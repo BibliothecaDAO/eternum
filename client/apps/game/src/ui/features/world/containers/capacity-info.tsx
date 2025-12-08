@@ -7,7 +7,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { CircularProgress } from "./top-left-navigation/circular-progress";
+import { CircularProgress } from "./top-header/circular-progress";
 
 const WorkersHutInfo = () => {
   const capacity = configManager.getBuildingCategoryConfig(BuildingType.WorkersHut).capacity_grant;

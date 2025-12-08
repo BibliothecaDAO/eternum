@@ -5,7 +5,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { TroopChip } from "@/ui/features/military";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
@@ -192,13 +191,7 @@ export const ArmyEntityDetail = memo(
           ) : (
             <div className={panelClasses()}>
               <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={`${smallTextClass} text-gold/60 italic`}
-              >
-                No resources stored.
-              </BottomHudEmptyState>
+              <p className={`${smallTextClass} text-gold/60 italic`}>No resources stored.</p>
             </div>
           )}
 

@@ -4,6 +4,7 @@ import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-dra
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   calculateDonkeysNeeded,
   configManager,
@@ -21,12 +22,13 @@ import {
   ResourcesIds,
   Structure,
   StructureType,
+  getResourceTiers,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Castle, Crown, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
 
 const ESSENCE_SITE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
 
@@ -42,11 +44,31 @@ const isRealm = (structure: Structure | undefined) => structure?.category === St
 const isAllowedSource = (structure: Structure) => SOURCE_ALLOWED_CATEGORIES.has(structure.category);
 const isAllowedDestination = (structure: Structure) => DEST_ALLOWED_CATEGORIES.has(structure.category);
 
-export const TransferAutomationPanel = () => {
+const getStructureIcon = (category: StructureType, isBlitz: boolean) => {
+  switch (category) {
+    case StructureType.Realm:
+      return Crown;
+    case StructureType.Village:
+      return isBlitz ? Tent : Castle;
+    case StructureType.FragmentMine:
+      return Pickaxe;
+    case StructureType.Hyperstructure:
+      return Sparkles;
+    default:
+      return Castle;
+  }
+};
+
+interface TransferAutomationPanelProps {
+  initialSourceId?: number | null;
+}
+
+export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useUIStore((s) => s.playerStructures);
-  const toggleModal = useUIStore((s) => s.toggleModal);
   const { currentDefaultTick } = useBlockTimestamp();
   const isBlitz = getIsBlitz();
+  const { favorites } = useFavoriteStructures();
+  const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);
 
   const ownedSources = useMemo<Structure[]>(() => {
     return playerStructures.filter((structure) => isAllowedSource(structure));
@@ -57,35 +79,6 @@ export const TransferAutomationPanel = () => {
     setup: { components, systemCalls },
     account: { account },
   } = useDojo();
-
-  const resourceTotals = useMemo(() => {
-    const totals = new Map<ResourcesIds, number>();
-    if (!components) return totals;
-    const clientComponents = components as ClientComponents;
-    for (const ps of ownedSources) {
-      const entityKey = getEntityIdFromKeys([BigInt(ps.entityId)]);
-      const resourceComponent = getComponentValue(clientComponents.Resource, entityKey);
-      if (!resourceComponent) continue;
-
-      const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick);
-      const category = ps.category;
-
-      for (const { resourceId, amount } of balances) {
-        const rid = resourceId as ResourcesIds;
-        if (amount <= 0) continue;
-        if (isMilitaryResource(rid) && category !== StructureType.Realm) {
-          continue;
-        }
-        const human = Number(amount) / RESOURCE_PRECISION;
-        if (human > 0) {
-          totals.set(rid, (totals.get(rid) ?? 0) + human);
-        }
-      }
-    }
-    return totals;
-  }, [components, ownedSources, currentDefaultTick]);
-
-  const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
 
   // UI state
   const [selectedResources, setSelectedResources] = useState<ResourcesIds[]>([]);
@@ -111,6 +104,82 @@ export const TransferAutomationPanel = () => {
     () => selectedResources.some((rid) => rid !== ResourcesIds.Donkey),
     [selectedResources],
   );
+
+  const resourcePriorityMap = useMemo(() => {
+    const resourceTiers = getResourceTiers(getIsBlitz());
+    const tierOrder = [
+      "lords",
+      "relics",
+      "essence",
+      "labor",
+      "military",
+      "transport",
+      "food",
+      "common",
+      "uncommon",
+      "rare",
+      "unique",
+      "mythic",
+    ] as const;
+
+    const map = new Map<ResourcesIds, { group: number; position: number }>();
+    tierOrder.forEach((key, groupIndex) => {
+      const ids = (resourceTiers as Record<string, ResourcesIds[]>)[key] ?? [];
+      ids.forEach((id, index) => {
+        const isMaterialGroup = groupIndex >= tierOrder.indexOf("common");
+        map.set(id, { group: groupIndex, position: isMaterialGroup ? id : index });
+      });
+    });
+    return map;
+  }, []);
+
+  const getResourcePriority = useCallback(
+    (resourceId: ResourcesIds) => {
+      const match = resourcePriorityMap.get(resourceId);
+      if (match) return match;
+      return { group: resourcePriorityMap.size + 1, position: resourceId };
+    },
+    [resourcePriorityMap],
+  );
+
+  const resourceTotals = useMemo(() => {
+    const totals = new Map<ResourcesIds, number>();
+    if (!components) return totals;
+    const clientComponents = components as ClientComponents;
+    const sourcesToUse =
+      selectedSourceId !== null
+        ? ownedSources.filter((ps) => Number(ps.entityId) === Number(selectedSourceId))
+        : ownedSources;
+
+    for (const ps of sourcesToUse) {
+      const entityKey = getEntityIdFromKeys([BigInt(ps.entityId)]);
+      const resourceComponent = getComponentValue(clientComponents.Resource, entityKey);
+      if (!resourceComponent) continue;
+
+      const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick);
+      const category = ps.category;
+
+      for (const { resourceId, amount } of balances) {
+        const rid = resourceId as ResourcesIds;
+        if (amount <= 0) continue;
+        if (isMilitaryResource(rid) && category !== StructureType.Realm) {
+          continue;
+        }
+        const human = Number(amount) / RESOURCE_PRECISION;
+        if (human > 0) {
+          totals.set(rid, (totals.get(rid) ?? 0) + human);
+        }
+      }
+    }
+    return totals;
+  }, [components, ownedSources, currentDefaultTick, selectedSourceId]);
+
+  const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
+
+  useEffect(() => {
+    if (initialSourceId === null || initialSourceId === undefined) return;
+    setSelectedSourceId((prev) => (prev === initialSourceId ? prev : initialSourceId));
+  }, [initialSourceId]);
 
   useEffect(() => {
     if (!statusMessage) return;
@@ -228,18 +297,34 @@ export const TransferAutomationPanel = () => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9 ]/g, "");
-    const list = baseList
+    const filtered = baseList
       .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
       .filter((ps) => (allowEssenceDestinationPayload ? true : !isFragmentMine(ps)));
-    if (!q) return list;
-    return list.filter((ps) => {
-      const name = getStructureName(ps.structure, isBlitz).name;
-      if (isNumeric) {
-        return String(ps.entityId).includes(q);
-      }
-      return norm(name).includes(norm(q));
+    const searched = !q
+      ? filtered
+      : filtered.filter((ps) => {
+          const name = getStructureName(ps.structure, isBlitz).name;
+          if (isNumeric) {
+            return String(ps.entityId).includes(q);
+          }
+          return norm(name).includes(norm(q));
+        });
+    return [...searched].sort((a, b) => {
+      const aFav = favoriteDestinationIds.has(Number(a.entityId));
+      const bFav = favoriteDestinationIds.has(Number(b.entityId));
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return 0;
     });
-  }, [ownedDestOnly, filteredOwnedDestinations, destSearch, isBlitz, selectedSourceId, allowEssenceDestinationPayload]);
+  }, [
+    ownedDestOnly,
+    filteredOwnedDestinations,
+    destSearch,
+    isBlitz,
+    selectedSourceId,
+    allowEssenceDestinationPayload,
+    favoriteDestinationIds,
+  ]);
 
   // Force single destination selection when multiple resources are selected
   useEffect(() => {
@@ -633,24 +718,10 @@ export const TransferAutomationPanel = () => {
     setStatusMessage(null);
   }, []);
 
-  const openAdvanced = useCallback(() => {
-    toggleModal(<TransferAutomationAdvancedModal />);
-  }, [toggleModal]);
-
   return (
     <div className="p-3 md:p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="text-gold font-semibold">Transfer</h4>
-          <p className="text-xxs text-gold/60">Select resources, source, destination and frequency.</p>
-        </div>
-        <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
-          Reset
-        </Button>
-      </div>
-
       <section className="space-y-2">
-        <div className="flex items-center">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 rounded-full border border-gold/40 bg-brown/40 px-1 py-0.5 text-xxs font-semibold uppercase tracking-widest">
             <button
               type="button"
@@ -674,6 +745,9 @@ export const TransferAutomationPanel = () => {
               Military
             </button>
           </div>
+          <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
+            Reset
+          </Button>
         </div>
         {restrictToEssencePayload && (
           <p className="text-xxs text-gold/60">Essence rifts can only transfer Donkeys and Essence.</p>
@@ -688,7 +762,17 @@ export const TransferAutomationPanel = () => {
               if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
               return true;
             })
-            .sort((a, b) => Number(a) - Number(b))
+            .sort((a, b) => {
+              const ra = a as ResourcesIds;
+              const rb = b as ResourcesIds;
+              const priA = getResourcePriority(ra);
+              const priB = getResourcePriority(rb);
+              if (priA.group !== priB.group) return priA.group - priB.group;
+              if (priA.position !== priB.position) return priA.position - priB.position;
+              const labelA = ResourcesIds[ra] as string;
+              const labelB = ResourcesIds[rb] as string;
+              return labelA.localeCompare(labelB);
+            })
             .map((rid) => {
               const resourceId = rid as ResourcesIds;
               const sel = selectedResources.includes(resourceId);
@@ -714,57 +798,56 @@ export const TransferAutomationPanel = () => {
         </div>
       </section>
 
-      {selectedResources.length > 0 && (
-        <section className="space-y-2">
-          <div className="text-xs text-gold/70">Source Location</div>
-          <input
-            type="text"
-            value={sourceSearch}
-            onChange={(e) => setSourceSearch(e.target.value)}
-            placeholder="Filter by name or ID"
-            className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
-          />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {eligibleSources
-              .filter((ps) => {
-                const q = sourceSearch.trim();
-                if (!q) return true;
-                const isNumeric = /^\d+$/.test(q);
-                const name = getStructureName(ps.structure, isBlitz).name;
-                if (isNumeric) return String(ps.entityId).includes(q);
-                const norm = (s: string) =>
-                  s
-                    .toLowerCase()
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "");
-                return norm(name).includes(norm(q));
-              })
-              .map((ps) => {
-                const name = getStructureName(ps.structure, isBlitz).name;
-                const entityId = Number(ps.entityId);
-                const isSel = selectedSourceId === entityId;
-                return (
-                  <button
-                    key={ps.entityId}
-                    type="button"
-                    className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                    onClick={() => setSelectedSourceId(isSel ? null : entityId)}
-                  >
+      <section className="space-y-2">
+        <input
+          type="text"
+          value={sourceSearch}
+          onChange={(e) => setSourceSearch(e.target.value)}
+          placeholder="Filter by name or ID"
+          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
+        />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {eligibleSources
+            .filter((ps) => {
+              const q = sourceSearch.trim();
+              if (!q) return true;
+              const isNumeric = /^\d+$/.test(q);
+              const name = getStructureName(ps.structure, isBlitz).name;
+              if (isNumeric) return String(ps.entityId).includes(q);
+              const norm = (s: string) =>
+                s
+                  .toLowerCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "");
+              return norm(name).includes(norm(q));
+            })
+            .map((ps) => {
+              const name = getStructureName(ps.structure, isBlitz).name;
+              const entityId = Number(ps.entityId);
+              const isSel = selectedSourceId === entityId;
+              const Icon = getStructureIcon(ps.category, isBlitz);
+              return (
+                <button
+                  key={ps.entityId}
+                  type="button"
+                  className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  onClick={() => setSelectedSourceId(isSel ? null : entityId)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-gold" aria-hidden />
                     <div className="text-sm font-semibold">{name}</div>
-                    <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
-                  </button>
-                );
-              })}
-          </div>
-        </section>
-      )}
+                  </div>
+                </button>
+              );
+            })}
+        </div>
+      </section>
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-gold/70">
-              Destination
-              {allowMultiDestination && actualDestinationCount > 0 ? ` (${actualDestinationCount} selected)` : ""}
+              {allowMultiDestination && actualDestinationCount > 0 ? `${actualDestinationCount} selected` : ""}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xxs text-gold/60">
               <label className="flex items-center gap-2">
@@ -785,6 +868,8 @@ export const TransferAutomationPanel = () => {
               const name = getStructureName(ps.structure, isBlitz).name;
               const entityId = Number(ps.entityId);
               const isSel = destinationIds.includes(entityId);
+              const Icon = getStructureIcon(ps.category, isBlitz);
+              const isFavorite = favoriteDestinationIds.has(entityId);
               return (
                 <button
                   key={`dst-${ps.entityId}`}
@@ -792,8 +877,11 @@ export const TransferAutomationPanel = () => {
                   className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
-                  <div className="text-sm font-semibold">{name}</div>
-                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
+                  <div className="flex items-center gap-2">
+                    {isFavorite && <Star className="h-4 w-4 fill-current text-gold" aria-hidden />}
+                    <Icon className="h-4 w-4 text-gold" aria-hidden />
+                    <div className="text-sm font-semibold">{name}</div>
+                  </div>
                 </button>
               );
             })}
@@ -803,14 +891,6 @@ export const TransferAutomationPanel = () => {
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="flex flex-col gap-1 text-xs text-gold/70">
-            <div>
-              Per-resource Amounts
-              {allowMultiDestination && actualDestinationCount > 1 && (
-                <span className="ml-1 text-xxs text-gold/50">(per destination)</span>
-              )}
-            </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
@@ -988,9 +1068,6 @@ export const TransferAutomationPanel = () => {
             </>
           )}
         </div>
-        <Button variant="outline" onClick={openAdvanced}>
-          Advanced
-        </Button>
       </div>
     </div>
   );

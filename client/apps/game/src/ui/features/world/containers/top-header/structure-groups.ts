@@ -1,13 +1,15 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export const STRUCTURE_GROUPS_STORAGE_KEY = "structureGroups";
+const STRUCTURE_GROUPS_EVENT = "structureGroups:updated";
 
 export const STRUCTURE_GROUP_COLORS = [
-  { value: "gold" as const, label: "Gold", textClass: "text-gold", dotClass: "bg-gold" },
-  { value: "emerald" as const, label: "Emerald", textClass: "text-emerald-300", dotClass: "bg-emerald-400" },
-  { value: "sky" as const, label: "Sky", textClass: "text-sky-300", dotClass: "bg-sky-400" },
-  { value: "violet" as const, label: "Violet", textClass: "text-violet-300", dotClass: "bg-violet-400" },
-  { value: "rose" as const, label: "Rose", textClass: "text-rose-300", dotClass: "bg-rose-400" },
+  { value: "red" as const, label: "Red", textClass: "text-red-400", dotClass: "bg-red-400" },
+  { value: "amber" as const, label: "Amber", textClass: "text-amber-400", dotClass: "bg-amber-400" },
+  { value: "green" as const, label: "Green", textClass: "text-green-400", dotClass: "bg-green-400" },
+  { value: "blue" as const, label: "Blue", textClass: "text-blue-400", dotClass: "bg-blue-400" },
+  { value: "indigo" as const, label: "Indigo", textClass: "text-indigo-400", dotClass: "bg-indigo-400" },
+  { value: "violet" as const, label: "Violet", textClass: "text-violet-400", dotClass: "bg-violet-400" },
 ] as const;
 
 export type StructureGroupColor = (typeof STRUCTURE_GROUP_COLORS)[number]["value"];
@@ -82,6 +84,7 @@ export const saveStructureGroups = (groups: StructureGroupsMap): void => {
 
   try {
     window.localStorage.setItem(STRUCTURE_GROUPS_STORAGE_KEY, JSON.stringify(groups));
+    window.dispatchEvent(new CustomEvent(STRUCTURE_GROUPS_EVENT, { detail: groups }));
   } catch (error) {
     console.warn("Failed to persist structure groups", error);
   }
@@ -116,15 +119,48 @@ export const useStructureGroups = () => {
     setStructureGroups((previous) => {
       const next = { ...previous } as StructureGroupsMap;
 
-      if (color === null) {
+      const sanitizedColor = color === null ? null : sanitizeGroupValue(color);
+
+      if (sanitizedColor === undefined) {
+        return previous;
+      }
+
+      if (sanitizedColor === null) {
         delete next[entityId];
       } else {
-        next[entityId] = color;
+        next[entityId] = sanitizedColor;
       }
 
       saveStructureGroups(next);
       return next;
     });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleCustomUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<StructureGroupsMap>;
+      if (customEvent.detail) {
+        setStructureGroups(customEvent.detail);
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === STRUCTURE_GROUPS_STORAGE_KEY) {
+        setStructureGroups(loadStructureGroups());
+      }
+    };
+
+    window.addEventListener(STRUCTURE_GROUPS_EVENT, handleCustomUpdate as EventListener);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(STRUCTURE_GROUPS_EVENT, handleCustomUpdate as EventListener);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   return { structureGroups, updateStructureGroup };

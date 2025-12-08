@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 
-import type { StoryEventPresentation } from "@bibliothecadao/eternum";
+import type { StoryEventPresentation, StoryEventSystemUpdate } from "@bibliothecadao/eternum";
 
 export interface StoryEventToastProviderProps {
   children: ReactNode;
@@ -14,10 +14,11 @@ export interface StoryEventFeedItem {
   id: string;
   createdAt: number;
   event: StoryEventPresentation;
+  source?: StoryEventSystemUpdate;
 }
 
 interface StoryEventToastContextValue {
-  pushToast: (event: StoryEventPresentation) => void;
+  pushToast: (event: StoryEventPresentation, source?: StoryEventSystemUpdate) => void;
   clearAll: () => void;
   visibleEvents: StoryEventFeedItem[];
 }
@@ -26,7 +27,7 @@ const StoryEventToastContext = createContext<StoryEventToastContextValue | undef
 
 export function StoryEventToastProvider({
   children,
-  autoDismissMs = 6000,
+  autoDismissMs = 12000,
   maxVisible = 5,
 }: StoryEventToastProviderProps) {
   const [toasts, setToasts] = useState<StoryEventFeedItem[]>([]);
@@ -76,9 +77,9 @@ export function StoryEventToastProvider({
   );
 
   const pushToast = useCallback(
-    (event: StoryEventPresentation) => {
+    (event: StoryEventPresentation, source?: StoryEventSystemUpdate) => {
       const id = `${event.title}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const newToast: StoryEventFeedItem = { id, createdAt: Date.now(), event };
+      const newToast: StoryEventFeedItem = { id, createdAt: Date.now(), event, source };
 
       setToasts((currentToasts) => {
         if (currentToasts.length < maxVisible) {

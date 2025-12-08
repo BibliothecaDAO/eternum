@@ -2,8 +2,6 @@ import { ID } from "@bibliothecadao/types";
 
 export enum RightView {
   None,
-  ResourceTable,
-  Production,
   Bridge,
   Automation,
   Transfer,
@@ -17,6 +15,8 @@ export enum LeftView {
   ConstructionView,
   HyperstructuresView,
   ResourceArrivals,
+  ChatView,
+  StoryEvents,
   ResourceTable,
   RelicsView,
 }

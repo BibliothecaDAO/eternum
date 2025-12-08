@@ -3,7 +3,6 @@ import { memo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
@@ -203,13 +202,7 @@ export const StructureEntityDetail = memo(
                 variant={compact ? "banner" : "default"}
               />
             ) : (
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={`${smallTextClass} text-gold/60 italic`}
-              >
-                No defenders stationed.
-              </BottomHudEmptyState>
+              <p className={`${smallTextClass} text-gold/60 italic`}>No defenders stationed.</p>
             )}
           </div>
 
@@ -226,13 +219,7 @@ export const StructureEntityDetail = memo(
           ) : (
             <div className={panelClasses()}>
               <div className={`${sectionTitleClass} mb-1`}>Buildings & Production</div>
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={`${smallTextClass} text-gold/60 italic`}
-              >
-                Buildings & Production data unavailable.
-              </BottomHudEmptyState>
+              <p className={`${smallTextClass} text-gold/60 italic`}>Buildings & Production data unavailable.</p>
             </div>
           )}
 
@@ -255,13 +242,7 @@ export const StructureEntityDetail = memo(
           ) : (
             <div className={panelClasses()}>
               <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={`${smallTextClass} text-gold/60 italic`}
-              >
-                No resources stored.
-              </BottomHudEmptyState>
+              <p className={`${smallTextClass} text-gold/60 italic`}>No resources stored.</p>
             </div>
           )}
 

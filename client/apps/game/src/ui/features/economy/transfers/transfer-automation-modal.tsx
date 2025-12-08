@@ -30,7 +30,7 @@ const formatLastRun = (timestamp: number) => {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 };
 
-export const TransferAutomationAdvancedModal = () => {
+export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded?: boolean }) => {
   const entries = useTransferAutomationStore((s) => s.entries);
   const toggleActive = useTransferAutomationStore((s) => s.toggleActive);
   const remove = useTransferAutomationStore((s) => s.remove);
@@ -173,71 +173,76 @@ export const TransferAutomationAdvancedModal = () => {
 
   const hasActiveFiltered = filtered.some((entry) => entry.active);
 
-  return (
-    <ModalContainer size="full" title="Scheduled Transfers">
-      <div className="p-4 pb-6 h-full overflow-y-auto">
-        <div className="mb-3 flex flex-col gap-2">
-          <input
-            type="text"
-            className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 outline-none"
-            placeholder="Filter by source/destination"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="xs"
-              onClick={runActiveNow}
-              disabled={isRunningAll || !hasActiveFiltered}
-              isLoading={isRunningAll}
-            >
-              Run active transfers now
-            </Button>
-            <Button size="xs" variant="outline" onClick={pauseAll}>
-              Pause all
-            </Button>
-            <Button size="xs" variant="outline" onClick={resumeAll}>
-              Resume all
-            </Button>
-          </div>
+  const content = (
+    <div className={embedded ? "p-3 space-y-3 overflow-y-auto max-h-[70vh]" : "p-4 pb-6 h-full overflow-y-auto"}>
+      <div className="mb-3 flex flex-col gap-2">
+        <input
+          type="text"
+          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 outline-none"
+          placeholder="Filter by source/destination"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="xs"
+            onClick={runActiveNow}
+            disabled={isRunningAll || !hasActiveFiltered}
+            isLoading={isRunningAll}
+          >
+            Run active transfers now
+          </Button>
+          <Button size="xs" variant="outline" onClick={pauseAll}>
+            Pause all
+          </Button>
+          <Button size="xs" variant="outline" onClick={resumeAll}>
+            Resume all
+          </Button>
         </div>
-        {filtered.length === 0 ? (
-          <div className="text-xxs text-gold/60">No scheduled transfers.</div>
-        ) : (
-          <div className="space-y-2">
-            {filtered.map((e) => (
-              <div
-                key={e.id}
-                className="flex items-center justify-between rounded border border-gold/20 bg-black/30 p-2"
-              >
-                <div className="flex flex-col text-xs text-gold/80">
-                  <div className="font-semibold text-gold/90">
-                    {e.sourceName ?? e.sourceEntityId} → {e.destinationName ?? e.destinationEntityId}
-                  </div>
-                  <div>
-                    {formatResourceSummary(e)}
-                    {e.active ? ` • every ${e.intervalMinutes}m` : " • paused"}
-                    {typeof e.lastRunAt === "number" && (
-                      <span className="text-gold/60"> • last run {formatLastRun(e.lastRunAt)}</span>
-                    )}
-                  </div>
+      </div>
+      {filtered.length === 0 ? (
+        <div className="text-xxs text-gold/60">No scheduled transfers.</div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((e) => (
+            <div key={e.id} className="flex items-center justify-between rounded border border-gold/20 bg-black/30 p-2">
+              <div className="flex flex-col text-xs text-gold/80">
+                <div className="font-semibold text-gold/90">
+                  {e.sourceName ?? e.sourceEntityId} → {e.destinationName ?? e.destinationEntityId}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="xs" onClick={() => runNow(e)}>
-                    Run now
-                  </Button>
-                  <Button size="xs" variant="outline" onClick={() => toggleActive(e.id, !e.active)}>
-                    {e.active ? "Pause" : "Resume"}
-                  </Button>
-                  <Button size="xs" variant="danger" onClick={() => remove(e.id)}>
-                    Delete
-                  </Button>
+                <div>
+                  {formatResourceSummary(e)}
+                  {e.active ? ` • every ${e.intervalMinutes}m` : " • paused"}
+                  {typeof e.lastRunAt === "number" && (
+                    <span className="text-gold/60"> • last run {formatLastRun(e.lastRunAt)}</span>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="flex items-center gap-2">
+                <Button size="xs" onClick={() => runNow(e)}>
+                  Run now
+                </Button>
+                <Button size="xs" variant="outline" onClick={() => toggleActive(e.id, !e.active)}>
+                  {e.active ? "Pause" : "Resume"}
+                </Button>
+                <Button size="xs" variant="danger" onClick={() => remove(e.id)}>
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <ModalContainer size="full" title="Scheduled Transfers">
+      {content}
     </ModalContainer>
   );
 };

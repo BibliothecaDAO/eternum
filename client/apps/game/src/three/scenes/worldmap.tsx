@@ -271,8 +271,10 @@ export default class WorldmapScene extends HexagonScene {
 
   dojo: SetupResult;
 
+  // Render-area fetch bookkeeping (keys represent render-sized regions, not chunk stride)
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<void>> = new Map();
+  private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<ID, { scheduledAt: number; chunkKey: string; reason: "tile" | "zero" }> =
     new Map();
@@ -1007,7 +1009,8 @@ export default class WorldmapScene extends HexagonScene {
 
   private openBattleLogsPanel() {
     const uiStore = useUIStore.getState();
-    uiStore.setRightNavigationView(RightView.StoryEvents);
+    uiStore.setRightNavigationView(RightView.None);
+    uiStore.setLeftNavigationView(LeftView.StoryEvents);
   }
 
   private notifyArmyUnderAttack(update: BattleEventSystemUpdate) {
@@ -1406,6 +1409,19 @@ export default class WorldmapScene extends HexagonScene {
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
 
+    if (hexCoords) {
+      void this.ensureStructureSynced(selectedEntityId, hexCoords);
+      const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+      const worldMapPosition =
+        Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
+          ? { col: Number(contractPosition.x), row: Number(contractPosition.y) }
+          : undefined;
+      this.state.setStructureEntityId(selectedEntityId, {
+        worldMapPosition,
+        spectator: this.state.isSpectating,
+      });
+    }
+
     // Show selection pulse for the selected structure
     if (hexCoords) {
       const worldPos = getWorldPositionForHex(hexCoords);
@@ -1782,6 +1798,7 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.clear();
     this.pendingChunks.clear();
     this.pinnedChunkKeys.clear();
+    this.pinnedRenderAreas.clear();
 
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
@@ -2275,6 +2292,36 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  /**
+   * Derive a stable render-area key for a chunk key.
+   * The key snaps to the renderChunkSize grid so fetch/cache
+   * bookkeeping aligns with what is actually rendered.
+   */
+  private getRenderAreaKeyForChunk(chunkKey: string): string {
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
+    const areaRow = Math.floor(centerRow / this.renderChunkSize.height) * this.renderChunkSize.height;
+    const areaCol = Math.floor(centerCol / this.renderChunkSize.width) * this.renderChunkSize.width;
+    return `${areaRow},${areaCol}`;
+  }
+
+  /**
+   * Compute integer fetch bounds that fully cover the render area for a chunk key.
+   */
+  private getRenderFetchBounds(chunkKey: string): { minCol: number; maxCol: number; minRow: number; maxRow: number } {
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
+    const halfWidth = this.renderChunkSize.width / 2;
+    const halfHeight = this.renderChunkSize.height / 2;
+
+    return {
+      minCol: Math.floor(centerCol - halfWidth),
+      maxCol: Math.floor(centerCol + halfWidth - 1),
+      minRow: Math.floor(centerRow - halfHeight),
+      maxRow: Math.floor(centerRow + halfHeight - 1),
+    };
+  }
+
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {
     const pos = getWorldPositionForHex({ row, col });
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(pos.x, pos.z);
@@ -2653,32 +2700,55 @@ export default class WorldmapScene extends HexagonScene {
   private updatePinnedChunks(newChunkKeys: string[]): void {
     const nextPinned = new Set(newChunkKeys);
     const prevPinned = this.pinnedChunkKeys;
-    const newlyPinned: string[] = [];
-    const removedPinned: string[] = [];
+    const newlyPinnedChunks: string[] = [];
+    const removedPinnedChunks: string[] = [];
+
+    // Compute render-area coverage for the new/old pinned sets
+    const nextPinnedAreas = new Set<string>();
+    nextPinned.forEach((chunkKey) => nextPinnedAreas.add(this.getRenderAreaKeyForChunk(chunkKey)));
+    const prevPinnedAreas = this.pinnedRenderAreas;
+    const newlyPinnedAreas: string[] = [];
+    const removedPinnedAreas: string[] = [];
+
+    nextPinnedAreas.forEach((areaKey) => {
+      if (!prevPinnedAreas.has(areaKey)) {
+        newlyPinnedAreas.push(areaKey);
+      }
+    });
+
+    prevPinnedAreas.forEach((areaKey) => {
+      if (!nextPinnedAreas.has(areaKey)) {
+        removedPinnedAreas.push(areaKey);
+      }
+    });
 
     // Track which chunks became newly active so we can refresh their structures
     nextPinned.forEach((chunkKey) => {
       if (!prevPinned.has(chunkKey)) {
-        newlyPinned.push(chunkKey);
+        newlyPinnedChunks.push(chunkKey);
       }
     });
 
-    // Any chunk that drops out of the pinned set needs to be refetched when revisited.
-    // Remove it from the fetched cache so computeTileEntities will request fresh data.
     prevPinned.forEach((chunkKey) => {
       if (!nextPinned.has(chunkKey)) {
-        this.fetchedChunks.delete(chunkKey);
-        removedPinned.push(chunkKey);
+        removedPinnedChunks.push(chunkKey);
       }
+    });
+
+    // Drop cached tile data for render areas that are no longer covered
+    removedPinnedAreas.forEach((areaKey) => {
+      this.fetchedChunks.delete(areaKey);
+      this.pendingChunks.delete(areaKey);
     });
 
     this.pinnedChunkKeys = nextPinned;
+    this.pinnedRenderAreas = nextPinnedAreas;
 
-    if (newlyPinned.length > 0) {
-      this.refreshStructuresForChunks(newlyPinned);
+    if (newlyPinnedChunks.length > 0) {
+      this.refreshStructuresForChunks(newlyPinnedChunks);
     }
 
-    removedPinned.forEach((chunkKey) => {
+    removedPinnedChunks.forEach((chunkKey) => {
       if (chunkKey !== this.currentChunk) {
         this.visibilityManager?.unregisterChunk(chunkKey);
       }
@@ -2764,31 +2834,22 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async computeTileEntities(chunkKey: string): Promise<void> {
-    // Skip if we've already fetched this chunk
-    if (this.fetchedChunks.has(chunkKey)) {
+    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    if (this.fetchedChunks.has(fetchKey)) {
       return;
     }
 
-    // If there's already a pending request for this chunk, return the existing promise
-    const existingPromise = this.pendingChunks.get(chunkKey);
+    const existingPromise = this.pendingChunks.get(fetchKey);
     if (existingPromise) {
       return existingPromise;
     }
 
-    // Parse chunk coordinates
-    const chunkRow = parseInt(chunkKey.split(",")[0]);
-    const chunkCol = parseInt(chunkKey.split(",")[1]);
-
-    // Calculate exact chunk boundaries
-    const minCol = chunkCol;
-    const maxCol = chunkCol + this.chunkSize - 1;
-    const minRow = chunkRow;
-    const maxRow = chunkRow + this.chunkSize - 1;
+    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBounds(chunkKey);
 
     if (import.meta.env.DEV) {
       console.log(
-        "[CHUNK KEY]",
-        chunkKey,
+        "[RENDER FETCH]",
+        { chunkKey, fetchKey },
         `cols: ${minCol}-${maxCol}`,
         `rows: ${minRow}-${maxRow}`,
         "fetched chunks",
@@ -2796,14 +2857,14 @@ export default class WorldmapScene extends HexagonScene {
       );
     }
 
-    // Create the promise and add it to pending chunks immediately
-    const fetchPromise = this.executeTileEntitiesFetch(chunkKey, minCol, maxCol, minRow, maxRow);
-    this.pendingChunks.set(chunkKey, fetchPromise);
+    const fetchPromise = this.executeTileEntitiesFetch(fetchKey, chunkKey, minCol, maxCol, minRow, maxRow);
+    this.pendingChunks.set(fetchKey, fetchPromise);
 
     return fetchPromise;
   }
 
   private async executeTileEntitiesFetch(
+    fetchKey: string,
     chunkKey: string,
     minCol: number,
     maxCol: number,
@@ -2820,9 +2881,9 @@ export default class WorldmapScene extends HexagonScene {
         minRow + FELT_CENTER(),
         maxRow + FELT_CENTER(),
       );
-      // Only add to the fetched cache if the chunk is still pinned (still relevant)
-      if (this.pinnedChunkKeys.has(chunkKey)) {
-        this.fetchedChunks.add(chunkKey);
+      // Only add to the fetched cache if the render area is still pinned (still relevant)
+      if (this.pinnedRenderAreas.has(fetchKey)) {
+        this.fetchedChunks.add(fetchKey);
         if (chunkKey === this.currentChunk && !this.isChunkTransitioning) {
           this.scheduleHydratedChunkRefresh(chunkKey);
         }
@@ -2832,7 +2893,7 @@ export default class WorldmapScene extends HexagonScene {
       // Don't add to fetchedChunks on error so it can be retried
     } finally {
       // Always remove from pending chunks
-      this.pendingChunks.delete(chunkKey);
+      this.pendingChunks.delete(fetchKey);
       this.endToriiFetch();
       //const end = performance.now();
     }
@@ -3321,6 +3382,7 @@ export default class WorldmapScene extends HexagonScene {
   public clearTileEntityCache() {
     this.fetchedChunks.clear();
     this.pendingChunks.clear();
+    this.pinnedRenderAreas.clear();
     this.clearCache();
     this.armyLastUpdateAt.clear();
     // Also clear the interactive hexes when clearing the entire cache

@@ -63,6 +63,8 @@ const structureIcons: Record<string, JSX.Element> = {
   [StructureType.Hyperstructure]: <Sparkles />,
   [StructureType.FragmentMine]: <Pickaxe />,
   [StructureType.Village]: <Home />,
+  None: <ShieldQuestion />,
+  ReadOnly: <ShieldQuestion />,
 };
 
 type SortMode = "name" | "population" | "realmLevel";
@@ -115,6 +117,14 @@ const getStructureIcon = (selectedStructure: SelectedStructure) => {
   }
 
   if (selectedStructure.structureCategory && structureIcons[selectedStructure.structureCategory]) {
+    const baseLevel = Number(selectedStructure.structure?.base?.level ?? 0);
+    const isEmpireRealm =
+      selectedStructure.structureCategory === StructureType.Realm && baseLevel >= RealmLevels.Empire;
+
+    if (isEmpireRealm) {
+      return <ShieldQuestion />;
+    }
+
     return structureIcons[selectedStructure.structureCategory];
   }
 
@@ -597,13 +607,15 @@ export const StructureSelectPanel = memo(
                               onMouseEnter={() => playHover()}
                               title={
                                 structure.groupColor
-                                  ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor].label}`
+                                  ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.label ?? "Group"}`
                                   : "Assign group color"
                               }
                             >
                               <Palette
                                 className={`h-4 w-4 ${
-                                  structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                                  structure.groupColor
+                                    ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "")
+                                    : ""
                                 }`}
                               />
                             </button>
@@ -625,12 +637,14 @@ export const StructureSelectPanel = memo(
                                 <span className="flex items-center gap-2">
                                   {structure.groupColor && (
                                     <span
-                                      className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`}
+                                      className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
                                     />
                                   )}
                                   <span
                                     className={
-                                      structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                                      structure.groupColor
+                                        ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "")
+                                        : ""
                                     }
                                   >
                                     {structure.name}

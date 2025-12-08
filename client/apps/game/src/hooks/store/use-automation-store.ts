@@ -191,10 +191,10 @@ const normalizePercentages = (
 };
 
 const normalizePresetId = (preset?: RealmPresetId | string | null): RealmPresetId => {
-  if (preset === "labor" || preset === "resource" || preset === "idle" || preset === "custom") {
+  if (preset === "smart" || preset === "idle" || preset === "custom") {
     return preset;
   }
-  return "labor";
+  return "smart";
 };
 
 const sanitizeRealmResources = (
@@ -269,9 +269,8 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             realmName: data?.realmName,
             entityType: data?.entityType ?? "realm",
             autoBalance: data?.autoBalance ?? true,
-            // Default to labor preset for new realms so bootstrapped
-            // resources start from a labor-friendly baseline.
-            presetId: normalizePresetId(data?.presetId ?? "labor"),
+            // Default to smart preset for new realms.
+            presetId: normalizePresetId(data?.presetId ?? "smart"),
             resources: {},
             createdAt: now,
             updatedAt: now,
@@ -291,7 +290,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           const target = state.realms[realmId];
           if (!target) return state;
 
-          const normalizedPreset = presetId;
+          const normalizedPreset = normalizePresetId(presetId);
           const allocations = calculatePresetAllocations(target, normalizedPreset);
           if (allocations.size === 0) {
             const nextState = {
@@ -447,7 +446,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           return existing;
         }
 
-        const shouldReapplyResourcePreset = realm?.presetId === "resource";
+        const shouldReapplyResourcePreset = realm?.presetId === "smart";
 
         const baseConfig = createDefaultResourceSettings(
           resourceId,
@@ -470,7 +469,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               },
             };
             const bootstrapAllocation = calculateResourceBootstrapAllocation(configWithResource, resourceId);
-            if (bootstrapAllocation && bootstrapAllocation.resourceToResource > 0) {
+            if (bootstrapAllocation) {
               newConfig = {
                 ...baseConfig,
                 percentages: {
@@ -507,10 +506,10 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         });
 
         if (shouldReapplyResourcePreset) {
-          // If the realm is currently using the resource preset,
+          // If the realm is currently using the smart preset,
           // re-apply it so the new building/resource is included
           // in the preset allocation across all resources.
-          store.setRealmPreset(realmId, "resource");
+          store.setRealmPreset(realmId, "smart");
         }
 
         return newConfig;
@@ -622,7 +621,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               [realmId]: {
                 ...realm,
                 resources: {},
-                presetId: "labor",
+                presetId: "smart",
                 updatedAt: Date.now(),
                 lastExecution: undefined,
               },
@@ -675,7 +674,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     {
       name: "eternum-production-automation",
       storage: createJSONStorage(() => localStorage),
-      version: 6,
+      version: 7,
       partialize: (state) => ({
         realms: state.realms,
         nextRunTimestamp: state.nextRunTimestamp,
@@ -721,9 +720,11 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           }
 
           const rawPreset = realm.presetId;
-          let normalizedPreset: RealmPresetId = "labor";
-          if (rawPreset === "labor" || rawPreset === "resource" || rawPreset === "idle" || rawPreset === "custom") {
+          let normalizedPreset: RealmPresetId = "smart";
+          if (rawPreset === "smart" || rawPreset === "idle" || rawPreset === "custom") {
             normalizedPreset = rawPreset;
+          } else if (rawPreset === "labor" || rawPreset === "resource") {
+            normalizedPreset = "smart";
           } else if (rawPreset === null) {
             normalizedPreset = "custom";
           } else if (typeof rawPreset === "string") {
