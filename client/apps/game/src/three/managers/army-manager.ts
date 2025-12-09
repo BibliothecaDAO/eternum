@@ -157,14 +157,15 @@ export class ArmyManager {
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
-    chunkStride?: number,
+    chunkStride: number,
   ) {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
-    this.chunkStride = chunkStride ?? Math.max(1, Math.floor(this.renderChunkSize.width / 2));
+    // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
+    this.chunkStride = Math.max(1, chunkStride);
     this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
     if (this.frustumManager) {
@@ -1445,6 +1446,10 @@ export class ArmyManager {
 
   public getArmies() {
     return Array.from(this.armies.values());
+  }
+
+  public getVisibleCount(): number {
+    return this.visibleArmyOrder.length;
   }
 
   update(deltaTime: number) {
