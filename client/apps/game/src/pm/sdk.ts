@@ -1,6 +1,7 @@
 import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { Market, MarketCreated, VaultDenominator, VaultNumerator } from "./bindings";
+export type { RegisteredToken } from "./bindings";
 import { MarketClass } from "./class";
 import { useDojoSdk } from "./hooks/dojo/useDojoSdk";
 import { useConfig } from "./providers";

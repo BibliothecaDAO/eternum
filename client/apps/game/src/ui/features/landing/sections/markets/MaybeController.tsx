@@ -8,7 +8,6 @@ export function MaybeController({ address, className, ...props }: { address: str
 
   useEffect(() => {
     const controller = findController(address);
-    console.log({ controller });
 
     if (controller) {
       setUsername(`${controller.username} (${shortAddress(address)})`);

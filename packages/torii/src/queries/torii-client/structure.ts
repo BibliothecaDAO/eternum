@@ -6,6 +6,7 @@ import { getResourcesFromToriiEntity } from "../../parser/torii-client/resources
 
 export const getStructureFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
   const query: Query = {
+    world_addresses: [],
     pagination: {
       limit: 1,
       cursor: undefined,

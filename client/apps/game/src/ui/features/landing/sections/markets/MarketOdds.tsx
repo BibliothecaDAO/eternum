@@ -21,11 +21,13 @@ const getOutcomes = (market: MarketClass): MarketOutcome[] => {
 export const MarketOdds = ({
   market,
   selectable = false,
-  onClick,
+  onSelect,
+  selectedOutcomeIndex,
 }: {
   market: MarketClass;
   selectable?: boolean;
-  onClick?: () => void;
+  onSelect?: (outcome: MarketOutcome) => void;
+  selectedOutcomeIndex?: number;
 }) => {
   const outcomes = getOutcomes(market);
 
@@ -39,19 +41,29 @@ export const MarketOdds = ({
         const odds = formatOdds(outcome?.odds ?? (outcome as any)?.price ?? (outcome as any)?.odds);
 
         return (
-          <div
+          <button
             key={(outcome as any)?.id ?? idx}
             className={cx(
-              "flex items-center justify-between rounded-sm border border-white/5 bg-white/5 px-3 py-2 text-xs transition",
-              selectable ? "cursor-pointer hover:border-gold/50 hover:bg-white/10" : "cursor-default",
+              "flex items-center justify-between rounded-sm border border-white/5 bg-white/5 px-3 py-2 text-left text-xs transition",
+              selectable
+                ? "cursor-pointer hover:border-gold/50 hover:bg-white/10"
+                : "cursor-default",
+              selectable && selectedOutcomeIndex === idx ? "border-gold/60 bg-white/10 ring-1 ring-gold/40" : null,
             )}
-            onClick={selectable ? onClick : undefined}
+            type="button"
+            onClick={
+              selectable && onSelect
+                ? () => {
+                    onSelect(outcome);
+                  }
+                : undefined
+            }
           >
             <HStack className="gap-2 text-white/90">
               <MaybeController address={outcome.name} />
             </HStack>
             <span className="text-gold">{odds ?? "--"}</span>
-          </div>
+          </button>
         );
       })}
     </div>

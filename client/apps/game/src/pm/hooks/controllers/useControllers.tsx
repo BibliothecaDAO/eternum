@@ -19,8 +19,6 @@ export function ControllersProvider({ children, ...props }: ControllersProviderP
   const { sdk } = useDojoSdk();
   const [controllers, setControllers] = useState<Controller[]>();
 
-  console.log({ raschelSdk: sdk });
-
   const refreshControllers = async () => {
     // fetch all
     const res = await sdk?.getControllers([], [], {

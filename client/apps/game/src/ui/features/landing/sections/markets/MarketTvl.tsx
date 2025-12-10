@@ -11,8 +11,7 @@ const formatTvl = (value: unknown) => {
 };
 
 export const MarketTvl = ({ market }: { market: MarketClass }) => {
-  const tvl = market.tvl ?? 0;
-  console.log({ tvl });
+  const tvl = market.getTvl ? market.getTvl() : market.tvl ?? 0;
   return (
     <HStack className="gap-2 text-sm text-gold">
       <span className="text-xs uppercase text-gold/70">TVL</span>

@@ -6,6 +6,18 @@ const defaultSdk = {
   getEntities: async () => ({
     getItems: () => [],
   }),
+  getControllers: async () => [],
+  getEventMessages: async () => ({
+    getItems: () => [],
+  }),
+  generateTypedData: () => ({
+    types: {
+      "pm-UserMessage": [],
+    },
+  }),
+  client: {
+    publishMessage: async () => undefined,
+  },
 };
 
 export const appDomain: StarknetDomain = {
@@ -17,6 +29,13 @@ export const appDomain: StarknetDomain = {
 
 const DojoSdkContext = createContext({
   sdk: defaultSdk as any,
+  config: {
+    manifest: {
+      world: {
+        address: "0x0",
+      },
+    },
+  },
 });
 
 export const DojoSdkProvider = DojoSdkContext.Provider;
@@ -36,6 +55,13 @@ export const DojoSdkProviderInitialized = ({
   worldAddress?: string;
 }>) => {
   const [sdk, setSdk] = useState<SDK<SchemaType>>();
+  const [config, setConfig] = useState({
+    manifest: {
+      world: {
+        address: worldAddress,
+      },
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +78,13 @@ export const DojoSdkProviderInitialized = ({
 
         if (!cancelled) {
           setSdk(initialized);
+          setConfig({
+            manifest: {
+              world: {
+                address: worldAddress,
+              },
+            },
+          });
         }
       } catch (error) {
         console.error("[pm-sdk] Failed to init Dojo SDK", error);
@@ -70,5 +103,5 @@ export const DojoSdkProviderInitialized = ({
 
   if (!sdk) return null;
 
-  return <DojoSdkProvider value={{ sdk }}>{children}</DojoSdkProvider>;
+  return <DojoSdkProvider value={{ sdk, config }}>{children}</DojoSdkProvider>;
 };

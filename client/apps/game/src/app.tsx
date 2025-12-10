@@ -17,6 +17,7 @@ import {
   LandingCosmetics,
   LandingLeaderboard,
   LandingCreateMarket,
+  LandingMarketDetails,
   LandingMarkets,
   LandingPlayer,
   LandingWelcome,
@@ -174,6 +175,7 @@ function App() {
               <Route path="player" element={<LandingPlayer />} />
               <Route path="create-market" element={<LandingCreateMarket />} />
               <Route path="markets" element={<LandingMarkets />} />
+              <Route path="markets/:marketId" element={<LandingMarketDetails />} />
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />

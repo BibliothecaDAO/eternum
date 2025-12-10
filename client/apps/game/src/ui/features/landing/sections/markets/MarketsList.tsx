@@ -28,6 +28,8 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
     return <p className="text-sm text-gold/70">No markets are available yet.</p>;
   }
 
+  const nowSec = Math.floor(Date.now() / 1_000);
+
   return (
     <VStack className="4xl:grid-cols-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {sortedMarkets.map((market, idx) => {
@@ -78,6 +80,11 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
                   <HStack className="justify-center">
                     <MarketStatusBadge market={market} />
                   </HStack>
+                  {!(nowSec >= market.start_at && nowSec < market.end_at) ? (
+                    <div className="rounded-sm border border-white/10 bg-white/5 px-3 py-2 text-center text-xs text-gold/80">
+                      Market closed to trades
+                    </div>
+                  ) : null}
 
                   <MarketTimeline market={market} />
                 </VStack>
