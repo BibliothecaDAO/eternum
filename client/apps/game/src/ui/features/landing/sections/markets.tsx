@@ -13,11 +13,13 @@ import {
 import { ScrollArea } from "@pm/ui";
 import { ArrowLeft } from "lucide-react";
 
+import { UserProvider } from "@/pm/hooks/dojo/user";
 import { MarketActivity } from "./markets/details/MarketActivity";
 import { MarketCreatedBy } from "./markets/details/MarketCreatedBy";
 import { MarketFees } from "./markets/details/MarketFees";
 import { MarketHistory } from "./markets/details/MarketHistory";
 import { MarketPositions } from "./markets/details/MarketPositions";
+import { MarketResolution } from "./markets/details/MarketResolution";
 import { MarketResolved } from "./markets/details/MarketResolved";
 import { MarketTrade } from "./markets/details/MarketTrade";
 import { MarketVaultFees } from "./markets/details/MarketVaultFees";
@@ -30,8 +32,8 @@ import { MarketTimeline } from "./markets/MarketTimeline";
 import { MarketTvl } from "./markets/MarketTvl";
 
 const PREDICTION_MARKET_CONFIG = {
-  // toriiUrl: "https://localhost:8080",
-  toriiUril: "https://api.cartridge.gg/x/blitz-slot-pm-1/torii/sql",
+  toriiUrl: "https://localhost:8080",
+  // toriiUrl: "https://api.cartridge.gg/x/blitz-slot-pm-1/torii",
   worldAddress: "0x0172e470e28b6ad5f4c397019a3aca0c9b451a5e06f5255fbb8c4eefcd6f2b58",
 };
 
@@ -63,7 +65,9 @@ const MarketsProviders = ({ children }: { children: ReactNode }) => (
     toriiUrl={PREDICTION_MARKET_CONFIG.toriiUrl}
     worldAddress={PREDICTION_MARKET_CONFIG.worldAddress}
   >
-    <ControllersProvider>{children}</ControllersProvider>
+    <UserProvider>
+      <ControllersProvider>{children}</ControllersProvider>
+    </UserProvider>
   </DojoSdkProviderInitialized>
 );
 
@@ -166,7 +170,13 @@ const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
           {activeTab === "activity" ? <MarketActivity market={market} /> : null}
           {activeTab === "positions" ? <MarketPositions market={market} /> : null}
           {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null}
-          {activeTab === "resolution" ? <MarketResolved market={market} /> : null}
+          {activeTab === "resolution" ? (
+            market.isResolved() ? (
+              <MarketResolved market={market} />
+            ) : (
+              <MarketResolution market={market} />
+            )
+          ) : null}
         </div>
       </div>
     </>

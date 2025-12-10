@@ -1,3 +1,6 @@
+import BigNumber from "bignumber.js";
+import { Uint256, uint256 } from "starknet";
+
 export const shortAddress = (address: string) => {
   const addr = BigInt(address).toString(16);
   return "0x" + addr.substring(0, 4) + "..." + addr.substring(addr.length - 4, addr.length);
@@ -65,3 +68,26 @@ export const replaceAndFormat = (template?: string) => {
 
   return template;
 };
+
+export function formatUint256(value: Uint256, decimals = 18, precision = 0) {
+  return BigNumber(uint256.uint256ToBN(value).toString())
+    .dividedBy(10 ** decimals)
+    .toFixed(precision)
+    .replace(/^(\d+)(?:\.0+|(\.\d*?)0+)$/, "$1$2");
+}
+
+export function parseUint256(value: string, decimals = 18) {
+  return uint256.bnToUint256(
+    BigInt(
+      BigNumber(value)
+        .multipliedBy(10 ** decimals)
+        .toFixed(),
+    ),
+  );
+}
+
+export function parseUnits(value: string, decimals = 18) {
+  return BigNumber(value)
+    .multipliedBy(10 ** decimals)
+    .toFixed(0);
+}

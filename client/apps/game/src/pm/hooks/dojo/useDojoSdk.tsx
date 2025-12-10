@@ -1,6 +1,7 @@
 import { init, SchemaType, type SDK } from "@dojoengine/sdk";
 import { createContext, type PropsWithChildren, useContext, useEffect, useState } from "react";
 import type { StarknetDomain } from "starknet";
+import manifestBlitz from "../../manifests/manifest_blitz.json";
 
 const defaultSdk = {
   getEntities: async () => ({
@@ -30,11 +31,7 @@ export const appDomain: StarknetDomain = {
 const DojoSdkContext = createContext({
   sdk: defaultSdk as any,
   config: {
-    manifest: {
-      world: {
-        address: "0x0",
-      },
-    },
+    manifest: manifestBlitz,
   },
 });
 
@@ -56,11 +53,7 @@ export const DojoSdkProviderInitialized = ({
 }>) => {
   const [sdk, setSdk] = useState<SDK<SchemaType>>();
   const [config, setConfig] = useState({
-    manifest: {
-      world: {
-        address: worldAddress,
-      },
-    },
+    manifest: manifestBlitz,
   });
 
   useEffect(() => {
@@ -79,11 +72,7 @@ export const DojoSdkProviderInitialized = ({
         if (!cancelled) {
           setSdk(initialized);
           setConfig({
-            manifest: {
-              world: {
-                address: worldAddress,
-              },
-            },
+            manifest: manifestBlitz,
           });
         }
       } catch (error) {

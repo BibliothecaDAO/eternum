@@ -1,14 +1,139 @@
-import type { MarketClass } from "@/pm/class";
+import { MarketClass } from "@/pm/class";
+import { formatUint256 } from "@/pm/utils";
+import { Button } from "@/ui/design-system/atoms";
+import { HStack, VStack } from "@pm/ui";
+import { TrendingUp } from "lucide-react";
+import { useMemo } from "react";
+import { MaybeController } from "../MaybeController";
 
-export const MarketResolved = ({ market }: { market: MarketClass }) => {
-  if (!market.isResolved()) return null;
+export function MarketResolved({
+  market,
+  ...props
+}: {
+  market: MarketClass;
+} & React.ComponentProps<"div">) {
+  const outcomes = market.getMarketTextOutcomes();
+
+  const payouts = useMemo(() => {
+    switch (market.typ.activeVariant()) {
+      case "Binary":
+        return [
+          {
+            index: 0,
+            name: outcomes[0],
+            payoutNumerator: Number(market.conditionResolution?.payout_numerators[0]),
+          },
+          {
+            index: 1,
+            name: outcomes[1],
+            payoutNumerator: Number(market.conditionResolution?.payout_numerators[1]),
+          },
+        ];
+      case "Categorical":
+        return market.odds?.map((odds, idx) => {
+          return {
+            index: idx,
+            name: outcomes[idx],
+            payoutNumerator: Number(market.conditionResolution?.payout_numerators[idx]),
+          };
+        });
+    }
+    return [];
+  }, [market]);
+
+  if (!market || !payouts || !market.odds) return null;
 
   return (
-    <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-      <div className="font-semibold uppercase tracking-wide">Resolved</div>
-      <div className="text-emerald-50">
-        This market has been resolved. Outcome details will appear once resolution data is available.
-      </div>
+    <div {...props}>
+      {market.typBinary() && !market.typBinaryScalar() && (
+        <HStack className="justify-center gap-3">
+          {payouts[0].payoutNumerator > 0 && (
+            <>
+              <Button className="bg-green-700 text-white hover:bg-green-600">YES</Button>
+              <HStack className="text-green-400">
+                <TrendingUp />
+                {Math.ceil((Number(market.odds[1]) / Number(market.odds[0])) * 100)}%
+              </HStack>
+            </>
+          )}
+          {payouts[1].payoutNumerator > 0 && (
+            <>
+              <Button className="bg-red-700 text-white hover:bg-red-600">NO</Button>
+              <HStack className="text-green-400">
+                <TrendingUp />
+                {Math.ceil((Number(market.odds[0]) / Number(market.odds[1])) * 100)}%
+              </HStack>
+            </>
+          )}
+        </HStack>
+      )}
+
+      {market.typBinary() && market.typBinaryScalar() && (
+        <HStack className="justify-center gap-3">
+          {payouts[0].payoutNumerator > 0 &&
+            payouts[1].payoutNumerator === 0 &&
+            `< ${formatUint256(market.typBinaryScalar().low, 18)}`}
+          {payouts[1].payoutNumerator > 0 &&
+            payouts[0].payoutNumerator === 0 &&
+            `< ${formatUint256(market.typBinaryScalar().high, 18)}`}
+          {payouts[0].payoutNumerator > 0 &&
+            payouts[1].payoutNumerator > 0 &&
+            `${
+              (BigInt(market.typBinaryScalar().low) +
+                ((BigInt(market.typBinaryScalar().high) - BigInt(market.typBinaryScalar().low)) *
+                  BigInt(payouts[1].payoutNumerator)) /
+                  10_000n) /
+              10n ** 18n
+            }`}
+          {/* {payouts[0].payoutNumerator > 0 && (
+            <>
+              <Button className="bg-green-700 text-white hover:bg-green-600">
+                YES
+              </Button>
+              <HStack className="text-green-400">
+                <TrendingUp />
+                {Math.ceil(
+                  (Number(market.odds[1]) / Number(market.odds[0])) * 100,
+                )}
+                %
+              </HStack>
+            </>
+          )}
+          {payouts[1].payoutNumerator > 0 && (
+            <>
+              <Button className="bg-red-700 text-white hover:bg-red-600">
+                NO
+              </Button>
+              <HStack className="text-green-400">
+                <TrendingUp />
+                {Math.ceil(
+                  (Number(market.odds[0]) / Number(market.odds[1])) * 100,
+                )}
+                %
+              </HStack>
+            </>
+          )} */}
+        </HStack>
+      )}
+
+      {market.typCategorical() && (
+        <HStack className="justify-center gap-3">
+          {payouts.map((payout, idx) => {
+            if (payout.payoutNumerator === 0) return null;
+            return (
+              <VStack className="text-green-400 justify-center" key={idx}>
+                <Button variant="secondary">
+                  <MaybeController address={payout.name} />
+                </Button>
+                <HStack className="w-full justify-center">
+                  <TrendingUp />
+                  {Math.ceil(100 / Number(market.odds![idx])) * 100}%
+                </HStack>
+              </VStack>
+            );
+          })}
+        </HStack>
+      )}
     </div>
   );
-};
+}
