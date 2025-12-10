@@ -49,7 +49,7 @@ import {
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { SceneName } from "../types";
-import { getWorldPositionForHex } from "../utils";
+import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
 
 export enum CameraView {
@@ -539,6 +539,14 @@ export abstract class HexagonScene {
       pos.copy(newPosition);
       this.notifyControlsChanged();
     }
+  }
+
+  public getCameraTargetPosition(): Vector3 {
+    return this.controls.target.clone();
+  }
+
+  public getCameraTargetHex(): HexPosition {
+    return getHexForWorldPosition(this.controls.target);
   }
 
   loadBiomeModels(maxInstances: number) {

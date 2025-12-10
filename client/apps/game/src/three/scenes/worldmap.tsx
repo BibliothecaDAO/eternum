@@ -189,6 +189,12 @@ export default class WorldmapScene extends HexagonScene {
   private armyStructureOwners: Map<ID, ID> = new Map();
   private minimap!: Minimap;
   private updateMinimapThrottled?: ReturnType<typeof throttle>;
+  private syncMinimapToCamera!: ReturnType<typeof throttle>;
+  private handleControlsChangeForMinimap = () => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    if (this.minimap?.isUserDragging?.()) return;
+    this.syncMinimapToCamera?.(true);
+  };
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
@@ -733,6 +739,11 @@ export default class WorldmapScene extends HexagonScene {
     this.updateMinimapThrottled = throttle(() => {
       this.minimap.update();
     }, 100);
+    this.syncMinimapToCamera = throttle((force: boolean = false) => {
+      this.minimap?.syncToCameraTarget(force);
+    }, 50);
+    this.controls.addEventListener("change", this.handleControlsChangeForMinimap);
+    this.syncMinimapToCamera();
 
     // Initialize SceneShortcutManager for WorldMap shortcuts
     this.shortcutManager = new SceneShortcutManager("worldmap", this.sceneManager);
@@ -3713,6 +3724,8 @@ export default class WorldmapScene extends HexagonScene {
 
     this.resourceFXManager.destroy();
     this.updateMinimapThrottled?.cancel();
+    this.syncMinimapToCamera?.cancel();
+    this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
     this.stopRelicValidationTimer();
     this.clearCache();
     this.minimap.dispose();

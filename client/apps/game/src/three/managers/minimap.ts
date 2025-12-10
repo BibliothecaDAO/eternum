@@ -12,7 +12,7 @@ import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccu
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
-import { getHexForWorldPosition } from "../utils";
+import { HEX_SIZE } from "../constants/scene-constants";
 
 const LABELS = (isBlitz: boolean) => ({
   ARMY: "/images/labels/enemy_army.png",
@@ -145,10 +145,19 @@ class Minimap {
   private currentClusterRadius: number = MINIMAP_CONFIG.CLUSTER.MIN_RADIUS;
   private needsReclustering: boolean = true;
   private lastZoomRatio: number = 0;
+  private syncCameraToMinimapCenter!: () => void;
+  private lastCameraTarget: THREE.Vector3 | null = null;
+  private isSyncingCamera: boolean = false;
+  private readonly hexVertDist = HEX_SIZE * 2 * 0.75;
+  private readonly hexHorizDist = Math.sqrt(3) * HEX_SIZE;
 
   constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera) {
     this.worldmapScene = worldmapScene;
     this.isBlitz = getIsBlitz();
+    this.syncCameraToMinimapCenter = throttle(() => {
+      this.isSyncingCamera = true;
+      this.worldmapScene.moveCameraToColRow(this.mapCenter.col, this.mapCenter.row, 0.12);
+    }, 50);
 
     // Expose the minimap instance globally for UI access
     (window as any).minimapInstance = this;
@@ -217,15 +226,20 @@ class Minimap {
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
     this.scaledCoords.clear();
-    const minCol = this.mapCenter.col - this.mapSize.width / 2;
-    const maxCol = this.mapCenter.col + this.mapSize.width / 2;
-    const minRow = this.mapCenter.row - this.mapSize.height / 2;
-    const maxRow = this.mapCenter.row + this.mapSize.height / 2;
+    const minColRaw = this.mapCenter.col - this.mapSize.width / 2;
+    const maxColRaw = this.mapCenter.col + this.mapSize.width / 2;
+    const minRowRaw = this.mapCenter.row - this.mapSize.height / 2;
+    const maxRowRaw = this.mapCenter.row + this.mapSize.height / 2;
+
+    const minCol = Math.floor(minColRaw);
+    const maxCol = Math.ceil(maxColRaw);
+    const minRow = Math.floor(minRowRaw);
+    const maxRow = Math.ceil(maxRowRaw);
 
     for (let col = minCol; col <= maxCol; col++) {
       for (let row = minRow; row <= maxRow; row++) {
-        const scaledCol = (col - minCol) * this.scaleX;
-        const scaledRow = (row - minRow) * this.scaleY;
+        const scaledCol = (col - minColRaw) * this.scaleX;
+        const scaledRow = (row - minRowRaw) * this.scaleY;
         this.scaledCoords.set(`${col},${row}`, { scaledCol, scaledRow });
       }
     }
@@ -295,12 +309,28 @@ class Minimap {
     }
   }
 
+  private updateMapCenter(col: number, row: number, forceRecompute: boolean = false): boolean {
+    const previousCenter = { ...this.mapCenter };
+    this.mapCenter = { col, row };
+    this.clampMapCenter();
+
+    const centerChanged = previousCenter.col !== this.mapCenter.col || previousCenter.row !== this.mapCenter.row;
+
+    if (!forceRecompute && !centerChanged) {
+      return false;
+    }
+
+    this.recomputeScales();
+    this.needsStaticRedraw = true;
+    return centerChanged;
+  }
+
   private getMousePosition(event: MouseEvent) {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const col = Math.floor(x / this.scaleX) + (this.mapCenter.col - this.mapSize.width / 2);
-    const row = Math.floor(y / this.scaleY) + (this.mapCenter.row - this.mapSize.height / 2);
+    const col = Math.floor(x / this.scaleX + (this.mapCenter.col - this.mapSize.width / 2));
+    const row = Math.floor(y / this.scaleY + (this.mapCenter.row - this.mapSize.height / 2));
     return { col, row, x, y };
   }
 
@@ -677,35 +707,7 @@ class Minimap {
   }
 
   drawCamera() {
-    if (!this.context) return;
-
-    const cameraPosition = this.camera.position;
-    const currentCameraView: CameraView = this.worldmapScene.getCurrentCameraView();
-    const { col, row } = getHexForWorldPosition(cameraPosition);
-    const cacheKey = `${col},${row}`;
-    if (this.scaledCoords.has(cacheKey)) {
-      const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-
-      this.context.strokeStyle = MINIMAP_CONFIG.COLORS.CAMERA;
-      this.context.beginPath();
-      if (currentCameraView !== CameraView.Far) {
-        this.context.moveTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-        this.context.lineTo(scaledCol + this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-        this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth / 2, scaledRow);
-        this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth / 2, scaledRow);
-        this.context.lineTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-      }
-      if (currentCameraView === CameraView.Far) {
-        this.context.moveTo(scaledCol - this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
-        this.context.lineTo(scaledCol + this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
-        this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth, scaledRow - this.cameraSize.height * 0.5);
-        this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth, scaledRow - this.cameraSize.height * 0.5);
-        this.context.lineTo(scaledCol - this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
-      }
-      this.context.closePath();
-      this.context.lineWidth = 1;
-      this.context.stroke();
-    }
+    // Disabled camera footprint rendering per feedback
   }
 
   hideMinimap() {
@@ -754,10 +756,7 @@ class Minimap {
     const url = new URL(window.location.href);
     const col = parseInt(url.searchParams.get("col") || "0");
     const row = parseInt(url.searchParams.get("row") || "0");
-    this.mapCenter = { col, row };
-    this.clampMapCenter();
-    this.recomputeScales();
-    this.needsStaticRedraw = true;
+    this.updateMapCenter(col, row);
   }
 
   // Set the map to maximum distance for screenshots
@@ -786,6 +785,10 @@ class Minimap {
   update() {
     // Only call draw if we have completed initialization
     if (this.context) {
+      if (!this.isDragging && !this.isMinimized) {
+        // Keep the minimap centered on the current camera target when the world view moves
+        this.syncToCameraTarget();
+      }
       // Mark as needing reclustering on scene update, but not on every frame
       // This ensures armies that move will eventually get reclustered
       if (Math.random() < 0.1) {
@@ -822,18 +825,18 @@ class Minimap {
     if (this.isDragging && this.lastMousePosition && !this.isMinimized) {
       const colShift = Math.round((event.clientX - this.lastMousePosition.x) * this.dragSpeed);
       const rowShift = Math.round((event.clientY - this.lastMousePosition.y) * this.dragSpeed);
-      this.mapCenter.col -= colShift;
-      this.mapCenter.row -= rowShift;
-
-      this.clampMapCenter();
+      const nextCol = this.mapCenter.col - colShift;
+      const nextRow = this.mapCenter.row - rowShift;
 
       this.lastMousePosition = {
         x: event.clientX,
         y: event.clientY,
       };
 
-      this.recomputeScales();
-      this.needsStaticRedraw = true; // Dragging changes view, need redraw
+      const centerChanged = this.updateMapCenter(nextCol, nextRow);
+      if (centerChanged) {
+        this.syncCameraToMinimapCenter();
+      }
       this.draw();
     } else if (!this.isMinimized) {
       // Redraw only when not dragging to show updated hover coordinates
@@ -886,18 +889,22 @@ class Minimap {
     this.mapSize.width -= 2 * deltaX;
     this.mapSize.height -= 2 * deltaY;
 
+    let nextCol = this.mapCenter.col;
+    let nextRow = this.mapCenter.row;
+
     if (!zoomOut && event) {
       const { col, row } = this.getMousePosition(event);
       const colShift = col - this.mapCenter.col;
       const rowShift = row - this.mapCenter.row;
-      this.mapCenter.col += Math.round(colShift * 0.15); // Adjust the factor as needed
-      this.mapCenter.row += Math.round(rowShift * 0.15); // Adjust the factor as needed
+      nextCol += Math.round(colShift * 0.15); // Adjust the factor as needed
+      nextRow += Math.round(rowShift * 0.15); // Adjust the factor as needed
     }
 
-    this.clampMapCenter();
-
-    this.recomputeScales();
-    this.needsStaticRedraw = true; // Zoom changed, need redraw
+    const centerChanged = this.updateMapCenter(nextCol, nextRow, true);
+    if (centerChanged) {
+      this.syncCameraToMinimapCenter();
+    }
+    this.draw();
     // The recomputeScales method will set needsReclustering if the zoom level changed enough
   }
 
@@ -1151,15 +1158,39 @@ class Minimap {
   }
 
   resetToCameraCenter() {
-    if (!this.context) return;
+    this.syncToCameraTarget();
+  }
 
-    const cameraPosition = this.camera.position;
-    const { col, row } = getHexForWorldPosition(cameraPosition);
-    this.mapCenter = { col, row };
-    this.clampMapCenter();
-    this.recomputeScales();
-    this.needsStaticRedraw = true;
-    this.draw();
+  syncToCameraTarget(forceRedraw: boolean = false) {
+    const cameraTarget = this.worldmapScene.getCameraTargetPosition();
+
+    if (this.isSyncingCamera) {
+      this.lastCameraTarget = cameraTarget.clone();
+      this.isSyncingCamera = false;
+      const { col, row } = this.worldmapScene.getCameraTargetHex();
+      this.updateMapCenter(col, row, true);
+      if (this.context) this.draw();
+      return;
+    }
+
+    if (!this.lastCameraTarget) {
+      this.lastCameraTarget = cameraTarget.clone();
+      const { col, row } = this.worldmapScene.getCameraTargetHex();
+      this.updateMapCenter(col, row, true);
+      if (this.context) this.draw();
+      return;
+    }
+
+    const deltaX = cameraTarget.x - this.lastCameraTarget.x;
+    const deltaZ = cameraTarget.z - this.lastCameraTarget.z;
+    this.lastCameraTarget.copy(cameraTarget);
+
+    const nextCol = this.mapCenter.col + deltaX / this.hexHorizDist;
+    const nextRow = this.mapCenter.row + deltaZ / this.hexVertDist;
+    const changed = this.updateMapCenter(nextCol, nextRow, forceRedraw);
+    if ((changed || forceRedraw) && this.context) {
+      this.draw();
+    }
   }
 
   // New method to draw the hovered coordinates
@@ -1251,6 +1282,10 @@ class Minimap {
     if (import.meta.env.DEV) {
       console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
     }
+  }
+
+  public isUserDragging(): boolean {
+    return this.isDragging;
   }
 }
 
