@@ -1,7 +1,7 @@
 import { BattleViewInfo, LeftView, RightView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
-import { BiomeType, ContractAddress, ID } from "@bibliothecadao/types";
+import { BiomeType, ContractAddress } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
@@ -12,6 +12,8 @@ import { createThreeStoreSlice, ThreeStore } from "./use-three-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
 type TooltipPlacement = "top" | "left" | "right" | "bottom";
+
+export type BottomPanelTabId = "tile" | "minimap";
 
 let lastResolvedAnchor: HTMLElement | null = null;
 
@@ -137,6 +139,8 @@ interface UIStore {
   setLeftNavigationView: (view: LeftView) => void;
   rightNavigationView: RightView;
   setRightNavigationView: (view: RightView) => void;
+  activeBottomPanelTab: BottomPanelTabId | null;
+  setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => void;
   showMinimap: boolean;
   setShowMinimap: (show: boolean) => void;
   selectedPlayer: ContractAddress | null;
@@ -259,6 +263,8 @@ export const useUIStore = create(
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
     rightNavigationView: RightView.None,
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
+    activeBottomPanelTab: "tile",
+    setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => set({ activeBottomPanelTab: tab }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
