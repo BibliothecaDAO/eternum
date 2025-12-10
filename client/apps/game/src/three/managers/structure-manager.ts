@@ -156,6 +156,8 @@ export class StructureManager {
   private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
   private chunkStride: number;
+  private needsSpatialReindex = false;
+  private visibleStructureCount = 0;
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
@@ -249,7 +251,9 @@ export class StructureManager {
     }
     this.isBlitz = getIsBlitz();
     this.structureModelPaths = getStructureModelPaths(this.isBlitz);
-    this.chunkStride = chunkStride ?? Math.max(1, Math.floor(this.renderChunkSize.width / 2));
+    // Keep chunk stride aligned with the world chunk size so visibility/fetch math matches.
+    this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
+    this.needsSpatialReindex = true;
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -967,6 +971,10 @@ export class StructureManager {
     return undefined;
   }
 
+  public getVisibleCount(): number {
+    return this.visibleStructureCount;
+  }
+
   private updateVisibleStructures(): void {
     if (this.isUpdatingVisibleStructures) {
       this.hasPendingVisibleStructuresUpdate = true;
@@ -1012,6 +1020,7 @@ export class StructureManager {
     // Get visible structures from spatial index
     const [startRow, startCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
     const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
+    this.visibleStructureCount = visibleStructures.length;
 
     // Organize by type for model loading and rendering
     const structuresByType = new Map<StructureType, StructureInfo[]>();
@@ -1354,6 +1363,9 @@ export class StructureManager {
   }
 
   private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {
+    if (this.needsSpatialReindex) {
+      this.rebuildSpatialIndex();
+    }
     const visibleStructures: StructureInfo[] = [];
     const bounds = this.getChunkBounds(startRow, startCol);
 
@@ -1383,6 +1395,19 @@ export class StructureManager {
     }
 
     return visibleStructures;
+  }
+
+  private rebuildSpatialIndex() {
+    this.chunkToStructures.clear();
+    this.structures.getStructures().forEach((structures) => {
+      structures.forEach((structure) => {
+        this.updateSpatialIndex(structure.entityId, undefined, {
+          col: structure.hexCoords.col,
+          row: structure.hexCoords.row,
+        });
+      });
+    });
+    this.needsSpatialReindex = false;
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {

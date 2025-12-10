@@ -117,11 +117,22 @@ const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 // ];
 
 export default class WorldmapScene extends HexagonScene {
-  private chunkSize = 24; // Smaller stride to reduce edge gaps
+  // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
+  private readonly chunkGeometry = {
+    size: 24, // Smaller stride to reduce edge gaps
+    renderSize: {
+      width: 64,
+      height: 64,
+    },
+    overlap: 0,
+  };
+  private chunkSize = this.chunkGeometry.size;
   private chunkSwitchPadding = 0.05; // switch earlier when crossing boundaries
   private lastChunkSwitchPosition?: Vector3;
   private hasChunkSwitchAnchor: boolean = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
+  private readonly prefetchedAhead: string[] = [];
+  private readonly maxPrefetchedAhead = 8;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -129,10 +140,7 @@ export default class WorldmapScene extends HexagonScene {
   private wheelDirection: -1 | 0 | 1 = 0;
   private wheelStepsThisGesture = 0;
   private readonly wheelGestureTimeoutMs = 50;
-  private renderChunkSize = {
-    width: 64,
-    height: 64,
-  };
+  private renderChunkSize = this.chunkGeometry.renderSize;
 
   private totalStructures: number = 0;
 
@@ -365,10 +373,24 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     // Initialize the quest manager
-    this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this);
+    this.questManager = new QuestManager(
+      this.scene,
+      this.renderChunkSize,
+      this.questLabelsGroup,
+      this,
+      this.frustumManager,
+      this.chunkSize,
+    );
 
     // Initialize the chest manager
-    this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this);
+    this.chestManager = new ChestManager(
+      this.scene,
+      this.renderChunkSize,
+      this.chestLabelsGroup,
+      this,
+      this.frustumManager,
+      this.chunkSize,
+    );
 
     const toriiClient = this.dojo.network?.toriiClient;
     if (toriiClient) {
@@ -2294,15 +2316,10 @@ export default class WorldmapScene extends HexagonScene {
 
   /**
    * Derive a stable render-area key for a chunk key.
-   * The key snaps to the renderChunkSize grid so fetch/cache
-   * bookkeeping aligns with what is actually rendered.
+   * Key by chunk stride so every chunkKey maps 1:1 to fetch/cache buckets.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
-    const areaRow = Math.floor(centerRow / this.renderChunkSize.height) * this.renderChunkSize.height;
-    const areaCol = Math.floor(centerCol / this.renderChunkSize.width) * this.renderChunkSize.width;
-    return `${areaRow},${areaCol}`;
+    return chunkKey;
   }
 
   /**
@@ -2347,6 +2364,94 @@ export default class WorldmapScene extends HexagonScene {
       const chunkCol = parseInt(chunkColStr);
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
     }
+  }
+
+  /**
+   * Compute a forward chunk key based on camera movement to prefetch ahead.
+   */
+  private getForwardChunkKey(focusPoint: Vector3): string | null {
+    const anchor = this.lastChunkSwitchPosition;
+    if (!anchor) {
+      return null;
+    }
+
+    const dx = focusPoint.x - anchor.x;
+    const dz = focusPoint.z - anchor.z;
+    const distance = Math.hypot(dx, dz);
+    if (distance < 0.01) {
+      return null;
+    }
+
+    const primaryAxisIsX = Math.abs(dx) >= Math.abs(dz);
+    const stepSign = primaryAxisIsX ? Math.sign(dx) : Math.sign(dz);
+    if (stepSign === 0) {
+      return null;
+    }
+
+    const strideWorldX = this.chunkSize * HEX_SIZE * Math.sqrt(3);
+    const strideWorldZ = this.chunkSize * HEX_SIZE * 1.5;
+
+    const aheadX = primaryAxisIsX ? focusPoint.x + stepSign * strideWorldX * 2 : focusPoint.x;
+    const aheadZ = primaryAxisIsX ? focusPoint.z : focusPoint.z + stepSign * strideWorldZ * 2;
+
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(aheadX, aheadZ);
+    return `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
+  }
+
+  /**
+   * Prefetch the chunk in front of the camera to reduce pop-in.
+   */
+  private prefetchDirectionalChunks(focusPoint: Vector3) {
+    const forwardChunkKey = this.getForwardChunkKey(focusPoint);
+    if (!forwardChunkKey) {
+      return;
+    }
+
+    const forwardRowCol = forwardChunkKey.split(",").map(Number);
+    const halfHeight = this.renderChunkSize.height / 2;
+    const halfWidth = this.renderChunkSize.width / 2;
+    const prefetchTargets = new Set<string>();
+
+    // Prefetch a 2x3 band ahead centered on the forward chunk (two rows deep, three cols wide).
+    for (let dz = 0; dz <= this.chunkSize * 2; dz += this.chunkSize) {
+      for (let dx = -this.chunkSize; dx <= this.chunkSize; dx += this.chunkSize) {
+        const row = forwardRowCol[0] + dz;
+        const col = forwardRowCol[1] + dx;
+        prefetchTargets.add(`${row},${col}`);
+      }
+    }
+
+    prefetchTargets.forEach((chunkKey) => {
+      // Skip if it's already pinned or current
+      if (this.pinnedChunkKeys.has(chunkKey) || chunkKey === this.currentChunk) {
+        return;
+      }
+
+      // Skip if already queued
+      if (this.prefetchedAhead.includes(chunkKey)) {
+        return;
+      }
+
+      this.prefetchedAhead.push(chunkKey);
+      // Cap the prefetch list to avoid unbounded growth
+      while (this.prefetchedAhead.length > this.maxPrefetchedAhead) {
+        this.prefetchedAhead.shift();
+      }
+
+      // Fire off fetch; deduping handled by computeTileEntities caches
+      this.computeTileEntities(chunkKey).catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn("[CHUNK PREFETCH] Failed to prefetch chunk", chunkKey, error);
+        }
+      });
+
+      // Kick off structure refresh for the forward band to avoid late pop-in.
+      this.refreshStructuresForChunks([chunkKey]).catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn("[CHUNK PREFETCH] Failed to prefetch structures for chunk", chunkKey, error);
+        }
+      });
+    });
   }
 
   clearCache() {
@@ -2784,15 +2889,13 @@ export default class WorldmapScene extends HexagonScene {
     const seen = new Set<ID>();
 
     chunkKeys.forEach((chunkKey) => {
-      const [startRow, startCol] = chunkKey.split(",").map(Number);
-      const endRow = startRow + this.renderChunkSize.height - 1;
-      const endCol = startCol + this.renderChunkSize.width - 1;
+      const { minRow, maxRow, minCol, maxCol } = this.getRenderFetchBounds(chunkKey);
 
       this.structuresPositions.forEach((pos, entityId) => {
         if (seen.has(entityId)) {
           return;
         }
-        if (pos.col >= startCol && pos.col <= endCol && pos.row >= startRow && pos.row <= endRow) {
+        if (pos.col >= minCol && pos.col <= maxCol && pos.row >= minRow && pos.row <= maxRow) {
           const contractCoords = new Position({ x: pos.col, y: pos.row }).getContract();
           structuresToSync.push({
             entityId,
@@ -3142,6 +3245,9 @@ export default class WorldmapScene extends HexagonScene {
       return false;
     }
 
+    // Proactively prefetch the forward chunk while staying in the current one to hide pop-in.
+    this.prefetchDirectionalChunks(focusPoint);
+
     if (chunkChanged) {
       // Create and track the global chunk switch promise
       this.isChunkTransitioning = true;
@@ -3353,6 +3459,21 @@ export default class WorldmapScene extends HexagonScene {
         console.error(`[CHUNK SYNC] ${updateTasks[index].label} manager failed for chunk ${chunkKey}`, result.reason);
       }
     });
+
+    if (import.meta.env.DEV) {
+      const debugFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+      console.info("[CHUNK DEBUG]", {
+        currentChunk: this.currentChunk,
+        fetchKey: debugFetchKey,
+        visible: {
+          armies: this.armyManager.getVisibleCount(),
+          structures: this.structureManager.getVisibleCount(),
+          quests: this.questManager.getVisibleCount(),
+          chests: this.chestManager.getVisibleCount(),
+        },
+        pendingFetches: this.pendingChunks.size,
+      });
+    }
   }
 
   update(deltaTime: number) {

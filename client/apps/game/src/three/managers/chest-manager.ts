@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
+import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { FrustumManager } from "../utils/frustum-manager";
 import { createChestLabel } from "../utils/labels/label-factory";
@@ -33,6 +34,7 @@ export class ChestManager {
   private chestInstanceOrder: ID[] = [];
   private chestInstanceIndices: Map<ID, number> = new Map();
   private scale: number = 1;
+  private chunkSize: number;
   private currentCameraView: CameraView;
   chestHexCoords: Map<number, Set<number>> = new Map();
   private animations: Map<number, THREE.AnimationMixer> = new Map();
@@ -47,11 +49,13 @@ export class ChestManager {
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
     frustumManager?: FrustumManager,
+    chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
+    this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.frustumManager = frustumManager;
     this.loadModel().then(() => {
@@ -66,6 +70,10 @@ export class ChestManager {
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
+  }
+
+  public getVisibleCount(): number {
+    return this.visibleChests.length;
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -242,11 +250,8 @@ export class ChestManager {
 
   private isChestVisible(chest: ChestData, startRow: number, startCol: number) {
     const { x, y } = chest.hexCoords.getNormalized();
-    const insideChunk =
-      x >= startCol - this.renderChunkSize.width / 2 &&
-      x <= startCol + this.renderChunkSize.width / 2 &&
-      y >= startRow - this.renderChunkSize.height / 2 &&
-      y <= startRow + this.renderChunkSize.height / 2;
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
 
     if (!insideChunk) {
       return false;

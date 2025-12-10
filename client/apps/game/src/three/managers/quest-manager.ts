@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
+import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { FrustumManager } from "../utils/frustum-manager";
 import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
@@ -29,6 +30,7 @@ export class QuestManager {
   private questInstanceOrder: Map<QuestType, ID[]> = new Map();
   private questInstanceIndices: Map<ID, { questType: QuestType; index: number }> = new Map();
   private scale: number = 1;
+  private chunkSize: number;
   private currentCameraView: CameraView;
   private labelManager: LabelManager;
   questHexCoords: Map<number, Set<number>> = new Map();
@@ -41,10 +43,12 @@ export class QuestManager {
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
     frustumManager?: FrustumManager,
+    chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
     this.renderChunkSize = renderChunkSize;
+    this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.frustumManager = frustumManager;
 
@@ -85,6 +89,10 @@ export class QuestManager {
 
     // Clean up the label manager
     this.labelManager.destroy();
+  }
+
+  public getVisibleCount(): number {
+    return this.visibleQuests.length;
   }
 
   private loadQuestModel(questType: QuestType): Promise<void> {
@@ -205,11 +213,8 @@ export class QuestManager {
 
   private isQuestVisible(quest: QuestData, startRow: number, startCol: number) {
     const { x, y } = quest.hexCoords.getNormalized();
-    const insideChunk =
-      x >= startCol - this.renderChunkSize.width / 2 &&
-      x <= startCol + this.renderChunkSize.width / 2 &&
-      y >= startRow - this.renderChunkSize.height / 2 &&
-      y <= startRow + this.renderChunkSize.height / 2;
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
 
     if (!insideChunk) {
       return false;
