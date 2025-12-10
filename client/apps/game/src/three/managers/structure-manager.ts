@@ -1401,7 +1401,10 @@ export class StructureManager {
     this.chunkToStructures.clear();
     this.structures.getStructures().forEach((structures) => {
       structures.forEach((structure) => {
-        this.updateSpatialIndex(structure.entityId, undefined, { col: structure.hexCoords.col, row: structure.hexCoords.row });
+        this.updateSpatialIndex(structure.entityId, undefined, {
+          col: structure.hexCoords.col,
+          row: structure.hexCoords.row,
+        });
       });
     });
     this.needsSpatialReindex = false;
