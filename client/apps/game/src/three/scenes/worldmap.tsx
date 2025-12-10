@@ -2407,34 +2407,50 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    // Skip if it's already pinned or current
-    if (this.pinnedChunkKeys.has(forwardChunkKey) || forwardChunkKey === this.currentChunk) {
-      return;
-    }
+    const forwardRowCol = forwardChunkKey.split(",").map(Number);
+    const halfHeight = this.renderChunkSize.height / 2;
+    const halfWidth = this.renderChunkSize.width / 2;
+    const prefetchTargets = new Set<string>();
 
-    // Skip if already queued
-    if (this.prefetchedAhead.includes(forwardChunkKey)) {
-      return;
-    }
-
-    this.prefetchedAhead.push(forwardChunkKey);
-    // Cap the prefetch list to avoid unbounded growth
-    while (this.prefetchedAhead.length > this.maxPrefetchedAhead) {
-      this.prefetchedAhead.shift();
-    }
-
-    // Fire off fetch; deduping handled by computeTileEntities caches
-    this.computeTileEntities(forwardChunkKey).catch((error) => {
-      if (import.meta.env.DEV) {
-        console.warn("[CHUNK PREFETCH] Failed to prefetch chunk", forwardChunkKey, error);
+    // Prefetch a 2x3 band ahead centered on the forward chunk (two rows deep, three cols wide).
+    for (let dz = 0; dz <= this.chunkSize * 2; dz += this.chunkSize) {
+      for (let dx = -this.chunkSize; dx <= this.chunkSize; dx += this.chunkSize) {
+        const row = forwardRowCol[0] + dz;
+        const col = forwardRowCol[1] + dx;
+        prefetchTargets.add(`${row},${col}`);
       }
-    });
+    }
 
-    // Kick off structure refresh for the forward chunk to avoid late pop-in.
-    this.refreshStructuresForChunks([forwardChunkKey]).catch((error) => {
-      if (import.meta.env.DEV) {
-        console.warn("[CHUNK PREFETCH] Failed to prefetch structures for chunk", forwardChunkKey, error);
+    prefetchTargets.forEach((chunkKey) => {
+      // Skip if it's already pinned or current
+      if (this.pinnedChunkKeys.has(chunkKey) || chunkKey === this.currentChunk) {
+        return;
       }
+
+      // Skip if already queued
+      if (this.prefetchedAhead.includes(chunkKey)) {
+        return;
+      }
+
+      this.prefetchedAhead.push(chunkKey);
+      // Cap the prefetch list to avoid unbounded growth
+      while (this.prefetchedAhead.length > this.maxPrefetchedAhead) {
+        this.prefetchedAhead.shift();
+      }
+
+      // Fire off fetch; deduping handled by computeTileEntities caches
+      this.computeTileEntities(chunkKey).catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn("[CHUNK PREFETCH] Failed to prefetch chunk", chunkKey, error);
+        }
+      });
+
+      // Kick off structure refresh for the forward band to avoid late pop-in.
+      this.refreshStructuresForChunks([chunkKey]).catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn("[CHUNK PREFETCH] Failed to prefetch structures for chunk", chunkKey, error);
+        }
+      });
     });
   }
 
