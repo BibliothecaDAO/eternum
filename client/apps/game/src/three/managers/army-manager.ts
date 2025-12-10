@@ -141,6 +141,7 @@ export class ArmyManager {
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private chunkToArmies: Map<string, Set<ID>> = new Map();
   private chunkStride: number;
+  private needsSpatialReindex = false;
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
@@ -157,7 +158,7 @@ export class ArmyManager {
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
-    chunkStride: number,
+    chunkStride?: number,
   ) {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
@@ -165,7 +166,8 @@ export class ArmyManager {
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
-    this.chunkStride = Math.max(1, chunkStride);
+    this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
+    this.needsSpatialReindex = true;
     this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
     if (this.frustumManager) {
@@ -940,6 +942,9 @@ export class ArmyManager {
   }
 
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
+    if (this.needsSpatialReindex) {
+      this.rebuildSpatialIndex();
+    }
     const visibleArmies: ArmyData[] = [];
     const bounds = this.getChunkBounds(startRow, startCol);
 
@@ -970,6 +975,14 @@ export class ArmyManager {
     }
 
     return visibleArmies;
+  }
+
+  private rebuildSpatialIndex() {
+    this.chunkToArmies.clear();
+    this.armies.forEach((army) => {
+      this.updateSpatialIndex(army.entityId, undefined, army.hexCoords);
+    });
+    this.needsSpatialReindex = false;
   }
 
   public async addArmy(params: AddArmyParams) {

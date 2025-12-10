@@ -156,6 +156,7 @@ export class StructureManager {
   private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
   private chunkStride: number;
+  private needsSpatialReindex = false;
   private visibleStructureCount = 0;
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
@@ -221,7 +222,7 @@ export class StructureManager {
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
-    chunkStride: number,
+    chunkStride?: number,
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
@@ -251,7 +252,8 @@ export class StructureManager {
     this.isBlitz = getIsBlitz();
     this.structureModelPaths = getStructureModelPaths(this.isBlitz);
     // Keep chunk stride aligned with the world chunk size so visibility/fetch math matches.
-    this.chunkStride = Math.max(1, chunkStride);
+    this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
+    this.needsSpatialReindex = true;
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -1361,6 +1363,9 @@ export class StructureManager {
   }
 
   private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {
+    if (this.needsSpatialReindex) {
+      this.rebuildSpatialIndex();
+    }
     const visibleStructures: StructureInfo[] = [];
     const bounds = this.getChunkBounds(startRow, startCol);
 
@@ -1390,6 +1395,16 @@ export class StructureManager {
     }
 
     return visibleStructures;
+  }
+
+  private rebuildSpatialIndex() {
+    this.chunkToStructures.clear();
+    this.structures.getStructures().forEach((structures) => {
+      structures.forEach((structure) => {
+        this.updateSpatialIndex(structure.entityId, undefined, { col: structure.hexCoords.col, row: structure.hexCoords.row });
+      });
+    });
+    this.needsSpatialReindex = false;
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {

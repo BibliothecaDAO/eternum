@@ -131,6 +131,8 @@ export default class WorldmapScene extends HexagonScene {
   private lastChunkSwitchPosition?: Vector3;
   private hasChunkSwitchAnchor: boolean = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
+  private readonly prefetchedAhead: string[] = [];
+  private readonly maxPrefetchedAhead = 8;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -2364,6 +2366,78 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  /**
+   * Compute a forward chunk key based on camera movement to prefetch ahead.
+   */
+  private getForwardChunkKey(focusPoint: Vector3): string | null {
+    const anchor = this.lastChunkSwitchPosition;
+    if (!anchor) {
+      return null;
+    }
+
+    const dx = focusPoint.x - anchor.x;
+    const dz = focusPoint.z - anchor.z;
+    const distance = Math.hypot(dx, dz);
+    if (distance < 0.01) {
+      return null;
+    }
+
+    const primaryAxisIsX = Math.abs(dx) >= Math.abs(dz);
+    const stepSign = primaryAxisIsX ? Math.sign(dx) : Math.sign(dz);
+    if (stepSign === 0) {
+      return null;
+    }
+
+    const strideWorldX = this.chunkSize * HEX_SIZE * Math.sqrt(3);
+    const strideWorldZ = this.chunkSize * HEX_SIZE * 1.5;
+
+    const aheadX = primaryAxisIsX ? focusPoint.x + stepSign * strideWorldX * 2 : focusPoint.x;
+    const aheadZ = primaryAxisIsX ? focusPoint.z : focusPoint.z + stepSign * strideWorldZ * 2;
+
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(aheadX, aheadZ);
+    return `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
+  }
+
+  /**
+   * Prefetch the chunk in front of the camera to reduce pop-in.
+   */
+  private prefetchDirectionalChunks(focusPoint: Vector3) {
+    const forwardChunkKey = this.getForwardChunkKey(focusPoint);
+    if (!forwardChunkKey) {
+      return;
+    }
+
+    // Skip if it's already pinned or current
+    if (this.pinnedChunkKeys.has(forwardChunkKey) || forwardChunkKey === this.currentChunk) {
+      return;
+    }
+
+    // Skip if already queued
+    if (this.prefetchedAhead.includes(forwardChunkKey)) {
+      return;
+    }
+
+    this.prefetchedAhead.push(forwardChunkKey);
+    // Cap the prefetch list to avoid unbounded growth
+    while (this.prefetchedAhead.length > this.maxPrefetchedAhead) {
+      this.prefetchedAhead.shift();
+    }
+
+    // Fire off fetch; deduping handled by computeTileEntities caches
+    this.computeTileEntities(forwardChunkKey).catch((error) => {
+      if (import.meta.env.DEV) {
+        console.warn("[CHUNK PREFETCH] Failed to prefetch chunk", forwardChunkKey, error);
+      }
+    });
+
+    // Kick off structure refresh for the forward chunk to avoid late pop-in.
+    this.refreshStructuresForChunks([forwardChunkKey]).catch((error) => {
+      if (import.meta.env.DEV) {
+        console.warn("[CHUNK PREFETCH] Failed to prefetch structures for chunk", forwardChunkKey, error);
+      }
+    });
+  }
+
   clearCache() {
     for (const chunkKey of this.cachedMatrices.keys()) {
       this.disposeCachedMatrices(chunkKey);
@@ -2799,15 +2873,13 @@ export default class WorldmapScene extends HexagonScene {
     const seen = new Set<ID>();
 
     chunkKeys.forEach((chunkKey) => {
-      const [startRow, startCol] = chunkKey.split(",").map(Number);
-      const endRow = startRow + this.renderChunkSize.height - 1;
-      const endCol = startCol + this.renderChunkSize.width - 1;
+      const { minRow, maxRow, minCol, maxCol } = this.getRenderFetchBounds(chunkKey);
 
       this.structuresPositions.forEach((pos, entityId) => {
         if (seen.has(entityId)) {
           return;
         }
-        if (pos.col >= startCol && pos.col <= endCol && pos.row >= startRow && pos.row <= endRow) {
+        if (pos.col >= minCol && pos.col <= maxCol && pos.row >= minRow && pos.row <= maxRow) {
           const contractCoords = new Position({ x: pos.col, y: pos.row }).getContract();
           structuresToSync.push({
             entityId,
@@ -3156,6 +3228,9 @@ export default class WorldmapScene extends HexagonScene {
     if (!force && chunkChanged && this.shouldDelayChunkSwitch(focusPoint)) {
       return false;
     }
+
+    // Proactively prefetch the forward chunk while staying in the current one to hide pop-in.
+    this.prefetchDirectionalChunks(focusPoint);
 
     if (chunkChanged) {
       // Create and track the global chunk switch promise
