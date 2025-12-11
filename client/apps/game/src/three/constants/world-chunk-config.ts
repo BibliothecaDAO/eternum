@@ -15,6 +15,8 @@ export interface WorldChunkConfig {
     sideRadiusStrides: number;
     /** Max remembered prefetched chunk keys */
     maxAhead: number;
+    /** Max concurrent background prefetches */
+    maxConcurrent: number;
   };
 }
 
@@ -35,6 +37,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
     forwardDepthStrides: 2,
     sideRadiusStrides: 1,
     maxAhead: 8,
+    maxConcurrent: 3,
   },
 };
-

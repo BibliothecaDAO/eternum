@@ -129,6 +129,12 @@ export default class WorldmapScene extends HexagonScene {
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
   private readonly maxPrefetchedAhead = WORLD_CHUNK_CONFIG.prefetch.maxAhead;
+  // Background prefetch queue with simple prioritization.
+  // Priority 1: pinned neighborhood, Priority 2: directional ahead.
+  private prefetchQueue: Array<{ chunkKey: string; priority: number; prefetchStructures: boolean }> = [];
+  private queuedPrefetchKeys: Set<string> = new Set();
+  private activePrefetches = 0;
+  private readonly maxConcurrentPrefetches = WORLD_CHUNK_CONFIG.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -248,7 +254,8 @@ export default class WorldmapScene extends HexagonScene {
 
   private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
-  private readonly maxMatrixCacheSize = 16;
+  // Cache should at least cover the pinned 5x5 neighborhood, plus slack for recent history.
+  private readonly maxMatrixCacheSize = (WORLD_CHUNK_CONFIG.pinRadius * 2 + 1) ** 2 + 8;
   private pinnedChunkKeys: Set<string> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
@@ -1825,6 +1832,9 @@ export default class WorldmapScene extends HexagonScene {
 
     this.disposeChunkDebugOverlay();
     this.unregisterPinnedChunks();
+    this.prefetchQueue = [];
+    this.queuedPrefetchKeys.clear();
+    this.prefetchedAhead.length = 0;
 
     // Reset chunk state to ensure clean re-initialization when returning to world view
     this.currentChunk = "null";
@@ -2511,19 +2521,73 @@ export default class WorldmapScene extends HexagonScene {
         this.prefetchedAhead.shift();
       }
 
-      // Fire off fetch; deduping handled by computeTileEntities caches
-      this.computeTileEntities(chunkKey).catch((error) => {
-        if (import.meta.env.DEV) {
-          console.warn("[CHUNK PREFETCH] Failed to prefetch chunk", chunkKey, error);
-        }
-      });
+      // Directional prefetch is lowest priority compared to pinned neighborhood.
+      this.enqueueChunkPrefetch(chunkKey, 2, { prefetchStructures: true });
+    });
+  }
 
-      // Kick off structure refresh for the forward band to avoid late pop-in.
-      this.refreshStructuresForChunks([chunkKey]).catch((error) => {
-        if (import.meta.env.DEV) {
-          console.warn("[CHUNK PREFETCH] Failed to prefetch structures for chunk", chunkKey, error);
+  private enqueueChunkPrefetch(
+    chunkKey: string,
+    priority: number,
+    options?: { prefetchStructures?: boolean },
+  ): void {
+    if (!chunkKey || this.queuedPrefetchKeys.has(chunkKey)) {
+      return;
+    }
+
+    this.queuedPrefetchKeys.add(chunkKey);
+    this.prefetchQueue.push({
+      chunkKey,
+      priority,
+      prefetchStructures: options?.prefetchStructures ?? false,
+    });
+
+    this.prefetchQueue.sort((a, b) => a.priority - b.priority);
+    this.processPrefetchQueue();
+  }
+
+  private processPrefetchQueue(): void {
+    while (
+      this.activePrefetches < this.maxConcurrentPrefetches &&
+      this.prefetchQueue.length > 0
+    ) {
+      const item = this.prefetchQueue.shift();
+      if (!item) {
+        return;
+      }
+
+      this.activePrefetches += 1;
+      void (async () => {
+        try {
+          await this.computeTileEntities(item.chunkKey);
+          if (item.prefetchStructures) {
+            await this.refreshStructuresForChunks([item.chunkKey]);
+          }
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.warn("[CHUNK PREFETCH] Prefetch failed for chunk", item.chunkKey, error);
+          }
+        } finally {
+          this.activePrefetches -= 1;
+          this.queuedPrefetchKeys.delete(item.chunkKey);
+          this.processPrefetchQueue();
         }
-      });
+      })();
+    }
+  }
+
+  private prunePrefetchQueue(): void {
+    if (this.prefetchQueue.length === 0) {
+      return;
+    }
+
+    const allowed = new Set<string>([...this.pinnedChunkKeys, ...this.prefetchedAhead]);
+    this.prefetchQueue = this.prefetchQueue.filter((item) => {
+      if (allowed.has(item.chunkKey)) {
+        return true;
+      }
+      this.queuedPrefetchKeys.delete(item.chunkKey);
+      return false;
     });
   }
 
@@ -2996,6 +3060,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.pinnedChunkKeys = nextPinned;
     this.pinnedRenderAreas = nextPinnedAreas;
+    this.prunePrefetchQueue();
 
     if (newlyPinnedChunks.length > 0) {
       this.refreshStructuresForChunks(newlyPinnedChunks);
@@ -3466,8 +3531,12 @@ export default class WorldmapScene extends HexagonScene {
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
 
-    // Start loading all surrounding chunks (they will deduplicate automatically)
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+    // Start loading pinned neighborhood chunks (priority 1).
+    surroundingChunks.forEach((chunk) => {
+      if (chunk !== chunkKey) {
+        this.enqueueChunkPrefetch(chunk, 1);
+      }
+    });
 
     // Calculate the starting position for the new chunk - this is the main visual update
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
@@ -3558,7 +3627,11 @@ export default class WorldmapScene extends HexagonScene {
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+    surroundingChunks.forEach((chunk) => {
+      if (chunk !== chunkKey) {
+        this.enqueueChunkPrefetch(chunk, 1);
+      }
+    });
 
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
@@ -3870,6 +3943,9 @@ export default class WorldmapScene extends HexagonScene {
     this.stopRelicValidationTimer();
     this.disposeChunkDebugOverlay();
     this.unregisterPinnedChunks();
+    this.prefetchQueue = [];
+    this.queuedPrefetchKeys.clear();
+    this.prefetchedAhead.length = 0;
     this.clearCache();
     this.minimap.dispose();
 
