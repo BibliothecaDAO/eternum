@@ -30,7 +30,7 @@ import {
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
 import type { ArmyInstanceData } from "../types/army";
-import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
@@ -852,7 +852,10 @@ export class ArmyManager {
     }
   }
 
-  private isArmyVisible(army: ArmyData, startRow: number, startCol: number) {
+  private isArmyVisible(
+    army: ArmyData,
+    bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number },
+  ) {
     const entityIdNumber = this.toNumericId(army.entityId);
     const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
 
@@ -883,17 +886,13 @@ export class ArmyManager {
         );
       }
     }
-    const bounds = this.getChunkBounds(startRow, startCol);
     const isVisible = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
     if (!isVisible) {
       return false;
     }
 
-    let frustumPoint = worldPos?.clone();
-    if (!frustumPoint) {
-      const worldFromHex = getWorldPositionForHex({ col: x, row: y });
-      frustumPoint = worldFromHex;
-    }
+    const frustumPoint =
+      worldPos ?? getWorldPositionForHexCoordsInto(x, y, this.tempPosition);
     if (this.visibilityManager) {
       return this.visibilityManager.isPointVisible(frustumPoint);
     }
@@ -966,7 +965,7 @@ export class ArmyManager {
           for (const id of armyIds) {
             const army = this.armies.get(id);
             // Double check visibility using the precise check
-            if (army && this.isArmyVisible(army, startRow, startCol)) {
+            if (army && this.isArmyVisible(army, bounds)) {
               visibleArmies.push(army);
             }
           }
@@ -1492,10 +1491,7 @@ export class ArmyManager {
               : army.isMine
                 ? this.pointsRenderers!.player
                 : this.pointsRenderers!.enemy;
-            renderer.setPoint({
-              entityId: army.entityId,
-              position: iconPosition,
-            });
+            renderer.setPointPosition(army.entityId, iconPosition);
           }
         });
       }

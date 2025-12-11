@@ -9,7 +9,7 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { FrustumManager } from "../utils/frustum-manager";
 import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
 import { LabelManager } from "../utils/labels/label-manager";
@@ -36,6 +36,7 @@ export class QuestManager {
   questHexCoords: Map<number, Set<number>> = new Map();
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private frustumManager?: FrustumManager;
+  private readonly tempVisibilityPosition: THREE.Vector3 = new THREE.Vector3();
 
   constructor(
     scene: THREE.Scene,
@@ -224,9 +225,11 @@ export class QuestManager {
     return basePosition;
   };
 
-  private isQuestVisible(quest: QuestData, startRow: number, startCol: number) {
+  private isQuestVisible(
+    quest: QuestData,
+    bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number },
+  ) {
     const { x, y } = quest.hexCoords.getNormalized();
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
 
     if (!insideChunk) {
@@ -237,17 +240,15 @@ export class QuestManager {
       return true;
     }
 
-    const worldPos = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
+    const worldPos = getWorldPositionForHexCoordsInto(x, y, this.tempVisibilityPosition);
     worldPos.y += 0.05;
     return this.frustumManager.isPointVisible(worldPos);
   }
 
   private getVisibleQuestsForChunk(quests: Map<ID, QuestData>, startRow: number, startCol: number): QuestData[] {
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const visibleQuests = Array.from(quests.values())
-
-      .filter((quest) => {
-        return this.isQuestVisible(quest, startRow, startCol);
-      })
+      .filter((quest) => this.isQuestVisible(quest, bounds))
       .map((quest) => ({
         entityId: quest.entityId,
         questType: quest.questType,

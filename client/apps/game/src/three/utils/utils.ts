@@ -62,32 +62,44 @@ export const getHexagonCoordinates = (
 };
 
 export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+  const out = new Vector3();
+  return getWorldPositionForHexCoordsInto(hexCoords.col, hexCoords.row, out, flat);
+};
 
-  const col = hexCoords.col;
-  const row = hexCoords.row;
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const x = col * horizDist - rowOffset;
-  const z = row * vertDist;
+// Precomputed hex spacing constants for hot-path helpers.
+const HEX_RADIUS = HEX_SIZE;
+const HEX_HEIGHT = HEX_RADIUS * 2;
+const HEX_WIDTH = Math.sqrt(3) * HEX_RADIUS;
+const VERT_DIST = HEX_HEIGHT * 0.75;
+const HORIZ_DIST = HEX_WIDTH;
+
+/**
+ * Non-allocating hex -> world conversion.
+ * Writes into `out` and returns it.
+ */
+export const getWorldPositionForHexCoordsInto = (
+  col: number,
+  row: number,
+  out: Vector3,
+  flat: boolean = true,
+) => {
+  const rowOffset = ((row % 2) * Math.sign(row) * HORIZ_DIST) / 2;
+  const x = col * HORIZ_DIST - rowOffset;
+  const z = row * VERT_DIST;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
-  return new Vector3(x, y, z);
+  out.set(x, y, z);
+  return out;
+};
+
+export const getWorldPositionForHexInto = (hexCoords: HexPosition, out: Vector3, flat: boolean = true) => {
+  return getWorldPositionForHexCoordsInto(hexCoords.col, hexCoords.row, out, flat);
 };
 
 export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const row = Math.round(worldPosition.z / vertDist);
+  const row = Math.round(worldPosition.z / VERT_DIST);
   // hexception offsets hack
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const col = Math.round((worldPosition.x + rowOffset) / horizDist);
+  const rowOffset = ((row % 2) * Math.sign(row) * HORIZ_DIST) / 2;
+  const col = Math.round((worldPosition.x + rowOffset) / HORIZ_DIST);
 
   return {
     col,

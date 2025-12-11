@@ -24,7 +24,7 @@ import {
 import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { FrustumManager } from "../utils/frustum-manager";
@@ -134,6 +134,7 @@ export class StructureManager {
   private chunkToStructures: Map<string, Set<ID>> = new Map();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
+  private readonly tempVisibilityPosition: Vector3 = new Vector3();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private readonly animationCullDistance = 140;
   private animationCameraPosition: Vector3 = new Vector3();
@@ -1399,7 +1400,7 @@ export class StructureManager {
         if (structureIds) {
           for (const id of structureIds) {
             const structure = this.structures.getStructureByEntityId(id);
-            if (structure && this.isStructureVisible(structure)) {
+            if (structure && this.isStructureVisible(structure, bounds)) {
               visibleStructures.push(structure);
             }
           }
@@ -1434,7 +1435,9 @@ export class StructureManager {
   }
 
   private getVisibleStructures(structures: Map<ID, StructureInfo>): StructureInfo[] {
-    return Array.from(structures.values()).filter((structure) => this.isStructureVisible(structure));
+    const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
+    const bounds = this.getChunkBounds(chunkRow, chunkCol);
+    return Array.from(structures.values()).filter((structure) => this.isStructureVisible(structure, bounds));
   }
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
@@ -1448,12 +1451,16 @@ export class StructureManager {
     );
   }
 
-  private isStructureVisible(structure: StructureInfo): boolean {
-    if (!this.isInCurrentChunk(structure.hexCoords)) {
+  private isStructureVisible(
+    structure: StructureInfo,
+    bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number },
+  ): boolean {
+    const { col, row } = structure.hexCoords;
+    if (col < bounds.minCol || col > bounds.maxCol || row < bounds.minRow || row > bounds.maxRow) {
       return false;
     }
 
-    const position = getWorldPositionForHex(structure.hexCoords);
+    const position = getWorldPositionForHexCoordsInto(col, row, this.tempVisibilityPosition);
     position.y += 0.05;
     if (this.visibilityManager) {
       return this.visibilityManager.isPointVisible(position);

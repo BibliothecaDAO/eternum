@@ -83,7 +83,7 @@ import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
-import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
+import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, isAddressEqualToAccount } from "../utils";
 import {
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
@@ -169,6 +169,7 @@ export default class WorldmapScene extends HexagonScene {
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
   private cameraGroundIntersectionScratch: Vector3 = new Vector3();
+  private visibilityPositionScratch: Vector3 = new Vector3();
 
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
@@ -2319,7 +2320,7 @@ export default class WorldmapScene extends HexagonScene {
       return false;
     }
 
-    const worldPosition = getWorldPositionForHex({ col, row });
+    const worldPosition = getWorldPositionForHexCoordsInto(col, row, this.visibilityPositionScratch);
     return this.visibilityManager.isPointVisible(worldPosition);
   }
 
@@ -3014,8 +3015,6 @@ export default class WorldmapScene extends HexagonScene {
         const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
         const shouldHideTile = isStructure || isQuest;
         const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
-
-        this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
 
         if (shouldHideTile) {
           return;

@@ -141,7 +141,9 @@ export abstract class HexagonScene {
     this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
-    this.interactiveHexManager = new InteractiveHexManager(this.scene);
+    this.interactiveHexManager = new InteractiveHexManager(this.scene, {
+      persistent: this.sceneName === SceneName.Hexception,
+    });
     this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
