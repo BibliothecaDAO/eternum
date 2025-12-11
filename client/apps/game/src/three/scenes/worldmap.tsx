@@ -3461,17 +3461,55 @@ export default class WorldmapScene extends HexagonScene {
     return { chunkX, chunkZ };
   }
 
-  private shouldDelayChunkSwitch(cameraPosition: Vector3): boolean {
-    if (!this.hasChunkSwitchAnchor || !this.lastChunkSwitchPosition) {
+  private shouldDelayChunkSwitch(focusPoint: Vector3, nextChunkKey: string): boolean {
+    if (this.currentChunk === "null") {
       return false;
     }
 
     const chunkWorldWidth = this.chunkSize * HEX_SIZE * Math.sqrt(3);
     const chunkWorldDepth = this.chunkSize * HEX_SIZE * 1.5;
-    const dx = Math.abs(cameraPosition.x - this.lastChunkSwitchPosition.x);
-    const dz = Math.abs(cameraPosition.z - this.lastChunkSwitchPosition.z);
+    const paddingWorldX = chunkWorldWidth * this.chunkSwitchPadding;
+    const paddingWorldZ = chunkWorldDepth * this.chunkSwitchPadding;
 
-    return dx < chunkWorldWidth * this.chunkSwitchPadding && dz < chunkWorldDepth * this.chunkSwitchPadding;
+    const [currentStartRow, currentStartCol] = this.currentChunk.split(",").map(Number);
+    const [nextStartRow, nextStartCol] = nextChunkKey.split(",").map(Number);
+
+    const dxChunks = (nextStartCol - currentStartCol) / this.chunkSize;
+    const dzChunks = (nextStartRow - currentStartRow) / this.chunkSize;
+
+    // Only apply boundary hysteresis for adjacent chunk moves.
+    if (Math.abs(dxChunks) <= 1 && Math.abs(dzChunks) <= 1) {
+      const currentChunkX = currentStartCol / this.chunkSize;
+      const currentChunkZ = currentStartRow / this.chunkSize;
+
+      const currentMinX = currentChunkX * chunkWorldWidth;
+      const currentMaxX = currentMinX + chunkWorldWidth;
+      const currentMinZ = currentChunkZ * chunkWorldDepth;
+      const currentMaxZ = currentMinZ + chunkWorldDepth;
+
+      if (dxChunks === 1 && focusPoint.x < currentMaxX + paddingWorldX) {
+        return true;
+      }
+      if (dxChunks === -1 && focusPoint.x > currentMinX - paddingWorldX) {
+        return true;
+      }
+      if (dzChunks === 1 && focusPoint.z < currentMaxZ + paddingWorldZ) {
+        return true;
+      }
+      if (dzChunks === -1 && focusPoint.z > currentMinZ - paddingWorldZ) {
+        return true;
+      }
+    }
+
+    // Retain a small dead-zone around the last switch point to avoid immediate ping-pong.
+    if (!this.hasChunkSwitchAnchor || !this.lastChunkSwitchPosition) {
+      return false;
+    }
+
+    const dx = Math.abs(focusPoint.x - this.lastChunkSwitchPosition.x);
+    const dz = Math.abs(focusPoint.z - this.lastChunkSwitchPosition.z);
+
+    return dx < paddingWorldX && dz < paddingWorldZ;
   }
 
   private getChunkCenter(startRow: number, startCol: number): { row: number; col: number } {
@@ -3535,7 +3573,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const chunkChanged = this.currentChunk !== chunkKey;
 
-    if (!force && chunkChanged && this.shouldDelayChunkSwitch(focusPoint)) {
+    if (!force && chunkChanged && this.shouldDelayChunkSwitch(focusPoint, chunkKey)) {
       return false;
     }
 
