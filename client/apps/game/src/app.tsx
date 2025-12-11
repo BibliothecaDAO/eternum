@@ -17,7 +17,9 @@ import {
   LandingCosmetics,
   LandingLeaderboard,
   LandingCreateMarket,
+  LandingCreateMarketTest,
   LandingMarketDetails,
+  LandingMint,
   LandingMarkets,
   LandingPlayer,
   LandingWelcome,
@@ -174,6 +176,8 @@ function App() {
               <Route path="account" element={<LandingAccount />} />
               <Route path="player" element={<LandingPlayer />} />
               <Route path="create-market" element={<LandingCreateMarket />} />
+              <Route path="create-market-test" element={<LandingCreateMarketTest />} />
+              <Route path="mint" element={<LandingMint />} />
               <Route path="markets" element={<LandingMarkets />} />
               <Route path="markets/:marketId" element={<LandingMarketDetails />} />
               <Route path="leaderboard" element={<LandingLeaderboard />} />

@@ -4,11 +4,13 @@ import type { RegisteredToken } from "@pm/sdk";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
+type TokenLike = Pick<RegisteredToken, "symbol"> | RegisteredToken | { symbol?: string };
+
 export function TokenIcon({
   token,
   className,
   ...props
-}: { token?: RegisteredToken } & React.ComponentProps<"span">) {
+}: { token?: TokenLike } & React.ComponentProps<"span">) {
   const [broken, setBroken] = useState(false);
   const symbol = token?.symbol ?? "TKN";
   const imageSrc = useMemo(() => {

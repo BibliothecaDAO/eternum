@@ -4,13 +4,13 @@ import { useUser } from "@/pm/hooks/dojo/user";
 import { useProtocolFees } from "@/pm/hooks/markets/useProtocolFees";
 import { HStack, VStack } from "@/pm/ui";
 import { formatUnits } from "@/pm/utils";
-import { Button, Divider, Panel } from "@/ui/design-system/atoms";
+import { Button, Panel } from "@/ui/design-system/atoms";
 import { getContractByName } from "@dojoengine/core";
 import { useAccount } from "@starknet-react/core";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { Call } from "starknet";
+import { Call, uint256 } from "starknet";
 import { TokenIcon } from "../TokenIcon";
 
 export function MarketVaultFees({ market }: { market: MarketClass }) {
@@ -66,18 +66,31 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
 
   const redeemableDisplay = useMemo(() => formatUnits(value, decimals, 6), [value, decimals]);
 
+  const canClaim = market.isResolved();
+
   // TODO: multicall with redeem tokens
   const claim = async () => {
+    if (!account) {
+      toast.error("Connect a wallet to claim fees.");
+      return;
+    }
+    if (!canClaim) {
+      toast.error("You can only claim after the market is resolved.");
+      return;
+    }
+
     const approveCall: Call = {
       contractAddress: vaultFeesAdress,
       entrypoint: "set_approval_for_all",
       calldata: [marketAddress, true],
     };
 
+    // Use uint256 for market id as calldata
+    const marketId_u256 = uint256.bnToUint256(BigInt(market.market_id));
     const claimCall: Call = {
-      contractAddress: vaultFeesAdress,
+      contractAddress: marketAddress,
       entrypoint: "claim_market_fee_share",
-      calldata: [market.market_id],
+      calldata: [marketId_u256.low, marketId_u256.high],
     };
 
     await account?.execute([approveCall, claimCall]).then(() => toast("Vault Fees claimed!"));
@@ -91,16 +104,18 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
           <div className="text-xs uppercase tracking-[0.08em] text-white/70">Vault fees</div>
           <div className="text-lg font-semibold text-white">Claim your market share</div>
         </VStack>
-        <Button variant="secondary" size="sm" className="gap-2" onClick={claim}>
+        <Button variant="secondary" size="sm" className="gap-2" onClick={claim} disabled={!canClaim}>
           <ArrowDown className="h-4 w-4" />
           Claim
         </Button>
       </HStack>
+      {!canClaim && <div className="text-xs text-gold/60">Claims unlock once the market is resolved.</div>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <VStack className="gap-1 rounded-lg border border-gold/15 bg-black/20 p-3">
           <span className="text-xs uppercase tracking-[0.08em] text-white/60">Your share</span>
-          <span className="text-2xl font-semibold text-gold/90">{Number(share) > 0 ? `${shareDisplay}%` : "0%"}</span>
+          {/* <span className="text-2xl font-semibold text-gold/90">{Number(share) > 0 ? `${shareDisplay}%` : "0%"}</span> */}
+          <span className="text-2xl font-semibold text-gold/90">{"TBD"}</span>
           <span className="text-xs text-white/60">of accumulated fees</span>
         </VStack>
 
@@ -116,16 +131,12 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
         <VStack className="gap-1 rounded-lg border border-gold/15 bg-black/10 p-3">
           <span className="text-xs uppercase tracking-[0.08em] text-white/60">Redeemable</span>
           <HStack className="items-baseline gap-1">
-            <span className="text-xl font-semibold text-white">
-              {Number(value) > 0 ? redeemableDisplay : "0.000000"}
-            </span>
+            <span className="text-xl font-semibold text-white">{Number(value) > 0 ? redeemableDisplay : "0"}</span>
             <TokenIcon className="h-4 w-4" token={market.collateralToken} />
           </HStack>
           <span className="text-xs text-white/60">claimable right now</span>
         </VStack>
       </div>
-
-      <Divider tint="strong" spacing="sm" />
     </Panel>
   );
 }

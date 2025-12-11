@@ -12,7 +12,7 @@ const WORLD_CONFIG_QUERY =
 const PLAYERS_QUERY =
   'SELECT r.player AS player, n.name AS name FROM "s1_eternum-BlitzRealmPlayerRegister" r LEFT JOIN "s1_eternum-AddressName" n ON r.player = n.address WHERE r.once_registered = TRUE OR r.registered = TRUE;';
 
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+export const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
 const fetchWorldConfigMeta = async (
   toriiBaseUrl: string,
@@ -40,7 +40,7 @@ const fetchWorldConfigMeta = async (
   return meta;
 };
 
-const fetchRegisteredPlayers = async (
+export const fetchRegisteredPlayers = async (
   toriiBaseUrl: string,
 ): Promise<Array<{ address: string; name: string | null }>> => {
   try {

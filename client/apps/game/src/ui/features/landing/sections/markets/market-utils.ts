@@ -97,6 +97,18 @@ export const formatTimestamp = (value: number | null): string => {
   return new Date(value * 1000).toLocaleString();
 };
 
+export const formatSecondsToLocalInput = (value: number | null | undefined): string => {
+  if (value == null || !Number.isFinite(value) || value <= 0) return "";
+  const date = new Date(value * 1000);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const mi = pad(date.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+};
+
 export const deriveServerStatus = (
   startAt: number | null,
   endAt: number | null,

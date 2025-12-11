@@ -1,17 +1,21 @@
 import clsx from "clsx";
 import { Clock3, Loader2, Percent, Users } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { Button, NumberInput } from "@/ui/design-system/atoms";
 import { displayAddress } from "@/ui/utils/utils";
 
-import { formatTimestamp, type MarketServerStatus } from "./market-utils";
+import { formatSecondsToLocalInput, formatTimestamp, type MarketServerStatus } from "./market-utils";
 import { type MarketServer } from "./use-market-servers";
 
 export type MarketServerFormState = {
   weights: Record<string, number>;
   noneWeight: number;
   fundingAmount: string;
+  startAt?: string;
+  endAt?: string;
+  resolveAt?: string;
+  title?: string;
 };
 
 type MarketServerCardProps = {
@@ -24,6 +28,10 @@ type MarketServerCardProps = {
   onWeightChange: (address: string, value: number) => void;
   onNoneWeightChange: (value: number) => void;
   onFundingChange: (value: string) => void;
+  onStartAtChange: (value: string) => void;
+  onEndAtChange: (value: string) => void;
+  onResolveAtChange: (value: string) => void;
+  onTitleChange: (value: string) => void;
   onCreate: () => void;
   onDebug: () => void;
   onLoadPlayers: () => void;
@@ -45,6 +53,10 @@ export const MarketServerCard = ({
   onWeightChange,
   onNoneWeightChange,
   onFundingChange,
+  onStartAtChange,
+  onEndAtChange,
+  onResolveAtChange,
+  onTitleChange,
   onCreate,
   onDebug,
   onLoadPlayers,
@@ -66,6 +78,29 @@ export const MarketServerCard = ({
     if (!totalWeight) return "0%";
     return `${((weight / totalWeight) * 100).toFixed(1)}%`;
   };
+
+  const defaultSchedule = useMemo(() => {
+    const start = server.startAt ?? null;
+    const end = server.endAt && server.endAt !== 0 ? server.endAt : start;
+    const resolve = end != null ? end + 60 : start != null ? start + 60 : null;
+    return {
+      start,
+      end,
+      resolve,
+      startLocal: formatSecondsToLocalInput(start),
+      endLocal: formatSecondsToLocalInput(end),
+      resolveLocal: formatSecondsToLocalInput(resolve),
+    };
+  }, [server.endAt, server.startAt]);
+
+  const toInputValue = useCallback((value: string | undefined, fallback: string) => {
+    if (value === undefined) return fallback;
+    if (value === "") return "";
+    if (value.includes("T")) return value;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) return formatSecondsToLocalInput(numeric);
+    return fallback;
+  }, []);
 
   return (
     <div className="rounded-2xl border border-gold/20 bg-black/40 p-4 shadow-lg shadow-black/30">
@@ -103,6 +138,60 @@ export const MarketServerCard = ({
             </span>
           )}
         </div>
+      </div>
+
+      <div className="mt-4 space-y-2 rounded-xl border border-gold/20 bg-black/50 p-3">
+        <div className="text-sm font-semibold text-gold">Schedule overrides (local time)</div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-gold/60">Start time</span>
+            <input
+              type="datetime-local"
+              value={toInputValue(form.startAt, defaultSchedule.startLocal)}
+              onChange={(e) => onStartAtChange(e.target.value)}
+              placeholder={defaultSchedule.startLocal}
+              className="w-full rounded-lg border border-gold/30 bg-black/30 px-3 py-2 text-sm text-gold outline-none transition focus:border-gold/60"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-gold/60">End time</span>
+            <input
+              type="datetime-local"
+              value={toInputValue(form.endAt, defaultSchedule.endLocal)}
+              onChange={(e) => onEndAtChange(e.target.value)}
+              placeholder={defaultSchedule.endLocal}
+              className="w-full rounded-lg border border-gold/30 bg-black/30 px-3 py-2 text-sm text-gold outline-none transition focus:border-gold/60"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-gold/60">Resolve time</span>
+            <input
+              type="datetime-local"
+              value={toInputValue(form.resolveAt, defaultSchedule.resolveLocal)}
+              onChange={(e) => onResolveAtChange(e.target.value)}
+              placeholder={defaultSchedule.resolveLocal}
+              className="w-full rounded-lg border border-gold/30 bg-black/30 px-3 py-2 text-sm text-gold outline-none transition focus:border-gold/60"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-gold/60">
+          Edit in your local timezone (datetime-local). Leave blank to use the server schedule (Start:{" "}
+          {formatTimestamp(defaultSchedule.start)}, End: {formatTimestamp(defaultSchedule.end)}, Resolve:{" "}
+          {formatTimestamp(defaultSchedule.resolve)}). You can also paste unix seconds; they&apos;ll convert automatically.
+        </p>
+      </div>
+
+      <div className="mt-4 space-y-2 rounded-xl border border-gold/20 bg-black/50 p-3">
+        <div className="text-sm font-semibold text-gold">Market title</div>
+        <input
+          value={form.title ?? ""}
+          onChange={(e) => onTitleChange(e.target.value)}
+          placeholder={`Who wins ${server.name}?`}
+          className="w-full rounded-lg border border-gold/30 bg-black/30 px-3 py-2 text-sm text-gold outline-none transition focus:border-gold/60"
+        />
+        <p className="text-xs text-gold/60">
+          Optional override. Leave blank to use the default title for this server.
+        </p>
       </div>
       <div className="mt-4 space-y-3 rounded-xl border border-gold/20 bg-gold/5 p-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-gold">

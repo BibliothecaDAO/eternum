@@ -9,7 +9,13 @@ import { ChainType } from "@/ui/features/admin/utils/manifest-loader";
 import { Chain, getGameManifest } from "@contracts";
 import { env } from "../../../../../env";
 import { MarketServerCard, type MarketServerFormState } from "./markets/market-server-card";
-import { addressToUint256, deriveServerStatus, parseLordsToBaseUnits, stringToHexData } from "./markets/market-utils";
+import {
+  addressToUint256,
+  deriveServerStatus,
+  formatSecondsToLocalInput,
+  parseLordsToBaseUnits,
+  stringToHexData,
+} from "./markets/market-utils";
 import { useMarketServers, type MarketServer } from "./markets/use-market-servers";
 
 const tryBetterErrorMsg = (error: unknown) => {
@@ -111,12 +117,57 @@ const normalizeVariants = (value: unknown): unknown => {
 
 type BuildResult = { params: RawArgsObject; fundingBase: bigint } | { error: string };
 
-const ensureForm = (form?: MarketServerFormState): MarketServerFormState => {
+type LandingCreateMarketProps = {
+  includeEnded?: boolean;
+};
+
+const normalizeTimeInputValue = (value?: string, fallback = ""): string => {
+  if (!value) return fallback;
+  if (value.includes("T")) return value;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return formatSecondsToLocalInput(numeric);
+  return value;
+};
+
+const ensureForm = (
+  form?: MarketServerFormState,
+  defaults?: Partial<Pick<MarketServerFormState, "startAt" | "endAt" | "resolveAt" | "title">>,
+): MarketServerFormState => {
   return {
     fundingAmount: form?.fundingAmount || DEFAULT_FUNDING_LORDS,
     weights: form?.weights || {},
     noneWeight: form?.noneWeight ?? 1,
+    startAt: normalizeTimeInputValue(form?.startAt, defaults?.startAt ?? ""),
+    endAt: normalizeTimeInputValue(form?.endAt, defaults?.endAt ?? ""),
+    resolveAt: normalizeTimeInputValue(form?.resolveAt, defaults?.resolveAt ?? ""),
+    title: form?.title ?? defaults?.title ?? "",
   };
+};
+
+const buildDefaultSchedule = (server: MarketServer) => {
+  const start = server.startAt ?? null;
+  const end = server.endAt && server.endAt !== 0 ? server.endAt : start;
+  const resolve = end != null ? end + 60 : start != null ? start + 60 : null;
+
+  return {
+    startAt: formatSecondsToLocalInput(start),
+    endAt: formatSecondsToLocalInput(end),
+    resolveAt: formatSecondsToLocalInput(resolve),
+    title: server.name ? server.name.padEnd(10, " ") : "",
+  };
+};
+
+const parseTimestampInput = (label: string, value?: string): { value: number | null; error?: string } => {
+  const trimmed = value?.trim();
+  if (!trimmed) return { value: null };
+  const parsed = Number(trimmed);
+  if (Number.isFinite(parsed)) return { value: Math.floor(parsed) };
+
+  const normalized = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
+  const ms = Date.parse(normalized);
+  if (!Number.isNaN(ms)) return { value: Math.floor(ms / 1000) };
+
+  return { value: null, error: `Enter a valid ${label} time (unix seconds or yyyy-mm-ddThh:mm).` };
 };
 
 const buildMarketParams = (
@@ -147,14 +198,33 @@ const buildMarketParams = (
   }
 
   const fundingAmount = uint256.bnToUint256(fundingBase);
-  const startAt = server.startAt ?? nowSec;
-  const endAt = server.endAt && server.endAt !== 0 ? server.endAt : startAt;
-  const resolveAt = endAt + 60;
+  const { value: startOverride, error: startError } = parseTimestampInput("start", form.startAt);
+  const { value: endOverride, error: endError } = parseTimestampInput("end", form.endAt);
+  const { value: resolveOverride, error: resolveError } = parseTimestampInput("resolve", form.resolveAt);
+  const titleOverrideRaw = form.title ?? "";
 
+  if (startError) return { error: startError };
+  if (endError) return { error: endError };
+  if (resolveError) return { error: resolveError };
+
+  const startAt = startOverride ?? server.startAt ?? nowSec;
+  const endAt = endOverride ?? (server.endAt && server.endAt !== 0 ? server.endAt : startAt);
+  const resolveAt = resolveOverride ?? endAt + 60;
+
+  if (endAt < startAt) {
+    return { error: "End time must be after or equal to start time." };
+  }
+
+  if (resolveAt < endAt) {
+    return { error: "Resolve time must be after or equal to end time." };
+  }
+
+  const defaultTitle = server.name.padEnd(10, " ");
+  const hasCustomTitle = titleOverrideRaw.trim().length > 0 && titleOverrideRaw !== defaultTitle;
+  const titleText = hasCustomTitle ? titleOverrideRaw.trim() : defaultTitle;
   // const titleData = stringToHexData(`Who wins ${server.name}?`);
   // const questionData = stringToHexData(`Predict the winner on ${server.name}`);
-  const paddedName = server.name.padEnd(10, " ");
-  const titleData = stringToHexData(paddedName);
+  const titleData = stringToHexData(titleText);
   const questionData = stringToHexData("Who will be the winner?");
 
   const params = normalizeVariants({
@@ -184,7 +254,7 @@ const buildMarketParams = (
   return { params, fundingBase };
 };
 
-export const LandingCreateMarket = () => {
+export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarketProps = {}) => {
   const account = useAccountStore((state) => state.account);
   const { servers, loading, error, nowSec, refresh, loadPlayers } = useMarketServers();
 
@@ -227,9 +297,13 @@ export const LandingCreateMarket = () => {
     });
   }, [blitzOracleAddresses, resolveBlitzOracleAddress, servers]);
 
-  const startedServers = useMemo(
-    () => servers.filter((server) => deriveServerStatus(server.startAt, server.endAt, nowSec) === "started"),
-    [servers, nowSec],
+  const eligibleServers = useMemo(
+    () =>
+      servers.filter((server) => {
+        const status = deriveServerStatus(server.startAt, server.endAt, nowSec);
+        return status === "started" || (includeEnded && status === "ended");
+      }),
+    [includeEnded, nowSec, servers],
   );
 
   useEffect(() => {
@@ -238,7 +312,8 @@ export const LandingCreateMarket = () => {
       let changed = false;
 
       servers.forEach((server) => {
-        const existing = ensureForm(next[server.name]);
+        const defaults = buildDefaultSchedule(server);
+        const existing = ensureForm(next[server.name], defaults);
         const weights = { ...existing.weights };
         const playerAddresses = new Set(server.players.map((p) => p.address));
         server.players.forEach((player) => {
@@ -252,6 +327,10 @@ export const LandingCreateMarket = () => {
           fundingAmount: existing.fundingAmount || DEFAULT_FUNDING_LORDS,
           weights,
           noneWeight: existing.noneWeight ?? 1,
+          startAt: existing.startAt ?? defaults.startAt,
+          endAt: existing.endAt ?? defaults.endAt,
+          resolveAt: existing.resolveAt ?? defaults.resolveAt,
+          title: existing.title ?? defaults.title,
         };
 
         const previous = prev[server.name];
@@ -261,8 +340,21 @@ export const LandingCreateMarket = () => {
           Object.keys(weights).some((key) => previous.weights?.[key] !== weights[key]);
         const fundingChanged = previous ? previous.fundingAmount !== updated.fundingAmount : true;
         const noneChanged = previous ? previous.noneWeight !== updated.noneWeight : true;
+        const startChanged = previous ? previous.startAt !== updated.startAt : true;
+        const endChanged = previous ? previous.endAt !== updated.endAt : true;
+        const resolveChanged = previous ? previous.resolveAt !== updated.resolveAt : true;
+        const titleChanged = previous ? previous.title !== updated.title : true;
 
-        if (!previous || weightsChanged || fundingChanged || noneChanged) {
+        if (
+          !previous ||
+          weightsChanged ||
+          fundingChanged ||
+          noneChanged ||
+          startChanged ||
+          endChanged ||
+          resolveChanged ||
+          titleChanged
+        ) {
           next[server.name] = updated;
           changed = true;
         }
@@ -301,6 +393,46 @@ export const LandingCreateMarket = () => {
       [serverName]: {
         ...ensureForm(prev[serverName]),
         fundingAmount: value,
+      },
+    }));
+  }, []);
+
+  const handleStartAtChange = useCallback((serverName: string, value: string) => {
+    setForms((prev) => ({
+      ...prev,
+      [serverName]: {
+        ...ensureForm(prev[serverName]),
+        startAt: value,
+      },
+    }));
+  }, []);
+
+  const handleEndAtChange = useCallback((serverName: string, value: string) => {
+    setForms((prev) => ({
+      ...prev,
+      [serverName]: {
+        ...ensureForm(prev[serverName]),
+        endAt: value,
+      },
+    }));
+  }, []);
+
+  const handleResolveAtChange = useCallback((serverName: string, value: string) => {
+    setForms((prev) => ({
+      ...prev,
+      [serverName]: {
+        ...ensureForm(prev[serverName]),
+        resolveAt: value,
+      },
+    }));
+  }, []);
+
+  const handleTitleChange = useCallback((serverName: string, value: string) => {
+    setForms((prev) => ({
+      ...prev,
+      [serverName]: {
+        ...ensureForm(prev[serverName]),
+        title: value,
       },
     }));
   }, []);
@@ -379,10 +511,11 @@ export const LandingCreateMarket = () => {
   );
 
   const sectionTitle = useMemo(() => {
-    const active = startedServers.length;
-    if (active === 0) return "Prediction Markets";
-    return `Prediction Markets • ${active} started server${active === 1 ? "" : "s"}`;
-  }, [startedServers.length]);
+    const active = eligibleServers.length;
+    if (active === 0) return includeEnded ? "Prediction Markets (test)" : "Prediction Markets";
+    const descriptor = includeEnded ? "started/ended" : "started";
+    return `Prediction Markets • ${active} ${descriptor} server${active === 1 ? "" : "s"}`;
+  }, [eligibleServers, includeEnded]);
 
   return (
     <section
@@ -396,6 +529,7 @@ export const LandingCreateMarket = () => {
             <p className="text-sm text-gold/70">
               Choose a live server, inspect its registered players, and craft a market once the game is underway.
               Start/end times below are shown in your local time.
+              {includeEnded ? " Ended games are shown here so you can backfill markets." : ""}
             </p>
           </div>
           <div className="flex flex-col gap-1 text-right text-[11px] text-gold/70 sm:items-end">
@@ -411,7 +545,7 @@ export const LandingCreateMarket = () => {
         {error && <p className="text-sm text-danger">{error}</p>}
 
         <div className="grid grid-cols-1 gap-4">
-          {startedServers.map((server) => {
+          {eligibleServers.map((server) => {
             const status = deriveServerStatus(server.startAt, server.endAt, nowSec);
             const form = ensureForm(forms[server.name]);
             const blitzOracleAddress = blitzOracleAddresses[server.name];
@@ -443,6 +577,10 @@ export const LandingCreateMarket = () => {
                 onWeightChange={(address, value) => handleWeightChange(server.name, address, value)}
                 onNoneWeightChange={(value) => handleNoneWeightChange(server.name, value)}
                 onFundingChange={(value) => handleFundingChange(server.name, value)}
+                onStartAtChange={(value) => handleStartAtChange(server.name, value)}
+                onEndAtChange={(value) => handleEndAtChange(server.name, value)}
+                onResolveAtChange={(value) => handleResolveAtChange(server.name, value)}
+                onTitleChange={(value) => handleTitleChange(server.name, value)}
                 onDebug={() => handleDebug(server, blitzOracleAddress)}
                 onCreate={() => void handleCreate(server, blitzOracleAddress)}
               />
@@ -450,9 +588,11 @@ export const LandingCreateMarket = () => {
           })}
         </div>
 
-        {startedServers.length === 0 && !loading && !error && (
+        {eligibleServers.length === 0 && !loading && !error && (
           <div className="rounded-xl border border-gold/20 bg-black/60 p-4 text-center text-gold/70">
-            No started servers detected right now (registration or ended games are hidden).
+            {includeEnded
+              ? "No started or ended servers detected right now (registration games are hidden)."
+              : "No started servers detected right now (registration or ended games are hidden)."}
           </div>
         )}
 
@@ -464,3 +604,5 @@ export const LandingCreateMarket = () => {
     </section>
   );
 };
+
+export const LandingCreateMarketTest = () => <LandingCreateMarket includeEnded />;
