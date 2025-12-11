@@ -7,6 +7,14 @@ export interface WorldChunkConfig {
   pinRadius: number;
   /** Boundary padding for delaying chunk switches */
   switchPadding: number;
+  /** Torii tile fetch coalescing */
+  toriiFetch: {
+    /**
+     * Number of stride chunks per side in a Torii "super-area".
+     * A value of 4 means one fetch covers a 4x4 stride-chunk block.
+     */
+    superAreaStrides: number;
+  };
   /** Directional prefetch tuning */
   prefetch: {
     /** How many stride steps ahead to prefetch (inclusive) */
@@ -33,6 +41,10 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   },
   pinRadius: 2, // 5x5 pinned neighborhood
   switchPadding: 0.05,
+  toriiFetch: {
+    // Coalesce overlapping 64x64 render windows into larger stable fetch areas.
+    superAreaStrides: 4,
+  },
   prefetch: {
     forwardDepthStrides: 2,
     sideRadiusStrides: 1,

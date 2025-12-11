@@ -89,8 +89,8 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 
 **Fetch caching**
 
-- Tile fetches are deduped by `fetchedChunks` (completed) and `pendingChunks` (in‑flight), keyed by render-area
-  (currently 1:1 with chunkKey).
+- Tile fetches are deduped by `fetchedChunks` (completed) and `pendingChunks` (in‑flight), keyed by Torii super‑areas
+  (`getRenderAreaKeyForChunk`), so multiple stride chunks share one fetch.
 - A completed fetch is only cached if its render area is still pinned when it finishes, preventing stale caching.
 
 ## Rendering pipeline
@@ -117,8 +117,8 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
   update, a targeted grid refresh could be required to avoid tiles showing under them.
 - The 5×5 pinned set can exceed `maxMatrixCacheSize = 16`; consider increasing the cache or tying it to pinned count to
   avoid retention warnings.
-- Fetch keys are stride‑based while render windows overlap, so Torii queries can repeat for overlapping areas. Future
-  optimization could coalesce adjacent/overlapping fetches.
+- Torii tile fetches are coalesced by super‑areas (`toriiFetch.superAreaStrides`) so overlapping 64×64 render windows don’t
+  repeat queries. Tune `superAreaStrides` if Torii payload size or pop‑in behavior changes.
 - Keep `chunkSize`/`renderChunkSize` consistent across managers; `utils/chunk-geometry.ts` is the shared source of
   truth.
 
@@ -136,8 +136,8 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
    directly to the shared config.
 6. Add prefetch priority/cancellation (current > pinned ring > forward band, cap concurrency, drop queued work on pin
    changes). This reduces wasted work during fast pans.
-7. Coalesce Torii tile fetches across overlapping render windows (shared “super‑area” keys or rect‑coverage cache). This
-   is the biggest perf win but safest once bounds/config are locked.
+7. (Done) Coalesce Torii tile fetches across overlapping render windows using “super‑area” keys. Remaining tuning is
+   choosing the right `superAreaStrides` for payload vs. reuse.
 8. Strengthen hysteresis around chunk boundaries, using the debug overlay to tune enter/exit bands and verify thrash
    reduction.
 9. Extract chunking/grid/fetch/caching into a dedicated chunk subsystem. Do this last so you’re refactoring a stable,

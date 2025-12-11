@@ -107,6 +107,14 @@ interface CachedMatrixEntry {
   sphere?: Sphere;
 }
 
+interface PrefetchQueueItem {
+  chunkKey: string;
+  fetchKey: string;
+  priority: number;
+  fetchTiles: boolean;
+  fetchStructures: boolean;
+}
+
 //const dummyObject = new Object3D();
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -131,8 +139,9 @@ export default class WorldmapScene extends HexagonScene {
   private readonly maxPrefetchedAhead = WORLD_CHUNK_CONFIG.prefetch.maxAhead;
   // Background prefetch queue with simple prioritization.
   // Priority 1: pinned neighborhood, Priority 2: directional ahead.
-  private prefetchQueue: Array<{ chunkKey: string; priority: number; prefetchStructures: boolean }> = [];
+  private prefetchQueue: PrefetchQueueItem[] = [];
   private queuedPrefetchKeys: Set<string> = new Set();
+  private queuedPrefetchAreaKeys: Set<string> = new Set();
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLD_CHUNK_CONFIG.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
@@ -288,7 +297,7 @@ export default class WorldmapScene extends HexagonScene {
 
   dojo: SetupResult;
 
-  // Render-area fetch bookkeeping (keys represent render-sized regions, not chunk stride)
+  // Render-area fetch bookkeeping (keys represent Torii super-areas, not stride chunks)
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<void>> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
@@ -1834,6 +1843,7 @@ export default class WorldmapScene extends HexagonScene {
     this.unregisterPinnedChunks();
     this.prefetchQueue = [];
     this.queuedPrefetchKeys.clear();
+    this.queuedPrefetchAreaKeys.clear();
     this.prefetchedAhead.length = 0;
 
     // Reset chunk state to ensure clean re-initialization when returning to world view
@@ -2394,11 +2404,21 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   /**
-   * Derive a stable render-area key for a chunk key.
-   * Key by chunk stride so every chunkKey maps 1:1 to fetch/cache buckets.
+   * Derive a stable Torii render-area key for a chunk key.
+   * Key by Torii "super-area" so overlapping render windows coalesce.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
-    return chunkKey;
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    const stride = this.chunkSize;
+    const superAreaStrides = WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides;
+
+    const chunkRowIdx = startRow / stride;
+    const chunkColIdx = startCol / stride;
+
+    const areaRowIdx = Math.floor(chunkRowIdx / superAreaStrides) * superAreaStrides;
+    const areaColIdx = Math.floor(chunkColIdx / superAreaStrides) * superAreaStrides;
+
+    return `${areaRowIdx * stride},${areaColIdx * stride}`;
   }
 
   /**
@@ -2415,6 +2435,32 @@ export default class WorldmapScene extends HexagonScene {
       maxCol: Math.floor(centerCol + halfWidth - 1),
       minRow: Math.floor(centerRow - halfHeight),
       maxRow: Math.floor(centerRow + halfHeight - 1),
+    };
+  }
+
+  /**
+   * Compute integer fetch bounds that fully cover all render windows inside a Torii super-area.
+   */
+  private getRenderFetchBoundsForArea(
+    areaKey: string,
+  ): { minCol: number; maxCol: number; minRow: number; maxRow: number } {
+    const [areaStartRow, areaStartCol] = areaKey.split(",").map(Number);
+    const stride = this.chunkSize;
+    const superAreaStrides = WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides;
+
+    const firstCenter = this.getChunkCenter(areaStartRow, areaStartCol);
+    const lastChunkStartRow = areaStartRow + (superAreaStrides - 1) * stride;
+    const lastChunkStartCol = areaStartCol + (superAreaStrides - 1) * stride;
+    const lastCenter = this.getChunkCenter(lastChunkStartRow, lastChunkStartCol);
+
+    const halfWidth = this.renderChunkSize.width / 2;
+    const halfHeight = this.renderChunkSize.height / 2;
+
+    return {
+      minCol: Math.floor(firstCenter.col - halfWidth),
+      maxCol: Math.floor(lastCenter.col + halfWidth - 1),
+      minRow: Math.floor(firstCenter.row - halfHeight),
+      maxRow: Math.floor(lastCenter.row + halfHeight - 1),
     };
   }
 
@@ -2531,15 +2577,36 @@ export default class WorldmapScene extends HexagonScene {
     priority: number,
     options?: { prefetchStructures?: boolean },
   ): void {
-    if (!chunkKey || this.queuedPrefetchKeys.has(chunkKey)) {
+    if (!chunkKey) {
       return;
     }
 
-    this.queuedPrefetchKeys.add(chunkKey);
+    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const tilesAlreadyHandled =
+      this.fetchedChunks.has(fetchKey) ||
+      this.pendingChunks.has(fetchKey) ||
+      this.queuedPrefetchAreaKeys.has(fetchKey);
+    const fetchTiles = !tilesAlreadyHandled;
+
+    const wantsStructures = options?.prefetchStructures ?? false;
+    const fetchStructures = wantsStructures && !this.queuedPrefetchKeys.has(chunkKey);
+
+    if (!fetchTiles && !fetchStructures) {
+      return;
+    }
+
+    if (fetchTiles) {
+      this.queuedPrefetchAreaKeys.add(fetchKey);
+    }
+    if (fetchStructures) {
+      this.queuedPrefetchKeys.add(chunkKey);
+    }
     this.prefetchQueue.push({
       chunkKey,
+      fetchKey,
       priority,
-      prefetchStructures: options?.prefetchStructures ?? false,
+      fetchTiles,
+      fetchStructures,
     });
 
     this.prefetchQueue.sort((a, b) => a.priority - b.priority);
@@ -2559,8 +2626,10 @@ export default class WorldmapScene extends HexagonScene {
       this.activePrefetches += 1;
       void (async () => {
         try {
-          await this.computeTileEntities(item.chunkKey);
-          if (item.prefetchStructures) {
+          if (item.fetchTiles) {
+            await this.computeTileEntities(item.chunkKey);
+          }
+          if (item.fetchStructures) {
             await this.refreshStructuresForChunks([item.chunkKey]);
           }
         } catch (error) {
@@ -2569,7 +2638,12 @@ export default class WorldmapScene extends HexagonScene {
           }
         } finally {
           this.activePrefetches -= 1;
-          this.queuedPrefetchKeys.delete(item.chunkKey);
+          if (item.fetchTiles) {
+            this.queuedPrefetchAreaKeys.delete(item.fetchKey);
+          }
+          if (item.fetchStructures) {
+            this.queuedPrefetchKeys.delete(item.chunkKey);
+          }
           this.processPrefetchQueue();
         }
       })();
@@ -2586,7 +2660,12 @@ export default class WorldmapScene extends HexagonScene {
       if (allowed.has(item.chunkKey)) {
         return true;
       }
-      this.queuedPrefetchKeys.delete(item.chunkKey);
+      if (item.fetchTiles) {
+        this.queuedPrefetchAreaKeys.delete(item.fetchKey);
+      }
+      if (item.fetchStructures) {
+        this.queuedPrefetchKeys.delete(item.chunkKey);
+      }
       return false;
     });
   }
@@ -3160,7 +3239,7 @@ export default class WorldmapScene extends HexagonScene {
       return existingPromise;
     }
 
-    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBounds(chunkKey);
+    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBoundsForArea(fetchKey);
 
     if (import.meta.env.DEV) {
       console.log(
@@ -3200,8 +3279,10 @@ export default class WorldmapScene extends HexagonScene {
       // Only add to the fetched cache if the render area is still pinned (still relevant)
       if (this.pinnedRenderAreas.has(fetchKey)) {
         this.fetchedChunks.add(fetchKey);
-        if (chunkKey === this.currentChunk && !this.isChunkTransitioning) {
-          this.scheduleHydratedChunkRefresh(chunkKey);
+        const currentAreaKey =
+          this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
+        if (currentAreaKey && fetchKey === currentAreaKey && !this.isChunkTransitioning) {
+          this.scheduleHydratedChunkRefresh(this.currentChunk);
         }
       }
     } catch (error) {
@@ -3945,6 +4026,7 @@ export default class WorldmapScene extends HexagonScene {
     this.unregisterPinnedChunks();
     this.prefetchQueue = [];
     this.queuedPrefetchKeys.clear();
+    this.queuedPrefetchAreaKeys.clear();
     this.prefetchedAhead.length = 0;
     this.clearCache();
     this.minimap.dispose();
