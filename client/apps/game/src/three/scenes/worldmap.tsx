@@ -148,7 +148,7 @@ export default class WorldmapScene extends HexagonScene {
   private isChunkTransitioning: boolean = false;
   private chunkRefreshTimeout: number | null = null;
   private pendingChunkRefreshForce = false;
-  private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
+  private readonly chunkRefreshDebounceMs = 50; // Reduced from 200ms for more responsive chunk loading
   private toriiLoadingCounter = 0;
   private readonly chunkRowsAhead = 2;
   private readonly chunkRowsBehind = 2;
@@ -301,7 +301,7 @@ export default class WorldmapScene extends HexagonScene {
   private toriiStreamManager?: ToriiStreamManager;
 
   // Chunk lifecycle integration for deterministic loading
-  private chunkIntegration?: import("@/three/chunk-system").ChunkIntegration;
+
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
 
@@ -3446,6 +3446,11 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async updateManagersForChunk(chunkKey: string, options?: { force?: boolean }) {
+    // Ensure visibility state matches current camera position before rendering entities.
+    // This fixes a race condition where rapid scrolling causes the frustum cache to become
+    // stale, resulting in entities failing visibility checks despite being within chunk bounds.
+    this.visibilityManager?.forceUpdate();
+
     const updateTasks = [
       { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
       { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
@@ -3719,9 +3724,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();
-
-    // Clean up chunk integration
-    this.chunkIntegration?.destroy();
 
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
