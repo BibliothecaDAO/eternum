@@ -6,7 +6,7 @@ import { ToriiStreamManager } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { getBiomeVariant, HEX_SIZE } from "@/three/constants";
+import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
@@ -84,7 +84,11 @@ import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
-import { getChunkCenter as getChunkCenterAligned, getRenderBounds } from "../utils/chunk-geometry";
+import {
+  getChunkCenter as getChunkCenterAligned,
+  getRenderBounds,
+  isHexWithinRenderBounds,
+} from "../utils/chunk-geometry";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -117,22 +121,14 @@ const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 // ];
 
 export default class WorldmapScene extends HexagonScene {
-  // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
-  private readonly chunkGeometry = {
-    size: 24, // Smaller stride to reduce edge gaps
-    renderSize: {
-      width: 64,
-      height: 64,
-    },
-    overlap: 0,
-  };
-  private chunkSize = this.chunkGeometry.size;
-  private chunkSwitchPadding = 0.05; // switch earlier when crossing boundaries
+  // Single source of truth for chunk geometry/policy to avoid drift across fetch/render/visibility.
+  private chunkSize = WORLD_CHUNK_CONFIG.stride;
+  private chunkSwitchPadding = WORLD_CHUNK_CONFIG.switchPadding;
   private lastChunkSwitchPosition?: Vector3;
   private hasChunkSwitchAnchor: boolean = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
-  private readonly maxPrefetchedAhead = 8;
+  private readonly maxPrefetchedAhead = WORLD_CHUNK_CONFIG.prefetch.maxAhead;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -140,7 +136,7 @@ export default class WorldmapScene extends HexagonScene {
   private wheelDirection: -1 | 0 | 1 = 0;
   private wheelStepsThisGesture = 0;
   private readonly wheelGestureTimeoutMs = 50;
-  private renderChunkSize = this.chunkGeometry.renderSize;
+  private renderChunkSize = WORLD_CHUNK_CONFIG.renderSize;
 
   private totalStructures: number = 0;
 
@@ -150,9 +146,9 @@ export default class WorldmapScene extends HexagonScene {
   private pendingChunkRefreshForce = false;
   private readonly chunkRefreshDebounceMs = 50; // Reduced from 200ms for more responsive chunk loading
   private toriiLoadingCounter = 0;
-  private readonly chunkRowsAhead = 2;
-  private readonly chunkRowsBehind = 2;
-  private readonly chunkColsEachSide = 2;
+  private readonly chunkRowsAhead = WORLD_CHUNK_CONFIG.pinRadius;
+  private readonly chunkRowsBehind = WORLD_CHUNK_CONFIG.pinRadius;
+  private readonly chunkColsEachSide = WORLD_CHUNK_CONFIG.pinRadius;
   private hydratedChunkRefreshes: Set<string> = new Set();
   private hydratedRefreshScheduled = false;
   private cameraPositionScratch: Vector3 = new Vector3();
@@ -163,6 +159,10 @@ export default class WorldmapScene extends HexagonScene {
   private pendingArmyMovements: Set<ID> = new Set();
   private structureManager: StructureManager;
   private memoryMonitor?: MemoryMonitor;
+  // Dev-only chunk debug overlay (enabled via VITE_PUBLIC_GRAPHICS_DEV)
+  private chunkDebugElement?: HTMLDivElement;
+  private lastChunkDebugUpdate = 0;
+  private readonly chunkDebugUpdateIntervalMs = 200;
   private chestManager: ChestManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
@@ -179,6 +179,8 @@ export default class WorldmapScene extends HexagonScene {
   private armyLastUpdateAt: Map<ID, number> = new Map();
   // normalized coordinates
   private structuresPositions: Map<ID, HexPosition> = new Map();
+  // normalized coordinates for quests (to detect moves and unhide tiles)
+  private questsPositions: Map<ID, HexPosition> = new Map();
 
   // Battle direction manager for tracking attacker/defender relationships
   private battleDirectionManager: BattleDirectionManager;
@@ -612,7 +614,7 @@ export default class WorldmapScene extends HexagonScene {
     // Store the unsubscribe function for Structure updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
-        this.updateStructureHexes(value);
+        const positions = this.updateStructureHexes(value);
 
         const optimisticStructure = this.structureManager.structures.removeStructure(
           Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
@@ -627,7 +629,12 @@ export default class WorldmapScene extends HexagonScene {
 
         await this.structureManager.onUpdate(value);
 
-        if (this.totalStructures !== this.structureManager.getTotalStructures()) {
+        const countChanged = this.totalStructures !== this.structureManager.getTotalStructures();
+        if (positions && !countChanged) {
+          this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
+        }
+
+        if (countChanged) {
           this.totalStructures = this.structureManager.getTotalStructures();
           this.clearCache();
           this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
@@ -1697,6 +1704,7 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     useUIStore.getState().setLeftNavigationView(LeftView.None);
+    this.ensureChunkDebugOverlay();
 
     if (!this.hasInitialized) {
       if (!this.initialSetupPromise) {
@@ -1814,6 +1822,9 @@ export default class WorldmapScene extends HexagonScene {
       this.wheelHandler = null;
     }
     this.resetWheelState();
+
+    this.disposeChunkDebugOverlay();
+    this.unregisterPinnedChunks();
 
     // Reset chunk state to ensure clean re-initialization when returning to world view
     this.currentChunk = "null";
@@ -2092,28 +2103,40 @@ export default class WorldmapScene extends HexagonScene {
     entityId: ID;
     hexCoords: HexPosition;
     owner: { address: bigint | undefined };
-  }) {
+  }): { oldPos?: HexPosition; newPos: HexPosition } | null {
     const {
       hexCoords: { col, row },
       owner: { address },
       entityId,
     } = update;
 
-    if (address === undefined) return;
+    if (address === undefined) return null;
     const normalized = new Position({ x: col, y: row }).getNormalized();
+    const newPos = { col: normalized.x, row: normalized.y };
+    const oldPos = this.structuresPositions.get(entityId);
+
+    // Remove from old position if it changed
+    if (
+      oldPos &&
+      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
+      this.structureHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
+    ) {
+      this.structureHexes.get(oldPos.col)?.delete(oldPos.row);
+      gameWorkerManager.updateStructureHex(oldPos.col, oldPos.row, null);
+      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
+    }
 
     // Update structure position
-    this.structuresPositions.set(entityId, { col: normalized.x, row: normalized.y });
+    this.structuresPositions.set(entityId, newPos);
 
-    const newCol = normalized.x;
-    const newRow = normalized.y;
-
-    if (!this.structureHexes.has(newCol)) {
-      this.structureHexes.set(newCol, new Map());
+    if (!this.structureHexes.has(newPos.col)) {
+      this.structureHexes.set(newPos.col, new Map());
     }
     const structureInfo = { id: entityId, owner: address };
-    this.structureHexes.get(newCol)?.set(newRow, structureInfo);
-    gameWorkerManager.updateStructureHex(newCol, newRow, structureInfo);
+    this.structureHexes.get(newPos.col)?.set(newPos.row, structureInfo);
+    gameWorkerManager.updateStructureHex(newPos.col, newPos.row, structureInfo);
+    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+    return { oldPos, newPos };
   }
 
   // update quest hexes on the map
@@ -2124,14 +2147,26 @@ export default class WorldmapScene extends HexagonScene {
     } = update;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
+    const newPos = { col: normalized.x, row: normalized.y };
+    const oldPos = this.questsPositions.get(entityId);
 
-    const newCol = normalized.x;
-    const newRow = normalized.y;
-
-    if (!this.questHexes.has(newCol)) {
-      this.questHexes.set(newCol, new Map());
+    if (
+      oldPos &&
+      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
+      this.questHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
+    ) {
+      this.questHexes.get(oldPos.col)?.delete(oldPos.row);
+      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
     }
-    this.questHexes.get(newCol)?.set(newRow, { id: entityId, owner: 0n });
+
+    this.questsPositions.set(entityId, newPos);
+
+    if (!this.questHexes.has(newPos.col)) {
+      this.questHexes.set(newPos.col, new Map());
+    }
+    this.questHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: 0n });
+    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+    this.scheduleTileRefreshIfAffectsCurrentRenderBounds(oldPos ?? null, newPos);
   }
 
   // update chest hexes on the map
@@ -2268,6 +2303,40 @@ export default class WorldmapScene extends HexagonScene {
     return this.visibilityManager.isPointVisible(worldPosition);
   }
 
+  /**
+   * Structures/quests hide the underlying biome tile. When they change within the current
+   * render window we need to refresh the hex grid so tiles don't linger underneath.
+   */
+  private scheduleTileRefreshIfAffectsCurrentRenderBounds(
+    oldHex?: { col: number; row: number } | null,
+    newHex?: { col: number; row: number } | null,
+  ): void {
+    if (this.currentChunk === "null" || this.isChunkTransitioning) {
+      return;
+    }
+
+    const [startRow, startCol] = this.currentChunk.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+      return;
+    }
+
+    const affectsBounds = (hex?: { col: number; row: number } | null) =>
+      hex
+        ? isHexWithinRenderBounds(
+            hex.col,
+            hex.row,
+            startRow,
+            startCol,
+            this.renderChunkSize,
+            this.chunkSize,
+          )
+        : false;
+
+    if (affectsBounds(oldHex) || affectsBounds(newHex)) {
+      this.requestChunkRefresh(true);
+    }
+  }
+
   private getSurroundingChunkKeys(centerRow: number, centerCol: number): string[] {
     const chunkKeys: string[] = [];
 
@@ -2391,8 +2460,13 @@ export default class WorldmapScene extends HexagonScene {
     const strideWorldX = this.chunkSize * HEX_SIZE * Math.sqrt(3);
     const strideWorldZ = this.chunkSize * HEX_SIZE * 1.5;
 
-    const aheadX = primaryAxisIsX ? focusPoint.x + stepSign * strideWorldX * 2 : focusPoint.x;
-    const aheadZ = primaryAxisIsX ? focusPoint.z : focusPoint.z + stepSign * strideWorldZ * 2;
+    const forwardOffsetStrides = WORLD_CHUNK_CONFIG.prefetch.forwardDepthStrides;
+    const aheadX = primaryAxisIsX
+      ? focusPoint.x + stepSign * strideWorldX * forwardOffsetStrides
+      : focusPoint.x;
+    const aheadZ = primaryAxisIsX
+      ? focusPoint.z
+      : focusPoint.z + stepSign * strideWorldZ * forwardOffsetStrides;
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(aheadX, aheadZ);
     return `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
@@ -2408,15 +2482,14 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const forwardRowCol = forwardChunkKey.split(",").map(Number);
-    const halfHeight = this.renderChunkSize.height / 2;
-    const halfWidth = this.renderChunkSize.width / 2;
     const prefetchTargets = new Set<string>();
 
-    // Prefetch a 2x3 band ahead centered on the forward chunk (two rows deep, three cols wide).
-    for (let dz = 0; dz <= this.chunkSize * 2; dz += this.chunkSize) {
-      for (let dx = -this.chunkSize; dx <= this.chunkSize; dx += this.chunkSize) {
-        const row = forwardRowCol[0] + dz;
-        const col = forwardRowCol[1] + dx;
+    const { forwardDepthStrides, sideRadiusStrides } = WORLD_CHUNK_CONFIG.prefetch;
+    // Prefetch a band ahead centered on the forward chunk.
+    for (let dzStride = 0; dzStride <= forwardDepthStrides; dzStride++) {
+      for (let dxStride = -sideRadiusStrides; dxStride <= sideRadiusStrides; dxStride++) {
+        const row = forwardRowCol[0] + dzStride * this.chunkSize;
+        const col = forwardRowCol[1] + dxStride * this.chunkSize;
         prefetchTargets.add(`${row},${col}`);
       }
     }
@@ -2466,6 +2539,83 @@ export default class WorldmapScene extends HexagonScene {
     if (this.currentChunk !== "null") {
       this.visibilityManager?.unregisterChunk(this.currentChunk);
     }
+  }
+
+  private unregisterPinnedChunks(): void {
+    if (!this.visibilityManager) {
+      return;
+    }
+
+    const chunksToUnregister = new Set(this.pinnedChunkKeys);
+    if (this.currentChunk !== "null") {
+      chunksToUnregister.add(this.currentChunk);
+    }
+
+    chunksToUnregister.forEach((chunkKey) => this.visibilityManager.unregisterChunk(chunkKey));
+  }
+
+  private ensureChunkDebugOverlay(): void {
+    if (env.VITE_PUBLIC_GRAPHICS_DEV !== true || this.chunkDebugElement) {
+      return;
+    }
+
+    const element = document.createElement("div");
+    element.style.cssText = `
+      position: fixed;
+      top: 50px;
+      right: 0px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+      font-family: monospace;
+      font-size: 10px;
+      padding: 6px 8px;
+      border-radius: 3px;
+      z-index: 10000;
+      min-width: 220px;
+      pointer-events: none;
+    `;
+    element.innerHTML = "<strong>Chunk Debug</strong>";
+    document.body.appendChild(element);
+    this.chunkDebugElement = element;
+    this.lastChunkDebugUpdate = 0;
+    this.updateChunkDebugOverlay(true);
+  }
+
+  private updateChunkDebugOverlay(force: boolean = false): void {
+    if (env.VITE_PUBLIC_GRAPHICS_DEV !== true || !this.chunkDebugElement) {
+      return;
+    }
+
+    const now = performance.now();
+    if (!force && now - this.lastChunkDebugUpdate < this.chunkDebugUpdateIntervalMs) {
+      return;
+    }
+    this.lastChunkDebugUpdate = now;
+
+    const visibleCounts = {
+      armies: this.armyManager.getVisibleCount(),
+      structures: this.structureManager.getVisibleCount(),
+      quests: this.questManager.getVisibleCount(),
+      chests: this.chestManager.getVisibleCount(),
+    };
+
+    const pinnedDim = WORLD_CHUNK_CONFIG.pinRadius * 2 + 1;
+    this.chunkDebugElement.innerHTML = `
+      <strong>Chunk Debug</strong><br>
+      Current: ${this.currentChunk}<br>
+      Pinned: ${this.pinnedChunkKeys.size} (${pinnedDim}x${pinnedDim})<br>
+      Prefetched: ${this.prefetchedAhead.length}<br>
+      Pending fetches: ${this.pendingChunks.size}<br>
+      Fetched areas: ${this.fetchedChunks.size}<br>
+      Visible A:${visibleCounts.armies} S:${visibleCounts.structures} Q:${visibleCounts.quests} C:${visibleCounts.chests}
+    `;
+  }
+
+  private disposeChunkDebugOverlay(): void {
+    if (this.chunkDebugElement?.parentElement) {
+      this.chunkDebugElement.parentElement.removeChild(this.chunkDebugElement);
+    }
+    this.chunkDebugElement = undefined;
   }
 
   private scheduleHydratedChunkRefresh(chunkKey: string) {
@@ -2593,8 +2743,6 @@ export default class WorldmapScene extends HexagonScene {
       const vertDist = hexHeight * 0.75;
       const horizDist = hexWidth;
       const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-
-      this.computeTileEntities(this.currentChunk);
 
       const cleanupTask = () => {
         if (this.hexGridFrameHandle !== null) {
@@ -3314,7 +3462,7 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    // Load surrounding chunks for better UX (3x3 grid)
+    // Load surrounding chunks for better UX (5x5 grid)
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
 
@@ -3490,6 +3638,7 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);
     this.updateMinimapThrottled?.();
+    this.updateChunkDebugOverlay();
   }
 
   protected override shouldUpdateBiomeAnimations(): boolean {
@@ -3719,6 +3868,8 @@ export default class WorldmapScene extends HexagonScene {
     this.resourceFXManager.destroy();
     this.updateMinimapThrottled?.cancel();
     this.stopRelicValidationTimer();
+    this.disposeChunkDebugOverlay();
+    this.unregisterPinnedChunks();
     this.clearCache();
     this.minimap.dispose();
 

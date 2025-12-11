@@ -145,6 +145,19 @@ export class QuestManager {
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
     const questType = QuestType.DarkShuffle;
 
+    const existingQuest = this.quests.getQuest(entityId);
+    if (existingQuest) {
+      const oldNormalized = existingQuest.hexCoords.getNormalized();
+      if (oldNormalized.x !== normalizedCoord.col || oldNormalized.y !== normalizedCoord.row) {
+        const oldCol = oldNormalized.x;
+        const oldRow = oldNormalized.y;
+        this.questHexCoords.get(oldCol)?.delete(oldRow);
+        if (this.questHexCoords.get(oldCol)?.size === 0) {
+          this.questHexCoords.delete(oldCol);
+        }
+      }
+    }
+
     if (!this.questHexCoords.has(normalizedCoord.col)) {
       this.questHexCoords.set(normalizedCoord.col, new Set());
     }

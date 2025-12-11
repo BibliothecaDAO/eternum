@@ -681,6 +681,20 @@ export class StructureManager {
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
+    // Check if structure already exists to clean up old hex coord when it moves.
+    const existingStructure = this.structures.getStructureByEntityId(entityId);
+    if (
+      existingStructure &&
+      (existingStructure.hexCoords.col !== normalizedCoord.col || existingStructure.hexCoords.row !== normalizedCoord.row)
+    ) {
+      const oldCol = existingStructure.hexCoords.col;
+      const oldRow = existingStructure.hexCoords.row;
+      this.structureHexCoords.get(oldCol)?.delete(oldRow);
+      if (this.structureHexCoords.get(oldCol)?.size === 0) {
+        this.structureHexCoords.delete(oldCol);
+      }
+    }
+
     if (!this.structureHexCoords.has(normalizedCoord.col)) {
       this.structureHexCoords.set(normalizedCoord.col, new Set());
     }
@@ -692,7 +706,6 @@ export class StructureManager {
 
     // Check for pending label updates and apply them if they exist
     // Check if structure already exists with valid owner before overwriting
-    const existingStructure = this.structures.getStructureByEntityId(entityId);
 
     // Update spatial index
     this.updateSpatialIndex(entityId, existingStructure?.hexCoords, normalizedCoord);
