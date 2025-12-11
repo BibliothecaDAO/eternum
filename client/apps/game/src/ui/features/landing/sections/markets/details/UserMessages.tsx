@@ -80,7 +80,7 @@ export const UserMessages = ({ marketId }: { marketId: string }) => {
   return (
     <VStack className="w-full items-start gap-6">
       <HStack className="w-full items-center gap-3">
-        <AvatarImage address={account?.address || "0x0"} className="bg-primary" />
+        <AvatarImage address={account?.address || "0x0"} className="bg-gold/30 text-dark" />
         <div className="flex w-full items-center gap-2">
           <Input
             placeholder="Add a comment"

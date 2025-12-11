@@ -48,10 +48,13 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
     <VStack className="w-full items-start gap-12">
       <VStack className="items-start gap-6">
         {marketBuys.map((marketBuy, idx) => {
-          const bg = BigInt(marketBuy.account_address) === BigInt(account?.address || 0) ? "bg-primary" : "bg-white";
+          const isSelf = BigInt(marketBuy.account_address) === BigInt(account?.address || 0);
           return (
             <HStack className="gap-3" key={idx}>
-              <AvatarImage address={marketBuy.account_address} className={`h-[32px] w-[32px] rounded-full ${bg}`} />
+              <AvatarImage
+                address={marketBuy.account_address}
+                className={`h-[32px] w-[32px] rounded-full ${isSelf ? "bg-gold/30 text-dark" : ""}`}
+              />
 
               <VStack className="items-start gap-1">
                 <HStack className="text-xs">

@@ -49,8 +49,8 @@ export function MarketResolved({
         <HStack className="justify-center gap-3">
           {payouts[0].payoutNumerator > 0 && (
             <>
-              <Button className="bg-green-700 text-white hover:bg-green-600">YES</Button>
-              <HStack className="text-green-400">
+              <Button className="bg-progress-bar-good text-white hover:bg-progress-bar-good/80">YES</Button>
+              <HStack className="text-brilliance">
                 <TrendingUp />
                 {Math.ceil((Number(market.odds[1]) / Number(market.odds[0])) * 100)}%
               </HStack>
@@ -58,8 +58,8 @@ export function MarketResolved({
           )}
           {payouts[1].payoutNumerator > 0 && (
             <>
-              <Button className="bg-red-700 text-white hover:bg-red-600">NO</Button>
-              <HStack className="text-green-400">
+              <Button className="bg-danger text-lightest hover:bg-danger/80">NO</Button>
+              <HStack className="text-brilliance">
                 <TrendingUp />
                 {Math.ceil((Number(market.odds[0]) / Number(market.odds[1])) * 100)}%
               </HStack>
@@ -87,10 +87,10 @@ export function MarketResolved({
             }`}
           {/* {payouts[0].payoutNumerator > 0 && (
             <>
-              <Button className="bg-green-700 text-white hover:bg-green-600">
+              <Button className="bg-progress-bar-good text-white hover:bg-progress-bar-good/80">
                 YES
               </Button>
-              <HStack className="text-green-400">
+              <HStack className="text-brilliance">
                 <TrendingUp />
                 {Math.ceil(
                   (Number(market.odds[1]) / Number(market.odds[0])) * 100,
@@ -101,10 +101,10 @@ export function MarketResolved({
           )}
           {payouts[1].payoutNumerator > 0 && (
             <>
-              <Button className="bg-red-700 text-white hover:bg-red-600">
+              <Button className="bg-danger text-lightest hover:bg-danger/80">
                 NO
               </Button>
-              <HStack className="text-green-400">
+              <HStack className="text-brilliance">
                 <TrendingUp />
                 {Math.ceil(
                   (Number(market.odds[0]) / Number(market.odds[1])) * 100,
@@ -121,7 +121,7 @@ export function MarketResolved({
           {payouts.map((payout, idx) => {
             if (payout.payoutNumerator === 0) return null;
             return (
-              <VStack className="text-green-400 justify-center" key={idx}>
+              <VStack className="text-brilliance justify-center" key={idx}>
                 <Button variant="secondary">
                   <MaybeController address={payout.name} />
                 </Button>

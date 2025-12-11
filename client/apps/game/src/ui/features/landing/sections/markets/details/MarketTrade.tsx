@@ -65,7 +65,7 @@ const DialogDescription = ({ children }: { children: React.ReactNode }) => (
 const Leo = ({
   width = "48px",
   height = "48px",
-  color = "#f0b100",
+  color = "#dfaa54",
 }: {
   width?: string;
   height?: string;
@@ -235,7 +235,7 @@ export function MarketTrade({
           {market.typBinary() && (
             <HStack className="w-full">
               <Button
-                className="w-1/2 bg-green-700 text-white hover:bg-green-600"
+                className="w-1/2 bg-progress-bar-good text-white hover:bg-progress-bar-good/80"
                 onClick={() => {
                   setSelectedOutcome?.(outcomes[0]);
                   setIsDialogOpen(true);
@@ -245,7 +245,7 @@ export function MarketTrade({
                 BUY YES
               </Button>
               <Button
-                className="w-1/2 bg-red-700 text-white hover:bg-red-600"
+                className="w-1/2 bg-danger text-lightest hover:bg-danger/80"
                 onClick={() => {
                   setSelectedOutcome?.(outcomes[1]);
                   setIsDialogOpen(true);

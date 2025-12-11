@@ -84,7 +84,7 @@ export const MarketTimeline = ({ market }: { market: Market }) => {
         </div>
 
         <div className="absolute top-[0px] ml-[-5px]" style={{ left: `${end}%` }} title={`End ${endLabel}`}>
-          <Flag className="h-[16px] w-[16px] text-red-400" />
+          <Flag className="h-[16px] w-[16px] text-danger" />
         </div>
 
         <div className="absolute top-[0px] ml-[-5px]" style={{ left: `${now}%` }} title="Now">
@@ -96,7 +96,7 @@ export const MarketTimeline = ({ market }: { market: Market }) => {
           style={{ left: `${resolve}%` }}
           title={`Resolvable ${resolveLabel}`}
         >
-          <Flag className="h-[16px] w-[16px] text-emerald-400" />
+          <Flag className="h-[16px] w-[16px] text-progress-bar-good" />
         </div>
 
         {resolvedLabel ? (
@@ -105,7 +105,7 @@ export const MarketTimeline = ({ market }: { market: Market }) => {
             style={{ left: `${resolved}%` }}
             title={`Resolved ${resolvedLabel}`}
           >
-            <Flag className="h-[16px] w-[16px] text-emerald-700" />
+            <Flag className="h-[16px] w-[16px] text-dark-green" />
           </div>
         ) : null}
       </div>

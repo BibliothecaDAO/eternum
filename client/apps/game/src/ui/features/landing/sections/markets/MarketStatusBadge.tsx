@@ -3,17 +3,17 @@ import type { Market } from "@pm/sdk";
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
 const STATUS_STYLES: Record<string, string> = {
-  open: "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
-  active: "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
-  trading: "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
-  closed: "border-orange-400/40 bg-orange-400/10 text-orange-100",
-  resolvable: "border-orange-400/40 bg-orange-400/10 text-orange-100",
-  resolved: "border-blue-400/40 bg-blue-400/10 text-blue-100",
-  settling: "border-blue-400/40 bg-blue-400/10 text-blue-100",
-  pending: "border-white/30 bg-white/5 text-white/80",
-  upcoming: "border-white/30 bg-white/5 text-white/80",
-  cancelled: "border-red-400/40 bg-red-400/10 text-red-100",
-  default: "border-white/30 bg-white/5 text-white/80",
+  open: "border-brilliance/40 bg-brilliance/10 text-brilliance",
+  active: "border-brilliance/40 bg-brilliance/10 text-brilliance",
+  trading: "border-brilliance/40 bg-brilliance/10 text-brilliance",
+  closed: "border-orange/40 bg-orange/10 text-orange",
+  resolvable: "border-orange/40 bg-orange/10 text-orange",
+  resolved: "border-blueish/40 bg-blueish/10 text-blueish",
+  settling: "border-blueish/40 bg-blueish/10 text-blueish",
+  pending: "border-lightest/30 bg-lightest/5 text-lightest/80",
+  upcoming: "border-lightest/30 bg-lightest/5 text-lightest/80",
+  cancelled: "border-danger/40 bg-danger/10 text-danger",
+  default: "border-lightest/30 bg-lightest/5 text-lightest/80",
 };
 
 const formatStatus = (status?: unknown) => {

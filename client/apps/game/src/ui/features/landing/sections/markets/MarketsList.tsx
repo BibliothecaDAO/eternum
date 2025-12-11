@@ -52,7 +52,10 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
         );
 
         return (
-          <Card className="hover:border-primary h-full gap-3 rounded-sm p-3" key={href !== "#" ? href : idx}>
+          <Card
+            className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/60 p-3 transition hover:border-gold/60"
+            key={href !== "#" ? href : idx}
+          >
             <CardHeader className="px-0">
               <CardTitle>
                 {isLinkable ? (
