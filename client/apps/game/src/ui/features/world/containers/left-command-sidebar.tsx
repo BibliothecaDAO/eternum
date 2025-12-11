@@ -589,14 +589,8 @@ type StructureLevelUpButtonProps = {
 
 const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevelUpButtonProps) => {
   const [isUpgrading, setIsUpgrading] = useState(false);
-  const [hasUpgraded, setHasUpgraded] = useState(false);
   const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
   const setTooltip = useUIStore((state) => state.setTooltip);
-
-  useEffect(() => {
-    // Re-enable the button once the realm level has changed and fresh data is available
-    setHasUpgraded(false);
-  }, [upgradeInfo?.currentLevel]);
 
   if (!upgradeInfo) {
     return null;
@@ -607,7 +601,7 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
   const isAtMaxLevel = upgradeInfo.isMaxLevel || currentLevel >= maxLevel;
   const meetsRequirements = (upgradeInfo.missingRequirements?.length ?? 0) === 0;
   const canUpgrade = upgradeInfo.isOwner && !isAtMaxLevel && meetsRequirements;
-  const isDisabled = !canUpgrade || isUpgrading || hasUpgraded || isAtMaxLevel;
+  const isDisabled = !canUpgrade || isUpgrading || isAtMaxLevel;
   const shouldGlow = canUpgrade && !isDisabled;
   const nextLevel = upgradeInfo.nextLevel ?? 0;
 
@@ -687,7 +681,6 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
     setIsUpgrading(true);
     try {
       await upgradeInfo.handleUpgrade();
-      setHasUpgraded(true);
     } catch (error) {
       console.error("Failed to upgrade structure", error);
     } finally {
