@@ -60,7 +60,11 @@ type ArmyGroup = {
   bonus?: number;
 };
 
+const buildablePositionsCache = new Map<number, Array<{ col: number; row: number }>>();
+
 const generateBuildablePositions = (radius: number) => {
+  const cached = buildablePositionsCache.get(radius);
+  if (cached) return cached;
   const positions: Array<{ col: number; row: number }> = [];
   const seen = new Set<string>();
 
@@ -89,6 +93,7 @@ const generateBuildablePositions = (radius: number) => {
     currentLayer = nextLayer;
   }
 
+  buildablePositionsCache.set(radius, positions);
   return positions;
 };
 
@@ -137,6 +142,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   );
   const resourceData = useComponentValue(dojo.setup.components.Resource, getEntityIdFromKeys([BigInt(entityId)]));
   const currentTime = useMemo(() => Date.now(), [timerTick]);
+  const currentTimeRef = useRef(currentTime);
+  currentTimeRef.current = currentTime;
+
+  const currentDefaultTickRef = useRef(currentDefaultTick);
+  currentDefaultTickRef.current = currentDefaultTick;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -448,6 +458,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
     return map;
   }, [currentDefaultTick, producedResourceIds, resourceData]);
+  const productionStatusByResourceRef = useRef(productionStatusByResource);
+  productionStatusByResourceRef.current = productionStatusByResource;
 
   const armyGroups = useMemo<ArmyGroup[]>(
     () =>
@@ -498,12 +510,20 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     setSelectedArmyType(recommendedArmyType ?? armyGroups[0].armyType);
   }, [armyGroups, recommendedArmyType, selectedArmyType]);
 
-  const checkBalance = (cost: any) =>
-    Object.keys(cost).every((resourceId) => {
-      const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(entityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
-      return divideByPrecision(balance.balance) >= resourceCost.amount;
-    });
+  const checkBalance = useCallback(
+    (cost: any) =>
+      Object.keys(cost).every((resourceId) => {
+        const resourceCost = cost[Number(resourceId)];
+        const balance = getBalance(
+          entityId,
+          resourceCost.resource,
+          currentDefaultTickRef.current,
+          dojo.setup.components,
+        );
+        return divideByPrecision(balance.balance) >= resourceCost.amount;
+      }),
+    [entityId, dojo.setup.components],
+  );
 
   const activeArmyType = selectedArmyType ?? recommendedArmyType ?? armyGroups[0]?.armyType ?? null;
 
@@ -527,7 +547,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               if (!buildingCosts) return;
 
               const hasBalance = checkBalance(buildingCosts);
-              const productionStatus = productionStatusByResource.get(resourceId as ResourcesIds);
+              const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
               const isLaborLockedResource =
@@ -568,7 +588,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   buildingName={resource?.trait}
                   resourceName={resource?.trait}
                   productionStatus={productionStatus}
-                  currentTime={currentTime}
+                  currentTime={currentTimeRef.current}
                   toolTip={
                     <ResourceInfo
                       buildingId={building}
@@ -628,7 +648,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   | ResourcesIds
                   | undefined;
                 const productionStatus = producedResourceId
-                  ? productionStatusByResource.get(producedResourceId as ResourcesIds)
+                  ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
                   : undefined;
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
@@ -685,7 +705,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }
                     isWorkersHut={isWorkersHut}
                     productionStatus={productionStatus}
-                    currentTime={currentTime}
+                    currentTime={currentTimeRef.current}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
@@ -787,7 +807,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               | ResourcesIds
                               | undefined;
                             const productionStatus = producedResourceId
-                              ? productionStatusByResource.get(producedResourceId as ResourcesIds)
+                              ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
                               : undefined;
 
                             const hasBalance = checkBalance(buildingCost);
@@ -831,7 +851,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                   ] as keyof typeof ResourcesIds
                                 }
                                 productionStatus={productionStatus}
-                                currentTime={currentTime}
+                                currentTime={currentTimeRef.current}
                                 toolTip={
                                   <BuildingInfo
                                     buildingId={building}
@@ -876,6 +896,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       handleAutoBuild,
       handleDestroyBuilding,
       getBuildingCountFor,
+      checkBalance,
     ],
   );
 

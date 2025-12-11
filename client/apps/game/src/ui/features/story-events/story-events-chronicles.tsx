@@ -31,7 +31,7 @@ import {
   Sword,
   Trophy,
 } from "lucide-react";
-import React, { type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
+import React, { memo, type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
 
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -349,12 +349,14 @@ const LiveStatusIndicator: React.FC<{ isRefreshing: boolean }> = ({ isRefreshing
   </div>
 );
 
-const ActivityHighlight: React.FC<{
+interface ActivityHighlightProps {
   event: ProcessedStoryEvent | null;
   eventLocation: EventLocation | null;
   onNavigateToEvent?: (event: ProcessedStoryEvent) => void;
   isNavigating: boolean;
-}> = ({ event, eventLocation, onNavigateToEvent, isNavigating }) => {
+}
+
+const ActivityHighlight = memo(({ event, eventLocation, onNavigateToEvent, isNavigating }: ActivityHighlightProps) => {
   if (!event) {
     return (
       <div className="flex flex-col items-center justify-center rounded-md border border-amber-400/20 bg-black/30 px-4 py-6 text-center">
@@ -425,7 +427,9 @@ const ActivityHighlight: React.FC<{
       </div>
     </div>
   );
-};
+});
+
+ActivityHighlight.displayName = "ActivityHighlight";
 
 interface ChroniclesFilterPanelProps {
   state: ChroniclesFilterState;
@@ -438,7 +442,7 @@ interface ChroniclesFilterPanelProps {
   onToggle: () => void;
 }
 
-const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
+const ChroniclesFilterPanel = memo(({
   state,
   onChange,
   onReset,
@@ -447,7 +451,7 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
   recentEvents,
   collapsed,
   onToggle,
-}) => {
+}: ChroniclesFilterPanelProps) => {
   const setStoryType = (storyType: StoryFilterValue) => onChange({ ...state, storyType });
   const setSortOrder = (sortOrder: SortOrder) => onChange({ ...state, sortOrder });
 
@@ -646,25 +650,35 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
       </div>
     </aside>
   );
-};
+});
 
-const TimelineEventCard: React.FC<{
+ChroniclesFilterPanel.displayName = "ChroniclesFilterPanel";
+
+const TimelineEventCard = memo(({
+  event,
+  isActive,
+  onSelect,
+  eventLocation,
+  onNavigateToEvent,
+  isNavigating,
+}: {
   event: ProcessedStoryEvent;
   isActive: boolean;
-  onSelect: () => void;
+  onSelect: (eventId: string) => void;
   eventLocation: EventLocation | null;
   onNavigateToEvent?: (event: ProcessedStoryEvent) => void;
   isNavigating: boolean;
-}> = ({ event, isActive, onSelect, eventLocation, onNavigateToEvent, isNavigating }) => {
+}) => {
   const storyKey = resolveStoryKey(event.story);
   const storyConfig = STORY_TYPE_CONFIG[storyKey];
   const StoryIcon = storyConfig.icon;
   const details = parseDetailSegments(event.presentation.description);
+  const handleSelect = useCallback(() => onSelect(event.id), [onSelect, event.id]);
 
   return (
     <li>
       <button
-        onClick={onSelect}
+        onClick={handleSelect}
         className={clsx(
           "group w-full rounded border p-3 text-left transition-colors",
           isActive
@@ -730,7 +744,9 @@ const TimelineEventCard: React.FC<{
       </button>
     </li>
   );
-};
+});
+
+TimelineEventCard.displayName = "TimelineEventCard";
 
 const groupEventsByDate = (events: ProcessedStoryEvent[]) => {
   const groups: Array<{ dateKey: string; label: string; events: ProcessedStoryEvent[] }> = [];
@@ -892,6 +908,14 @@ export const StoryEventsChronicles: React.FC = () => {
 
   const groupedEvents = useMemo(() => groupEventsByDate(visibleEvents), [visibleEvents]);
 
+  const visibleEventLocations = useMemo(() => {
+    const map = new Map<string, EventLocation | null>();
+    visibleEvents.forEach((event) => {
+      map.set(event.id, getEventLocation(event));
+    });
+    return map;
+  }, [visibleEvents, getEventLocation]);
+
   const highlightedEvent = useMemo(() => {
     if (!selectedEventId) return storyFilteredEvents[0] ?? null;
     return storyFilteredEvents.find((e) => e.id === selectedEventId) ?? storyFilteredEvents[0] ?? null;
@@ -1019,13 +1043,13 @@ export const StoryEventsChronicles: React.FC = () => {
                       </div>
                       <ul className="space-y-4">
                         {group.events.map((event) => {
-                          const eventLocation = getEventLocation(event);
+                          const eventLocation = visibleEventLocations.get(event.id) ?? null;
                           return (
                             <TimelineEventCard
                               key={event.id}
                               event={event}
                               isActive={event.id === selectedEventId}
-                              onSelect={() => setSelectedEventId(event.id)}
+                              onSelect={setSelectedEventId}
                               eventLocation={eventLocation}
                               onNavigateToEvent={handleNavigateToEvent}
                               isNavigating={Boolean(navigatingEventId === event.id)}

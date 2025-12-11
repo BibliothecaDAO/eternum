@@ -4,8 +4,10 @@ import {
   MAX_RESOURCE_ALLOCATION_PERCENT,
   RealmAutomationConfig,
   RealmAutomationExecutionSummary,
+  type ResourceAutomationPercentages,
   isAutomationResourceBlocked,
 } from "@/hooks/store/use-automation-store";
+import { calculatePresetAllocations } from "@/utils/automation-presets";
 import { configManager, divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 
@@ -70,6 +72,12 @@ const addToRecord = (record: Record<number, number>, resourceId: ResourcesIds, d
 const ensurePositiveNumber = (value: number): number => {
   if (!Number.isFinite(value) || value <= 0) return 0;
   return value;
+};
+
+const clampPercent = (value: number): number => {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  if (value > MAX_RESOURCE_ALLOCATION_PERCENT) return MAX_RESOURCE_ALLOCATION_PERCENT;
+  return Math.round(value);
 };
 
 const DEFAULT_PLAN_CALLSET: RealmProductionCallset = {
@@ -147,15 +155,20 @@ export const buildRealmProductionPlan = ({
 
   const entityType = realmConfig.entityType ?? "realm";
 
-  const configuredResourceIds = Object.keys(realmConfig.resources).map((key) => Number(key) as ResourcesIds);
-  const resourceIdsToProcess = new Set<ResourcesIds>(configuredResourceIds);
-
-  // Include any resources with active production from the snapshot
+  const producedResourceIds: ResourcesIds[] = [];
   snapshot.forEach((entry) => {
     if (entry.hasActiveProduction) {
-      resourceIdsToProcess.add(entry.resourceId);
+      producedResourceIds.push(entry.resourceId);
     }
   });
+
+  const configuredCustomIds = Object.keys(realmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds);
+  const resourceIdsToProcess = new Set<ResourcesIds>(producedResourceIds);
+
+  // Reliability fallback: if snapshot misses active production, keep configured custom resources in scope.
+  if (resourceIdsToProcess.size === 0) {
+    configuredCustomIds.forEach((resourceId) => resourceIdsToProcess.add(resourceId));
+  }
 
   if (resourceIdsToProcess.size === 0) {
     return {
@@ -172,20 +185,38 @@ export const buildRealmProductionPlan = ({
     };
   }
 
+  const presetId = realmConfig.presetId ?? "smart";
+  const presetAllocations =
+    presetId === "smart" || presetId === "idle"
+      ? calculatePresetAllocations(Array.from(resourceIdsToProcess), presetId, entityType)
+      : new Map<number, ResourceAutomationPercentages>();
+
+  const baselinePercentages = (resourceId: ResourcesIds): ResourceAutomationPercentages => {
+    if (resourceId === ResourcesIds.Donkey) {
+      return { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 };
+    }
+    return { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+  };
+
   const resourceDefinitions = Array.from(resourceIdsToProcess)
     .filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))
     .sort((a, b) => a - b)
     .map((resourceId) => {
-      const config = realmConfig.resources[resourceId];
-      const percentages = config?.percentages
-        ? { ...config.percentages }
-        : resourceId === ResourcesIds.Donkey
-          ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
-          : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
-      if (resourceId === ResourcesIds.Donkey) {
-        percentages.laborToResource = 0;
-      }
-      return { resourceId, config, percentages };
+      const customPercentages = realmConfig.customPercentages?.[resourceId];
+      const presetPercentages = presetAllocations.get(resourceId);
+
+      const source =
+        presetId === "custom"
+          ? customPercentages ?? baselinePercentages(resourceId)
+          : presetPercentages ?? { resourceToResource: 0, laborToResource: 0 };
+
+      const percentages: ResourceAutomationPercentages = {
+        resourceToResource: clampPercent(source.resourceToResource),
+        laborToResource:
+          resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource ?? 0),
+      };
+
+      return { resourceId, percentages };
     });
 
   const resourcesToTrack = new Set<ResourcesIds>();

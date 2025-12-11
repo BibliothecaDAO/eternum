@@ -29,7 +29,6 @@ import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
-  STRUCTURE_GROUP_COLORS,
   STRUCTURE_GROUP_CONFIG,
   StructureGroupColor,
   StructureGroupsMap,
@@ -199,20 +198,23 @@ const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
 const HANDLE_WIDTH = 14;
 
-const LeftPanelHeader = ({
-  structureEntityId,
-  structures,
-  structureInfo,
-  onSelectStructure,
-  isBlitz,
-  components,
-  structureGroups,
-  onRequestNameChange,
-  nameUpdateVersion,
-  favorites,
-  onToggleFavorite,
-}: LeftPanelHeaderProps) => {
+const LeftPanelHeader = memo(
+  ({
+    structureEntityId,
+    structures,
+    structureInfo,
+    onSelectStructure,
+    isBlitz,
+    components,
+    structureGroups,
+    onRequestNameChange,
+    nameUpdateVersion,
+    favorites,
+    onToggleFavorite,
+  }: LeftPanelHeaderProps) => {
   const [activeTab, setActiveTab] = useState(0);
+
+  const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
   const structureEntityKey = useMemo(() => {
     try {
@@ -253,6 +255,8 @@ const LeftPanelHeader = ({
   const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
     // Force recomputation when a local rename occurs.
     void nameUpdateVersion;
+    const basePopulationCapacityValue = configManager.getBasePopulationCapacity();
+    const maxRealmLevel = configManager.getMaxLevel(StructureType.Realm);
     return structures.map((structure) => {
       const { name, originalName } = getStructureName(structure.structure, isBlitz);
       const baseLevel = structure.structure.base?.level;
@@ -269,12 +273,13 @@ const LeftPanelHeader = ({
       const population = Number(structureBuildings?.population.current ?? 0);
       const hasBasePopulation =
         structure.category === StructureType.Realm || structure.category === StructureType.Village;
-      const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
-      const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
+      const normalizedBasePopulationCapacity = hasBasePopulation
+        ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
+        : 0;
       const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
       const groupColor = structureGroups[structure.entityId] ?? null;
 
-      const isFavorite = favorites.includes(structure.entityId);
+      const isFavorite = favoritesSet.has(structure.entityId);
 
       return {
         ...structure,
@@ -287,20 +292,39 @@ const LeftPanelHeader = ({
         groupColor,
         isFavorite,
         canUpgrade:
-          structure.category === StructureType.Realm &&
-          normalizedLevel < configManager.getMaxLevel(structure.category as StructureType),
+          structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
       };
     });
-  }, [structures, isBlitz, components.StructureBuildings, structureGroups, nameUpdateVersion, favorites]);
+  }, [structures, isBlitz, components.StructureBuildings, structureGroups, nameUpdateVersion, favoritesSet]);
 
-  const currentTab = structureTabs[activeTab] ?? structureTabs[0];
-  const filteredStructures =
-    currentTab?.categories?.length === 0
-      ? structuresWithMetadata
-      : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
+  const orderedStructures = useMemo(() => {
+    const currentTab = structureTabs[activeTab] ?? structureTabs[0];
+    const filtered =
+      currentTab?.categories?.length === 0
+        ? structuresWithMetadata
+        : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
+    return [...filtered].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
+  }, [activeTab, structureTabs, structuresWithMetadata]);
 
-  const selectedStructureMetadata = structuresWithMetadata.find(
-    (structure) => structure.entityId === structureEntityId,
+  const categoryCounts = useMemo(() => {
+    const counts: Partial<Record<StructureType, number>> = {};
+    for (const structure of structuresWithMetadata) {
+      counts[structure.category] = (counts[structure.category] ?? 0) + 1;
+    }
+    return counts;
+  }, [structuresWithMetadata]);
+
+  const tabCounts = useMemo(
+    () =>
+      structureTabs.map((tab) =>
+        tab.categories.reduce((total, category) => total + (categoryCounts[category] ?? 0), 0),
+      ),
+    [structureTabs, categoryCounts],
+  );
+
+  const selectedStructureMetadata = useMemo(
+    () => structuresWithMetadata.find((structure) => structure.entityId === structureEntityId),
+    [structuresWithMetadata, structureEntityId],
   );
   const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
   const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
@@ -403,9 +427,7 @@ const LeftPanelHeader = ({
           <Tabs.List>
             {structureTabs.map((tab, index) => {
               const Icon = tab.icon;
-              const count = structuresWithMetadata.filter((structure) =>
-                tab.categories.includes(structure.category),
-              ).length;
+              const count = tabCounts[index] ?? 0;
               const isActiveTab = activeTab === index;
               const isDisabledTab = count === 0 && tab.key !== "realms";
               return (
@@ -447,22 +469,18 @@ const LeftPanelHeader = ({
           </Tabs.List>
         </Tabs>
 
-        {filteredStructures.length > 0 ? (
+        {orderedStructures.length > 0 ? (
           <div className="max-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
-            {[...filteredStructures]
-              .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite))
-              .map((structure) => (
-                <StructureListItem
-                  key={structure.entityId}
-                  structure={structure}
-                  isSelected={structure.entityId === structureEntityId}
-                  onSelectStructure={onSelectStructure}
-                  onToggleFavorite={onToggleFavorite}
-                  onRequestNameChange={onRequestNameChange}
-                  structureGroups={structureGroups}
-                  components={components}
-                />
-              ))}
+            {orderedStructures.map((structure) => (
+              <StructureListItem
+                key={structure.entityId}
+                structure={structure}
+                isSelected={structure.entityId === structureEntityId}
+                onSelectStructure={onSelectStructure}
+                onToggleFavorite={onToggleFavorite}
+                components={components}
+              />
+            ))}
           </div>
         ) : (
           <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
@@ -472,27 +490,21 @@ const LeftPanelHeader = ({
       </div>
     </div>
   );
-};
+  },
+);
+
+LeftPanelHeader.displayName = "LeftPanelHeader";
 
 type StructureListItemProps = {
   structure: StructureWithMetadata;
   isSelected: boolean;
   onSelectStructure: (entityId: ID) => void;
   onToggleFavorite: (entityId: ID) => void;
-  onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
-  structureGroups: StructureGroupsMap;
   components: ClientComponents;
 };
 
-const StructureListItem = ({
-  structure,
-  isSelected,
-  onSelectStructure,
-  onToggleFavorite,
-  onRequestNameChange,
-  structureGroups,
-  components,
-}: StructureListItemProps) => {
+const StructureListItem = memo(
+  ({ structure, isSelected, onSelectStructure, onToggleFavorite, components }: StructureListItemProps) => {
   const entityKey = useMemo(() => {
     try {
       return getEntityIdFromKeys([BigInt(structure.entityId)]);
@@ -524,14 +536,20 @@ const StructureListItem = ({
   const capacityDisplay = `${population}/${populationCapacity}`;
   const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
 
-  const handleSelectStructure = () => onSelectStructure(structure.entityId);
+  const handleSelectStructure = useCallback(
+    () => onSelectStructure(structure.entityId),
+    [onSelectStructure, structure.entityId],
+  );
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleSelectStructure();
-    }
-  };
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleSelectStructure();
+      }
+    },
+    [handleSelectStructure],
+  );
 
   return (
     <div
@@ -580,7 +598,20 @@ const StructureListItem = ({
       </div>
     </div>
   );
-};
+  },
+);
+
+StructureListItem.displayName = "StructureListItem";
+
+const ORDERED_MENU_IDS: MenuEnum[] = [
+  MenuEnum.entityDetails, // Realm Info
+  MenuEnum.construction, // Buildings
+  MenuEnum.military, // Army
+  MenuEnum.resourceArrivals, // Donkey arrivals
+  MenuEnum.transfer, // Transfers
+  MenuEnum.chat, // Chat
+  MenuEnum.storyEvents, // Chronicles
+];
 
 type StructureLevelUpButtonProps = {
   structureEntityId: ID | null;
@@ -968,6 +999,7 @@ export const LeftCommandSidebar = memo(() => {
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const structures = useUIStore((state) => state.playerStructures);
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
   const { favorites, toggleFavorite } = useFavoriteStructures();
   const goToStructure = useGoToStructure(setup);
@@ -998,8 +1030,6 @@ export const LeftCommandSidebar = memo(() => {
     setTransferPanelSourceId(null);
     togglePopup(TRANSFER_POPUP_NAME);
   }, [setTransferPanelSourceId, togglePopup]);
-
-  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const {
     initializer: realtimeInitializer,
@@ -1128,23 +1158,24 @@ export const LeftCommandSidebar = memo(() => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const computedWidth = isCollapsed ? HANDLE_WIDTH : PANEL_WIDTH + HANDLE_WIDTH;
-  const panelHeightStyle = { height: navHeight, maxHeight: navHeight };
+  const panelHeightStyle = useMemo(() => ({ height: navHeight, maxHeight: navHeight }), [navHeight]);
+  const outerPanelStyle = useMemo(
+    () => ({ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }),
+    [panelHeightStyle],
+  );
+  const containerPanelStyle = useMemo(
+    () => ({ ...panelHeightStyle, width: `${PANEL_WIDTH}px` }),
+    [panelHeightStyle],
+  );
   const showEmptyState = false;
   const contentScrollClass = view === LeftView.ChatView ? "overflow-hidden" : "overflow-y-auto";
 
-  const orderedIds: MenuEnum[] = [
-    MenuEnum.entityDetails, // Realm Info
-    MenuEnum.construction, // Buildings
-    MenuEnum.military, // Army
-    MenuEnum.resourceArrivals, // Donkey arrivals
-    MenuEnum.transfer, // Transfers
-    MenuEnum.chat, // Chat
-    MenuEnum.storyEvents, // Chronicles
-  ];
-  const navigationItems = [...realmNavigationItems, chatNavigationItem, ...economyNavigationItems];
-  const combinedNavigationItems = orderedIds
-    .map((id) => navigationItems.find((item) => item.id === id))
-    .filter((item): item is NavigationItem => Boolean(item));
+  const combinedNavigationItems = useMemo(() => {
+    const navigationItems = [...realmNavigationItems, chatNavigationItem, ...economyNavigationItems];
+    return ORDERED_MENU_IDS.map((id) => navigationItems.find((item) => item.id === id)).filter(
+      (item): item is NavigationItem => Boolean(item),
+    );
+  }, [realmNavigationItems, chatNavigationItem, economyNavigationItems]);
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
@@ -1172,12 +1203,12 @@ export const LeftCommandSidebar = memo(() => {
 
   return (
     <>
-      <div className="pointer-events-none h-full" style={{ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }}>
+      <div className="pointer-events-none h-full" style={outerPanelStyle}>
         <div className="flex h-full pointer-events-auto" style={{ width: `${computedWidth}px` }}>
           {!isCollapsed && (
             <BaseContainer
               className="pointer-events-auto flex h-full w-full flex-col panel-wood panel-wood-corners overflow-hidden shadow-2xl"
-              style={{ ...panelHeightStyle, width: `${PANEL_WIDTH}px` }}
+              style={containerPanelStyle}
             >
               <LeftPanelHeader
                 structureEntityId={structureEntityId}

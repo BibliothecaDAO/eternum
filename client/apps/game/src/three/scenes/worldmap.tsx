@@ -158,6 +158,9 @@ export default class WorldmapScene extends HexagonScene {
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
   private cameraGroundIntersectionScratch: Vector3 = new Vector3();
+  private minimapNdcScratch: Vector3 = new Vector3();
+  private minimapRayScratch: Vector3 = new Vector3();
+  private minimapIntersectionScratch: Vector3 = new Vector3();
 
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
@@ -190,8 +193,33 @@ export default class WorldmapScene extends HexagonScene {
   private minimap!: Minimap;
   private updateMinimapThrottled?: ReturnType<typeof throttle>;
   private syncMinimapToCamera!: ReturnType<typeof throttle>;
+  private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
+  private updateCameraTargetHex = () => {
+    const normalizedHex = this.getCameraTargetHex();
+    const contractHex = new Position({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
+    const nextHex = { col: Number(contractHex.x), row: Number(contractHex.y) };
+    const nextRadius = this.computeCameraViewRadiusHex();
+    const state = useUIStore.getState();
+    const currentHex = state.cameraTargetHex;
+    const currentRadius = state.cameraViewRadiusHex;
+    const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
+    const radiusChanged = currentRadius === null || Math.abs(currentRadius - nextRadius) > 0.1;
+    if (hexChanged || radiusChanged) {
+      useUIStore.setState({ cameraTargetHex: nextHex, cameraViewRadiusHex: nextRadius });
+    }
+  };
+  private minimapCameraMoveTarget: { col: number; row: number } | null = null;
+  private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
+  private minimapCameraMoveHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const detail = (event as CustomEvent<{ col: number; row: number }>).detail;
+    if (!detail) return;
+    this.minimapCameraMoveTarget = detail;
+    this.minimapCameraMoveThrottled?.();
+  };
   private handleControlsChangeForMinimap = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    this.updateCameraTargetHexThrottled?.();
     if (this.minimap?.isUserDragging?.()) return;
     this.syncMinimapToCamera?.(true);
   };
@@ -736,14 +764,22 @@ export default class WorldmapScene extends HexagonScene {
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
 
     this.minimap = new Minimap(this, this.camera);
+    this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, 33);
+    this.minimapCameraMoveThrottled = throttle(() => {
+      const target = this.minimapCameraMoveTarget;
+      if (!target) return;
+      this.moveCameraToColRow(target.col, target.row, 0.25);
+    }, 16);
     this.updateMinimapThrottled = throttle(() => {
       this.minimap.update();
     }, 100);
     this.syncMinimapToCamera = throttle((force: boolean = false) => {
       this.minimap?.syncToCameraTarget(force);
     }, 50);
+    window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     this.controls.addEventListener("change", this.handleControlsChangeForMinimap);
     this.syncMinimapToCamera();
+    this.updateCameraTargetHexThrottled();
 
     // Initialize SceneShortcutManager for WorldMap shortcuts
     this.shortcutManager = new SceneShortcutManager("worldmap", this.sceneManager);
@@ -3213,6 +3249,50 @@ export default class WorldmapScene extends HexagonScene {
     return this.cameraGroundIntersectionScratch;
   }
 
+  private getGroundIntersectionForNdc(ndcX: number, ndcY: number): Vector3 {
+    const camera = this.camera;
+    const origin = this.cameraPositionScratch.copy(camera.position);
+    this.minimapNdcScratch.set(ndcX, ndcY, 0.5);
+    this.minimapRayScratch.copy(this.minimapNdcScratch).unproject(camera).sub(origin);
+
+    if (Math.abs(this.minimapRayScratch.y) < 0.001) {
+      return this.minimapIntersectionScratch.copy(this.controls.target);
+    }
+
+    const t = -origin.y / this.minimapRayScratch.y;
+    if (!Number.isFinite(t) || t < 0) {
+      return this.minimapIntersectionScratch.copy(this.controls.target);
+    }
+
+    this.minimapIntersectionScratch.copy(this.minimapRayScratch).multiplyScalar(t).add(origin);
+    return this.minimapIntersectionScratch;
+  }
+
+  private computeCameraViewRadiusHex(): number {
+    const target = this.controls.target;
+    let maxWorldDist = 0;
+
+    const corners: Array<[number, number]> = [
+      [-1, -1],
+      [-1, 1],
+      [1, -1],
+      [1, 1],
+    ];
+
+    for (const [ndcX, ndcY] of corners) {
+      const intersection = this.getGroundIntersectionForNdc(ndcX, ndcY);
+      const dx = intersection.x - target.x;
+      const dz = intersection.z - target.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > maxWorldDist) {
+        maxWorldDist = dist;
+      }
+    }
+
+    const hexWorldStep = Math.sqrt(3) * HEX_SIZE;
+    return hexWorldStep > 0 ? maxWorldDist / hexWorldStep : 0;
+  }
+
   public requestChunkRefresh(force: boolean = false) {
     if (force) {
       this.pendingChunkRefreshForce = true;
@@ -3725,7 +3805,10 @@ export default class WorldmapScene extends HexagonScene {
     this.resourceFXManager.destroy();
     this.updateMinimapThrottled?.cancel();
     this.syncMinimapToCamera?.cancel();
+    this.updateCameraTargetHexThrottled?.cancel();
+    this.minimapCameraMoveThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
+    window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     this.stopRelicValidationTimer();
     this.clearCache();
     this.minimap.dispose();

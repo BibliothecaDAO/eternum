@@ -4,18 +4,18 @@ import {
   buildRealmResourceSnapshot,
   planHasExecutableCalls,
   PROCESS_INTERVAL_MS,
+  type RealmProductionPlan,
+  type RealmResourceSnapshot,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import {
   useAutomationStore,
+  DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
+  DONKEY_DEFAULT_RESOURCE_PERCENT,
   type ResourceAutomationPercentages,
-  type ResourceAutomationSettings,
+  type RealmAutomationExecutionSummary,
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  calculateLimitedPresetPercentages,
-  getAutomationOverallocation,
-  type RealmPresetId,
-} from "@/utils/automation-presets";
+import { getAutomationOverallocation } from "@/utils/automation-presets";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { getStructureName, getIsBlitz, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -27,6 +27,55 @@ const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
   return typeof label === "string" ? label : `Resource ${resourceId}`;
 };
+
+const labelResourceRecord = (record: Record<number, number>) =>
+  Object.entries(record).map(([resourceId, amount]) => ({
+    resourceId: Number(resourceId),
+    resource: resolveResourceLabel(Number(resourceId)),
+    amount,
+  }));
+
+const labelExecutionEntries = (entries: RealmAutomationExecutionSummary["resourceToResource"]) =>
+  entries.map((entry) => ({
+    ...entry,
+    resource: resolveResourceLabel(entry.resourceId),
+    inputs: entry.inputs.map((input) => ({
+      ...input,
+      resource: resolveResourceLabel(input.resourceId),
+    })),
+  }));
+
+const labelPlanCallset = (plan: RealmProductionPlan) => ({
+  resourceToResource: plan.callset.resourceToResource.map((call) => ({
+    ...call,
+    resource: resolveResourceLabel(call.resourceId),
+  })),
+  laborToResource: plan.callset.laborToResource.map((call) => ({
+    ...call,
+    resource: resolveResourceLabel(call.resourceId),
+  })),
+});
+
+const formatSnapshotLog = (
+  snapshot: RealmResourceSnapshot,
+  customPercentages: Record<number, ResourceAutomationPercentages>,
+) =>
+  Array.from(snapshot.values())
+    .filter((entry) => entry.hasActiveProduction || customPercentages[entry.resourceId])
+    .map((entry) => ({
+      resourceId: entry.resourceId,
+      resource: resolveResourceLabel(entry.resourceId),
+      balanceHuman: entry.balanceHuman,
+      productionPerSecond: entry.productionPerSecond,
+      hasActiveProduction: entry.hasActiveProduction,
+    }));
+
+const formatCustomPercentagesLog = (percentages: Record<number, ResourceAutomationPercentages>) =>
+  Object.entries(percentages ?? {}).map(([resourceId, value]) => ({
+    resourceId: Number(resourceId),
+    resource: resolveResourceLabel(Number(resourceId)),
+    percentages: value,
+  }));
 
 export const useAutomation = () => {
   const {
@@ -41,7 +90,6 @@ export const useAutomation = () => {
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
-  const setRealmPresetConfig = useAutomationStore((state) => state.setRealmPresetConfig);
   const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
@@ -172,6 +220,7 @@ export const useAutomation = () => {
       for (const realmConfig of realmList) {
         let activeRealmConfig = realmConfig;
         const realmIdNum = Number(activeRealmConfig.realmId);
+        const realmLabel = activeRealmConfig.realmName ?? `Realm ${activeRealmConfig.realmId}`;
 
         const snapshot =
           Number.isFinite(realmIdNum) && realmIdNum > 0
@@ -182,6 +231,13 @@ export const useAutomation = () => {
               })
             : new Map();
 
+        console.log("[Automation] Prepared realm snapshot", {
+          realmId: activeRealmConfig.realmId,
+          realmName: realmLabel,
+          blockTick: currentDefaultTick,
+          balances: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
+        });
+
         const producedResourceIds: ResourcesIds[] = [];
         snapshot.forEach((entry) => {
           if (entry.hasActiveProduction) {
@@ -189,67 +245,56 @@ export const useAutomation = () => {
           }
         });
 
-        // If config is over-allocated and still using a preset mode
-        // (smart/idle/custom), auto-apply the smart preset to bring inputs back
-        // within limits. Manual slider configs flow through here as the "custom"
-        // preset so caps can still be enforced.
-        const hasPreset =
-          activeRealmConfig.presetId === "smart" ||
-          activeRealmConfig.presetId === "idle" ||
-          activeRealmConfig.presetId === "custom";
-        if (hasPreset) {
+        if (activeRealmConfig.presetId === "idle") {
+          console.log("[Automation] Skipping automation run due to idle preset", {
+            realmId: activeRealmConfig.realmId,
+            realmName: realmLabel,
+          });
+          continue;
+        }
+
+        if (activeRealmConfig.presetId === "custom" && activeRealmConfig.autoBalance) {
           try {
-            let overAllocationConfig = activeRealmConfig;
-            if (producedResourceIds.length > 0) {
-              const limitedResources: Record<number, ResourceAutomationSettings> = {};
-              producedResourceIds.forEach((resourceId) => {
-                const existing = activeRealmConfig.resources[resourceId];
-                if (existing) {
-                  limitedResources[resourceId] = existing;
-                }
-              });
-              overAllocationConfig = {
-                ...activeRealmConfig,
-                resources: limitedResources,
-              };
-            }
+            const resourceIdsForCheck =
+              producedResourceIds.length > 0
+                ? producedResourceIds
+                : Object.keys(activeRealmConfig.customPercentages ?? {}).map(
+                    (key) => Number(key) as ResourcesIds,
+                  );
 
-            const { resourceOver, laborOver } = getAutomationOverallocation(overAllocationConfig);
-            let presetToApply: RealmPresetId | null = null;
+            const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
+            resourceIdsForCheck.forEach((resourceId) => {
+              const stored = activeRealmConfig.customPercentages?.[resourceId];
+              const baseline =
+                resourceId === ResourcesIds.Donkey
+                  ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+                  : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+              effectivePercentages[resourceId] = stored ?? baseline;
+            });
+
+            const { resourceOver, laborOver } = getAutomationOverallocation(
+              effectivePercentages,
+              activeRealmConfig.entityType,
+            );
+
             if (resourceOver || laborOver) {
-              presetToApply = "smart";
-            }
+              console.log("[Automation] Auto-switching to smart preset due to over-allocation", {
+                realmId: activeRealmConfig.realmId,
+                realmName: realmLabel,
+                producedResourceIds,
+                resourceOver,
+                laborOver,
+              });
 
-            if (presetToApply) {
-              if (producedResourceIds.length > 0) {
-                const limitedPercentagesMap = calculateLimitedPresetPercentages(
-                  activeRealmConfig,
-                  presetToApply,
-                  producedResourceIds,
-                );
-                if (limitedPercentagesMap.size > 0) {
-                  const percentages: Record<number, ResourceAutomationPercentages> = {};
-                  limitedPercentagesMap.forEach((value, key) => {
-                    percentages[key] = value;
-                  });
-                  setRealmPresetConfig(activeRealmConfig.realmId, presetToApply, percentages);
-                  const refreshed = getRealmConfig(activeRealmConfig.realmId);
-                  if (refreshed) {
-                    activeRealmConfig = refreshed;
-                  }
-                }
-              } else {
-                // Fallback: apply preset using full config when no produced resources detected.
-                setRealmPreset(activeRealmConfig.realmId, presetToApply);
-                const refreshed = getRealmConfig(activeRealmConfig.realmId);
-                if (refreshed) {
-                  activeRealmConfig = refreshed;
-                }
+              setRealmPreset(activeRealmConfig.realmId, "smart");
+              const refreshed = getRealmConfig(activeRealmConfig.realmId);
+              if (refreshed) {
+                activeRealmConfig = refreshed;
               }
             }
           } catch (error) {
             console.error(
-              "[Automation] Failed to auto-apply preset for over-allocated realm",
+              "[Automation] Failed to auto-balance custom allocations",
               activeRealmConfig.realmId,
               error,
             );
@@ -261,11 +306,35 @@ export const useAutomation = () => {
           snapshot,
         });
 
+        const planLogPayload = {
+          realmId: plan.realmId,
+          realmName: realmLabel,
+          presetId: activeRealmConfig.presetId,
+          autoBalance: activeRealmConfig.autoBalance,
+          evaluatedResources: plan.evaluatedResourceIds.map((resourceId) => ({
+            resourceId,
+            resource: resolveResourceLabel(resourceId),
+          })),
+          configuredResources: formatCustomPercentagesLog(activeRealmConfig.customPercentages),
+          snapshot: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
+          callset: labelPlanCallset(plan),
+          consumption: labelResourceRecord(plan.consumptionByResource),
+          outputs: labelResourceRecord(plan.outputsByResource),
+          skipped: plan.skipped.map((entry) => ({
+            ...entry,
+            resource: resolveResourceLabel(entry.resourceId),
+          })),
+        };
+
+        console.log("[Automation] Planned production run", planLogPayload);
+
         if (!planHasExecutableCalls(plan)) {
+          console.log("[Automation] No executable automation calls detected", planLogPayload);
           continue;
         }
 
         try {
+          console.log("[Automation] Executing production plan", planLogPayload);
           const callset = plan.callset;
           await execute_realm_production_plan({
             signer: starknetSignerAccount as StarknetAccount,
@@ -282,6 +351,15 @@ export const useAutomation = () => {
 
           const summary = buildExecutionSummary(plan, Date.now());
           recordExecution(activeRealmConfig.realmId, summary);
+          console.log("[Automation] Automation execution complete", {
+            realmId: plan.realmId,
+            realmName: realmLabel,
+            outputs: planLogPayload.outputs,
+            consumption: planLogPayload.consumption,
+            resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
+            laborExecutions: labelExecutionEntries(plan.laborExecutions),
+            skipped: planLogPayload.skipped,
+          });
           anyExecuted = true;
 
           const producedResources = Object.entries(plan.outputsByResource);
@@ -317,7 +395,6 @@ export const useAutomation = () => {
     recordExecution,
     starknetSignerAccount,
     setRealmPreset,
-    setRealmPresetConfig,
     getRealmConfig,
     isGameOver,
   ]);
@@ -390,10 +467,11 @@ export const useAutomation = () => {
     const signature = Object.entries(realms)
       .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
       .map(([realmId, realm]) => {
-        const resourceKeys = Object.keys(realm.resources ?? {})
+        const customKeys = Object.keys(realm.customPercentages ?? {})
           .sort()
           .join(",");
-        return `${realmId}:${resourceKeys}`;
+        const presetId = realm.presetId ?? "smart";
+        return `${realmId}:${presetId}:${customKeys}`;
       })
       .sort()
       .join("|");

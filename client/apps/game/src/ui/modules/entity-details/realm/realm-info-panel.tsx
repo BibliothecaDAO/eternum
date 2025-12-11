@@ -22,7 +22,7 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ArrowLeftRight, Shield, Sword } from "lucide-react";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
@@ -64,11 +64,11 @@ const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null)
     return "Smart automation";
   }
 
-  const hasLabor = Object.values(automation.resources ?? {}).some(
-    (config) => (config?.percentages?.laborToResource ?? 0) > 0,
+  const hasLabor = Object.values(automation.customPercentages ?? {}).some(
+    (config) => (config?.laborToResource ?? 0) > 0,
   );
-  const hasResource = Object.values(automation.resources ?? {}).some(
-    (config) => (config?.percentages?.resourceToResource ?? 0) > 0,
+  const hasResource = Object.values(automation.customPercentages ?? {}).some(
+    (config) => (config?.resourceToResource ?? 0) > 0,
   );
 
   if (hasLabor && hasResource) return "Burning labor & resources";
@@ -78,17 +78,25 @@ const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null)
   return "Idle";
 };
 
-const formatRelative = (timestamp?: number) => {
-  if (!timestamp) return null;
-  const diffMs = Date.now() - timestamp;
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  if (diffMinutes < 1) return "just now";
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-};
+const NextAutomationRunLabel = memo(() => {
+  const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (typeof nextRunTimestamp !== "number") return;
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [nextRunTimestamp]);
+
+  if (typeof nextRunTimestamp !== "number") {
+    return <span>Automation schedule pending.</span>;
+  }
+
+  const remainingSeconds = Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000));
+  return <span>Next automation run in {remainingSeconds}s</span>;
+});
+
+NextAutomationRunLabel.displayName = "NextAutomationRunLabel";
 
 export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -138,10 +146,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     return automationRealms[String(realmId)];
   }, [automationRealms, realmId]);
   const statusLabel = resolveAutomationStatusLabel(automationConfig);
-  const formattedLastRun = automationConfig?.lastExecution?.executedAt
-    ? formatRelative(automationConfig.lastExecution.executedAt)
-    : null;
-  const lastRunLabel = formattedLastRun ? `Last run ${formattedLastRun}` : "Automation has not executed yet.";
 
   const handleModifyClick = useCallback(() => {
     if (!realmId || !structurePosition) return;
@@ -225,7 +229,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
               <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>
             )}
           </div>
-          <div className="mt-3 text-right text-[10px] text-gold/50">{lastRunLabel}</div>
+          <div className="mt-3 text-right text-[10px] text-gold/50">
+            <NextAutomationRunLabel />
+          </div>
         </div>
       )}
 
