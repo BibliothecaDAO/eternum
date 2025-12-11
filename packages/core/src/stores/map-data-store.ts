@@ -606,12 +606,7 @@ export class MapDataStore {
    * @param maxRow Maximum row (contract coordinate)
    * @returns Array of structures within the bounds
    */
-  public getStructuresInBounds(
-    minCol: number,
-    maxCol: number,
-    minRow: number,
-    maxRow: number,
-  ): StructureMapData[] {
+  public getStructuresInBounds(minCol: number, maxCol: number, minRow: number, maxRow: number): StructureMapData[] {
     this._checkRefresh();
     return Array.from(this.structuresMap.values()).filter(
       (s) => s.coordX >= minCol && s.coordX <= maxCol && s.coordY >= minRow && s.coordY <= maxRow,
