@@ -113,8 +113,7 @@ const CircleButton = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const tooltipContent = useMemo(
-    () =>
-      label ? <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span> : null,
+    () => (label ? <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span> : null),
     [label],
   );
 

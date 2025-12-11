@@ -1,7 +1,13 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { FELT_CENTER } from "@/ui/config";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
-import { BiomeIdToType, HexPosition } from "@bibliothecadao/types";
-import { isTileOccupierStructure } from "@bibliothecadao/eternum";
+import {
+  getExplorerInfoFromTileOccupier,
+  getStructureInfoFromTileOccupier,
+  isTileOccupierStructure,
+} from "@bibliothecadao/eternum";
+import { BiomeIdToType, HexPosition, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 
 export interface MinimapTile {
@@ -24,6 +30,17 @@ export const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
 
 const HEX_SIZE = 7;
 const SQRT3 = Math.sqrt(3);
+const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
+
+const TILE_MARKERS = {
+  essenceRift: { fill: "#8b5cf6", emoji: "⛏️" },
+  camp: { fill: "#92400e", emoji: "⛺" },
+  owned: { fill: "#22c55e" },
+  enemy: { fill: "#ef4444" },
+  hyperstructure: { fill: "#facc15", emoji: "⭐" },
+  armyOwned: { fill: "#22c55e", emoji: "⚔️" },
+  armyEnemy: { fill: "#ef4444", emoji: "⚔️" },
+} as const;
 
 const axialToPixel = (col: number, row: number) => {
   const x = HEX_SIZE * (SQRT3 * col + (SQRT3 / 2) * row);
@@ -162,12 +179,22 @@ interface HexMinimapProps {
   selectedHex: HexPosition | null;
   navigationTarget: HexPosition | null;
   cameraTargetHex: HexPosition | null;
-  cameraViewRadiusHex: number | null;
 }
 
-export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex, cameraViewRadiusHex }: HexMinimapProps) => {
+export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex }: HexMinimapProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
+  const playerStructures = useUIStore((state) => state.playerStructures);
+  const currentPlayerData = usePlayerStore((state) => state.currentPlayerData);
+
+  const ownedStructureIds = useMemo(() => {
+    return new Set(playerStructures.map((structure) => String(structure.entityId)));
+  }, [playerStructures]);
+
+  const ownedExplorerIds = useMemo(() => {
+    if (!currentPlayerData?.explorerIds?.length) return new Set<string>();
+    return new Set(currentPlayerData.explorerIds.map((entry) => entry.split(":")[0]));
+  }, [currentPlayerData]);
 
   const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
 
@@ -322,22 +349,21 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   }, [viewport, view]);
 
   const cameraCircle = useMemo(() => {
-    if (!cameraTargetHex || cameraViewRadiusHex === null) return null;
+    if (!cameraTargetHex) return null;
     const col = cameraTargetHex.col - FELT_CENTER();
     const row = cameraTargetHex.row - FELT_CENTER();
     const centerPixel = axialToPixel(col, row);
-    const radiusPx = Math.max(cameraViewRadiusHex * HEX_SIZE * SQRT3, HEX_SIZE * 1.5);
+    const radiusPx = CAMERA_CIRCLE_SCREEN_RADIUS_PX / view.scale;
     return { centerPixel, radiusPx };
-  }, [cameraTargetHex, cameraViewRadiusHex]);
+  }, [cameraTargetHex, view.scale]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     console.log("[minimap] HexMinimap cameraCircle", {
       cameraTargetHex,
-      cameraViewRadiusHex,
       cameraCircle,
     });
-  }, [cameraTargetHex, cameraViewRadiusHex, cameraCircle]);
+  }, [cameraTargetHex, cameraCircle]);
 
   const visibleTiles = useMemo(() => {
     if (!tiles.length) return [] as CenteredTileEntry[];
@@ -383,6 +409,42 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     return result;
   }, [tiles.length, centeredIndex.byCol, viewBox]);
 
+  const getTileMarker = useCallback(
+    (tile: MinimapTile) => {
+      const occupierType = tile.occupier_type ?? 0;
+      const hasStructure = tile.occupier_is_structure || isTileOccupierStructure(occupierType);
+
+      if (hasStructure) {
+        const info = getStructureInfoFromTileOccupier(occupierType);
+        if (!info) return null;
+
+        switch (info.type) {
+          case StructureType.FragmentMine:
+            return TILE_MARKERS.essenceRift;
+          case StructureType.Village:
+            return TILE_MARKERS.camp;
+          case StructureType.Realm: {
+            const isMine = ownedStructureIds.has(String(tile.occupier_id));
+            return isMine ? { ...TILE_MARKERS.owned, emoji: "👑" } : { ...TILE_MARKERS.enemy, emoji: "👑" };
+          }
+          case StructureType.Hyperstructure:
+            return TILE_MARKERS.hyperstructure;
+          default:
+            return null;
+        }
+      }
+
+      const explorerInfo = getExplorerInfoFromTileOccupier(occupierType);
+      if (explorerInfo) {
+        const isMine = ownedExplorerIds.has(String(tile.occupier_id));
+        return isMine ? TILE_MARKERS.armyOwned : TILE_MARKERS.armyEnemy;
+      }
+
+      return null;
+    },
+    [ownedStructureIds, ownedExplorerIds],
+  );
+
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     console.log("[minimap] HexMinimap visibleTiles", {
@@ -418,26 +480,29 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     };
   }, []);
 
-  const handlePointerMove = useCallback((e: PointerEvent<SVGSVGElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== e.pointerId) return;
-    e.preventDefault();
-    const dx = (e.clientX - drag.startClientX) / drag.startView.scale;
-    const dy = (e.clientY - drag.startClientY) / drag.startView.scale;
-    if (!drag.moved && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
-      drag.moved = true;
-    }
-    const nextX = drag.startView.x - dx;
-    const nextY = drag.startView.y - dy;
-    scheduleViewUpdate({
-      ...drag.startView,
-      x: nextX,
-      y: nextY,
-    });
-    if (drag.moved) {
-      scheduleCameraMove(nextX, nextY);
-    }
-  }, [scheduleViewUpdate, scheduleCameraMove]);
+  const handlePointerMove = useCallback(
+    (e: PointerEvent<SVGSVGElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      e.preventDefault();
+      const dx = (e.clientX - drag.startClientX) / drag.startView.scale;
+      const dy = (e.clientY - drag.startClientY) / drag.startView.scale;
+      if (!drag.moved && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
+        drag.moved = true;
+      }
+      const nextX = drag.startView.x - dx;
+      const nextY = drag.startView.y - dy;
+      scheduleViewUpdate({
+        ...drag.startView,
+        x: nextX,
+        y: nextY,
+      });
+      if (drag.moved) {
+        scheduleCameraMove(nextX, nextY);
+      }
+    },
+    [scheduleViewUpdate, scheduleCameraMove],
+  );
 
   const endDrag = useCallback((e: PointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
@@ -499,18 +564,13 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       onDoubleClick={handleDoubleClick}
     >
       {visibleTiles.map(({ tile, points, pixel }) => {
-        const fill = getBiomeColor(tile.biome);
+        const marker = getTileMarker(tile);
+        const fill = marker?.fill ?? getBiomeColor(tile.biome);
         const occupierColor = getOccupierColor(tile);
         return (
           <g key={`${tile.col}:${tile.row}`}>
-            <polygon
-              points={points}
-              fill={fill}
-              stroke="#1f130a"
-              strokeWidth={0.6}
-              fillOpacity={0.92}
-            />
-            {occupierColor && (
+            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
+            {occupierColor && !marker?.emoji && (
               <circle
                 cx={pixel.x}
                 cy={pixel.y}
@@ -519,6 +579,18 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
                 stroke="#0f0a07"
                 strokeWidth={0.8}
               />
+            )}
+            {marker?.emoji && (
+              <text
+                x={pixel.x}
+                y={pixel.y}
+                fontSize={HEX_SIZE * 1.4}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className="select-none"
+              >
+                {marker.emoji}
+              </text>
             )}
           </g>
         );

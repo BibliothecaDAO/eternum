@@ -111,11 +111,9 @@ type TabDefinition = {
   icon: LucideIcon;
 };
 
-const MINIMAP_PANEL_ENABLED = true;
-
 const BOTTOM_PANEL_TABS: TabDefinition[] = [
   { id: "tile", label: "Selected tile", icon: CircleHelp },
-  ...(MINIMAP_PANEL_ENABLED ? [{ id: "minimap", label: "Minimap", icon: MapIcon }] : []),
+  { id: "minimap", label: "Minimap", icon: MapIcon },
 ];
 
 const PanelTabs = ({
@@ -706,7 +704,6 @@ const MinimapPanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
   const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
-  const cameraViewRadiusHex = useUIStore((state) => state.cameraViewRadiusHex);
 
   useEffect(() => {
     if (activeTab !== "minimap") return;
@@ -753,7 +750,6 @@ const MinimapPanel = () => {
             selectedHex={selectedHex}
             navigationTarget={navigationTarget}
             cameraTargetHex={cameraTargetHex}
-            cameraViewRadiusHex={cameraViewRadiusHex}
           />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -777,12 +773,6 @@ export const SelectedTilePanel = memo(() => {
   const shouldShow = !showBlankOverlay;
   const isPanelOpen = shouldShow && activeTab !== null;
 
-  useEffect(() => {
-    if (!MINIMAP_PANEL_ENABLED && activeTab === "minimap") {
-      setActiveTab("tile");
-    }
-  }, [activeTab, setActiveTab]);
-
   const handleTabToggle = (tab: BottomPanelTabId) => {
     setActiveTab(activeTab === tab ? null : tab);
   };
@@ -797,20 +787,14 @@ export const SelectedTilePanel = memo(() => {
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
       <div className="relative w-full md:w-[37%] lg:w-[27%] md:ml-auto min-h-[44px]">
-        <PanelTabs
-          activeTab={activeTab}
-          onSelect={handleTabToggle}
-          className="absolute right-0 bottom-full"
-        />
+        <PanelTabs activeTab={activeTab} onSelect={handleTabToggle} className="absolute right-0 bottom-full" />
         <div className="pointer-events-auto">
           <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
             {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
           </div>
-          {MINIMAP_PANEL_ENABLED && (
-            <div className={cn(activeTab === "minimap" && isPanelOpen ? "block" : "hidden")}>
-              <MinimapPanel />
-            </div>
-          )}
+          <div className={cn(activeTab === "minimap" && isPanelOpen ? "block" : "hidden")}>
+            <MinimapPanel />
+          </div>
         </div>
       </div>
     </div>

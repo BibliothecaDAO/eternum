@@ -134,15 +134,21 @@ export const RealmAutomationSummary = ({
     [normalizedResourceIds, inferredPresetId, effectiveEntityType],
   );
 
+  const smartPresetAllocations = useMemo(
+    () => calculatePresetAllocations(normalizedResourceIds, "smart", effectiveEntityType),
+    [normalizedResourceIds, effectiveEntityType],
+  );
+
   const automationRows = useMemo(() => {
     return normalizedResourceIds.map((resourceId) => {
       let percentages =
         inferredPresetId === "custom"
           ? automation?.customPercentages?.[resourceId]
             ? { ...automation.customPercentages[resourceId] }
-            : resourceId === ResourcesIds.Donkey
-              ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
-              : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES }
+            : (smartPresetAllocations.get(resourceId) ??
+              (resourceId === ResourcesIds.Donkey
+                ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+                : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES }))
           : presetAllocations.get(resourceId)
             ? { ...(presetAllocations.get(resourceId) as typeof DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES) }
             : { resourceToResource: 0, laborToResource: 0 };
@@ -161,7 +167,13 @@ export const RealmAutomationSummary = ({
         simpleInputs,
       };
     });
-  }, [automation?.customPercentages, inferredPresetId, normalizedResourceIds, presetAllocations]);
+  }, [
+    automation?.customPercentages,
+    inferredPresetId,
+    normalizedResourceIds,
+    presetAllocations,
+    smartPresetAllocations,
+  ]);
 
   const referenceAggregatedUsageMap = useMemo(() => {
     const totals = new Map<number, number>();

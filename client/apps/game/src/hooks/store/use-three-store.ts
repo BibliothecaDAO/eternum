@@ -6,8 +6,6 @@ export interface ThreeStore {
   setNavigationTarget: (hex: HexPosition | null) => void;
   cameraTargetHex: HexPosition | null;
   setCameraTargetHex: (hex: HexPosition | null) => void;
-  cameraViewRadiusHex: number | null;
-  setCameraViewRadiusHex: (radius: number | null) => void;
   hoveredHex: HexPosition | null;
   setHoveredHex: (hex: HexPosition | null) => void;
   entityActions: EntityActions;
@@ -46,8 +44,6 @@ export const createThreeStoreSlice = (set: any, _get: any) => ({
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
   cameraTargetHex: null,
   setCameraTargetHex: (hex: HexPosition | null) => set({ cameraTargetHex: hex }),
-  cameraViewRadiusHex: null,
-  setCameraViewRadiusHex: (radius: number | null) => set({ cameraViewRadiusHex: radius }),
   hoveredHex: null,
   setHoveredHex: (hoveredHex: HexPosition | null) => set({ hoveredHex }),
   entityActions: {

@@ -102,6 +102,11 @@ export const RealmAutomationPanel = ({
   const savedPresetId = useMemo(() => inferRealmPreset(realmAutomation), [realmAutomation]);
   const activePresetId = draftPresetId ?? savedPresetId;
 
+  const smartPresetAllocations = useMemo(
+    () => calculatePresetAllocations(realmResources, "smart", entityType),
+    [realmResources, entityType],
+  );
+
   const presetAllocations = useMemo(() => {
     if (activePresetId === "custom") {
       return new Map<number, ResourceAutomationPercentages>();
@@ -140,6 +145,10 @@ export const RealmAutomationPanel = ({
         if (stored) {
           return { ...stored };
         }
+        const smartDefault = smartPresetAllocations.get(resourceId);
+        if (smartDefault) {
+          return { ...smartDefault };
+        }
         return createBaselinePercentages(resourceId);
       }
 
@@ -150,7 +159,14 @@ export const RealmAutomationPanel = ({
 
       return createBaselinePercentages(resourceId);
     },
-    [draftPercentages, activePresetId, realmAutomation, presetAllocations, createBaselinePercentages],
+    [
+      draftPercentages,
+      activePresetId,
+      realmAutomation,
+      presetAllocations,
+      smartPresetAllocations,
+      createBaselinePercentages,
+    ],
   );
 
   const hasLocalChanges = useMemo(() => {
@@ -196,9 +212,12 @@ export const RealmAutomationPanel = ({
     const presetId = inferRealmPreset(realmAutomation);
 
     if (presetId === "custom") {
+      const smartDefaults = calculatePresetAllocations(realmResources, "smart", entityType);
       realmResources.forEach((resourceId) => {
         snapshotPercentages[resourceId] =
-          realmAutomation.customPercentages?.[resourceId] ?? createBaselinePercentages(resourceId);
+          realmAutomation.customPercentages?.[resourceId] ??
+          smartDefaults.get(resourceId) ??
+          createBaselinePercentages(resourceId);
       });
     } else {
       const allocations = calculatePresetAllocations(realmResources, presetId, entityType);
@@ -414,9 +433,12 @@ export const RealmAutomationPanel = ({
     const buildPercentagesForPreset = (presetId: RealmPresetId) => {
       const next: Record<number, ResourceAutomationPercentages> = {};
       if (presetId === "custom") {
+        const smartDefaults = calculatePresetAllocations(realmResources, "smart", entityType);
         realmResources.forEach((resourceId) => {
           next[resourceId] =
-            realmAutomation.customPercentages?.[resourceId] ?? createBaselinePercentages(resourceId);
+            realmAutomation.customPercentages?.[resourceId] ??
+            smartDefaults.get(resourceId) ??
+            createBaselinePercentages(resourceId);
         });
         return next;
       }

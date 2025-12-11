@@ -255,9 +255,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     }
 
-    eligible.sort(
-      (a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0),
-    );
+    eligible.sort((a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0));
     return eligible;
   }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
@@ -778,27 +776,27 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         )}
         <div className="flex flex-wrap gap-2">
           {visibleResourceIds.map((rid) => {
-              const resourceId = rid as ResourcesIds;
-              const sel = selectedResources.includes(resourceId);
-              const totalHuman = resourceTotals.get(rid) ?? 0;
-              return (
-                <button
-                  key={resourceId}
-                  type="button"
-                  onClick={() =>
-                    setSelectedResources((prev) =>
-                      prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
-                    )
-                  }
-                  className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                  title={ResourcesIds[resourceId] as string}
-                >
-                  <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
-                  {ResourcesIds[resourceId]}{" "}
-                  <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
-                </button>
-              );
-            })}
+            const resourceId = rid as ResourcesIds;
+            const sel = selectedResources.includes(resourceId);
+            const totalHuman = resourceTotals.get(rid) ?? 0;
+            return (
+              <button
+                key={resourceId}
+                type="button"
+                onClick={() =>
+                  setSelectedResources((prev) =>
+                    prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
+                  )
+                }
+                className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                title={ResourcesIds[resourceId] as string}
+              >
+                <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
+                {ResourcesIds[resourceId]}{" "}
+                <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
+              </button>
+            );
+          })}
         </div>
       </section>
 

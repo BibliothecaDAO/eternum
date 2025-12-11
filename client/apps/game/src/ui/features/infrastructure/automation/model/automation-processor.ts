@@ -162,7 +162,9 @@ export const buildRealmProductionPlan = ({
     }
   });
 
-  const configuredCustomIds = Object.keys(realmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds);
+  const configuredCustomIds = Object.keys(realmConfig.customPercentages ?? {}).map(
+    (key) => Number(key) as ResourcesIds,
+  );
   const resourceIdsToProcess = new Set<ResourcesIds>(producedResourceIds);
 
   // Reliability fallback: if snapshot misses active production, keep configured custom resources in scope.
@@ -186,6 +188,7 @@ export const buildRealmProductionPlan = ({
   }
 
   const presetId = realmConfig.presetId ?? "smart";
+  const smartDefaults = calculatePresetAllocations(Array.from(resourceIdsToProcess), "smart", entityType);
   const presetAllocations =
     presetId === "smart" || presetId === "idle"
       ? calculatePresetAllocations(Array.from(resourceIdsToProcess), presetId, entityType)
@@ -204,16 +207,16 @@ export const buildRealmProductionPlan = ({
     .map((resourceId) => {
       const customPercentages = realmConfig.customPercentages?.[resourceId];
       const presetPercentages = presetAllocations.get(resourceId);
+      const smartPercentages = smartDefaults.get(resourceId) ?? baselinePercentages(resourceId);
 
       const source =
         presetId === "custom"
-          ? customPercentages ?? baselinePercentages(resourceId)
-          : presetPercentages ?? { resourceToResource: 0, laborToResource: 0 };
+          ? (customPercentages ?? smartPercentages)
+          : (presetPercentages ?? { resourceToResource: 0, laborToResource: 0 });
 
       const percentages: ResourceAutomationPercentages = {
         resourceToResource: clampPercent(source.resourceToResource),
-        laborToResource:
-          resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource ?? 0),
+        laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource ?? 0),
       };
 
       return { resourceId, percentages };

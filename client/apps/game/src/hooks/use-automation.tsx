@@ -15,7 +15,7 @@ import {
   type RealmAutomationExecutionSummary,
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getAutomationOverallocation } from "@/utils/automation-presets";
+import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { getStructureName, getIsBlitz, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -258,18 +258,22 @@ export const useAutomation = () => {
             const resourceIdsForCheck =
               producedResourceIds.length > 0
                 ? producedResourceIds
-                : Object.keys(activeRealmConfig.customPercentages ?? {}).map(
-                    (key) => Number(key) as ResourcesIds,
-                  );
+                : Object.keys(activeRealmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds);
 
             const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
+            const smartDefaults = calculatePresetAllocations(
+              resourceIdsForCheck,
+              "smart",
+              activeRealmConfig.entityType,
+            );
             resourceIdsForCheck.forEach((resourceId) => {
               const stored = activeRealmConfig.customPercentages?.[resourceId];
+              const smartDefault = smartDefaults.get(resourceId);
               const baseline =
                 resourceId === ResourcesIds.Donkey
                   ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
                   : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
-              effectivePercentages[resourceId] = stored ?? baseline;
+              effectivePercentages[resourceId] = stored ?? smartDefault ?? baseline;
             });
 
             const { resourceOver, laborOver } = getAutomationOverallocation(
@@ -293,11 +297,7 @@ export const useAutomation = () => {
               }
             }
           } catch (error) {
-            console.error(
-              "[Automation] Failed to auto-balance custom allocations",
-              activeRealmConfig.realmId,
-              error,
-            );
+            console.error("[Automation] Failed to auto-balance custom allocations", activeRealmConfig.realmId, error);
           }
         }
 

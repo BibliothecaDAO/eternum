@@ -290,11 +290,11 @@ type PendingPresetAction = {
   tab: AutomationTab;
 };
 
-  export const ProductionSidebar = memo(
-    ({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
-      const upsertRealm = useAutomationStore((state) => state.upsertRealm);
-      const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
-      const isBlitz = getIsBlitz();
+export const ProductionSidebar = memo(
+  ({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
+    const upsertRealm = useAutomationStore((state) => state.upsertRealm);
+    const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+    const isBlitz = getIsBlitz();
 
     const structuresByType = useMemo(() => {
       const realmStructures: RealmInfo[] = [];

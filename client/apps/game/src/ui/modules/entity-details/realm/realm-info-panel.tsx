@@ -64,6 +64,10 @@ const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null)
     return "Smart automation";
   }
 
+  if (!automation.customPercentages || Object.keys(automation.customPercentages).length === 0) {
+    return "Smart automation";
+  }
+
   const hasLabor = Object.values(automation.customPercentages ?? {}).some(
     (config) => (config?.laborToResource ?? 0) > 0,
   );
