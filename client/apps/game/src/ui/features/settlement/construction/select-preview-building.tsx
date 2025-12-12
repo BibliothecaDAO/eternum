@@ -1097,6 +1097,7 @@ const BuildingCard = ({
         isProducing={productionStatus.isProducing}
         timeRemainingSeconds={effectiveRemainingSeconds}
         size="md"
+        showTooltip={false}
         cornerTopLeft={totalProductionBuildings > 0 ? `${totalProductionBuildings}` : undefined}
         cornerTopRight={outputLabel}
         cornerBottomRight={formattedRemaining ?? undefined}
@@ -1472,7 +1473,7 @@ export const BuildingInfo = ({
               <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produced</h6>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-semibold text-green-400">+{perTick}</span>
-                <ResourceIcon className="self-center" resource={resourceProducedName} size="sm" />
+                <ResourceIcon withTooltip={false} className="self-center" resource={resourceProducedName} size="sm" />
                 <span className="text-gold/80">{resourceProducedName}</span>
               </div>
             </div>

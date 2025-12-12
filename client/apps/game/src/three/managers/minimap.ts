@@ -69,8 +69,6 @@ const MINIMAP_CONFIG = {
   },
 };
 
-const FETCH_TILES_SLOW_THRESHOLD_MS = 1_000;
-
 // Generic cluster interface for any entity type
 interface EntityCluster {
   centerCol: number;
@@ -1055,9 +1053,6 @@ class Minimap {
     this.isFetchingTiles = true;
     const getTimestamp = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const startTime = getTimestamp();
-    if (import.meta.env.DEV) {
-      console.log("fetchTiles");
-    }
     try {
       const tiles: Tile[] = [];
       const limit = 40_000;
@@ -1105,16 +1100,9 @@ class Minimap {
       const fetchDuration = fetchEndTime - startTime;
       const postProcessDuration = endTime - fetchEndTime;
       const totalDuration = endTime - startTime;
-      if (import.meta.env.DEV) {
-        console.log(
-          `[Minimap] fetchTiles finished in ${totalDuration.toFixed(2)}ms (fetch ${fetchDuration.toFixed(2)}ms, render ${postProcessDuration.toFixed(2)}ms)`,
-        );
-      }
-      if (totalDuration > FETCH_TILES_SLOW_THRESHOLD_MS) {
-        console.warn(
-          `[Minimap] fetchTiles slow: ${totalDuration.toFixed(2)}ms > ${FETCH_TILES_SLOW_THRESHOLD_MS}ms threshold`,
-        );
-      }
+      void fetchDuration;
+      void postProcessDuration;
+      void totalDuration;
     } catch (error) {
       console.error("Failed to fetch tiles:", error);
     } finally {
@@ -1347,10 +1335,6 @@ class Minimap {
   };
 
   public dispose(): void {
-    if (import.meta.env.DEV) {
-      console.log("🧹 Minimap: Starting disposal");
-    }
-
     // Remove all event listeners
     if (this.canvas) {
       this.canvas.removeEventListener("mousedown", this.handleMouseDown);
@@ -1365,11 +1349,9 @@ class Minimap {
     this.scaledCoords.clear();
 
     // Dispose label images
-    let imagesDisposed = 0;
-    this.labelImages.forEach((image, key) => {
+    this.labelImages.forEach((image) => {
       // Set src to empty to help with garbage collection
       image.src = "";
-      imagesDisposed++;
     });
     this.labelImages.clear();
 
@@ -1398,10 +1380,6 @@ class Minimap {
     if (this.tileStreamSubscription) {
       this.tileStreamSubscription.cancel();
       this.tileStreamSubscription = null;
-    }
-
-    if (import.meta.env.DEV) {
-      console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
     }
   }
 

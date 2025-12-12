@@ -1515,7 +1515,9 @@ export default class WorldmapScene extends HexagonScene {
         if (this.armyManager.hasArmy(selectedEntityId)) {
           this.onArmySelection(selectedEntityId, playerAddress);
         } else {
-          console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
+          if (import.meta.env.DEV) {
+            console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
+          }
         }
       };
 
@@ -1530,7 +1532,9 @@ export default class WorldmapScene extends HexagonScene {
 
     // Ensure army is available for selection
     if (!this.armyManager.hasArmy(selectedEntityId)) {
-      console.warn(`[DEBUG] Army ${selectedEntityId} not available in current chunk for selection`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Army ${selectedEntityId} not available in current chunk for selection`);
+      }
 
       return;
     }
@@ -1572,7 +1576,9 @@ export default class WorldmapScene extends HexagonScene {
         new Color(0.8, 1.0, 1.0), // Cyan pulse
       );
     } else {
-      console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
+      }
     }
 
     const extraHexes: HexPosition[] = [];
@@ -2049,7 +2055,9 @@ export default class WorldmapScene extends HexagonScene {
     } = update;
 
     if (ownerAddress === undefined) {
-      console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
+      }
       return;
     }
 
@@ -2061,7 +2069,9 @@ export default class WorldmapScene extends HexagonScene {
 
     let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
-      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
+      }
 
       // Check if we already have this army with a valid owner
       const existingArmy = this.armiesPositions.has(entityId);
@@ -2079,7 +2089,9 @@ export default class WorldmapScene extends HexagonScene {
 
         // If we still have 0n owner, the army was defeated/deleted - clean up the cache
         if (actualOwnerAddress === 0n) {
-          console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+          if (import.meta.env.DEV) {
+            console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+          }
           const oldPos = this.armiesPositions.get(entityId);
           if (oldPos) {
             this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
@@ -4159,7 +4171,6 @@ export default class WorldmapScene extends HexagonScene {
    */
   private addCombatRelationship(attackerId: ID, defenderId: ID) {
     this.battleDirectionManager.addCombatRelationship(attackerId, defenderId);
-    console.log(`[ATTACKER-DEFENDER] Added relationship: ${attackerId} attacked ${defenderId}`);
   }
 
   /**
@@ -4174,9 +4185,6 @@ export default class WorldmapScene extends HexagonScene {
    * Recalculate arrows for all entities that have relationships with the given entity
    */
   private recalculateArrowsForEntitiesRelatedTo(entityId: ID) {
-    console.log(
-      `[RECALCULATE ARROWS FOR ENTITIES RELATED TO] Recalculating arrows for entities related to ${entityId}`,
-    );
     this.battleDirectionManager.recalculateArrowsForEntitiesRelatedTo(entityId);
   }
 
@@ -4190,7 +4198,5 @@ export default class WorldmapScene extends HexagonScene {
 
     // Remove from battle direction relationships
     this.battleDirectionManager.removeEntityFromTracking(entityId);
-
-    console.log(`[ATTACKER-DEFENDER] Removed entity ${entityId} from tracking`);
   }
 }
