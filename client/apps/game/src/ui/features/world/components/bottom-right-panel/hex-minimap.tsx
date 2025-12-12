@@ -15,7 +15,7 @@ export interface MinimapTile {
   col: number;
   row: number;
   biome?: number;
-  occupier_id?: number;
+  occupier_id?: string;
   occupier_type?: number;
   occupier_is_structure?: boolean;
 }
@@ -24,10 +24,23 @@ export const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
   col: Number(tile.col),
   row: Number(tile.row),
   biome: tile.biome !== undefined ? Number(tile.biome) : undefined,
-  occupier_id: tile.occupier_id !== undefined ? Number(tile.occupier_id) : undefined,
+  occupier_id: normalizeEntityId(tile.occupier_id) ?? undefined,
   occupier_type: tile.occupier_type !== undefined ? Number(tile.occupier_type) : undefined,
   occupier_is_structure: Boolean(tile.occupier_is_structure),
 });
+
+const normalizeEntityId = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  const raw = typeof value === "string" ? value.trim() : String(value);
+  if (!raw) return null;
+  try {
+    const parsed = BigInt(raw);
+    if (parsed === 0n) return null;
+    return parsed.toString();
+  } catch {
+    return raw === "0" ? null : raw;
+  }
+};
 
 const HEX_SIZE = 7;
 const SQRT3 = Math.sqrt(3);
@@ -195,17 +208,33 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const selectableArmies = useUIStore((state) => state.selectableArmies);
   const currentPlayerData = usePlayerStore((state) => state.currentPlayerData);
   const isBlitz = getIsBlitz();
 
   const ownedStructureIds = useMemo(() => {
-    return new Set(playerStructures.map((structure) => String(structure.entityId)));
+    return new Set(
+      playerStructures
+        .map((structure) => normalizeEntityId(structure.entityId))
+        .filter((id): id is string => Boolean(id)),
+    );
   }, [playerStructures]);
 
   const ownedExplorerIds = useMemo(() => {
-    if (!currentPlayerData?.explorerIds?.length) return new Set<string>();
-    return new Set(currentPlayerData.explorerIds.map((entry) => entry.split(":")[0]));
-  }, [currentPlayerData]);
+    const ids = new Set<string>();
+
+    selectableArmies.forEach((army) => {
+      const id = normalizeEntityId(army.entityId);
+      if (id) ids.add(id);
+    });
+
+    currentPlayerData?.explorerIds?.forEach((entry) => {
+      const id = normalizeEntityId(entry.split(":")[0]);
+      if (id) ids.add(id);
+    });
+
+    return ids;
+  }, [selectableArmies, currentPlayerData]);
 
   const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
 
@@ -444,13 +473,15 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
             } satisfies TileMarker;
           case StructureType.Village:
             return {
-              iconSrc: ownedStructureIds.has(String(tile.occupier_id))
+              iconSrc: ownedStructureIds.has(normalizeEntityId(tile.occupier_id) ?? "")
                 ? LABEL_ICONS.villageMine
                 : LABEL_ICONS.villageEnemy,
             } satisfies TileMarker;
           case StructureType.Realm:
             return {
-              iconSrc: ownedStructureIds.has(String(tile.occupier_id)) ? LABEL_ICONS.realmMine : LABEL_ICONS.realmEnemy,
+              iconSrc: ownedStructureIds.has(normalizeEntityId(tile.occupier_id) ?? "")
+                ? LABEL_ICONS.realmMine
+                : LABEL_ICONS.realmEnemy,
             } satisfies TileMarker;
           case StructureType.Hyperstructure:
             return { iconSrc: LABEL_ICONS.hyperstructure, sizeMultiplier: 1.1 } satisfies TileMarker;
@@ -461,8 +492,9 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
       const explorerInfo = getExplorerInfoFromTileOccupier(occupierType);
       if (explorerInfo) {
+        const occupierId = normalizeEntityId(tile.occupier_id);
         return {
-          iconSrc: ownedExplorerIds.has(String(tile.occupier_id)) ? LABEL_ICONS.armyMine : LABEL_ICONS.armyEnemy,
+          iconSrc: occupierId && ownedExplorerIds.has(occupierId) ? LABEL_ICONS.armyMine : LABEL_ICONS.armyEnemy,
           sizeMultiplier: 0.9,
         } satisfies TileMarker;
       }
