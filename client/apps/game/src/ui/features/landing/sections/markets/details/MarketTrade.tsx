@@ -189,9 +189,8 @@ export function MarketTrade({
   const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions")?.address;
   const marketContractAddress = (env.VITE_PUBLIC_PM_ADDRESS ?? manifestMarketAddress ?? DEFAULT_MARKET_ADDRESS).trim();
   const nowSec = Math.floor(Date.now() / 1_000);
-  const isTradeable = nowSec >= market.start_at && nowSec < market.end_at;
-  // const isTradeable = true;
   const isResolved = market.isResolved();
+  const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
 
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
@@ -214,6 +213,40 @@ export function MarketTrade({
         (!account || BigInt(balance.account_address) === BigInt(account.address || 0)),
     );
   }, [positionBalances, positionIds, account]);
+
+  // TODO: check if that works when a market has been resovled
+  const claimableAmount = useMemo(() => {
+    if (!isResolved) return 0n;
+    const payouts = market.conditionResolution?.payout_numerators;
+    if (!payouts || payouts.length === 0) return 0n;
+    const totalPayout = payouts.reduce((acc, v) => acc + BigInt(v), 0n);
+    if (totalPayout === 0n) return 0n;
+
+    const denominator = BigInt(market.vaultDenominator?.value || 0);
+    if (denominator === 0n) return 0n;
+
+    return positionBalances.reduce((acc, balance) => {
+      const tokenId = BigInt(balance.token_id || 0);
+      const idx = positionIds.findIndex((id) => id === tokenId);
+      if (idx < 0) return acc;
+
+      const outcomeNumerator = BigInt(market.vaultNumerators?.find((n) => Number(n.index) === idx)?.value || 0);
+      if (outcomeNumerator === 0n) return acc;
+
+      const payout = BigInt(payouts[idx] ?? 0);
+      if (payout === 0n) return acc;
+
+      const share = (payout * 10_000n) / totalPayout;
+      const rewardPerUnit = (share * denominator) / outcomeNumerator;
+      const payoutAmount = (rewardPerUnit * BigInt(balance.balance || 0)) / 10_000n;
+      return acc + payoutAmount;
+    }, 0n);
+  }, [isResolved, market, positionBalances, positionIds]);
+
+  const claimableDisplay = useMemo(() => {
+    const formatted = formatUnits(claimableAmount, collateralDecimals, 4);
+    return Number(formatted || 0) > 0 ? formatted : "0";
+  }, [claimableAmount, collateralDecimals]);
 
   const tradePreview = useMemo(() => {
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
@@ -406,13 +439,28 @@ export function MarketTrade({
           ? "No redeemable positions detected in your wallet."
           : "Redeem your position tokens to claim your payout.";
 
-    return (
-      <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-gold/70">
-        <span className="font-semibold text-white">Claim rewards</span>
-        <span>{claimMessage}</span>
-        <Button className="w-full bg-white/10 text-white" disabled={claimDisabled} onClick={onRedeem}>
+    return isResolved ? (
+      <div className="flex flex-col gap-3 rounded-lg border border-progress-bar-good/30 bg-progress-bar-good/5 p-4 text-sm text-gold/80">
+        <div className="flex items-center justify-between">
+          <span className="text-xs uppercase tracking-[0.08em] text-progress-bar-good">Resolved — Claim</span>
+          <span className="flex items-center gap-2 text-base font-semibold text-progress-bar-good">
+            <span className="text-lg">+{claimableDisplay}</span>
+            <TokenIcon token={market.collateralToken} size={16} />
+          </span>
+        </div>
+        <span className="text-xs text-gold/70">{claimMessage}</span>
+        <Button
+          className="w-full bg-progress-bar-good/80 text-white hover:bg-progress-bar-good"
+          disabled={claimDisabled}
+          onClick={onRedeem}
+        >
           Claim
         </Button>
+      </div>
+    ) : (
+      <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-gold/70">
+        <span className="font-semibold text-white">Trading unavailable</span>
+        <span>{claimMessage}</span>
       </div>
     );
   }
