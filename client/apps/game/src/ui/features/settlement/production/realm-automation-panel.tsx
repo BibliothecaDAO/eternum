@@ -475,12 +475,11 @@ export const RealmAutomationPanel = ({
     allResources.forEach((id) => {
       const resourceId = Number(id) as ResourcesIds;
       const source = currentResourceSet.has(resourceId)
-        ? draftPercentages[resourceId] ?? resolveDraftPercentages(resourceId)
-        : realmAutomation.customPercentages?.[resourceId] ?? resolveDraftPercentages(resourceId);
+        ? (draftPercentages[resourceId] ?? resolveDraftPercentages(resourceId))
+        : (realmAutomation.customPercentages?.[resourceId] ?? resolveDraftPercentages(resourceId));
       normalizedPercentages[resourceId] = {
         resourceToResource: clampPercent(source.resourceToResource),
-        laborToResource:
-          resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource),
+        laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource),
       };
     });
 

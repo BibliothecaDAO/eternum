@@ -175,13 +175,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         vacated.delete(key);
       }
     });
-  }, [
-    dojo.setup.components,
-    dojo.setup.systemCalls,
-    realm?.position?.x,
-    realm?.position?.y,
-    structureBuildings,
-  ]);
+  }, [dojo.setup.components, dojo.setup.systemCalls, realm?.position?.x, realm?.position?.y, structureBuildings]);
   const hasAvailableBuildingTile = useMemo(() => {
     if (!realm?.position) return true;
 

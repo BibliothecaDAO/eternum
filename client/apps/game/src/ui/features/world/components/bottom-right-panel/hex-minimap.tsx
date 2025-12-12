@@ -238,16 +238,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
 
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    console.log("[minimap] HexMinimap tiles", {
-      count: tiles.length,
-      bounds: centeredIndex.bounds,
-      columns: centeredIndex.byCol.size,
-      sample: tiles[0],
-    });
-  }, [tiles, centeredIndex]);
-
   const initialView = useMemo(() => {
     if (!tiles.length) {
       return { x: 0, y: 0, scale: 1.4 };
@@ -308,11 +298,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
     followRafRef.current = requestAnimationFrame(tick);
   }, []);
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    console.log("[minimap] HexMinimap view", view);
-  }, [view]);
 
   const rafRef = useRef<number | null>(null);
   const pendingViewRef = useRef<{ x: number; y: number; scale: number } | null>(null);
@@ -396,14 +381,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     const radiusPx = CAMERA_CIRCLE_SCREEN_RADIUS_PX / view.scale;
     return { centerPixel, radiusPx };
   }, [cameraTargetHex, view.scale]);
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    console.log("[minimap] HexMinimap cameraCircle", {
-      cameraTargetHex,
-      cameraCircle,
-    });
-  }, [cameraTargetHex, cameraCircle]);
 
   const visibleTiles = useMemo(() => {
     if (!tiles.length) return [] as CenteredTileEntry[];
@@ -503,15 +480,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     },
     [ownedStructureIds, ownedExplorerIds, isBlitz],
   );
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    console.log("[minimap] HexMinimap visibleTiles", {
-      visibleCount: visibleTiles.length,
-      viewBox: viewBox.value,
-      viewport,
-    });
-  }, [visibleTiles.length, viewBox.value, viewport]);
 
   const dragRef = useRef<{
     pointerId: number;

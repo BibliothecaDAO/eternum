@@ -713,15 +713,20 @@ const MinimapPanel = () => {
     const loadTiles = async () => {
       setIsLoading(true);
       try {
-        const fetched = (await sqlApi.fetchAllTiles()) as MinimapTile[];
-        if (import.meta.env.DEV) {
-          console.log("[minimap] fetched tiles", {
-            count: fetched.length,
-            sample: fetched[0],
-          });
-        }
+        const fetched = await sqlApi.fetchAllTiles();
         if (!cancelled) {
-          setTiles(fetched.map(normalizeMinimapTile));
+          setTiles(
+            fetched.map((tile) =>
+              normalizeMinimapTile({
+                col: tile.col,
+                row: tile.row,
+                biome: tile.biome,
+                occupier_id: tile.occupier_id?.toString(),
+                occupier_type: tile.occupier_type,
+                occupier_is_structure: tile.occupier_is_structure,
+              }),
+            ),
+          );
           setError(null);
         }
       } catch (err) {
