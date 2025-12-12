@@ -1,12 +1,12 @@
 import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { Market, MarketCreated, VaultDenominator, VaultNumerator } from "./bindings";
-export type { RegisteredToken } from "./bindings";
 import { MarketClass } from "./class";
 import { useDojoSdk } from "./hooks/dojo/useDojoSdk";
 import { useConfig } from "./providers";
 import { deepEqual, formatCurrency, formatUnits } from "./utils";
 export { DojoSdkProviderInitialized } from "@/pm/hooks/dojo/useDojoSdk";
+export type { RegisteredToken } from "./bindings";
 
 export interface MarketFiltersParams {
   status: MarketStatusFilter;

@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import type { RegisteredToken } from "./bindings";
 
 const FALLBACK_TOKEN: RegisteredToken = {
-  contract_address: "0x0",
-  name: "Unknown collateral",
-  symbol: "TKN",
+  contract_address: "0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5",
+  name: "LORDS",
+  symbol: "LORDS",
   decimals: 18,
 };
 
