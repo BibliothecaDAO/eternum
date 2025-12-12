@@ -4,8 +4,11 @@ import { Link, useParams } from "react-router-dom";
 import { MarketClass, type MarketOutcome } from "@/pm/class";
 import { useMarkets } from "@pm/sdk";
 import { ScrollArea } from "@pm/ui";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Play } from "lucide-react";
 
+import Button from "@/ui/design-system/atoms/button";
+
+import { MARKET_FILTERS_ALL, MarketsProviders, MarketsSection } from "./markets";
 import { MarketActivity } from "./markets/details/MarketActivity";
 import { MarketCreatedBy } from "./markets/details/MarketCreatedBy";
 import { MarketFees } from "./markets/details/MarketFees";
@@ -14,13 +17,12 @@ import { MarketPositions } from "./markets/details/MarketPositions";
 import { MarketResolution } from "./markets/details/MarketResolution";
 import { MarketResolved } from "./markets/details/MarketResolved";
 import { MarketTrade } from "./markets/details/MarketTrade";
-import { MarketVaultFees } from "./markets/details/MarketVaultFees";
 import { UserMessages } from "./markets/details/UserMessages";
 import { MarketOdds } from "./markets/MarketOdds";
 import { MarketStatusBadge } from "./markets/MarketStatusBadge";
 import { MarketTimeline } from "./markets/MarketTimeline";
 import { MarketTvl } from "./markets/MarketTvl";
-import { MARKET_FILTERS_ALL, MarketsProviders, MarketsSection } from "./markets";
+import { useMarketWatch } from "./markets/use-market-watch";
 
 const parseMarketId = (raw?: string | null) => {
   if (!raw) return null;
@@ -32,17 +34,37 @@ const parseMarketId = (raw?: string | null) => {
 };
 
 const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
+  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
   const [activeTab, setActiveTab] = useState<
     "terms" | "comments" | "activity" | "positions" | "vault-fees" | "resolution"
   >("terms");
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
+  const watchState = getWatchState(market);
+  const isWatching = watchingMarketId === String(market.market_id);
+  const watchDisabled = watchState.status === "offline";
+  const watchLoading = watchState.status === "checking" || isWatching;
 
   return (
     <>
       <div className="grid w-full grid-cols-1 gap-8 lg:grid-cols-[5fr_2fr]">
         <div className="space-y-4">
           <div className="space-y-1">
-            <h3 className="text-3xl font-semibold text-white">{market.title || "Untitled market"}</h3>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h3 className="text-3xl font-semibold text-white">{market.title || "Untitled market"}</h3>
+              <Button
+                size="xs"
+                variant="outline"
+                forceUppercase={false}
+                className="gap-2"
+                onClick={() => void watchMarket(market)}
+                isLoading={watchLoading}
+                disabled={watchDisabled}
+                title={watchDisabled ? "Game is offline" : undefined}
+              >
+                <Play className="h-4 w-4" />
+                <span>Watch</span>
+              </Button>
+            </div>
             <MarketCreatedBy creator={market.creator} />
           </div>
 
@@ -113,7 +135,7 @@ const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
           {activeTab === "comments" ? <UserMessages marketId={market.market_id} /> : null}
           {activeTab === "activity" ? <MarketActivity market={market} /> : null}
           {activeTab === "positions" ? <MarketPositions market={market} /> : null}
-          {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null}
+          {/* {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null} */}
           {activeTab === "resolution" ? (
             market.isResolved() ? (
               <MarketResolved market={market} />

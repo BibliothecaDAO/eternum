@@ -3,14 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, HStack, Scro
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
+import Button from "@/ui/design-system/atoms/button";
+import { Play } from "lucide-react";
+
 import { MarketImage } from "./MarketImage";
 import { MarketOdds } from "./MarketOdds";
 import { MarketStatusBadge } from "./MarketStatusBadge";
 import { MarketTimeline } from "./MarketTimeline";
 import { MarketTvl } from "./MarketTvl";
+import { useMarketWatch } from "./use-market-watch";
 
 export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersParams }) {
   const { markets } = useMarkets({ marketFilters });
+  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
 
   const sortedMarkets = useMemo(() => {
     const getCreatedAt = (value: unknown) => {
@@ -56,8 +61,8 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
             className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/60 p-3 transition hover:border-gold/60"
             key={href !== "#" ? href : idx}
           >
-            <CardHeader className="px-0">
-              <CardTitle>
+            <CardHeader className="flex items-start justify-between gap-3 px-0">
+              <CardTitle className="flex-1">
                 {isLinkable ? (
                   <Link className="leading-normal hover:underline" to={href}>
                     {titleContent}
@@ -66,6 +71,26 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
                   titleContent
                 )}
               </CardTitle>
+              {(() => {
+                const state = getWatchState(market);
+                const disabled = state.status === "offline";
+                const loading = state.status === "checking" || watchingMarketId === String(market.market_id);
+                return (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    forceUppercase={false}
+                    className="gap-2"
+                    onClick={() => void watchMarket(market)}
+                    isLoading={loading}
+                    disabled={disabled}
+                    title={disabled ? "Game is offline" : undefined}
+                  >
+                    <Play className="h-4 w-4" />
+                    <span>Watch</span>
+                  </Button>
+                );
+              })()}
             </CardHeader>
             <CardContent className="flex flex-col gap-3 px-0">
               <VStack className="w-full">
