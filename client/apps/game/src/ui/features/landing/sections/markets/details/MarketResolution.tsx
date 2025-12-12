@@ -340,35 +340,39 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
   }, [players, playersError, playersLoading, serverLookupStatus]);
 
   return (
-    <VStack className="items-start gap-3">
-      <div className="text-sm text-gold/70">
-        Trigger resolution once the oracle data is ready. {serverLookupStatus !== "done" ? "Resolving game name..." : ""}
+    <>
+      <div className="mt-1 text-sm text-gold/70">
+        Trigger resolution once the oracle data is ready.{" "}
+        {serverLookupStatus !== "done" ? "Resolving game name..." : ""}
       </div>
-      <HStack className="flex-wrap gap-3">
-        <Button onClick={onResolve} disabled={!canResolve || isResolving} isLoading={isResolving}>
-          {isResolving ? "Resolving..." : "Resolve Market"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onComputeScores}
-          disabled={!canComputeScores || isComputingScores}
-          isLoading={isComputingScores}
-        >
-          {isComputingScores ? "Computing..." : "Compute Scores"}
-        </Button>
-        {!canResolve && <span className="text-xs text-gold/60">Resolution opens after the resolve time.</span>}
-        {!canComputeScores && (
-          <span className="text-xs text-gold/60">
-            {playersLoading
-              ? "Loading players..."
-              : !hasRankedPlayers
-                ? "Leaderboard unavailable — ranked order required to compute scores."
-                : "Score computation opens after the game ends."}
-          </span>
-        )}
-      </HStack>
-      <div className="text-[11px] text-gold/60 whitespace-pre-wrap break-words">{playersLabel}</div>
-      {computeStatus && <div className="text-xs text-gold/70">{computeStatus}</div>}
-    </VStack>
+
+      <VStack className="mt-4 items-start gap-3">
+        <HStack className="flex-wrap gap-3">
+          <Button onClick={onResolve} disabled={!canResolve || isResolving} isLoading={isResolving}>
+            {isResolving ? "Resolving..." : "Resolve Market"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onComputeScores}
+            disabled={!canComputeScores || isComputingScores}
+            isLoading={isComputingScores}
+          >
+            {isComputingScores ? "Computing..." : "Compute Scores"}
+          </Button>
+          {!canResolve && <span className="text-xs text-gold/60">Resolution opens after the resolve time.</span>}
+          {!canComputeScores && (
+            <span className="text-xs text-gold/60">
+              {playersLoading
+                ? "Loading players..."
+                : !hasRankedPlayers
+                  ? "Leaderboard unavailable — ranked order required to compute scores."
+                  : "Score computation opens after the game ends."}
+            </span>
+          )}
+        </HStack>
+        <div className="whitespace-pre-wrap break-words text-[11px] text-gold/60">{playersLabel}</div>
+        {computeStatus && <div className="text-xs text-gold/70">{computeStatus}</div>}
+      </VStack>
+    </>
   );
 };

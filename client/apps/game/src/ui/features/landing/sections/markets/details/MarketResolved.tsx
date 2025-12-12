@@ -8,6 +8,7 @@ import { MaybeController } from "../MaybeController";
 
 export function MarketResolved({
   market,
+  className,
   ...props
 }: {
   market: MarketClass;
@@ -44,7 +45,10 @@ export function MarketResolved({
   if (!market || !payouts || !market.odds) return null;
 
   return (
-    <div {...props}>
+    <div
+      className={`w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner ${className ?? ""}`}
+      {...props}
+    >
       {market.typBinary() && !market.typBinaryScalar() && (
         <HStack className="justify-center gap-3">
           {payouts[0].payoutNumerator > 0 && (

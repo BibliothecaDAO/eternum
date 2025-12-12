@@ -4,7 +4,7 @@ import { useUser } from "@/pm/hooks/dojo/user";
 import { useProtocolFees } from "@/pm/hooks/markets/useProtocolFees";
 import { HStack, VStack } from "@/pm/ui";
 import { formatUnits } from "@/pm/utils";
-import { Button, Panel } from "@/ui/design-system/atoms";
+import { Button } from "@/ui/design-system/atoms";
 import { getContractByName } from "@dojoengine/core";
 import { useAccount } from "@starknet-react/core";
 import { ArrowDown } from "lucide-react";
@@ -98,10 +98,10 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
 
   if (!relatedBalance) return null;
   return (
-    <Panel className="w-full max-w-[440px] space-y-4" tone="overlay" padding="lg" radius="xl" shadow="soft" blur>
+    <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
       <HStack className="items-start justify-between gap-3">
         <VStack className="gap-1">
-          <div className="text-xs uppercase tracking-[0.08em] text-white/70">Vault fees</div>
+          <div className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault fees</div>
           <div className="text-lg font-semibold text-white">Claim your market share</div>
         </VStack>
         <Button variant="secondary" size="sm" className="gap-2" onClick={claim} disabled={!canClaim}>
@@ -112,31 +112,31 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
       {!canClaim && <div className="text-xs text-gold/60">Claims unlock once the market is resolved.</div>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <VStack className="gap-1 rounded-lg border border-gold/15 bg-black/20 p-3">
-          <span className="text-xs uppercase tracking-[0.08em] text-white/60">Your share</span>
+        <VStack className="gap-1 rounded-lg border border-white/10 bg-white/5 p-3">
+          <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Your share</span>
           {/* <span className="text-2xl font-semibold text-gold/90">{Number(share) > 0 ? `${shareDisplay}%` : "0%"}</span> */}
-          <span className="text-2xl font-semibold text-gold/90">{"TBD"}</span>
-          <span className="text-xs text-white/60">of accumulated fees</span>
+          <span className="text-2xl font-semibold text-white">{"TBD"}</span>
+          <span className="text-xs text-gold/70">of accumulated fees</span>
         </VStack>
 
-        <VStack className="gap-1 rounded-lg border border-gold/15 bg-black/14 p-3">
-          <span className="text-xs uppercase tracking-[0.08em] text-white/60">Vault balance</span>
+        <VStack className="gap-1 rounded-lg border border-white/10 bg-white/5 p-3">
+          <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault balance</span>
           <HStack className="items-baseline gap-1">
             <span className="text-xl font-semibold text-white">{balanceDisplay}</span>
             <TokenIcon className="h-4 w-4" token={market.collateralToken} />
           </HStack>
-          <span className="text-xs text-white/60">held in this vault</span>
+          <span className="text-xs text-gold/70">held in this vault</span>
         </VStack>
 
-        <VStack className="gap-1 rounded-lg border border-gold/15 bg-black/10 p-3">
-          <span className="text-xs uppercase tracking-[0.08em] text-white/60">Redeemable</span>
+        <VStack className="gap-1 rounded-lg border border-white/10 bg-white/5 p-3">
+          <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Redeemable</span>
           <HStack className="items-baseline gap-1">
             <span className="text-xl font-semibold text-white">{Number(value) > 0 ? redeemableDisplay : "0"}</span>
             <TokenIcon className="h-4 w-4" token={market.collateralToken} />
           </HStack>
-          <span className="text-xs text-white/60">claimable right now</span>
+          <span className="text-xs text-gold/70">claimable right now</span>
         </VStack>
       </div>
-    </Panel>
+    </div>
   );
 }

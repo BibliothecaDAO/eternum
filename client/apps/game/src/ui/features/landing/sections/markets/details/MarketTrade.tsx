@@ -210,71 +210,79 @@ export function MarketTrade({
 
   if (!isTradeable) {
     return (
-      <VStack className="border-secondary !w-full gap-4 rounded-md border border-white/10 bg-black/40 p-4 text-white">
-        <div className="flex flex-col gap-1">
-          <span className="text-base font-semibold">Market closed</span>
-          <span className="text-sm text-gold/70">Trading is unavailable because the market is not live.</span>
+      <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
+        <div className="mb-3">
+          <p className="text-xs uppercase tracking-[0.08em] text-gold/70">Trading</p>
+          <p className="text-lg font-semibold">Market closed</p>
+          <p className="text-sm text-gold/70">Trading is unavailable because the market is not live.</p>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-md border border-white/10 bg-black/30 p-3 text-sm text-gold/70">
+        <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-gold/70">
           <span className="font-semibold text-white">Claim rewards</span>
           <span>Claiming is not implemented yet.</span>
           <Button className="w-full bg-white/10 text-white" disabled>
             Claim (coming soon)
           </Button>
         </div>
-      </VStack>
+      </div>
     );
   }
 
   return (
     <>
-      <VStack className="border-secondary !w-full items-end gap-6 rounded-md border border-white/10 p-3">
-        <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
-        <HStack className="justify-center">
-          {market.typBinary() && (
-            <HStack className="w-full">
-              <Button
-                className="w-1/2 bg-progress-bar-good text-white hover:bg-progress-bar-good/80"
-                onClick={() => {
-                  setSelectedOutcome?.(outcomes[0]);
-                  setIsDialogOpen(true);
-                }}
-                disabled={isSubmitting}
-              >
-                BUY YES
-              </Button>
-              <Button
-                className="w-1/2 bg-danger text-lightest hover:bg-danger/80"
-                onClick={() => {
-                  setSelectedOutcome?.(outcomes[1]);
-                  setIsDialogOpen(true);
-                }}
-                disabled={isSubmitting}
-              >
-                BUY NO
-              </Button>
-            </HStack>
-          )}
+      <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
+        <div className="mb-3">
+          <p className="text-xs uppercase tracking-[0.08em] text-gold/70">Trading</p>
+          <p className="text-lg font-semibold text-white">Place a trade</p>
+        </div>
 
-          {market.typCategorical() && (
-            <VStack className="w-full gap-2">
-              <div className="flex items-center justify-between rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs text-gold/70">
-                <span>Selected outcome</span>
-                <span className="text-white/90">
-                  {selectedOutcome?.name ? <MaybeController address={selectedOutcome.name} /> : "None"}
-                </span>
-              </div>
-              <Button
-                className="w-full bg-white/10 text-white hover:bg-white/20"
-                onClick={() => setIsDialogOpen(true)}
-                disabled={!selectedOutcome || isSubmitting}
-              >
-                {!selectedOutcome ? "Select an outcome" : "BUY"}
-              </Button>
-            </VStack>
-          )}
-        </HStack>
+        <VStack className="items-end gap-6">
+          <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
+          <HStack className="justify-center">
+            {market.typBinary() && (
+              <HStack className="w-full">
+                <Button
+                  className="w-1/2 bg-progress-bar-good text-white hover:bg-progress-bar-good/80"
+                  onClick={() => {
+                    setSelectedOutcome?.(outcomes[0]);
+                    setIsDialogOpen(true);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  BUY YES
+                </Button>
+                <Button
+                  className="w-1/2 bg-danger text-lightest hover:bg-danger/80"
+                  onClick={() => {
+                    setSelectedOutcome?.(outcomes[1]);
+                    setIsDialogOpen(true);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  BUY NO
+                </Button>
+              </HStack>
+            )}
+
+            {market.typCategorical() && (
+              <VStack className="w-full gap-2">
+                <div className="flex items-center justify-between rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-gold/70">
+                  <span>Selected outcome</span>
+                  <span className="text-white/90">
+                    {selectedOutcome?.name ? <MaybeController address={selectedOutcome.name} /> : "None"}
+                  </span>
+                </div>
+                <Button
+                  className="w-full bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => setIsDialogOpen(true)}
+                  disabled={!selectedOutcome || isSubmitting}
+                >
+                  {!selectedOutcome ? "Select an outcome" : "BUY"}
+                </Button>
+              </VStack>
+            )}
+          </HStack>
+        </VStack>
 
         <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
           <DialogHeader>
@@ -306,7 +314,7 @@ export function MarketTrade({
             </Button>
           </DialogFooter>
         </Dialog>
-      </VStack>
+      </div>
     </>
   );
 }

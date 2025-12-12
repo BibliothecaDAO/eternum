@@ -18,6 +18,20 @@ type HolderPosition = {
   totalRaw: bigint;
 };
 
+const HolderAvatar = ({ address, highlight }: { address: string; highlight?: boolean }) => {
+  const initials = address ? address.slice(2, 4).toUpperCase() : "??";
+
+  return (
+    <div
+      className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold ${
+        highlight ? "bg-gold/20 text-dark ring-1 ring-gold/50" : "bg-white/10 text-white ring-1 ring-white/10"
+      }`}
+    >
+      {initials}
+    </div>
+  );
+};
+
 const formatBalance = (balance: TokenBalance, token: Token | undefined, decimalsFallback: number) => {
   const decimals = token?.decimals ? Number(token.decimals) : decimalsFallback;
   return formatUnits(BigInt(balance.balance), decimals, 4);
@@ -30,7 +44,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
   } = useDojoSdk();
 
   const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions").address;
-  const vaultFeesAddress = getContractByName(manifest, "pm", "VaultFees").address;
+  // const vaultFeesAddress = getContractByName(manifest, "pm", "VaultFees").address;
 
   const positionTokenIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id)), [market.position_ids]);
 
@@ -94,46 +108,78 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
 
   if (holders.length === 0) {
     return (
-      <div className="rounded-md border border-white/10 bg-black/40 p-4 text-sm text-gold/80">
-        <p>No positions have been opened in this market yet.</p>
+      <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/80">
+        <p className="text-white">Market holders</p>
         <p className="mt-1 text-xs text-gold/60">Once players buy outcomes, their positions will appear here.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md border border-white/10 bg-black/40 p-4 text-sm text-white/80">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-white">Market holders</p>
-        <p className="text-xs text-gold/70">{symbol}</p>
+    <>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
+          {holders.length} {holders.length === 1 ? "holder" : "holders"}
+        </div>
       </div>
 
-      <div className="divide-y divide-white/10">
-        {holders.map((holder) => {
+      <div className="space-y-3">
+        {holders.map((holder, holderIdx) => {
           const isYou = account && BigInt(holder.account) === BigInt(account.address);
-          return (
-            <div key={holder.account} className="space-y-2 py-3">
-              <div className="flex items-center justify-between">
-                <MaybeController address={holder.account} className="text-white/90" />
-                {isYou ? <span className="text-xs text-gold/70">You</span> : null}
-              </div>
+          const totalFormatted = formatUnits(holder.totalRaw, Number(market.collateralToken.decimals), 4);
 
-              <div className="space-y-1">
-                {holder.positions.map((pos, idx) => (
-                  <div key={`${holder.account}-pos-${idx}`} className="flex items-center justify-between">
-                    <span className="text-gold/70">
-                      {/^0x[0-9a-fA-F]+$/.test(pos.label) ? <MaybeController address={pos.label} /> : pos.label}
-                    </span>
-                    <span className="text-white">
-                      {pos.amountFormatted} {symbol}
-                    </span>
+          return (
+            <div
+              key={`${holder.account}-${holderIdx}`}
+              className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${
+                isYou ? "border-gold/50 bg-gold/5" : "border-white/10 bg-white/5"
+              }`}
+            >
+              <HolderAvatar address={holder.account} highlight={isYou} />
+
+              <div className="flex flex-1 flex-col gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gold/70">
+                  <div className="flex items-center gap-2">
+                    <MaybeController address={holder.account} className="text-white" />
+                    {isYou ? (
+                      <span className="rounded-full bg-gold/20 px-2 py-[2px] text-[10px] font-semibold uppercase text-dark">
+                        You
+                      </span>
+                    ) : null}
                   </div>
-                ))}
+                  <div className="flex items-center gap-1 text-gold/60">
+                    <span>Holdings</span>
+                    <span className="text-white font-semibold">{totalFormatted}</span>
+                    {symbol ? <span className="text-xs uppercase text-gold/60">{symbol}</span> : null}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {holder.positions.map((pos, idx) => {
+                    const labelIsAddress = /^0x[0-9a-fA-F]+$/.test(pos.label);
+                    return (
+                      <div
+                        key={`${holder.account}-pos-${idx}`}
+                        className="flex items-center gap-2 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm"
+                      >
+                        <span className="rounded-full bg-white/10 px-2 py-[2px] text-[11px] uppercase tracking-wide text-gold/70">
+                          Outcome
+                        </span>
+                        <span className="text-gold/70">
+                          {labelIsAddress ? <MaybeController address={pos.label} /> : pos.label}
+                        </span>
+                        <span className="text-gold/60">•</span>
+                        <span className="text-white font-semibold">{pos.amountFormatted}</span>
+                        {symbol ? <span className="text-xs uppercase text-gold/60">{symbol}</span> : null}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-    </div>
+    </>
   );
 };

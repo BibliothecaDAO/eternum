@@ -30,7 +30,7 @@ const AvatarImage = ({ address, className }: { address: string; className?: stri
   const initial = address ? address.slice(2, 4).toUpperCase() : "??";
   return (
     <div
-      className={`flex h-[32px] w-[32px] items-center justify-center rounded-full bg-white/10 text-xs text-white ${className ?? ""}`}
+      className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xs text-white ring-1 ring-white/10 ${className ?? ""}`}
     >
       {initial}
     </div>
