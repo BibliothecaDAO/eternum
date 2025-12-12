@@ -757,7 +757,7 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager = new SelectedHexManager(this.scene);
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
 
-    this.minimap = new Minimap(this, this.camera);
+    this.minimap = new Minimap(this, this.camera, this.dojo.network.toriiClient);
     this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, 33);
     this.minimapCameraMoveThrottled = throttle(() => {
       const target = this.minimapCameraMoveTarget;

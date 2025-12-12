@@ -1,6 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { sqlApi } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { playerColorManager } from "@/three/systems/player-colors";
@@ -9,6 +8,7 @@ import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, Posi
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
+import type { Clause, Entity as ToriiEntity, ToriiClient } from "@dojoengine/torii-wasm/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
@@ -123,13 +123,15 @@ class Minimap {
   private labelImages = new Map<string, HTMLImageElement>();
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
-  private tiles: Tile[] = []; // SQL-fetched tiles
+  private tiles: Tile[] = [];
   private tileMap: Map<string, Tile> = new Map(); // Fast lookup for tiles by coordinate
   private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
   private isMinimized: boolean = false; // Add minimized state
   private tilesRefreshIntervalId: number | null = null;
   private isFetchingTiles: boolean = false;
   private isVisible: boolean = true;
+  private toriiClient: ToriiClient;
+  private tileStreamSubscription: { cancel: () => void } | null = null;
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -151,8 +153,9 @@ class Minimap {
   private readonly hexVertDist = HEX_SIZE * 2 * 0.75;
   private readonly hexHorizDist = Math.sqrt(3) * HEX_SIZE;
 
-  constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera) {
+  constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera, toriiClient: ToriiClient) {
     this.worldmapScene = worldmapScene;
+    this.toriiClient = toriiClient;
     this.isBlitz = getIsBlitz();
     this.syncCameraToMinimapCenter = throttle(() => {
       this.isSyncingCamera = true;
@@ -168,8 +171,7 @@ class Minimap {
         this.loadLabelImages();
         this.initializeCanvas(camera);
         this.canvas.addEventListener("canvasResized", this.handleResize);
-        this.fetchTiles(); // Start fetching tiles
-        this.startTilesRefreshLoop();
+        void this.fetchTiles().then(() => this.startTileStream());
       })
       .catch((error) => {
         console.warn("Minimap: Failed to initialize minimap:", error);
@@ -1040,26 +1042,16 @@ class Minimap {
   }
 
   private startTilesRefreshLoop() {
+    // Torii streams now provide tile deltas; polling is no longer required.
     this.stopTilesRefreshLoop();
-
-    if (!this.shouldPollTiles()) {
-      return;
-    }
-
-    this.tilesRefreshIntervalId = window.setInterval(() => {
-      if (!this.shouldPollTiles()) {
-        return;
-      }
-      void this.fetchTiles();
-    }, 10_000);
   }
 
   private shouldPollTiles() {
-    return this.isVisible && !this.isMinimized;
+    return false;
   }
 
   private async fetchTiles() {
-    if (this.isFetchingTiles || !this.shouldPollTiles()) return;
+    if (this.isFetchingTiles) return;
     this.isFetchingTiles = true;
     const getTimestamp = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const startTime = getTimestamp();
@@ -1067,19 +1059,39 @@ class Minimap {
       console.log("fetchTiles");
     }
     try {
-      const rawTiles = await sqlApi.fetchAllTiles();
+      const tiles: Tile[] = [];
+      const limit = 40_000;
+      let cursor: string | undefined;
+      const clause: Clause = {
+        Keys: {
+          keys: [undefined, undefined],
+          pattern_matching: "FixedLen",
+          models: ["s1_eternum-Tile"],
+        },
+      };
+
+      while (true) {
+        const page = await this.toriiClient.getEntities({
+          pagination: { limit, cursor, direction: "Forward", order_by: [] },
+          clause,
+          no_hashed_keys: false,
+          models: ["s1_eternum-Tile"],
+          historical: false,
+        });
+
+        page.items.forEach((entity) => {
+          const tile = this.extractTileFromToriiEntity(entity);
+          if (tile) tiles.push(tile);
+        });
+
+        if (page.items.length < limit || !page.next_cursor) {
+          break;
+        }
+        cursor = page.next_cursor;
+      }
+
       const fetchEndTime = getTimestamp();
-      const normalizedTiles = rawTiles.map((tile) => {
-        const position = new Position({ x: tile.col, y: tile.row });
-        const { x: col, y: row } = position.getNormalized();
-        return {
-          ...tile,
-          col,
-          row,
-        };
-      });
-      const normalizeEndTime = getTimestamp();
-      this.tiles = normalizedTiles;
+      this.tiles = tiles;
       this.tileMap.clear();
       this.tiles.forEach((tile) => {
         this.tileMap.set(`${tile.col},${tile.row}`, tile);
@@ -1091,12 +1103,11 @@ class Minimap {
       this.draw(); // Redraw the minimap with new data
       const endTime = getTimestamp();
       const fetchDuration = fetchEndTime - startTime;
-      const normalizeDuration = normalizeEndTime - fetchEndTime;
-      const postProcessDuration = endTime - normalizeEndTime;
+      const postProcessDuration = endTime - fetchEndTime;
       const totalDuration = endTime - startTime;
       if (import.meta.env.DEV) {
         console.log(
-          `[Minimap] fetchTiles finished in ${totalDuration.toFixed(2)}ms (fetch ${fetchDuration.toFixed(2)}ms, normalize ${normalizeDuration.toFixed(2)}ms, render ${postProcessDuration.toFixed(2)}ms)`,
+          `[Minimap] fetchTiles finished in ${totalDuration.toFixed(2)}ms (fetch ${fetchDuration.toFixed(2)}ms, render ${postProcessDuration.toFixed(2)}ms)`,
         );
       }
       if (totalDuration > FETCH_TILES_SLOW_THRESHOLD_MS) {
@@ -1109,6 +1120,111 @@ class Minimap {
     } finally {
       this.isFetchingTiles = false;
     }
+  }
+
+  private startTileStream = async () => {
+    if (this.tileStreamSubscription) return;
+
+    const clause: Clause = {
+      Keys: {
+        keys: [undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: ["s1_eternum-Tile"],
+      },
+    };
+
+    try {
+      this.tileStreamSubscription = await this.toriiClient.onEntityUpdated(clause, (entity: ToriiEntity) => {
+        this.handleTileEntityUpdate(entity);
+      });
+    } catch (error) {
+      console.warn("[Minimap] Failed to subscribe to tile stream", error);
+    }
+  };
+
+  private handleTileEntityUpdate(entity: ToriiEntity) {
+    if (!entity?.models || Object.keys(entity.models).length === 0) {
+      return;
+    }
+
+    const tile = this.extractTileFromToriiEntity(entity);
+    if (!tile) return;
+
+    const key = `${tile.col},${tile.row}`;
+    const existing = this.tileMap.get(key);
+
+    if (existing) {
+      const biomeChanged = existing.biome !== tile.biome;
+      existing.biome = tile.biome;
+      existing.occupier_id = tile.occupier_id;
+      existing.occupier_type = tile.occupier_type;
+      existing.occupier_is_structure = tile.occupier_is_structure;
+      if (biomeChanged) {
+        this.needsStaticRedraw = true;
+      }
+    } else {
+      this.tileMap.set(key, tile);
+      this.tiles.push(tile);
+      this.updateWorldBoundsWithTile(tile);
+      this.clampMapCenter();
+      this.recomputeScales();
+      this.needsStaticRedraw = true;
+    }
+
+    this.needsReclustering = true;
+  }
+
+  private extractTileFromToriiEntity(entity: ToriiEntity): Tile | null {
+    const tileModel = entity.models?.["s1_eternum-Tile"];
+    if (!tileModel) return null;
+
+    const readNumber = (field: string) => {
+      const ty = (tileModel as any)[field];
+      if (!ty) return 0;
+      const value = (ty as any).value;
+      return typeof value === "number" ? value : Number(value);
+    };
+
+    const readBoolean = (field: string) => {
+      const ty = (tileModel as any)[field];
+      if (!ty) return false;
+      const value = (ty as any).value;
+      if (typeof value === "boolean") return value;
+      if (typeof value === "number") return value !== 0;
+      if (typeof value === "string") return value === "true" || value === "1";
+      return Boolean(value);
+    };
+
+    const colRaw = readNumber("col");
+    const rowRaw = readNumber("row");
+    const position = new Position({ x: colRaw, y: rowRaw });
+    const { x: col, y: row } = position.getNormalized();
+
+    return {
+      col,
+      row,
+      biome: readNumber("biome"),
+      occupier_id: readNumber("occupier_id"),
+      occupier_type: readNumber("occupier_type"),
+      occupier_is_structure: readBoolean("occupier_is_structure"),
+    };
+  }
+
+  private updateWorldBoundsWithTile(tile: Tile) {
+    if (!this.worldBounds) {
+      this.worldBounds = {
+        minCol: tile.col,
+        maxCol: tile.col,
+        minRow: tile.row,
+        maxRow: tile.row,
+      };
+      return;
+    }
+
+    this.worldBounds.minCol = Math.min(this.worldBounds.minCol, tile.col);
+    this.worldBounds.maxCol = Math.max(this.worldBounds.maxCol, tile.col);
+    this.worldBounds.minRow = Math.min(this.worldBounds.minRow, tile.row);
+    this.worldBounds.maxRow = Math.max(this.worldBounds.maxRow, tile.row);
   }
 
   private updateWorldBounds() {
@@ -1278,6 +1394,11 @@ class Minimap {
     }
 
     this.stopTilesRefreshLoop();
+
+    if (this.tileStreamSubscription) {
+      this.tileStreamSubscription.cancel();
+      this.tileStreamSubscription = null;
+    }
 
     if (import.meta.env.DEV) {
       console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
