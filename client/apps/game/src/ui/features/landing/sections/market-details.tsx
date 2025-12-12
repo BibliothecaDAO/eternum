@@ -33,11 +33,63 @@ const parseMarketId = (raw?: string | null) => {
   }
 };
 
+type MarketDetailsTabKey = "terms" | "comments" | "activity" | "positions" | "vault-fees" | "resolution";
+
+const MARKET_DETAIL_TABS: Array<{ key: MarketDetailsTabKey; label: string }> = [
+  { key: "terms", label: "Terms" },
+  { key: "comments", label: "Comments" },
+  { key: "activity", label: "Activity" },
+  { key: "positions", label: "My Positions" },
+  { key: "vault-fees", label: "Vault Fees" },
+  { key: "resolution", label: "Resolution" },
+];
+
+const MarketDetailsTabs = ({ market }: { market: MarketClass }) => {
+  const [activeTab, setActiveTab] = useState<MarketDetailsTabKey>("terms");
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+      <div className="flex flex-wrap gap-2 pb-3">
+        {MARKET_DETAIL_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+              activeTab === tab.key
+                ? "bg-gold/20 text-white"
+                : "bg-white/5 text-gold/70 hover:bg-white/10 hover:text-white"
+            }`}
+            onClick={() => setActiveTab(tab.key)}
+            type="button"
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="rounded-md border border-white/10 bg-black/40 p-4">
+        {activeTab === "terms" && market.terms ? (
+          <div className="text-sm leading-relaxed text-white/80" dangerouslySetInnerHTML={{ __html: market.terms }} />
+        ) : null}
+        {activeTab === "terms" && !market.terms ? <p className="text-sm text-gold/70">No terms provided.</p> : null}
+
+        {activeTab === "comments" ? <UserMessages marketId={market.market_id} /> : null}
+        {activeTab === "activity" ? <MarketActivity market={market} /> : null}
+        {activeTab === "positions" ? <MarketPositions market={market} /> : null}
+        {/* {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null} */}
+        {activeTab === "resolution" ? (
+          market.isResolved() ? (
+            <MarketResolved market={market} />
+          ) : (
+            <MarketResolution market={market} />
+          )
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
 const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
-  const [activeTab, setActiveTab] = useState<
-    "terms" | "comments" | "activity" | "positions" | "vault-fees" | "resolution"
-  >("terms");
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
@@ -123,50 +175,7 @@ const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
         </div>
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-        <div className="flex flex-wrap gap-2 pb-3">
-          {[
-            { key: "terms", label: "Terms" },
-            { key: "comments", label: "Comments" },
-            { key: "activity", label: "Activity" },
-            { key: "positions", label: "My Positions" },
-            { key: "vault-fees", label: "Vault Fees" },
-            { key: "resolution", label: "Resolution" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                activeTab === tab.key
-                  ? "bg-gold/20 text-white"
-                  : "bg-white/5 text-gold/70 hover:bg-white/10 hover:text-white"
-              }`}
-              onClick={() => setActiveTab(tab.key as typeof activeTab)}
-              type="button"
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="rounded-md border border-white/10 bg-black/40 p-4">
-          {activeTab === "terms" && market.terms ? (
-            <div className="text-sm leading-relaxed text-white/80" dangerouslySetInnerHTML={{ __html: market.terms }} />
-          ) : null}
-          {activeTab === "terms" && !market.terms ? <p className="text-sm text-gold/70">No terms provided.</p> : null}
-
-          {activeTab === "comments" ? <UserMessages marketId={market.market_id} /> : null}
-          {activeTab === "activity" ? <MarketActivity market={market} /> : null}
-          {activeTab === "positions" ? <MarketPositions market={market} /> : null}
-          {/* {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null} */}
-          {activeTab === "resolution" ? (
-            market.isResolved() ? (
-              <MarketResolved market={market} />
-            ) : (
-              <MarketResolution market={market} />
-            )
-          ) : null}
-        </div>
-      </div>
+      <MarketDetailsTabs market={market} />
     </>
   );
 };
