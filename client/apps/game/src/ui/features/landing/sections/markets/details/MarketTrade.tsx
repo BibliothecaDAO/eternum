@@ -179,6 +179,7 @@ export function MarketTrade({
   const {
     config: { manifest },
   } = useDojoSdk();
+  const collateralDecimals = Number(market.collateralToken?.decimals ?? 18);
   const [amount, setAmount] = useState("0");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -193,7 +194,6 @@ export function MarketTrade({
   const isResolved = market.isResolved();
 
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
-  console.log({ positionIds });
 
   const positionIdsAsStrings = useMemo(() => positionIds.map((id) => id.toString()), [positionIds]);
 
@@ -215,20 +215,50 @@ export function MarketTrade({
     );
   }, [positionBalances, positionIds, account]);
 
-  const potentialWin = useMemo(() => {
-    const amt = Number(amount);
-    const odds = selectedOutcome ? Number(selectedOutcome.odds) : NaN;
+  const tradePreview = useMemo(() => {
+    const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
+    const totalLiquidityRaw = market.vaultDenominator?.value;
+    const outcomeIndex = selectedOutcome?.index;
+    const outcomeLiquidityRaw =
+      outcomeIndex != null ? market.vaultNumerators?.find((num) => num.index === outcomeIndex)?.value : undefined;
 
-    if (!Number.isFinite(amt) || amt <= 0 || !Number.isFinite(odds) || odds <= 0) return null;
+    if (
+      baseAmount == null ||
+      baseAmount <= 0n ||
+      totalLiquidityRaw == null ||
+      outcomeLiquidityRaw == null ||
+      BigInt(totalLiquidityRaw) <= 0n
+    ) {
+      return {
+        averageEntryPercent: null,
+        potentialWinFormatted: null,
+      };
+    }
 
-    const probability = odds / 100;
-    if (probability <= 0) return null;
+    const baseAmountBig = BigInt(baseAmount);
+    const outcomeLiquidity = BigInt(outcomeLiquidityRaw);
+    const totalLiquidity = BigInt(totalLiquidityRaw);
 
-    const payout = amt / probability;
-    if (!Number.isFinite(payout) || payout <= 0) return null;
+    const newOutcomeLiquidity = outcomeLiquidity + baseAmountBig;
+    const newTotalLiquidity = totalLiquidity + baseAmountBig;
 
-    return payout;
-  }, [amount, selectedOutcome]);
+    if (newOutcomeLiquidity === 0n || newTotalLiquidity === 0n) {
+      return {
+        averageEntryPercent: null,
+        potentialWinFormatted: null,
+      };
+    }
+
+    // Average execution price equals the post-trade probability in this pari-mutuel model.
+    const averageEntryPercent = Number((newOutcomeLiquidity * 10_000n) / newTotalLiquidity) / 100;
+    const potentialWinRaw = (baseAmountBig * newTotalLiquidity) / newOutcomeLiquidity;
+    const potentialWinFormatted = formatUnits(potentialWinRaw, collateralDecimals, 4);
+
+    return {
+      averageEntryPercent,
+      potentialWinFormatted,
+    };
+  }, [amount, collateralDecimals, market, selectedOutcome]);
 
   const onBuy = async (outcomeIndex: number) => {
     if (!account) {
@@ -247,7 +277,7 @@ export function MarketTrade({
       return;
     }
 
-    const baseAmount = parseLordsToBaseUnits(amount, market.collateralToken?.decimals ?? 18);
+    const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
     if (baseAmount == null || baseAmount <= 0n) {
       toast.error("Enter a valid amount greater than 0.");
       return;
@@ -405,12 +435,22 @@ export function MarketTrade({
               <span className="uppercase tracking-[0.08em] text-gold/60">To win</span>
               <div className="flex items-center gap-2 text-base font-semibold text-progress-bar-good">
                 <span>
-                  {potentialWin != null ? potentialWin.toLocaleString(undefined, { maximumFractionDigits: 4 }) : "--"}
+                  {tradePreview.potentialWinFormatted ?? "--"}
                 </span>
                 <TokenIcon token={market.collateralToken} size={16} />
               </div>
             </div>
-            <div className="mt-1 text-[11px] text-gold/60">If your selected outcome resolves true.</div>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gold/60">
+              <span>If your selected outcome resolves true.</span>
+              <span className="flex items-center gap-1 text-white/80">
+                Avg entry:{" "}
+                <span className="font-semibold text-progress-bar-good">
+                  {tradePreview.averageEntryPercent != null
+                    ? `${tradePreview.averageEntryPercent.toFixed(2)}%`
+                    : "--"}
+                </span>
+              </span>
+            </div>
           </div>
           <HStack className="justify-center">
             {market.typBinary() && (
