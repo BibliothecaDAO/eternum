@@ -235,9 +235,7 @@ export default class GameRenderer {
 
         attempts++;
         if (attempts === WARN_AFTER_ATTEMPTS) {
-          console.warn(
-            "GameRenderer: labelrenderer element not found yet; continuing to wait for world UI to mount",
-          );
+          console.warn("GameRenderer: labelrenderer element not found yet; continuing to wait for world UI to mount");
         }
 
         requestAnimationFrame(checkElement);
