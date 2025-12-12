@@ -5,8 +5,11 @@ import { BigNumberish, Call, uint256 } from "starknet";
 import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
+import type { RegisteredToken } from "@/pm/bindings";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { useTokens } from "@/pm/hooks/dojo/useTokens";
+import { useUser } from "@/pm/hooks/dojo/user";
+import { formatUnits } from "@/pm/utils";
 import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
 import { parseLordsToBaseUnits } from "../market-utils";
@@ -92,20 +95,57 @@ const TokenAmountInput = ({
 }: {
   amount: string;
   setAmount: (val: string) => void;
-  token: { symbol?: string };
-}) => (
-  <label className="flex w-full flex-col gap-2 text-xs text-gold/70">
-    <span>Amount ({token?.symbol ?? "Token"})</span>
-    <input
-      type="number"
-      min="0"
-      step="0.01"
-      className="w-full rounded-md border border-white/10 bg-black/60 px-3 py-2 text-sm text-white outline-none focus:border-gold/60"
-      value={amount}
-      onChange={(e) => setAmount(e.target.value)}
-    />
-  </label>
-);
+  token: RegisteredToken;
+}) => {
+  const {
+    tokens: { getBalances },
+  } = useUser();
+
+  const balances = useMemo(
+    () => (token?.contract_address ? getBalances([token.contract_address]) : []),
+    [getBalances, token?.contract_address],
+  );
+
+  const { balanceFormatted } = useMemo(() => {
+    if (!token) return { balanceFormatted: "0" };
+
+    const raw = balances?.[0]?.balance ? BigInt(balances[0].balance) : 0n;
+    const decimals = Number(token.decimals ?? 0);
+    const formatted = formatUnits(raw, decimals, 4);
+
+    return { balanceFormatted: formatted };
+  }, [balances, token]);
+
+  return (
+    <div className="w-full rounded-md border border-white/10 bg-black/60 px-3 py-3 text-xs text-gold/70">
+      <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-gold/60">
+        <span>Amount</span>
+        <span className="flex items-center gap-2 text-[11px] text-gold/60">
+          <TokenIcon token={token} size={16} />
+          <span className="uppercase">{token?.symbol}</span>
+        </span>
+      </div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-lg text-white outline-none focus:border-gold/60"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
+      <div className="mt-2 flex items-center justify-between text-[11px] text-gold/60">
+        <span>Balance: {balanceFormatted}</span>
+        <button
+          type="button"
+          className="rounded-sm border border-white/20 bg-white/5 px-2 py-[2px] text-[11px] font-semibold text-white transition hover:border-gold/60 hover:text-gold"
+          onClick={() => setAmount(balanceFormatted)}
+        >
+          MAX
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const DEFAULT_MARKET_ADDRESS = "";
 
@@ -148,7 +188,8 @@ export function MarketTrade({
   const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions")?.address;
   const marketContractAddress = (env.VITE_PUBLIC_PM_ADDRESS ?? manifestMarketAddress ?? DEFAULT_MARKET_ADDRESS).trim();
   const nowSec = Math.floor(Date.now() / 1_000);
-  const isTradeable = nowSec >= market.start_at && nowSec < market.end_at;
+  // const isTradeable = nowSec >= market.start_at && nowSec < market.end_at;
+  const isTradeable = true;
   const isResolved = market.isResolved();
 
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
@@ -173,6 +214,21 @@ export function MarketTrade({
         (!account || BigInt(balance.account_address) === BigInt(account.address || 0)),
     );
   }, [positionBalances, positionIds, account]);
+
+  const potentialWin = useMemo(() => {
+    const amt = Number(amount);
+    const odds = selectedOutcome ? Number(selectedOutcome.odds) : NaN;
+
+    if (!Number.isFinite(amt) || amt <= 0 || !Number.isFinite(odds) || odds <= 0) return null;
+
+    const probability = odds / 100;
+    if (probability <= 0) return null;
+
+    const payout = amt / probability;
+    if (!Number.isFinite(payout) || payout <= 0) return null;
+
+    return payout;
+  }, [amount, selectedOutcome]);
 
   const onBuy = async (outcomeIndex: number) => {
     if (!account) {
@@ -342,13 +398,20 @@ export function MarketTrade({
   return (
     <>
       <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
-        <div className="mb-3">
-          <p className="text-xs uppercase tracking-[0.08em] text-gold/70">Trading</p>
-          <p className="text-lg font-semibold text-white">Place a trade</p>
-        </div>
-
         <VStack className="items-end gap-6">
           <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
+          <div className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-gold/70">
+            <div className="flex items-center justify-between">
+              <span className="uppercase tracking-[0.08em] text-gold/60">To win</span>
+              <div className="flex items-center gap-2 text-base font-semibold text-progress-bar-good">
+                <span>
+                  {potentialWin != null ? potentialWin.toLocaleString(undefined, { maximumFractionDigits: 4 }) : "--"}
+                </span>
+                <TokenIcon token={market.collateralToken} size={16} />
+              </div>
+            </div>
+            <div className="mt-1 text-[11px] text-gold/60">If your selected outcome resolves true.</div>
+          </div>
           <HStack className="justify-center">
             {market.typBinary() && (
               <HStack className="w-full">
@@ -408,7 +471,7 @@ export function MarketTrade({
                   <span>I want to buy</span>
                   <HStack className="items-center justify-center">
                     {Number(amount) > 0 ? `${amount} ${market.collateralToken?.symbol ?? ""}`.trim() : "0"}
-                    <TokenIcon token={market.collateralToken} className="mx-1" />
+                    <TokenIcon token={market.collateralToken} size={18} className="mx-1" />
                   </HStack>
                   <MaybeController address={selectedOutcome?.name ?? ""} />
                 </VStack>

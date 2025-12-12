@@ -74,7 +74,7 @@ export const MarketOdds = ({
           <button
             key={(outcome as any)?.id ?? order}
             className={cx(
-              "flex items-center justify-between rounded-sm border px-3 py-2 text-left text-xs transition",
+              "flex min-h-[52px] items-center justify-between rounded-sm border px-3 py-2 text-left text-xs transition",
               "border-gold/20 bg-brown/40 text-lightest",
               selectable ? "cursor-pointer hover:border-gold/60 hover:bg-gold/10" : "cursor-default",
               isSelected ? "border-gold/70 bg-gold/15 ring-1 ring-gold/40" : null,
@@ -90,7 +90,7 @@ export const MarketOdds = ({
           >
             <HStack className="gap-2 text-lightest">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-              <MaybeController address={outcome.name} />
+              <MaybeController address={outcome.name} className="max-w-[220px] truncate" />
             </HStack>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />

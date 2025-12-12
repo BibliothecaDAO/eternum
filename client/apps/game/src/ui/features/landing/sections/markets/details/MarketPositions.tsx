@@ -7,6 +7,7 @@ import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { useTokens } from "@/pm/hooks/dojo/useTokens";
 import { formatUnits } from "@/pm/utils";
+import { TokenIcon } from "../TokenIcon";
 import { MaybeController } from "../MaybeController";
 
 type HolderPosition = {
@@ -105,6 +106,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
   }, [balances, tokens, positionTokenIds, outcomes, market.collateralToken.decimals]);
 
   const symbol = market.collateralToken.symbol || "";
+  const tokenForIcon = market.collateralToken;
 
   if (holders.length === 0) {
     return (
@@ -150,7 +152,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                   <div className="flex items-center gap-1 text-gold/60">
                     <span>Holdings</span>
                     <span className="text-white font-semibold">{totalFormatted}</span>
-                    {symbol ? <span className="text-xs uppercase text-gold/60">{symbol}</span> : null}
+                    {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={16} /> : null}
                   </div>
                 </div>
 
@@ -170,7 +172,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                         </span>
                         <span className="text-gold/60">•</span>
                         <span className="text-white font-semibold">{pos.amountFormatted}</span>
-                        {symbol ? <span className="text-xs uppercase text-gold/60">{symbol}</span> : null}
+                        {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={14} /> : null}
                       </div>
                     );
                   })}

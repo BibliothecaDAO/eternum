@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { MarketClass, type MarketOutcome } from "@/pm/class";
@@ -43,6 +43,28 @@ const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
   const isWatching = watchingMarketId === String(market.market_id);
   const watchDisabled = watchState.status === "offline";
   const watchLoading = watchState.status === "checking" || isWatching;
+
+  const defaultHighestOutcome = useMemo(() => {
+    const outcomes = market.getMarketOutcomes();
+    if (!outcomes || outcomes.length === 0) return undefined;
+
+    return outcomes.reduce<MarketOutcome | undefined>((best, current) => {
+      const currentOdds = Number(current.odds);
+      const bestOdds = best ? Number(best.odds) : -Infinity;
+
+      if (!Number.isFinite(currentOdds)) return best;
+      if (!best || currentOdds > bestOdds) return current;
+
+      return best;
+    }, undefined);
+  }, [market]);
+
+  useEffect(() => {
+    if (!defaultHighestOutcome) return;
+    if (!selectedOutcome) {
+      setSelectedOutcome(defaultHighestOutcome);
+    }
+  }, [defaultHighestOutcome, selectedOutcome]);
 
   return (
     <>

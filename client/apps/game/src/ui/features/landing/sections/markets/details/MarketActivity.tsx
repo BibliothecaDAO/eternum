@@ -109,7 +109,7 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
 
                   <div className="flex items-center gap-2 text-base font-semibold">
                     <span>{amountFormatted}</span>
-                    <TokenIcon token={market.collateralToken} className="h-6 w-6" />
+                    <TokenIcon token={market.collateralToken} size={24} />
                   </div>
 
                   <span className="text-gold/60">on</span>

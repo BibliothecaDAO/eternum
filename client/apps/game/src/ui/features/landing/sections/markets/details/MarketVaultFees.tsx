@@ -123,7 +123,7 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
           <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault balance</span>
           <HStack className="items-baseline gap-1">
             <span className="text-xl font-semibold text-white">{balanceDisplay}</span>
-            <TokenIcon className="h-4 w-4" token={market.collateralToken} />
+            <TokenIcon token={market.collateralToken} size={16} />
           </HStack>
           <span className="text-xs text-gold/70">held in this vault</span>
         </VStack>
@@ -132,7 +132,7 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
           <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Redeemable</span>
           <HStack className="items-baseline gap-1">
             <span className="text-xl font-semibold text-white">{Number(value) > 0 ? redeemableDisplay : "0"}</span>
-            <TokenIcon className="h-4 w-4" token={market.collateralToken} />
+            <TokenIcon token={market.collateralToken} size={16} />
           </HStack>
           <span className="text-xs text-gold/70">claimable right now</span>
         </VStack>

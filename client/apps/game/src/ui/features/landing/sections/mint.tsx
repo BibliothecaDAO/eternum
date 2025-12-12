@@ -128,7 +128,7 @@ const MintContent = () => {
                 <TableRow key={`${token.contract_address}-${token.token_id || 0}`}>
                   <TableCell>
                     <HStack className="items-center gap-2">
-                      <TokenIcon token={token} className="h-5 w-5" />
+                    <TokenIcon token={token} size={20} />
                       <span className="font-semibold text-white">{token.symbol}</span>
                       <span className="text-xs text-white/60">({token.decimals} dec)</span>
                     </HStack>
