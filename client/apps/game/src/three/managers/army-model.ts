@@ -887,6 +887,9 @@ export class ArmyModel {
       tier,
     });
 
+    const segmentDistance = currentPos.distanceTo(nextPos);
+    const invTravelTime = segmentDistance > 0 ? this.MOVEMENT_SPEED / segmentDistance : Infinity;
+
     // Get current instance rotation using the reusable matrix
     const model = this.getModelForEntity(entityId);
     if (model && model.instancedMeshes.length > 0) {
@@ -897,6 +900,8 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
+        segmentDistance,
+        invTravelTime,
         matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
@@ -908,6 +913,8 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
+        segmentDistance,
+        invTravelTime,
         matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
@@ -1024,9 +1031,11 @@ export class ArmyModel {
   }
 
   private updateMovementProgress(movement: MovementData, instanceData: ArmyInstanceData, deltaTime: number): void {
-    const distance = movement.startPos.distanceTo(movement.endPos);
-    const travelTime = distance / this.MOVEMENT_SPEED;
-    movement.progress += deltaTime / travelTime;
+    if (!Number.isFinite(movement.invTravelTime) || movement.invTravelTime === Infinity) {
+      movement.progress = 1;
+    } else {
+      movement.progress += deltaTime * movement.invTravelTime;
+    }
 
     if (movement.progress >= 1) {
       this.handlePathCompletion(movement, instanceData);
@@ -1055,6 +1064,9 @@ export class ArmyModel {
     movement.startPos.copy(movement.endPos);
     movement.endPos.copy(nextPos);
     movement.progress = 0;
+    movement.segmentDistance = movement.startPos.distanceTo(movement.endPos);
+    movement.invTravelTime =
+      movement.segmentDistance > 0 ? this.MOVEMENT_SPEED / movement.segmentDistance : Infinity;
 
     this.updateInstanceDirection(instanceData.entityId, movement.startPos, movement.endPos);
   }
@@ -1063,7 +1075,7 @@ export class ArmyModel {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    const direction = new Vector3().subVectors(toPos, fromPos).normalize();
+    const direction = this.tempVector3.subVectors(toPos, fromPos).normalize();
     const baseAngle = Math.atan2(direction.x, direction.z);
 
     movement.targetRotation = baseAngle;
@@ -1176,6 +1188,8 @@ export class ArmyModel {
       startPos: new Vector3().copy(instanceData.position), // Create once for descent
       endPos: new Vector3().copy(instanceData.position), // Create once for descent
       progress: 0,
+      segmentDistance: 0,
+      invTravelTime: Infinity,
       matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
       floatingHeight: movement.floatingHeight,

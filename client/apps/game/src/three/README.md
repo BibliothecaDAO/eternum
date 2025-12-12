@@ -254,14 +254,3 @@ Chunking / Rendering‑Specific Improvements
 2. GC & visibility refactor: Add getWorldPositionForHexInto, eliminate clones, cache render bounds per update, switch
    visibility caches
 3. Adaptive quality/LOD: Wire QualityController and add simple distance‑based shadow/label/animation LOD.
-
-Open Questions / Assumptions
-
-- Is InteractiveHexManager meant to support interaction on far‑away explored hexes, or can it be limited to pinned/
-  render windows? This drives eviction strategy.
-- How many icons/labels are expected at peak (armies, (100s+ hexes)? If yes, instancing is urgent.
-- Can icon frustum culling be relaxed (single draw‑call points) to simplify PointsLabelRenderer?
-- Any constraints on using Web Workers/OffscreenCanvas for grid or hydration prep?
-
-If you want, I can turn the top 2–3 items into concrete patches next (starting with PointsLabelRenderer batching and
-non‑alloc getWorldPositionForHexInto).
