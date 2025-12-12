@@ -134,6 +134,7 @@ export default class InstancedModel {
         }
 
         if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
+          tmp.castShadow = false;
           tmp.receiveShadow = true;
           tmp.name = LAND_NAME;
         }
@@ -157,6 +158,11 @@ export default class InstancedModel {
       this.mixer = new AnimationMixer(gltf.scene);
       this.animation = gltf.animations[0];
     }
+  }
+
+  public setAnimationFPS(fps: number): void {
+    const resolved = Math.max(1, fps);
+    this.animationUpdateInterval = 1000 / resolved;
   }
 
   getCount(): number {

@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getStructureModelPaths } from "@/three/constants";
-import InstancedModel from "@/three/managers/instanced-model";
+import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
@@ -24,7 +24,7 @@ import {
 import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { FrustumManager } from "../utils/frustum-manager";
@@ -134,6 +134,7 @@ export class StructureManager {
   private chunkToStructures: Map<string, Set<ID>> = new Map();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
+  private readonly tempVisibilityPosition: Vector3 = new Vector3();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private readonly animationCullDistance = 140;
   private animationCameraPosition: Vector3 = new Vector3();
@@ -152,6 +153,7 @@ export class StructureManager {
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private visibilityManager?: CentralizedVisibilityManager;
+  private labelRenderDistanceSq: number = Infinity;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
@@ -414,7 +416,10 @@ export class StructureManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    if (this.currentCameraView === view) return;
+    if (this.currentCameraView === view) {
+      this.updateShadowFlags();
+      return;
+    }
 
     // If we're moving away from Medium view, clean up transition state
     if (this.currentCameraView === CameraView.Medium) {
@@ -430,7 +435,26 @@ export class StructureManager {
 
     // Use the centralized label transition function
     applyLabelTransitions(this.entityIdLabels, view);
+    this.updateShadowFlags();
   };
+
+  private updateShadowFlags(): void {
+    const enableCasting = this.currentCameraView === CameraView.Close;
+    const applyToModels = (models: InstancedModel[]) => {
+      models.forEach((model) => {
+        model.instancedMeshes.forEach((mesh) => {
+          if (mesh.name === LAND_NAME) {
+            mesh.castShadow = false;
+            return;
+          }
+          mesh.castShadow = enableCasting;
+        });
+      });
+    };
+
+    this.structureModels.forEach((models) => applyToModels(models));
+    this.cosmeticStructureModels.forEach((models) => applyToModels(models));
+  }
 
   public destroy() {
     if (this.unsubscribeFrustum) {
@@ -563,6 +587,7 @@ export class StructureManager {
             model.setWorldBounds(this.currentChunkBounds);
           }
         });
+        this.updateShadowFlags();
         return models;
       })
       .finally(() => {
@@ -629,6 +654,7 @@ export class StructureManager {
             model.setWorldBounds(this.currentChunkBounds);
           }
         });
+        this.updateShadowFlags();
         return models;
       })
       .catch((error) => {
@@ -681,6 +707,20 @@ export class StructureManager {
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
+    // Check if structure already exists to clean up old hex coord when it moves.
+    const existingStructure = this.structures.getStructureByEntityId(entityId);
+    if (
+      existingStructure &&
+      (existingStructure.hexCoords.col !== normalizedCoord.col || existingStructure.hexCoords.row !== normalizedCoord.row)
+    ) {
+      const oldCol = existingStructure.hexCoords.col;
+      const oldRow = existingStructure.hexCoords.row;
+      this.structureHexCoords.get(oldCol)?.delete(oldRow);
+      if (this.structureHexCoords.get(oldCol)?.size === 0) {
+        this.structureHexCoords.delete(oldCol);
+      }
+    }
+
     if (!this.structureHexCoords.has(normalizedCoord.col)) {
       this.structureHexCoords.set(normalizedCoord.col, new Set());
     }
@@ -692,7 +732,6 @@ export class StructureManager {
 
     // Check for pending label updates and apply them if they exist
     // Check if structure already exists with valid owner before overwriting
-    const existingStructure = this.structures.getStructureByEntityId(entityId);
 
     // Update spatial index
     this.updateSpatialIndex(entityId, existingStructure?.hexCoords, normalizedCoord);
@@ -973,6 +1012,22 @@ export class StructureManager {
 
   public getVisibleCount(): number {
     return this.visibleStructureCount;
+  }
+
+  public setAnimationFPS(fps: number): void {
+    const resolved = Math.max(1, fps);
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.setAnimationFPS(resolved));
+    });
+    this.cosmeticStructureModels.forEach((models) => {
+      models.forEach((model) => model.setAnimationFPS(resolved));
+    });
+  }
+
+  public setLabelRenderDistance(distance: number): void {
+    const resolved = Math.max(0, distance);
+    this.labelRenderDistanceSq = resolved > 0 ? resolved * resolved : Infinity;
+    this.frustumVisibilityDirty = true;
   }
 
   private updateVisibleStructures(): void {
@@ -1386,7 +1441,7 @@ export class StructureManager {
         if (structureIds) {
           for (const id of structureIds) {
             const structure = this.structures.getStructureByEntityId(id);
-            if (structure && this.isStructureVisible(structure)) {
+            if (structure && this.isStructureVisible(structure, bounds)) {
               visibleStructures.push(structure);
             }
           }
@@ -1421,7 +1476,9 @@ export class StructureManager {
   }
 
   private getVisibleStructures(structures: Map<ID, StructureInfo>): StructureInfo[] {
-    return Array.from(structures.values()).filter((structure) => this.isStructureVisible(structure));
+    const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
+    const bounds = this.getChunkBounds(chunkRow, chunkCol);
+    return Array.from(structures.values()).filter((structure) => this.isStructureVisible(structure, bounds));
   }
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
@@ -1435,12 +1492,16 @@ export class StructureManager {
     );
   }
 
-  private isStructureVisible(structure: StructureInfo): boolean {
-    if (!this.isInCurrentChunk(structure.hexCoords)) {
+  private isStructureVisible(
+    structure: StructureInfo,
+    bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number },
+  ): boolean {
+    const { col, row } = structure.hexCoords;
+    if (col < bounds.minCol || col > bounds.maxCol || row < bounds.minRow || row > bounds.maxRow) {
       return false;
     }
 
-    const position = getWorldPositionForHex(structure.hexCoords);
+    const position = getWorldPositionForHexCoordsInto(col, row, this.tempVisibilityPosition);
     position.y += 0.05;
     if (this.visibilityManager) {
       return this.visibilityManager.isPointVisible(position);
@@ -1567,10 +1628,19 @@ export class StructureManager {
   }
 
   private applyFrustumVisibilityToLabels() {
+    const cameraPosition =
+      this.visibilityManager?.getCameraPosition() ?? this.hexagonScene?.getCamera()?.position;
+    const distanceSqLimit = this.labelRenderDistanceSq;
+    const hasDistanceLimit = cameraPosition !== undefined && Number.isFinite(distanceSqLimit);
+
     this.entityIdLabels.forEach((label) => {
-      const isVisible = this.visibilityManager
+      const withinDistance =
+        !hasDistanceLimit || label.position.distanceToSquared(cameraPosition!) <= distanceSqLimit;
+      const isVisible =
+        withinDistance &&
+        (this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
-        : (this.frustumManager?.isPointVisible(label.position) ?? true);
+        : (this.frustumManager?.isPointVisible(label.position) ?? true));
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);

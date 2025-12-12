@@ -46,6 +46,7 @@ export class ArmyModel {
   private readonly models: Map<ModelType, ModelData> = new Map();
   private readonly pendingModelLoads: Map<ModelType, Promise<ModelData>> = new Map();
   private readonly entityModelMap: Map<number, ModelType> = new Map();
+  private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
@@ -58,6 +59,7 @@ export class ArmyModel {
   private readonly cosmeticModels: Map<string, ModelData> = new Map();
   private readonly pendingCosmeticModelLoads: Map<string, Promise<ModelData>> = new Map();
   private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
+  private readonly activeCosmeticByEntity: Map<number, string | null> = new Map(); // entityId -> active cosmeticId
 
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
@@ -88,6 +90,7 @@ export class ArmyModel {
   private readonly agentScale = new Vector3(2, 2, 2);
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
+  private modelAnimationUpdateIntervalMs = this.MODEL_ANIMATION_UPDATE_INTERVAL;
   private readonly INITIAL_INSTANCE_CAPACITY = 64;
 
   // agent
@@ -284,7 +287,7 @@ export class ArmyModel {
       targetScales: new Map(),
       currentScales: new Map(),
       lastAnimationUpdate: 0,
-      animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
+      animationUpdateInterval: this.modelAnimationUpdateIntervalMs,
     };
   }
 
@@ -321,7 +324,7 @@ export class ArmyModel {
     ) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
-    instancedMesh.castShadow = true;
+    instancedMesh.castShadow = this.currentCameraView === CameraView.Close;
     instancedMesh.instanceMatrix.needsUpdate = true;
     instancedMesh.renderOrder = 10 + meshIndex;
     // @ts-ignore
@@ -537,6 +540,16 @@ export class ArmyModel {
     this.rebindMovementMatrixIndex(entityId, newSlot);
   }
 
+  private getScaleForModelType(modelType: ModelType): Vector3 {
+    if (modelType === ModelType.Boat) {
+      return this.boatScale;
+    }
+    if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
+      return this.agentScale;
+    }
+    return this.normalScale;
+  }
+
   public updateInstance(
     entityId: number,
     index: number,
@@ -553,40 +566,58 @@ export class ArmyModel {
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
 
-    // Check if entity has a cosmetic model assigned
-    const activeCosmeticId = this.entityCosmeticMap.get(entityId);
-    const hasCosmeticModel = activeCosmeticId && this.cosmeticModels.has(activeCosmeticId);
+    const desiredModelType = this.entityModelMap.get(entityId) ?? null;
+    const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
+    const hasActiveCosmetic = desiredCosmeticId !== undefined && this.cosmeticModels.has(desiredCosmeticId);
 
-    // Update base models - hide them if entity has an active cosmetic model
-    this.models.forEach((modelData, modelType) => {
-      const isActiveBaseModel = modelType === this.entityModelMap.get(entityId);
-      let targetScale = this.zeroScale;
+    const activeBaseModel = hasActiveCosmetic ? null : desiredModelType;
+    const activeCosmetic = hasActiveCosmetic ? desiredCosmeticId! : null;
 
-      // Only show base model if it's active AND there's no cosmetic override
-      if (isActiveBaseModel && !hasCosmeticModel) {
-        if (modelType === ModelType.Boat) {
-          targetScale = this.boatScale;
-        } else if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
-          targetScale = this.agentScale;
-        } else {
-          targetScale = this.normalScale;
+    const prevActiveBaseModel = this.activeBaseModelByEntity.get(entityId) ?? null;
+    const prevActiveCosmetic = this.activeCosmeticByEntity.get(entityId) ?? null;
+
+    if (prevActiveBaseModel !== activeBaseModel) {
+      if (prevActiveBaseModel) {
+        const prevModelData = this.models.get(prevActiveBaseModel);
+        if (prevModelData) {
+          this.ensureModelCapacity(prevModelData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevModelData, index, entityId, state.color);
         }
       }
+      this.activeBaseModelByEntity.set(entityId, activeBaseModel);
+    }
 
-      this.ensureModelCapacity(modelData, index + 1);
-      this.updateInstanceTransform(state.position, targetScale, state.rotation);
-      this.updateInstanceMeshes(modelData, index, entityId, state.color);
-    });
+    if (prevActiveCosmetic !== activeCosmetic) {
+      if (prevActiveCosmetic) {
+        const prevCosmeticData = this.cosmeticModels.get(prevActiveCosmetic);
+        if (prevCosmeticData) {
+          this.ensureModelCapacity(prevCosmeticData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.color);
+        }
+      }
+      this.activeCosmeticByEntity.set(entityId, activeCosmetic);
+    }
 
-    // Update cosmetic models - show only the active one for this entity
-    this.cosmeticModels.forEach((modelData, cosmeticId) => {
-      const isActiveCosmeticModel = cosmeticId === activeCosmeticId;
-      const targetScale = isActiveCosmeticModel ? this.normalScale : this.zeroScale;
+    if (activeBaseModel) {
+      const modelData = this.models.get(activeBaseModel);
+      if (modelData) {
+        const targetScale = this.getScaleForModelType(activeBaseModel);
+        this.ensureModelCapacity(modelData, index + 1);
+        this.updateInstanceTransform(state.position, targetScale, state.rotation);
+        this.updateInstanceMeshes(modelData, index, entityId, state.color);
+      }
+    }
 
-      this.ensureModelCapacity(modelData, index + 1);
-      this.updateInstanceTransform(state.position, targetScale, state.rotation);
-      this.updateInstanceMeshes(modelData, index, entityId, state.color);
-    });
+    if (activeCosmetic) {
+      const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+      if (cosmeticData) {
+        this.ensureModelCapacity(cosmeticData, index + 1);
+        this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
+        this.updateInstanceMeshes(cosmeticData, index, entityId, state.color);
+      }
+    }
   }
 
   public releaseEntity(entityId: number, freedSlot?: number): void {
@@ -594,6 +625,8 @@ export class ArmyModel {
     this.instanceData.delete(entityId);
     this.entityModelMap.delete(entityId);
     this.entityCosmeticMap.delete(entityId);
+    this.activeBaseModelByEntity.delete(entityId);
+    this.activeCosmeticByEntity.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
     this.removeLabel(entityId);
   }
@@ -662,6 +695,19 @@ export class ArmyModel {
   }
 
   // Animation Methods
+  public setAnimationFPS(fps: number): void {
+    const resolved = Math.max(1, fps);
+    const interval = 1000 / resolved;
+    this.modelAnimationUpdateIntervalMs = interval;
+
+    this.models.forEach((modelData) => {
+      modelData.animationUpdateInterval = interval;
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.animationUpdateInterval = interval;
+    });
+  }
+
   public updateAnimations(_deltaTime: number): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 
@@ -855,6 +901,9 @@ export class ArmyModel {
       tier,
     });
 
+    const segmentDistance = currentPos.distanceTo(nextPos);
+    const invTravelTime = segmentDistance > 0 ? this.MOVEMENT_SPEED / segmentDistance : Infinity;
+
     // Get current instance rotation using the reusable matrix
     const model = this.getModelForEntity(entityId);
     if (model && model.instancedMeshes.length > 0) {
@@ -865,6 +914,8 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
+        segmentDistance,
+        invTravelTime,
         matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
@@ -876,6 +927,8 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
+        segmentDistance,
+        invTravelTime,
         matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
@@ -992,9 +1045,11 @@ export class ArmyModel {
   }
 
   private updateMovementProgress(movement: MovementData, instanceData: ArmyInstanceData, deltaTime: number): void {
-    const distance = movement.startPos.distanceTo(movement.endPos);
-    const travelTime = distance / this.MOVEMENT_SPEED;
-    movement.progress += deltaTime / travelTime;
+    if (!Number.isFinite(movement.invTravelTime) || movement.invTravelTime === Infinity) {
+      movement.progress = 1;
+    } else {
+      movement.progress += deltaTime * movement.invTravelTime;
+    }
 
     if (movement.progress >= 1) {
       this.handlePathCompletion(movement, instanceData);
@@ -1023,6 +1078,9 @@ export class ArmyModel {
     movement.startPos.copy(movement.endPos);
     movement.endPos.copy(nextPos);
     movement.progress = 0;
+    movement.segmentDistance = movement.startPos.distanceTo(movement.endPos);
+    movement.invTravelTime =
+      movement.segmentDistance > 0 ? this.MOVEMENT_SPEED / movement.segmentDistance : Infinity;
 
     this.updateInstanceDirection(instanceData.entityId, movement.startPos, movement.endPos);
   }
@@ -1031,7 +1089,7 @@ export class ArmyModel {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    const direction = new Vector3().subVectors(toPos, fromPos).normalize();
+    const direction = this.tempVector3.subVectors(toPos, fromPos).normalize();
     const baseAngle = Math.atan2(direction.x, direction.z);
 
     movement.targetRotation = baseAngle;
@@ -1144,6 +1202,8 @@ export class ArmyModel {
       startPos: new Vector3().copy(instanceData.position), // Create once for descent
       endPos: new Vector3().copy(instanceData.position), // Create once for descent
       progress: 0,
+      segmentDistance: 0,
+      invTravelTime: Infinity,
       matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
       floatingHeight: movement.floatingHeight,
@@ -1186,6 +1246,14 @@ export class ArmyModel {
    */
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
+  }
+
+  public setShadowsEnabled(enabled: boolean): void {
+    this.models.forEach((model) => {
+      model.instancedMeshes.forEach((mesh) => {
+        mesh.castShadow = enabled;
+      });
+    });
   }
 
   public setMovementCompleteCallback(entityId: number, callback?: () => void): void {
@@ -1489,6 +1557,8 @@ export class ArmyModel {
     this.cosmeticModels.clear();
     this.entityModelMap.clear();
     this.entityCosmeticMap.clear();
+    this.activeBaseModelByEntity.clear();
+    this.activeCosmeticByEntity.clear();
     this.movingInstances.clear();
     this.instanceData.clear();
     this.matrixIndexOwners.clear();

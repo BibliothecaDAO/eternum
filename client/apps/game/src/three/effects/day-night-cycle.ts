@@ -43,14 +43,14 @@ export class DayNightCycleManager {
 
   // Current color state (for smooth transitions)
   private currentColors: TimeOfDayColors = {
-    skyColor: 0x24153c,
-    groundColor: 0x12081f,
-    sunColor: 0x7b5fd6,
-    ambientColor: 0x38245d,
-    fogColor: 0x271847,
-    hemisphereIntensity: 0.6,
-    sunIntensity: 1.4,
-    ambientIntensity: 0.28,
+    skyColor: 0x121733,
+    groundColor: 0x07090f,
+    sunColor: 0x6f86d9,
+    ambientColor: 0x121526,
+    fogColor: 0x0f1328,
+    hemisphereIntensity: 0.45,
+    sunIntensity: 1.2,
+    ambientIntensity: 0.18,
     fogNear: 15,
     fogFar: 45,
   };
@@ -83,66 +83,66 @@ export class DayNightCycleManager {
   private readonly timeOfDayPresets: { [key: string]: TimeOfDayColors } = {
     deepNight: {
       // 0, 100
-      skyColor: 0x24153c,
-      groundColor: 0x12081f,
-      sunColor: 0x7b5fd6,
-      ambientColor: 0x38245d,
-      fogColor: 0x271847,
-      hemisphereIntensity: 0.6,
-      sunIntensity: 1.4,
-      ambientIntensity: 0.28,
+      skyColor: 0x121733,
+      groundColor: 0x07090f,
+      sunColor: 0x6f86d9,
+      ambientColor: 0x121526,
+      fogColor: 0x0f1328,
+      hemisphereIntensity: 0.45,
+      sunIntensity: 1.2,
+      ambientIntensity: 0.18,
       fogNear: 15,
       fogFar: 45,
     },
     dawn: {
       // 12.5
       skyColor: 0xffb07a,
-      groundColor: 0x865480,
-      sunColor: 0xffc49a,
-      ambientColor: 0x9a7ab0,
-      fogColor: 0xbb8da8,
-      hemisphereIntensity: 1.2,
-      sunIntensity: 2.9,
-      ambientIntensity: 0.48,
+      groundColor: 0x7a6a52,
+      sunColor: 0xffd0a8,
+      ambientColor: 0x9b90b8,
+      fogColor: 0xd4b5a5,
+      hemisphereIntensity: 1.0,
+      sunIntensity: 2.8,
+      ambientIntensity: 0.35,
       fogNear: 20,
       fogFar: 52,
     },
     day: {
       // 37.5
       skyColor: 0xcfe8ff,
-      groundColor: 0xf9e7c9,
-      sunColor: 0xffffff,
-      ambientColor: 0xf1edf9,
-      fogColor: 0xe2defa,
-      hemisphereIntensity: 2.0,
-      sunIntensity: 3.6,
-      ambientIntensity: 0.65,
+      groundColor: 0xe4d6b5,
+      sunColor: 0xfff5e6,
+      ambientColor: 0xdfe7f2,
+      fogColor: 0xd0d8e5,
+      hemisphereIntensity: 1.3,
+      sunIntensity: 3.2,
+      ambientIntensity: 0.45,
       fogNear: 26,
       fogFar: 70,
     },
     dusk: {
       // 62.5
       skyColor: 0xff9b73,
-      groundColor: 0x845183,
-      sunColor: 0xffb080,
-      ambientColor: 0xa680b4,
-      fogColor: 0xc493b0,
-      hemisphereIntensity: 1.35,
-      sunIntensity: 2.6,
-      ambientIntensity: 0.48,
+      groundColor: 0x5a4a3a,
+      sunColor: 0xffb58c,
+      ambientColor: 0x8a7aa0,
+      fogColor: 0xb89a90,
+      hemisphereIntensity: 1.1,
+      sunIntensity: 2.4,
+      ambientIntensity: 0.35,
       fogNear: 22,
       fogFar: 55,
     },
     evening: {
       // 87.5
-      skyColor: 0x55357a,
-      groundColor: 0x2b1845,
-      sunColor: 0xaf8cf5,
-      ambientColor: 0x694f98,
-      fogColor: 0x54357a,
-      hemisphereIntensity: 0.8,
-      sunIntensity: 1.8,
-      ambientIntensity: 0.3,
+      skyColor: 0x2b315a,
+      groundColor: 0x141826,
+      sunColor: 0x8fa0ff,
+      ambientColor: 0x262b4d,
+      fogColor: 0x23294f,
+      hemisphereIntensity: 0.55,
+      sunIntensity: 1.5,
+      ambientIntensity: 0.22,
       fogNear: 20,
       fogFar: 48,
     },
@@ -336,24 +336,18 @@ export class DayNightCycleManager {
 
   /**
    * Update sun position based on cycle progress
-   * Sun rises from east, peaks at noon, sets in west
+   * Sun orbits around the camera target with a fixed elevation.
    * @param progress - Cycle progress (0-100)
    * @param cameraTarget - Optional camera target to offset sun position
    */
   private updateSunPosition(progress: number, cameraTarget?: Vector3): void {
-    // Convert progress to angle (0-360 degrees)
-    // 0 = midnight (below horizon)
-    // 25 = sunrise (eastern horizon)
-    // 50 = noon (directly above)
-    // 75 = sunset (western horizon)
-    // 100 = midnight (below horizon)
-
+    // Convert progress to azimuthal angle (0-360 degrees)
     const angle = (progress / 100) * Math.PI * 2;
 
-    // Calculate sun position offset in an arc
-    const offsetX = Math.sin(angle) * this.params.sunDistance;
-    const offsetY = Math.cos(angle) * this.params.sunHeight;
-    const offsetZ = Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
+    // Fixed-elevation orbit for stable shadow/readability.
+    const offsetX = Math.cos(angle) * this.params.sunDistance;
+    const offsetZ = Math.sin(angle) * this.params.sunDistance;
+    const offsetY = this.params.sunHeight;
 
     // Calculate target sun position and target
     let targetSunPosition: Vector3;
@@ -362,13 +356,13 @@ export class DayNightCycleManager {
     if (cameraTarget) {
       targetSunPosition = new Vector3(
         cameraTarget.x + offsetX,
-        cameraTarget.y + Math.max(offsetY, 0.5),
+        cameraTarget.y + offsetY,
         cameraTarget.z + offsetZ,
       );
       targetSunTarget = new Vector3(cameraTarget.x, cameraTarget.y, cameraTarget.z + 5.2);
     } else {
       // Default behavior - sun at world origin
-      targetSunPosition = new Vector3(offsetX, Math.max(offsetY, 0.5), offsetZ);
+      targetSunPosition = new Vector3(offsetX, offsetY, offsetZ);
       targetSunTarget = new Vector3(0, 0, 5.2);
     }
 

@@ -598,6 +598,21 @@ export class MapDataStore {
     return { structures, armies };
   }
 
+  /**
+   * Get all structures within rectangular bounds (using contract coordinates with FELT_CENTER)
+   * @param minCol Minimum column (contract coordinate)
+   * @param maxCol Maximum column (contract coordinate)
+   * @param minRow Minimum row (contract coordinate)
+   * @param maxRow Maximum row (contract coordinate)
+   * @returns Array of structures within the bounds
+   */
+  public getStructuresInBounds(minCol: number, maxCol: number, minRow: number, maxRow: number): StructureMapData[] {
+    this._checkRefresh();
+    return Array.from(this.structuresMap.values()).filter(
+      (s) => s.coordX >= minCol && s.coordX <= maxCol && s.coordY >= minRow && s.coordY <= maxRow,
+    );
+  }
+
   public getPlayerName(ownerAddress: string): string {
     const normalizedAddress = BigInt(ownerAddress).toString();
     return this.addressToNameMap.get(normalizedAddress) || "";
