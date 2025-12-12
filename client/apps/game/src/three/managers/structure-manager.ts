@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getStructureModelPaths } from "@/three/constants";
-import InstancedModel from "@/three/managers/instanced-model";
+import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
@@ -416,7 +416,10 @@ export class StructureManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    if (this.currentCameraView === view) return;
+    if (this.currentCameraView === view) {
+      this.updateShadowFlags();
+      return;
+    }
 
     // If we're moving away from Medium view, clean up transition state
     if (this.currentCameraView === CameraView.Medium) {
@@ -432,7 +435,26 @@ export class StructureManager {
 
     // Use the centralized label transition function
     applyLabelTransitions(this.entityIdLabels, view);
+    this.updateShadowFlags();
   };
+
+  private updateShadowFlags(): void {
+    const enableCasting = this.currentCameraView === CameraView.Close;
+    const applyToModels = (models: InstancedModel[]) => {
+      models.forEach((model) => {
+        model.instancedMeshes.forEach((mesh) => {
+          if (mesh.name === LAND_NAME) {
+            mesh.castShadow = false;
+            return;
+          }
+          mesh.castShadow = enableCasting;
+        });
+      });
+    };
+
+    this.structureModels.forEach((models) => applyToModels(models));
+    this.cosmeticStructureModels.forEach((models) => applyToModels(models));
+  }
 
   public destroy() {
     if (this.unsubscribeFrustum) {
@@ -565,6 +587,7 @@ export class StructureManager {
             model.setWorldBounds(this.currentChunkBounds);
           }
         });
+        this.updateShadowFlags();
         return models;
       })
       .finally(() => {
@@ -631,6 +654,7 @@ export class StructureManager {
             model.setWorldBounds(this.currentChunkBounds);
           }
         });
+        this.updateShadowFlags();
         return models;
       })
       .catch((error) => {

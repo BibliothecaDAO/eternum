@@ -11,6 +11,7 @@ import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
+import { LAND_NAME } from "@/three/managers/instanced-model";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
@@ -104,6 +105,7 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
   count: number;
+  landColors?: Float32Array | null;
   box?: Box3;
   sphere?: Sphere;
 }
@@ -933,7 +935,7 @@ export default class WorldmapScene extends HexagonScene {
     this.mainDirectionalLight.shadow.camera.bottom = -45;
     this.mainDirectionalLight.shadow.camera.far = 110;
     this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.shadow.bias = -0.02;
+    this.mainDirectionalLight.shadow.bias = -0.015;
     this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
   }
 
@@ -2298,6 +2300,19 @@ export default class WorldmapScene extends HexagonScene {
       const hexMesh = this.biomeModels.get(biomeVariant as BiomeType)!;
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
+      const satSeed = this.hashCoordinates(col + 19.13, row - 7.77);
+      const lightSeed = this.hashCoordinates(col - 11.8, row + 29.4);
+      const satOffset = (satSeed - 0.5) * 0.06;
+      const lightOffset = (lightSeed - 0.5) * 0.06;
+      const jitterColor = hexMesh.getLandColor().clone();
+      jitterColor.offsetHSL(0, satOffset, lightOffset);
+      const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
+      landMeshes.forEach((mesh) => mesh.setColorAt(currentCount, jitterColor));
+      landMeshes.forEach((mesh) => {
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
+      });
       hexMesh.setCount(currentCount + 1);
       hexMesh.needsUpdate();
 
@@ -2850,8 +2865,38 @@ export default class WorldmapScene extends HexagonScene {
     const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
     const frameBudget = this.hexGridFrameBudgetMs;
 
+    const baseLandColors = new Map<string, Color>();
+    this.biomeModels.forEach((model, biome) => {
+      baseLandColors.set(biome as string, model.getLandColor().clone());
+    });
+    const landColorScratch = new Color();
+
     this.updateHexagonGridPromise = new Promise((resolve) => {
       const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
+        None: [],
+        Ocean: [],
+        DeepOcean: [],
+        Beach: [],
+        Scorched: [],
+        Bare: [],
+        Tundra: [],
+        Snow: [],
+        TemperateDesert: [],
+        Shrubland: [],
+        ShrublandAlt: [],
+        Taiga: [],
+        Grassland: [],
+        GrasslandAlt: [],
+        TemperateDeciduousForest: [],
+        TemperateDeciduousForestAlt: [],
+        TemperateRainForest: [],
+        SubtropicalDesert: [],
+        TropicalSeasonalForest: [],
+        TropicalRainForest: [],
+        Outline: [],
+      };
+
+      const biomeColorOffsets: Record<BiomeType | "Outline" | string, number[]> = {
         None: [],
         Ocean: [],
         DeepOcean: [],
@@ -2960,6 +3005,25 @@ export default class WorldmapScene extends HexagonScene {
           });
           hexMesh.setCount(matrices.length);
           hexMesh.needsUpdate();
+
+          const offsets = biomeColorOffsets[biome];
+          if (offsets && offsets.length > 0) {
+            const baseColor = baseLandColors.get(biome) ?? hexMesh.getLandColor().clone();
+            const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
+            if (landMeshes.length > 0) {
+              for (let i = 0; i < matrices.length; i++) {
+                const satOffset = offsets[i * 2] ?? 0;
+                const lightOffset = offsets[i * 2 + 1] ?? 0;
+                landColorScratch.copy(baseColor).offsetHSL(0, satOffset, lightOffset);
+                landMeshes.forEach((mesh) => mesh.setColorAt(i, landColorScratch));
+              }
+              landMeshes.forEach((mesh) => {
+                if (mesh.instanceColor) {
+                  mesh.instanceColor.needsUpdate = true;
+                }
+              });
+            }
+          }
         }
 
         this.cacheMatricesForChunk(startRow, startCol);
@@ -3043,6 +3107,12 @@ export default class WorldmapScene extends HexagonScene {
           const pooledMatrix = matrixPool.getMatrix();
           pooledMatrix.copy(tempMatrix);
           biomeHexes[biomeVariant].push(pooledMatrix);
+
+          const satSeed = this.hashCoordinates(globalCol + 19.13, globalRow - 7.77);
+          const lightSeed = this.hashCoordinates(globalCol - 11.8, globalRow + 29.4);
+          const satOffset = (satSeed - 0.5) * 0.06; // +/- 3% saturation
+          const lightOffset = (lightSeed - 0.5) * 0.06; // +/- 3% lightness
+          biomeColorOffsets[biomeVariant].push(satOffset, lightOffset);
         } else {
           tempPosition.y = 0.01;
           tempMatrix.setPosition(tempPosition);
@@ -3367,10 +3437,19 @@ export default class WorldmapScene extends HexagonScene {
       const { matrices, count } = model.getMatricesAndCount();
       if (count === 0) {
         this.releaseInstancedAttribute(matrices);
-        cachedChunk.set(biome, { matrices: null, count });
+        cachedChunk.set(biome, { matrices: null, count, landColors: null });
         continue;
       }
-      cachedChunk.set(biome, { matrices, count });
+      const landMesh = model.instancedMeshes.find((mesh) => mesh.name === LAND_NAME);
+      let landColors: Float32Array | null = null;
+      if (landMesh?.instanceColor) {
+        const source = landMesh.instanceColor.array as Float32Array;
+        const requiredFloats = count * 3;
+        landColors = new Float32Array(requiredFloats);
+        landColors.set(source.subarray(0, requiredFloats));
+      }
+
+      cachedChunk.set(biome, { matrices, count, landColors });
     }
 
     cachedChunk.set("__bounds__", {
@@ -3403,15 +3482,31 @@ export default class WorldmapScene extends HexagonScene {
         return false;
       }
       this.touchMatrixCache(chunkKey);
-      for (const [biome, { matrices, count }] of cachedMatrices) {
+      for (const [biome, entry] of cachedMatrices) {
         if (biome === "__bounds__") {
           continue;
         }
+        const { matrices, count, landColors } = entry;
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         if (matrices) {
           hexMesh.setMatricesAndCount(matrices, count);
         } else {
           hexMesh.setCount(count);
+        }
+
+        if (landColors && count > 0) {
+          const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
+          landMeshes.forEach((mesh) => {
+            if (!mesh.instanceColor || (mesh.instanceColor.array as Float32Array).length < count * 3) {
+              mesh.instanceColor = new InstancedBufferAttribute(
+                new Float32Array(mesh.instanceMatrix.count * 3),
+                3,
+              );
+              mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
+            }
+            (mesh.instanceColor.array as Float32Array).set(landColors);
+            mesh.instanceColor.needsUpdate = true;
+          });
         }
       }
       this.ensureMatrixCacheLimit();

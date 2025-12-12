@@ -15,15 +15,17 @@ import {
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
-  BloomEffect,
-  Effect,
-  EffectComposer,
-  EffectPass,
-  FXAAEffect,
-  RenderPass,
-  ToneMappingEffect,
-  ToneMappingMode,
-  VignetteEffect,
+    BloomEffect,
+    BrightnessContrastEffect,
+    Effect,
+    EffectComposer,
+    EffectPass,
+    FXAAEffect,
+    HueSaturationEffect,
+    RenderPass,
+    ToneMappingEffect,
+    ToneMappingMode,
+    VignetteEffect,
 } from "postprocessing";
 import {
   ACESFilmicToneMapping,
@@ -36,6 +38,7 @@ import {
   PMREMGenerator,
   Raycaster,
   ReinhardToneMapping,
+  SRGBColorSpace,
   Vector2,
   WebGLRenderer,
   WebGLRenderTarget,
@@ -258,9 +261,11 @@ export default class GameRenderer {
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.8;
+    // Explicitly set output color space to ensure correct gamma across browsers/three versions.
+    this.renderer.outputColorSpace = SRGBColorSpace;
+    // Slightly higher exposure after SRGB output to preserve midtone readability.
+    this.renderer.toneMappingExposure = 0.9;
     this.renderer.autoClear = false;
-    //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: HalfFloatType,
     });
@@ -901,6 +906,19 @@ export default class GameRenderer {
     }
 
     const effects: Effect[] = [this.toneMappingEffect];
+
+    effects.push(
+      new HueSaturationEffect({
+        hue: this.postProcessingConfig.hue,
+        saturation: this.postProcessingConfig.saturation,
+      }),
+    );
+    effects.push(
+      new BrightnessContrastEffect({
+        brightness: this.postProcessingConfig.brightness,
+        contrast: this.postProcessingConfig.contrast,
+      }),
+    );
 
     if (features.fxaa) {
       effects.push(new FXAAEffect());

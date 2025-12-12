@@ -134,6 +134,7 @@ export default class InstancedModel {
         }
 
         if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
+          tmp.castShadow = false;
           tmp.receiveShadow = true;
           tmp.name = LAND_NAME;
         }

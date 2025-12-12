@@ -143,114 +143,58 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 9. Extract chunking/grid/fetch/caching into a dedicated chunk subsystem. Do this last so you’re refactoring a stable,
    well‑understood behavior/perf profile.
 
-Current Performance Risks (ordered)
+---
 
-- PointsLabelRenderer.setPoint recomputes bounding spheres + flips multiple attributes on every call, then re‑checks
-  frustum; chunk refreshes and moving armies can trigger hundreds of calls → CPU spikes + stutter
-  (managers/points-label-renderer.ts).
-- Multiple independent requestAnimationFrame loops for effects (hover, selection pulses, resource FX) run alongside the
-  main loop → extra callbacks, unsynced timing, frame variance (managers/hover-hex-manager.ts,
-  managers/selection-pulse-manager.ts, managers/resource- fx-manager.ts).
-- Heavy, repeated allocations in hot chunk/visibility paths: getWorldPositionForHex returns new Vector3, plus many
-  .clone() calls inside loops → GC thrash on chunk switches and large entity counts (utils/utils.ts,
-  scenes/worldmap.tsx, managers/\*-manager.ts).
-- InteractiveHexManager keeps allHexes/hexBuckets forever using string keys; updateVisibleHexes parses/splits strings
-  each switch → memory grows with explored map, visibility updates get slower (managers/interactive-hex- manager.ts,
-  scenes/worldmap.tsx#processCell).
-- CentralizedVisibilityManager builds string keys with toFixed() per query → lots of transient strings when many
-  entities are checked (utils/centralized-visibility- manager.ts).
-- ArmyModel.updateInstance updates every base/cosmetic instanced mesh per moving entity (zero‑scale hides) → O(models ×
-  movingArmies) per frame under load (managers/ army-model.ts).
-- Ownership pulses create per‑hex Mesh + cloned shader material (no instancing) → draw‑call/material explosion if
-  positions grow (managers/selection-pulse-manager.ts).
-- CSS2D label rendering every frame for world + HUD can become DOM‑bound with many labels despite pooling (game-
-  renderer.ts#animate, utils/labels/\*).
-- updateHexagonGrid finalization applies matrices with per‑instance setMatrixAt loops; end‑of‑task “apply” can still
-  hitch (scenes/worldmap.tsx#finalizeSuccess).
-
-Concrete Optimisation Recommendations
-
-- Batch/defang PointsLabelRenderer updates
-  - Change: add beginBatch()/endBatch() or setPoints([...]) in managers/points-label- renderer.ts; during batch, only
-    write to arrays, then once: attributes.position.needsUpdate = true, setDrawRange, recompute bounds once or disable
-    bounds/frustum for points (points.frustumCulled = false). Add setPointPosition(entityId,x,y,z) so moving updates
-    don’t touch size/color.
-  - Why: removes O(N) computeBoundingSphere per point and redundant attribute flips.
-  - Impact: high CPU + stutter reduction.
-- Collapse per‑manager rAF loops into main update
-  - Change: refactor HoverHexManager, SelectionPulseManager, ResourceFXManager to expose update(deltaTime); register
-    them in WorldmapScene.update / HexagonScene.update or a shared FXSystem. Remove their internal
-    requestAnimationFrame.
-  - Why: one timing source, fewer callbacks, lower frame variance.
-  - Impact: high/medium CPU + stutter.
-- Introduce non‑alloc hex→world helpers and remove clones
-  - Change: in utils/utils.ts, add getWorldPositionForHexInto(hex, out, flat?) (or (col,row,out)); update hot loops to
-    reuse scratch vectors:
-    - scenes/worldmap.tsx#processCell, InteractiveHexManager.renderHexes/ renderAllHexes, ArmyManager.isArmyVisible,
-      StructureManager.isStructureVisible, QuestManager.isQuestVisible, ChestManager.isChestVisible.
-    - Avoid position.clone() inside loops; pass numbers or copy into scratch.
-  - Why: cuts thousands of Vector3 allocations per chunk rebuild and per visibility pass.
-  - Impact: high GC/memory + stutter.
-- Cache render bounds once per chunk update
-  - Change: compute bounds once in getVisible*ForChunk and pass to is*Visible helpers (armies/structures/
-    quests/chests). Remove per‑entity getRenderBounds calls.
-  - Why: avoids repeated object creation and math.
-  - Impact: medium-high on chunk switch smoothness.
-- Fix CentralizedVisibilityManager keying
-  - Change: replace boxToKey/sphereToKey/pointToKey with identity‑based caches: WeakMap<Box3, boolean>, WeakMap<Sphere,
-    boolean>, and WeakMap<Vector3, boolean> (or allow caller‑supplied stable keys).
-  - Why: eliminates per‑query string/toFixed allocations.
-  - Impact: medium-high CPU/GC when many entities visible.
-- Rework InteractiveHexManager storage
-  - Change: store hexes per‑chunk (e.g., Map<chunkKey, Uint32Array> or Set<number> encoded coords) and evict when chunks
-    unpinned. Avoid global allHexes growth and string splitting. Optionally, skip addHex per cell and derive visible
-    coords directly from render bounds.
-  - Why: prevents unbounded memory and keeps visibility O(window) not O(explored).
-  - Impact: high memory + scalability.
-- Bulk‑apply biome matrices at grid finalize
-  - Change: in scenes/worldmap.tsx#finalizeSuccess, build InstancedBufferAttribute per biome via
-    InstancedMatrixAttributePool and call InstancedBiome.setMatricesAndCount once, or spread final apply across a few
-    frames.
-  - Why: reduces end‑of‑chunk one‑frame “apply” spike.
-  - Impact: medium-high frame variance.
-- Reduce per‑frame ArmyModel work
-  - Change: in managers/army-model.ts#updateInstance, update only active base model + active cosmetic (and previous
-    active on transitions). Keep per‑entity active model IDs to skip zero‑scale writes to inactive meshes each frame.
-  - Why: fewer instanced‑mesh writes with many moving armies.
-  - Impact: medium-high CPU.
-- Instance ownership pulses
-  - Change: replace per‑mesh clones in managers/ selection-pulse-manager.ts#showOwnershipPulses with a single
-    InstancedMesh and per‑instance color/ pulseColor attributes. Add a cap or reuse pool.
-  - Why: collapses draw calls/materials.
-  - Impact: medium-high GPU.
-- Throttle CSS2D label rendering
-  - Change: in game-renderer.ts#animate, render CSS2D only when camera changed or label state dirty, or at capped FPS
-    (e.g., 30). Use QualityController.labelRenderDistance for distance cull.
-  - Why: DOM layout is often the real CPU bottleneck at scale.
-  - Impact: medium CPU.
-- Actually use QualityController
-  - Change: call qualityController.recordFrame(deltaMs) in main loop; subscribe to quality events to adjust pixel ratio,
-    shadows, post‑FX, label distance, animation FPS, chunk load radius.
-  - Why: keeps frame time stable across hardware/player density.
-  - Impact: medium stability/scalability.
-- Minor cleanups
-  - Remove unused per‑cell rotation math in scenes/ worldmap.tsx#processCell if rotation stays disabled.
-  - Precompute particle circle cos/sin once in managers/ particles.ts.
-  - Guard stray logs with import.meta.env.DEV (managers/ instanced-model.tsx, managers/army-manager.ts).
-  - Impact: low but easy wins.
-
-Chunking / Rendering‑Specific Improvements
-
-- Visibility logic
-  - Already movement‑debounced + hysteresis‑based (good). Next: avoid focusPoint clones, and make managers share
-    precomputed bounds/center from utils/ chunk-geometry.ts.
-  - Replace per‑entity frustum point creation with scratch vectors + centralized visibility cache.
-- Load/unload performance
-  - Keep matrix cache (33 chunks) but ensure InteractiveHexManager and label/icon caches evict with pinned‑set changes.
-  - Reuse shared materials via MaterialPool for structures/biomes if you see duplication in MaterialPool.getStats();
-    avoid creating per‑object materials in future additions.
-
-1. Quick wins (low risk): Batch PointsLabelRenderer, disable per‑set bounding sphere, guard logs, remove unused math.
-2. GC & visibility refactor: Add getWorldPositionForHexInto, eliminate clones, cache render bounds per update, switch
-   visibility caches
-3. Adaptive quality/LOD: Wire QualityController and add simple distance‑based shadow/label/animation LOD.
+1. Baseline + guardrails
+   - Capture reference screenshots at CameraView.Close/ Medium/Far across day/night and storm, to compare before/after.
+   - Add a small “visual QA” note with target look (contrast, fog, shadows).
+2. Fix color pipeline
+   - In game-renderer.ts, set renderer.outputColorSpace = SRGBColorSpace and verify no double‑gamma in GLTF/ textures.
+   - Re‑tune renderer.toneMappingExposure after SRGB fix.
+3. Rebalance lighting
+   - In scenes/hexagon-scene.ts, lower fill lights and neutralize tint:
+     - Reduce HemisphereLight intensity and shift sky/ ground colors to warm‑key / cool‑fill.
+     - Reduce ambientPurpleLight intensity and desaturate its color.
+   - In effects/day-night-cycle.ts, adjust presets to avoid full‑scene purple wash; keep warm sun + cooler shadows.
+4. Angle + camera‑track the sun
+   - Change default sun position to a shallow angle (e.g., elevation 30–40°, azimuth offset) in
+     HexagonScene.configureDirectionalLight.
+   - Update DayNightCycleManager.updateSunPosition to orbit around camera target with fixed elevation and smoothed
+     azimuth.
+5. Shadow readability + cost
+   - Disable terrain/land casting shadows:
+     - In managers/instanced-biome.tsx / managers/ instanced-model.tsx, set castShadow=false for land meshes; keep
+       receiveShadow=true.
+   - Add distance/view‑based shadow gating in WorldmapScene.applyQualityFeatures or per CameraView (near
+     units/structures only).
+   - Re‑tune shadow camera bounds/bias for angled sun.
+6. Re‑enable dynamic fog
+   - Re‑enable scene.fog for MID/HIGH in HexagonScene (was disabled).
+   - Each frame, set fog near/far based on current camera distance/view to avoid the prior zoom issue (FOG_CONFIG per
+     view).
+7. Terrain per‑hex variation
+   - Enable vertexColors on terrain materials (land submesh) and use InstancedMesh.setColorAt when building hex grids
+     (WorldmapScene.updateHexagonGrid / updateExploredHex).
+   - Add tiny HSL jitter per instance from hashCoordinates to break tiling (1–3% value/sat shift).
+8. Material presets + pooling
+   - Add a small preset layer (e.g., utils/material- presets.ts) that returns pooled MeshStandardMaterial variants for:
+     - terrain (matte),
+     - buildings (mid‑gloss),
+     - units (highest contrast + emissive accents).
+   - Route GLTF materials through MaterialPool.getStandardMaterial with roughness/ metalness clamps.
+   - Clamp extreme emissive boosts in managers/instanced- model.tsx.
+9. Hex edge/outline scaling
+   - In geometry/hexagon-geometry.ts or scene update, scale edge opacity with zoom (more visible far, subtle close) to
+     avoid grid noise.
+10. Camera polish
+    - Replace view “step” with eased interpolation in WorldmapScene.changeCameraView (gsap/custom easing).
+    - Dynamically adjust camera near/far with zoom to reduce z‑fighting and keep fog stable.
+11. Post‑processing grading
+    - Check if postprocessing already exports BrightnessContrastEffect/HueSaturationEffect; if yes, add them in
+      game-renderer.ts and wire to POST_PROCESSING_CONFIG.
+    - If not available, plan a lightweight custom shader pass for saturation/contrast only.
+12. Perf + scale validation
+    - Test LOW/MID/HIGH, flat mode, large map visibility;
+13. Document visual ruleset
+    - Add a short “Visual Ruleset” section to three/ README.md for future assets (lighting ratios, saturation hierarchy,
+      shadow policy).

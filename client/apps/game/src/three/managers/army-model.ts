@@ -324,7 +324,7 @@ export class ArmyModel {
     ) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
-    instancedMesh.castShadow = true;
+    instancedMesh.castShadow = this.currentCameraView === CameraView.Close;
     instancedMesh.instanceMatrix.needsUpdate = true;
     instancedMesh.renderOrder = 10 + meshIndex;
     // @ts-ignore
@@ -1246,6 +1246,14 @@ export class ArmyModel {
    */
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
+  }
+
+  public setShadowsEnabled(enabled: boolean): void {
+    this.models.forEach((model) => {
+      model.instancedMeshes.forEach((mesh) => {
+        mesh.castShadow = enabled;
+      });
+    });
   }
 
   public setMovementCompleteCallback(entityId: number, callback?: () => void): void {
