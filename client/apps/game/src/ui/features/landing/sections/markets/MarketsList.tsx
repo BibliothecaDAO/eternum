@@ -3,14 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, HStack, Scro
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
-import Button from "@/ui/design-system/atoms/button";
-import { Play } from "lucide-react";
-
 import { MarketImage } from "./MarketImage";
 import { MarketOdds } from "./MarketOdds";
 import { MarketStatusBadge } from "./MarketStatusBadge";
 import { MarketTimeline } from "./MarketTimeline";
-import { MarketTvl } from "./MarketTvl";
+import { MarketQuickStats } from "./market-quick-stats";
 import { useMarketWatch } from "./use-market-watch";
 
 export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersParams }) {
@@ -71,7 +68,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
                   titleContent
                 )}
               </CardTitle>
-              {(() => {
+              {/* {(() => {
                 const state = getWatchState(market);
                 const disabled = state.status === "offline";
                 const loading = state.status === "checking" || watchingMarketId === String(market.market_id);
@@ -90,13 +87,12 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
                     <span>Watch</span>
                   </Button>
                 );
-              })()}
+              })()} */}
             </CardHeader>
             <CardContent className="flex flex-col gap-3 px-0">
               <VStack className="w-full">
-                <VStack className="w-auto items-end">
-                  <MarketTvl market={market} />
-                </VStack>
+                <VStack className="w-auto items-end">{/* <MarketTvl market={market} /> */}</VStack>
+                <MarketQuickStats market={market} />
               </VStack>
 
               <ScrollArea className="h-[120px] w-full pr-2">
@@ -108,11 +104,11 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
                   <HStack className="justify-center">
                     <MarketStatusBadge market={market} />
                   </HStack>
-                  {!(nowSec >= market.start_at && nowSec < market.end_at) ? (
+                  {/* {!(nowSec >= market.start_at && nowSec < market.end_at) ? (
                     <div className="rounded-sm border border-white/10 bg-white/5 px-3 py-2 text-center text-xs text-gold/80">
                       Market closed to trades
                     </div>
-                  ) : null}
+                  ) : null} */}
 
                   <MarketTimeline market={market} />
                 </VStack>

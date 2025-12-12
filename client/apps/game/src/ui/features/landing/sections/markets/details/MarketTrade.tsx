@@ -4,11 +4,11 @@ import { BigNumberish, Call, uint256 } from "starknet";
 
 import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import type { MarketClass, MarketOutcome } from "@/pm/class";
 import type { RegisteredToken } from "@/pm/bindings";
+import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
-import { useTokens } from "@/pm/hooks/dojo/useTokens";
 import { useUser } from "@/pm/hooks/dojo/user";
+import { useTokens } from "@/pm/hooks/dojo/useTokens";
 import { formatUnits } from "@/pm/utils";
 import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
@@ -189,8 +189,8 @@ export function MarketTrade({
   const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions")?.address;
   const marketContractAddress = (env.VITE_PUBLIC_PM_ADDRESS ?? manifestMarketAddress ?? DEFAULT_MARKET_ADDRESS).trim();
   const nowSec = Math.floor(Date.now() / 1_000);
-  // const isTradeable = nowSec >= market.start_at && nowSec < market.end_at;
-  const isTradeable = true;
+  const isTradeable = nowSec >= market.start_at && nowSec < market.end_at;
+  // const isTradeable = true;
   const isResolved = market.isResolved();
 
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
@@ -407,20 +407,12 @@ export function MarketTrade({
           : "Redeem your position tokens to claim your payout.";
 
     return (
-      <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
-        <div className="mb-3">
-          <p className="text-xs uppercase tracking-[0.08em] text-gold/70">Trading</p>
-          <p className="text-lg font-semibold">Market closed</p>
-          <p className="text-sm text-gold/70">Trading is unavailable because the market is not live.</p>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-gold/70">
-          <span className="font-semibold text-white">Claim rewards</span>
-          <span>{claimMessage}</span>
-          <Button className="w-full bg-white/10 text-white" disabled={claimDisabled} onClick={onRedeem}>
-            Claim
-          </Button>
-        </div>
+      <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-gold/70">
+        <span className="font-semibold text-white">Claim rewards</span>
+        <span>{claimMessage}</span>
+        <Button className="w-full bg-white/10 text-white" disabled={claimDisabled} onClick={onRedeem}>
+          Claim
+        </Button>
       </div>
     );
   }
@@ -434,9 +426,7 @@ export function MarketTrade({
             <div className="flex items-center justify-between">
               <span className="uppercase tracking-[0.08em] text-gold/60">To win</span>
               <div className="flex items-center gap-2 text-base font-semibold text-progress-bar-good">
-                <span>
-                  {tradePreview.potentialWinFormatted ?? "--"}
-                </span>
+                <span>{tradePreview.potentialWinFormatted ?? "--"}</span>
                 <TokenIcon token={market.collateralToken} size={16} />
               </div>
             </div>
@@ -445,9 +435,7 @@ export function MarketTrade({
               <span className="flex items-center gap-1 text-white/80">
                 Avg entry:{" "}
                 <span className="font-semibold text-progress-bar-good">
-                  {tradePreview.averageEntryPercent != null
-                    ? `${tradePreview.averageEntryPercent.toFixed(2)}%`
-                    : "--"}
+                  {tradePreview.averageEntryPercent != null ? `${tradePreview.averageEntryPercent.toFixed(2)}%` : "--"}
                 </span>
               </span>
             </div>
