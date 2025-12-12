@@ -19,7 +19,7 @@ export function MaybeController({ address, className, ...props }: { address: str
 
       setUsername(`${short}`);
     }
-  }, [address]);
+  }, [address, findController]);
 
   return (
     <div className={className} {...props}>

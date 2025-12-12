@@ -1,4 +1,5 @@
 import { MarketClass, MarketOutcome } from "@/pm/class";
+import { getOutcomeColor } from "@/pm/constants/marketOutcomeColors";
 import { HStack } from "@pm/ui";
 import { MaybeController } from "./MaybeController";
 
@@ -12,7 +13,8 @@ const formatOdds = (value: unknown) => {
   return num.toFixed(2);
 };
 
-const getOddsValue = (outcome: MarketOutcome) => (outcome as any)?.odds ?? (outcome as any)?.price ?? (outcome as any)?.odds;
+const getOddsValue = (outcome: MarketOutcome) =>
+  (outcome as any)?.odds ?? (outcome as any)?.price ?? (outcome as any)?.odds;
 
 const getOutcomes = (market: MarketClass): MarketOutcome[] => {
   const outcomes = market.getMarketOutcomes();
@@ -66,6 +68,7 @@ export const MarketOdds = ({
         const oddsRaw = getOddsValue(outcome);
         const odds = formatOdds(oddsRaw);
         const isSelected = selectable && selectedOutcomeIndex === order;
+        const color = getOutcomeColor(order);
 
         return (
           <button
@@ -86,9 +89,13 @@ export const MarketOdds = ({
             }
           >
             <HStack className="gap-2 text-lightest">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
               <MaybeController address={outcome.name} />
             </HStack>
-            <span className="text-gold">{odds ?? "--"}</span>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              <span className="text-gold">{odds ?? "--"}</span>
+            </div>
           </button>
         );
       })}

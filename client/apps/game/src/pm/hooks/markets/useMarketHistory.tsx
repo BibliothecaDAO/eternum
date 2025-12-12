@@ -7,17 +7,7 @@ import type { RegisteredToken, VaultDenominatorEvent, VaultNumeratorEvent } from
 import { useControllers } from "@/pm/hooks/controllers/useControllers";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { formatUnits } from "@/pm/utils";
-
-const chartColors: Record<number, string> = {
-  0: "#5AC8FA",
-  1: "#FF5E57",
-  2: "#FFB800",
-  3: "#34C759",
-  4: "#AF52DE",
-  5: "#FF9500",
-  6: "#5856D6",
-  7: "#FF2D55",
-};
+import { getOutcomeColor } from "@/pm/constants/marketOutcomeColors";
 
 const toBigInt = (value: BigNumberish | undefined) => {
   if (value === undefined || value === null) return 0n;
@@ -105,7 +95,7 @@ export const useMarketHistory = (market: MarketClass) => {
           `p${idx}`,
           {
             label: controller ? controller.username : outcomesText[idx],
-            color: chartColors[idx % Object.values(chartColors).length],
+            color: getOutcomeColor(idx),
           },
         ];
       }),
