@@ -8,7 +8,7 @@ import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { useUser } from "@/pm/hooks/dojo/user";
-import { useTokens } from "@/pm/hooks/dojo/useTokens";
+import { useClaimablePayout } from "@/pm/hooks/markets/useClaimablePayout";
 import { formatUnits } from "@/pm/utils";
 import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
@@ -194,59 +194,10 @@ export function MarketTrade({
 
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
-  const positionIdsAsStrings = useMemo(() => positionIds.map((id) => id.toString()), [positionIds]);
-
-  const { balances: positionBalances } = useTokens(
-    {
-      accountAddresses: account?.address ? [account.address] : undefined,
-      contractAddresses: vaultPositionsAddress ? [vaultPositionsAddress] : [],
-      tokenIds: positionIdsAsStrings,
-    },
-    true,
+  const { claimableDisplay, hasRedeemablePositions } = useClaimablePayout(
+    market,
+    account?.address || undefined,
   );
-
-  const hasRedeemablePositions = useMemo(() => {
-    return positionBalances.some(
-      (balance) =>
-        BigInt(balance.balance || 0) > 0n &&
-        positionIds.some((id) => BigInt(balance.token_id || 0) === id) &&
-        (!account || BigInt(balance.account_address) === BigInt(account.address || 0)),
-    );
-  }, [positionBalances, positionIds, account]);
-
-  // TODO: check if that works when a market has been resovled
-  const claimableAmount = useMemo(() => {
-    if (!isResolved) return 0n;
-    const payouts = market.conditionResolution?.payout_numerators;
-    if (!payouts || payouts.length === 0) return 0n;
-    const totalPayout = payouts.reduce((acc, v) => acc + BigInt(v), 0n);
-    if (totalPayout === 0n) return 0n;
-
-    const denominator = BigInt(market.vaultDenominator?.value || 0);
-    if (denominator === 0n) return 0n;
-
-    return positionBalances.reduce((acc, balance) => {
-      const tokenId = BigInt(balance.token_id || 0);
-      const idx = positionIds.findIndex((id) => id === tokenId);
-      if (idx < 0) return acc;
-
-      const outcomeNumerator = BigInt(market.vaultNumerators?.find((n) => Number(n.index) === idx)?.value || 0);
-      if (outcomeNumerator === 0n) return acc;
-
-      const payout = BigInt(payouts[idx] ?? 0);
-      if (payout === 0n) return acc;
-
-      const share = (payout * 10_000n) / totalPayout;
-      const rewardPerUnit = (share * denominator) / outcomeNumerator;
-      const payoutAmount = (rewardPerUnit * BigInt(balance.balance || 0)) / 10_000n;
-      return acc + payoutAmount;
-    }, 0n);
-  }, [isResolved, market, positionBalances, positionIds]);
-
-  const claimableDisplay = useMemo(() => {
-    const formatted = formatUnits(claimableAmount, collateralDecimals, 4);
-    return Number(formatted || 0) > 0 ? formatted : "0";
-  }, [claimableAmount, collateralDecimals]);
 
   const tradePreview = useMemo(() => {
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
