@@ -1,9 +1,10 @@
+import { useMemo } from "react";
+
 import { MarketClass } from "@/pm/class";
 import { formatUint256 } from "@/pm/utils";
-import { Button } from "@/ui/design-system/atoms";
 import { HStack, VStack } from "@pm/ui";
-import { TrendingUp } from "lucide-react";
-import { useMemo } from "react";
+import { CheckCircle2, TrendingUp } from "lucide-react";
+
 import { MaybeController } from "../MaybeController";
 
 export function MarketResolved({
@@ -49,95 +50,93 @@ export function MarketResolved({
       className={`w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner ${className ?? ""}`}
       {...props}
     >
-      {market.typBinary() && !market.typBinaryScalar() && (
-        <HStack className="justify-center gap-3">
-          {payouts[0].payoutNumerator > 0 && (
-            <>
-              <Button className="bg-progress-bar-good text-white hover:bg-progress-bar-good/80">YES</Button>
-              <HStack className="text-brilliance">
-                <TrendingUp />
-                {Math.ceil((Number(market.odds[1]) / Number(market.odds[0])) * 100)}%
-              </HStack>
-            </>
-          )}
-          {payouts[1].payoutNumerator > 0 && (
-            <>
-              <Button className="bg-danger text-lightest hover:bg-danger/80">NO</Button>
-              <HStack className="text-brilliance">
-                <TrendingUp />
-                {Math.ceil((Number(market.odds[0]) / Number(market.odds[1])) * 100)}%
-              </HStack>
-            </>
-          )}
-        </HStack>
-      )}
+      <VStack className="gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-progress-bar-good">
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="font-semibold uppercase tracking-[0.08em] text-progress-bar-good">Resolved</span>
+          </div>
+          <div className="text-xs text-gold/70">
+            Oracle outcome posted. Winning selections are highlighted below.
+          </div>
+        </div>
 
-      {market.typBinary() && market.typBinaryScalar() && (
-        <HStack className="justify-center gap-3">
-          {payouts[0].payoutNumerator > 0 &&
-            payouts[1].payoutNumerator === 0 &&
-            `< ${formatUint256(market.typBinaryScalar().low, 18)}`}
-          {payouts[1].payoutNumerator > 0 &&
-            payouts[0].payoutNumerator === 0 &&
-            `< ${formatUint256(market.typBinaryScalar().high, 18)}`}
-          {payouts[0].payoutNumerator > 0 &&
-            payouts[1].payoutNumerator > 0 &&
-            `${
-              (BigInt(market.typBinaryScalar().low) +
-                ((BigInt(market.typBinaryScalar().high) - BigInt(market.typBinaryScalar().low)) *
-                  BigInt(payouts[1].payoutNumerator)) /
-                  10_000n) /
-              10n ** 18n
-            }`}
-          {/* {payouts[0].payoutNumerator > 0 && (
-            <>
-              <Button className="bg-progress-bar-good text-white hover:bg-progress-bar-good/80">
-                YES
-              </Button>
-              <HStack className="text-brilliance">
-                <TrendingUp />
-                {Math.ceil(
-                  (Number(market.odds[1]) / Number(market.odds[0])) * 100,
-                )}
-                %
-              </HStack>
-            </>
-          )}
-          {payouts[1].payoutNumerator > 0 && (
-            <>
-              <Button className="bg-danger text-lightest hover:bg-danger/80">
-                NO
-              </Button>
-              <HStack className="text-brilliance">
-                <TrendingUp />
-                {Math.ceil(
-                  (Number(market.odds[0]) / Number(market.odds[1])) * 100,
-                )}
-                %
-              </HStack>
-            </>
-          )} */}
-        </HStack>
-      )}
+        {market.typBinary() && !market.typBinaryScalar() ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {payouts.map((payout, idx) => {
+              const won = payout.payoutNumerator > 0;
+              const odds = market.odds ? Number(market.odds[idx]) : 0;
+              const edge = market.odds ? Math.ceil((Number(market.odds[1 - idx]) / Number(odds || 1)) * 100) : 0;
+              return (
+                <div
+                  key={idx}
+                  className={`rounded-lg border px-3 py-3 ${
+                    won
+                      ? "border-progress-bar-good/60 bg-progress-bar-good/10"
+                      : "border-white/10 bg-white/5 opacity-70"
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white font-semibold">{idx === 0 ? "YES" : "NO"}</span>
+                    <span className="flex items-center gap-2 text-xs text-gold/70">
+                      <TrendingUp className="h-3 w-3" />
+                      {edge}%
+                    </span>
+                  </div>
+                  {won ? (
+                    <div className="mt-2 text-xs font-semibold text-progress-bar-good">Winner</div>
+                  ) : (
+                    <div className="mt-2 text-xs text-gold/60">Lost</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
 
-      {market.typCategorical() && (
-        <HStack className="justify-center gap-3">
-          {payouts.map((payout, idx) => {
-            if (payout.payoutNumerator === 0) return null;
-            return (
-              <VStack className="text-brilliance justify-center" key={idx}>
-                <Button variant="secondary">
-                  <MaybeController address={payout.name} />
-                </Button>
-                <HStack className="w-full justify-center">
-                  <TrendingUp />
-                  {Math.ceil(100 / Number(market.odds![idx])) * 100}%
-                </HStack>
-              </VStack>
-            );
-          })}
-        </HStack>
-      )}
+        {market.typBinary() && market.typBinaryScalar() ? (
+          <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
+            <div className="text-xs uppercase tracking-[0.08em] text-gold/70">Scalar outcome</div>
+            <div className="mt-2 text-lg font-semibold text-white">
+              {payouts[0].payoutNumerator > 0 && payouts[1].payoutNumerator === 0
+                ? `< ${formatUint256(market.typBinaryScalar().low, 18)}`
+                : payouts[1].payoutNumerator > 0 && payouts[0].payoutNumerator === 0
+                  ? `< ${formatUint256(market.typBinaryScalar().high, 18)}`
+                  : `${
+                      (BigInt(market.typBinaryScalar().low) +
+                        ((BigInt(market.typBinaryScalar().high) - BigInt(market.typBinaryScalar().low)) *
+                          BigInt(payouts[1].payoutNumerator)) /
+                          10_000n) /
+                      10n ** 18n
+                    }`}
+            </div>
+          </div>
+        ) : null}
+
+        {market.typCategorical() ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {payouts.map((payout, idx) => {
+              if (payout.payoutNumerator === 0) return null;
+              const upsidePercent = Math.ceil((100 / Number(market.odds![idx] || 1)) * 100);
+              return (
+                <div
+                  key={idx}
+                  className="flex flex-col gap-2 rounded-lg border border-progress-bar-good/50 bg-progress-bar-good/10 p-3"
+                >
+                  <div className="flex items-center justify-between text-sm">
+                    <MaybeController address={payout.name} className="text-white" />
+                    <span className="flex items-center gap-1 text-xs text-gold/70">
+                      <TrendingUp className="h-3 w-3" />
+                      {upsidePercent}%
+                    </span>
+                  </div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.08em] text-progress-bar-good">Winner</div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </VStack>
     </div>
   );
 }

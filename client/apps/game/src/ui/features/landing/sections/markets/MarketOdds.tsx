@@ -42,6 +42,7 @@ export const MarketOdds = ({
   selectedOutcomeIndex?: number;
 }) => {
   const outcomes = getOutcomes(market);
+  const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
   const sortedOutcomes = [...outcomes]
     .map((outcome, idx) => {
       const normalizedOrder = Number((outcome as any)?.index);
@@ -69,13 +70,19 @@ export const MarketOdds = ({
         const odds = formatOdds(oddsRaw);
         const isSelected = selectable && selectedOutcomeIndex === order;
         const color = getOutcomeColor(order);
+        const isWinner =
+          resolvedPayouts.length > 0 &&
+          resolvedPayouts[order] != null &&
+          Number(resolvedPayouts[order]) > 0 &&
+          market.isResolved();
 
         return (
           <button
             key={(outcome as any)?.id ?? order}
             className={cx(
               "flex min-h-[52px] items-center justify-between rounded-sm border px-3 py-2 text-left text-xs transition",
-              "border-gold/20 bg-brown/40 text-lightest",
+              isWinner ? "border-progress-bar-good/60 bg-progress-bar-good/10" : "border-gold/20 bg-brown/40",
+              "text-lightest",
               selectable ? "cursor-pointer hover:border-gold/60 hover:bg-gold/10" : "cursor-default",
               isSelected ? "border-gold/70 bg-gold/15 ring-1 ring-gold/40" : null,
             )}
@@ -93,8 +100,7 @@ export const MarketOdds = ({
               <MaybeController address={outcome.name} className="max-w-[220px] truncate" />
             </HStack>
             <div className="flex items-center gap-2">
-              {/* <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} /> */}
-              <span className="text-gold">{odds ?? "--"}</span>
+              <span className={isWinner ? "text-progress-bar-good" : "text-gold"}>{odds ?? "--"}</span>
             </div>
           </button>
         );

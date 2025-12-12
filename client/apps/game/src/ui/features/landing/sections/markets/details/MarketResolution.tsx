@@ -198,7 +198,6 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
     try {
       const toriiBaseUrl = buildToriiBaseUrl(serverName);
-      console.log({ toriiBaseUrl });
       // Prefer leaderboard order when Torii is reachable
       try {
         const leaderboardAddresses = await fetchLeaderboardAddresses(toriiBaseUrl, 500);
@@ -336,7 +335,7 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
     if (players.length === 0 && playersError) return playersError;
     if (players.length === 0) return "No ranked players loaded yet.";
     const rankedList = players.map((addr, idx) => `${idx + 1}. ${addr}`).join("\n");
-    return `Players (${players.length}, \n${rankedList}`;
+    return `Players (${players.length}) \n${rankedList}`;
   }, [players, playersError, playersLoading, serverLookupStatus]);
 
   return (
@@ -370,7 +369,11 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
             </span>
           )}
         </HStack>
-        <div className="whitespace-pre-wrap break-words text-[11px] text-gold/60">{playersLabel}</div>
+        {/* Debug: Player list rendering */}
+        <div className="whitespace-pre-wrap break-words text-[11px] text-gold/60">
+          <span className="font-semibold text-amber-500 pr-2">[DEBUG]</span>
+          {playersLabel}
+        </div>
         {computeStatus && <div className="text-xs text-gold/70">{computeStatus}</div>}
       </VStack>
     </>
