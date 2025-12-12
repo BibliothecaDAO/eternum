@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, type TooltipProps } from "recharts";
 
 import type { MarketClass } from "@/pm/class";
 import { useMarketHistory } from "@/pm/hooks/markets/useMarketHistory";
@@ -8,8 +8,6 @@ import {
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
-  ChartTooltipContent,
-  HStack,
 } from "@pm/ui";
 
 export const MarketHistory = ({ market }: { market: MarketClass }) => {
@@ -36,6 +34,53 @@ export const MarketHistory = ({ market }: { market: MarketClass }) => {
       return Math.max(...values);
     }),
   );
+
+  const renderTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+    if (!active || !payload?.length) return null;
+
+    const tooltipDate = payload?.[0]?.payload?.date as number | undefined;
+    const formattedDate = tooltipDate
+      ? new Date(tooltipDate).toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : undefined;
+
+    const playerPayloads = payload
+      .filter((item) => typeof item.dataKey === "string")
+      .sort((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
+
+    return (
+      <div className="min-w-[220px] rounded-lg border border-white/10 bg-black/90 px-3 py-2 shadow-xl backdrop-blur">
+        {formattedDate ? (
+          <div className="mb-2 text-[11px] uppercase tracking-[0.08em] text-gold/70">{formattedDate}</div>
+        ) : null}
+
+        <div className="flex flex-col gap-2">
+          {playerPayloads.map((item) => {
+            const dataKey = item.dataKey as string;
+            const config = chartConfig[dataKey as keyof typeof chartConfig];
+            const color = config?.color || (item as any).color;
+
+            return (
+              <div key={dataKey} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: color }} />
+                  <span className="text-xs text-white">{config?.label || dataKey}</span>
+                </div>
+                <span className="text-xs font-mono font-semibold text-white">
+                  {Number(item.value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner">
@@ -91,38 +136,7 @@ export const MarketHistory = ({ market }: { market: MarketClass }) => {
           })}
 
           <ChartTooltip
-            content={
-              <ChartTooltipContent
-                labelKey="date"
-                labelFormatter={(value, payload) => {
-                  const date = payload?.[0]?.payload?.date;
-                  return new Date(date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "2-digit",
-                  });
-                }}
-                formatter={(value, name, items) => {
-                  return (
-                    <HStack className="w-full justify-between">
-                      <HStack>
-                        <div
-                          className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-(--color-bg)"
-                          style={
-                            {
-                              "--color-bg": `var(--color-${name})`,
-                            } as React.CSSProperties
-                          }
-                        />
-                        <div>{chartConfig[name as keyof typeof chartConfig]?.label || name}</div>
-                      </HStack>
-                      <div>{value}%</div>
-                    </HStack>
-                  );
-                }}
-              />
-            }
+            content={renderTooltip}
           />
 
           <ChartLegend
