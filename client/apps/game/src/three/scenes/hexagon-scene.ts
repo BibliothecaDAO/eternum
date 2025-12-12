@@ -14,7 +14,7 @@ import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { gltfLoader } from "@/three/utils/utils";
-import { LeftView, RightView } from "@/types";
+import { LeftView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
@@ -156,14 +156,12 @@ export abstract class HexagonScene {
     this.uiStateUnsubscribe = useUIStore.subscribe(
       (state) => ({
         leftNavigationView: state.leftNavigationView,
-        rightNavigationView: state.rightNavigationView,
         structureEntityId: state.structureEntityId,
         cycleProgress: state.cycleProgress,
         cycleTime: state.cycleTime,
       }),
-      ({ leftNavigationView, rightNavigationView, structureEntityId, cycleProgress, cycleTime }) => {
+      ({ leftNavigationView, structureEntityId, cycleProgress, cycleTime }) => {
         this.state.leftNavigationView = leftNavigationView;
-        this.state.rightNavigationView = rightNavigationView;
         this.state.structureEntityId = structureEntityId;
         this.state.cycleProgress = cycleProgress;
         this.state.cycleTime = cycleTime;
@@ -403,11 +401,10 @@ export abstract class HexagonScene {
 
   public closeNavigationViews() {
     this.state.setLeftNavigationView(LeftView.None);
-    this.state.setRightNavigationView(RightView.None);
   }
 
   public isNavigationViewOpen() {
-    return this.state.leftNavigationView !== LeftView.None || this.state.rightNavigationView !== RightView.None;
+    return this.state.leftNavigationView !== LeftView.None;
   }
 
   protected hashCoordinates(x: number, y: number): number {

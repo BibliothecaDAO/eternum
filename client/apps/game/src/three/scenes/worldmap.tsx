@@ -11,14 +11,13 @@ import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
-import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
-import { LeftView, RightView } from "@/types";
+import { LeftView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
@@ -187,9 +186,6 @@ export default class WorldmapScene extends HexagonScene {
   private selectionPulseManager: SelectionPulseManager;
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
-  private minimap!: Minimap;
-  private updateMinimapThrottled?: ReturnType<typeof throttle>;
-  private syncMinimapToCamera!: ReturnType<typeof throttle>;
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
     const normalizedHex = this.getCameraTargetHex();
@@ -214,8 +210,6 @@ export default class WorldmapScene extends HexagonScene {
   private handleControlsChangeForMinimap = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
-    if (this.minimap?.isUserDragging?.()) return;
-    this.syncMinimapToCamera?.(true);
   };
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
@@ -757,22 +751,16 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager = new SelectedHexManager(this.scene);
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
 
-    this.minimap = new Minimap(this, this.camera, this.dojo.network.toriiClient);
+    // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
+    // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
     this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, 33);
     this.minimapCameraMoveThrottled = throttle(() => {
       const target = this.minimapCameraMoveTarget;
       if (!target) return;
       this.moveCameraToColRow(target.col, target.row, 0.25);
     }, 16);
-    this.updateMinimapThrottled = throttle(() => {
-      this.minimap.update();
-    }, 100);
-    this.syncMinimapToCamera = throttle((force: boolean = false) => {
-      this.minimap?.syncToCameraTarget(force);
-    }, 50);
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     this.controls.addEventListener("change", this.handleControlsChangeForMinimap);
-    this.syncMinimapToCamera();
     this.updateCameraTargetHexThrottled();
 
     // Initialize SceneShortcutManager for WorldMap shortcuts
@@ -1072,7 +1060,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private openBattleLogsPanel() {
     const uiStore = useUIStore.getState();
-    uiStore.setRightNavigationView(RightView.None);
     uiStore.setLeftNavigationView(LeftView.StoryEvents);
   }
 
@@ -1772,8 +1759,6 @@ export default class WorldmapScene extends HexagonScene {
   private async performInitialSetup() {
     this.clearTileEntityCache();
     this.moveCameraToURLLocation();
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
@@ -1801,8 +1786,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private async resumeWorldmapScene() {
     this.moveCameraToURLLocation();
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
@@ -1834,7 +1817,6 @@ export default class WorldmapScene extends HexagonScene {
     this.scene.remove(this.chestLabelsGroup);
 
     // Clean up labels
-    this.minimap.hideMinimap();
     this.armyManager.removeLabelsFromScene();
     // console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
@@ -3537,7 +3519,7 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);
-    this.updateMinimapThrottled?.();
+    this.updateCameraTargetHexThrottled?.();
   }
 
   protected override shouldUpdateBiomeAnimations(): boolean {
@@ -3765,15 +3747,12 @@ export default class WorldmapScene extends HexagonScene {
     this.disposeWorldUpdateSubscriptions();
 
     this.resourceFXManager.destroy();
-    this.updateMinimapThrottled?.cancel();
-    this.syncMinimapToCamera?.cancel();
     this.updateCameraTargetHexThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     this.stopRelicValidationTimer();
     this.clearCache();
-    this.minimap.dispose();
 
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();

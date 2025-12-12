@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LeftView, RightView } from "@/types";
+import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { Tabs } from "@/ui/design-system/atoms";
 import {
@@ -15,7 +15,6 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { Bridge } from "@/ui/features/infrastructure";
 import {
   RealtimeChatShell,
   useRealtimeChatActions,
@@ -106,7 +105,6 @@ type StructureWithMetadata = Structure & {
 type RealmNavigationContext = {
   view: LeftView;
   setView: (view: LeftView) => void;
-  setRightView: (view: RightView) => void;
   disableButtons: boolean;
   isRealmOrVillage: boolean;
   arrivedArrivalsNumber: number;
@@ -118,8 +116,6 @@ type RealmNavigationContext = {
 
 type EconomyNavigationContext = {
   view: LeftView;
-  rightView: RightView;
-  setRightView: (view: RightView) => void;
   setLeftView: (view: LeftView) => void;
   disableButtons: boolean;
   isBlitz: boolean;
@@ -613,6 +609,7 @@ const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.military, // Army
   MenuEnum.resourceArrivals, // Donkey arrivals
   MenuEnum.transfer, // Transfers
+  MenuEnum.bridge, // Bridge
   MenuEnum.chat, // Chat
   MenuEnum.storyEvents, // Chronicles
 ];
@@ -758,7 +755,6 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
 const buildRealmNavigationItems = ({
   view,
   setView,
-  setRightView,
   disableButtons,
   isRealmOrVillage,
   arrivedArrivalsNumber,
@@ -768,7 +764,6 @@ const buildRealmNavigationItems = ({
   isBlitz,
 }: RealmNavigationContext): NavigationItem[] => {
   const toggleView = (targetView: LeftView) => () => {
-    setRightView(RightView.None);
     setView(view === targetView ? LeftView.None : targetView);
   };
 
@@ -876,20 +871,13 @@ const buildRealmNavigationItems = ({
 };
 
 const buildEconomyNavigationItems = ({
-  rightView,
   view,
-  setRightView,
   setLeftView,
   disableButtons,
   isBlitz,
   onOpenTransfer,
   isTransferOpen,
 }: EconomyNavigationContext): NavigationItem[] => {
-  const toggleView = (targetView: RightView) => () => {
-    setLeftView(LeftView.None);
-    setRightView(rightView === targetView ? RightView.None : targetView);
-  };
-
   const items: NavigationItem[] = [
     {
       id: MenuEnum.transfer,
@@ -904,6 +892,23 @@ const buildEconomyNavigationItems = ({
         onOpenTransfer();
       },
     },
+    ...(!isBlitz
+      ? ([
+          {
+            id: MenuEnum.bridge,
+            className: "bridge-selector",
+            image: BuildingThumbs.bridge,
+            tooltipLocation: "top",
+            label: "Bridge",
+            size: DEFAULT_BUTTON_SIZE,
+            disabled: disableButtons,
+            active: view === LeftView.BridgeView,
+            onClick: () => {
+              setLeftView(view === LeftView.BridgeView ? LeftView.None : LeftView.BridgeView);
+            },
+          },
+        ] satisfies NavigationItem[])
+      : []),
     {
       id: MenuEnum.storyEvents,
       className: "story-events-selector",
@@ -914,13 +919,12 @@ const buildEconomyNavigationItems = ({
       disabled: false,
       active: view === LeftView.StoryEvents,
       onClick: () => {
-        setRightView(RightView.None);
         setLeftView(view === LeftView.StoryEvents ? LeftView.None : LeftView.StoryEvents);
       },
     },
   ];
 
-  const allowedMenus: MenuEnum[] = [MenuEnum.transfer, MenuEnum.storyEvents];
+  const allowedMenus: MenuEnum[] = [MenuEnum.transfer, ...(isBlitz ? [] : [MenuEnum.bridge]), MenuEnum.storyEvents];
 
   return items.filter((item) => allowedMenus.includes(item.id));
 };
@@ -964,6 +968,11 @@ const SelectPreviewBuildingMenu = lazy(() =>
     default: module.SelectPreviewBuildingMenu,
   })),
 );
+const Bridge = lazy(() =>
+  import("@/ui/features/infrastructure/bridge/bridge").then((module) => ({
+    default: module.Bridge,
+  })),
+);
 const BlitzHyperstructuresMenu = lazy(() =>
   import("@/ui/features/world").then((module) => ({
     default: module.BlitzHyperstructuresMenu,
@@ -991,8 +1000,6 @@ export const LeftCommandSidebar = memo(() => {
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
-  const rightView = useUIStore((state) => state.rightNavigationView);
-  const setRightView = useUIStore((state) => state.setRightNavigationView);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -1086,7 +1093,6 @@ export const LeftCommandSidebar = memo(() => {
       buildRealmNavigationItems({
         view,
         setView,
-        setRightView,
         disableButtons,
         isRealmOrVillage,
         arrivedArrivalsNumber,
@@ -1098,7 +1104,6 @@ export const LeftCommandSidebar = memo(() => {
     [
       view,
       setView,
-      setRightView,
       disableButtons,
       isRealmOrVillage,
       arrivedArrivalsNumber,
@@ -1112,16 +1117,14 @@ export const LeftCommandSidebar = memo(() => {
   const economyNavigationItems = useMemo(
     () =>
       buildEconomyNavigationItems({
-        rightView,
         view,
-        setRightView,
         setLeftView: setView,
         disableButtons,
         isBlitz,
         onOpenTransfer: handleOpenTransferPopup,
         isTransferOpen: isTransferPopupOpen,
       }),
-    [rightView, view, setRightView, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
+    [view, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
   );
 
   const chatNavigationItem = useMemo<NavigationItem>(() => {
@@ -1135,7 +1138,6 @@ export const LeftCommandSidebar = memo(() => {
       disabled: !realtimeInitializer,
       active: isActive,
       onClick: () => {
-        setRightView(RightView.None);
         setView(isActive ? LeftView.None : LeftView.ChatView);
       },
       primaryNotification:
@@ -1155,7 +1157,7 @@ export const LeftCommandSidebar = memo(() => {
         </div>
       ),
     };
-  }, [connectionStatus, realtimeInitializer, setRightView, setView, unreadChatTotal, view]);
+  }, [connectionStatus, realtimeInitializer, setView, unreadChatTotal, view]);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
@@ -1253,7 +1255,7 @@ export const LeftCommandSidebar = memo(() => {
                     {view !== LeftView.StoryEvents && view === LeftView.ResourceArrivals && (
                       <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
                     )}
-                    {rightView === RightView.Bridge && (
+                    {view !== LeftView.StoryEvents && view === LeftView.BridgeView && (
                       <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <Bridge structures={structures} />
                       </div>

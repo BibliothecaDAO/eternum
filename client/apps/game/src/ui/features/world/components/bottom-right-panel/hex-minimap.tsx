@@ -8,7 +8,7 @@ import {
   getStructureInfoFromTileOccupier,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { BiomeIdToType, HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeIdToType, BiomeType, HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 
 export interface MinimapTile {
@@ -65,40 +65,28 @@ const LABEL_ICONS = {
   chest: "/images/labels/chest.png",
 } as const;
 
-const axialToPixel = (col: number, row: number) => {
-  const x = HEX_SIZE * (SQRT3 * col + (SQRT3 / 2) * row);
-  const y = HEX_SIZE * ((3 / 2) * row);
+const getGridMetrics = () => {
+  const hexHeight = HEX_SIZE * 2;
+  const hexWidth = SQRT3 * HEX_SIZE;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
+  return { vertDist, horizDist };
+};
+
+const offsetToPixel = (col: number, row: number) => {
+  const { vertDist, horizDist } = getGridMetrics();
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const x = col * horizDist - rowOffset;
+  const y = row * vertDist;
   return { x, y };
 };
 
-const pixelToAxial = (x: number, y: number) => {
-  const row = (2 / 3) * (y / HEX_SIZE);
-  const col = x / (SQRT3 * HEX_SIZE) - row / 2;
+const pixelToOffset = (x: number, y: number) => {
+  const { vertDist, horizDist } = getGridMetrics();
+  const row = Math.round(y / vertDist);
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const col = Math.round((x + rowOffset) / horizDist);
   return { col, row };
-};
-
-const axialRound = (col: number, row: number) => {
-  let x = col;
-  let z = row;
-  let y = -x - z;
-
-  let rx = Math.round(x);
-  let ry = Math.round(y);
-  let rz = Math.round(z);
-
-  const xDiff = Math.abs(rx - x);
-  const yDiff = Math.abs(ry - y);
-  const zDiff = Math.abs(rz - z);
-
-  if (xDiff > yDiff && xDiff > zDiff) {
-    rx = -ry - rz;
-  } else if (yDiff > zDiff) {
-    ry = -rx - rz;
-  } else {
-    rz = -rx - ry;
-  }
-
-  return { col: rx, row: rz };
 };
 
 const hexCorners = (center: { x: number; y: number }) => {
@@ -116,6 +104,7 @@ const hexCorners = (center: { x: number; y: number }) => {
 const getBiomeColor = (biomeId?: number) => {
   if (biomeId === undefined) return "#4b5563";
   const biomeType = BiomeIdToType[biomeId];
+  if (biomeType === BiomeType.Taiga) return "#ffffff";
   const color = BIOME_COLORS[biomeType as keyof typeof BIOME_COLORS];
   return color?.getStyle?.() ?? "#4b5563";
 };
@@ -152,7 +141,7 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
   for (const tile of tiles) {
     const centeredCol = tile.col - center;
     const centeredRow = tile.row - center;
-    const pixel = axialToPixel(centeredCol, centeredRow);
+    const pixel = offsetToPixel(centeredCol, centeredRow);
     const corners = hexCorners(pixel);
     const points = corners.map((corner) => `${corner.x},${corner.y}`).join(" ");
     const tileMinX = Math.min(...corners.map((c) => c.x));
@@ -247,7 +236,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     if (targetHex) {
       const col = targetHex.col - FELT_CENTER();
       const row = targetHex.row - FELT_CENTER();
-      const centerPixel = axialToPixel(col, row);
+      const centerPixel = offsetToPixel(col, row);
       return { x: centerPixel.x, y: centerPixel.y, scale: 1.4 };
     }
 
@@ -315,10 +304,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   const dispatchCameraMove = useCallback((centerX: number, centerY: number) => {
     if (typeof window === "undefined") return;
-    const axial = pixelToAxial(centerX, centerY);
-    const rounded = axialRound(axial.col, axial.row);
-    const col = rounded.col;
-    const row = rounded.row;
+    const { col, row } = pixelToOffset(centerX, centerY);
     window.dispatchEvent(new CustomEvent("minimapCameraMove", { detail: { col, row } }));
   }, []);
 
@@ -343,7 +329,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     if (!cameraTargetHex || isDraggingRef.current) return;
     const col = cameraTargetHex.col - FELT_CENTER();
     const row = cameraTargetHex.row - FELT_CENTER();
-    const centerPixel = axialToPixel(col, row);
+    const centerPixel = offsetToPixel(col, row);
     followTargetRef.current = centerPixel;
     startFollowAnimation();
   }, [cameraTargetHex, startFollowAnimation]);
@@ -377,7 +363,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     if (!cameraTargetHex) return null;
     const col = cameraTargetHex.col - FELT_CENTER();
     const row = cameraTargetHex.row - FELT_CENTER();
-    const centerPixel = axialToPixel(col, row);
+    const centerPixel = offsetToPixel(col, row);
     const radiusPx = CAMERA_CIRCLE_SCREEN_RADIUS_PX / view.scale;
     return { centerPixel, radiusPx };
   }, [cameraTargetHex, view.scale]);
@@ -385,22 +371,23 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const visibleTiles = useMemo(() => {
     if (!tiles.length) return [] as CenteredTileEntry[];
 
+    const { vertDist, horizDist } = getGridMetrics();
     const paddingPx = HEX_SIZE * 3;
     const minX = viewBox.minX - paddingPx;
     const maxX = viewBox.minX + viewBox.width + paddingPx;
     const minY = viewBox.minY - paddingPx;
     const maxY = viewBox.minY + viewBox.height + paddingPx;
 
-    const minRowFloat = pixelToAxial(0, minY).row;
-    const maxRowFloat = pixelToAxial(0, maxY).row;
-    const minRow = Math.floor(Math.min(minRowFloat, maxRowFloat)) - 2;
-    const maxRow = Math.ceil(Math.max(minRowFloat, maxRowFloat)) + 2;
+    const minRow = Math.floor(minY / vertDist) - 2;
+    const maxRow = Math.ceil(maxY / vertDist) + 2;
 
+    const rowOffsetMin = 0;
+    const rowOffsetMax = horizDist / 2;
     const colCandidates = [
-      pixelToAxial(minX, minY).col,
-      pixelToAxial(minX, maxY).col,
-      pixelToAxial(maxX, minY).col,
-      pixelToAxial(maxX, maxY).col,
+      (minX + rowOffsetMin) / horizDist,
+      (minX + rowOffsetMax) / horizDist,
+      (maxX + rowOffsetMin) / horizDist,
+      (maxX + rowOffsetMax) / horizDist,
     ];
     const minCol = Math.floor(Math.min(...colCandidates)) - 2;
     const maxCol = Math.ceil(Math.max(...colCandidates)) + 2;

@@ -1,4 +1,4 @@
-import { BattleViewInfo, LeftView, RightView } from "@/types";
+import { BattleViewInfo, LeftView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress } from "@bibliothecadao/types";
@@ -137,8 +137,6 @@ interface UIStore {
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
   setLeftNavigationView: (view: LeftView) => void;
-  rightNavigationView: RightView;
-  setRightNavigationView: (view: RightView) => void;
   activeBottomPanelTab: BottomPanelTabId | null;
   setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => void;
   showMinimap: boolean;
@@ -261,8 +259,6 @@ export const useUIStore = create(
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
-    rightNavigationView: RightView.None,
-    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
     activeBottomPanelTab: "tile",
     setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => set({ activeBottomPanelTab: tab }),
     showMinimap: false,
