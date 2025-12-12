@@ -46,6 +46,7 @@ export class ArmyModel {
   private readonly models: Map<ModelType, ModelData> = new Map();
   private readonly pendingModelLoads: Map<ModelType, Promise<ModelData>> = new Map();
   private readonly entityModelMap: Map<number, ModelType> = new Map();
+  private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
@@ -58,6 +59,7 @@ export class ArmyModel {
   private readonly cosmeticModels: Map<string, ModelData> = new Map();
   private readonly pendingCosmeticModelLoads: Map<string, Promise<ModelData>> = new Map();
   private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
+  private readonly activeCosmeticByEntity: Map<number, string | null> = new Map(); // entityId -> active cosmeticId
 
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
@@ -537,6 +539,16 @@ export class ArmyModel {
     this.rebindMovementMatrixIndex(entityId, newSlot);
   }
 
+  private getScaleForModelType(modelType: ModelType): Vector3 {
+    if (modelType === ModelType.Boat) {
+      return this.boatScale;
+    }
+    if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
+      return this.agentScale;
+    }
+    return this.normalScale;
+  }
+
   public updateInstance(
     entityId: number,
     index: number,
@@ -553,40 +565,58 @@ export class ArmyModel {
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
 
-    // Check if entity has a cosmetic model assigned
-    const activeCosmeticId = this.entityCosmeticMap.get(entityId);
-    const hasCosmeticModel = activeCosmeticId && this.cosmeticModels.has(activeCosmeticId);
+    const desiredModelType = this.entityModelMap.get(entityId) ?? null;
+    const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
+    const hasActiveCosmetic = desiredCosmeticId !== undefined && this.cosmeticModels.has(desiredCosmeticId);
 
-    // Update base models - hide them if entity has an active cosmetic model
-    this.models.forEach((modelData, modelType) => {
-      const isActiveBaseModel = modelType === this.entityModelMap.get(entityId);
-      let targetScale = this.zeroScale;
+    const activeBaseModel = hasActiveCosmetic ? null : desiredModelType;
+    const activeCosmetic = hasActiveCosmetic ? desiredCosmeticId! : null;
 
-      // Only show base model if it's active AND there's no cosmetic override
-      if (isActiveBaseModel && !hasCosmeticModel) {
-        if (modelType === ModelType.Boat) {
-          targetScale = this.boatScale;
-        } else if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
-          targetScale = this.agentScale;
-        } else {
-          targetScale = this.normalScale;
+    const prevActiveBaseModel = this.activeBaseModelByEntity.get(entityId) ?? null;
+    const prevActiveCosmetic = this.activeCosmeticByEntity.get(entityId) ?? null;
+
+    if (prevActiveBaseModel !== activeBaseModel) {
+      if (prevActiveBaseModel) {
+        const prevModelData = this.models.get(prevActiveBaseModel);
+        if (prevModelData) {
+          this.ensureModelCapacity(prevModelData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevModelData, index, entityId, state.color);
         }
       }
+      this.activeBaseModelByEntity.set(entityId, activeBaseModel);
+    }
 
-      this.ensureModelCapacity(modelData, index + 1);
-      this.updateInstanceTransform(state.position, targetScale, state.rotation);
-      this.updateInstanceMeshes(modelData, index, entityId, state.color);
-    });
+    if (prevActiveCosmetic !== activeCosmetic) {
+      if (prevActiveCosmetic) {
+        const prevCosmeticData = this.cosmeticModels.get(prevActiveCosmetic);
+        if (prevCosmeticData) {
+          this.ensureModelCapacity(prevCosmeticData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.color);
+        }
+      }
+      this.activeCosmeticByEntity.set(entityId, activeCosmetic);
+    }
 
-    // Update cosmetic models - show only the active one for this entity
-    this.cosmeticModels.forEach((modelData, cosmeticId) => {
-      const isActiveCosmeticModel = cosmeticId === activeCosmeticId;
-      const targetScale = isActiveCosmeticModel ? this.normalScale : this.zeroScale;
+    if (activeBaseModel) {
+      const modelData = this.models.get(activeBaseModel);
+      if (modelData) {
+        const targetScale = this.getScaleForModelType(activeBaseModel);
+        this.ensureModelCapacity(modelData, index + 1);
+        this.updateInstanceTransform(state.position, targetScale, state.rotation);
+        this.updateInstanceMeshes(modelData, index, entityId, state.color);
+      }
+    }
 
-      this.ensureModelCapacity(modelData, index + 1);
-      this.updateInstanceTransform(state.position, targetScale, state.rotation);
-      this.updateInstanceMeshes(modelData, index, entityId, state.color);
-    });
+    if (activeCosmetic) {
+      const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+      if (cosmeticData) {
+        this.ensureModelCapacity(cosmeticData, index + 1);
+        this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
+        this.updateInstanceMeshes(cosmeticData, index, entityId, state.color);
+      }
+    }
   }
 
   public releaseEntity(entityId: number, freedSlot?: number): void {
@@ -594,6 +624,8 @@ export class ArmyModel {
     this.instanceData.delete(entityId);
     this.entityModelMap.delete(entityId);
     this.entityCosmeticMap.delete(entityId);
+    this.activeBaseModelByEntity.delete(entityId);
+    this.activeCosmeticByEntity.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
     this.removeLabel(entityId);
   }
@@ -1489,6 +1521,8 @@ export class ArmyModel {
     this.cosmeticModels.clear();
     this.entityModelMap.clear();
     this.entityCosmeticMap.clear();
+    this.activeBaseModelByEntity.clear();
+    this.activeCosmeticByEntity.clear();
     this.movingInstances.clear();
     this.instanceData.clear();
     this.matrixIndexOwners.clear();
