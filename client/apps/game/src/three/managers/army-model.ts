@@ -90,6 +90,7 @@ export class ArmyModel {
   private readonly agentScale = new Vector3(2, 2, 2);
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
+  private modelAnimationUpdateIntervalMs = this.MODEL_ANIMATION_UPDATE_INTERVAL;
   private readonly INITIAL_INSTANCE_CAPACITY = 64;
 
   // agent
@@ -286,7 +287,7 @@ export class ArmyModel {
       targetScales: new Map(),
       currentScales: new Map(),
       lastAnimationUpdate: 0,
-      animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
+      animationUpdateInterval: this.modelAnimationUpdateIntervalMs,
     };
   }
 
@@ -694,6 +695,19 @@ export class ArmyModel {
   }
 
   // Animation Methods
+  public setAnimationFPS(fps: number): void {
+    const resolved = Math.max(1, fps);
+    const interval = 1000 / resolved;
+    this.modelAnimationUpdateIntervalMs = interval;
+
+    this.models.forEach((modelData) => {
+      modelData.animationUpdateInterval = interval;
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.animationUpdateInterval = interval;
+    });
+  }
+
   public updateAnimations(_deltaTime: number): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 

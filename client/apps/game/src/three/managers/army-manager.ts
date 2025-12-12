@@ -128,6 +128,7 @@ export class ArmyManager {
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
+  private labelRenderDistanceSq: number = Infinity;
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -1464,6 +1465,16 @@ export class ArmyManager {
     return this.visibleArmyOrder.length;
   }
 
+  public setAnimationFPS(fps: number): void {
+    this.armyModel.setAnimationFPS(fps);
+  }
+
+  public setLabelRenderDistance(distance: number): void {
+    const resolved = Math.max(0, distance);
+    this.labelRenderDistanceSq = resolved > 0 ? resolved * resolved : Infinity;
+    this.frustumVisibilityDirty = true;
+  }
+
   update(deltaTime: number) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
@@ -1511,10 +1522,19 @@ export class ArmyManager {
   }
 
   private applyFrustumVisibilityToLabels() {
+    const cameraPosition =
+      this.visibilityManager?.getCameraPosition() ?? this.hexagonScene?.getCamera()?.position;
+    const distanceSqLimit = this.labelRenderDistanceSq;
+    const hasDistanceLimit = cameraPosition !== undefined && Number.isFinite(distanceSqLimit);
+
     this.entityIdLabels.forEach((label) => {
-      const isVisible = this.visibilityManager
+      const withinDistance =
+        !hasDistanceLimit || label.position.distanceToSquared(cameraPosition!) <= distanceSqLimit;
+      const isVisible =
+        withinDistance &&
+        (this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
-        : (this.frustumManager?.isPointVisible(label.position) ?? true);
+        : (this.frustumManager?.isPointVisible(label.position) ?? true));
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);

@@ -153,6 +153,7 @@ export class StructureManager {
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private visibilityManager?: CentralizedVisibilityManager;
+  private labelRenderDistanceSq: number = Infinity;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
@@ -989,6 +990,22 @@ export class StructureManager {
     return this.visibleStructureCount;
   }
 
+  public setAnimationFPS(fps: number): void {
+    const resolved = Math.max(1, fps);
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.setAnimationFPS(resolved));
+    });
+    this.cosmeticStructureModels.forEach((models) => {
+      models.forEach((model) => model.setAnimationFPS(resolved));
+    });
+  }
+
+  public setLabelRenderDistance(distance: number): void {
+    const resolved = Math.max(0, distance);
+    this.labelRenderDistanceSq = resolved > 0 ? resolved * resolved : Infinity;
+    this.frustumVisibilityDirty = true;
+  }
+
   private updateVisibleStructures(): void {
     if (this.isUpdatingVisibleStructures) {
       this.hasPendingVisibleStructuresUpdate = true;
@@ -1587,10 +1604,19 @@ export class StructureManager {
   }
 
   private applyFrustumVisibilityToLabels() {
+    const cameraPosition =
+      this.visibilityManager?.getCameraPosition() ?? this.hexagonScene?.getCamera()?.position;
+    const distanceSqLimit = this.labelRenderDistanceSq;
+    const hasDistanceLimit = cameraPosition !== undefined && Number.isFinite(distanceSqLimit);
+
     this.entityIdLabels.forEach((label) => {
-      const isVisible = this.visibilityManager
+      const withinDistance =
+        !hasDistanceLimit || label.position.distanceToSquared(cameraPosition!) <= distanceSqLimit;
+      const isVisible =
+        withinDistance &&
+        (this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
-        : (this.frustumManager?.isPointVisible(label.position) ?? true);
+        : (this.frustumManager?.isPointVisible(label.position) ?? true));
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);

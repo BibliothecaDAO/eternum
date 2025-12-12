@@ -101,6 +101,11 @@ export default class InstancedModel {
     });
   }
 
+  public setAnimationFPS(fps: number): void {
+    const resolved = Math.max(1, fps);
+    this.animationUpdateInterval = 1000 / resolved;
+  }
+
   getCount(): number {
     return this.count;
   }

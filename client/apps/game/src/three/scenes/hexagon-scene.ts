@@ -14,6 +14,7 @@ import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { gltfLoader } from "@/three/utils/utils";
+import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
@@ -106,6 +107,8 @@ export abstract class HexagonScene {
   private animationCameraTarget: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
+  protected shadowsEnabledByQuality = true;
+  protected shadowMapSizeByQuality = 2048;
 
   constructor(
     protected sceneName: SceneName,
@@ -208,9 +211,9 @@ export abstract class HexagonScene {
   }
 
   private configureDirectionalLight(): void {
-    this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.width = 2048;
-    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+    this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSizeByQuality;
+    this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSizeByQuality;
     this.mainDirectionalLight.shadow.camera.left = -20;
     this.mainDirectionalLight.shadow.camera.right = 20;
     this.mainDirectionalLight.shadow.camera.top = 13;
@@ -406,6 +409,30 @@ export abstract class HexagonScene {
   public closeNavigationViews() {
     this.state.setLeftNavigationView(LeftView.None);
     this.state.setRightNavigationView(RightView.None);
+  }
+
+  public applyQualityFeatures(features: QualityFeatures): void {
+    this.shadowsEnabledByQuality = features.shadows;
+    if (features.shadowMapSize > 0) {
+      this.shadowMapSizeByQuality = features.shadowMapSize;
+    }
+
+    if (this.mainDirectionalLight) {
+      this.mainDirectionalLight.castShadow =
+        this.shadowsEnabledByQuality && this.currentCameraView !== CameraView.Far;
+      if (this.shadowMapSizeByQuality > 0) {
+        this.mainDirectionalLight.shadow.mapSize.set(
+          this.shadowMapSizeByQuality,
+          this.shadowMapSizeByQuality,
+        );
+      }
+    }
+
+    if (features.animationFPS > 0) {
+      this.biomeModels.forEach((model) => {
+        model.setAnimationFPS?.(features.animationFPS);
+      });
+    }
   }
 
   public isNavigationViewOpen() {
@@ -929,13 +956,13 @@ export abstract class HexagonScene {
 
     switch (position) {
       case CameraView.Close: // Close view
-        this.mainDirectionalLight.castShadow = true;
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
         this.mainDirectionalLight.shadow.bias = -0.025;
         this.cameraDistance = 10;
         this.cameraAngle = Math.PI / 6; // 30 degrees
         break;
       case CameraView.Medium: // Medium view
-        this.mainDirectionalLight.castShadow = true;
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
         this.mainDirectionalLight.shadow.bias = -0.02;
         this.cameraDistance = 20;
         this.cameraAngle = Math.PI / 3; // 60 degrees

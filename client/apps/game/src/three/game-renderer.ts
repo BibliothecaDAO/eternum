@@ -50,6 +50,7 @@ import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
+import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 let cachedHDRTarget: WebGLRenderTarget | null = null;
@@ -65,6 +66,11 @@ export default class GameRenderer {
   private controls!: MapControls;
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
+  private effectPass?: EffectPass;
+  private postProcessingConfig?: PostProcessingConfig;
+  private toneMappingEffect?: ToneMappingEffect;
+  private unsubscribeQualityController?: () => void;
+  private lastAppliedQuality?: QualityFeatures;
 
   // Stats and Monitoring
   private stats!: Stats;
@@ -469,6 +475,8 @@ export default class GameRenderer {
     this.applyEnvironment();
     this.setupPostProcessingEffects();
     this.sceneManager.moveCameraForScene();
+    this.applyQualityFeatures(qualityController.getFeatures());
+    this.subscribeToQualityController();
   }
 
   private initializeSceneManagement() {
@@ -495,18 +503,9 @@ export default class GameRenderer {
     if (!effectsConfig) {
       return; // Skip post-processing for low graphics settings
     }
-
-    const effects: Effect[] = [this.createToneMappingEffect(effectsConfig), new FXAAEffect()];
-
-    if (this.graphicsSetting === GraphicsSettings.HIGH) {
-      effects.push(this.createBloomEffect(effectsConfig.bloomIntensity));
-      effects.push(this.createVignetteEffect(effectsConfig));
-    } else if (this.graphicsSetting === GraphicsSettings.MID) {
-      effects.push(this.createBloomEffect(effectsConfig.bloomIntensity));
-    }
-
-    // Add all effects in a single pass
-    this.composer.addPass(new EffectPass(this.camera, ...effects));
+    this.postProcessingConfig = effectsConfig;
+    this.toneMappingEffect = this.createToneMappingEffect(effectsConfig);
+    this.rebuildPostProcessing(qualityController.getFeatures());
   }
 
   private createToneMappingEffect(config: PostProcessingConfig) {
@@ -635,6 +634,11 @@ export default class GameRenderer {
   private getTargetPixelRatio() {
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
 
+    const qualityPixelRatio = this.lastAppliedQuality?.pixelRatio;
+    if (qualityPixelRatio !== undefined) {
+      return Math.min(devicePixelRatio, qualityPixelRatio);
+    }
+
     switch (this.graphicsSetting) {
       case GraphicsSettings.HIGH:
         return Math.min(devicePixelRatio, 2);
@@ -680,6 +684,7 @@ export default class GameRenderer {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
+      this.composer?.setSize(width, height);
       this.labelRenderer?.setSize(width, height);
       this.hudScene.onWindowResize(width, height);
     } else {
@@ -687,6 +692,7 @@ export default class GameRenderer {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.composer?.setSize(window.innerWidth, window.innerHeight);
       this.labelRenderer?.setSize(window.innerWidth, window.innerHeight);
       this.hudScene.onWindowResize(window.innerWidth, window.innerHeight);
     }
@@ -722,6 +728,7 @@ export default class GameRenderer {
 
     const deltaTime = (currentTime - this.lastTime) / 1000;
     this.lastTime = currentTime;
+    qualityController.recordFrame(deltaTime * 1000);
 
     if (this.stats) this.stats.update();
     if (this.controls) {
@@ -776,6 +783,10 @@ export default class GameRenderer {
       if (this.unsubscribeEnableMapZoom) {
         this.unsubscribeEnableMapZoom();
         this.unsubscribeEnableMapZoom = undefined;
+      }
+      if (this.unsubscribeQualityController) {
+        this.unsubscribeQualityController();
+        this.unsubscribeQualityController = undefined;
       }
 
       // Clean up intervals
@@ -841,5 +852,72 @@ export default class GameRenderer {
     } catch (error) {
       console.error("Error during GameRenderer cleanup:", error);
     }
+  }
+
+  private subscribeToQualityController(): void {
+    if (this.unsubscribeQualityController) {
+      return;
+    }
+    this.unsubscribeQualityController = qualityController.addEventListener((event) => {
+      this.applyQualityFeatures(event.currentFeatures);
+    });
+  }
+
+  private applyQualityFeatures(features: QualityFeatures): void {
+    this.lastAppliedQuality = { ...features };
+
+    const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
+    const resolvedPixelRatio = Math.min(devicePixelRatio, features.pixelRatio);
+    this.renderer.setPixelRatio(resolvedPixelRatio);
+    this.renderer.shadowMap.enabled = features.shadows;
+
+    if (this.postProcessingConfig && this.toneMappingEffect) {
+      this.rebuildPostProcessing(features);
+    }
+
+    this.worldmapScene?.applyQualityFeatures(features);
+    this.hexceptionScene?.applyQualityFeatures(features);
+
+    if (this.composer) {
+      this.composer.setSize(window.innerWidth, window.innerHeight);
+    }
+  }
+
+  private rebuildPostProcessing(features: QualityFeatures): void {
+    if (!this.postProcessingConfig || !this.toneMappingEffect) {
+      return;
+    }
+
+    if (this.effectPass) {
+      const passes = (this.composer as any).passes as unknown[] | undefined;
+      if (passes) {
+        const index = passes.indexOf(this.effectPass);
+        if (index !== -1) {
+          passes.splice(index, 1);
+        }
+      }
+      this.effectPass.dispose?.();
+      this.effectPass = undefined;
+    }
+
+    const effects: Effect[] = [this.toneMappingEffect];
+
+    if (features.fxaa) {
+      effects.push(new FXAAEffect());
+    }
+    if (features.bloom) {
+      effects.push(this.createBloomEffect(features.bloomIntensity));
+    }
+    if (features.vignette) {
+      effects.push(
+        new VignetteEffect({
+          darkness: this.postProcessingConfig.vignette.darkness,
+          offset: this.postProcessingConfig.vignette.offset,
+        }),
+      );
+    }
+
+    this.effectPass = new EffectPass(this.camera, ...effects);
+    this.composer.addPass(this.effectPass);
   }
 }

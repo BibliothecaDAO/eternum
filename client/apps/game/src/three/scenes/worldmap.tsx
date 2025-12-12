@@ -18,6 +18,7 @@ import { RelicSource, StructureManager } from "@/three/managers/structure-manage
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
+import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView, RightView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
@@ -161,9 +162,7 @@ export default class WorldmapScene extends HexagonScene {
   private pendingChunkRefreshForce = false;
   private readonly chunkRefreshDebounceMs = 50; // Reduced from 200ms for more responsive chunk loading
   private toriiLoadingCounter = 0;
-  private readonly chunkRowsAhead = WORLD_CHUNK_CONFIG.pinRadius;
-  private readonly chunkRowsBehind = WORLD_CHUNK_CONFIG.pinRadius;
-  private readonly chunkColsEachSide = WORLD_CHUNK_CONFIG.pinRadius;
+  private chunkLoadRadius = WORLD_CHUNK_CONFIG.pinRadius;
   private hydratedChunkRefreshes: Set<string> = new Set();
   private hydratedRefreshScheduled = false;
   private cameraPositionScratch: Vector3 = new Vector3();
@@ -265,7 +264,7 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
   // Cache should at least cover the pinned 5x5 neighborhood, plus slack for recent history.
-  private readonly maxMatrixCacheSize = (WORLD_CHUNK_CONFIG.pinRadius * 2 + 1) ** 2 + 8;
+  private maxMatrixCacheSize = (this.chunkLoadRadius * 2 + 1) ** 2 + 8;
   private pinnedChunkKeys: Set<string> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
@@ -924,8 +923,10 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.mainDirectionalLight) {
       return;
     }
-    this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
+    this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+    if (this.shadowMapSizeByQuality > 0) {
+      this.mainDirectionalLight.shadow.mapSize.set(this.shadowMapSizeByQuality, this.shadowMapSizeByQuality);
+    }
     this.mainDirectionalLight.shadow.camera.left = -60;
     this.mainDirectionalLight.shadow.camera.right = 60;
     this.mainDirectionalLight.shadow.camera.top = 45;
@@ -2361,8 +2362,8 @@ export default class WorldmapScene extends HexagonScene {
   private getSurroundingChunkKeys(centerRow: number, centerCol: number): string[] {
     const chunkKeys: string[] = [];
 
-    for (let rowOffset = -this.chunkRowsAhead; rowOffset <= this.chunkRowsBehind; rowOffset++) {
-      for (let colOffset = -this.chunkColsEachSide; colOffset <= this.chunkColsEachSide; colOffset++) {
+    for (let rowOffset = -this.chunkLoadRadius; rowOffset <= this.chunkLoadRadius; rowOffset++) {
+      for (let colOffset = -this.chunkLoadRadius; colOffset <= this.chunkLoadRadius; colOffset++) {
         const row = centerRow + rowOffset * this.chunkSize;
         const col = centerCol + colOffset * this.chunkSize;
         chunkKeys.push(`${row},${col}`);
@@ -2743,7 +2744,7 @@ export default class WorldmapScene extends HexagonScene {
       chests: this.chestManager.getVisibleCount(),
     };
 
-    const pinnedDim = WORLD_CHUNK_CONFIG.pinRadius * 2 + 1;
+    const pinnedDim = this.chunkLoadRadius * 2 + 1;
     this.chunkDebugElement.innerHTML = `
       <strong>Chunk Debug</strong><br>
       Current: ${this.currentChunk}<br>
@@ -4494,5 +4495,25 @@ export default class WorldmapScene extends HexagonScene {
     this.battleDirectionManager.removeEntityFromTracking(entityId);
 
     console.log(`[ATTACKER-DEFENDER] Removed entity ${entityId} from tracking`);
+  }
+
+  public override applyQualityFeatures(features: QualityFeatures): void {
+    super.applyQualityFeatures(features);
+    this.armyManager.setAnimationFPS(features.animationFPS);
+    this.structureManager.setAnimationFPS(features.animationFPS);
+    this.armyManager.setLabelRenderDistance(features.labelRenderDistance);
+    this.structureManager.setLabelRenderDistance(features.labelRenderDistance);
+    this.setChunkLoadRadius(features.chunkLoadRadius);
+  }
+
+  private setChunkLoadRadius(radius: number): void {
+    const resolved = Math.max(0, Math.floor(radius));
+    if (resolved === this.chunkLoadRadius) {
+      return;
+    }
+    this.chunkLoadRadius = resolved;
+    this.maxMatrixCacheSize = (this.chunkLoadRadius * 2 + 1) ** 2 + 8;
+    this.ensureMatrixCacheLimit();
+    this.requestChunkRefresh(true);
   }
 }
