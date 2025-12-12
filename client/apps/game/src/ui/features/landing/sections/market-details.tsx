@@ -139,7 +139,7 @@ const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
                 <span>Watch</span>
               </Button>
             </div>
-            <MarketCreatedBy creator={market.creator} />
+            <MarketCreatedBy creator={market.creator} market={market} />
           </div>
 
           <div className="space-y-3">

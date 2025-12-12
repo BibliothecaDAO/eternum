@@ -93,7 +93,7 @@ export const MarketOdds = ({
               <MaybeController address={outcome.name} className="max-w-[220px] truncate" />
             </HStack>
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              {/* <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} /> */}
               <span className="text-gold">{odds ?? "--"}</span>
             </div>
           </button>

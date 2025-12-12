@@ -1,14 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, type TooltipProps } from "recharts";
 
 import type { MarketClass } from "@/pm/class";
 import { useMarketHistory } from "@/pm/hooks/markets/useMarketHistory";
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-} from "@pm/ui";
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@pm/ui";
 
 export const MarketHistory = ({ market }: { market: MarketClass }) => {
   const { chartData, chartConfig } = useMarketHistory(market);
@@ -84,10 +79,6 @@ export const MarketHistory = ({ market }: { market: MarketClass }) => {
 
   return (
     <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner">
-      <div className="mb-3">
-        <p className="text-xs uppercase tracking-[0.08em] text-gold/70">Market history</p>
-        <p className="text-lg font-semibold text-white">Price movement</p>
-      </div>
       <ChartContainer config={chartConfig} className="h-[640px] w-full">
         <LineChart
           data={chartData}
@@ -135,9 +126,7 @@ export const MarketHistory = ({ market }: { market: MarketClass }) => {
             );
           })}
 
-          <ChartTooltip
-            content={renderTooltip}
-          />
+          <ChartTooltip content={renderTooltip} />
 
           <ChartLegend
             className="flex-row flex-wrap items-start gap-3"
