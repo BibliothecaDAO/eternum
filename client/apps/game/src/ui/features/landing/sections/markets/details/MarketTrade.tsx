@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
 
 import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
+import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useTokens } from "@/pm/hooks/dojo/useTokens";
+import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
-import { MaybeController } from "../MaybeController";
 import { parseLordsToBaseUnits } from "../market-utils";
+import { MaybeController } from "../MaybeController";
 import { TokenIcon } from "../TokenIcon";
 
 // Lightweight stand-ins for UI pieces used in the reference implementation.
@@ -133,14 +136,43 @@ export function MarketTrade({
   selectedOutcome?: MarketOutcome;
   setSelectedOutcome?: (e: MarketOutcome) => void;
 }) {
+  const {
+    config: { manifest },
+  } = useDojoSdk();
   const [amount, setAmount] = useState("0");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const account = useAccountStore((state) => state.account);
 
-  const marketAddress = env.VITE_PUBLIC_PM_ADDRESS ?? DEFAULT_MARKET_ADDRESS;
+  const manifestMarketAddress = getContractByName(manifest, "pm", "Markets")?.address;
+  const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions")?.address;
+  const marketContractAddress = (env.VITE_PUBLIC_PM_ADDRESS ?? manifestMarketAddress ?? DEFAULT_MARKET_ADDRESS).trim();
   const nowSec = Math.floor(Date.now() / 1_000);
   const isTradeable = nowSec >= market.start_at && nowSec < market.end_at;
+  const isResolved = market.isResolved();
+
+  const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
+  console.log({ positionIds });
+
+  const positionIdsAsStrings = useMemo(() => positionIds.map((id) => id.toString()), [positionIds]);
+
+  const { balances: positionBalances } = useTokens(
+    {
+      accountAddresses: account?.address ? [account.address] : undefined,
+      contractAddresses: vaultPositionsAddress ? [vaultPositionsAddress] : [],
+      tokenIds: positionIdsAsStrings,
+    },
+    true,
+  );
+
+  const hasRedeemablePositions = useMemo(() => {
+    return positionBalances.some(
+      (balance) =>
+        BigInt(balance.balance || 0) > 0n &&
+        positionIds.some((id) => BigInt(balance.token_id || 0) === id) &&
+        (!account || BigInt(balance.account_address) === BigInt(account.address || 0)),
+    );
+  }, [positionBalances, positionIds, account]);
 
   const onBuy = async (outcomeIndex: number) => {
     if (!account) {
@@ -148,9 +180,8 @@ export function MarketTrade({
       return;
     }
 
-    const targetMarketAddress = marketAddress.trim();
-    if (!targetMarketAddress) {
-      toast.error("Market contract address is not configured (VITE_PUBLIC_PM_ADDRESS).");
+    if (!marketContractAddress) {
+      toast.error("Market contract address is not configured.");
       return;
     }
 
@@ -173,11 +204,11 @@ export function MarketTrade({
     const approveCall: Call = {
       contractAddress: collateralAddress,
       entrypoint: "approve",
-      calldata: [targetMarketAddress, amountU256.low, amountU256.high],
+      calldata: [marketContractAddress, amountU256.low, amountU256.high],
     };
 
     const buyCall: Call = {
-      contractAddress: targetMarketAddress,
+      contractAddress: marketContractAddress,
       entrypoint: "buy",
       calldata: [marketIdU256.low, marketIdU256.high, outcomeIndex, amountU256.low, amountU256.high],
     };
@@ -205,10 +236,90 @@ export function MarketTrade({
     }
   };
 
+  const onRedeem = async () => {
+    if (!account) {
+      toast.error("Connect a wallet to claim.");
+      return;
+    }
+
+    if (!marketContractAddress) {
+      toast.error("Market contract address is not configured.");
+      return;
+    }
+
+    if (!vaultPositionsAddress) {
+      toast.error("Vault positions contract address is missing.");
+      return;
+    }
+
+    if (!isResolved) {
+      toast.error("You can only redeem after the market is resolved.");
+      return;
+    }
+
+    if (!hasRedeemablePositions) {
+      toast.error("No redeemable positions found for this market.");
+      return;
+    }
+
+    if (positionIds.length === 0) {
+      toast.error("Unable to find position ids for this market.");
+      return;
+    }
+
+    const marketIdU256 = toUint256(market.market_id);
+    const positionsCalldata = positionIds.flatMap((id) => {
+      const idU256 = toUint256(id);
+      return [idU256.low, idU256.high];
+    });
+
+    const redeemCall: Call = {
+      contractAddress: marketContractAddress,
+      entrypoint: "redeem",
+      calldata: [marketIdU256.low, marketIdU256.high, positionIds.length, ...positionsCalldata],
+    };
+
+    const approveCall: Call = {
+      contractAddress: vaultPositionsAddress,
+      entrypoint: "set_approval_for_all",
+      calldata: [marketContractAddress, true],
+    };
+
+    try {
+      setIsSubmitting(true);
+
+      await account.estimateInvokeFee([approveCall, redeemCall], {
+        blockIdentifier: "pre_confirmed",
+      });
+
+      const resultTx = await account.execute([approveCall, redeemCall]);
+
+      if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
+        await account.waitForTransaction(resultTx.transaction_hash);
+      }
+
+      toast.success("Redeem submitted.");
+    } catch (error) {
+      console.error(error);
+      toast.error(tryBetterErrorMsg(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const outcomes = market.getMarketOutcomes();
   if (!outcomes) return null;
 
   if (!isTradeable) {
+    const claimDisabled = isSubmitting || !isResolved || (!!account && !hasRedeemablePositions);
+    const claimMessage = !account
+      ? "Connect a wallet to check if you have redeemable positions."
+      : !isResolved
+        ? "Claims unlock once the market is resolved."
+        : !hasRedeemablePositions
+          ? "No redeemable positions detected in your wallet."
+          : "Redeem your position tokens to claim your payout.";
+
     return (
       <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
         <div className="mb-3">
@@ -219,9 +330,9 @@ export function MarketTrade({
 
         <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-gold/70">
           <span className="font-semibold text-white">Claim rewards</span>
-          <span>Claiming is not implemented yet.</span>
-          <Button className="w-full bg-white/10 text-white" disabled>
-            Claim (coming soon)
+          <span>{claimMessage}</span>
+          <Button className="w-full bg-white/10 text-white" disabled={claimDisabled} onClick={onRedeem}>
+            Claim
           </Button>
         </div>
       </div>
