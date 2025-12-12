@@ -194,9 +194,15 @@ export default class WorldmapScene extends HexagonScene {
     const state = useUIStore.getState();
     const currentHex = state.cameraTargetHex;
     const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
-    if (hexChanged) {
-      useUIStore.setState({ cameraTargetHex: nextHex });
-    }
+    const nextCameraDistance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
+    const distanceChanged = state.cameraDistance === null || Math.abs(state.cameraDistance - nextCameraDistance) > 0.01;
+
+    if (!hexChanged && !distanceChanged) return;
+
+    const nextState: { cameraTargetHex?: typeof nextHex; cameraDistance?: number } = {};
+    if (hexChanged) nextState.cameraTargetHex = nextHex;
+    if (distanceChanged) nextState.cameraDistance = nextCameraDistance;
+    useUIStore.setState(nextState);
   };
   private minimapCameraMoveTarget: { col: number; row: number } | null = null;
   private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
@@ -206,6 +212,38 @@ export default class WorldmapScene extends HexagonScene {
     if (!detail) return;
     this.minimapCameraMoveTarget = detail;
     this.minimapCameraMoveThrottled?.();
+  };
+  private minimapZoomHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const detail = (event as CustomEvent<{ zoomOut: boolean }>).detail;
+    if (!detail) return;
+
+    const enableSmoothZoom = useUIStore.getState().enableMapZoom;
+    if (!enableSmoothZoom) {
+      this.stepCameraView(detail.zoomOut);
+      return;
+    }
+
+    const camera = this.controls.object;
+    const target = this.controls.target;
+    const currentDistance = camera.position.distanceTo(target);
+    if (!Number.isFinite(currentDistance) || currentDistance <= 0) return;
+
+    const zoomFactor = detail.zoomOut ? 1.1 : 0.9;
+    const minDistance = this.controls.minDistance || this.getTargetDistanceForCameraView(CameraView.Close);
+    const maxDistance = this.controls.maxDistance || this.getTargetDistanceForCameraView(CameraView.Far);
+    const nextDistance = Math.min(maxDistance, Math.max(minDistance, currentDistance * zoomFactor));
+
+    const direction = new Vector3().subVectors(camera.position, target);
+    const length = direction.length();
+    if (length < 1e-6) return;
+    direction.multiplyScalar(nextDistance / length);
+    camera.position.copy(target).add(direction);
+
+    this.controls.update();
+    this.controls.dispatchEvent({ type: "change" });
+    this.frustumManager?.forceUpdate();
+    this.visibilityManager?.markDirty();
   };
   private handleControlsChangeForMinimap = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -760,6 +798,7 @@ export default class WorldmapScene extends HexagonScene {
       this.moveCameraToColRow(target.col, target.row, 0.25);
     }, 16);
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
+    window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     this.controls.addEventListener("change", this.handleControlsChangeForMinimap);
     this.updateCameraTargetHexThrottled();
 
@@ -3751,6 +3790,7 @@ export default class WorldmapScene extends HexagonScene {
     this.minimapCameraMoveThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
+    window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     this.stopRelicValidationTimer();
     this.clearCache();
 

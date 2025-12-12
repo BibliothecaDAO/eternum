@@ -45,6 +45,8 @@ const normalizeEntityId = (value: unknown): string | null => {
 const HEX_SIZE = 7;
 const SQRT3 = Math.sqrt(3);
 const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
+const WORLD_CAMERA_DISTANCE_REFERENCE = 20;
+const MINIMAP_SCALE_REFERENCE = 1.4;
 
 type TileMarker = {
   iconSrc: string;
@@ -198,6 +200,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
   const playerStructures = useUIStore((state) => state.playerStructures);
   const selectableArmies = useUIStore((state) => state.selectableArmies);
+  const cameraDistance = useUIStore((state) => state.cameraDistance);
   const currentPlayerData = usePlayerStore((state) => state.currentPlayerData);
   const isBlitz = getIsBlitz();
 
@@ -229,7 +232,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   const initialView = useMemo(() => {
     if (!tiles.length) {
-      return { x: 0, y: 0, scale: 1.4 };
+      return { x: 0, y: 0, scale: MINIMAP_SCALE_REFERENCE };
     }
 
     const targetHex = cameraTargetHex ?? navigationTarget ?? selectedHex;
@@ -237,13 +240,13 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       const col = targetHex.col - FELT_CENTER();
       const row = targetHex.row - FELT_CENTER();
       const centerPixel = offsetToPixel(col, row);
-      return { x: centerPixel.x, y: centerPixel.y, scale: 1.4 };
+      return { x: centerPixel.x, y: centerPixel.y, scale: MINIMAP_SCALE_REFERENCE };
     }
 
     return {
       x: (centeredIndex.bounds.minX + centeredIndex.bounds.maxX) / 2,
       y: (centeredIndex.bounds.minY + centeredIndex.bounds.maxY) / 2,
-      scale: 1.4,
+      scale: MINIMAP_SCALE_REFERENCE,
     };
   }, [tiles.length, cameraTargetHex, navigationTarget, selectedHex, centeredIndex.bounds]);
 
@@ -301,6 +304,14 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!cameraDistance) return;
+    const nextScale = clamp((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / cameraDistance, 0.4, 4);
+    const current = viewRef.current;
+    if (Math.abs(current.scale - nextScale) < 0.01) return;
+    scheduleViewUpdate({ ...current, scale: nextScale });
+  }, [cameraDistance, scheduleViewUpdate]);
 
   const dispatchCameraMove = useCallback((centerX: number, centerY: number) => {
     if (typeof window === "undefined") return;
@@ -530,35 +541,14 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     }
   }, []);
 
-  const handleWheel = useCallback(
-    (e: WheelEvent<SVGSVGElement>) => {
-      e.preventDefault();
-      const rect = svgRef.current?.getBoundingClientRect();
-      if (!rect) return;
-
-      const current = viewRef.current;
-      const width = viewport.width / current.scale;
-      const height = viewport.height / current.scale;
-
-      const pointerXRatio = (e.clientX - rect.left) / rect.width - 0.5;
-      const pointerYRatio = (e.clientY - rect.top) / rect.height - 0.5;
-
-      const pointerWorldX = current.x + pointerXRatio * width;
-      const pointerWorldY = current.y + pointerYRatio * height;
-
-      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      const nextScale = clamp(current.scale * zoomFactor, 0.4, 4);
-
-      const nextWidth = viewport.width / nextScale;
-      const nextHeight = viewport.height / nextScale;
-
-      const nextX = pointerWorldX - pointerXRatio * nextWidth;
-      const nextY = pointerWorldY - pointerYRatio * nextHeight;
-
-      scheduleViewUpdate({ x: nextX, y: nextY, scale: nextScale });
-    },
-    [scheduleViewUpdate, viewport],
-  );
+  const handleWheel = useCallback((e: WheelEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window === "undefined") return;
+    const direction = Math.sign(e.deltaY);
+    if (direction === 0) return;
+    window.dispatchEvent(new CustomEvent("minimapZoom", { detail: { zoomOut: direction > 0 } }));
+  }, []);
 
   const handleDoubleClick = useCallback(() => {
     scheduleViewUpdate({ ...initialView });
