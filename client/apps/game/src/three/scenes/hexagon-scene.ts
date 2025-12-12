@@ -111,6 +111,10 @@ export abstract class HexagonScene {
   protected shadowMapSizeByQuality = 2048;
   private lastClipNear = 0;
   private lastClipFar = 0;
+  private fogEnabledByQuality = false;
+  private fogEnabledByUser = false;
+  private lastFogNear = 0;
+  private lastFogFar = 0;
 
   constructor(
     protected sceneName: SceneName,
@@ -138,6 +142,8 @@ export abstract class HexagonScene {
     this.controls.update();
     const distance = this.controls.object.position.distanceTo(this.controls.target);
     this.updateCameraClipPlanesForDistance(distance);
+    this.updateFogForDistance(distance);
+    this.updateOutlineOpacityForDistance(distance);
     this.controls.dispatchEvent({ type: "change" });
     this.frustumManager?.forceUpdate();
     this.visibilityManager?.markDirty();
@@ -157,8 +163,12 @@ export abstract class HexagonScene {
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
-    if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
-      // this.scene.fog = this.fog; // Disabled due to zoom level issues
+    this.fogEnabledByQuality = !IS_FLAT_MODE && GRAPHICS_SETTING !== GraphicsSettings.LOW;
+    this.fogEnabledByUser = false;
+    if (this.fogEnabledByQuality && this.fogEnabledByUser) {
+      this.scene.fog = this.fog;
+      const initialDistance = this.controls.object.position.distanceTo(this.controls.target);
+      this.updateFogForDistance(initialDistance);
     }
 
     // subscribe to state changes
@@ -380,12 +390,14 @@ export abstract class HexagonScene {
     fogFolder.add(this.fog, "far", 0, 100, 0.1).name("Far");
 
     // Add toggle for fog
-    const fogParams = { enabled: !IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH };
+    const fogParams = { enabled: this.fogEnabledByUser };
     fogFolder
       .add(fogParams, "enabled")
       .name("Enable Fog")
       .onChange((value: boolean) => {
-        this.scene.fog = value ? this.fog : null;
+        this.fogEnabledByUser = value;
+        const distance = this.controls.object.position.distanceTo(this.controls.target);
+        this.updateFogForDistance(distance);
       });
 
     fogFolder.close();
@@ -426,6 +438,14 @@ export abstract class HexagonScene {
       this.shadowMapSizeByQuality = features.shadowMapSize;
     }
 
+    const nextFogQualityEnabled = !IS_FLAT_MODE && features.pixelRatio > 1;
+    if (nextFogQualityEnabled !== this.fogEnabledByQuality) {
+      this.fogEnabledByQuality = nextFogQualityEnabled;
+      if (!this.fogEnabledByQuality) {
+        this.scene.fog = null;
+      }
+    }
+
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.castShadow =
         this.shadowsEnabledByQuality && this.currentCameraView !== CameraView.Far;
@@ -442,6 +462,9 @@ export abstract class HexagonScene {
         model.setAnimationFPS?.(features.animationFPS);
       });
     }
+
+    const distance = this.controls.object.position.distanceTo(this.controls.target);
+    this.updateFogForDistance(distance);
   }
 
   public isNavigationViewOpen() {
@@ -1015,6 +1038,7 @@ export abstract class HexagonScene {
     const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
     this.updateOutlineOpacityForDistance(this.cameraDistance);
     this.updateCameraClipPlanesForDistance(this.cameraDistance);
+    this.updateFogForDistance(this.cameraDistance);
     this.cameraAnimate(newPosition, target, duration);
 
     // Notify all listeners of the camera view change
@@ -1040,5 +1064,34 @@ export abstract class HexagonScene {
     this.camera.updateProjectionMatrix();
     this.lastClipNear = desiredNear;
     this.lastClipFar = desiredFar;
+  }
+
+  private updateFogForDistance(distance: number): void {
+    if (!this.fogEnabledByQuality || !this.fogEnabledByUser || this.currentCameraView === CameraView.Close) {
+      if (this.scene.fog) {
+        this.scene.fog = null;
+      }
+      return;
+    }
+
+    if (!this.scene.fog) {
+      this.scene.fog = this.fog;
+    }
+
+    const clipFar = Math.min(this.camera.far, distance * 3.5);
+    const startFactor = this.currentCameraView === CameraView.Medium ? 0.35 : 0.45;
+    const endFactor = this.currentCameraView === CameraView.Medium ? 0.85 : 0.9;
+
+    const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
+    const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
+
+    if (Math.abs(desiredNear - this.lastFogNear) < 0.5 && Math.abs(desiredFar - this.lastFogFar) < 0.5) {
+      return;
+    }
+
+    this.fog.near = desiredNear;
+    this.fog.far = desiredFar;
+    this.lastFogNear = desiredNear;
+    this.lastFogFar = desiredFar;
   }
 }
