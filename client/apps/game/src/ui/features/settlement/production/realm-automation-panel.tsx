@@ -465,46 +465,30 @@ export const RealmAutomationPanel = ({
       return;
     }
 
-    const resourceIds = new Set<number>([
-      ...Object.keys(snapshot.percentages).map(Number),
-      ...Object.keys(draftPercentages).map(Number),
-    ]);
-
-    const changedResources: ResourcesIds[] = [];
-
-    resourceIds.forEach((id) => {
-      const resourceId = Number(id) as ResourcesIds;
-      const next = draftPercentages[resourceId] ?? createBaselinePercentages(resourceId);
-      const prevSnapshot = snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
-      if (
-        next.resourceToResource !== prevSnapshot.resourceToResource ||
-        next.laborToResource !== prevSnapshot.laborToResource
-      ) {
-        changedResources.push(resourceId);
-        setResourcePercentages(realmEntityId, resourceId, next);
-      }
-    });
-
-    if (changedResources.length === 0 && savedPreset !== "custom") {
-      setRealmPreset(realmEntityId, "custom");
-    }
-
     const allResources = new Set<number>([
-      ...resourceIds,
       ...realmResources.map((resourceId) => Number(resourceId)),
       ...Object.keys(realmAutomation.customPercentages ?? {}).map(Number),
     ]);
 
+    const currentResourceSet = new Set<number>(realmResources.map((resourceId) => Number(resourceId)));
     const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
     allResources.forEach((id) => {
       const resourceId = Number(id) as ResourcesIds;
-      const source =
-        draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
+      const source = currentResourceSet.has(resourceId)
+        ? draftPercentages[resourceId] ?? resolveDraftPercentages(resourceId)
+        : realmAutomation.customPercentages?.[resourceId] ?? resolveDraftPercentages(resourceId);
       normalizedPercentages[resourceId] = {
-        resourceToResource: source.resourceToResource,
-        laborToResource: source.laborToResource,
+        resourceToResource: clampPercent(source.resourceToResource),
+        laborToResource:
+          resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource),
       };
     });
+
+    Object.entries(normalizedPercentages).forEach(([key, value]) => {
+      setResourcePercentages(realmEntityId, Number(key) as ResourcesIds, value);
+    });
+
+    setRealmPreset(realmEntityId, "custom");
 
     setLastSavedSnapshot({ presetId: "custom", percentages: normalizedPercentages });
     setDraftPercentages(normalizedPercentages);
@@ -518,6 +502,7 @@ export const RealmAutomationPanel = ({
     realmResources,
     entityType,
     createBaselinePercentages,
+    resolveDraftPercentages,
     realmEntityId,
     setRealmPreset,
     setResourcePercentages,
