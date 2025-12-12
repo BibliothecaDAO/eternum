@@ -11,7 +11,7 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
-import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 
 import {
   Biome,
@@ -97,27 +97,12 @@ const generateBuildablePositions = (radius: number) => {
   return positions;
 };
 
-const formatPerSecondValue = (value: number): string => {
-  const abs = Math.abs(value);
-  if (abs < 0.0001) return "0";
-  if (abs >= 1000) return Math.round(abs).toLocaleString();
-  if (abs >= 1) return abs.toFixed(0);
-  if (abs >= 0.1) return abs.toFixed(2);
-  return abs.toFixed(3);
-};
-
-const formatSignedPerSecond = (value: number | null | undefined): string | undefined => {
-  if (value === null || value === undefined || Number.isNaN(value)) return undefined;
-  if (Math.abs(value) < 0.0001) return "0/s";
-  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
-  return `${sign}${formatPerSecondValue(value)}/s`;
-};
-
 type ResourceProductionStatus = {
   resourceId: ResourcesIds;
   isProducing: boolean;
   timeRemainingSeconds: number | null;
   productionPerSecond: number | null;
+  outputRemaining: number | null;
   totalBuildings: number;
   activeBuildings: number;
   calculatedAt: number;
@@ -154,9 +139,49 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     return () => window.clearInterval(interval);
   }, []);
 
-  const reservedSpotsRef = useRef<Set<string>>(new Set());
+  const occupiedSpotsRef = useRef<Set<string>>(new Set());
+  const vacatedSpotsRef = useRef<Set<string>>(new Set());
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
   const [pendingDestroys, setPendingDestroys] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    occupiedSpotsRef.current.clear();
+    vacatedSpotsRef.current.clear();
+  }, [entityId]);
+
+  useEffect(() => {
+    if (!realm?.position) return;
+
+    const outerCol = Number(realm.position.x);
+    const outerRow = Number(realm.position.y);
+    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+      col: outerCol,
+      row: outerRow,
+    });
+
+    const occupied = occupiedSpotsRef.current;
+    const vacated = vacatedSpotsRef.current;
+
+    Array.from(occupied).forEach((key) => {
+      const [col, row] = key.split(",").map(Number);
+      if (tileManager.isHexOccupied({ col, row })) {
+        occupied.delete(key);
+      }
+    });
+
+    Array.from(vacated).forEach((key) => {
+      const [col, row] = key.split(",").map(Number);
+      if (!tileManager.isHexOccupied({ col, row })) {
+        vacated.delete(key);
+      }
+    });
+  }, [
+    dojo.setup.components,
+    dojo.setup.systemCalls,
+    realm?.position?.x,
+    realm?.position?.y,
+    structureBuildings,
+  ]);
   const hasAvailableBuildingTile = useMemo(() => {
     if (!realm?.position) return true;
 
@@ -169,12 +194,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     const buildRadius = Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1);
     const candidates = generateBuildablePositions(buildRadius);
     const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
-    const reserved = reservedSpotsRef.current;
+    const occupied = occupiedSpotsRef.current;
+    const vacated = vacatedSpotsRef.current;
 
     return candidates.some((pos) => {
       const key = `${pos.col},${pos.row}`;
       if (key === centerKey) return false;
-      if (reserved.has(key)) return false;
+      if (occupied.has(key)) return false;
+      if (vacated.has(key)) return true;
       return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
     });
   }, [
@@ -184,6 +211,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     realm?.position?.x,
     realm?.position?.y,
     pendingBuilds,
+    pendingDestroys,
     structureBuildings,
   ]);
   const isRealmFull = !hasAvailableBuildingTile;
@@ -214,8 +242,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         col: outerCol,
         row: outerRow,
       });
-      const reserved = reservedSpotsRef.current;
-      let reservedKey: string | null = null;
+      const occupied = occupiedSpotsRef.current;
+      const vacated = vacatedSpotsRef.current;
+      let occupiedKey: string | null = null;
+      let didBuild = false;
 
       setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
 
@@ -227,7 +257,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         const availableSpot = candidates.find((pos) => {
           const key = `${pos.col},${pos.row}`;
           if (key === centerKey) return false;
-          if (reserved.has(key)) return false;
+          if (occupied.has(key)) return false;
+          if (vacated.has(key)) return true;
           return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
         });
 
@@ -236,8 +267,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           return;
         }
 
-        reservedKey = `${availableSpot.col},${availableSpot.row}`;
-        reserved.add(reservedKey);
+        occupiedKey = `${availableSpot.col},${availableSpot.row}`;
+        occupied.add(occupiedKey);
+        vacated.delete(occupiedKey);
 
         await tileManager.placeBuilding(
           dojo.account.account,
@@ -246,6 +278,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           { col: availableSpot.col, row: availableSpot.row },
           useSimpleCost,
         );
+        didBuild = true;
 
         setPreviewBuilding(null);
         setSelectedBuildingHex({
@@ -258,8 +291,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         console.error("Failed to auto-build", error);
         toast.error("Building failed. Please try again.");
       } finally {
-        if (reservedKey) {
-          reserved.delete(reservedKey);
+        if (occupiedKey && !didBuild) {
+          occupied.delete(occupiedKey);
         }
         setPendingBuilds((prev) => {
           const next = { ...prev };
@@ -301,10 +334,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         return;
       }
 
+      const occupied = occupiedSpotsRef.current;
+      const vacated = vacatedSpotsRef.current;
+      const destroyedKey = `${existing.col},${existing.row}`;
+
       setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
 
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
+        vacated.add(destroyedKey);
+        occupied.delete(destroyedKey);
         if (
           previewBuilding?.type === target.type &&
           (!target.resource || previewBuilding?.resource === target.resource)
@@ -450,6 +489,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         productionPerSecond: Number.isFinite(productionData.productionPerSecond)
           ? productionData.productionPerSecond
           : null,
+        outputRemaining: Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null,
         totalBuildings,
         activeBuildings: productionData.isProducing ? (totalBuildings > 0 ? totalBuildings : 0) : 0,
         calculatedAt,
@@ -1015,6 +1055,22 @@ const BuildingCard = ({
         ? Math.max(productionStatus.timeRemainingSeconds - (currentTime - productionStatus.calculatedAt) / 1000, 0)
         : null
       : (productionStatus?.timeRemainingSeconds ?? null);
+  const effectiveOutputRemaining =
+    productionStatus &&
+    currentTime &&
+    productionStatus.outputRemaining !== null &&
+    productionStatus.productionPerSecond !== null &&
+    Number.isFinite(productionStatus.productionPerSecond)
+      ? Math.max(
+          productionStatus.outputRemaining -
+            ((currentTime - productionStatus.calculatedAt) / 1000) * productionStatus.productionPerSecond,
+          0,
+        )
+      : (productionStatus?.outputRemaining ?? null);
+  const outputLabel =
+    productionStatus?.isProducing && effectiveOutputRemaining !== null
+      ? currencyIntlFormat(effectiveOutputRemaining, Math.abs(effectiveOutputRemaining) >= 1000 ? 1 : 0)
+      : undefined;
   const totalProductionBuildings =
     productionStatus && productionStatus.totalBuildings > 0 ? productionStatus.totalBuildings : count;
   const activeProductionBuildings =
@@ -1042,7 +1098,7 @@ const BuildingCard = ({
         timeRemainingSeconds={effectiveRemainingSeconds}
         size="md"
         cornerTopLeft={totalProductionBuildings > 0 ? `${totalProductionBuildings}` : undefined}
-        cornerTopRight={formatSignedPerSecond(productionStatus.productionPerSecond)?.replace("/s", "")}
+        cornerTopRight={outputLabel}
         cornerBottomRight={formattedRemaining ?? undefined}
       />
     ) : null;

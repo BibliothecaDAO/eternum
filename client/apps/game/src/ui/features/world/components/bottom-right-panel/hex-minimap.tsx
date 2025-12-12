@@ -3,11 +3,12 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { FELT_CENTER } from "@/ui/config";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import {
+  getIsBlitz,
   getExplorerInfoFromTileOccupier,
   getStructureInfoFromTileOccupier,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { BiomeIdToType, HexPosition, StructureType } from "@bibliothecadao/types";
+import { BiomeIdToType, HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 
 export interface MinimapTile {
@@ -32,14 +33,23 @@ const HEX_SIZE = 7;
 const SQRT3 = Math.sqrt(3);
 const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
 
-const TILE_MARKERS = {
-  essenceRift: { fill: "#8b5cf6", emoji: "⛏️" },
-  camp: { fill: "#92400e", emoji: "⛺" },
-  owned: { fill: "#22c55e" },
-  enemy: { fill: "#ef4444" },
-  hyperstructure: { fill: "#facc15", emoji: "⭐" },
-  armyOwned: { fill: "#22c55e", emoji: "⚔️" },
-  armyEnemy: { fill: "#ef4444", emoji: "⚔️" },
+type TileMarker = {
+  iconSrc: string;
+  sizeMultiplier?: number;
+};
+
+const LABEL_ICONS = {
+  armyMine: "/images/labels/army.png",
+  armyEnemy: "/images/labels/enemy_army.png",
+  realmMine: "/images/labels/realm.png",
+  realmEnemy: "/images/labels/enemy_realm.png",
+  villageMine: "/images/labels/village.png",
+  villageEnemy: "/images/labels/enemy_village.png",
+  hyperstructure: "/images/labels/hyperstructure.png",
+  fragmentMine: "/images/labels/fragment_mine.png",
+  essenceRift: "/images/labels/essence_rift.png",
+  quest: "/images/labels/quest.png",
+  chest: "/images/labels/chest.png",
 } as const;
 
 const axialToPixel = (col: number, row: number) => {
@@ -186,6 +196,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
   const playerStructures = useUIStore((state) => state.playerStructures);
   const currentPlayerData = usePlayerStore((state) => state.currentPlayerData);
+  const isBlitz = getIsBlitz();
 
   const ownedStructureIds = useMemo(() => {
     return new Set(playerStructures.map((structure) => String(structure.entityId)));
@@ -412,6 +423,14 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const getTileMarker = useCallback(
     (tile: MinimapTile) => {
       const occupierType = tile.occupier_type ?? 0;
+      if (occupierType === TileOccupier.Chest) {
+        return { iconSrc: LABEL_ICONS.chest } satisfies TileMarker;
+      }
+
+      if (occupierType === TileOccupier.Quest) {
+        return { iconSrc: LABEL_ICONS.quest } satisfies TileMarker;
+      }
+
       const hasStructure = tile.occupier_is_structure || isTileOccupierStructure(occupierType);
 
       if (hasStructure) {
@@ -420,15 +439,21 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
         switch (info.type) {
           case StructureType.FragmentMine:
-            return TILE_MARKERS.essenceRift;
+            return {
+              iconSrc: isBlitz ? LABEL_ICONS.essenceRift : LABEL_ICONS.fragmentMine,
+            } satisfies TileMarker;
           case StructureType.Village:
-            return TILE_MARKERS.camp;
-          case StructureType.Realm: {
-            const isMine = ownedStructureIds.has(String(tile.occupier_id));
-            return isMine ? { ...TILE_MARKERS.owned, emoji: "👑" } : { ...TILE_MARKERS.enemy, emoji: "👑" };
-          }
+            return {
+              iconSrc: ownedStructureIds.has(String(tile.occupier_id))
+                ? LABEL_ICONS.villageMine
+                : LABEL_ICONS.villageEnemy,
+            } satisfies TileMarker;
+          case StructureType.Realm:
+            return {
+              iconSrc: ownedStructureIds.has(String(tile.occupier_id)) ? LABEL_ICONS.realmMine : LABEL_ICONS.realmEnemy,
+            } satisfies TileMarker;
           case StructureType.Hyperstructure:
-            return TILE_MARKERS.hyperstructure;
+            return { iconSrc: LABEL_ICONS.hyperstructure, sizeMultiplier: 1.1 } satisfies TileMarker;
           default:
             return null;
         }
@@ -436,13 +461,15 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
       const explorerInfo = getExplorerInfoFromTileOccupier(occupierType);
       if (explorerInfo) {
-        const isMine = ownedExplorerIds.has(String(tile.occupier_id));
-        return isMine ? TILE_MARKERS.armyOwned : TILE_MARKERS.armyEnemy;
+        return {
+          iconSrc: ownedExplorerIds.has(String(tile.occupier_id)) ? LABEL_ICONS.armyMine : LABEL_ICONS.armyEnemy,
+          sizeMultiplier: 0.9,
+        } satisfies TileMarker;
       }
 
       return null;
     },
-    [ownedStructureIds, ownedExplorerIds],
+    [ownedStructureIds, ownedExplorerIds, isBlitz],
   );
 
   useEffect(() => {
@@ -565,12 +592,13 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     >
       {visibleTiles.map(({ tile, points, pixel }) => {
         const marker = getTileMarker(tile);
-        const fill = marker?.fill ?? getBiomeColor(tile.biome);
+        const fill = getBiomeColor(tile.biome);
         const occupierColor = getOccupierColor(tile);
+        const iconSize = marker ? HEX_SIZE * 2.2 * (marker.sizeMultiplier ?? 1) : 0;
         return (
           <g key={`${tile.col}:${tile.row}`}>
             <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
-            {occupierColor && !marker?.emoji && (
+            {occupierColor && !marker && (
               <circle
                 cx={pixel.x}
                 cy={pixel.y}
@@ -580,17 +608,16 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
                 strokeWidth={0.8}
               />
             )}
-            {marker?.emoji && (
-              <text
-                x={pixel.x}
-                y={pixel.y}
-                fontSize={HEX_SIZE * 1.4}
-                textAnchor="middle"
-                dominantBaseline="central"
-                className="select-none"
-              >
-                {marker.emoji}
-              </text>
+            {marker && (
+              <image
+                href={marker.iconSrc}
+                x={pixel.x - iconSize / 2}
+                y={pixel.y - iconSize / 2}
+                width={iconSize}
+                height={iconSize}
+                preserveAspectRatio="xMidYMid meet"
+                className="pointer-events-none select-none"
+              />
             )}
           </g>
         );
@@ -604,14 +631,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
             fill="rgba(255,255,255,0.06)"
             stroke="rgba(255,255,255,0.9)"
             strokeWidth={1}
-          />
-          <circle
-            cx={cameraCircle.centerPixel.x}
-            cy={cameraCircle.centerPixel.y}
-            r={HEX_SIZE * 0.5}
-            fill="#ffffff"
-            stroke="#000000"
-            strokeWidth={0.6}
           />
         </g>
       )}

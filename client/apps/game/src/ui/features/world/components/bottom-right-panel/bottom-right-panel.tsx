@@ -117,16 +117,18 @@ const BOTTOM_PANEL_TABS: TabDefinition[] = [
 ];
 
 const PanelTabs = ({
+  tabs,
   activeTab,
   onSelect,
   className,
 }: {
+  tabs: TabDefinition[];
   activeTab: BottomPanelTabId | null;
   onSelect: (tab: BottomPanelTabId) => void;
   className?: string;
 }) => (
   <div className={cn("pointer-events-auto flex gap-2", className)}>
-    {BOTTOM_PANEL_TABS.map(({ id, label, icon: Icon }) => {
+    {tabs.map(({ id, label, icon: Icon }) => {
       const isActive = activeTab === id;
       return (
         <button
@@ -765,13 +767,24 @@ const MinimapPanel = () => {
   );
 };
 
-export const SelectedTilePanel = memo(() => {
+export const BottomRightPanel = memo(() => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const activeTab = useUIStore((state) => state.activeBottomPanelTab);
   const setActiveTab = useUIStore((state) => state.setActiveBottomPanelTab);
   const shouldShow = !showBlankOverlay;
   const isPanelOpen = shouldShow && activeTab !== null;
+
+  const availableTabs = useMemo(
+    () => (isMapView ? BOTTOM_PANEL_TABS : BOTTOM_PANEL_TABS.filter((tab) => tab.id === "tile")),
+    [isMapView],
+  );
+
+  useEffect(() => {
+    if (!isMapView && activeTab === "minimap") {
+      setActiveTab("tile");
+    }
+  }, [activeTab, isMapView, setActiveTab]);
 
   const handleTabToggle = (tab: BottomPanelTabId) => {
     setActiveTab(activeTab === tab ? null : tab);
@@ -787,7 +800,12 @@ export const SelectedTilePanel = memo(() => {
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
       <div className="relative w-full md:w-[37%] lg:w-[27%] md:ml-auto min-h-[44px]">
-        <PanelTabs activeTab={activeTab} onSelect={handleTabToggle} className="absolute right-0 bottom-full" />
+        <PanelTabs
+          tabs={availableTabs}
+          activeTab={activeTab}
+          onSelect={handleTabToggle}
+          className="absolute right-2 bottom-full pb-2"
+        />
         <div className="pointer-events-auto">
           <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
             {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
@@ -801,4 +819,4 @@ export const SelectedTilePanel = memo(() => {
   );
 });
 
-SelectedTilePanel.displayName = "SelectedTilePanel";
+BottomRightPanel.displayName = "BottomRightPanel";

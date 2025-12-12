@@ -4,7 +4,7 @@ import { RealtimeChatShell, type InitializeRealtimeClientParams } from "@/ui/fea
 import {
   BOTTOM_PANEL_MARGIN,
   BOTTOM_PANEL_RESERVED_SPACE,
-} from "@/ui/features/world/components/selected-tile-panel/constants";
+} from "@/ui/features/world/components/bottom-right-panel/constants";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
