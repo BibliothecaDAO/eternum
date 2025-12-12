@@ -9,7 +9,7 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { FrustumManager } from "../utils/frustum-manager";
 import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
 import { LabelManager } from "../utils/labels/label-manager";
@@ -36,7 +36,6 @@ export class QuestManager {
   questHexCoords: Map<number, Set<number>> = new Map();
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private frustumManager?: FrustumManager;
-  private readonly tempVisibilityPosition: THREE.Vector3 = new THREE.Vector3();
 
   constructor(
     scene: THREE.Scene,
@@ -146,19 +145,6 @@ export class QuestManager {
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
     const questType = QuestType.DarkShuffle;
 
-    const existingQuest = this.quests.getQuest(entityId);
-    if (existingQuest) {
-      const oldNormalized = existingQuest.hexCoords.getNormalized();
-      if (oldNormalized.x !== normalizedCoord.col || oldNormalized.y !== normalizedCoord.row) {
-        const oldCol = oldNormalized.x;
-        const oldRow = oldNormalized.y;
-        this.questHexCoords.get(oldCol)?.delete(oldRow);
-        if (this.questHexCoords.get(oldCol)?.size === 0) {
-          this.questHexCoords.delete(oldCol);
-        }
-      }
-    }
-
     if (!this.questHexCoords.has(normalizedCoord.col)) {
       this.questHexCoords.set(normalizedCoord.col, new Set());
     }
@@ -225,11 +211,9 @@ export class QuestManager {
     return basePosition;
   };
 
-  private isQuestVisible(
-    quest: QuestData,
-    bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number },
-  ) {
+  private isQuestVisible(quest: QuestData, startRow: number, startCol: number) {
     const { x, y } = quest.hexCoords.getNormalized();
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
 
     if (!insideChunk) {
@@ -240,15 +224,17 @@ export class QuestManager {
       return true;
     }
 
-    const worldPos = getWorldPositionForHexCoordsInto(x, y, this.tempVisibilityPosition);
+    const worldPos = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
     worldPos.y += 0.05;
     return this.frustumManager.isPointVisible(worldPos);
   }
 
   private getVisibleQuestsForChunk(quests: Map<ID, QuestData>, startRow: number, startCol: number): QuestData[] {
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const visibleQuests = Array.from(quests.values())
-      .filter((quest) => this.isQuestVisible(quest, bounds))
+
+      .filter((quest) => {
+        return this.isQuestVisible(quest, startRow, startCol);
+      })
       .map((quest) => ({
         entityId: quest.entityId,
         questType: quest.questType,

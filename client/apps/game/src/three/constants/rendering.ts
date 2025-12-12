@@ -52,7 +52,7 @@ export const POST_PROCESSING_CONFIG: Record<GraphicsSettings, PostProcessingConf
     brightness: 0,
     contrast: 0,
     hue: 0,
-    saturation: 0.18,
+    saturation: 0.6,
     toneMapping: {
       mode: ToneMappingMode.OPTIMIZED_CINEON,
       exposure: 0.7,
@@ -68,7 +68,7 @@ export const POST_PROCESSING_CONFIG: Record<GraphicsSettings, PostProcessingConf
     brightness: 0,
     contrast: 0,
     hue: 0,
-    saturation: 0.12,
+    saturation: 0.4,
     toneMapping: {
       mode: ToneMappingMode.OPTIMIZED_CINEON,
       exposure: 0.6,

@@ -6,11 +6,10 @@ import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import * as THREE from "three";
-import { getHexagonCoordinates, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils";
+import { getHexagonCoordinates, getWorldPositionForHex } from "../utils";
 
 export class InteractiveHexManager {
   private scene: THREE.Scene;
-  private persistent: boolean;
   // Store all interactive hexes
   private allHexes: Set<string> = new Set();
   private hexBuckets: Map<string, Set<string>> = new Map();
@@ -28,9 +27,8 @@ export class InteractiveHexManager {
   private readonly bucketSize = 16;
   private instanceCapacity = 0;
 
-  constructor(scene: THREE.Scene, options?: { persistent?: boolean }) {
+  constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.persistent = options?.persistent ?? false;
     this.hoverAura = new Aura();
     this.hoverHexManager = new HoverHexManager(scene);
     this.hexGeometryPool = HexGeometryPool.getInstance();
@@ -188,9 +186,6 @@ export class InteractiveHexManager {
 
   // Add hex to the global collection of all interactive hexes
   addHex(hex: { col: number; row: number }) {
-    if (!this.persistent) {
-      return;
-    }
     const key = `${hex.col},${hex.row}`;
     if (this.allHexes.has(key)) {
       return;
@@ -206,12 +201,6 @@ export class InteractiveHexManager {
 
   // Filter visible hexes for the current chunk
   updateVisibleHexes(startRow: number, startCol: number, width: number, height: number) {
-    // In non-persistent mode (WorldMap), interactive hexes are limited to the current render window.
-    if (!this.persistent) {
-      this.updateVisibleHexesForWindow(startRow, startCol, width, height);
-      return;
-    }
-
     this.visibleHexes.clear();
 
     // Calculate chunk boundaries
@@ -247,44 +236,6 @@ export class InteractiveHexManager {
 
     // Render only the visible hexes
     this.renderHexes();
-  }
-
-  private updateVisibleHexesForWindow(centerRow: number, centerCol: number, width: number, height: number) {
-    const resolvedCols = Math.max(1, Math.floor(width));
-    const resolvedRows = Math.max(1, Math.floor(height));
-    const halfCols = Math.floor(resolvedCols / 2);
-    const halfRows = Math.floor(resolvedRows / 2);
-
-    const minCol = Math.floor(centerCol - halfCols);
-    const minRow = Math.floor(centerRow - halfRows);
-    const maxCol = minCol + resolvedCols - 1;
-    const maxRow = minRow + resolvedRows - 1;
-
-    const capacityHint = resolvedCols * resolvedRows;
-    this.ensureInstanceMeshCapacity(capacityHint);
-
-    if (!this.instanceMesh) {
-      return;
-    }
-
-    const mesh = this.instanceMesh;
-    let index = 0;
-
-    for (let row = minRow; row <= maxRow; row++) {
-      for (let col = minCol; col <= maxCol; col++) {
-        getWorldPositionForHexCoordsInto(col, row, this.position);
-        this.dummy.position.set(this.position.x, 0.1, this.position.z);
-        this.dummy.rotation.x = -Math.PI / 2;
-        this.dummy.updateMatrix();
-        mesh.setMatrixAt(index, this.dummy.matrix);
-        index++;
-      }
-    }
-
-    mesh.count = index;
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingBox();
-    mesh.computeBoundingSphere();
   }
 
   // Clear all interactive hexes (e.g., when resetting the world)

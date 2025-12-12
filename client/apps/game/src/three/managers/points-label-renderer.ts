@@ -42,7 +42,6 @@ export class PointsLabelRenderer {
   private sizesArray: Float32Array;
   private colorIndicesArray: Float32Array;
   private hoverArray: Float32Array;
-  // Icons are small and bounded by chunk visibility; frustum culling can be relaxed.
   private frustumManager?: FrustumManager;
   private unsubscribeFrustum?: () => void;
   private boundsDirty = true;
@@ -84,8 +83,6 @@ export class PointsLabelRenderer {
     // Create Points object
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.renderOrder = 999; // Render after everything else (on top)
-    // Avoid per-update bounding sphere work; visibility is handled at the chunk level.
-    this.points.frustumCulled = false;
     scene.add(this.points);
 
     // Setup raycaster for hover detection
@@ -104,8 +101,22 @@ export class PointsLabelRenderer {
   }
 
   private refreshFrustumVisibility(): void {
-    // With frustum culling relaxed, just hide when empty.
-    this.points.visible = this.currentCount > 0;
+    if (!this.frustumManager) {
+      this.points.visible = this.currentCount > 0;
+      return;
+    }
+
+    if (this.currentCount === 0) {
+      this.points.visible = false;
+      return;
+    }
+
+    if (this.boundsDirty || !this.geometry.boundingSphere) {
+      this.geometry.computeBoundingSphere();
+      this.boundsDirty = false;
+    }
+
+    this.points.visible = this.frustumManager.isSphereVisible(this.geometry.boundingSphere);
   }
 
   /**
@@ -138,41 +149,19 @@ export class PointsLabelRenderer {
     this.positionsArray[posIndex + 1] = position.y;
     this.positionsArray[posIndex + 2] = position.z;
 
-    // Update attributes only if changed to reduce buffer churn
-    if (this.sizesArray[index] !== size) {
-      this.sizesArray[index] = size;
-      this.geometry.attributes.size.needsUpdate = true;
-    }
-    if (this.colorIndicesArray[index] !== colorIndex) {
-      this.colorIndicesArray[index] = colorIndex;
-      this.geometry.attributes.colorIndex.needsUpdate = true;
-    }
+    // Update attributes
+    this.sizesArray[index] = size;
+    this.colorIndicesArray[index] = colorIndex;
 
-    // Mark position attribute as needing update
+    // Mark attributes as needing update
     this.geometry.attributes.position.needsUpdate = true;
+    this.geometry.attributes.size.needsUpdate = true;
+    this.geometry.attributes.colorIndex.needsUpdate = true;
 
     // Update draw range
     this.geometry.setDrawRange(0, this.currentCount);
     this.boundsDirty = true;
     this.refreshFrustumVisibility();
-  }
-
-  /**
-   * Fast path for updating an existing point's position only.
-   * Falls back to setPoint() if the point doesn't exist yet.
-   */
-  public setPointPosition(entityId: ID, position: THREE.Vector3): void {
-    const index = this.entityIdToIndex.get(entityId);
-    if (index === undefined) {
-      this.setPoint({ entityId, position });
-      return;
-    }
-
-    const posIndex = index * 3;
-    this.positionsArray[posIndex] = position.x;
-    this.positionsArray[posIndex + 1] = position.y;
-    this.positionsArray[posIndex + 2] = position.z;
-    this.geometry.attributes.position.needsUpdate = true;
   }
 
   /**

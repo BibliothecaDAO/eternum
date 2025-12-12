@@ -15,8 +15,6 @@ export interface MovementData {
   startPos: Vector3;
   endPos: Vector3;
   progress: number;
-  segmentDistance: number;
-  invTravelTime: number;
   matrixIndex: number;
   currentPathIndex: number;
   floatingHeight: number;

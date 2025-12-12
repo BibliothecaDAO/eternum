@@ -10,7 +10,7 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { FrustumManager } from "../utils/frustum-manager";
 import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
@@ -42,7 +42,6 @@ export class ChestManager {
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
   private frustumManager?: FrustumManager;
-  private readonly tempVisibilityPosition: THREE.Vector3 = new THREE.Vector3();
 
   constructor(
     scene: THREE.Scene,
@@ -249,11 +248,9 @@ export class ChestManager {
     return basePosition;
   };
 
-  private isChestVisible(
-    chest: ChestData,
-    bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number },
-  ) {
+  private isChestVisible(chest: ChestData, startRow: number, startCol: number) {
     const { x, y } = chest.hexCoords.getNormalized();
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
 
     if (!insideChunk) {
@@ -264,14 +261,16 @@ export class ChestManager {
       return true;
     }
 
-    const worldPos = getWorldPositionForHexCoordsInto(x, y, this.tempVisibilityPosition);
+    const worldPos = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
     worldPos.y += 0.05;
     return this.frustumManager.isPointVisible(worldPos);
   }
 
   private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    const visibleChests = Array.from(chests.values()).filter((chest) => this.isChestVisible(chest, bounds))
+    const visibleChests = Array.from(chests.values())
+      .filter((chest) => {
+        return this.isChestVisible(chest, startRow, startCol);
+      })
       .map((chest) => ({
         entityId: chest.entityId,
         hexCoords: chest.hexCoords,

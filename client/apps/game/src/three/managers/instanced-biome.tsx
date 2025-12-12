@@ -70,19 +70,8 @@ export default class InstancedModel {
           tmp.morphTexture!.needsUpdate = true;
         }
 
-        const isLand =
-          child.name.includes(LAND_NAME) || (child.parent?.name && child.parent.name.includes(LAND_NAME));
-
-        if (isLand && child.material) {
-          // Enable per-instance vertex colors on terrain base.
-          (child.material as THREE.MeshStandardMaterial).vertexColors = true;
-          (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
-          tmp.name = LAND_NAME;
-        }
-
         if (name !== "Outline" && !name.toLowerCase().includes("ocean")) {
-          // Terrain base should receive shadows but not cast them to avoid far-view noise.
-          tmp.castShadow = !isLand;
+          tmp.castShadow = true;
           tmp.receiveShadow = true;
           tmp.renderOrder = renderOrder;
         }
@@ -110,11 +99,6 @@ export default class InstancedModel {
         this.biomeMeshes.push(biomeMesh);
       }
     });
-  }
-
-  public setAnimationFPS(fps: number): void {
-    const resolved = Math.max(1, fps);
-    this.animationUpdateInterval = 1000 / resolved;
   }
 
   getCount(): number {

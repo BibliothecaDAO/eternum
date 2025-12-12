@@ -14,7 +14,6 @@ import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { gltfLoader } from "@/three/utils/utils";
-import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
@@ -107,10 +106,6 @@ export abstract class HexagonScene {
   private animationCameraTarget: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
-  protected shadowsEnabledByQuality = true;
-  protected shadowMapSizeByQuality = 2048;
-  private lastClipNear = 0;
-  private lastClipFar = 0;
 
   constructor(
     protected sceneName: SceneName,
@@ -136,8 +131,6 @@ export abstract class HexagonScene {
 
   private notifyControlsChanged(): void {
     this.controls.update();
-    const distance = this.controls.object.position.distanceTo(this.controls.target);
-    this.updateCameraClipPlanesForDistance(distance);
     this.controls.dispatchEvent({ type: "change" });
     this.frustumManager?.forceUpdate();
     this.visibilityManager?.markDirty();
@@ -148,9 +141,7 @@ export abstract class HexagonScene {
     this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
-    this.interactiveHexManager = new InteractiveHexManager(this.scene, {
-      persistent: this.sceneName === SceneName.Hexception,
-    });
+    this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
@@ -203,39 +194,34 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    // Cooler sky fill + warmer ground bounce, kept subtle to preserve directional contrast.
-    this.hemisphereLight = new HemisphereLight(0xaecbff, 0x6a5844, 0.8);
+    this.hemisphereLight = new HemisphereLight(0x6a3a6a, 0xffffff, 1.2);
     this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    // Warm key light baseline; day/night cycle will override dynamically.
-    this.mainDirectionalLight = new DirectionalLight(0xfff2d2, 2.0);
+    this.mainDirectionalLight = new DirectionalLight(0x9966ff, 2.0);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
   }
 
   private configureDirectionalLight(): void {
-    this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-    this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSizeByQuality;
-    this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSizeByQuality;
-    // Slightly wider ortho bounds for angled sun shadows.
-    this.mainDirectionalLight.shadow.camera.left = -24;
-    this.mainDirectionalLight.shadow.camera.right = 24;
-    this.mainDirectionalLight.shadow.camera.top = 16;
-    this.mainDirectionalLight.shadow.camera.bottom = -16;
-    this.mainDirectionalLight.shadow.camera.far = 45;
-    this.mainDirectionalLight.shadow.camera.near = 5;
-    this.mainDirectionalLight.shadow.bias = -0.015;
-    // Default shallow sun angle for better form readability at zoom-out.
-    this.mainDirectionalLight.position.set(-15, 13, 8);
-    this.mainDirectionalLight.target.position.set(0, 0, -5.2);
+    this.mainDirectionalLight.castShadow = true;
+    this.mainDirectionalLight.shadow.mapSize.width = 2048;
+    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.shadow.camera.left = -20;
+    this.mainDirectionalLight.shadow.camera.right = 20;
+    this.mainDirectionalLight.shadow.camera.top = 13;
+    this.mainDirectionalLight.shadow.camera.bottom = -13;
+    this.mainDirectionalLight.shadow.camera.far = 38;
+    this.mainDirectionalLight.shadow.camera.near = 8;
+    this.mainDirectionalLight.shadow.bias = -0.02;
+    this.mainDirectionalLight.position.set(0, 9, 0);
+    this.mainDirectionalLight.target.position.set(0, 0, 5.2);
   }
 
   private setupStormLighting(): void {
-    // Low-intensity neutral ambient to avoid purple wash when cycle is disabled.
-    this.ambientPurpleLight = new AmbientLight(0x1b1e2b, 0.06);
+    this.ambientPurpleLight = new AmbientLight(0x3a1a3a, 0.1);
     this.scene.add(this.ambientPurpleLight);
 
     this.stormLight = new PointLight(0xaa77ff, 1.5, 80);
@@ -420,30 +406,6 @@ export abstract class HexagonScene {
     this.state.setRightNavigationView(RightView.None);
   }
 
-  public applyQualityFeatures(features: QualityFeatures): void {
-    this.shadowsEnabledByQuality = features.shadows;
-    if (features.shadowMapSize > 0) {
-      this.shadowMapSizeByQuality = features.shadowMapSize;
-    }
-
-    if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.castShadow =
-        this.shadowsEnabledByQuality && this.currentCameraView !== CameraView.Far;
-      if (this.shadowMapSizeByQuality > 0) {
-        this.mainDirectionalLight.shadow.mapSize.set(
-          this.shadowMapSizeByQuality,
-          this.shadowMapSizeByQuality,
-        );
-      }
-    }
-
-    if (features.animationFPS > 0) {
-      this.biomeModels.forEach((model) => {
-        model.setAnimationFPS?.(features.animationFPS);
-      });
-    }
-  }
-
   public isNavigationViewOpen() {
     return this.state.leftNavigationView !== LeftView.None || this.state.rightNavigationView !== RightView.None;
   }
@@ -603,10 +565,6 @@ export abstract class HexagonScene {
             const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.onBiomeModelLoaded(tmp);
-            if (biome === "Outline") {
-              const currentDistance = this.controls.object.position.distanceTo(this.controls.target);
-              this.updateOutlineOpacityForDistance(currentDistance);
-            }
             this.scene.add(tmp.group);
             resolve();
           },
@@ -680,25 +638,6 @@ export abstract class HexagonScene {
         }
       });
     }
-  }
-
-  protected updateOutlineOpacityForDistance(distance: number): void {
-    const outlineKey = "Outline" as unknown as BiomeType;
-    const outlineModel = this.biomeModels.get(outlineKey);
-    if (!outlineModel) {
-      return;
-    }
-
-    const minDistance = 10;
-    const maxDistance = 40;
-    const t = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
-    const opacity = 0.04 + t * 0.06;
-
-    outlineModel.instancedMeshes.forEach((mesh) => {
-      const material = mesh.material as MeshStandardMaterial;
-      material.transparent = true;
-      material.opacity = opacity;
-    });
   }
 
   protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
@@ -991,20 +930,19 @@ export abstract class HexagonScene {
 
   public changeCameraView(position: CameraView) {
     console.log("HexagonScene changeCameraView:", this.currentCameraView, "->", position);
-    const previousView = this.currentCameraView;
     const target = this.controls.target;
     this.currentCameraView = position;
 
     switch (position) {
       case CameraView.Close: // Close view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.02;
+        this.mainDirectionalLight.castShadow = true;
+        this.mainDirectionalLight.shadow.bias = -0.025;
         this.cameraDistance = 10;
         this.cameraAngle = Math.PI / 6; // 30 degrees
         break;
       case CameraView.Medium: // Medium view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.015;
+        this.mainDirectionalLight.castShadow = true;
+        this.mainDirectionalLight.shadow.bias = -0.02;
         this.cameraDistance = 20;
         this.cameraAngle = Math.PI / 3; // 60 degrees
         break;
@@ -1019,34 +957,9 @@ export abstract class HexagonScene {
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
 
     const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
-    const viewDelta = Math.abs(position - previousView);
-    const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
-    this.updateOutlineOpacityForDistance(this.cameraDistance);
-    this.updateCameraClipPlanesForDistance(this.cameraDistance);
-    this.cameraAnimate(newPosition, target, duration);
+    this.cameraAnimate(newPosition, target, 1);
 
     // Notify all listeners of the camera view change
     this.cameraViewListeners.forEach((listener) => listener(position));
-  }
-
-  private updateCameraClipPlanesForDistance(distance: number): void {
-    const minNear = 0.1;
-    const maxNear = 1.5;
-    const minFar = 50;
-    const maxFar = 140;
-    const farMultiplier = 3.5;
-
-    const desiredNear = Math.min(maxNear, Math.max(minNear, distance * 0.02));
-    const desiredFar = Math.min(maxFar, Math.max(minFar, distance * farMultiplier));
-
-    if (Math.abs(desiredNear - this.lastClipNear) < 0.005 && Math.abs(desiredFar - this.lastClipFar) < 0.5) {
-      return;
-    }
-
-    this.camera.near = desiredNear;
-    this.camera.far = desiredFar;
-    this.camera.updateProjectionMatrix();
-    this.lastClipNear = desiredNear;
-    this.lastClipFar = desiredFar;
   }
 }

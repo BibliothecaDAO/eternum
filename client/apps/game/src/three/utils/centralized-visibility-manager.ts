@@ -29,6 +29,8 @@ export interface FrameVisibilityState {
   boxVisibility: Map<string, boolean>;
   /** Map of sphere visibility results */
   sphereVisibility: Map<string, boolean>;
+  /** Map of point visibility results */
+  pointVisibility: Map<string, boolean>;
 }
 
 /**
@@ -63,6 +65,13 @@ function boxToKey(box: Box3): string {
  */
 function sphereToKey(sphere: Sphere): string {
   return `sphere_${sphere.center.x.toFixed(1)}_${sphere.center.y.toFixed(1)}_${sphere.center.z.toFixed(1)}_${sphere.radius.toFixed(1)}`;
+}
+
+/**
+ * Creates a unique key for a Vector3 point
+ */
+function pointToKey(point: Vector3): string {
+  return `point_${point.x.toFixed(1)}_${point.y.toFixed(1)}_${point.z.toFixed(1)}`;
 }
 
 /**
@@ -157,9 +166,10 @@ export class CentralizedVisibilityManager {
       this.frameState.frameId = this.currentFrameId;
       this.frameState.timestamp = performance.now();
 
-      // Clear per-frame caches (boxes, spheres)
+      // Clear per-frame caches (boxes, spheres, points)
       this.frameState.boxVisibility.clear();
       this.frameState.sphereVisibility.clear();
+      this.frameState.pointVisibility.clear();
 
       this.isDirty = false;
 
@@ -294,10 +304,18 @@ export class CentralizedVisibilityManager {
   }
 
   /**
-   * Check if a point is visible. No caching to avoid per-call allocations.
+   * Check if a point is visible. Caches result for the frame.
    */
   isPointVisible(point: Vector3): boolean {
-    return this.frustum.containsPoint(point);
+    const key = pointToKey(point);
+    const cached = this.frameState.pointVisibility.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const visible = this.frustum.containsPoint(point);
+    this.frameState.pointVisibility.set(key, visible);
+    return visible;
   }
 
   // ===========================================================================
@@ -383,6 +401,7 @@ export class CentralizedVisibilityManager {
     visibleChunks: number;
     cachedBoxChecks: number;
     cachedSphereChecks: number;
+    cachedPointChecks: number;
     chunkCapacity: number | null;
   } {
     return {
@@ -391,6 +410,7 @@ export class CentralizedVisibilityManager {
       visibleChunks: this.frameState.visibleChunks.size,
       cachedBoxChecks: this.frameState.boxVisibility.size,
       cachedSphereChecks: this.frameState.sphereVisibility.size,
+      cachedPointChecks: this.frameState.pointVisibility.size,
       chunkCapacity: this.config.maxRegisteredChunks ?? null,
     };
   }
@@ -430,6 +450,7 @@ export class CentralizedVisibilityManager {
       visibleChunks: new Set(),
       boxVisibility: new Map(),
       sphereVisibility: new Map(),
+      pointVisibility: new Map(),
     };
   }
 
