@@ -227,22 +227,31 @@ export default class GameRenderer {
   }
 
   private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
-    return new Promise((resolve, reject) => {
-      const MAX_ATTEMPTS = 300; // ~5 seconds at 60fps
+    return new Promise((resolve) => {
+      const WARN_AFTER_ATTEMPTS = 300; // ~5 seconds at 60fps
       let attempts = 0;
 
       const checkElement = () => {
-        const element = document.getElementById("labelrenderer") as HTMLDivElement;
+        if (this.isDestroyed) {
+          return;
+        }
+
+        const element = document.getElementById("labelrenderer") as HTMLDivElement | null;
         if (element) {
           resolve(element);
-        } else if (attempts >= MAX_ATTEMPTS) {
-          console.error("GameRenderer: labelrenderer element not found after max attempts");
-          reject(new Error("labelrenderer element not found"));
-        } else {
-          attempts++;
-          requestAnimationFrame(checkElement);
+          return;
         }
+
+        attempts++;
+        if (attempts === WARN_AFTER_ATTEMPTS) {
+          console.warn(
+            "GameRenderer: labelrenderer element not found yet; continuing to wait for world UI to mount",
+          );
+        }
+
+        requestAnimationFrame(checkElement);
       };
+
       checkElement();
     });
   }
