@@ -14,7 +14,9 @@ import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory } fro
 import { Chain, getGameManifest } from "@contracts";
 import { env } from "../../../../../../../env";
 import { decodePaddedFeltAscii } from "../market-utils";
+import { MaybeController } from "../MaybeController";
 import { buildToriiBaseUrl } from "../use-market-servers";
+import { usePlayerRanks } from "./usePlayerRanks";
 
 const chunk = <T,>(arr: T[], size: number) => {
   const out: T[][] = [];
@@ -98,10 +100,12 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
   const [playersError, setPlayersError] = useState<string | null>(null);
   const [serverName, setServerName] = useState<string | null>(null);
   const [serverLookupStatus, setServerLookupStatus] = useState<"pending" | "done">("pending");
+  const toriiBaseUrl = useMemo(() => (serverName ? buildToriiBaseUrl(serverName) : null), [serverName]);
 
   // Use uint256 for market id as calldata
   const marketId_u256 = useMemo(() => uint256.bnToUint256(BigInt(market.market_id)), [market.market_id]);
   const prizeContractAddress = useMemo(() => extractPrizeDistributionAddress(market), [market]);
+  const marketPlayers = useMemo(() => derivePlayersFromMarket(market), [market]);
 
   useEffect(() => {
     setServerName(null);
@@ -201,7 +205,6 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
       // Prefer leaderboard order when Torii is reachable
       try {
         const leaderboardAddresses = await fetchLeaderboardAddresses(toriiBaseUrl, 500);
-        console.log({ leaderboardAddresses });
         if (leaderboardAddresses.length > 0) {
           setPlayers(leaderboardAddresses);
           return leaderboardAddresses;
@@ -317,6 +320,7 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
       setComputeStatus("Score computation submitted.");
       toast.success("Scores computation submitted.");
+      refetchRanks();
     } catch (error) {
       console.error("Failed to compute scores", error);
       setComputeStatus("Failed to compute scores.");
@@ -328,7 +332,20 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
   const canResolve = market.isResolvable() && !market.isResolved() && serverLookupStatus === "done";
   const hasRankedPlayers = players.length > 0;
-  const canComputeScores = market.isEnded() && hasRankedPlayers && !playersLoading && serverLookupStatus === "done";
+  const {
+    trialId: finalTrialId,
+    ranks: playerRanks,
+    isLoading: ranksLoading,
+    error: ranksError,
+    refetch: refetchRanks,
+  } = usePlayerRanks({
+    players: marketPlayers.length > 0 ? marketPlayers : players,
+    toriiBaseUrl,
+  });
+
+  const hasFinalRanking = Boolean(finalTrialId);
+  const canComputeScores =
+    market.isEnded() && hasRankedPlayers && !playersLoading && serverLookupStatus === "done" && !hasFinalRanking;
   const playersLabel = useMemo(() => {
     if (serverLookupStatus !== "done") return "Resolving game name...";
     if (playersLoading) return "Loading players...";
@@ -356,25 +373,57 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
             disabled={!canComputeScores || isComputingScores}
             isLoading={isComputingScores}
           >
-            {isComputingScores ? "Computing..." : "Compute Scores"}
+            {hasFinalRanking ? "Scores Finalized" : isComputingScores ? "Computing..." : "Compute Scores"}
           </Button>
           {!canResolve && <span className="text-xs text-gold/60">Resolution opens after the resolve time.</span>}
           {!canComputeScores && (
             <span className="text-xs text-gold/60">
-              {playersLoading
-                ? "Loading players..."
-                : !hasRankedPlayers
-                  ? "Leaderboard unavailable — ranked order required to compute scores."
-                  : "Score computation opens after the game ends."}
+              {hasFinalRanking
+                ? "Scores already computed — see ranking below."
+                : playersLoading
+                  ? "Loading players..."
+                  : !hasRankedPlayers
+                    ? "Leaderboard unavailable — ranked order required to compute scores."
+                    : "Score computation opens after the game ends."}
             </span>
           )}
         </HStack>
-        {/* Debug: Player list rendering */}
-        <div className="whitespace-pre-wrap break-words text-[11px] text-gold/60">
-          <span className="font-semibold text-amber-500 pr-2">[DEBUG]</span>
-          {playersLabel}
-        </div>
         {computeStatus && <div className="text-xs text-gold/70">{computeStatus}</div>}
+        {hasFinalRanking ? (
+          <div className="w-full rounded-md border border-white/10 bg-white/5 p-3">
+            <div className="flex items-center justify-between text-sm text-gold/80">
+              <span className="text-white font-semibold">Final ranking</span>
+              <span className="text-xs text-gold/60">Trial {finalTrialId?.toString()}</span>
+            </div>
+            {ranksLoading ? <p className="mt-2 text-xs text-gold/60">Loading ranking...</p> : null}
+            {ranksError ? <p className="mt-2 text-xs text-danger">{ranksError}</p> : null}
+            {!ranksLoading && !ranksError ? (
+              playerRanks.length > 0 ? (
+                <ol className="mt-3 space-y-2 text-sm text-white">
+                  {playerRanks.map((entry) => (
+                    <li
+                      key={`${entry.player}-${entry.rank}`}
+                      className="flex items-center justify-between gap-2 rounded-md border border-white/5 bg-white/5 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-white/10 px-2 py-[2px] text-[11px] font-semibold uppercase text-gold/70">
+                          #{entry.rank}
+                        </span>
+                        <MaybeController address={entry.player} className="text-white" />
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="mt-2 text-xs text-gold/60">
+                  Ranking finalized, but no players from this market were found in the list.
+                </p>
+              )
+            ) : null}
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap break-words text-[11px] text-gold/60">{playersLabel}</div>
+        )}
       </VStack>
     </>
   );

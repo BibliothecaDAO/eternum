@@ -23,12 +23,16 @@ export function MarketResolved({
           {
             index: 0,
             name: outcomes[0],
-            payoutNumerator: Number(market.conditionResolution?.payout_numerators[0]),
+            payoutNumerator: market.conditionResolution?.payout_numerators?.[0]
+              ? BigInt(market.conditionResolution.payout_numerators[0])
+              : 0n,
           },
           {
             index: 1,
             name: outcomes[1],
-            payoutNumerator: Number(market.conditionResolution?.payout_numerators[1]),
+            payoutNumerator: market.conditionResolution?.payout_numerators?.[1]
+              ? BigInt(market.conditionResolution.payout_numerators[1])
+              : 0n,
           },
         ];
       case "Categorical":
@@ -36,7 +40,9 @@ export function MarketResolved({
           return {
             index: idx,
             name: outcomes[idx],
-            payoutNumerator: Number(market.conditionResolution?.payout_numerators[idx]),
+            payoutNumerator: market.conditionResolution?.payout_numerators?.[idx]
+              ? BigInt(market.conditionResolution.payout_numerators[idx])
+              : 0n,
           };
         });
     }
@@ -64,7 +70,7 @@ export function MarketResolved({
         {market.typBinary() && !market.typBinaryScalar() ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {payouts.map((payout, idx) => {
-              const won = payout.payoutNumerator > 0;
+              const won = payout.payoutNumerator > 0n;
               const odds = market.odds ? Number(market.odds[idx]) : 0;
               const edge = market.odds ? Math.ceil((Number(market.odds[1 - idx]) / Number(odds || 1)) * 100) : 0;
               return (
@@ -98,9 +104,9 @@ export function MarketResolved({
           <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
             <div className="text-xs uppercase tracking-[0.08em] text-gold/70">Scalar outcome</div>
             <div className="mt-2 text-lg font-semibold text-white">
-              {payouts[0].payoutNumerator > 0 && payouts[1].payoutNumerator === 0
+              {payouts[0].payoutNumerator > 0n && payouts[1].payoutNumerator === 0n
                 ? `< ${formatUint256(market.typBinaryScalar().low, 18)}`
-                : payouts[1].payoutNumerator > 0 && payouts[0].payoutNumerator === 0
+                : payouts[1].payoutNumerator > 0n && payouts[0].payoutNumerator === 0n
                   ? `< ${formatUint256(market.typBinaryScalar().high, 18)}`
                   : `${
                       (BigInt(market.typBinaryScalar().low) +
@@ -116,7 +122,7 @@ export function MarketResolved({
         {market.typCategorical() ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {payouts.map((payout, idx) => {
-              if (payout.payoutNumerator === 0) return null;
+              if (payout.payoutNumerator === 0n) return null;
               const upsidePercent = Math.ceil((100 / Number(market.odds![idx] || 1)) * 100);
               return (
                 <div

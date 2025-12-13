@@ -117,7 +117,7 @@ export class MarketClass implements MarketClassInterface {
   }
 
   isResolved() {
-    return this.conditionResolution && this.resolved_at > 0;
+    return this.resolved_at > 0;
   }
 
   isResolvable() {

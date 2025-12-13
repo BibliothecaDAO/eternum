@@ -23,28 +23,28 @@ const formatStatus = (status?: unknown) => {
 };
 
 export const MarketStatusBadge = ({ market }: { market: MarketClass }) => {
-  const statusRaw = (market as any).status || (market as any).state;
-  const now = Math.floor(Date.now() / 1_000);
+  const nowMs = Date.now();
 
-  const startAt = Number((market as any).start_at ?? (market as any).created_at);
-  const resolveAt = Number((market as any).resolve_at);
-  const resolvedAt = Number((market as any).resolved_at);
+  const startAtMs = Number(market.start_at ?? market.created_at) * 1_000;
+  const resolveAtMs = Number(market.resolve_at) * 1_000;
+  const endAtMs = Number(market.end_at) * 1_000;
+  const resolvedAtMs = Number(market.resolved_at) * 1_000;
 
-  const computedStatus =
-    Number.isFinite(resolvedAt) && resolvedAt > 0
-      ? "resolved"
-      : Number.isFinite(resolveAt) && resolveAt <= now
-        ? "resolvable"
-        : Number.isFinite(startAt) && startAt > now
-          ? "upcoming"
-          : undefined;
+  const computedStatus = (() => {
+    if (market.isResolved() || (Number.isFinite(resolvedAtMs) && resolvedAtMs > 0)) return "resolved";
+    if (market.isResolvable() || (Number.isFinite(resolveAtMs) && resolveAtMs > 0 && resolveAtMs <= nowMs))
+      return "resolvable";
+    if (market.isEnded() || (Number.isFinite(endAtMs) && endAtMs > 0 && endAtMs <= nowMs)) return "closed";
+    if (Number.isFinite(startAtMs) && startAtMs > nowMs) return "upcoming";
+    return "open";
+  })();
 
-  const normalized = (computedStatus ?? (typeof statusRaw === "string" ? statusRaw : "unknown")).toLowerCase();
+  const normalized = computedStatus.toLowerCase();
   const style = STATUS_STYLES[normalized] || STATUS_STYLES.default;
 
   return (
     <span className={cx("rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide", style)}>
-      {formatStatus(computedStatus ?? statusRaw ?? normalized)}
+      {formatStatus(computedStatus)}
     </span>
   );
 };
