@@ -1,10 +1,28 @@
-import { ControllersProvider } from "@/pm/hooks/controllers/useControllers";
-import { DojoSdkProviderInitialized, MarketStatusFilter, MarketTypeFilter, type MarketFiltersParams } from "@pm/sdk";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
+import { useAccount } from "@starknet-react/core";
+import { ControllersProvider } from "@/pm/hooks/controllers/useControllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
+import { useConfig } from "@/pm/providers";
+import {
+  DojoSdkProviderInitialized,
+  MarketStatusFilter,
+  MarketTypeFilter,
+  useMarkets,
+  type MarketFiltersParams,
+} from "@pm/sdk";
+
 import { MarketFilters } from "./markets/MarketFilters";
 import { MarketsList } from "./markets/MarketsList";
+import { MarketsLeaderboardView } from "./markets/MarketsLeaderboardView";
+import { PlayerMarketsView } from "./markets/PlayerMarketsView";
+import { MARKET_TABS, TabButton, type MarketTab } from "./markets/market-tabs";
+import {
+  buildLeaderboard,
+  buildPlayerSummary,
+  useMarketEventsSnapshot,
+  type MarketLeaderboardRange,
+} from "./markets/use-market-stats";
 
 export const PREDICTION_MARKET_CONFIG = {
   toriiUrl: "https://localhost:8080",
@@ -44,12 +62,75 @@ export const MarketsSection = ({ children, description }: { children: ReactNode;
 
 export const LandingMarkets = () => {
   const [marketFilters, setMarketFilters] = useState<MarketFiltersParams>({ ...MARKET_FILTERS_ALL });
+  const [activeTab, setActiveTab] = useState<MarketTab>("markets");
+  const [leaderboardRange, setLeaderboardRange] = useState<MarketLeaderboardRange>("all");
+
+  const { getRegisteredToken } = useConfig();
+  const { address } = useAccount();
+
+  const { markets: allMarkets } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
+  const { buys, payouts, isLoading: isStatsLoading, refresh } = useMarketEventsSnapshot();
+
+  const leaderboardEntries = useMemo(
+    () =>
+      buildLeaderboard({
+        markets: allMarkets,
+        buys,
+        payouts,
+        range: leaderboardRange,
+        getRegisteredToken,
+      }),
+    [allMarkets, buys, getRegisteredToken, leaderboardRange, payouts],
+  );
+
+  const playerSummary = useMemo(
+    () =>
+      buildPlayerSummary({
+        address,
+        markets: allMarkets,
+        buys,
+        payouts,
+        getRegisteredToken,
+      }),
+    [address, allMarkets, buys, getRegisteredToken, payouts],
+  );
 
   return (
     <MarketsProviders>
       <MarketsSection description="Browse live prediction markets, inspect their odds, and hop into the ones that interest you.">
-        <MarketFilters marketFilters={marketFilters} setMarketFilters={setMarketFilters} />
-        <MarketsList marketFilters={marketFilters} />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            {MARKET_TABS.map((tab) => (
+              <TabButton key={tab.id} isActive={tab.id === activeTab} label={tab.label} onClick={() => setActiveTab(tab.id)} />
+            ))}
+          </div>
+        </div>
+
+        {activeTab === "markets" ? (
+          <>
+            <MarketFilters marketFilters={marketFilters} setMarketFilters={setMarketFilters} />
+            <MarketsList marketFilters={marketFilters} />
+          </>
+        ) : null}
+
+        {activeTab === "leaderboard" ? (
+          <MarketsLeaderboardView
+            entries={leaderboardEntries}
+            range={leaderboardRange}
+            onRangeChange={setLeaderboardRange}
+            isLoading={isStatsLoading}
+            onRefresh={refresh}
+          />
+        ) : null}
+
+        {activeTab === "player" ? (
+          <PlayerMarketsView
+            isLoading={isStatsLoading}
+            onRefresh={refresh}
+            hasWallet={Boolean(address)}
+            summary={playerSummary}
+          />
+        ) : null}
       </MarketsSection>
     </MarketsProviders>
   );

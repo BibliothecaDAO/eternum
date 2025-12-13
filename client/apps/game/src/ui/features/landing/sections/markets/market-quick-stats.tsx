@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { getContractByName } from "@dojoengine/core";
-import { Circle, Clock3, Users } from "lucide-react";
+import { Clock3, Lock, Users } from "lucide-react";
 
 import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
@@ -60,10 +60,12 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
   const tvl = market.getTvl ? market.getTvl() : (market.tvl ?? 0);
   const tradingEndsLabel = formatTimeLeft(market.end_at ?? null);
 
+  const isEnded = tradingEndsLabel === "Ended";
+
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gold/80">
       <span className="flex items-center gap-1">
-        <Circle className="h-3 w-3 text-gold" />
+        <Lock className="h-3 w-3 text-gold" />
         <span className="text-white">{tvl ?? "--"}</span>
         {market.collateralToken ? <TokenIcon token={market.collateralToken as any} size={12} /> : null}
       </span>
@@ -73,7 +75,7 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
       </span>
       <span className="flex items-center gap-1">
         <Clock3 className="h-3 w-3" />
-        <span className="text-white">Ends in {tradingEndsLabel}</span>
+        <span className="text-white">{isEnded ? "Ended" : `Ends in ${tradingEndsLabel}`}</span>
       </span>
     </div>
   );
