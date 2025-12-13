@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { useExplorersByStructure } from "@bibliothecadao/react";
@@ -9,14 +8,13 @@ import { ClientComponents, StructureType, Troops } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Shield, Sword } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ArmyChip } from "./army-chip";
 import { CompactDefenseDisplay } from "./compact-defense-display";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 export const ArmyList = ({ structure }: { structure: ComponentValue<ClientComponents["Structure"]["schema"]> }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const [guards, setGuards] = useState<Guard[]>([]);
   const structureId = Number(structure?.entity_id ?? 0);
 
   const explorers = useExplorersByStructure({
@@ -32,24 +30,19 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
     staleTime: 10000, // 10 seconds
   });
 
-  console.log({ guards });
-
-  useEffect(() => {
-    if (guardsData) {
-      setGuards(
-        guardsData.map((guard) => ({
-          ...guard,
-          troops: guard.troops
-            ? guard.troops
-            : { category: null, tier: null, count: 0n, stamina: { amount: 0n, updated_tick: 0n } },
-        })),
-      );
-    }
+  const guards = useMemo<Guard[]>(() => {
+    return (guardsData ?? []).map((guard) => ({
+      ...guard,
+      troops: guard.troops ?? { category: null, tier: null, count: 0n, stamina: { amount: 0n, updated_tick: 0n } },
+    }));
   }, [guardsData]);
 
-  const totalExplorersCount = useMemo(() => {
-    return explorers.length;
-  }, [explorers]);
+  const nonEmptyGuardCount = useMemo(
+    () => guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length,
+    [guards],
+  );
+
+  const totalExplorersCount = explorers.length;
 
   const isRealmOrVillage = structure.category === StructureType.Realm || structure.category === StructureType.Village;
 
@@ -86,8 +79,7 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
         <div>
           <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Guard Armies</div>
           <div className="text-sm font-semibold text-gold">
-            {guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length} /{" "}
-            {structure.base.troop_max_guard_count}
+            {nonEmptyGuardCount} / {structure.base.troop_max_guard_count}
           </div>
         </div>
       </div>
@@ -155,14 +147,13 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
           <div className="flex items-center justify-between text-xxs uppercase tracking-[0.12em] text-gold/60">
             <span>Defenses</span>
             <span className="text-gold/70">
-              {guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length}/
-              {structure.base.troop_max_guard_count}
+              {nonEmptyGuardCount}/{structure.base.troop_max_guard_count}
             </span>
           </div>
 
           <CompactDefenseDisplay
             className="w-full"
-            slotsUsed={guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length}
+            slotsUsed={nonEmptyGuardCount}
             slotsMax={structure.base.troop_max_guard_count}
             structureId={structureId}
             canManageDefense={canOpenDefenseModal}

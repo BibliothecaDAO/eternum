@@ -10,7 +10,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { CircularProgress } from "@/ui/features/world/containers/top-header/circular-progress";
 import { ProductionModal } from "@/ui/features/settlement";
-import { REALM_PRESETS, inferRealmPreset } from "@/utils/automation-presets";
+import { REALM_PRESETS, calculatePresetAllocations, inferRealmPreset } from "@/utils/automation-presets";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -129,14 +129,29 @@ export const RealmAutomationSummary = ({
       });
   }, [resourceIds, effectiveEntityType]);
 
+  const presetAllocations = useMemo(
+    () => calculatePresetAllocations(normalizedResourceIds, inferredPresetId, effectiveEntityType),
+    [normalizedResourceIds, inferredPresetId, effectiveEntityType],
+  );
+
+  const smartPresetAllocations = useMemo(
+    () => calculatePresetAllocations(normalizedResourceIds, "smart", effectiveEntityType),
+    [normalizedResourceIds, effectiveEntityType],
+  );
+
   const automationRows = useMemo(() => {
     return normalizedResourceIds.map((resourceId) => {
-      const config = automation?.resources?.[resourceId];
-      const percentages = config?.percentages
-        ? { ...config.percentages }
-        : resourceId === ResourcesIds.Donkey
-          ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
-          : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+      let percentages =
+        inferredPresetId === "custom"
+          ? automation?.customPercentages?.[resourceId]
+            ? { ...automation.customPercentages[resourceId] }
+            : (smartPresetAllocations.get(resourceId) ??
+              (resourceId === ResourcesIds.Donkey
+                ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+                : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES }))
+          : presetAllocations.get(resourceId)
+            ? { ...(presetAllocations.get(resourceId) as typeof DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES) }
+            : { resourceToResource: 0, laborToResource: 0 };
 
       if (resourceId === ResourcesIds.Donkey) {
         percentages.laborToResource = 0;
@@ -152,7 +167,13 @@ export const RealmAutomationSummary = ({
         simpleInputs,
       };
     });
-  }, [automation?.resources, normalizedResourceIds]);
+  }, [
+    automation?.customPercentages,
+    inferredPresetId,
+    normalizedResourceIds,
+    presetAllocations,
+    smartPresetAllocations,
+  ]);
 
   const referenceAggregatedUsageMap = useMemo(() => {
     const totals = new Map<number, number>();

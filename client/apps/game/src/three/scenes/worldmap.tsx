@@ -11,14 +11,13 @@ import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
-import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
-import { LeftView, RightView } from "@/types";
+import { LeftView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
@@ -148,7 +147,7 @@ export default class WorldmapScene extends HexagonScene {
   private isChunkTransitioning: boolean = false;
   private chunkRefreshTimeout: number | null = null;
   private pendingChunkRefreshForce = false;
-  private readonly chunkRefreshDebounceMs = 50; // Reduced from 200ms for more responsive chunk loading
+  private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
   private toriiLoadingCounter = 0;
   private readonly chunkRowsAhead = 2;
   private readonly chunkRowsBehind = 2;
@@ -187,8 +186,69 @@ export default class WorldmapScene extends HexagonScene {
   private selectionPulseManager: SelectionPulseManager;
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
-  private minimap!: Minimap;
-  private updateMinimapThrottled?: ReturnType<typeof throttle>;
+  private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
+  private updateCameraTargetHex = () => {
+    const normalizedHex = this.getCameraTargetHex();
+    const contractHex = new Position({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
+    const nextHex = { col: Number(contractHex.x), row: Number(contractHex.y) };
+    const state = useUIStore.getState();
+    const currentHex = state.cameraTargetHex;
+    const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
+    const nextCameraDistance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
+    const distanceChanged = state.cameraDistance === null || Math.abs(state.cameraDistance - nextCameraDistance) > 0.01;
+
+    if (!hexChanged && !distanceChanged) return;
+
+    const nextState: { cameraTargetHex?: typeof nextHex; cameraDistance?: number } = {};
+    if (hexChanged) nextState.cameraTargetHex = nextHex;
+    if (distanceChanged) nextState.cameraDistance = nextCameraDistance;
+    useUIStore.setState(nextState);
+  };
+  private minimapCameraMoveTarget: { col: number; row: number } | null = null;
+  private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
+  private minimapCameraMoveHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const detail = (event as CustomEvent<{ col: number; row: number }>).detail;
+    if (!detail) return;
+    this.minimapCameraMoveTarget = detail;
+    this.minimapCameraMoveThrottled?.();
+  };
+  private minimapZoomHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const detail = (event as CustomEvent<{ zoomOut: boolean }>).detail;
+    if (!detail) return;
+
+    const enableSmoothZoom = useUIStore.getState().enableMapZoom;
+    if (!enableSmoothZoom) {
+      this.stepCameraView(detail.zoomOut);
+      return;
+    }
+
+    const camera = this.controls.object;
+    const target = this.controls.target;
+    const currentDistance = camera.position.distanceTo(target);
+    if (!Number.isFinite(currentDistance) || currentDistance <= 0) return;
+
+    const zoomFactor = detail.zoomOut ? 1.1 : 0.9;
+    const minDistance = this.controls.minDistance || this.getTargetDistanceForCameraView(CameraView.Close);
+    const maxDistance = this.controls.maxDistance || this.getTargetDistanceForCameraView(CameraView.Far);
+    const nextDistance = Math.min(maxDistance, Math.max(minDistance, currentDistance * zoomFactor));
+
+    const direction = new Vector3().subVectors(camera.position, target);
+    const length = direction.length();
+    if (length < 1e-6) return;
+    direction.multiplyScalar(nextDistance / length);
+    camera.position.copy(target).add(direction);
+
+    this.controls.update();
+    this.controls.dispatchEvent({ type: "change" });
+    this.frustumManager?.forceUpdate();
+    this.visibilityManager?.markDirty();
+  };
+  private handleControlsChangeForMinimap = () => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    this.updateCameraTargetHexThrottled?.();
+  };
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
@@ -301,7 +361,7 @@ export default class WorldmapScene extends HexagonScene {
   private toriiStreamManager?: ToriiStreamManager;
 
   // Chunk lifecycle integration for deterministic loading
-
+  private chunkIntegration?: import("@/three/chunk-system").ChunkIntegration;
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
 
@@ -729,10 +789,18 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager = new SelectedHexManager(this.scene);
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
 
-    this.minimap = new Minimap(this, this.camera);
-    this.updateMinimapThrottled = throttle(() => {
-      this.minimap.update();
-    }, 100);
+    // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
+    // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
+    this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, 33);
+    this.minimapCameraMoveThrottled = throttle(() => {
+      const target = this.minimapCameraMoveTarget;
+      if (!target) return;
+      this.moveCameraToColRow(target.col, target.row, 0.25);
+    }, 16);
+    window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
+    window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    this.controls.addEventListener("change", this.handleControlsChangeForMinimap);
+    this.updateCameraTargetHexThrottled();
 
     // Initialize SceneShortcutManager for WorldMap shortcuts
     this.shortcutManager = new SceneShortcutManager("worldmap", this.sceneManager);
@@ -1031,7 +1099,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private openBattleLogsPanel() {
     const uiStore = useUIStore.getState();
-    uiStore.setRightNavigationView(RightView.None);
     uiStore.setLeftNavigationView(LeftView.StoryEvents);
   }
 
@@ -1474,7 +1541,9 @@ export default class WorldmapScene extends HexagonScene {
         if (this.armyManager.hasArmy(selectedEntityId)) {
           this.onArmySelection(selectedEntityId, playerAddress);
         } else {
-          console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
+          if (import.meta.env.DEV) {
+            console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
+          }
         }
       };
 
@@ -1489,7 +1558,9 @@ export default class WorldmapScene extends HexagonScene {
 
     // Ensure army is available for selection
     if (!this.armyManager.hasArmy(selectedEntityId)) {
-      console.warn(`[DEBUG] Army ${selectedEntityId} not available in current chunk for selection`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Army ${selectedEntityId} not available in current chunk for selection`);
+      }
 
       return;
     }
@@ -1531,7 +1602,9 @@ export default class WorldmapScene extends HexagonScene {
         new Color(0.8, 1.0, 1.0), // Cyan pulse
       );
     } else {
-      console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
+      }
     }
 
     const extraHexes: HexPosition[] = [];
@@ -1725,8 +1798,6 @@ export default class WorldmapScene extends HexagonScene {
   private async performInitialSetup() {
     this.clearTileEntityCache();
     this.moveCameraToURLLocation();
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
@@ -1754,8 +1825,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private async resumeWorldmapScene() {
     this.moveCameraToURLLocation();
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
@@ -1787,7 +1856,6 @@ export default class WorldmapScene extends HexagonScene {
     this.scene.remove(this.chestLabelsGroup);
 
     // Clean up labels
-    this.minimap.hideMinimap();
     this.armyManager.removeLabelsFromScene();
     // console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
@@ -2008,7 +2076,9 @@ export default class WorldmapScene extends HexagonScene {
     } = update;
 
     if (ownerAddress === undefined) {
-      console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
+      }
       return;
     }
 
@@ -2020,7 +2090,9 @@ export default class WorldmapScene extends HexagonScene {
 
     let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
-      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
+      }
 
       // Check if we already have this army with a valid owner
       const existingArmy = this.armiesPositions.has(entityId);
@@ -2038,7 +2110,9 @@ export default class WorldmapScene extends HexagonScene {
 
         // If we still have 0n owner, the army was defeated/deleted - clean up the cache
         if (actualOwnerAddress === 0n) {
-          console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+          if (import.meta.env.DEV) {
+            console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+          }
           const oldPos = this.armiesPositions.get(entityId);
           if (oldPos) {
             this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
@@ -3446,11 +3520,6 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async updateManagersForChunk(chunkKey: string, options?: { force?: boolean }) {
-    // Ensure visibility state matches current camera position before rendering entities.
-    // This fixes a race condition where rapid scrolling causes the frustum cache to become
-    // stale, resulting in entities failing visibility checks despite being within chunk bounds.
-    this.visibilityManager?.forceUpdate();
-
     const updateTasks = [
       { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
       { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
@@ -3489,7 +3558,7 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);
-    this.updateMinimapThrottled?.();
+    this.updateCameraTargetHexThrottled?.();
   }
 
   protected override shouldUpdateBiomeAnimations(): boolean {
@@ -3717,13 +3786,19 @@ export default class WorldmapScene extends HexagonScene {
     this.disposeWorldUpdateSubscriptions();
 
     this.resourceFXManager.destroy();
-    this.updateMinimapThrottled?.cancel();
+    this.updateCameraTargetHexThrottled?.cancel();
+    this.minimapCameraMoveThrottled?.cancel();
+    this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
+    window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
+    window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     this.stopRelicValidationTimer();
     this.clearCache();
-    this.minimap.dispose();
 
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();
+
+    // Clean up chunk integration
+    this.chunkIntegration?.destroy();
 
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
@@ -4115,7 +4190,6 @@ export default class WorldmapScene extends HexagonScene {
    */
   private addCombatRelationship(attackerId: ID, defenderId: ID) {
     this.battleDirectionManager.addCombatRelationship(attackerId, defenderId);
-    console.log(`[ATTACKER-DEFENDER] Added relationship: ${attackerId} attacked ${defenderId}`);
   }
 
   /**
@@ -4130,9 +4204,6 @@ export default class WorldmapScene extends HexagonScene {
    * Recalculate arrows for all entities that have relationships with the given entity
    */
   private recalculateArrowsForEntitiesRelatedTo(entityId: ID) {
-    console.log(
-      `[RECALCULATE ARROWS FOR ENTITIES RELATED TO] Recalculating arrows for entities related to ${entityId}`,
-    );
     this.battleDirectionManager.recalculateArrowsForEntitiesRelatedTo(entityId);
   }
 
@@ -4146,7 +4217,5 @@ export default class WorldmapScene extends HexagonScene {
 
     // Remove from battle direction relationships
     this.battleDirectionManager.removeEntityFromTracking(entityId);
-
-    console.log(`[ATTACKER-DEFENDER] Removed entity ${entityId} from tracking`);
   }
 }

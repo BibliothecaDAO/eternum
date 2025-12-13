@@ -74,20 +74,21 @@ export const TopHeader = memo(() => {
   const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
   const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
 
-  const headerRefreshIntervalMs = Math.max(MIN_REFRESH_INTERVAL_MS, 60_000);
+  useEffect(() => {
+    void fetchLeaderboardEntries({ limit: 50 });
+  }, [fetchLeaderboardEntries]);
 
   useEffect(() => {
-    const refresh = () => {
-      void fetchLeaderboardEntries({ limit: 50, force: true });
-      if (account.address) {
-        void fetchPlayerEntry(account.address, { force: true });
-      }
+    if (!account.address) return undefined;
+
+    const refreshPlayer = () => {
+      void fetchPlayerEntry(account.address);
     };
 
-    refresh();
-    const intervalId = window.setInterval(refresh, headerRefreshIntervalMs);
+    refreshPlayer();
+    const intervalId = window.setInterval(refreshPlayer, MIN_REFRESH_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
-  }, [account.address, fetchLeaderboardEntries, fetchPlayerEntry, headerRefreshIntervalMs]);
+  }, [account.address, fetchPlayerEntry]);
 
   const formatPoints = useCallback((points: number | null | undefined) => {
     if (points === null || points === undefined) {
@@ -100,8 +101,8 @@ export const TopHeader = memo(() => {
   const playerEntry = useMemo(() => {
     const normalizedAccount = normalizeAddress(account.address);
     return (
-      leaderboardEntries.find((entry) => normalizeAddress(entry.address) === normalizedAccount) ??
       playerEntries[normalizedAccount]?.data ??
+      leaderboardEntries.find((entry) => normalizeAddress(entry.address) === normalizedAccount) ??
       null
     );
   }, [account.address, leaderboardEntries, normalizeAddress, playerEntries]);

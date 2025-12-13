@@ -1,6 +1,8 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { BottomPanelTabId, useUIStore } from "@/hooks/store/use-ui-store";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import Button from "@/ui/design-system/atoms/button";
+import { sqlApi } from "@/services/api";
 import {
   configManager,
   divideByPrecision,
@@ -22,7 +24,6 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/types";
-import { LeftView } from "@/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -30,11 +31,11 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
-import Button from "@/ui/design-system/atoms/button";
 import { TileManager } from "@bibliothecadao/eternum";
-import { Info, Trash2 } from "lucide-react";
+import { CircleHelp, Info, Map as MapIcon, Trash2, type LucideIcon } from "lucide-react";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
+import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -53,6 +54,7 @@ interface PanelFrameProps {
   title: string;
   children: ReactNode;
   className?: string;
+  attached?: boolean;
 }
 
 interface ResourceAmountEntry {
@@ -63,27 +65,35 @@ interface ResourceAmountEntry {
 const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
   if (!value) return [];
 
-  const toEntry = (entry: any): ResourceAmountEntry | null => {
-    if (!entry) return null;
-    const resource = Number(entry.resource ?? entry.resourceId);
-    const amount = Number(entry.amount);
+  const toEntry = (entry: unknown): ResourceAmountEntry | null => {
+    if (!entry || typeof entry !== "object") return null;
+
+    const typedEntry = entry as {
+      resource?: number | string | bigint;
+      resourceId?: number | string | bigint;
+      amount?: number | string | bigint;
+    };
+
+    const resource = Number(typedEntry.resource ?? typedEntry.resourceId);
+    const amount = Number(typedEntry.amount);
     if (!Number.isFinite(resource) || !Number.isFinite(amount)) return null;
     return { resource, amount };
   };
 
   if (Array.isArray(value)) {
-    return value.map(toEntry).filter(Boolean) as ResourceAmountEntry[];
+    return value.map(toEntry).filter((entry): entry is ResourceAmountEntry => Boolean(entry));
   }
 
   return Object.values(value as Record<string, unknown>)
     .map(toEntry)
-    .filter(Boolean) as ResourceAmountEntry[];
+    .filter((entry): entry is ResourceAmountEntry => Boolean(entry));
 };
 
-const PanelFrame = ({ title, children, className }: PanelFrameProps) => (
+const PanelFrame = ({ title, children, className, attached = false }: PanelFrameProps) => (
   <section
     className={cn(
       "pointer-events-auto panel-wood panel-wood-corners border border-gold/20 bg-black/60 shadow-2xl flex h-full flex-col overflow-hidden",
+      attached && "rounded-t-none border-t-0",
       className,
     )}
     style={{ height: BOTTOM_PANEL_HEIGHT }}
@@ -93,6 +103,52 @@ const PanelFrame = ({ title, children, className }: PanelFrameProps) => (
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-3 py-2">{children}</div>
   </section>
+);
+
+type TabDefinition = {
+  id: BottomPanelTabId;
+  label: string;
+  icon: LucideIcon;
+};
+
+const BOTTOM_PANEL_TABS: TabDefinition[] = [
+  { id: "tile", label: "Selected tile", icon: CircleHelp },
+  { id: "minimap", label: "Minimap", icon: MapIcon },
+];
+
+const PanelTabs = ({
+  tabs,
+  activeTab,
+  onSelect,
+  className,
+}: {
+  tabs: TabDefinition[];
+  activeTab: BottomPanelTabId | null;
+  onSelect: (tab: BottomPanelTabId) => void;
+  className?: string;
+}) => (
+  <div className={cn("pointer-events-auto flex gap-2", className)}>
+    {tabs.map(({ id, label, icon: Icon }) => {
+      const isActive = activeTab === id;
+      return (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onSelect(id)}
+          aria-pressed={isActive}
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-md border transition",
+            isActive
+              ? "border-gold/80 bg-black/80 text-gold shadow-[0_6px_18px_rgba(255,209,128,0.25)] ring-1 ring-gold/40"
+              : "border-gold/30 bg-black/70 text-gold/70 hover:border-gold/60 hover:text-gold",
+          )}
+          title={label}
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      );
+    })}
+  </div>
 );
 
 const MapTilePanel = () => {
@@ -110,7 +166,7 @@ const MapTilePanel = () => {
       tileComponent,
       getEntityIdFromKeys([BigInt(selectedHexContract.x), BigInt(selectedHexContract.y)]),
     );
-  }, [selectedHex?.col, selectedHex?.row, tileComponent]);
+  }, [selectedHex, tileComponent]);
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;
@@ -143,7 +199,7 @@ const MapTilePanel = () => {
     : "No Tile Selected";
 
   return (
-    <PanelFrame title={panelTitle}>
+    <PanelFrame title={panelTitle} attached>
       {selectedHex ? (
         <div className="h-full min-h-0 overflow-hidden">
           <SelectedWorldmapEntity />
@@ -164,7 +220,6 @@ const LocalTilePanel = () => {
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const leftView = useUIStore((state) => state.leftNavigationView);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureUpgrade = useStructureUpgrade(structureEntityId ?? null);
@@ -366,7 +421,7 @@ const LocalTilePanel = () => {
   };
 
   return (
-    <PanelFrame title={panelTitle}>
+    <PanelFrame title={panelTitle} attached>
       {selectedBuildingHex ? (
         isCastleTile ? (
           <div className="h-full min-h-0 overflow-auto">
@@ -643,10 +698,102 @@ const LocalTilePanel = () => {
   );
 };
 
-export const SelectedTilePanel = memo(() => {
+const MinimapPanel = () => {
+  const [tiles, setTiles] = useState<MinimapTile[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const activeTab = useUIStore((state) => state.activeBottomPanelTab);
+  const selectedHex = useUIStore((state) => state.selectedHex);
+  const navigationTarget = useUIStore((state) => state.navigationTarget);
+  const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
+
+  useEffect(() => {
+    if (activeTab !== "minimap") return;
+    let cancelled = false;
+    const loadTiles = async () => {
+      setIsLoading(true);
+      try {
+        const fetched = await sqlApi.fetchAllTiles();
+        if (!cancelled) {
+          setTiles(
+            fetched.map((tile) =>
+              normalizeMinimapTile({
+                col: tile.col,
+                row: tile.row,
+                biome: tile.biome,
+                occupier_id: tile.occupier_id?.toString(),
+                occupier_type: tile.occupier_type,
+                occupier_is_structure: tile.occupier_is_structure,
+              }),
+            ),
+          );
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load minimap data");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadTiles();
+    const interval = setInterval(loadTiles, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeTab]);
+
+  return (
+    <PanelFrame title="Minimap" attached>
+      <div className="relative flex h-full min-h-0 flex-col">
+        <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
+          <HexMinimap
+            tiles={tiles}
+            selectedHex={selectedHex}
+            navigationTarget={navigationTarget}
+            cameraTargetHex={cameraTargetHex}
+          />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/40 border-t-gold" />
+            </div>
+          )}
+          {error && (
+            <div className="absolute bottom-3 right-3 rounded bg-black/70 px-3 py-1 text-xxs text-red-200">{error}</div>
+          )}
+        </div>
+      </div>
+    </PanelFrame>
+  );
+};
+
+export const BottomRightPanel = memo(() => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const activeTab = useUIStore((state) => state.activeBottomPanelTab);
+  const setActiveTab = useUIStore((state) => state.setActiveBottomPanelTab);
   const shouldShow = !showBlankOverlay;
+  const isPanelOpen = shouldShow && activeTab !== null;
+
+  const availableTabs = useMemo(
+    () => (isMapView ? BOTTOM_PANEL_TABS : BOTTOM_PANEL_TABS.filter((tab) => tab.id === "tile")),
+    [isMapView],
+  );
+
+  useEffect(() => {
+    if (!isMapView && activeTab === "minimap") {
+      setActiveTab("tile");
+    }
+  }, [activeTab, isMapView, setActiveTab]);
+
+  const handleTabToggle = (tab: BottomPanelTabId) => {
+    setActiveTab(activeTab === tab ? null : tab);
+  };
 
   return (
     <div
@@ -657,9 +804,24 @@ export const SelectedTilePanel = memo(() => {
       aria-hidden={!shouldShow}
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="w-full md:w-[37%] lg:w-[27%] md:ml-auto">{isMapView ? <MapTilePanel /> : <LocalTilePanel />}</div>
+      <div className="relative w-full md:w-[37%] lg:w-[27%] md:ml-auto min-h-[44px]">
+        <PanelTabs
+          tabs={availableTabs}
+          activeTab={activeTab}
+          onSelect={handleTabToggle}
+          className="absolute right-2 bottom-full pb-2"
+        />
+        <div className="pointer-events-auto">
+          <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
+            {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
+          </div>
+          <div className={cn(activeTab === "minimap" && isPanelOpen ? "block" : "hidden")}>
+            <MinimapPanel />
+          </div>
+        </div>
+      </div>
     </div>
   );
 });
 
-SelectedTilePanel.displayName = "SelectedTilePanel";
+BottomRightPanel.displayName = "BottomRightPanel";

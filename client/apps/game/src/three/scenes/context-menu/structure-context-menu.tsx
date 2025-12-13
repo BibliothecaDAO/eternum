@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
-import { LeftView, RightView } from "@/types";
+import { LeftView } from "@/types";
 import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
@@ -61,7 +61,6 @@ export const openStructureContextMenu = ({
     uiStore.setSelectedBuilding(building);
     uiStore.setPreviewBuilding(resource !== undefined ? { type: building, resource } : { type: building });
     uiStore.setLeftNavigationView(view);
-    uiStore.setRightNavigationView(RightView.None);
 
     if (resource !== undefined) {
       playResourceSound(resource, isSoundOn, effectsLevel);

@@ -46,9 +46,9 @@ const TopHeader = lazy(() =>
     default: module.TopHeader,
   })),
 );
-const SelectedTilePanel = lazy(() =>
-  import("../features/world/components/selected-tile-panel").then((module) => ({
-    default: module.SelectedTilePanel,
+const BottomRightPanel = lazy(() =>
+  import("../features/world/components/bottom-right-panel").then((module) => ({
+    default: module.BottomRightPanel,
   })),
 );
 
@@ -149,7 +149,7 @@ const WorldHud = () => (
       <TopHeader />
     </TopLeftContainer>
 
-    <SelectedTilePanel />
+    <BottomRightPanel />
   </div>
 );
 

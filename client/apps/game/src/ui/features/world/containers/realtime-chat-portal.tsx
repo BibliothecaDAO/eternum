@@ -4,7 +4,7 @@ import { RealtimeChatShell, type InitializeRealtimeClientParams } from "@/ui/fea
 import {
   BOTTOM_PANEL_MARGIN,
   BOTTOM_PANEL_RESERVED_SPACE,
-} from "@/ui/features/world/components/selected-tile-panel/constants";
+} from "@/ui/features/world/components/bottom-right-panel/constants";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -15,6 +15,7 @@ export const RealtimeChatPortal = () => {
   const accountName = useAccountStore((state) => state.accountName);
   const isModalOpen = useUIStore((state) => state.showModal);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const activeBottomPanelTab = useUIStore((state) => state.activeBottomPanelTab);
   const { isMapView } = useQuery();
 
   const [chatPortalTarget, setChatPortalTarget] = useState<HTMLElement | null>(null);
@@ -57,7 +58,7 @@ export const RealtimeChatPortal = () => {
   }
 
   const isOverlayActive = isModalOpen || showBlankOverlay;
-  const shouldOffsetForPanels = isMapView && !showBlankOverlay;
+  const shouldOffsetForPanels = isMapView && !showBlankOverlay && activeBottomPanelTab !== null;
   const bottomOffset = shouldOffsetForPanels ? BOTTOM_PANEL_RESERVED_SPACE : BOTTOM_PANEL_MARGIN;
 
   return createPortal(

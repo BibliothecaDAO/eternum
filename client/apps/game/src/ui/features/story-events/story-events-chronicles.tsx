@@ -31,7 +31,7 @@ import {
   Sword,
   Trophy,
 } from "lucide-react";
-import React, { type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
+import React, { memo, type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
 
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -349,12 +349,14 @@ const LiveStatusIndicator: React.FC<{ isRefreshing: boolean }> = ({ isRefreshing
   </div>
 );
 
-const ActivityHighlight: React.FC<{
+interface ActivityHighlightProps {
   event: ProcessedStoryEvent | null;
   eventLocation: EventLocation | null;
   onNavigateToEvent?: (event: ProcessedStoryEvent) => void;
   isNavigating: boolean;
-}> = ({ event, eventLocation, onNavigateToEvent, isNavigating }) => {
+}
+
+const ActivityHighlight = memo(({ event, eventLocation, onNavigateToEvent, isNavigating }: ActivityHighlightProps) => {
   if (!event) {
     return (
       <div className="flex flex-col items-center justify-center rounded-md border border-amber-400/20 bg-black/30 px-4 py-6 text-center">
@@ -425,7 +427,9 @@ const ActivityHighlight: React.FC<{
       </div>
     </div>
   );
-};
+});
+
+ActivityHighlight.displayName = "ActivityHighlight";
 
 interface ChroniclesFilterPanelProps {
   state: ChroniclesFilterState;
@@ -438,299 +442,317 @@ interface ChroniclesFilterPanelProps {
   onToggle: () => void;
 }
 
-const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
-  state,
-  onChange,
-  onReset,
-  storyCounts,
-  totalEvents,
-  recentEvents,
-  collapsed,
-  onToggle,
-}) => {
-  const setStoryType = (storyType: StoryFilterValue) => onChange({ ...state, storyType });
-  const setSortOrder = (sortOrder: SortOrder) => onChange({ ...state, sortOrder });
+const ChroniclesFilterPanel = memo(
+  ({
+    state,
+    onChange,
+    onReset,
+    storyCounts,
+    totalEvents,
+    recentEvents,
+    collapsed,
+    onToggle,
+  }: ChroniclesFilterPanelProps) => {
+    const setStoryType = (storyType: StoryFilterValue) => onChange({ ...state, storyType });
+    const setSortOrder = (sortOrder: SortOrder) => onChange({ ...state, sortOrder });
 
-  const activeFilters =
-    (state.storyType !== "all" ? 1 : 0) + (state.searchTerm ? 1 : 0) + (state.sortOrder !== "newest" ? 1 : 0);
+    const activeFilters =
+      (state.storyType !== "all" ? 1 : 0) + (state.searchTerm ? 1 : 0) + (state.sortOrder !== "newest" ? 1 : 0);
 
-  if (collapsed) {
-    // Compact horizontal-collapsed rail
-    return (
-      <aside
-        className={clsx(
-          "flex flex-col items-center gap-3 rounded-md border border-amber-400/20 bg-black/35 p-2",
-          "w-14 md:sticky md:top-4",
-        )}
-      >
-        <button
-          onClick={onToggle}
-          aria-label="Expand filters"
-          className="relative flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/30 bg-black/40 text-amber-200 hover:border-amber-400/60 hover:bg-black/50"
-        >
-          <Filter className="h-4 w-4" />
-          {activeFilters > 0 && (
-            <span className="absolute -right-1 -top-1 rounded-full bg-amber-500/80 px-1.5 py-[2px] text-[9px] font-semibold text-black">
-              {activeFilters}
-            </span>
+    if (collapsed) {
+      // Compact horizontal-collapsed rail
+      return (
+        <aside
+          className={clsx(
+            "flex flex-col items-center gap-3 rounded-md border border-amber-400/20 bg-black/35 p-2",
+            "w-14 md:sticky md:top-4",
           )}
-        </button>
-
-        <div className="flex flex-col items-center gap-2">
-          {/* Quick story type indicator (current) */}
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/25 bg-black/45 text-amber-200"
-            title={
-              state.storyType === "all" ? "All story types" : STORY_TYPE_CONFIG[state.storyType as StoryTypeKey]?.label
-            }
-          >
-            {state.storyType === "all" ? (
-              <Sparkles className="h-4 w-4 text-amber-300" />
-            ) : (
-              React.createElement(STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].icon, {
-                className: clsx("h-4 w-4", STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].accent),
-              })
-            )}
-          </div>
-
-          {/* Sort order indicator */}
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/25 bg-black/45 text-amber-200"
-            title={`Sort: ${SORT_OPTIONS.find((s) => s.value === state.sortOrder)?.label}`}
-          >
-            <Clock className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="mt-auto flex flex-col items-center gap-2 pb-1">
-          <button
-            onClick={onReset}
-            aria-label="Reset filters"
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/30 bg-black/40 text-amber-200 hover:border-amber-400/60 hover:bg-black/50 text-[10px] font-medium"
-          >
-            R
-          </button>
-          <div
-            className="flex h-14 w-10 flex-col items-center justify-center rounded-md border border-amber-400/25 bg-black/40 text-[9px] leading-tight text-amber-300"
-            title={`${totalEvents} events (${recentEvents} / 24h)`}
-          >
-            <span className="font-semibold">{totalEvents}</span>
-            <span className="text-amber-400/70">{recentEvents}</span>
-          </div>
+        >
           <button
             onClick={onToggle}
             aria-label="Expand filters"
-            className="flex h-8 w-8 items-center justify-center rounded border border-amber-400/30 bg-black/40 text-amber-200 hover:border-amber-400/60 hover:bg-black/50"
+            className="relative flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/30 bg-black/40 text-amber-200 hover:border-amber-400/60 hover:bg-black/50"
           >
-            <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+            <Filter className="h-4 w-4" />
+            {activeFilters > 0 && (
+              <span className="absolute -right-1 -top-1 rounded-full bg-amber-500/80 px-1.5 py-[2px] text-[9px] font-semibold text-black">
+                {activeFilters}
+              </span>
+            )}
           </button>
+
+          <div className="flex flex-col items-center gap-2">
+            {/* Quick story type indicator (current) */}
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/25 bg-black/45 text-amber-200"
+              title={
+                state.storyType === "all"
+                  ? "All story types"
+                  : STORY_TYPE_CONFIG[state.storyType as StoryTypeKey]?.label
+              }
+            >
+              {state.storyType === "all" ? (
+                <Sparkles className="h-4 w-4 text-amber-300" />
+              ) : (
+                React.createElement(STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].icon, {
+                  className: clsx("h-4 w-4", STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].accent),
+                })
+              )}
+            </div>
+
+            {/* Sort order indicator */}
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/25 bg-black/45 text-amber-200"
+              title={`Sort: ${SORT_OPTIONS.find((s) => s.value === state.sortOrder)?.label}`}
+            >
+              <Clock className="h-4 w-4" />
+            </div>
+          </div>
+
+          <div className="mt-auto flex flex-col items-center gap-2 pb-1">
+            <button
+              onClick={onReset}
+              aria-label="Reset filters"
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/30 bg-black/40 text-amber-200 hover:border-amber-400/60 hover:bg-black/50 text-[10px] font-medium"
+            >
+              R
+            </button>
+            <div
+              className="flex h-14 w-10 flex-col items-center justify-center rounded-md border border-amber-400/25 bg-black/40 text-[9px] leading-tight text-amber-300"
+              title={`${totalEvents} events (${recentEvents} / 24h)`}
+            >
+              <span className="font-semibold">{totalEvents}</span>
+              <span className="text-amber-400/70">{recentEvents}</span>
+            </div>
+            <button
+              onClick={onToggle}
+              aria-label="Expand filters"
+              className="flex h-8 w-8 items-center justify-center rounded border border-amber-400/30 bg-black/40 text-amber-200 hover:border-amber-400/60 hover:bg-black/50"
+            >
+              <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+            </button>
+          </div>
+        </aside>
+      );
+    }
+
+    // Expanded (full) panel
+    return (
+      <aside className="flex flex-col gap-4 rounded-md border border-amber-400/20 bg-black/35 p-3 md:sticky md:top-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-amber-400/30 bg-black/50">
+              <Filter className="h-3.5 w-3.5 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-amber-50">Filters</h3>
+              <p className="text-[11px] leading-tight text-amber-400/70">Refine activity stream.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {activeFilters > 0 && (
+              <span className="rounded bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-200">
+                {activeFilters}
+              </span>
+            )}
+            <button
+              onClick={onToggle}
+              aria-label="Collapse filters"
+              className="inline-flex items-center gap-1 rounded border border-amber-400/30 bg-black/40 px-2 py-1 text-[10px] font-medium text-amber-200 hover:border-amber-400/60 hover:bg-black/50"
+            >
+              <ChevronUp className="h-3 w-3 rotate-[-90deg]" />
+              Collapse
+            </button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Search</label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-amber-500/60" />
+            <input
+              className="w-full rounded border border-amber-400/30 bg-black/55 py-1.5 pl-7 pr-2 text-xs text-amber-100 placeholder:text-amber-500/50 focus:border-amber-400 focus:outline-none"
+              placeholder="Search title / player / detail"
+              value={state.searchTerm}
+              onChange={(event) => onChange({ ...state, searchTerm: event.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Story Type */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Story Type</label>
+          <div className="grid grid-cols-1 gap-1.5">
+            {STORY_FILTER_VALUES.map((key) => {
+              const isAll = key === "all";
+              const config = isAll
+                ? { label: "All", icon: Sparkles, accent: "text-amber-200", halo: "" }
+                : STORY_TYPE_CONFIG[key as StoryTypeKey];
+              const IconComponent = config.icon;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setStoryType(key)}
+                  className={clsx(
+                    "group flex items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors",
+                    state.storyType === key
+                      ? "border-amber-400/70 bg-amber-500/15 text-amber-50"
+                      : "border-amber-400/15 bg-black/40 text-amber-300/80 hover:border-amber-400/50 hover:text-amber-100",
+                  )}
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded bg-black/60">
+                    <IconComponent className={clsx("h-3 w-3", config.accent)} />
+                  </div>
+                  <div className="flex flex-1 items-center justify-between gap-2">
+                    <span className="text-[11px] font-medium">{config.label}</span>
+                    <span className="text-[10px] tabular-nums text-amber-400/60">{storyCounts[key] ?? 0}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sort */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Sort</label>
+          <div className="flex gap-2">
+            {SORT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setSortOrder(option.value)}
+                className={clsx(
+                  "flex-1 rounded border px-2 py-1.5 text-[11px] font-medium transition-colors",
+                  state.sortOrder === option.value
+                    ? "border-amber-400/70 bg-amber-500/15 text-amber-50"
+                    : "border-amber-400/20 bg-black/45 text-amber-300/80 hover:border-amber-400/50 hover:text-amber-100",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between rounded border border-amber-400/20 bg-black/40 px-3 py-2">
+          <div className="leading-tight">
+            <p className="text-[11px] font-semibold text-amber-50">{totalEvents} events</p>
+            <p className="text-[10px] text-amber-400/70">{recentEvents} in last 24h</p>
+          </div>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={onReset}
+            className="border-amber-400/60 px-2 py-1 text-[11px] text-amber-100 hover:bg-amber-500/15"
+            forceUppercase={false}
+          >
+            Reset
+          </Button>
         </div>
       </aside>
     );
-  }
+  },
+);
 
-  // Expanded (full) panel
-  return (
-    <aside className="flex flex-col gap-4 rounded-md border border-amber-400/20 bg-black/35 p-3 md:sticky md:top-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md border border-amber-400/30 bg-black/50">
-            <Filter className="h-3.5 w-3.5 text-amber-400" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-amber-50">Filters</h3>
-            <p className="text-[11px] leading-tight text-amber-400/70">Refine activity stream.</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {activeFilters > 0 && (
-            <span className="rounded bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-200">
-              {activeFilters}
-            </span>
+ChroniclesFilterPanel.displayName = "ChroniclesFilterPanel";
+
+const TimelineEventCard = memo(
+  ({
+    event,
+    isActive,
+    onSelect,
+    eventLocation,
+    onNavigateToEvent,
+    isNavigating,
+  }: {
+    event: ProcessedStoryEvent;
+    isActive: boolean;
+    onSelect: (eventId: string) => void;
+    eventLocation: EventLocation | null;
+    onNavigateToEvent?: (event: ProcessedStoryEvent) => void;
+    isNavigating: boolean;
+  }) => {
+    const storyKey = resolveStoryKey(event.story);
+    const storyConfig = STORY_TYPE_CONFIG[storyKey];
+    const StoryIcon = storyConfig.icon;
+    const details = parseDetailSegments(event.presentation.description);
+    const handleSelect = useCallback(() => onSelect(event.id), [onSelect, event.id]);
+
+    return (
+      <li>
+        <button
+          onClick={handleSelect}
+          className={clsx(
+            "group w-full rounded border p-3 text-left transition-colors",
+            isActive
+              ? "border-amber-400/70 bg-amber-500/15"
+              : "border-amber-400/15 bg-black/35 hover:border-amber-400/50 hover:bg-black/45",
           )}
-          <button
-            onClick={onToggle}
-            aria-label="Collapse filters"
-            className="inline-flex items-center gap-1 rounded border border-amber-400/30 bg-black/40 px-2 py-1 text-[10px] font-medium text-amber-200 hover:border-amber-400/60 hover:bg-black/50"
-          >
-            <ChevronUp className="h-3 w-3 rotate-[-90deg]" />
-            Collapse
-          </button>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Search</label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-amber-500/60" />
-          <input
-            className="w-full rounded border border-amber-400/30 bg-black/55 py-1.5 pl-7 pr-2 text-xs text-amber-100 placeholder:text-amber-500/50 focus:border-amber-400 focus:outline-none"
-            placeholder="Search title / player / detail"
-            value={state.searchTerm}
-            onChange={(event) => onChange({ ...state, searchTerm: event.target.value })}
-          />
-        </div>
-      </div>
-
-      {/* Story Type */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Story Type</label>
-        <div className="grid grid-cols-1 gap-1.5">
-          {STORY_FILTER_VALUES.map((key) => {
-            const isAll = key === "all";
-            const config = isAll
-              ? { label: "All", icon: Sparkles, accent: "text-amber-200", halo: "" }
-              : STORY_TYPE_CONFIG[key as StoryTypeKey];
-            const IconComponent = config.icon;
-            return (
-              <button
-                key={key}
-                onClick={() => setStoryType(key)}
-                className={clsx(
-                  "group flex items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors",
-                  state.storyType === key
-                    ? "border-amber-400/70 bg-amber-500/15 text-amber-50"
-                    : "border-amber-400/15 bg-black/40 text-amber-300/80 hover:border-amber-400/50 hover:text-amber-100",
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-md border border-amber-400/25 bg-black/50">
+                <StoryIcon className={clsx("h-3.5 w-3.5", storyConfig.accent)} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-medium text-amber-50">{event.presentation.title}</h3>
+                {event.presentation.owner && (
+                  <p className="truncate text-[11px] text-amber-400/70">by {event.presentation.owner}</p>
                 )}
-              >
-                <div className="flex h-6 w-6 items-center justify-center rounded bg-black/60">
-                  <IconComponent className={clsx("h-3 w-3", config.accent)} />
-                </div>
-                <div className="flex flex-1 items-center justify-between gap-2">
-                  <span className="text-[11px] font-medium">{config.label}</span>
-                  <span className="text-[10px] tabular-nums text-amber-400/60">{storyCounts[key] ?? 0}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-2 text-right sm:flex-row sm:items-center sm:gap-2">
+              <div className="flex items-center gap-1 rounded border border-amber-400/20 bg-black/40 px-2 py-1 text-[10px] text-amber-400/70">
+                <Clock className="h-3 w-3" />
+                <span>{getRelativeTime(event.timestampMs)}</span>
+              </div>
+              {event.story === "BattleStory" && (
+                <button
+                  type="button"
+                  disabled={!eventLocation || isNavigating}
+                  onClick={(evt) => {
+                    evt.stopPropagation();
+                    if (!eventLocation || isNavigating) return;
+                    onNavigateToEvent?.(event);
+                  }}
+                  className={clsx(
+                    "inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+                    "border-amber-400/60 bg-black/30 text-amber-50 hover:bg-amber-500/10",
+                    (!eventLocation || isNavigating) && "cursor-not-allowed border-amber-400/15 text-amber-400/60",
+                  )}
+                >
+                  <Navigation className="h-3 w-3" />
+                  {eventLocation ? (isNavigating ? "Locating…" : "View hex") : "No hex"}
+                </button>
+              )}
+            </div>
+          </div>
 
-      {/* Sort */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Sort</label>
-        <div className="flex gap-2">
-          {SORT_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setSortOrder(option.value)}
+          {details.length > 0 && (
+            <div className="mt-2">
+              <DetailGrid details={details} columns={details.length > 1 ? 2 : 1} />
+            </div>
+          )}
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span
               className={clsx(
-                "flex-1 rounded border px-2 py-1.5 text-[11px] font-medium transition-colors",
-                state.sortOrder === option.value
-                  ? "border-amber-400/70 bg-amber-500/15 text-amber-50"
-                  : "border-amber-400/20 bg-black/45 text-amber-300/80 hover:border-amber-400/50 hover:text-amber-100",
+                "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                storyConfig.badge,
               )}
             >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between rounded border border-amber-400/20 bg-black/40 px-3 py-2">
-        <div className="leading-tight">
-          <p className="text-[11px] font-semibold text-amber-50">{totalEvents} events</p>
-          <p className="text-[10px] text-amber-400/70">{recentEvents} in last 24h</p>
-        </div>
-        <Button
-          variant="outline"
-          size="xs"
-          onClick={onReset}
-          className="border-amber-400/60 px-2 py-1 text-[11px] text-amber-100 hover:bg-amber-500/15"
-          forceUppercase={false}
-        >
-          Reset
-        </Button>
-      </div>
-    </aside>
-  );
-};
-
-const TimelineEventCard: React.FC<{
-  event: ProcessedStoryEvent;
-  isActive: boolean;
-  onSelect: () => void;
-  eventLocation: EventLocation | null;
-  onNavigateToEvent?: (event: ProcessedStoryEvent) => void;
-  isNavigating: boolean;
-}> = ({ event, isActive, onSelect, eventLocation, onNavigateToEvent, isNavigating }) => {
-  const storyKey = resolveStoryKey(event.story);
-  const storyConfig = STORY_TYPE_CONFIG[storyKey];
-  const StoryIcon = storyConfig.icon;
-  const details = parseDetailSegments(event.presentation.description);
-
-  return (
-    <li>
-      <button
-        onClick={onSelect}
-        className={clsx(
-          "group w-full rounded border p-3 text-left transition-colors",
-          isActive
-            ? "border-amber-400/70 bg-amber-500/15"
-            : "border-amber-400/15 bg-black/35 hover:border-amber-400/50 hover:bg-black/45",
-        )}
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-2">
-            <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-md border border-amber-400/25 bg-black/50">
-              <StoryIcon className={clsx("h-3.5 w-3.5", storyConfig.accent)} />
-            </div>
-            <div className="min-w-0">
-              <h3 className="truncate text-sm font-medium text-amber-50">{event.presentation.title}</h3>
-              {event.presentation.owner && (
-                <p className="truncate text-[11px] text-amber-400/70">by {event.presentation.owner}</p>
-              )}
-            </div>
+              {storyConfig.label}
+            </span>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2 text-right sm:flex-row sm:items-center sm:gap-2">
-            <div className="flex items-center gap-1 rounded border border-amber-400/20 bg-black/40 px-2 py-1 text-[10px] text-amber-400/70">
-              <Clock className="h-3 w-3" />
-              <span>{getRelativeTime(event.timestampMs)}</span>
-            </div>
-            {event.story === "BattleStory" && (
-              <button
-                type="button"
-                disabled={!eventLocation || isNavigating}
-                onClick={(evt) => {
-                  evt.stopPropagation();
-                  if (!eventLocation || isNavigating) return;
-                  onNavigateToEvent?.(event);
-                }}
-                className={clsx(
-                  "inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
-                  "border-amber-400/60 bg-black/30 text-amber-50 hover:bg-amber-500/10",
-                  (!eventLocation || isNavigating) && "cursor-not-allowed border-amber-400/15 text-amber-400/60",
-                )}
-              >
-                <Navigation className="h-3 w-3" />
-                {eventLocation ? (isNavigating ? "Locating…" : "View hex") : "No hex"}
-              </button>
-            )}
-          </div>
-        </div>
+        </button>
+      </li>
+    );
+  },
+);
 
-        {details.length > 0 && (
-          <div className="mt-2">
-            <DetailGrid details={details} columns={details.length > 1 ? 2 : 1} />
-          </div>
-        )}
-
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span
-            className={clsx(
-              "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
-              storyConfig.badge,
-            )}
-          >
-            {storyConfig.label}
-          </span>
-        </div>
-      </button>
-    </li>
-  );
-};
+TimelineEventCard.displayName = "TimelineEventCard";
 
 const groupEventsByDate = (events: ProcessedStoryEvent[]) => {
   const groups: Array<{ dateKey: string; label: string; events: ProcessedStoryEvent[] }> = [];
@@ -892,6 +914,14 @@ export const StoryEventsChronicles: React.FC = () => {
 
   const groupedEvents = useMemo(() => groupEventsByDate(visibleEvents), [visibleEvents]);
 
+  const visibleEventLocations = useMemo(() => {
+    const map = new Map<string, EventLocation | null>();
+    visibleEvents.forEach((event) => {
+      map.set(event.id, getEventLocation(event));
+    });
+    return map;
+  }, [visibleEvents, getEventLocation]);
+
   const highlightedEvent = useMemo(() => {
     if (!selectedEventId) return storyFilteredEvents[0] ?? null;
     return storyFilteredEvents.find((e) => e.id === selectedEventId) ?? storyFilteredEvents[0] ?? null;
@@ -1019,13 +1049,13 @@ export const StoryEventsChronicles: React.FC = () => {
                       </div>
                       <ul className="space-y-4">
                         {group.events.map((event) => {
-                          const eventLocation = getEventLocation(event);
+                          const eventLocation = visibleEventLocations.get(event.id) ?? null;
                           return (
                             <TimelineEventCard
                               key={event.id}
                               event={event}
                               isActive={event.id === selectedEventId}
-                              onSelect={() => setSelectedEventId(event.id)}
+                              onSelect={setSelectedEventId}
                               eventLocation={eventLocation}
                               onNavigateToEvent={handleNavigateToEvent}
                               isNavigating={Boolean(navigatingEventId === event.id)}

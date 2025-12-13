@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LeftView, RightView } from "@/types";
+import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { Tabs } from "@/ui/design-system/atoms";
 import {
@@ -15,7 +15,6 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { Bridge } from "@/ui/features/infrastructure";
 import {
   RealtimeChatShell,
   useRealtimeChatActions,
@@ -29,7 +28,6 @@ import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
-  STRUCTURE_GROUP_COLORS,
   STRUCTURE_GROUP_CONFIG,
   StructureGroupColor,
   StructureGroupsMap,
@@ -107,7 +105,6 @@ type StructureWithMetadata = Structure & {
 type RealmNavigationContext = {
   view: LeftView;
   setView: (view: LeftView) => void;
-  setRightView: (view: RightView) => void;
   disableButtons: boolean;
   isRealmOrVillage: boolean;
   arrivedArrivalsNumber: number;
@@ -119,8 +116,6 @@ type RealmNavigationContext = {
 
 type EconomyNavigationContext = {
   view: LeftView;
-  rightView: RightView;
-  setRightView: (view: RightView) => void;
   setLeftView: (view: LeftView) => void;
   disableButtons: boolean;
   isBlitz: boolean;
@@ -199,388 +194,425 @@ const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
 const HANDLE_WIDTH = 14;
 
-const LeftPanelHeader = ({
-  structureEntityId,
-  structures,
-  structureInfo,
-  onSelectStructure,
-  isBlitz,
-  components,
-  structureGroups,
-  onRequestNameChange,
-  nameUpdateVersion,
-  favorites,
-  onToggleFavorite,
-}: LeftPanelHeaderProps) => {
-  const [activeTab, setActiveTab] = useState(0);
+const LeftPanelHeader = memo(
+  ({
+    structureEntityId,
+    structures,
+    structureInfo,
+    onSelectStructure,
+    isBlitz,
+    components,
+    structureGroups,
+    onRequestNameChange,
+    nameUpdateVersion,
+    favorites,
+    onToggleFavorite,
+  }: LeftPanelHeaderProps) => {
+    const [activeTab, setActiveTab] = useState(0);
 
-  const structureEntityKey = useMemo(() => {
-    try {
-      return getEntityIdFromKeys([BigInt(structureEntityId)]);
-    } catch {
-      return null;
-    }
-  }, [structureEntityId]);
+    const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
-  const liveStructure = useComponentValue(components.Structure, structureEntityKey as any);
-  const liveStructureBuildings = useComponentValue(components.StructureBuildings, structureEntityKey as any);
-
-  const structureTabs = useMemo<Array<{ key: string; label: string; categories: StructureType[]; icon: LucideIcon }>>(
-    () => [
-      { key: "realms", label: "Realms", categories: [StructureType.Realm], icon: Crown },
-      {
-        key: "villages",
-        label: isBlitz ? "Camps" : "Villages",
-        categories: [StructureType.Village],
-        icon: isBlitz ? Tent : Castle,
-      },
-      {
-        key: "rifts",
-        label: isBlitz ? "Rifts" : "Essence Rifts",
-        categories: [StructureType.FragmentMine],
-        icon: Pickaxe,
-      },
-      {
-        key: "hyperstructures",
-        label: "Hyperstructures",
-        categories: [StructureType.Hyperstructure],
-        icon: Sparkles,
-      },
-    ],
-    [isBlitz],
-  );
-
-  const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
-    // Force recomputation when a local rename occurs.
-    void nameUpdateVersion;
-    return structures.map((structure) => {
-      const { name, originalName } = getStructureName(structure.structure, isBlitz);
-      const baseLevel = structure.structure.base?.level;
-      const normalizedLevel =
-        typeof baseLevel === "number" ? baseLevel : typeof baseLevel === "bigint" ? Number(baseLevel) : 0;
-      const realmLevelLabel =
-        structure.category === StructureType.Realm || structure.category === StructureType.Village
-          ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-          : null;
-      const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
-      const structureBuildings = components.StructureBuildings
-        ? getComponentValue(components.StructureBuildings, structureEntity)
-        : null;
-      const population = Number(structureBuildings?.population.current ?? 0);
-      const hasBasePopulation =
-        structure.category === StructureType.Realm || structure.category === StructureType.Village;
-      const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
-      const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
-      const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
-      const groupColor = structureGroups[structure.entityId] ?? null;
-
-      const isFavorite = favorites.includes(structure.entityId);
-
-      return {
-        ...structure,
-        displayName: name,
-        originalName,
-        realmLevel: normalizedLevel,
-        realmLevelLabel,
-        population,
-        populationCapacity,
-        groupColor,
-        isFavorite,
-        canUpgrade:
-          structure.category === StructureType.Realm &&
-          normalizedLevel < configManager.getMaxLevel(structure.category as StructureType),
-      };
-    });
-  }, [structures, isBlitz, components.StructureBuildings, structureGroups, nameUpdateVersion, favorites]);
-
-  const currentTab = structureTabs[activeTab] ?? structureTabs[0];
-  const filteredStructures =
-    currentTab?.categories?.length === 0
-      ? structuresWithMetadata
-      : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-
-  const selectedStructureMetadata = structuresWithMetadata.find(
-    (structure) => structure.entityId === structureEntityId,
-  );
-  const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
-  const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
-  const normalizedLevelRaw =
-    liveStructure?.base?.level ??
-    selectedStructureMetadata?.realmLevel ??
-    selectedStructureMetadata?.structure.base?.level ??
-    0;
-  const normalizedLevel =
-    typeof normalizedLevelRaw === "bigint" ? Number(normalizedLevelRaw) : Number(normalizedLevelRaw ?? 0);
-  const levelLabel =
-    selectedStructureMetadata?.category === StructureType.Realm ||
-    selectedStructureMetadata?.category === StructureType.Village
-      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-      : selectedStructureMetadata
-        ? `Level ${normalizedLevel}`
-        : "Level —";
-  const hasBasePopulation =
-    selectedStructureMetadata?.category === StructureType.Realm ||
-    selectedStructureMetadata?.category === StructureType.Village;
-  const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
-  const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
-  const livePopulation = Number(
-    liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0,
-  );
-  const livePopulationCapacity =
-    Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
-    normalizedBasePopulationCapacity;
-  const populationCapacityLabel = selectedStructureMetadata ? `${livePopulation}/${livePopulationCapacity}` : null;
-  const showDetailedStats = Boolean(
-    selectedStructureMetadata &&
-      (selectedStructureMetadata.category === StructureType.Realm ||
-        selectedStructureMetadata.category === StructureType.Village),
-  );
-  const headerTitle =
-    selectedStructureMetadata?.displayName ??
-    structureInfo?.name?.name ??
-    (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
-  const ActiveStructureIcon = useMemo<LucideIcon | null>(() => {
-    if (!selectedStructureMetadata) {
-      return null;
-    }
-    for (const tab of structureTabs) {
-      if (tab.categories.includes(selectedStructureMetadata.category)) {
-        return tab.icon;
+    const structureEntityKey = useMemo(() => {
+      try {
+        return getEntityIdFromKeys([BigInt(structureEntityId)]);
+      } catch {
+        return null;
       }
-    }
-    return null;
-  }, [selectedStructureMetadata, structureTabs]);
+    }, [structureEntityId]);
 
-  return (
-    <div className="border-b border-gold/20 bg-black/60 px-4 py-4 space-y-4">
-      <div className="border-b border-gold/20 pb-3">
-        <div className="flex items-center gap-2 text-sm text-gold min-w-0">
-          {ActiveStructureIcon && (
-            <span className={selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"}>
-              <ActiveStructureIcon className="h-5 w-5" />
-            </span>
-          )}
-          {selectedGroupColor && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />}
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <p
-              className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${
-                selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
-              }`}
-              title={headerTitle}
-            >
-              {headerTitle}
-            </p>
-            {showDetailedStats && populationCapacityLabel && (
-              <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
-                <span className="text-gold/40">•</span>
-                <span>{levelLabel}</span>
-                <span className="text-gold/40">•</span>
-                <span>{populationCapacityLabel}</span>
-              </div>
+    const liveStructure = useComponentValue(components.Structure, structureEntityKey as any);
+    const liveStructureBuildings = useComponentValue(components.StructureBuildings, structureEntityKey as any);
+
+    const structureTabs = useMemo<Array<{ key: string; label: string; categories: StructureType[]; icon: LucideIcon }>>(
+      () => [
+        { key: "realms", label: "Realms", categories: [StructureType.Realm], icon: Crown },
+        {
+          key: "villages",
+          label: isBlitz ? "Camps" : "Villages",
+          categories: [StructureType.Village],
+          icon: isBlitz ? Tent : Castle,
+        },
+        {
+          key: "rifts",
+          label: isBlitz ? "Rifts" : "Essence Rifts",
+          categories: [StructureType.FragmentMine],
+          icon: Pickaxe,
+        },
+        {
+          key: "hyperstructures",
+          label: "Hyperstructures",
+          categories: [StructureType.Hyperstructure],
+          icon: Sparkles,
+        },
+      ],
+      [isBlitz],
+    );
+
+    const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
+      // Force recomputation when a local rename occurs.
+      void nameUpdateVersion;
+      const basePopulationCapacityValue = configManager.getBasePopulationCapacity();
+      const maxRealmLevel = configManager.getMaxLevel(StructureType.Realm);
+      return structures.map((structure) => {
+        const { name, originalName } = getStructureName(structure.structure, isBlitz);
+        const baseLevel = structure.structure.base?.level;
+        const normalizedLevel =
+          typeof baseLevel === "number" ? baseLevel : typeof baseLevel === "bigint" ? Number(baseLevel) : 0;
+        const realmLevelLabel =
+          structure.category === StructureType.Realm || structure.category === StructureType.Village
+            ? getLevelName(
+                Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
+              )
+            : null;
+        const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
+        const structureBuildings = components.StructureBuildings
+          ? getComponentValue(components.StructureBuildings, structureEntity)
+          : null;
+        const population = Number(structureBuildings?.population.current ?? 0);
+        const hasBasePopulation =
+          structure.category === StructureType.Realm || structure.category === StructureType.Village;
+        const normalizedBasePopulationCapacity = hasBasePopulation
+          ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
+          : 0;
+        const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
+        const groupColor = structureGroups[structure.entityId] ?? null;
+
+        const isFavorite = favoritesSet.has(structure.entityId);
+
+        return {
+          ...structure,
+          displayName: name,
+          originalName,
+          realmLevel: normalizedLevel,
+          realmLevelLabel,
+          population,
+          populationCapacity,
+          groupColor,
+          isFavorite,
+          canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
+        };
+      });
+    }, [structures, isBlitz, components.StructureBuildings, structureGroups, nameUpdateVersion, favoritesSet]);
+
+    const orderedStructures = useMemo(() => {
+      const currentTab = structureTabs[activeTab] ?? structureTabs[0];
+      const filtered =
+        currentTab?.categories?.length === 0
+          ? structuresWithMetadata
+          : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
+      return [...filtered].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
+    }, [activeTab, structureTabs, structuresWithMetadata]);
+
+    const categoryCounts = useMemo(() => {
+      const counts: Partial<Record<StructureType, number>> = {};
+      for (const structure of structuresWithMetadata) {
+        counts[structure.category] = (counts[structure.category] ?? 0) + 1;
+      }
+      return counts;
+    }, [structuresWithMetadata]);
+
+    const tabCounts = useMemo(
+      () =>
+        structureTabs.map((tab) =>
+          tab.categories.reduce((total, category) => total + (categoryCounts[category] ?? 0), 0),
+        ),
+      [structureTabs, categoryCounts],
+    );
+
+    const selectedStructureMetadata = useMemo(
+      () => structuresWithMetadata.find((structure) => structure.entityId === structureEntityId),
+      [structuresWithMetadata, structureEntityId],
+    );
+    const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
+    const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
+    const normalizedLevelRaw =
+      liveStructure?.base?.level ??
+      selectedStructureMetadata?.realmLevel ??
+      selectedStructureMetadata?.structure.base?.level ??
+      0;
+    const normalizedLevel =
+      typeof normalizedLevelRaw === "bigint" ? Number(normalizedLevelRaw) : Number(normalizedLevelRaw ?? 0);
+    const levelLabel =
+      selectedStructureMetadata?.category === StructureType.Realm ||
+      selectedStructureMetadata?.category === StructureType.Village
+        ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
+        : selectedStructureMetadata
+          ? `Level ${normalizedLevel}`
+          : "Level —";
+    const hasBasePopulation =
+      selectedStructureMetadata?.category === StructureType.Realm ||
+      selectedStructureMetadata?.category === StructureType.Village;
+    const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
+    const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
+    const livePopulation = Number(
+      liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0,
+    );
+    const livePopulationCapacity =
+      Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
+      normalizedBasePopulationCapacity;
+    const populationCapacityLabel = selectedStructureMetadata ? `${livePopulation}/${livePopulationCapacity}` : null;
+    const showDetailedStats = Boolean(
+      selectedStructureMetadata &&
+        (selectedStructureMetadata.category === StructureType.Realm ||
+          selectedStructureMetadata.category === StructureType.Village),
+    );
+    const headerTitle =
+      selectedStructureMetadata?.displayName ??
+      structureInfo?.name?.name ??
+      (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
+    const ActiveStructureIcon = useMemo<LucideIcon | null>(() => {
+      if (!selectedStructureMetadata) {
+        return null;
+      }
+      for (const tab of structureTabs) {
+        if (tab.categories.includes(selectedStructureMetadata.category)) {
+          return tab.icon;
+        }
+      }
+      return null;
+    }, [selectedStructureMetadata, structureTabs]);
+
+    return (
+      <div className="border-b border-gold/20 bg-black/60 px-4 py-4 space-y-4">
+        <div className="border-b border-gold/20 pb-3">
+          <div className="flex items-center gap-2 text-sm text-gold min-w-0">
+            {ActiveStructureIcon && (
+              <span className={selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"}>
+                <ActiveStructureIcon className="h-5 w-5" />
+              </span>
+            )}
+            {selectedGroupColor && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />}
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <p
+                className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${
+                  selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
+                }`}
+                title={headerTitle}
+              >
+                {headerTitle}
+              </p>
+              {showDetailedStats && populationCapacityLabel && (
+                <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
+                  <span className="text-gold/40">•</span>
+                  <span>{levelLabel}</span>
+                  <span className="text-gold/40">•</span>
+                  <span>{populationCapacityLabel}</span>
+                </div>
+              )}
+            </div>
+            {selectedStructureMetadata && (
+              <button
+                type="button"
+                onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
+                className="flex-shrink-0 rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+                title="Rename structure"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
             )}
           </div>
-          {selectedStructureMetadata && (
-            <button
-              type="button"
-              onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
-              className="flex-shrink-0 rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-              title="Rename structure"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-          )}
         </div>
-      </div>
 
-      <div className="space-y-3">
-        <Tabs
-          selectedIndex={activeTab}
-          onChange={setActiveTab}
-          variant="selection"
-          size="small"
-          className="text-xs text-gold"
-        >
-          <Tabs.List>
-            {structureTabs.map((tab, index) => {
-              const Icon = tab.icon;
-              const count = structuresWithMetadata.filter((structure) =>
-                tab.categories.includes(structure.category),
-              ).length;
-              const isActiveTab = activeTab === index;
-              const isDisabledTab = count === 0 && tab.key !== "realms";
-              return (
-                <Tabs.Tab
-                  key={tab.key}
-                  aria-label={tab.label}
-                  title={tab.label}
-                  disabled={isDisabledTab}
-                  className={clsx(
-                    "!mx-0 border",
-                    isActiveTab
-                      ? "border-gold/60 bg-black/40 text-[#f4c24d]"
-                      : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
-                    isDisabledTab && "opacity-60 hover:border-gold/25 hover:text-gold/60",
-                  )}
-                >
-                  <span className="flex items-center gap-1">
-                    <span
-                      className={clsx(
-                        "text-[12px] font-semibold transition-none",
-                        isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                        isDisabledTab && "text-gold/40",
-                      )}
-                    >
-                      {count}
+        <div className="space-y-3">
+          <Tabs
+            selectedIndex={activeTab}
+            onChange={setActiveTab}
+            variant="selection"
+            size="small"
+            className="text-xs text-gold"
+          >
+            <Tabs.List>
+              {structureTabs.map((tab, index) => {
+                const Icon = tab.icon;
+                const count = tabCounts[index] ?? 0;
+                const isActiveTab = activeTab === index;
+                const isDisabledTab = count === 0 && tab.key !== "realms";
+                return (
+                  <Tabs.Tab
+                    key={tab.key}
+                    aria-label={tab.label}
+                    title={tab.label}
+                    disabled={isDisabledTab}
+                    className={clsx(
+                      "!mx-0 border",
+                      isActiveTab
+                        ? "border-gold/60 bg-black/40 text-[#f4c24d]"
+                        : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
+                      isDisabledTab && "opacity-60 hover:border-gold/25 hover:text-gold/60",
+                    )}
+                  >
+                    <span className="flex items-center gap-1">
+                      <span
+                        className={clsx(
+                          "text-[12px] font-semibold transition-none",
+                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
+                          isDisabledTab && "text-gold/40",
+                        )}
+                      >
+                        {count}
+                      </span>
+                      <Icon
+                        className={clsx(
+                          "h-4 w-4",
+                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
+                          isDisabledTab && "text-gold/40",
+                        )}
+                      />
                     </span>
-                    <Icon
-                      className={clsx(
-                        "h-4 w-4",
-                        isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                        isDisabledTab && "text-gold/40",
-                      )}
-                    />
-                  </span>
-                  <span className="sr-only">{tab.label}</span>
-                </Tabs.Tab>
-              );
-            })}
-          </Tabs.List>
-        </Tabs>
+                    <span className="sr-only">{tab.label}</span>
+                  </Tabs.Tab>
+                );
+              })}
+            </Tabs.List>
+          </Tabs>
 
-        {filteredStructures.length > 0 ? (
-          <div className="max-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
-            {[...filteredStructures]
-              .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite))
-              .map((structure) => (
+          {orderedStructures.length > 0 ? (
+            <div className="max-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
+              {orderedStructures.map((structure) => (
                 <StructureListItem
                   key={structure.entityId}
                   structure={structure}
                   isSelected={structure.entityId === structureEntityId}
                   onSelectStructure={onSelectStructure}
                   onToggleFavorite={onToggleFavorite}
-                  onRequestNameChange={onRequestNameChange}
-                  structureGroups={structureGroups}
                   components={components}
                 />
               ))}
-          </div>
-        ) : (
-          <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
-            No structures available for this category.
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
+              No structures available for this category.
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
+
+LeftPanelHeader.displayName = "LeftPanelHeader";
 
 type StructureListItemProps = {
   structure: StructureWithMetadata;
   isSelected: boolean;
   onSelectStructure: (entityId: ID) => void;
   onToggleFavorite: (entityId: ID) => void;
-  onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
-  structureGroups: StructureGroupsMap;
   components: ClientComponents;
 };
 
-const StructureListItem = ({
-  structure,
-  isSelected,
-  onSelectStructure,
-  onToggleFavorite,
-  onRequestNameChange,
-  structureGroups,
-  components,
-}: StructureListItemProps) => {
-  const entityKey = useMemo(() => {
-    try {
-      return getEntityIdFromKeys([BigInt(structure.entityId)]);
-    } catch {
-      return null;
-    }
-  }, [structure.entityId]);
+const StructureListItem = memo(
+  ({ structure, isSelected, onSelectStructure, onToggleFavorite, components }: StructureListItemProps) => {
+    const entityKey = useMemo(() => {
+      try {
+        return getEntityIdFromKeys([BigInt(structure.entityId)]);
+      } catch {
+        return null;
+      }
+    }, [structure.entityId]);
 
-  const liveStructure = useComponentValue(components.Structure, entityKey as any);
-  const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
+    const liveStructure = useComponentValue(components.Structure, entityKey as any);
+    const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
 
-  const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
-  const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
-  const levelLabel =
-    structure.category === StructureType.Realm || structure.category === StructureType.Village
-      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-      : null;
+    const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
+    const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
+    const levelLabel =
+      structure.category === StructureType.Realm || structure.category === StructureType.Village
+        ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
+        : null;
 
-  const hasBasePopulation = structure.category === StructureType.Realm || structure.category === StructureType.Village;
-  const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
-  const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
+    const hasBasePopulation =
+      structure.category === StructureType.Realm || structure.category === StructureType.Village;
+    const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
+    const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
 
-  const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
-  const populationCapacity =
-    Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) +
-    normalizedBasePopulationCapacity;
+    const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
+    const populationCapacity =
+      Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) +
+      normalizedBasePopulationCapacity;
 
-  const showInfoLine = hasBasePopulation;
-  const capacityDisplay = `${population}/${populationCapacity}`;
-  const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
+    const showInfoLine = hasBasePopulation;
+    const capacityDisplay = `${population}/${populationCapacity}`;
+    const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
 
-  const handleSelectStructure = () => onSelectStructure(structure.entityId);
+    const handleSelectStructure = useCallback(
+      () => onSelectStructure(structure.entityId),
+      [onSelectStructure, structure.entityId],
+    );
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleSelectStructure();
-    }
-  };
+    const handleKeyDown = useCallback(
+      (event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleSelectStructure();
+        }
+      },
+      [handleSelectStructure],
+    );
 
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={handleSelectStructure}
-      onKeyDown={handleKeyDown}
-      className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-        isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleFavorite(structure.entityId);
-          }}
-          className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
-          title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-        >
-          <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
-        </button>
-        <div className="flex flex-1 items-center gap-2">
-          {structure.groupColor && (
-            <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`} />
-          )}
-          <span
-            className={`text-sm font-semibold ${
-              structure.groupColor
-                ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
-                : "text-gold"
-            }`}
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleSelectStructure}
+        onKeyDown={handleKeyDown}
+        className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+          isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleFavorite(structure.entityId);
+            }}
+            className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
+            title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
           >
-            {structure.displayName}
-          </span>
-          {showInfoLine && (
-            <span className="text-xxs text-gold/70">
-              {infoLineLabel} • {capacityDisplay}
+            <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
+          </button>
+          <div className="flex flex-1 items-center gap-2">
+            {structure.groupColor && (
+              <span
+                className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
+              />
+            )}
+            <span
+              className={`text-sm font-semibold ${
+                structure.groupColor
+                  ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
+                  : "text-gold"
+              }`}
+            >
+              {structure.displayName}
             </span>
+            {showInfoLine && (
+              <span className="text-xxs text-gold/70">
+                {infoLineLabel} • {capacityDisplay}
+              </span>
+            )}
+          </div>
+          {structure.category === StructureType.Realm && (
+            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
           )}
         </div>
-        {structure.category === StructureType.Realm && (
-          <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
-        )}
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
+
+StructureListItem.displayName = "StructureListItem";
+
+const ORDERED_MENU_IDS: MenuEnum[] = [
+  MenuEnum.entityDetails, // Realm Info
+  MenuEnum.construction, // Buildings
+  MenuEnum.military, // Army
+  MenuEnum.resourceArrivals, // Donkey arrivals
+  MenuEnum.transfer, // Transfers
+  MenuEnum.bridge, // Bridge
+  MenuEnum.chat, // Chat
+  MenuEnum.storyEvents, // Chronicles
+];
 
 type StructureLevelUpButtonProps = {
   structureEntityId: ID | null;
@@ -589,14 +621,8 @@ type StructureLevelUpButtonProps = {
 
 const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevelUpButtonProps) => {
   const [isUpgrading, setIsUpgrading] = useState(false);
-  const [hasUpgraded, setHasUpgraded] = useState(false);
   const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
   const setTooltip = useUIStore((state) => state.setTooltip);
-
-  useEffect(() => {
-    // Re-enable the button once the realm level has changed and fresh data is available
-    setHasUpgraded(false);
-  }, [upgradeInfo?.currentLevel]);
 
   if (!upgradeInfo) {
     return null;
@@ -607,7 +633,7 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
   const isAtMaxLevel = upgradeInfo.isMaxLevel || currentLevel >= maxLevel;
   const meetsRequirements = (upgradeInfo.missingRequirements?.length ?? 0) === 0;
   const canUpgrade = upgradeInfo.isOwner && !isAtMaxLevel && meetsRequirements;
-  const isDisabled = !canUpgrade || isUpgrading || hasUpgraded || isAtMaxLevel;
+  const isDisabled = !canUpgrade || isUpgrading || isAtMaxLevel;
   const shouldGlow = canUpgrade && !isDisabled;
   const nextLevel = upgradeInfo.nextLevel ?? 0;
 
@@ -687,7 +713,6 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
     setIsUpgrading(true);
     try {
       await upgradeInfo.handleUpgrade();
-      setHasUpgraded(true);
     } catch (error) {
       console.error("Failed to upgrade structure", error);
     } finally {
@@ -730,7 +755,6 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
 const buildRealmNavigationItems = ({
   view,
   setView,
-  setRightView,
   disableButtons,
   isRealmOrVillage,
   arrivedArrivalsNumber,
@@ -740,7 +764,6 @@ const buildRealmNavigationItems = ({
   isBlitz,
 }: RealmNavigationContext): NavigationItem[] => {
   const toggleView = (targetView: LeftView) => () => {
-    setRightView(RightView.None);
     setView(view === targetView ? LeftView.None : targetView);
   };
 
@@ -848,20 +871,13 @@ const buildRealmNavigationItems = ({
 };
 
 const buildEconomyNavigationItems = ({
-  rightView,
   view,
-  setRightView,
   setLeftView,
   disableButtons,
   isBlitz,
   onOpenTransfer,
   isTransferOpen,
 }: EconomyNavigationContext): NavigationItem[] => {
-  const toggleView = (targetView: RightView) => () => {
-    setLeftView(LeftView.None);
-    setRightView(rightView === targetView ? RightView.None : targetView);
-  };
-
   const items: NavigationItem[] = [
     {
       id: MenuEnum.transfer,
@@ -876,6 +892,23 @@ const buildEconomyNavigationItems = ({
         onOpenTransfer();
       },
     },
+    ...(!isBlitz
+      ? ([
+          {
+            id: MenuEnum.bridge,
+            className: "bridge-selector",
+            image: BuildingThumbs.bridge,
+            tooltipLocation: "top",
+            label: "Bridge",
+            size: DEFAULT_BUTTON_SIZE,
+            disabled: disableButtons,
+            active: view === LeftView.BridgeView,
+            onClick: () => {
+              setLeftView(view === LeftView.BridgeView ? LeftView.None : LeftView.BridgeView);
+            },
+          },
+        ] satisfies NavigationItem[])
+      : []),
     {
       id: MenuEnum.storyEvents,
       className: "story-events-selector",
@@ -886,13 +919,12 @@ const buildEconomyNavigationItems = ({
       disabled: false,
       active: view === LeftView.StoryEvents,
       onClick: () => {
-        setRightView(RightView.None);
         setLeftView(view === LeftView.StoryEvents ? LeftView.None : LeftView.StoryEvents);
       },
     },
   ];
 
-  const allowedMenus: MenuEnum[] = [MenuEnum.transfer, MenuEnum.storyEvents];
+  const allowedMenus: MenuEnum[] = [MenuEnum.transfer, ...(isBlitz ? [] : [MenuEnum.bridge]), MenuEnum.storyEvents];
 
   return items.filter((item) => allowedMenus.includes(item.id));
 };
@@ -936,6 +968,11 @@ const SelectPreviewBuildingMenu = lazy(() =>
     default: module.SelectPreviewBuildingMenu,
   })),
 );
+const Bridge = lazy(() =>
+  import("@/ui/features/infrastructure/bridge/bridge").then((module) => ({
+    default: module.Bridge,
+  })),
+);
 const BlitzHyperstructuresMenu = lazy(() =>
   import("@/ui/features/world").then((module) => ({
     default: module.BlitzHyperstructuresMenu,
@@ -963,8 +1000,6 @@ export const LeftCommandSidebar = memo(() => {
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
-  const rightView = useUIStore((state) => state.rightNavigationView);
-  const setRightView = useUIStore((state) => state.setRightNavigationView);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -975,6 +1010,7 @@ export const LeftCommandSidebar = memo(() => {
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const structures = useUIStore((state) => state.playerStructures);
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
   const { favorites, toggleFavorite } = useFavoriteStructures();
   const goToStructure = useGoToStructure(setup);
@@ -1005,8 +1041,6 @@ export const LeftCommandSidebar = memo(() => {
     setTransferPanelSourceId(null);
     togglePopup(TRANSFER_POPUP_NAME);
   }, [setTransferPanelSourceId, togglePopup]);
-
-  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const {
     initializer: realtimeInitializer,
@@ -1059,7 +1093,6 @@ export const LeftCommandSidebar = memo(() => {
       buildRealmNavigationItems({
         view,
         setView,
-        setRightView,
         disableButtons,
         isRealmOrVillage,
         arrivedArrivalsNumber,
@@ -1071,7 +1104,6 @@ export const LeftCommandSidebar = memo(() => {
     [
       view,
       setView,
-      setRightView,
       disableButtons,
       isRealmOrVillage,
       arrivedArrivalsNumber,
@@ -1085,16 +1117,14 @@ export const LeftCommandSidebar = memo(() => {
   const economyNavigationItems = useMemo(
     () =>
       buildEconomyNavigationItems({
-        rightView,
         view,
-        setRightView,
         setLeftView: setView,
         disableButtons,
         isBlitz,
         onOpenTransfer: handleOpenTransferPopup,
         isTransferOpen: isTransferPopupOpen,
       }),
-    [rightView, view, setRightView, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
+    [view, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
   );
 
   const chatNavigationItem = useMemo<NavigationItem>(() => {
@@ -1108,7 +1138,6 @@ export const LeftCommandSidebar = memo(() => {
       disabled: !realtimeInitializer,
       active: isActive,
       onClick: () => {
-        setRightView(RightView.None);
         setView(isActive ? LeftView.None : LeftView.ChatView);
       },
       primaryNotification:
@@ -1128,30 +1157,25 @@ export const LeftCommandSidebar = memo(() => {
         </div>
       ),
     };
-  }, [connectionStatus, realtimeInitializer, setRightView, setView, unreadChatTotal, view]);
+  }, [connectionStatus, realtimeInitializer, setView, unreadChatTotal, view]);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const computedWidth = isCollapsed ? HANDLE_WIDTH : PANEL_WIDTH + HANDLE_WIDTH;
-  const panelHeightStyle = { height: navHeight, maxHeight: navHeight };
+  const panelHeightStyle = useMemo(() => ({ height: navHeight, maxHeight: navHeight }), [navHeight]);
+  const outerPanelStyle = useMemo(() => ({ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }), [panelHeightStyle]);
+  const containerPanelStyle = useMemo(() => ({ ...panelHeightStyle, width: `${PANEL_WIDTH}px` }), [panelHeightStyle]);
   const showEmptyState = false;
   const contentScrollClass = view === LeftView.ChatView ? "overflow-hidden" : "overflow-y-auto";
 
-  const orderedIds: MenuEnum[] = [
-    MenuEnum.entityDetails, // Realm Info
-    MenuEnum.construction, // Buildings
-    MenuEnum.military, // Army
-    MenuEnum.resourceArrivals, // Donkey arrivals
-    MenuEnum.transfer, // Transfers
-    MenuEnum.chat, // Chat
-    MenuEnum.storyEvents, // Chronicles
-  ];
-  const navigationItems = [...realmNavigationItems, chatNavigationItem, ...economyNavigationItems];
-  const combinedNavigationItems = orderedIds
-    .map((id) => navigationItems.find((item) => item.id === id))
-    .filter((item): item is NavigationItem => Boolean(item));
+  const combinedNavigationItems = useMemo(() => {
+    const navigationItems = [...realmNavigationItems, chatNavigationItem, ...economyNavigationItems];
+    return ORDERED_MENU_IDS.map((id) => navigationItems.find((item) => item.id === id)).filter(
+      (item): item is NavigationItem => Boolean(item),
+    );
+  }, [realmNavigationItems, chatNavigationItem, economyNavigationItems]);
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
@@ -1179,12 +1203,12 @@ export const LeftCommandSidebar = memo(() => {
 
   return (
     <>
-      <div className="pointer-events-none h-full" style={{ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }}>
+      <div className="pointer-events-none h-full" style={outerPanelStyle}>
         <div className="flex h-full pointer-events-auto" style={{ width: `${computedWidth}px` }}>
           {!isCollapsed && (
             <BaseContainer
               className="pointer-events-auto flex h-full w-full flex-col panel-wood panel-wood-corners overflow-hidden shadow-2xl"
-              style={{ ...panelHeightStyle, width: `${PANEL_WIDTH}px` }}
+              style={containerPanelStyle}
             >
               <LeftPanelHeader
                 structureEntityId={structureEntityId}
@@ -1231,7 +1255,7 @@ export const LeftCommandSidebar = memo(() => {
                     {view !== LeftView.StoryEvents && view === LeftView.ResourceArrivals && (
                       <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
                     )}
-                    {rightView === RightView.Bridge && (
+                    {view !== LeftView.StoryEvents && view === LeftView.BridgeView && (
                       <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <Bridge structures={structures} />
                       </div>

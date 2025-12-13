@@ -1,6 +1,7 @@
 import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import clsx from "clsx";
+import { memo, useCallback, useMemo } from "react";
 
 type CircleButtonProps = {
   onClick: () => void;
@@ -111,28 +112,35 @@ const CircleButton = ({
   const playClick = useUISound("ui.click");
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const handleMouseEnter = () => {
+  const tooltipContent = useMemo(
+    () => (label ? <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span> : null),
+    [label],
+  );
+
+  const handleMouseEnter = useCallback(() => {
     playHoverClick();
-    if (label) {
+    if (tooltipContent) {
       setTooltip({
         position: tooltipLocation,
-        content: <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span>,
+        content: tooltipContent,
       });
     }
-  };
+  }, [playHoverClick, setTooltip, tooltipContent, tooltipLocation]);
 
-  const handleClick = () => {
+  const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);
+
+  const handleClick = useCallback(() => {
     if (!disabled) {
       onClick();
       playClick();
     }
-  };
+  }, [disabled, onClick, playClick]);
 
   return (
     <div className="relative">
       <button
         onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setTooltip(null)}
+        onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         className={clsx(
           "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
@@ -178,4 +186,4 @@ const CircleButton = ({
   );
 };
 
-export default CircleButton;
+export default memo(CircleButton);

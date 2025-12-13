@@ -234,28 +234,29 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     if (!components) return filteredOwnedSources;
     if (selectedResources.length === 0) return filteredOwnedSources;
     const clientComponents = components as ClientComponents;
-    return filteredOwnedSources
-      .filter((ps) => {
-        const rm = new ResourceManager(clientComponents, ps.entityId);
-        for (const rid of selectedResources) {
-          const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
-          if (Number(bal) <= 0) return false;
+    const eligible: Structure[] = [];
+    const balanceSums = new Map<number, number>();
+
+    for (const ps of filteredOwnedSources) {
+      const rm = new ResourceManager(clientComponents, ps.entityId);
+      let sum = 0;
+      let hasAllResources = true;
+      for (const rid of selectedResources) {
+        const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
+        if (Number(bal) <= 0) {
+          hasAllResources = false;
+          break;
         }
-        return true;
-      })
-      .sort((a, b) => {
-        const rma = new ResourceManager(clientComponents, a.entityId);
-        const rmb = new ResourceManager(clientComponents, b.entityId);
-        const suma = selectedResources.reduce(
-          (acc, rid) => acc + Number(rma.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n),
-          0,
-        );
-        const sumb = selectedResources.reduce(
-          (acc, rid) => acc + Number(rmb.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n),
-          0,
-        );
-        return sumb - suma;
-      });
+        sum += Number(bal);
+      }
+      if (hasAllResources) {
+        eligible.push(ps);
+        balanceSums.set(Number(ps.entityId), sum);
+      }
+    }
+
+    eligible.sort((a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0));
+    return eligible;
   }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
   const selectedSource = useMemo(() => {
@@ -422,6 +423,27 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   }, []);
 
   const restrictToEssencePayload = selectedSource?.category === StructureType.FragmentMine;
+
+  const visibleResourceIds = useMemo(() => {
+    return Array.from(availableResources)
+      .filter((rid) => {
+        if (restrictToEssencePayload && !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid as ResourcesIds)) {
+          return false;
+        }
+        if (resourceFilter === "military") return isMilitaryResource(rid as ResourcesIds);
+        if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
+        return true;
+      })
+      .sort((a, b) => {
+        const ra = a as ResourcesIds;
+        const rb = b as ResourcesIds;
+        const priA = getResourcePriority(ra);
+        const priB = getResourcePriority(rb);
+        if (priA.group !== priB.group) return priA.group - priB.group;
+        if (priA.position !== priB.position) return priA.position - priB.position;
+        return ra - rb;
+      });
+  }, [availableResources, restrictToEssencePayload, resourceFilter, getResourcePriority]);
 
   const hasRestrictedResourcesSelected = useMemo(
     () =>
@@ -753,48 +775,28 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           <p className="text-xxs text-gold/60">Essence rifts can only transfer Donkeys and Essence.</p>
         )}
         <div className="flex flex-wrap gap-2">
-          {Array.from(availableResources)
-            .filter((rid) => {
-              if (restrictToEssencePayload && !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid as ResourcesIds)) {
-                return false;
-              }
-              if (resourceFilter === "military") return isMilitaryResource(rid as ResourcesIds);
-              if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
-              return true;
-            })
-            .sort((a, b) => {
-              const ra = a as ResourcesIds;
-              const rb = b as ResourcesIds;
-              const priA = getResourcePriority(ra);
-              const priB = getResourcePriority(rb);
-              if (priA.group !== priB.group) return priA.group - priB.group;
-              if (priA.position !== priB.position) return priA.position - priB.position;
-              const labelA = ResourcesIds[ra] as string;
-              const labelB = ResourcesIds[rb] as string;
-              return labelA.localeCompare(labelB);
-            })
-            .map((rid) => {
-              const resourceId = rid as ResourcesIds;
-              const sel = selectedResources.includes(resourceId);
-              const totalHuman = resourceTotals.get(rid) ?? 0;
-              return (
-                <button
-                  key={resourceId}
-                  type="button"
-                  onClick={() =>
-                    setSelectedResources((prev) =>
-                      prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
-                    )
-                  }
-                  className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                  title={ResourcesIds[resourceId] as string}
-                >
-                  <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
-                  {ResourcesIds[resourceId]}{" "}
-                  <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
-                </button>
-              );
-            })}
+          {visibleResourceIds.map((rid) => {
+            const resourceId = rid as ResourcesIds;
+            const sel = selectedResources.includes(resourceId);
+            const totalHuman = resourceTotals.get(rid) ?? 0;
+            return (
+              <button
+                key={resourceId}
+                type="button"
+                onClick={() =>
+                  setSelectedResources((prev) =>
+                    prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
+                  )
+                }
+                className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                title={ResourcesIds[resourceId] as string}
+              >
+                <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
+                {ResourcesIds[resourceId]}{" "}
+                <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
+              </button>
+            );
+          })}
         </div>
       </section>
 

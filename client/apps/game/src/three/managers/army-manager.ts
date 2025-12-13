@@ -196,9 +196,6 @@ export class ArmyManager {
     if (MEMORY_MONITORING_ENABLED) {
       this.memoryMonitor = new MemoryMonitor({
         spikeThresholdMB: 25, // Lower threshold for army operations
-        onMemorySpike: (spike) => {
-          console.warn(`🎖️  Army Manager Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
-        },
       });
     }
 
@@ -305,10 +302,6 @@ export class ArmyManager {
           this.pendingExplorerTroopsUpdate.delete(entityId);
           cleanedCount++;
         }
-      }
-
-      if (cleanedCount > 0) {
-        console.log(`[PENDING UPDATES CLEANUP] Removed ${cleanedCount} stale pending updates`);
       }
 
       // Schedule next cleanup
@@ -423,8 +416,6 @@ export class ArmyManager {
     if (chunkChanged) {
       // console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
       this.currentChunkKey = chunkKey;
-    } else if (force) {
-      console.log(`[CHUNK SYNC] Refreshing army chunk ${chunkKey}`);
     }
 
     // Create and track the chunk switch promise
@@ -876,11 +867,6 @@ export class ArmyManager {
         x = normalized.x;
         y = normalized.y;
         this.lastKnownVisibleHexes.set(army.entityId, { col: normalized.x, row: normalized.y });
-        console.debug(
-          `[ArmyManager] Using fallback hex for visibility of entity ${army.entityId} (pathFallback=${
-            path && path.length > 0
-          })`,
-        );
       }
     }
     const bounds = this.getChunkBounds(startRow, startCol);
@@ -1021,18 +1007,6 @@ export class ArmyManager {
         : undefined,
     );
 
-    console.log("[ADD ARMY] Combat degrees:", {
-      attackedFromDegrees: attackedFromDegrees,
-      attackedTowardDegrees: attackTowardDegrees,
-      pos: { x, y },
-      latestAttackerId: params.latestAttackerId,
-      latestAttackerCoordX: params.latestAttackerCoordX,
-      latestAttackerCoordY: params.latestAttackerCoordY,
-      latestDefenderId: params.latestDefenderId,
-      latestDefenderCoordX: params.latestDefenderCoordX,
-      latestDefenderCoordY: params.latestDefenderCoordY,
-    });
-
     // Check for pending label updates and apply them if they exist
     const pendingUpdate = this.pendingExplorerTroopsUpdate.get(params.entityId);
     if (pendingUpdate) {
@@ -1040,14 +1014,8 @@ export class ArmyManager {
       const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
 
       if (isPendingStale) {
-        console.warn(
-          `[PENDING LABEL UPDATE] Discarding stale pending update for army ${params.entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
-        );
         this.pendingExplorerTroopsUpdate.delete(params.entityId);
       } else {
-        console.log(
-          `[PENDING LABEL UPDATE] Applying pending update for army ${params.entityId} (tick: ${pendingUpdate.updateTick})`,
-        );
         finalOnChainStamina = pendingUpdate.onChainStamina;
 
         // Apply any pending battle degrees data
@@ -1843,17 +1811,8 @@ export class ArmyManager {
               ),
             };
 
-            console.log("[ArmyManager] Points-based icon renderers initialized with params:", {
-              maxPoints: 1000,
-              pointSize: scaledPointSize,
-              hoverScale: 0,
-              hoverBrightness: 1.3,
-              sizeAttenuation: true,
-            });
-
             // Re-render visible armies to populate points
             if (this.currentChunkKey) {
-              console.log("[ArmyManager] Re-rendering armies after points renderer init, chunk:", this.currentChunkKey);
               this.renderVisibleArmies(this.currentChunkKey);
             }
           }
@@ -1900,6 +1859,8 @@ export class ArmyManager {
    * Debug method to test material sharing effectiveness
    */
   public logMaterialSharingStats(): void {
+    if (!import.meta.env.DEV) return;
+
     const stats = this.armyModel.getMaterialSharingStats();
     const efficiency = stats.materialPoolStats.totalReferences / Math.max(stats.materialPoolStats.uniqueMaterials, 1);
     const theoreticalWaste = stats.totalMeshes - stats.materialPoolStats.uniqueMaterials;
@@ -2102,10 +2063,6 @@ ${
           battleCooldownEnd: update.battleCooldownEnd,
           battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
-      } else {
-        console.log(
-          `[PENDING LABEL UPDATE] Ignoring older pending update for army ${update.entityId} (tick: ${currentTick} vs ${existingPending.updateTick})`,
-        );
       }
       return;
     }
@@ -2239,9 +2196,6 @@ ${
 
     // Clear any remaining pending updates
     if (this.pendingExplorerTroopsUpdate.size > 0) {
-      console.log(
-        `[PENDING UPDATES CLEANUP] Clearing ${this.pendingExplorerTroopsUpdate.size} remaining pending updates on destroy`,
-      );
       this.pendingExplorerTroopsUpdate.clear();
     }
 

@@ -1,11 +1,11 @@
 import {
-  MAX_RESOURCE_ALLOCATION_PERCENT,
-  RealmAutomationConfig,
-  ResourceAutomationSettings,
-  type ResourceAutomationPercentages,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
   DONKEY_DEFAULT_RESOURCE_PERCENT,
+  MAX_RESOURCE_ALLOCATION_PERCENT,
   isAutomationResourceBlocked,
+  type RealmAutomationConfig,
+  type RealmEntityType,
+  type ResourceAutomationPercentages,
 } from "@/hooks/store/use-automation-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -65,10 +65,10 @@ const assignTierSplit = (
 };
 
 const buildSmartPresetAllocations = (
-  resources: ResourceAutomationSettings[],
+  resources: ResourcesIds[],
 ): Map<number, { resourceToResource: number; laborToResource: number }> => {
   const allocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
-  const presentSet = new Set(resources.map((resource) => resource.resourceId));
+  const presentSet = new Set(resources);
 
   const presentT1 = SMART_T1_RESOURCES.filter((resourceId) => presentSet.has(resourceId));
   const presentT2 = SMART_T2_RESOURCES.filter((resourceId) => presentSet.has(resourceId));
@@ -150,9 +150,9 @@ const buildSmartPresetAllocations = (
   }
 
   // Ensure every resource has an entry, defaulting to zero.
-  resources.forEach((setting) => {
-    if (!allocations.has(setting.resourceId)) {
-      allocations.set(setting.resourceId, { resourceToResource: 0, laborToResource: 0 });
+  resources.forEach((resourceId) => {
+    if (!allocations.has(resourceId)) {
+      allocations.set(resourceId, { resourceToResource: 0, laborToResource: 0 });
     }
   });
 
@@ -160,157 +160,59 @@ const buildSmartPresetAllocations = (
 };
 
 export const calculatePresetAllocations = (
-  automation: RealmAutomationConfig | undefined,
+  resourceIds: ResourcesIds[],
   presetId: RealmPresetId,
-): Map<number, { resourceToResource: number; laborToResource: number }> => {
-  const allocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
+  entityType: RealmEntityType = "realm",
+): Map<number, ResourceAutomationPercentages> => {
+  const allocations = new Map<number, ResourceAutomationPercentages>();
 
-  if (!automation) {
-    return allocations;
-  }
-
-  const entityType = automation.entityType ?? "realm";
-
-  const resources = Object.values(automation.resources ?? {}).filter(
-    (setting) => !isAutomationResourceBlocked(setting.resourceId, entityType),
+  const scopedIds = Array.from(new Set(resourceIds)).filter(
+    (resourceId) => !isAutomationResourceBlocked(resourceId, entityType),
   );
 
-  if (!resources.length) {
+  if (!scopedIds.length) {
     return allocations;
   }
 
   if (presetId === "idle") {
-    resources.forEach((setting) => {
-      allocations.set(setting.resourceId, { resourceToResource: 0, laborToResource: 0 });
+    scopedIds.forEach((resourceId) => {
+      allocations.set(resourceId, { resourceToResource: 0, laborToResource: 0 });
     });
     return allocations;
   }
 
   if (presetId === "smart") {
-    const smartAllocations = buildSmartPresetAllocations(resources);
-    resources.forEach((setting) => {
-      const next = smartAllocations.get(setting.resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
-      // Donkey should never consume labor.
-      const laborToResource = setting.resourceId === ResourcesIds.Donkey ? 0 : next.laborToResource;
-      allocations.set(setting.resourceId, { resourceToResource: next.resourceToResource, laborToResource });
+    const smartAllocations = buildSmartPresetAllocations(scopedIds);
+    scopedIds.forEach((resourceId) => {
+      const next = smartAllocations.get(resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
+      allocations.set(resourceId, {
+        resourceToResource: next.resourceToResource,
+        laborToResource: resourceId === ResourcesIds.Donkey ? 0 : next.laborToResource,
+      });
     });
     return allocations;
   }
 
-  // Custom: keep current values for resources in scope.
-  resources.forEach((setting) => {
-    allocations.set(setting.resourceId, {
-      resourceToResource: clampPercent(setting.percentages.resourceToResource ?? 0),
-      laborToResource:
-        setting.resourceId === ResourcesIds.Donkey ? 0 : clampPercent(setting.percentages.laborToResource ?? 0),
-    });
-  });
-
+  // Custom allocations are resolved from stored percentages elsewhere.
   return allocations;
 };
 
-export const calculateLimitedPresetPercentages = (
-  automation: RealmAutomationConfig | undefined,
-  presetId: RealmPresetId,
-  resourceIds: ResourcesIds[],
-): Map<number, ResourceAutomationPercentages> => {
-  const result = new Map<number, ResourceAutomationPercentages>();
-
-  if (!automation || !resourceIds.length) {
-    return result;
-  }
-
-  const entityType = automation.entityType ?? "realm";
-  const uniqueIds = Array.from(new Set(resourceIds)).filter(
-    (resourceId) => !isAutomationResourceBlocked(resourceId, entityType),
-  );
-
-  if (!uniqueIds.length) {
-    return result;
-  }
-
-  const now = Date.now();
-  const limitedResources: Record<number, ResourceAutomationSettings> = {};
-
-  uniqueIds.forEach((resourceId) => {
-    const existing = automation.resources[resourceId];
-    if (existing) {
-      limitedResources[resourceId] = {
-        ...existing,
-        resourceId,
-      };
-      return;
-    }
-
-    const basePercentages =
-      resourceId === ResourcesIds.Donkey
-        ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
-        : {
-            resourceToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
-            laborToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
-          };
-
-    limitedResources[resourceId] = {
-      resourceId,
-      autoManaged: true,
-      label: undefined,
-      updatedAt: now,
-      percentages: basePercentages,
-    };
-  });
-
-  const limitedAutomation: RealmAutomationConfig = {
-    ...automation,
-    resources: limitedResources,
-  };
-
-  const allocations = calculatePresetAllocations(limitedAutomation, presetId);
-
-  uniqueIds.forEach((resourceId) => {
-    if (presetId === "idle") {
-      result.set(resourceId, { resourceToResource: 0, laborToResource: 0 });
-      return;
-    }
-
-    const allocation = allocations.get(resourceId);
-    if (allocation) {
-      result.set(resourceId, {
-        resourceToResource: allocation.resourceToResource,
-        laborToResource: allocation.laborToResource,
-      });
-    } else {
-      result.set(resourceId, {
-        resourceToResource: 0,
-        laborToResource: 0,
-      });
-    }
-  });
-
-  return result;
-};
-
 export const getAutomationOverallocation = (
-  automation: RealmAutomationConfig | undefined,
+  percentagesByResource: Record<number, ResourceAutomationPercentages> | undefined,
+  entityType: RealmEntityType = "realm",
 ): { resourceOver: boolean; laborOver: boolean } => {
-  if (!automation) {
-    return { resourceOver: false, laborOver: false };
-  }
-
-  const entityType = automation.entityType ?? "realm";
-
-  const resources = Object.values(automation.resources ?? {}).filter(
-    (setting) => !isAutomationResourceBlocked(setting.resourceId, entityType),
-  );
-
-  if (!resources.length) {
+  if (!percentagesByResource) {
     return { resourceOver: false, laborOver: false };
   }
 
   const resourceTotals = new Map<number, number>();
   const laborTotals = new Map<number, number>();
 
-  resources.forEach((setting) => {
-    const { resourceId, percentages } = setting;
+  Object.entries(percentagesByResource).forEach(([key, percentages]) => {
+    const resourceId = Number(key) as ResourcesIds;
+    if (isAutomationResourceBlocked(resourceId, entityType)) {
+      return;
+    }
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
     const complexInputs = rawComplexInputs.filter(
       (input: { resource: ResourcesIds }) =>
@@ -323,15 +225,15 @@ export const getAutomationOverallocation = (
         !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
     );
 
-    if (percentages.resourceToResource > 0) {
+    if ((percentages?.resourceToResource ?? 0) > 0) {
       complexInputs.forEach(({ resource }: { resource: ResourcesIds }) => {
-        resourceTotals.set(resource, (resourceTotals.get(resource) ?? 0) + percentages.resourceToResource);
+        resourceTotals.set(resource, (resourceTotals.get(resource) ?? 0) + (percentages?.resourceToResource ?? 0));
       });
     }
 
-    if (percentages.laborToResource > 0) {
+    if ((percentages?.laborToResource ?? 0) > 0) {
       simpleInputs.forEach(({ resource }: { resource: ResourcesIds }) => {
-        laborTotals.set(resource, (laborTotals.get(resource) ?? 0) + percentages.laborToResource);
+        laborTotals.set(resource, (laborTotals.get(resource) ?? 0) + (percentages?.laborToResource ?? 0));
       });
     }
   });
@@ -352,35 +254,6 @@ export const getAutomationOverallocation = (
   });
 
   return { resourceOver, laborOver };
-};
-
-export const calculateResourceBootstrapAllocation = (
-  automation: RealmAutomationConfig | undefined,
-  resourceId: ResourcesIds,
-): { resourceToResource: number; laborToResource: number } | null => {
-  if (!automation) {
-    return null;
-  }
-
-  const entityType = automation.entityType ?? "realm";
-  if (isAutomationResourceBlocked(resourceId, entityType)) {
-    return null;
-  }
-
-  if (!automation.resources?.[resourceId]) {
-    return null;
-  }
-
-  const smartAllocations = calculatePresetAllocations(automation, "smart");
-  const allocation = smartAllocations.get(resourceId);
-  if (!allocation) {
-    return null;
-  }
-
-  return {
-    resourceToResource: allocation.resourceToResource,
-    laborToResource: allocation.laborToResource ?? 0,
-  };
 };
 
 export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPresetId => {
