@@ -211,6 +211,9 @@ export default class WorldmapScene extends HexagonScene {
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
+
+  // Performance simulation: Show all biomes as explored (bypasses fog of war)
+  private simulateAllExplored: boolean = false;
   private async ensureStructureSynced(structureId: ID, hexCoords: HexPosition) {
     const components = this.dojo.components as SetupResult["components"];
     const toriiClient = this.dojo.network?.toriiClient;
@@ -349,6 +352,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
+    this.setupPerformanceSimulationGUI();
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
@@ -3099,8 +3103,14 @@ export default class WorldmapScene extends HexagonScene {
           tempPosition.y += 0.05;
         }
 
-        if (isExplored) {
-          const biome = isExplored as BiomeType;
+        // Performance simulation: treat all hexes as explored when flag is set
+        const effectivelyExplored = isExplored || this.simulateAllExplored;
+
+        if (effectivelyExplored) {
+          // Use actual biome if explored, or generate deterministic biome for simulation
+          const biome = isExplored
+            ? (isExplored as BiomeType)
+            : this.getSimulatedBiome(globalCol, globalRow);
           const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
           tempMatrix.setPosition(tempPosition);
 
@@ -4610,5 +4620,59 @@ export default class WorldmapScene extends HexagonScene {
     this.maxMatrixCacheSize = (this.chunkLoadRadius * 2 + 1) ** 2 + 8;
     this.ensureMatrixCacheLimit();
     this.requestChunkRefresh(true);
+  }
+
+  // ============================================================================
+  // Performance Simulation - Show all biomes for benchmarking
+  // ============================================================================
+
+  /**
+   * Setup GUI controls for performance simulation
+   */
+  private setupPerformanceSimulationGUI(): void {
+    const perfFolder = this.GUIFolder.addFolder("Perf Simulation");
+
+    perfFolder
+      .add(this, "simulateAllExplored")
+      .name("Show All Biomes")
+      .onChange((value: boolean) => {
+        console.log(`[Performance] Simulate all explored: ${value}`);
+        // Force chunk refresh to apply the change
+        this.requestChunkRefresh(true);
+      });
+
+    perfFolder.close();
+  }
+
+  /**
+   * Generate a deterministic biome type for unexplored hexes during simulation.
+   * Uses the same hash function as other visual randomization for consistency.
+   */
+  private getSimulatedBiome(col: number, row: number): BiomeType {
+    // Use hash to generate deterministic but varied biomes
+    const hash = this.hashCoordinates(col * 7.31, row * 13.17);
+
+    // Distribute across biome types (excluding special types)
+    const biomeTypes = [
+      BiomeType.DeepOcean,
+      BiomeType.Ocean,
+      BiomeType.Beach,
+      BiomeType.Scorched,
+      BiomeType.Bare,
+      BiomeType.Tundra,
+      BiomeType.Snow,
+      BiomeType.TemperateDesert,
+      BiomeType.Shrubland,
+      BiomeType.Taiga,
+      BiomeType.Grassland,
+      BiomeType.TemperateDeciduousForest,
+      BiomeType.TemperateRainForest,
+      BiomeType.SubtropicalDesert,
+      BiomeType.TropicalSeasonalForest,
+      BiomeType.TropicalRainForest,
+    ];
+
+    const index = Math.floor(hash * biomeTypes.length);
+    return biomeTypes[index];
   }
 }

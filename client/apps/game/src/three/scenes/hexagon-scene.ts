@@ -13,6 +13,7 @@ import { CentralizedVisibilityManager, getVisibilityManager } from "@/three/util
 import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
+import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import { gltfLoader } from "@/three/utils/utils";
 import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView, RightView } from "@/types";
@@ -321,6 +322,7 @@ export abstract class HexagonScene {
     this.setupStormLightGUI();
     this.setupShadowGUI();
     this.setupFogGUI();
+    this.setupPerformanceGUI();
     this.thunderBoltManager.setupGUI(this.GUIFolder);
     this.dayNightCycleManager.addGUIControls(this.GUIFolder);
   }
@@ -400,6 +402,142 @@ export abstract class HexagonScene {
       });
 
     fogFolder.close();
+  }
+
+  private setupPerformanceGUI(): void {
+    const perfFolder = this.GUIFolder.addFolder("Performance");
+
+    // Performance monitoring toggle
+    const perfParams = {
+      enabled: PerformanceMonitor.isEnabled(),
+      simulatedHexes: PerformanceMonitor.getSimulatedHexCount(),
+      logReport: () => {
+        const matrixStats = MatrixPool.getInstance().getStats();
+        PerformanceMonitor.logSummary(matrixStats);
+      },
+      exploreAllHexes: () => {
+        this.simulateHexExploration(5000);
+      },
+      exploreHexes1k: () => {
+        this.simulateHexExploration(1000);
+      },
+      exploreHexes9k: () => {
+        this.simulateHexExploration(9000);
+      },
+      clearSimulation: () => {
+        this.clearHexSimulation();
+      },
+    };
+
+    perfFolder.add(perfParams, "enabled").name("Enable Monitoring").onChange((value: boolean) => {
+      PerformanceMonitor.setEnabled(value);
+    });
+
+    perfFolder.add(perfParams, "simulatedHexes", 0, 15000, 100).name("Simulated Hexes").onChange((value: number) => {
+      PerformanceMonitor.setSimulatedHexCount(value);
+    });
+
+    perfFolder.add(perfParams, "logReport").name("Log Performance Report");
+    perfFolder.add(perfParams, "exploreHexes1k").name("Simulate 1K Hexes");
+    perfFolder.add(perfParams, "exploreAllHexes").name("Simulate 5K Hexes");
+    perfFolder.add(perfParams, "exploreHexes9k").name("Simulate 9K Hexes");
+    perfFolder.add(perfParams, "clearSimulation").name("Clear Simulation");
+
+    perfFolder.close();
+  }
+
+  /**
+   * Simulate hex exploration for performance testing
+   * For WorldMap: renders a large grid of hexes centered on current camera target
+   * For Hexception: adds hexes to the persistent collection
+   */
+  protected simulateHexExploration(hexCount: number): void {
+    console.log(`Simulating exploration of ${hexCount} hexes...`);
+    PerformanceMonitor.begin("simulateHexExploration");
+    PerformanceMonitor.setSimulatedHexCount(hexCount);
+    PerformanceMonitor.setSimulating(true);
+
+    // Calculate grid dimensions to approximate hexCount
+    // For a square-ish grid: width * height ≈ hexCount
+    const gridSize = Math.ceil(Math.sqrt(hexCount));
+
+    // Get current camera target position for centering
+    const target = this.controls.target;
+    const centerHex = this.getHexFromWorldPosition(target);
+
+    if (this.sceneName === SceneName.Hexception) {
+      // For Hexception (persistent mode): use addHex + renderAllHexes
+      const hexes: Array<{ col: number; row: number }> = [];
+      let col = 0;
+      let row = 0;
+      let direction = 0;
+      let ringSize = 1;
+      let stepsInCurrentDirection = 0;
+      let directionsCompleted = 0;
+
+      hexes.push({ col: centerHex.col, row: centerHex.row });
+
+      const directions = [
+        { col: 1, row: 0 },
+        { col: 0, row: 1 },
+        { col: -1, row: 1 },
+        { col: -1, row: 0 },
+        { col: 0, row: -1 },
+        { col: 1, row: -1 },
+      ];
+
+      col = centerHex.col;
+      row = centerHex.row;
+
+      while (hexes.length < hexCount) {
+        col += directions[direction].col;
+        row += directions[direction].row;
+        hexes.push({ col, row });
+        stepsInCurrentDirection++;
+
+        if (stepsInCurrentDirection >= ringSize) {
+          stepsInCurrentDirection = 0;
+          direction = (direction + 1) % 6;
+          directionsCompleted++;
+
+          if (directionsCompleted >= 6) {
+            directionsCompleted = 0;
+            ringSize++;
+          }
+        }
+      }
+
+      hexes.forEach((hex) => {
+        this.interactiveHexManager.addHex(hex);
+      });
+      this.interactiveHexManager.renderAllHexes();
+    } else {
+      // For WorldMap (non-persistent mode): use updateVisibleHexes with large window
+      // This simulates having many hexes in the render window
+      this.interactiveHexManager.updateVisibleHexes(
+        centerHex.row,
+        centerHex.col,
+        gridSize,
+        gridSize,
+      );
+    }
+
+    const duration = PerformanceMonitor.end("simulateHexExploration");
+    console.log(`Simulated ${hexCount} hexes (${gridSize}x${gridSize} grid) in ${duration.toFixed(2)}ms`);
+
+    // Log matrix pool stats
+    const matrixStats = MatrixPool.getInstance().getStats();
+    console.log(`Matrix Pool: ${matrixStats.inUse} in use, ${matrixStats.totalAllocated} allocated (${matrixStats.memoryEstimateMB.toFixed(2)}MB)`);
+  }
+
+  /**
+   * Clear simulated hex exploration
+   */
+  protected clearHexSimulation(): void {
+    console.log("Clearing hex simulation...");
+    PerformanceMonitor.setSimulatedHexCount(0);
+    PerformanceMonitor.setSimulating(false);
+    this.interactiveHexManager.clearHexes();
   }
 
   private setupGroundMeshGUI(): void {
@@ -683,23 +821,37 @@ export abstract class HexagonScene {
   }
 
   update(deltaTime: number): void {
+    PerformanceMonitor.recordFrame();
+    PerformanceMonitor.begin("scene.update");
+
+    PerformanceMonitor.begin("interactiveHexManager.update");
     this.interactiveHexManager.update();
+    PerformanceMonitor.end("interactiveHexManager.update");
+
     this.updateLights();
     this.updateHighlightPulse();
     this.thunderBoltManager.update();
+
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
     }
+
     if (this.shouldUpdateBiomeAnimations()) {
+      PerformanceMonitor.begin("biomeAnimations.total");
       const animationContext = this.getAnimationVisibilityContext();
-      this.biomeModels.forEach((biome) => {
+      this.biomeModels.forEach((biome, biomeType) => {
         try {
+          PerformanceMonitor.begin(`biome.${biomeType}`);
           biome.updateAnimations(deltaTime, animationContext);
+          PerformanceMonitor.end(`biome.${biomeType}`);
         } catch (error) {
           console.error(`Error updating biome animations:`, error);
         }
       });
+      PerformanceMonitor.end("biomeAnimations.total");
     }
+
+    PerformanceMonitor.end("scene.update");
   }
 
   protected updateOutlineOpacityForDistance(distance: number): void {

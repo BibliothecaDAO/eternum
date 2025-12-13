@@ -1487,11 +1487,12 @@ export class StructureManager {
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
     const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [];
     const bounds = this.getChunkBounds(chunkRow || 0, chunkCol || 0);
+    // Use inclusive bounds (<=) to match isStructureVisible behavior
     return (
       hexCoords.col >= bounds.minCol &&
-      hexCoords.col < bounds.maxCol &&
+      hexCoords.col <= bounds.maxCol &&
       hexCoords.row >= bounds.minRow &&
-      hexCoords.row < bounds.maxRow
+      hexCoords.row <= bounds.maxRow
     );
   }
 

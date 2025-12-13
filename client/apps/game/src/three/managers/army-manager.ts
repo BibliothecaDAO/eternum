@@ -143,6 +143,8 @@ export class ArmyManager {
   private chunkToArmies: Map<string, Set<ID>> = new Map();
   private chunkStride: number;
   private needsSpatialReindex = false;
+  // Track source buckets for moving armies to keep them visible during animation
+  private movingArmySourceBuckets: Map<ID, string> = new Map();
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
@@ -874,26 +876,37 @@ export class ArmyManager {
         x = lastKnown.col;
         y = lastKnown.row;
       } else {
-        const path = this.armyPaths.get(army.entityId);
-        const fallback = path && path.length > 0 ? path[0] : army.hexCoords;
-        const normalized = fallback.getNormalized();
+        // Use destination hex as primary position
+        const normalized = army.hexCoords.getNormalized();
         x = normalized.x;
         y = normalized.y;
-        this.lastKnownVisibleHexes.set(army.entityId, { col: normalized.x, row: normalized.y });
-        console.debug(
-          `[ArmyManager] Using fallback hex for visibility of entity ${army.entityId} (pathFallback=${
-            path && path.length > 0
-          })`,
-        );
       }
     }
-    const isVisible = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
-    if (!isVisible) {
+
+    // Check if destination position is in bounds
+    const destInBounds = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
+
+    // For moving armies, also check if source position is in bounds
+    // This ensures armies remain visible throughout their movement across chunk boundaries
+    let sourceInBounds = false;
+    const sourceBucketKey = this.movingArmySourceBuckets.get(army.entityId);
+    if (sourceBucketKey && !destInBounds) {
+      // Parse source bucket key to get approximate source position
+      const [bucketX, bucketY] = sourceBucketKey.split(",").map(Number);
+      // Use bucket center as approximate source position
+      const sourceX = (bucketX + 0.5) * this.chunkStride;
+      const sourceY = (bucketY + 0.5) * this.chunkStride;
+      sourceInBounds =
+        sourceX >= bounds.minCol && sourceX <= bounds.maxCol &&
+        sourceY >= bounds.minRow && sourceY <= bounds.maxRow;
+    }
+
+    if (!destInBounds && !sourceInBounds) {
       return false;
     }
 
-    const frustumPoint =
-      worldPos ?? getWorldPositionForHexCoordsInto(x, y, this.tempPosition);
+    // Use actual world position for frustum check if available, otherwise use the hex that's in bounds
+    const frustumPoint = worldPos ?? getWorldPositionForHexCoordsInto(x, y, this.tempPosition);
     if (this.visibilityManager) {
       return this.visibilityManager.isPointVisible(frustumPoint);
     }
@@ -941,6 +954,40 @@ export class ArmyManager {
     newSet.add(entityId);
   }
 
+  /**
+   * Add an army to a spatial bucket without removing from existing buckets.
+   * Used during movement to keep army in both source and destination buckets.
+   */
+  private addToSpatialBucket(entityId: ID, hex: Position) {
+    const norm = hex.getNormalized();
+    const key = this.getSpatialKey(norm.x, norm.y);
+    let bucket = this.chunkToArmies.get(key);
+    if (!bucket) {
+      bucket = new Set();
+      this.chunkToArmies.set(key, bucket);
+    }
+    bucket.add(entityId);
+  }
+
+  /**
+   * Remove army from its tracked source bucket after movement completes.
+   */
+  private cleanupMovementSourceBucket(entityId: ID) {
+    const sourceBucketKey = this.movingArmySourceBuckets.get(entityId);
+    if (!sourceBucketKey) {
+      return;
+    }
+    this.movingArmySourceBuckets.delete(entityId);
+
+    const bucket = this.chunkToArmies.get(sourceBucketKey);
+    if (bucket) {
+      bucket.delete(entityId);
+      if (bucket.size === 0) {
+        this.chunkToArmies.delete(sourceBucketKey);
+      }
+    }
+  }
+
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
     if (this.needsSpatialReindex) {
       this.rebuildSpatialIndex();
@@ -981,6 +1028,15 @@ export class ArmyManager {
     this.chunkToArmies.clear();
     this.armies.forEach((army) => {
       this.updateSpatialIndex(army.entityId, undefined, army.hexCoords);
+    });
+    // Re-add source buckets for armies that are currently moving
+    this.movingArmySourceBuckets.forEach((sourceBucketKey, entityId) => {
+      let bucket = this.chunkToArmies.get(sourceBucketKey);
+      if (!bucket) {
+        bucket = new Set();
+        this.chunkToArmies.set(sourceBucketKey, bucket);
+      }
+      bucket.add(entityId);
     });
     this.needsSpatialReindex = false;
   }
@@ -1273,14 +1329,29 @@ export class ArmyManager {
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
 
-    // Update army position immediately to avoid starting from a "back" position
-    this.updateSpatialIndex(entityId, armyData.hexCoords, hexCoords);
+    // Track source bucket so army remains visible during movement animation.
+    // The spatial index will have the army in BOTH source and destination buckets
+    // until movement completes.
+    const sourceNorm = armyData.hexCoords.getNormalized();
+    const sourceBucketKey = this.getSpatialKey(sourceNorm.x, sourceNorm.y);
+    const destNorm = hexCoords.getNormalized();
+    const destBucketKey = this.getSpatialKey(destNorm.x, destNorm.y);
+
+    // Only track source if buckets are different
+    if (sourceBucketKey !== destBucketKey) {
+      this.movingArmySourceBuckets.set(entityId, sourceBucketKey);
+    }
+
+    // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)
+    this.addToSpatialBucket(entityId, hexCoords);
     this.armies.set(entityId, { ...armyData, hexCoords });
 
     const matrixIndex = armyData.matrixIndex;
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+      // Clean up source bucket tracking since movement won't actually happen
+      this.cleanupMovementSourceBucket(entityId);
       return;
     }
 
@@ -1288,6 +1359,8 @@ export class ArmyManager {
 
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       this.armyPaths.delete(entityId);
+      // Remove from source bucket now that movement is complete
+      this.cleanupMovementSourceBucket(entityId);
     });
 
     // Don't remove relic effects during movement - they will follow the army
@@ -1378,7 +1451,10 @@ export class ArmyManager {
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
 
-    // Update spatial index (remove)
+    // Clean up movement source bucket tracking if army was mid-movement
+    this.cleanupMovementSourceBucket(entityId);
+
+    // Update spatial index (remove from destination bucket)
     if (this.armies.has(entityId)) {
       const army = this.armies.get(entityId)!;
       const { x, y } = army.hexCoords.getNormalized();
@@ -2282,6 +2358,8 @@ ${
     this.entityIdLabels.clear();
 
     this.armyPaths.clear();
+    this.movingArmySourceBuckets.clear();
+    this.chunkToArmies.clear();
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();

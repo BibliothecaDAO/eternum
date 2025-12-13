@@ -15,6 +15,7 @@ import {
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
+import InstancedBiome from "@/three/managers/instanced-biome";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -60,6 +61,7 @@ import gsap from "gsap";
 import {
   AnimationClip,
   AnimationMixer,
+  Box3,
   Color,
   ExtrudeGeometry,
   Group,
@@ -69,6 +71,7 @@ import {
   MeshStandardMaterial,
   Object3D,
   Raycaster,
+  Sphere,
   Vector2,
   Vector3,
 } from "three";
@@ -1268,5 +1271,31 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingMixers.forEach((mixer) => {
       mixer.update(deltaTime);
     });
+  }
+
+  /**
+   * Override to set world bounds for Hexception biome models.
+   * This enables visibility-based animation culling (Phase 1 optimization).
+   *
+   * The Hexception scene is a local view with ~750 hexes arranged in 7 large hex rings.
+   * We set bounds based on the maximum extent of the scene.
+   */
+  protected override onBiomeModelLoaded(model: InstancedBiome): void {
+    // Hexception scene spans approximately:
+    // - 7 large hexes arranged in a hex pattern
+    // - Each large hex has radius 4 (hexceptionRadius)
+    // - World coordinates span roughly -20 to +20 in x and z
+    const hexceptionBounds = {
+      box: new Box3(
+        new Vector3(-25, -5, -25),  // min
+        new Vector3(25, 10, 25)     // max
+      ),
+      sphere: new Sphere(
+        new Vector3(0, 0, 0),       // center
+        35                          // radius (covers the entire hex grid)
+      ),
+    };
+
+    model.setWorldBounds(hexceptionBounds);
   }
 }
