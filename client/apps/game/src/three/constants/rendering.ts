@@ -42,7 +42,7 @@ export const CONTROL_CONFIG = {
 };
 
 export const FOG_CONFIG = {
-  color: 0x2d1b4e,
+  color: 0x1b1e2b,
   near: 15,
   far: 35,
 };

@@ -30,7 +30,7 @@ import {
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
 import type { ArmyInstanceData } from "../types/army";
-import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
@@ -128,6 +128,7 @@ export class ArmyManager {
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
+  private labelRenderDistanceSq: number = Infinity;
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -196,6 +197,9 @@ export class ArmyManager {
     if (MEMORY_MONITORING_ENABLED) {
       this.memoryMonitor = new MemoryMonitor({
         spikeThresholdMB: 25, // Lower threshold for army operations
+        onMemorySpike: (spike) => {
+          console.warn(`🎖️  Army Manager Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+        },
       });
     }
 
@@ -302,6 +306,10 @@ export class ArmyManager {
           this.pendingExplorerTroopsUpdate.delete(entityId);
           cleanedCount++;
         }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`[PENDING UPDATES CLEANUP] Removed ${cleanedCount} stale pending updates`);
       }
 
       // Schedule next cleanup
@@ -416,6 +424,8 @@ export class ArmyManager {
     if (chunkChanged) {
       // console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
       this.currentChunkKey = chunkKey;
+    } else if (force) {
+      console.log(`[CHUNK SYNC] Refreshing army chunk ${chunkKey}`);
     }
 
     // Create and track the chunk switch promise
@@ -843,7 +853,10 @@ export class ArmyManager {
     }
   }
 
-  private isArmyVisible(army: ArmyData, startRow: number, startCol: number) {
+  private isArmyVisible(
+    army: ArmyData,
+    bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number },
+  ) {
     const entityIdNumber = this.toNumericId(army.entityId);
     const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
 
@@ -867,19 +880,20 @@ export class ArmyManager {
         x = normalized.x;
         y = normalized.y;
         this.lastKnownVisibleHexes.set(army.entityId, { col: normalized.x, row: normalized.y });
+        console.debug(
+          `[ArmyManager] Using fallback hex for visibility of entity ${army.entityId} (pathFallback=${
+            path && path.length > 0
+          })`,
+        );
       }
     }
-    const bounds = this.getChunkBounds(startRow, startCol);
     const isVisible = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
     if (!isVisible) {
       return false;
     }
 
-    let frustumPoint = worldPos?.clone();
-    if (!frustumPoint) {
-      const worldFromHex = getWorldPositionForHex({ col: x, row: y });
-      frustumPoint = worldFromHex;
-    }
+    const frustumPoint =
+      worldPos ?? getWorldPositionForHexCoordsInto(x, y, this.tempPosition);
     if (this.visibilityManager) {
       return this.visibilityManager.isPointVisible(frustumPoint);
     }
@@ -952,7 +966,7 @@ export class ArmyManager {
           for (const id of armyIds) {
             const army = this.armies.get(id);
             // Double check visibility using the precise check
-            if (army && this.isArmyVisible(army, startRow, startCol)) {
+            if (army && this.isArmyVisible(army, bounds)) {
               visibleArmies.push(army);
             }
           }
@@ -1007,6 +1021,18 @@ export class ArmyManager {
         : undefined,
     );
 
+    console.log("[ADD ARMY] Combat degrees:", {
+      attackedFromDegrees: attackedFromDegrees,
+      attackedTowardDegrees: attackTowardDegrees,
+      pos: { x, y },
+      latestAttackerId: params.latestAttackerId,
+      latestAttackerCoordX: params.latestAttackerCoordX,
+      latestAttackerCoordY: params.latestAttackerCoordY,
+      latestDefenderId: params.latestDefenderId,
+      latestDefenderCoordX: params.latestDefenderCoordX,
+      latestDefenderCoordY: params.latestDefenderCoordY,
+    });
+
     // Check for pending label updates and apply them if they exist
     const pendingUpdate = this.pendingExplorerTroopsUpdate.get(params.entityId);
     if (pendingUpdate) {
@@ -1014,8 +1040,14 @@ export class ArmyManager {
       const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
 
       if (isPendingStale) {
+        console.warn(
+          `[PENDING LABEL UPDATE] Discarding stale pending update for army ${params.entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
+        );
         this.pendingExplorerTroopsUpdate.delete(params.entityId);
       } else {
+        console.log(
+          `[PENDING LABEL UPDATE] Applying pending update for army ${params.entityId} (tick: ${pendingUpdate.updateTick})`,
+        );
         finalOnChainStamina = pendingUpdate.onChainStamina;
 
         // Apply any pending battle degrees data
@@ -1433,6 +1465,16 @@ export class ArmyManager {
     return this.visibleArmyOrder.length;
   }
 
+  public setAnimationFPS(fps: number): void {
+    this.armyModel.setAnimationFPS(fps);
+  }
+
+  public setLabelRenderDistance(distance: number): void {
+    const resolved = Math.max(0, distance);
+    this.labelRenderDistanceSq = resolved > 0 ? resolved * resolved : Infinity;
+    this.frustumVisibilityDirty = true;
+  }
+
   update(deltaTime: number) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
@@ -1460,10 +1502,7 @@ export class ArmyManager {
               : army.isMine
                 ? this.pointsRenderers!.player
                 : this.pointsRenderers!.enemy;
-            renderer.setPoint({
-              entityId: army.entityId,
-              position: iconPosition,
-            });
+            renderer.setPointPosition(army.entityId, iconPosition);
           }
         });
       }
@@ -1483,10 +1522,19 @@ export class ArmyManager {
   }
 
   private applyFrustumVisibilityToLabels() {
+    const cameraPosition =
+      this.visibilityManager?.getCameraPosition() ?? this.hexagonScene?.getCamera()?.position;
+    const distanceSqLimit = this.labelRenderDistanceSq;
+    const hasDistanceLimit = cameraPosition !== undefined && Number.isFinite(distanceSqLimit);
+
     this.entityIdLabels.forEach((label) => {
-      const isVisible = this.visibilityManager
+      const withinDistance =
+        !hasDistanceLimit || label.position.distanceToSquared(cameraPosition!) <= distanceSqLimit;
+      const isVisible =
+        withinDistance &&
+        (this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
-        : (this.frustumManager?.isPointVisible(label.position) ?? true);
+        : (this.frustumManager?.isPointVisible(label.position) ?? true));
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);
@@ -1811,8 +1859,17 @@ export class ArmyManager {
               ),
             };
 
+            console.log("[ArmyManager] Points-based icon renderers initialized with params:", {
+              maxPoints: 1000,
+              pointSize: scaledPointSize,
+              hoverScale: 0,
+              hoverBrightness: 1.3,
+              sizeAttenuation: true,
+            });
+
             // Re-render visible armies to populate points
             if (this.currentChunkKey) {
+              console.log("[ArmyManager] Re-rendering armies after points renderer init, chunk:", this.currentChunkKey);
               this.renderVisibleArmies(this.currentChunkKey);
             }
           }
@@ -1826,10 +1883,19 @@ export class ArmyManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    if (this.currentCameraView === view) return;
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableRealShadows = view === CameraView.Close && qualityShadowsEnabled;
+
+    // Keep shadow flags in sync even if view is unchanged (quality can toggle shadows dynamically).
+    this.armyModel.setShadowsEnabled(enableRealShadows);
+    this.armyModel.setContactShadowsEnabled(!enableRealShadows);
+
+    if (this.currentCameraView === view) {
+      return;
+    }
     this.currentCameraView = view;
 
-    // Update the ArmyModel's camera view
+    // Update the ArmyModel's camera view and shadow casting policy
     this.armyModel.setCurrentCameraView(view);
 
     // Apply label transitions using the centralized function
@@ -1859,8 +1925,6 @@ export class ArmyManager {
    * Debug method to test material sharing effectiveness
    */
   public logMaterialSharingStats(): void {
-    if (!import.meta.env.DEV) return;
-
     const stats = this.armyModel.getMaterialSharingStats();
     const efficiency = stats.materialPoolStats.totalReferences / Math.max(stats.materialPoolStats.uniqueMaterials, 1);
     const theoreticalWaste = stats.totalMeshes - stats.materialPoolStats.uniqueMaterials;
@@ -2063,6 +2127,10 @@ ${
           battleCooldownEnd: update.battleCooldownEnd,
           battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
+      } else {
+        console.log(
+          `[PENDING LABEL UPDATE] Ignoring older pending update for army ${update.entityId} (tick: ${currentTick} vs ${existingPending.updateTick})`,
+        );
       }
       return;
     }
@@ -2196,6 +2264,9 @@ ${
 
     // Clear any remaining pending updates
     if (this.pendingExplorerTroopsUpdate.size > 0) {
+      console.log(
+        `[PENDING UPDATES CLEANUP] Clearing ${this.pendingExplorerTroopsUpdate.size} remaining pending updates on destroy`,
+      );
       this.pendingExplorerTroopsUpdate.clear();
     }
 
