@@ -78,6 +78,14 @@ export class ChestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled);
+
+    // Cheap grounding in zoomed-out views (and as a fallback if shadows are disabled).
+    if (this.chestModel) {
+      this.chestModel.setContactShadowsEnabled(enableContactShadows);
+    }
+
     if (this.currentCameraView === view) return;
 
     // If we're moving away from Medium view, clean up transition state
@@ -173,6 +181,9 @@ export class ChestManager {
         this.chestModel = model;
         this.animationClips = clips;
         this.scene.add(model.group);
+        const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+        const enableContactShadows = !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled);
+        this.chestModel.setContactShadowsEnabled(enableContactShadows);
       })
       .catch((error) => {
         console.error(`Failed to load chest model:`, error);

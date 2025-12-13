@@ -61,6 +61,8 @@ export interface AnimatedInstancedMesh extends InstancedMesh {
 export interface ModelData {
   group: Group;
   instancedMeshes: AnimatedInstancedMesh[];
+  contactShadowMesh?: InstancedMesh;
+  contactShadowScale?: number;
   baseMeshes: Mesh[];
   mixer: AnimationMixer;
   animations: {

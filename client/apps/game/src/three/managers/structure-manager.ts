@@ -439,7 +439,9 @@ export class StructureManager {
   };
 
   private updateShadowFlags(): void {
-    const enableCasting = this.currentCameraView === CameraView.Close;
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableCasting = this.currentCameraView === CameraView.Close && qualityShadowsEnabled;
+    const enableContactShadows = !enableCasting;
     const applyToModels = (models: InstancedModel[]) => {
       models.forEach((model) => {
         model.instancedMeshes.forEach((mesh) => {
@@ -449,6 +451,7 @@ export class StructureManager {
           }
           mesh.castShadow = enableCasting;
         });
+        model.setContactShadowsEnabled(enableContactShadows);
       });
     };
 

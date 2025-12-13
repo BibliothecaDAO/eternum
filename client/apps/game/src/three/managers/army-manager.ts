@@ -1883,16 +1883,20 @@ export class ArmyManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableRealShadows = view === CameraView.Close && qualityShadowsEnabled;
+
+    // Keep shadow flags in sync even if view is unchanged (quality can toggle shadows dynamically).
+    this.armyModel.setShadowsEnabled(enableRealShadows);
+    this.armyModel.setContactShadowsEnabled(!enableRealShadows);
+
     if (this.currentCameraView === view) {
-      // Keep shadow flags in sync even if view is unchanged.
-      this.armyModel.setShadowsEnabled(view === CameraView.Close);
       return;
     }
     this.currentCameraView = view;
 
     // Update the ArmyModel's camera view and shadow casting policy
     this.armyModel.setCurrentCameraView(view);
-    this.armyModel.setShadowsEnabled(view === CameraView.Close);
 
     // Apply label transitions using the centralized function
     applyLabelTransitions(this.entityIdLabels, view);

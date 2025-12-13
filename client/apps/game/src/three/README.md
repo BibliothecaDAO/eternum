@@ -145,56 +145,88 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 
 ---
 
-1. Baseline + guardrails
-   - Capture reference screenshots at CameraView.Close/ Medium/Far across day/night and storm, to compare before/after.
-   - Add a small “visual QA” note with target look (contrast, fog, shadows).
-2. Fix color pipeline
-   - In game-renderer.ts, set renderer.outputColorSpace = SRGBColorSpace and verify no double‑gamma in GLTF/ textures.
-   - Re‑tune renderer.toneMappingExposure after SRGB fix.
-3. Rebalance lighting
-   - In scenes/hexagon-scene.ts, lower fill lights and neutralize tint:
-     - Reduce HemisphereLight intensity and shift sky/ ground colors to warm‑key / cool‑fill.
-     - Reduce ambientPurpleLight intensity and desaturate its color.
-   - In effects/day-night-cycle.ts, adjust presets to avoid full‑scene purple wash; keep warm sun + cooler shadows.
-4. Angle + camera‑track the sun
-   - Change default sun position to a shallow angle (e.g., elevation 30–40°, azimuth offset) in
-     HexagonScene.configureDirectionalLight.
-   - Update DayNightCycleManager.updateSunPosition to orbit around camera target with fixed elevation and smoothed
-     azimuth.
-5. Shadow readability + cost
-   - Disable terrain/land casting shadows:
-     - In managers/instanced-biome.tsx / managers/ instanced-model.tsx, set castShadow=false for land meshes; keep
-       receiveShadow=true.
-   - Add distance/view‑based shadow gating in WorldmapScene.applyQualityFeatures or per CameraView (near
-     units/structures only).
-   - Re‑tune shadow camera bounds/bias for angled sun.
-6. Re‑enable dynamic fog
-   - Re‑enable scene.fog for MID/HIGH in HexagonScene (was disabled).
-   - Each frame, set fog near/far based on current camera distance/view to avoid the prior zoom issue (FOG_CONFIG per
-     view).
-7. Terrain per‑hex variation
-   - Enable vertexColors on terrain materials (land submesh) and use InstancedMesh.setColorAt when building hex grids
-     (WorldmapScene.updateHexagonGrid / updateExploredHex).
-   - Add tiny HSL jitter per instance from hashCoordinates to break tiling (1–3% value/sat shift).
-8. Material presets + pooling
-   - Add a small preset layer (e.g., utils/material- presets.ts) that returns pooled MeshStandardMaterial variants for:
-     - terrain (matte),
-     - buildings (mid‑gloss),
-     - units (highest contrast + emissive accents).
-   - Route GLTF materials through MaterialPool.getStandardMaterial with roughness/ metalness clamps.
-   - Clamp extreme emissive boosts in managers/instanced- model.tsx.
-9. Hex edge/outline scaling
-   - In geometry/hexagon-geometry.ts or scene update, scale edge opacity with zoom (more visible far, subtle close) to
-     avoid grid noise.
-10. Camera polish
-    - Replace view “step” with eased interpolation in WorldmapScene.changeCameraView (gsap/custom easing).
-    - Dynamically adjust camera near/far with zoom to reduce z‑fighting and keep fog stable.
-11. Post‑processing grading
-    - Check if postprocessing already exports BrightnessContrastEffect/HueSaturationEffect; if yes, add them in
-      game-renderer.ts and wire to POST_PROCESSING_CONFIG.
-    - If not available, plan a lightweight custom shader pass for saturation/contrast only.
-12. Perf + scale validation
-    - Test LOW/MID/HIGH, flat mode, large map visibility;
-13. Document visual ruleset
-    - Add a short “Visual Ruleset” section to three/ README.md for future assets (lighting ratios, saturation hierarchy,
-      shadow policy).
+1. Current Visual Limitations
+
+- Potential double tone-mapping / inconsistent grade: renderer uses ACESFilmicToneMapping while postprocessing also
+  applies ToneMappingEffect (game-renderer.ts:250, game-renderer.ts:891), which can wash contrast and make bloom
+  behavior unpredictable across quality tiers.
+- Fog depth cues effectively disabled: fog is gated behind a user toggle + quality checks (scenes/hexagon-
+  scene.ts:1069), so the world can read “flat” at zoom-out.
+- Fog zoom instability risk: day/night cycle hard-sets fog near/far every update (effects/day-night- cycle.ts:314),
+  fighting the camera-distance fog logic (scenes/hexagon-scene.ts:1069) if you enable it.
+- Fill lighting likely too strong/constant: storm update overrides hemisphere intensity to ~1.2 continuously
+  (scenes/hexagon-scene.ts:757), reducing directional contrast even though base lighting aims for subtle fill
+  (scenes/hexagon-scene.ts:215).
+- Worldmap shadow noise + cost: worldmap forces castShadow = shadowsEnabledByQuality and uses a very wide shadow frustum
+  (scenes/worldmap.tsx:924), overriding the “no shadows in Far view” intent in the base camera logic
+  (scenes/hexagon-scene.ts:1007).
+- Emissive/glow risk: HDR-ish emissive values (e.g. MinesMaterialsParams) can blow out once you fix tone- mapping/bloom
+  ordering (constants/scene-constants.ts:257, constants/rendering.ts:50).
+
+2. High-Impact Visual Improvements (Low GPU Cost)
+
+- Pick one tone-mapping path: either (A) keep postprocessing tone mapping and set renderer toneMapping to NoToneMapping
+  for MID/HIGH, or (B) remove the ToneMappingEffect and rely on renderer tone mapping (game- renderer.ts:250,
+  game-renderer.ts:891). This alone usually improves clarity and “intentional” color.
+- Enable subtle fog by default for Medium/Far: make fog opt-out (not opt-in) and keep it very gentle; it’s night manager
+  and use updateFogForDistance as the single source of truth for near/far (effects/day-night- cycle.ts:314,
+  scenes/hexagon-scene.ts:1069).
+- Restore Far-view shadow disable in worldmap: align scenes/worldmap.tsx:924 with scenes/hexagon- scene.ts:1026 to avoid
+  noisy distant shadows and a big shadow pass.
+- Add cheap “contact shadows” for units/structures: blob/shadow decals (instanced quads with a soft alpha texture) keep
+  units grounded when Far-view shadows are off, with tiny cost.
+
+3. Lighting & Material Recommendations
+
+- Lighting ratios (readability-first): keep a strong sun + restrained fill.
+  - Target ranges: sun intensity ~1.5–2.5, hemisphere ~0.25–0.6, ambient ~0.05–0.15 (then stylize via color/grade).
+  - Today: hemisphere is initialized at 0.8 (scenes/hexagon-scene.ts:215) but then effectively forced near 1.2
+    (scenes/hexagon-scene.ts:757).
+- Storm vs “always on” atmosphere: apply the flicker only when weather says storm; otherwise keep steady lighting so
+  silhouettes and material response are stable (scenes/hexagon-scene.ts:757).
+- Shadow tuning: keep shadows crisp and purposeful.
+  - Use Far-view “no shadows” consistently (scenes/hexagon-scene.ts:1026, scenes/worldmap.tsx:924).
+  - Consider normalBias + smaller bias for cleaner results at low map sizes (your current bias = -0.015 is aggressive)
+    (scenes/hexagon-scene.ts:229).
+- Material strategy: standardize “matte terrain, mid-gloss buildings, highest-contrast units.”
+  - You already reuse/pool some materials (utils/material-pool.ts:1) and already do terrain vertex colors
+    (managers/instanced-biome.tsx:76); extend this by clamping extreme roughness/metalness/emissive on import.
+- Player/faction identity: you have a strong palette system for units (systems/player-colors.ts:1); reuse it for
+  structure selection/pulses (currently hue is derived from structure id) (scenes/worldmap.tsx:1633).
+
+4. Terrain & Chunk Visual Enhancements
+
+- Keep the current per-hex color jitter (it’s a great low-cost win): you already do ±3% sat/light variance per tile
+  (scenes/worldmap.tsx:2990, managers/instanced-biome.tsx:76).
+- Consider re-enabling selective 60° rotation for symmetric biomes: you already compute a rotation seed but don’t apply
+  it (scenes/worldmap.tsx:3088). Only enable for biomes whose meshes won’t create directional seams.
+- Shadow policy on terrain details: terrain base not casting is good; consider also disabling castShadow on small biome
+  detail meshes to reduce noise in Medium view (managers/instanced-biome.tsx:83).
+- Texture clarity at tilt: add moderate anisotropy (e.g., 4–8) to the big ground/terrain textures for sharper far
+  readability (ground texture setup is here: scenes/hexagon-scene.ts:647).
+
+5. Polish & Presentation Ideas
+
+- Selection/importance readability: expand your existing ring/pulse/hover language (you already have rim/ hover +
+  pulses) to units/structures consistently (managers/hover-hex-manager.ts:1, managers/selection- pulse-manager.ts:1).
+- Distance-aware emphasis: increase outline/ring contrast slightly in Far view and reduce in Close (you already scale
+  outline opacity with distance) (scenes/hexagon-scene.ts:700).
+- “Alive” without cost: tiny idle motion is already supported via throttled morph animation updates; focus it on
+  gameplay-important actors, not the whole terrain (managers/instanced-biome.tsx:115, utils/quality- controller.ts:46).
+- Post stack restraint: keep FXAA + mild vignette/grade; be careful with bloom on large maps (it tends to blur UI and
+  reduce tactical readability) (constants/rendering.ts:50, game-renderer.ts:891).
+
+6. Performance-Aware Trade-offs
+
+- Safest at scale: fog (linear), anisotropy (capped), material presets/pooling, Far-view shadow disable.
+- Primary cost centers: shadows (shadow pass triangle count + map size) and bloom at high pixel ratios
+  (utils/quality-controller.ts:46).
+- Optional/experimental: screen-space outlines for everything, cascaded shadows (CSM), SSAO—only if you can gate by
+  view/quality and measure.
+
+Suggested “Visual Ruleset” (team-facing)
+
+- Terrain muted + low contrast; gameplay objects get the saturation/contrast budget.
+- One sun does the shaping; fill lights never exceed ~30–40% of sun.
+- Shadows: units/structures only; Far view uses blobs, not shadow maps.
+- Fog always on (Medium/Far), tuned for readability (not “mood haze”).

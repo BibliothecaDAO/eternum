@@ -75,6 +75,12 @@ export class QuestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled);
+    this.questModels.forEach((models) => {
+      models.forEach((model) => model.setContactShadowsEnabled(enableContactShadows));
+    });
+
     if (this.currentCameraView === view) return;
     this.currentCameraView = view;
 
@@ -118,6 +124,9 @@ export class QuestManager {
           const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest" + QuestType[questType]);
           this.questModels.set(questType, [instancedModel]);
           this.scene.add(instancedModel.group);
+          const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+          const enableContactShadows = !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled);
+          instancedModel.setContactShadowsEnabled(enableContactShadows);
           resolve();
         },
         undefined,

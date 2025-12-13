@@ -84,6 +84,9 @@ export abstract class HexagonScene {
   protected stormLight!: PointLight;
   protected ambientPurpleLight!: AmbientLight;
 
+  private stormAmbientBaseIntensity?: number;
+  private stormHemisphereBaseIntensity?: number;
+
   private groundMesh!: Mesh;
   private uiStateUnsubscribe?: () => void;
   private lightningEndTime: number = 0;
@@ -213,14 +216,12 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    // Cooler sky fill + warmer ground bounce, kept subtle to preserve directional contrast.
-    this.hemisphereLight = new HemisphereLight(0xaecbff, 0x6a5844, 0.8);
+    this.hemisphereLight = new HemisphereLight(0x6a3a6a, 0xffffff, 1.2);
     this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    // Warm key light baseline; day/night cycle will override dynamically.
-    this.mainDirectionalLight = new DirectionalLight(0xfff2d2, 2.0);
+    this.mainDirectionalLight = new DirectionalLight(0x9966ff, 2.0);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
@@ -230,15 +231,13 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
     this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSizeByQuality;
     this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSizeByQuality;
-    // Slightly wider ortho bounds for angled sun shadows.
-    this.mainDirectionalLight.shadow.camera.left = -24;
-    this.mainDirectionalLight.shadow.camera.right = 24;
-    this.mainDirectionalLight.shadow.camera.top = 16;
-    this.mainDirectionalLight.shadow.camera.bottom = -16;
-    this.mainDirectionalLight.shadow.camera.far = 45;
-    this.mainDirectionalLight.shadow.camera.near = 5;
-    this.mainDirectionalLight.shadow.bias = -0.015;
-    // Default shallow sun angle for better form readability at zoom-out.
+    this.mainDirectionalLight.shadow.camera.left = -20;
+    this.mainDirectionalLight.shadow.camera.right = 20;
+    this.mainDirectionalLight.shadow.camera.top = 13;
+    this.mainDirectionalLight.shadow.camera.bottom = -13;
+    this.mainDirectionalLight.shadow.camera.far = 38;
+    this.mainDirectionalLight.shadow.camera.near = 8;
+    this.mainDirectionalLight.shadow.bias = -0.02;
     this.mainDirectionalLight.position.set(-15, 13, 8);
     this.mainDirectionalLight.target.position.set(0, 0, -5.2);
   }
@@ -433,6 +432,7 @@ export abstract class HexagonScene {
   }
 
   public applyQualityFeatures(features: QualityFeatures): void {
+    const shadowsEnabledChanged = this.shadowsEnabledByQuality !== features.shadows;
     this.shadowsEnabledByQuality = features.shadows;
     if (features.shadowMapSize > 0) {
       this.shadowMapSizeByQuality = features.shadowMapSize;
@@ -461,6 +461,10 @@ export abstract class HexagonScene {
       this.biomeModels.forEach((model) => {
         model.setAnimationFPS?.(features.animationFPS);
       });
+    }
+
+    if (shadowsEnabledChanged) {
+      this.cameraViewListeners.forEach((listener) => listener(this.currentCameraView));
     }
 
     const distance = this.controls.object.position.distanceTo(this.controls.target);
@@ -647,6 +651,7 @@ export abstract class HexagonScene {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
       texture.repeat.set(scale, scale / 2.5);
+      texture.anisotropy = 4; // Sharper terrain at tilted viewing angles
     });
 
     const material = new MeshStandardMaterial({
@@ -777,11 +782,29 @@ export abstract class HexagonScene {
       this.stormLight.intensity = stormIntensity;
     }
 
-    const purpleFlicker = 0.08 + Math.sin(elapsedTime * 2) * 0.03;
-    this.ambientPurpleLight.intensity = purpleFlicker;
+    // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
+    const dayNightEnabled = this.dayNightCycleManager?.params?.enabled === true;
 
-    const hemisphereFlicker = 1.2 + Math.sin(elapsedTime * 1.5) * 0.05;
-    this.hemisphereLight.intensity = hemisphereFlicker;
+    const ambientBase = dayNightEnabled
+      ? this.ambientPurpleLight.intensity
+      : (this.stormAmbientBaseIntensity ?? this.ambientPurpleLight.intensity);
+    const hemisphereBase = dayNightEnabled
+      ? this.hemisphereLight.intensity
+      : (this.stormHemisphereBaseIntensity ?? this.hemisphereLight.intensity);
+
+    if (dayNightEnabled) {
+      this.stormAmbientBaseIntensity = ambientBase;
+      this.stormHemisphereBaseIntensity = hemisphereBase;
+    } else {
+      this.stormAmbientBaseIntensity ??= ambientBase;
+      this.stormHemisphereBaseIntensity ??= hemisphereBase;
+    }
+
+    const ambientFlicker = 1 + Math.sin(elapsedTime * 2) * 0.06;
+    this.ambientPurpleLight.intensity = ambientBase * ambientFlicker;
+
+    const hemisphereFlicker = 1 + Math.sin(elapsedTime * 1.5) * 0.06;
+    this.hemisphereLight.intensity = hemisphereBase * hemisphereFlicker;
   }
 
   private startLightningSequence(): void {
@@ -991,6 +1014,10 @@ export abstract class HexagonScene {
 
   public getCurrentCameraView(): CameraView {
     return this.currentCameraView;
+  }
+
+  public getShadowsEnabledByQuality(): boolean {
+    return this.shadowsEnabledByQuality;
   }
 
   public addCameraViewListener(listener: (view: CameraView) => void) {
