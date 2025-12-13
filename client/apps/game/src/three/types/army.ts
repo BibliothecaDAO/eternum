@@ -15,6 +15,8 @@ export interface MovementData {
   startPos: Vector3;
   endPos: Vector3;
   progress: number;
+  segmentDistance: number;
+  invTravelTime: number;
   matrixIndex: number;
   currentPathIndex: number;
   floatingHeight: number;
@@ -59,6 +61,8 @@ export interface AnimatedInstancedMesh extends InstancedMesh {
 export interface ModelData {
   group: Group;
   instancedMeshes: AnimatedInstancedMesh[];
+  contactShadowMesh?: InstancedMesh;
+  contactShadowScale?: number;
   baseMeshes: Mesh[];
   mixer: AnimationMixer;
   animations: {

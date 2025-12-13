@@ -42,7 +42,7 @@ export const CONTROL_CONFIG = {
 };
 
 export const FOG_CONFIG = {
-  color: 0x2d1b4e,
+  color: 0x1b1e2b,
   near: 15,
   far: 35,
 };
@@ -52,7 +52,7 @@ export const POST_PROCESSING_CONFIG: Record<GraphicsSettings, PostProcessingConf
     brightness: 0,
     contrast: 0,
     hue: 0,
-    saturation: 0.6,
+    saturation: 0.18,
     toneMapping: {
       mode: ToneMappingMode.OPTIMIZED_CINEON,
       exposure: 0.7,
@@ -68,7 +68,7 @@ export const POST_PROCESSING_CONFIG: Record<GraphicsSettings, PostProcessingConf
     brightness: 0,
     contrast: 0,
     hue: 0,
-    saturation: 0.4,
+    saturation: 0.12,
     toneMapping: {
       mode: ToneMappingMode.OPTIMIZED_CINEON,
       exposure: 0.6,

@@ -694,25 +694,45 @@ export class WorldUpdateListener {
           callback,
           async (update: any) => {
             if (isComponentUpdate(update, this.setup.components.Building)) {
-              const building = getComponentValue(this.setup.components.Building, update.entity);
-              if (!building) return;
+              const [currentState, prevState] = update.value;
+              if (!currentState) return;
 
-              if (building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
+              if (currentState.outer_col !== hexCoords.col || currentState.outer_row !== hexCoords.row) {
+                return;
+              }
 
-              const innerCol = building.inner_col;
-              const innerRow = building.inner_row;
-              const buildingType = building.category;
-              const paused = building.paused;
+              const buildingType = currentState.category;
+              const innerCol = currentState.inner_col;
+              const innerRow = currentState.inner_row;
+              const paused = currentState.paused;
+              const entityId = currentState.entity_id;
 
-              const result = {
-                buildingType,
-                innerCol,
-                innerRow,
-                paused,
-              };
+              const prevBuildingType = prevState?.category;
+              const prevPaused = prevState?.paused;
+              const prevEntityId = prevState?.entity_id;
 
+              // Ignore noisy updates where nothing relevant changed.
+              if (
+                prevState &&
+                prevBuildingType === buildingType &&
+                prevPaused === paused &&
+                prevEntityId === entityId
+              ) {
+                return;
+              }
+
+              // Ignore empty-slot updates unless this is a real removal transition.
+              if (entityId === 0 && buildingType === BuildingType.None) {
+                const prevWasNonEmpty =
+                  prevState &&
+                  ((prevEntityId ?? 0) !== 0 || (prevBuildingType ?? BuildingType.None) !== BuildingType.None);
+                if (!prevWasNonEmpty) {
+                  return;
+                }
+              }
+
+              const result = { buildingType, innerCol, innerRow, paused };
               console.log("[onBuildingUpdate] BuildingSystemUpdate:", result);
-
               return result;
             }
           },
@@ -854,21 +874,28 @@ export class WorldUpdateListener {
 
   public get StructureEntityListener() {
     return {
-      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => any) => {
-        // Create a query for the Structure component
-        const query = defineQuery([HasValue(this.setup.components.Structure, { entity_id: entityId })], {
-          runOnInit: false,
-        });
+	      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => any) => {
+	        // Create a query for the Structure component
+	        const query = defineQuery([HasValue(this.setup.components.Structure, { entity_id: entityId })], {
+	          runOnInit: false,
+	        });
+	        let lastEmittedLevel: number | undefined;
 
-        // Subscribe to the query updates
-        const subscription = query.update$.subscribe((update) => {
-          if (isComponentUpdate(update, this.setup.components.Structure)) {
-            const [currentState, _prevState] = update.value;
-            if (!currentState) return;
-            const val = {
-              entityId,
-              level: currentState.base.level,
-            };
+	        // Subscribe to the query updates
+	        const subscription = query.update$.subscribe((update) => {
+	          if (isComponentUpdate(update, this.setup.components.Structure)) {
+	            const [currentState, prevState] = update.value;
+	            if (!currentState) return;
+	            const currentLevel = currentState.base.level;
+	            const prevLevel = prevState?.base.level;
+	            if (prevLevel === currentLevel || lastEmittedLevel === currentLevel) {
+	              return;
+	            }
+	            lastEmittedLevel = currentLevel;
+	            const val = {
+	              entityId,
+	              level: currentLevel,
+	            };
             console.log("[onLevelUpdate] StructureEntityListener:", val);
             callback(val);
           }
