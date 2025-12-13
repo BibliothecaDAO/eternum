@@ -5,8 +5,8 @@ import type { MarketClass } from "@/pm/class";
 import { useMarketHistory } from "@/pm/hooks/markets/useMarketHistory";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@pm/ui";
 
-export const MarketHistory = ({ market }: { market: MarketClass }) => {
-  const { chartData, chartConfig } = useMarketHistory(market);
+export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {
+  const { chartData, chartConfig } = useMarketHistory(market, refreshKey);
 
   const [hoveringDataKey, setHoveringDataKey] = useState<string | undefined>(undefined);
 

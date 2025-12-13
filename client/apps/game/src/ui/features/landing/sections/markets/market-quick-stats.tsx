@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 
 import { getContractByName } from "@dojoengine/core";
-import { Clock3, Lock, Users } from "lucide-react";
+import { Clock3, Lock, Users, Wallet } from "lucide-react";
+import { useAccount } from "@starknet-react/core";
 
 import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { useTokens } from "@/pm/hooks/dojo/useTokens";
+import { formatUnits } from "@/pm/utils";
 
 import { TokenIcon } from "./TokenIcon";
 
@@ -25,6 +27,7 @@ const formatTimeLeft = (targetSeconds: number | null) => {
 };
 
 export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
+  const { account } = useAccount();
   const {
     config: { manifest },
   } = useDojoSdk();
@@ -57,6 +60,22 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
     return holders.size;
   }, [balances, positionIds, vaultPositionsAddress]);
 
+  const playerLockedAmount = useMemo(() => {
+    if (!account?.address || !vaultPositionsAddress || positionIds.length === 0) return null;
+
+    const total = balances.reduce((acc, balance) => {
+      const matchesPlayer = BigInt(balance.account_address) === BigInt(account.address);
+      const matchesContract = BigInt(balance.contract_address) === BigInt(vaultPositionsAddress);
+      const matchesToken = positionIds.some((id) => BigInt(balance.token_id || 0) === id);
+
+      if (!matchesPlayer || !matchesContract || !matchesToken) return acc;
+
+      return acc + BigInt(balance.balance || 0);
+    }, 0n);
+
+    return formatUnits(total, Number(market.collateralToken?.decimals ?? 0), 4);
+  }, [account?.address, balances, market.collateralToken?.decimals, positionIds, vaultPositionsAddress]);
+
   const tvl = market.getTvl ? market.getTvl() : (market.tvl ?? 0);
   const tradingEndsLabel = formatTimeLeft(market.end_at ?? null);
 
@@ -72,6 +91,13 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
       <span className="flex items-center gap-1">
         <Users className="h-3 w-3" />
         <span className="text-white">{holdersCount != null ? holdersCount : "--"} holders</span>
+      </span>
+      <span className="flex items-center gap-1">
+        <Wallet className="h-3 w-3" />
+        <span className="text-white">
+          {account?.address ? playerLockedAmount ?? "0" : "--"}
+        </span>
+        {market.collateralToken ? <TokenIcon token={market.collateralToken as any} size={12} /> : null}
       </span>
       <span className="flex items-center gap-1">
         <Clock3 className="h-3 w-3" />

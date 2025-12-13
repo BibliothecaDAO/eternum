@@ -24,7 +24,7 @@ const getEntityIdFromKeys = (keys: bigint[]) => {
   return addAddressPadding(BigInt(poseidon));
 };
 
-export const useMarketHistory = (market: MarketClass) => {
+export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
   const { sdk } = useDojoSdk();
   const { findController, controllers } = useControllers();
 
@@ -84,7 +84,7 @@ export const useMarketHistory = (market: MarketClass) => {
     };
 
     void initAsync();
-  }, [query, sdk]);
+  }, [query, sdk, refreshKey]);
 
   const chartConfig = useMemo(() => {
     return Object.fromEntries(

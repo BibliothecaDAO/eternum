@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { MarketClass, type MarketOutcome } from "@/pm/class";
 import { useMarkets } from "@pm/sdk";
 import { ScrollArea } from "@pm/ui";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Play, RefreshCw } from "lucide-react";
 
 import Button from "@/ui/design-system/atoms/button";
 
@@ -88,7 +88,15 @@ const MarketDetailsTabs = ({ market }: { market: MarketClass }) => {
   );
 };
 
-const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
+const MarketDetailsContent = ({
+  market,
+  onRefresh,
+  refreshKey = 0,
+}: {
+  market: MarketClass;
+  onRefresh?: () => void;
+  refreshKey?: number;
+}) => {
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
   const watchState = getWatchState(market);
@@ -125,26 +133,39 @@ const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
           <div className="space-y-1">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h3 className="text-3xl font-semibold text-white">{market.title || "Untitled market"}</h3>
-              <Button
-                size="xs"
-                variant="outline"
-                forceUppercase={false}
-                className="gap-2"
-                onClick={() => void watchMarket(market)}
-                isLoading={watchLoading}
-                disabled={watchDisabled}
-                title={watchDisabled ? "Game is offline" : undefined}
-              >
-                <Play className="h-4 w-4" />
-                <span>Watch</span>
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="xs"
+                  variant="outline"
+                  forceUppercase={false}
+                  className="gap-2"
+                  onClick={() => onRefresh?.()}
+                  title="Refresh market data"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Refresh</span>
+                </Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  forceUppercase={false}
+                  className="gap-2"
+                  onClick={() => void watchMarket(market)}
+                  isLoading={watchLoading}
+                  disabled={watchDisabled}
+                  title={watchDisabled ? "Game is offline" : undefined}
+                >
+                  <Play className="h-4 w-4" />
+                  <span>Watch</span>
+                </Button>
+              </div>
             </div>
             <MarketCreatedBy creator={market.creator} market={market} />
           </div>
 
           <div className="space-y-3">
             <MarketTimeline market={market} />
-            <MarketHistory market={market} />
+            <MarketHistory market={market} refreshKey={refreshKey} />
           </div>
         </div>
 
@@ -182,7 +203,8 @@ const MarketDetailsContent = ({ market }: { market: MarketClass }) => {
 
 const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
   const targetId = useMemo(() => parseMarketId(marketId), [marketId]);
-  const { markets } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
+  const { markets, refresh: refreshMarkets } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const market = useMemo(() => {
     if (targetId == null) return undefined;
@@ -197,6 +219,11 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
   }, [markets, targetId]);
 
   const isLoading = !market && markets.length === 0;
+
+  const handleRefresh = () => {
+    refreshMarkets();
+    setRefreshKey((prev) => prev + 1);
+  };
 
   return (
     <MarketsSection description="Inspect a market's odds, schedule, and oracle details.">
@@ -221,7 +248,7 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
         </div>
       ) : null}
 
-      {market ? <MarketDetailsContent market={market} /> : null}
+      {market ? <MarketDetailsContent market={market} onRefresh={handleRefresh} refreshKey={refreshKey} /> : null}
     </MarketsSection>
   );
 };

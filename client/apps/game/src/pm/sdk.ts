@@ -1,5 +1,5 @@
 import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Market, MarketCreated, VaultDenominator, VaultNumerator } from "./bindings";
 import { MarketClass } from "./class";
 import { useDojoSdk } from "./hooks/dojo/useDojoSdk";
@@ -30,6 +30,7 @@ export enum MarketTypeFilter {
 export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersParams }) => {
   const { sdk } = useDojoSdk();
   const { registeredOracles, registeredTokens, getRegisteredToken } = useConfig();
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const [rawMarkets, setRawMarkets] = useState<Market[]>([]);
   const [vaultDenominators, setVaultDenominators] = useState<VaultDenominator[]>([]);
@@ -140,6 +141,8 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
       .includeHashedKeys();
   }, []);
 
+  const refresh = useCallback(() => setRefreshNonce((prev) => prev + 1), []);
+
   useEffect(() => {
     const initAsync = async () => {
       const entities = (await sdk.getEntities({ query: marketsQuery })).getItems();
@@ -160,7 +163,7 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
     };
 
     initAsync();
-  }, [marketsQuery]);
+  }, [marketsQuery, refreshNonce]);
 
   useEffect(() => {
     const initAsync = async () => {
@@ -175,7 +178,7 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
     };
 
     initAsync();
-  }, [allVaultNumeratorsQuery]);
+  }, [allVaultNumeratorsQuery, refreshNonce]);
 
   useEffect(() => {
     const fetchMarketEvents = async () => {
@@ -195,7 +198,7 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
     };
 
     void fetchMarketEvents();
-  }, [sdk, marketEventsQuery]);
+  }, [sdk, marketEventsQuery, refreshNonce]);
 
   useEffect(() => {
     if (!registeredOracles || registeredOracles.length === 0) return;
@@ -266,6 +269,7 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
 
   return {
     markets,
+    refresh,
   };
 };
 

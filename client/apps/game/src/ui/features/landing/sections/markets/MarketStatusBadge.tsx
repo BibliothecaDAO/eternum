@@ -1,4 +1,4 @@
-import type { Market } from "@pm/sdk";
+import { MarketClass } from "@/pm/class";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
@@ -22,7 +22,7 @@ const formatStatus = (status?: unknown) => {
   return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-export const MarketStatusBadge = ({ market }: { market: Market }) => {
+export const MarketStatusBadge = ({ market }: { market: MarketClass }) => {
   const statusRaw = (market as any).status || (market as any).state;
   const now = Math.floor(Date.now() / 1_000);
 
@@ -43,12 +43,7 @@ export const MarketStatusBadge = ({ market }: { market: Market }) => {
   const style = STATUS_STYLES[normalized] || STATUS_STYLES.default;
 
   return (
-    <span
-      className={cx(
-        "rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
-        style,
-      )}
-    >
+    <span className={cx("rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide", style)}>
       {formatStatus(computedStatus ?? statusRaw ?? normalized)}
     </span>
   );
