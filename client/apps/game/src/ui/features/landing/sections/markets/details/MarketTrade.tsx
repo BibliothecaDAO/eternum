@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
 
@@ -462,24 +463,26 @@ export function MarketTrade({
             {market.typBinary() && (
               <HStack className="w-full">
                 <Button
-                  className="w-1/2 bg-progress-bar-good text-white hover:bg-progress-bar-good/80"
+                  className="w-1/2 bg-progress-bar-good text-white hover:bg-progress-bar-good/80 flex items-center justify-center gap-2"
                   onClick={() => {
                     setSelectedOutcome?.(outcomes[0]);
                     setIsDialogOpen(true);
                   }}
                   disabled={isSubmitting}
                 >
-                  BUY YES
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {isSubmitting ? "Submitting..." : "BUY YES"}
                 </Button>
                 <Button
-                  className="w-1/2 bg-danger text-lightest hover:bg-danger/80"
+                  className="w-1/2 bg-danger text-lightest hover:bg-danger/80 flex items-center justify-center gap-2"
                   onClick={() => {
                     setSelectedOutcome?.(outcomes[1]);
                     setIsDialogOpen(true);
                   }}
                   disabled={isSubmitting}
                 >
-                  BUY NO
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {isSubmitting ? "Submitting..." : "BUY NO"}
                 </Button>
               </HStack>
             )}
@@ -493,11 +496,12 @@ export function MarketTrade({
                   </span>
                 </div>
                 <Button
-                  className="w-full bg-white/10 text-white hover:bg-white/20"
+                  className="w-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center gap-2"
                   onClick={() => setIsDialogOpen(true)}
                   disabled={!selectedOutcome || isSubmitting}
                 >
-                  {!selectedOutcome ? "Select an outcome" : "BUY"}
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {!selectedOutcome ? "Select an outcome" : isSubmitting ? "Submitting..." : "BUY"}
                 </Button>
               </VStack>
             )}
@@ -526,11 +530,12 @@ export function MarketTrade({
           </DialogDescription>
           <DialogFooter>
             <Button
-              className="w-full bg-white/10 text-white hover:bg-white/20"
+              className="w-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center gap-2"
               onClick={() => onBuy(selectedOutcome?.index ?? 0)}
               disabled={isSubmitting}
             >
-              BUY
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {isSubmitting ? "Submitting..." : "BUY"}
             </Button>
           </DialogFooter>
         </Dialog>
