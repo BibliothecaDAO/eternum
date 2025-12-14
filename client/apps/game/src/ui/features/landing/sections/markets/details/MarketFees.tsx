@@ -70,7 +70,7 @@ export const MarketFees = ({ market }: { market: MarketClass }) => {
           <CardTitle className="text-sm font-semibold text-white">
             <HStack className="items-center gap-3">
               <span className="text-xs text-gold/80">Fees</span>
-              <span className="rounded-full bg-white/10 px-2 py-[2px] text-[10px] font-semibold text-gold">
+              <span className="rounded-full bg-white/10 px-2 py-[2px] text-sm font-semibold text-gold">
                 Total {totalLabel}
               </span>
             </HStack>
