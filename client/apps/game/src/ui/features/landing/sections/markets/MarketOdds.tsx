@@ -43,7 +43,12 @@ export const MarketOdds = ({
 }) => {
   const outcomes = getOutcomes(market);
   const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
-  const sortedOutcomes = [...outcomes]
+  const winningOutcomeOrders = resolvedPayouts
+    .map((payout, idx) => (payout != null && Number(payout) > 0 ? idx : null))
+    .filter((idx): idx is number => idx !== null);
+  const winningOutcomeOrdersSet = new Set(winningOutcomeOrders);
+
+  const baseSortedOutcomes = [...outcomes]
     .map((outcome, idx) => {
       const normalizedOrder = Number((outcome as any)?.index);
       return { outcome, order: Number.isFinite(normalizedOrder) ? normalizedOrder : idx };
@@ -59,22 +64,30 @@ export const MarketOdds = ({
       return bOdds - aOdds;
     });
 
+  const sortedOutcomes =
+    market.isResolved() && winningOutcomeOrders.length > 0
+      ? [
+          // Move winning outcome(s) to the top once resolution is known.
+          ...baseSortedOutcomes.filter(({ order }) => winningOutcomeOrdersSet.has(order)),
+          ...baseSortedOutcomes.filter(({ order }) => !winningOutcomeOrdersSet.has(order)),
+        ]
+      : baseSortedOutcomes;
+
   if (outcomes.length === 0) {
     return <p className="text-xs text-gold/70">No odds available.</p>;
   }
+
+  const isSelectable = selectable && !market.isEnded() && !market.isResolved();
 
   return (
     <div className="flex flex-col gap-2">
       {sortedOutcomes.map(({ outcome, order }) => {
         const oddsRaw = getOddsValue(outcome);
         const odds = formatOdds(oddsRaw);
-        const isSelected = selectable && selectedOutcomeIndex === order;
+        const isSelected = isSelectable && selectedOutcomeIndex === order;
         const color = getOutcomeColor(order);
         const isWinner =
-          resolvedPayouts.length > 0 &&
-          resolvedPayouts[order] != null &&
-          Number(resolvedPayouts[order]) > 0 &&
-          market.isResolved();
+          market.isResolved() && resolvedPayouts.length > 0 && winningOutcomeOrdersSet.has(order);
 
         return (
           <button
@@ -83,12 +96,12 @@ export const MarketOdds = ({
               "flex min-h-[52px] items-center justify-between rounded-sm border px-3 py-2 text-left text-xs transition",
               isWinner ? "border-progress-bar-good/60 bg-progress-bar-good/10" : "border-gold/20 bg-brown/40",
               "text-lightest",
-              selectable ? "cursor-pointer hover:border-gold/60 hover:bg-gold/10" : "cursor-default",
+              isSelectable ? "cursor-pointer hover:border-gold/60 hover:bg-gold/10" : "cursor-default",
               isSelected ? "border-gold/70 bg-gold/15 ring-1 ring-gold/40" : null,
             )}
             type="button"
             onClick={
-              selectable && onSelect
+              isSelectable && onSelect
                 ? () => {
                     onSelect(outcome);
                   }
