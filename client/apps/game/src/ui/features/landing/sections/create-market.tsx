@@ -256,7 +256,9 @@ const buildMarketParams = (
 
 export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarketProps = {}) => {
   const account = useAccountStore((state) => state.account);
-  const { servers, loading, error, nowSec, refresh, loadPlayers } = useMarketServers();
+  const { servers, loading, error, nowSec, refresh, loadPlayers } = useMarketServers({
+    allowFakePlayerFallback: includeEnded,
+  });
 
   const marketAddress = env.VITE_PUBLIC_PM_ADDRESS ?? DEFAULT_MARKET_ADDRESS;
   const [forms, setForms] = useState<Record<string, MarketServerFormState>>({});

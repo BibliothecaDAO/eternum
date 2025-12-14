@@ -86,7 +86,7 @@ export type MarketServer = {
   playerError: string | null;
 };
 
-export const useMarketServers = () => {
+export const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayerFallback?: boolean } = {}) => {
   const [servers, setServers] = useState<MarketServer[]>([]);
   const serversRef = useRef<MarketServer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -189,8 +189,26 @@ export const useMarketServers = () => {
 
     try {
       const players = await fetchRegisteredPlayers(server.toriiBaseUrl);
+      // In test mode we need at least two players to create a market; when only one is registered,
+      // add a temporary fake player so creation flows don’t fail during debugging.
+      const augmentedPlayers =
+        allowFakePlayerFallback && players.length === 1
+          ? [
+              ...players,
+              {
+                address:
+                  "0x" +
+                  Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16))
+                    .join("")
+                    .padStart(64, "0"),
+                name: `DebugPlayer-${Math.random().toString(36).slice(2, 8)}`,
+              },
+            ]
+          : players;
       setServers((prev) =>
-        prev.map((s) => (s.name === serverName ? { ...s, players, playersLoaded: true, loadingPlayers: false } : s)),
+        prev.map((s) =>
+          s.name === serverName ? { ...s, players: augmentedPlayers, playersLoaded: true, loadingPlayers: false } : s,
+        ),
       );
     } catch (e: any) {
       const message = e?.message ?? "Failed to load players";
@@ -198,7 +216,7 @@ export const useMarketServers = () => {
         prev.map((s) => (s.name === serverName ? { ...s, playerError: message, loadingPlayers: false } : s)),
       );
     }
-  }, []);
+  }, [allowFakePlayerFallback]);
 
   const registrationTotal = useMemo(() => {
     return servers.reduce((acc, server) => acc + (server.registrationCount ?? 0), 0);
