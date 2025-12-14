@@ -8,15 +8,15 @@ import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useUser } from "@/pm/hooks/dojo/user";
-import { useClaimablePayout } from "@/pm/hooks/markets/useClaimablePayout";
+import { useClaimablePayout } from "@/pm/hooks/markets/use-claimable-payout";
 import { formatUnits } from "@/pm/utils";
 import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
 import { parseLordsToBaseUnits } from "../market-utils";
-import { MaybeController } from "../MaybeController";
-import { TokenIcon } from "../TokenIcon";
+import { MaybeController } from "../maybe-controller";
+import { TokenIcon } from "../token-icon";
 
 // Lightweight stand-ins for UI pieces used in the reference implementation.
 const Button = ({

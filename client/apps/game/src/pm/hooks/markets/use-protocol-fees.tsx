@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { uint256 } from "starknet";
 import { ProtocolFees } from "../../bindings";
 import { deepEqual } from "../../utils";
-import { useDojoSdk } from "../dojo/useDojoSdk";
+import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
 export const useProtocolFees = (address: string) => {
   const { sdk } = useDojoSdk();

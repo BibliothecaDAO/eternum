@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
 
 import { MarketsProviders, MarketsSection } from "./markets";
-import { TokenIcon } from "./markets/TokenIcon";
+import { TokenIcon } from "./markets/token-icon";
 
 const MintContent = () => {
   const { account } = useAccount();

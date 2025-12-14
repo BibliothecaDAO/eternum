@@ -5,12 +5,12 @@ import { Clock3, Lock, Users, Wallet } from "lucide-react";
 import { useAccount } from "@starknet-react/core";
 
 import type { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
-import { useTokens } from "@/pm/hooks/dojo/useTokens";
-import { useClaimablePayout } from "@/pm/hooks/markets/useClaimablePayout";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
+import { useClaimablePayout } from "@/pm/hooks/markets/use-claimable-payout";
 import { formatUnits } from "@/pm/utils";
 
-import { TokenIcon } from "./TokenIcon";
+import { TokenIcon } from "./token-icon";
 
 const formatTimeLeft = (targetSeconds: number | null) => {
   if (targetSeconds == null || targetSeconds <= 0) return "N/A";

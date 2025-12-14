@@ -1,7 +1,7 @@
 import { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useUser } from "@/pm/hooks/dojo/user";
-import { useProtocolFees } from "@/pm/hooks/markets/useProtocolFees";
+import { useProtocolFees } from "@/pm/hooks/markets/use-protocol-fees";
 import { HStack, VStack } from "@/pm/ui";
 import { formatUnits } from "@/pm/utils";
 import { Button } from "@/ui/design-system/atoms";
@@ -11,7 +11,7 @@ import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
-import { TokenIcon } from "../TokenIcon";
+import { TokenIcon } from "../token-icon";
 
 export function MarketVaultFees({ market }: { market: MarketClass }) {
   const {

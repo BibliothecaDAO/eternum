@@ -1,4 +1,4 @@
-import { useControllers } from "@/pm/hooks/controllers/useControllers";
+import { useControllers } from "@/pm/hooks/controllers/use-controllers";
 import { shortAddress } from "@/pm/utils";
 import { useEffect, useState } from "react";
 

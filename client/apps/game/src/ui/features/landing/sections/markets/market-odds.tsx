@@ -1,7 +1,7 @@
 import { MarketClass, MarketOutcome } from "@/pm/class";
-import { getOutcomeColor } from "@/pm/constants/marketOutcomeColors";
+import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 import { HStack } from "@pm/ui";
-import { MaybeController } from "./MaybeController";
+import { MaybeController } from "./maybe-controller";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 

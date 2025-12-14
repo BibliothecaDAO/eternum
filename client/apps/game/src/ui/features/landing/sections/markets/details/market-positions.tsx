@@ -4,12 +4,12 @@ import { useAccount } from "@starknet-react/core";
 import { useMemo } from "react";
 
 import type { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
-import { useTokens } from "@/pm/hooks/dojo/useTokens";
-import { computeRedeemableValue } from "@/pm/hooks/markets/calcRedeemable";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
+import { computeRedeemableValue } from "@/pm/hooks/markets/calc-redeemable";
 import { formatUnits } from "@/pm/utils";
-import { TokenIcon } from "../TokenIcon";
-import { MaybeController } from "../MaybeController";
+import { TokenIcon } from "../token-icon";
+import { MaybeController } from "../maybe-controller";
 
 type HolderPosition = {
   account: string;

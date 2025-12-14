@@ -1,7 +1,7 @@
 import { Token, TokenBalance } from "@dojoengine/torii-client";
 import { useAccount } from "@starknet-react/core";
 import { createContext, useCallback, useContext } from "react";
-import { useTokens } from "./useTokens";
+import { useTokens } from "./use-tokens";
 
 type UserProviderProps = {
   children: React.ReactNode;

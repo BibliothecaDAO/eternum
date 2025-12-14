@@ -1,10 +1,10 @@
 import { useAccount } from "@starknet-react/core";
 import { useState } from "react";
 
-import { useMarketUserMessages } from "@/pm/hooks/social/useMarketUserMessages";
+import { useMarketUserMessages } from "@/pm/hooks/social/use-market-user-messages";
 import { HStack, VStack } from "@pm/ui";
 
-import { MaybeController } from "../MaybeController";
+import { MaybeController } from "../maybe-controller";
 
 const Input = ({
   value,

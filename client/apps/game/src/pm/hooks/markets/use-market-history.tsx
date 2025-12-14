@@ -4,10 +4,10 @@ import { addAddressPadding, hash, uint256, type BigNumberish } from "starknet";
 
 import type { MarketClass } from "@/pm/class";
 import type { RegisteredToken, VaultDenominatorEvent, VaultNumeratorEvent } from "@/pm/bindings";
-import { useControllers } from "@/pm/hooks/controllers/useControllers";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useControllers } from "@/pm/hooks/controllers/use-controllers";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { formatUnits } from "@/pm/utils";
-import { getOutcomeColor } from "@/pm/constants/marketOutcomeColors";
+import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 
 const toBigInt = (value: BigNumberish | undefined) => {
   if (value === undefined || value === null) return 0n;

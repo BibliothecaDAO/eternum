@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 
 import { useAccount } from "@starknet-react/core";
-import { ControllersProvider } from "@/pm/hooks/controllers/useControllers";
+import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
 import { useConfig } from "@/pm/providers";
 import {
@@ -12,10 +12,10 @@ import {
   type MarketFiltersParams,
 } from "@pm/sdk";
 
-import { MarketFilters } from "./markets/MarketFilters";
-import { MarketsList } from "./markets/MarketsList";
-import { MarketsLeaderboardView } from "./markets/MarketsLeaderboardView";
-import { PlayerMarketsView } from "./markets/PlayerMarketsView";
+import { MarketFilters } from "./markets/market-filters";
+import { MarketsList } from "./markets/markets-list";
+import { MarketsLeaderboardView } from "./markets/markets-leaderboard-view";
+import { PlayerMarketsView } from "./markets/player-markets-view";
 import { MARKET_TABS, TabButton, type MarketTab } from "./markets/market-tabs";
 import {
   buildLeaderboard,

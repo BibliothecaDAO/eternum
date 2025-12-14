@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import { getContractByName } from "@dojoengine/core";
 
 import type { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
-import { useTokens } from "@/pm/hooks/dojo/useTokens";
-import { computeRedeemableValue } from "@/pm/hooks/markets/calcRedeemable";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
+import { computeRedeemableValue } from "@/pm/hooks/markets/calc-redeemable";
 import { formatUnits } from "@/pm/utils";
 
 export const useClaimablePayout = (market: MarketClass, accountAddress?: string) => {

@@ -1,6 +1,6 @@
 import { MarketClass } from "@/pm/class";
 import { HStack } from "@pm/ui";
-import { TokenIcon } from "./TokenIcon";
+import { TokenIcon } from "./token-icon";
 
 const formatTvl = (value: unknown) => {
   const num = Number(value);

@@ -3,12 +3,12 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getContractByName } from "@dojoengine/core";
 
 import type { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
-import { useTokens } from "@/pm/hooks/dojo/useTokens";
-import { useMarketActivity } from "@/pm/hooks/social/useMarketActivity";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
+import { useMarketActivity } from "@/pm/hooks/social/use-market-activity";
 import { formatUnits } from "@/pm/utils";
-import { MaybeController } from "../MaybeController";
-import { TokenIcon } from "../TokenIcon";
+import { MaybeController } from "../maybe-controller";
+import { TokenIcon } from "../token-icon";
 
 const formatTimeLeft = (targetMs: number | null, now: number) => {
   if (targetMs == null || targetMs <= 0) return "N/A";

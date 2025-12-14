@@ -2,7 +2,7 @@ import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding, BigNumberish } from "starknet";
 import { MarketBuy } from "../../bindings";
-import { useDojoSdk } from "../dojo/useDojoSdk";
+import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
 export const useMarketActivity = (marketId: BigNumberish) => {
   const { sdk } = useDojoSdk();

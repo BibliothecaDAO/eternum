@@ -4,7 +4,7 @@ import { addAddressPadding } from "starknet";
 
 import type { MarketClass } from "@/pm/class";
 import type { MarketBuy, PayoutRedemption } from "@/pm/bindings";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { formatUnits } from "@/pm/utils";
 
 export type MarketLeaderboardRange = "daily" | "weekly" | "monthly" | "all";

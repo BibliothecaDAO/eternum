@@ -1,11 +1,11 @@
 import type { MarketClass } from "@/pm/class";
 import { useState } from "react";
 
-import { useMarketActivity } from "@/pm/hooks/social/useMarketActivity";
+import { useMarketActivity } from "@/pm/hooks/social/use-market-activity";
 import { formatUnits } from "@/pm/utils";
 import { useAccount } from "@starknet-react/core";
-import { MaybeController } from "../MaybeController";
-import { TokenIcon } from "../TokenIcon";
+import { MaybeController } from "../maybe-controller";
+import { TokenIcon } from "../token-icon";
 
 const AvatarImage = ({
   address,

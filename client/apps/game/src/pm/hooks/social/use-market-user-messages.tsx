@@ -2,7 +2,7 @@ import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { AccountInterface, addAddressPadding, BigNumberish, cairo } from "starknet";
 import { UserMessage } from "../../bindings";
-import { useDojoSdk } from "../dojo/useDojoSdk";
+import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
 // todo: make it work
 export const useMarketUserMessages = (marketId: BigNumberish) => {

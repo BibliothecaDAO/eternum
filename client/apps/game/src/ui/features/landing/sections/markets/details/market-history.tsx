@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, type TooltipProps } from "recharts";
 
 import type { MarketClass } from "@/pm/class";
-import { useMarketHistory } from "@/pm/hooks/markets/useMarketHistory";
+import { useMarketHistory } from "@/pm/hooks/markets/use-market-history";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@pm/ui";
 
 export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {

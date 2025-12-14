@@ -14,7 +14,7 @@ import type {
 import { MarketClass } from "@/pm/class";
 import { useConfig } from "@/pm/providers";
 import { deepEqual } from "@/pm/utils";
-import { useDojoSdk } from "../dojo/useDojoSdk";
+import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
 export const useMarket = (marketId: bigint) => {
   const { sdk } = useDojoSdk();

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { Button } from "@/ui/design-system/atoms";
 import { SqlApi } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
@@ -15,9 +15,9 @@ import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory } fro
 import { Chain, getGameManifest } from "@contracts";
 import { env } from "../../../../../../../env";
 import { decodePaddedFeltAscii } from "../market-utils";
-import { MaybeController } from "../MaybeController";
+import { MaybeController } from "../maybe-controller";
 import { buildToriiBaseUrl } from "../use-market-servers";
-import { usePlayerRanks } from "./usePlayerRanks";
+import { usePlayerRanks } from "./use-player-ranks";
 
 const chunk = <T,>(arr: T[], size: number) => {
   const out: T[][] = [];

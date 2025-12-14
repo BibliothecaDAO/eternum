@@ -1,7 +1,7 @@
 import { Controller } from "@dojoengine/torii-client";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { BigNumberish } from "starknet";
-import { useDojoSdk } from "../dojo/useDojoSdk";
+import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
 type ControllersProviderProps = {
   children: React.ReactNode;

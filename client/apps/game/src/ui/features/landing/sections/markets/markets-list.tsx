@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, HStack, Scro
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
-import { MarketImage } from "./MarketImage";
-import { MarketOdds } from "./MarketOdds";
-import { MarketStatusBadge } from "./MarketStatusBadge";
-import { MarketTimeline } from "./MarketTimeline";
+import { MarketImage } from "./market-image";
+import { MarketOdds } from "./market-odds";
+import { MarketStatusBadge } from "./market-status-badge";
+import { MarketTimeline } from "./market-timeline";
 import { MarketQuickStats } from "./market-quick-stats";
 import { useMarketWatch } from "./use-market-watch";
 

@@ -9,19 +9,19 @@ import { ArrowLeft, Play, RefreshCw } from "lucide-react";
 import Button from "@/ui/design-system/atoms/button";
 
 import { MARKET_FILTERS_ALL, MarketsProviders, MarketsSection } from "./markets";
-import { MarketActivity } from "./markets/details/MarketActivity";
-import { MarketCreatedBy } from "./markets/details/MarketCreatedBy";
-import { MarketFees } from "./markets/details/MarketFees";
-import { MarketHistory } from "./markets/details/MarketHistory";
-import { MarketPositions } from "./markets/details/MarketPositions";
-import { MarketResolution } from "./markets/details/MarketResolution";
-import { MarketResolved } from "./markets/details/MarketResolved";
-import { MarketTrade } from "./markets/details/MarketTrade";
-import { UserMessages } from "./markets/details/UserMessages";
-import { MarketOdds } from "./markets/MarketOdds";
-import { MarketStatusBadge } from "./markets/MarketStatusBadge";
-import { MarketTimeline } from "./markets/MarketTimeline";
-import { MarketTvl } from "./markets/MarketTvl";
+import { MarketActivity } from "./markets/details/market-activity";
+import { MarketCreatedBy } from "./markets/details/market-created-by";
+import { MarketFees } from "./markets/details/market-fees";
+import { MarketHistory } from "./markets/details/market-history";
+import { MarketPositions } from "./markets/details/market-positions";
+import { MarketResolution } from "./markets/details/market-resolution";
+import { MarketResolved } from "./markets/details/market-resolved";
+import { MarketTrade } from "./markets/details/market-trade";
+import { UserMessages } from "./markets/details/user-messages";
+import { MarketOdds } from "./markets/market-odds";
+import { MarketStatusBadge } from "./markets/market-status-badge";
+import { MarketTimeline } from "./markets/market-timeline";
+import { MarketTvl } from "./markets/market-tvl";
 import { useMarketWatch } from "./markets/use-market-watch";
 
 const parseMarketId = (raw?: string | null) => {

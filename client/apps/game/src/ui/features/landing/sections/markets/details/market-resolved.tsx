@@ -5,7 +5,7 @@ import { formatUint256 } from "@/pm/utils";
 import { HStack, VStack } from "@pm/ui";
 import { CheckCircle2, TrendingUp } from "lucide-react";
 
-import { MaybeController } from "../MaybeController";
+import { MaybeController } from "../maybe-controller";
 
 export function MarketResolved({
   market,

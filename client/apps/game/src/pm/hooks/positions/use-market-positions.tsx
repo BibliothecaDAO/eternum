@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { RegisteredToken } from "../../bindings";
 import { MarketClass, MarketOutcome } from "../../class";
 import { formatUnits } from "../../utils";
-import { useDojoSdk } from "../dojo/useDojoSdk";
+import { useDojoSdk } from "../dojo/use-dojo-sdk";
 import { useUser } from "../dojo/user";
 
 export type MarketPositionDetails = {

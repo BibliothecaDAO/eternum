@@ -4,7 +4,7 @@ import { uint256 } from "starknet";
 
 import { ConditionResolution, Market, MarketCreated, VaultDenominator, VaultNumerator } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useConfig } from "@/pm/providers";
 import { deepEqual, replaceAndFormat } from "@/pm/utils";
 

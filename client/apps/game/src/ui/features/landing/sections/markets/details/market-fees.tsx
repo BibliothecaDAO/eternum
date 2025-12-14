@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { CoreSettings, CurveRange, MarketModelVault } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { formatUnits } from "@/pm/utils";
 import { Card, CardContent, CardHeader, CardTitle, HStack } from "@pm/ui";
 import { ChevronDown } from "lucide-react";

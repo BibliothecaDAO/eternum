@@ -7,9 +7,9 @@ import { Market, MarketCreated, VaultDenominator } from "../../bindings";
 import { MarketClass } from "../../class";
 import { useConfig } from "../../providers";
 import { deepEqual } from "../../utils";
-import { useDojoSdk } from "../dojo/useDojoSdk";
-import { useTokens } from "../dojo/useTokens";
-// import { useTokens } from "../dojo/useTokens";
+import { useDojoSdk } from "../dojo/use-dojo-sdk";
+import { useTokens } from "../dojo/use-tokens";
+// import { useTokens } from "../dojo/use-tokens";
 
 export const useAllPositions = (address?: string) => {
   const { sdk } = useDojoSdk();
