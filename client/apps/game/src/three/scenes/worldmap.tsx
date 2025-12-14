@@ -2895,7 +2895,9 @@ export default class WorldmapScene extends HexagonScene {
 
         if (effectivelyExplored) {
           // Use actual biome if explored, or generate deterministic biome for simulation
-          const biome = isExplored ? (isExplored as BiomeType) : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
+          const biome = isExplored
+            ? (isExplored as BiomeType)
+            : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
           const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
           tempMatrix.setPosition(tempPosition);
 
