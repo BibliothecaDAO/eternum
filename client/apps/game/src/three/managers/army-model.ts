@@ -7,6 +7,7 @@ import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
   AnimationMixer,
+  Box3,
   Color,
   Euler,
   Group,
@@ -31,10 +32,12 @@ import {
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
+import { getContactShadowResources } from "../utils/contact-shadow";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const CONTACT_SHADOW_Y_OFFSET = 0.02;
 
 export class ArmyModel {
   // Core properties
@@ -58,9 +61,12 @@ export class ArmyModel {
   private readonly cosmeticModels: Map<string, ModelData> = new Map();
   private readonly pendingCosmeticModelLoads: Map<string, Promise<ModelData>> = new Map();
   private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
+  private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
+  private readonly activeCosmeticByEntity: Map<number, string | null> = new Map();
 
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
+  private readonly contactShadowMatrix: Matrix4 = new Matrix4();
   private readonly dummyEuler: Euler = new Euler();
   private readonly tempVector1: Vector3 = new Vector3();
   private readonly tempVector2: Vector3 = new Vector3();
@@ -92,6 +98,7 @@ export class ArmyModel {
 
   // agent
   private isAgent: boolean = false;
+  private contactShadowsEnabled = true;
 
   // Memory monitoring
   private memoryMonitor?: MemoryMonitor;
@@ -113,6 +120,7 @@ export class ArmyModel {
     this.loadPromise = Promise.resolve();
     this.labelsGroup = labelsGroup || new Group();
     this.currentCameraView = cameraView || CameraView.Medium;
+    this.contactShadowsEnabled = this.currentCameraView !== CameraView.Close;
 
     // Initialize memory monitor for army model operations
     if (MEMORY_MONITORING_ENABLED) {
@@ -266,6 +274,19 @@ export class ArmyModel {
     const baseMeshes: Mesh[] = [];
 
     this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes);
+
+    const contactShadowScale = this.computeContactShadowScale(gltf);
+    const { geometry, material } = getContactShadowResources();
+    const contactShadowMesh = new InstancedMesh(geometry, material, this.INITIAL_INSTANCE_CAPACITY);
+    contactShadowMesh.frustumCulled = true;
+    contactShadowMesh.castShadow = false;
+    contactShadowMesh.receiveShadow = false;
+    contactShadowMesh.renderOrder = 9;
+    contactShadowMesh.count = 0;
+    contactShadowMesh.raycast = () => {};
+    contactShadowMesh.visible = this.contactShadowsEnabled;
+    group.add(contactShadowMesh);
+
     this.scene.add(group);
 
     const mixer = new AnimationMixer(gltf.scene);
@@ -273,6 +294,8 @@ export class ArmyModel {
     return {
       group,
       instancedMeshes,
+      contactShadowMesh,
+      contactShadowScale,
       baseMeshes,
       mixer,
       animations: {
@@ -286,6 +309,19 @@ export class ArmyModel {
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
     };
+  }
+
+  private computeContactShadowScale(gltf: any): number {
+    try {
+      gltf.scene.updateMatrixWorld(true);
+      const bounds = new Box3().setFromObject(gltf.scene);
+      bounds.getSize(this.tempVector1);
+      const footprint = Math.max(this.tempVector1.x, this.tempVector1.z);
+      return Math.max(0.6, footprint * 1.1);
+    } catch (error) {
+      console.warn("[ArmyModel] Failed to compute contact shadow bounds", error);
+      return 1;
+    }
   }
 
   private processGLTFScene(
@@ -378,6 +414,28 @@ export class ArmyModel {
         mesh.morphTexture.needsUpdate = true;
       }
     });
+
+    if (modelData.contactShadowMesh) {
+      const mesh = modelData.contactShadowMesh;
+      const capacity = mesh.instanceMatrix.count;
+      if (requiredCount > capacity) {
+        let newCapacity = capacity || 1;
+        while (newCapacity < requiredCount) {
+          newCapacity *= 2;
+        }
+
+        const matrixArray = mesh.instanceMatrix.array as Float32Array;
+        const resizedMatrixArray = new Float32Array(newCapacity * 16);
+        resizedMatrixArray.set(matrixArray.subarray(0, capacity * 16));
+        mesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.count = Math.min(mesh.count, newCapacity);
+
+        for (let i = capacity; i < newCapacity; i++) {
+          mesh.setMatrixAt(i, this.zeroInstanceMatrix);
+        }
+      }
+    }
   }
 
   private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: Mesh, animations: any[]): void {
@@ -400,6 +458,10 @@ export class ArmyModel {
         mesh.instanceMatrix.needsUpdate = true;
         mesh.userData.entityIdMap?.delete(matrixIndex);
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      }
     });
     // Also clear from cosmetic models
     this.cosmeticModels.forEach((modelData) => {
@@ -409,6 +471,10 @@ export class ArmyModel {
         mesh.instanceMatrix.needsUpdate = true;
         mesh.userData.entityIdMap?.delete(matrixIndex);
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      }
     });
     this.setAnimationState(matrixIndex, false);
   }
@@ -537,6 +603,16 @@ export class ArmyModel {
     this.rebindMovementMatrixIndex(entityId, newSlot);
   }
 
+  private getScaleForModelType(modelType: ModelType): Vector3 {
+    if (modelType === ModelType.Boat) {
+      return this.boatScale;
+    }
+    if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
+      return this.agentScale;
+    }
+    return this.normalScale;
+  }
+
   public updateInstance(
     entityId: number,
     index: number,
@@ -553,40 +629,58 @@ export class ArmyModel {
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
 
-    // Check if entity has a cosmetic model assigned
-    const activeCosmeticId = this.entityCosmeticMap.get(entityId);
-    const hasCosmeticModel = activeCosmeticId && this.cosmeticModels.has(activeCosmeticId);
+    const desiredModelType = this.entityModelMap.get(entityId) ?? null;
+    const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
+    const hasActiveCosmetic = desiredCosmeticId !== undefined && this.cosmeticModels.has(desiredCosmeticId);
 
-    // Update base models - hide them if entity has an active cosmetic model
-    this.models.forEach((modelData, modelType) => {
-      const isActiveBaseModel = modelType === this.entityModelMap.get(entityId);
-      let targetScale = this.zeroScale;
+    const activeBaseModel = hasActiveCosmetic ? null : desiredModelType;
+    const activeCosmetic = hasActiveCosmetic ? desiredCosmeticId! : null;
 
-      // Only show base model if it's active AND there's no cosmetic override
-      if (isActiveBaseModel && !hasCosmeticModel) {
-        if (modelType === ModelType.Boat) {
-          targetScale = this.boatScale;
-        } else if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
-          targetScale = this.agentScale;
-        } else {
-          targetScale = this.normalScale;
+    const prevActiveBaseModel = this.activeBaseModelByEntity.get(entityId) ?? null;
+    const prevActiveCosmetic = this.activeCosmeticByEntity.get(entityId) ?? null;
+
+    if (prevActiveBaseModel !== activeBaseModel) {
+      if (prevActiveBaseModel) {
+        const prevModelData = this.models.get(prevActiveBaseModel);
+        if (prevModelData) {
+          this.ensureModelCapacity(prevModelData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevModelData, index, entityId, state.position, state.color);
         }
       }
+      this.activeBaseModelByEntity.set(entityId, activeBaseModel);
+    }
 
-      this.ensureModelCapacity(modelData, index + 1);
-      this.updateInstanceTransform(state.position, targetScale, state.rotation);
-      this.updateInstanceMeshes(modelData, index, entityId, state.color);
-    });
+    if (prevActiveCosmetic !== activeCosmetic) {
+      if (prevActiveCosmetic) {
+        const prevCosmeticData = this.cosmeticModels.get(prevActiveCosmetic);
+        if (prevCosmeticData) {
+          this.ensureModelCapacity(prevCosmeticData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.position, state.color);
+        }
+      }
+      this.activeCosmeticByEntity.set(entityId, activeCosmetic);
+    }
 
-    // Update cosmetic models - show only the active one for this entity
-    this.cosmeticModels.forEach((modelData, cosmeticId) => {
-      const isActiveCosmeticModel = cosmeticId === activeCosmeticId;
-      const targetScale = isActiveCosmeticModel ? this.normalScale : this.zeroScale;
+    if (activeBaseModel) {
+      const modelData = this.models.get(activeBaseModel);
+      if (modelData) {
+        const targetScale = this.getScaleForModelType(activeBaseModel);
+        this.ensureModelCapacity(modelData, index + 1);
+        this.updateInstanceTransform(state.position, targetScale, state.rotation);
+        this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+      }
+    }
 
-      this.ensureModelCapacity(modelData, index + 1);
-      this.updateInstanceTransform(state.position, targetScale, state.rotation);
-      this.updateInstanceMeshes(modelData, index, entityId, state.color);
-    });
+    if (activeCosmetic) {
+      const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+      if (cosmeticData) {
+        this.ensureModelCapacity(cosmeticData, index + 1);
+        this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
+        this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
+      }
+    }
   }
 
   public releaseEntity(entityId: number, freedSlot?: number): void {
@@ -594,6 +688,8 @@ export class ArmyModel {
     this.instanceData.delete(entityId);
     this.entityModelMap.delete(entityId);
     this.entityCosmeticMap.delete(entityId);
+    this.activeBaseModelByEntity.delete(entityId);
+    this.activeCosmeticByEntity.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
     this.removeLabel(entityId);
   }
@@ -646,7 +742,13 @@ export class ArmyModel {
     this.dummyObject.updateMatrix();
   }
 
-  private updateInstanceMeshes(modelData: ModelData, index: number, entityId: number, color?: Color): void {
+  private updateInstanceMeshes(
+    modelData: ModelData,
+    index: number,
+    entityId: number,
+    position: Vector3,
+    color?: Color,
+  ): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(index, this.dummyObject.matrix);
       mesh.instanceMatrix.needsUpdate = true;
@@ -659,6 +761,27 @@ export class ArmyModel {
       mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map<number, number>();
       mesh.userData.entityIdMap.set(index, entityId);
     });
+
+    if (modelData.contactShadowMesh) {
+      const isHidden =
+        this.dummyObject.scale.x === 0 && this.dummyObject.scale.y === 0 && this.dummyObject.scale.z === 0;
+      if (isHidden) {
+        modelData.contactShadowMesh.setMatrixAt(index, this.zeroInstanceMatrix);
+      } else {
+        const baseScale = modelData.contactShadowScale ?? 1;
+        const instanceScale = Math.max(this.dummyObject.scale.x, this.dummyObject.scale.z);
+        const finalScale = baseScale * instanceScale;
+
+        // Keep contact shadows grounded while units "float" during movement.
+        const movement = this.movingInstances.get(entityId);
+        const baseY = movement ? position.y - movement.floatingHeight : position.y;
+
+        this.contactShadowMatrix.makeScale(finalScale, finalScale, finalScale);
+        this.contactShadowMatrix.setPosition(position.x, baseY + CONTACT_SHADOW_Y_OFFSET, position.z);
+        modelData.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
+      }
+      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   // Animation Methods
@@ -1188,6 +1311,33 @@ export class ArmyModel {
     this.currentCameraView = view;
   }
 
+  public setShadowsEnabled(enabled: boolean): void {
+    this.models.forEach((model) => {
+      model.instancedMeshes.forEach((mesh) => {
+        mesh.castShadow = enabled;
+      });
+    });
+    this.cosmeticModels.forEach((model) => {
+      model.instancedMeshes.forEach((mesh) => {
+        mesh.castShadow = enabled;
+      });
+    });
+  }
+
+  public setContactShadowsEnabled(enabled: boolean): void {
+    this.contactShadowsEnabled = enabled;
+    this.models.forEach((model) => {
+      if (model.contactShadowMesh) {
+        model.contactShadowMesh.visible = enabled;
+      }
+    });
+    this.cosmeticModels.forEach((model) => {
+      if (model.contactShadowMesh) {
+        model.contactShadowMesh.visible = enabled;
+      }
+    });
+  }
+
   public setMovementCompleteCallback(entityId: number, callback?: () => void): void {
     if (!callback) {
       this.movementCompleteCallbacks.delete(entityId);
@@ -1334,6 +1484,19 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = 0;
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = 0;
+      }
+      modelData.activeInstances.clear();
+    });
+
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = 0;
+      });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = 0;
+      }
       modelData.activeInstances.clear();
     });
   }
@@ -1346,6 +1509,9 @@ export class ArmyModel {
           mesh.instanceColor.needsUpdate = true;
         }
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      }
     });
 
     // Also update cosmetic models
@@ -1356,6 +1522,9 @@ export class ArmyModel {
           mesh.instanceColor.needsUpdate = true;
         }
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      }
     });
   }
 
@@ -1379,6 +1548,9 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = drawCount;
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = drawCount;
+      }
     });
 
     // Also update cosmetic models
@@ -1387,6 +1559,9 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = drawCount;
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = drawCount;
+      }
     });
   }
 
@@ -1408,6 +1583,7 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.computeBoundingSphere();
       });
+      modelData.contactShadowMesh?.computeBoundingSphere();
     });
 
     // Also compute for cosmetic models
@@ -1415,6 +1591,7 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.computeBoundingSphere();
       });
+      modelData.contactShadowMesh?.computeBoundingSphere();
     });
   }
 

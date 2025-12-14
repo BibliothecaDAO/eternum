@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getStructureModelPaths } from "@/three/constants";
-import InstancedModel from "@/three/managers/instanced-model";
+import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
@@ -414,7 +414,10 @@ export class StructureManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    if (this.currentCameraView === view) return;
+    if (this.currentCameraView === view) {
+      this.updateShadowFlags();
+      return;
+    }
 
     // If we're moving away from Medium view, clean up transition state
     if (this.currentCameraView === CameraView.Medium) {
@@ -430,7 +433,29 @@ export class StructureManager {
 
     // Use the centralized label transition function
     applyLabelTransitions(this.entityIdLabels, view);
+    this.updateShadowFlags();
   };
+
+  private updateShadowFlags(): void {
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableCasting = this.currentCameraView === CameraView.Close && qualityShadowsEnabled;
+    const enableContactShadows = !enableCasting;
+    const applyToModels = (models: InstancedModel[]) => {
+      models.forEach((model) => {
+        model.instancedMeshes.forEach((mesh) => {
+          if (mesh.name === LAND_NAME) {
+            mesh.castShadow = false;
+            return;
+          }
+          mesh.castShadow = enableCasting;
+        });
+        model.setContactShadowsEnabled(enableContactShadows);
+      });
+    };
+
+    this.structureModels.forEach((models) => applyToModels(models));
+    this.cosmeticStructureModels.forEach((models) => applyToModels(models));
+  }
 
   public destroy() {
     if (this.unsubscribeFrustum) {
@@ -1427,11 +1452,12 @@ export class StructureManager {
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
     const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [];
     const bounds = this.getChunkBounds(chunkRow || 0, chunkCol || 0);
+    // Use inclusive bounds (<=) to match isStructureVisible behavior
     return (
       hexCoords.col >= bounds.minCol &&
-      hexCoords.col < bounds.maxCol &&
+      hexCoords.col <= bounds.maxCol &&
       hexCoords.row >= bounds.minRow &&
-      hexCoords.row < bounds.maxRow
+      hexCoords.row <= bounds.maxRow
     );
   }
 
@@ -1440,15 +1466,11 @@ export class StructureManager {
       return false;
     }
 
-    const position = getWorldPositionForHex(structure.hexCoords);
-    position.y += 0.05;
-    if (this.visibilityManager) {
-      return this.visibilityManager.isPointVisible(position);
-    }
-    if (!this.frustumManager) {
-      return true;
-    }
-    return this.frustumManager.isPointVisible(position);
+    // Skip frustum culling during chunk updates - bounds check is sufficient.
+    // Frustum culling can fail when the camera is still animating to the new chunk position,
+    // causing structures to not appear until the next frame/click.
+    // The bounds check already ensures we only render structures in the current chunk area.
+    return true;
   }
 
   public getEntityIdFromInstance(structureType: StructureType, instanceId: number): ID | undefined {

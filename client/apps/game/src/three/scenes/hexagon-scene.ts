@@ -13,7 +13,9 @@ import { CentralizedVisibilityManager, getVisibilityManager } from "@/three/util
 import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
+import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import { gltfLoader } from "@/three/utils/utils";
+import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
@@ -83,6 +85,9 @@ export abstract class HexagonScene {
   protected stormLight!: PointLight;
   protected ambientPurpleLight!: AmbientLight;
 
+  private stormAmbientBaseIntensity?: number;
+  private stormHemisphereBaseIntensity?: number;
+
   private groundMesh!: Mesh;
   private uiStateUnsubscribe?: () => void;
   private lightningEndTime: number = 0;
@@ -106,6 +111,19 @@ export abstract class HexagonScene {
   private animationCameraTarget: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
+  protected shadowsEnabledByQuality = true;
+  protected shadowMapSizeByQuality = 2048;
+  private lastClipNear = 0;
+  private lastClipFar = 0;
+  private fogEnabledByQuality = false;
+  private fogEnabledByUser = false;
+
+  // Performance tuning options (optimized defaults for better FPS)
+  protected biomeShadowsEnabled = false;
+  protected biomeAnimationsEnabled = false;
+  protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
+  private lastFogNear = 0;
+  private lastFogFar = 0;
 
   constructor(
     protected sceneName: SceneName,
@@ -131,6 +149,10 @@ export abstract class HexagonScene {
 
   private notifyControlsChanged(): void {
     this.controls.update();
+    const distance = this.controls.object.position.distanceTo(this.controls.target);
+    this.updateCameraClipPlanesForDistance(distance);
+    this.updateFogForDistance(distance);
+    this.updateOutlineOpacityForDistance(distance);
     this.controls.dispatchEvent({ type: "change" });
     this.frustumManager?.forceUpdate();
     this.visibilityManager?.markDirty();
@@ -148,8 +170,12 @@ export abstract class HexagonScene {
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
-    if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
-      // this.scene.fog = this.fog; // Disabled due to zoom level issues
+    this.fogEnabledByQuality = !IS_FLAT_MODE && GRAPHICS_SETTING !== GraphicsSettings.LOW;
+    this.fogEnabledByUser = false;
+    if (this.fogEnabledByQuality && this.fogEnabledByUser) {
+      this.scene.fog = this.fog;
+      const initialDistance = this.controls.object.position.distanceTo(this.controls.target);
+      this.updateFogForDistance(initialDistance);
     }
 
     // subscribe to state changes
@@ -204,9 +230,9 @@ export abstract class HexagonScene {
   }
 
   private configureDirectionalLight(): void {
-    this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.width = 2048;
-    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+    this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSizeByQuality;
+    this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSizeByQuality;
     this.mainDirectionalLight.shadow.camera.left = -20;
     this.mainDirectionalLight.shadow.camera.right = 20;
     this.mainDirectionalLight.shadow.camera.top = 13;
@@ -214,8 +240,8 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.shadow.camera.far = 38;
     this.mainDirectionalLight.shadow.camera.near = 8;
     this.mainDirectionalLight.shadow.bias = -0.02;
-    this.mainDirectionalLight.position.set(0, 9, 0);
-    this.mainDirectionalLight.target.position.set(0, 0, 5.2);
+    this.mainDirectionalLight.position.set(-15, 13, 8);
+    this.mainDirectionalLight.target.position.set(0, 0, -5.2);
   }
 
   private setupStormLighting(): void {
@@ -296,6 +322,7 @@ export abstract class HexagonScene {
     this.setupStormLightGUI();
     this.setupShadowGUI();
     this.setupFogGUI();
+    this.setupPerformanceGUI();
     this.thunderBoltManager.setupGUI(this.GUIFolder);
     this.dayNightCycleManager.addGUIControls(this.GUIFolder);
   }
@@ -364,15 +391,234 @@ export abstract class HexagonScene {
     fogFolder.add(this.fog, "far", 0, 100, 0.1).name("Far");
 
     // Add toggle for fog
-    const fogParams = { enabled: !IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH };
+    const fogParams = { enabled: this.fogEnabledByUser };
     fogFolder
       .add(fogParams, "enabled")
       .name("Enable Fog")
       .onChange((value: boolean) => {
-        this.scene.fog = value ? this.fog : null;
+        this.fogEnabledByUser = value;
+        const distance = this.controls.object.position.distanceTo(this.controls.target);
+        this.updateFogForDistance(distance);
       });
 
     fogFolder.close();
+  }
+
+  private setupPerformanceGUI(): void {
+    const perfFolder = this.GUIFolder.addFolder("Performance");
+
+    // Performance monitoring toggle
+    const perfParams = {
+      enabled: PerformanceMonitor.isEnabled(),
+      simulatedHexes: PerformanceMonitor.getSimulatedHexCount(),
+      logReport: () => {
+        const matrixStats = MatrixPool.getInstance().getStats();
+        PerformanceMonitor.logSummary(matrixStats);
+      },
+      exploreAllHexes: () => {
+        this.simulateHexExploration(5000);
+      },
+      exploreHexes1k: () => {
+        this.simulateHexExploration(1000);
+      },
+      exploreHexes9k: () => {
+        this.simulateHexExploration(9000);
+      },
+      clearSimulation: () => {
+        this.clearHexSimulation();
+      },
+    };
+
+    perfFolder
+      .add(perfParams, "enabled")
+      .name("Enable Monitoring")
+      .onChange((value: boolean) => {
+        PerformanceMonitor.setEnabled(value);
+      });
+
+    perfFolder
+      .add(perfParams, "simulatedHexes", 0, 15000, 100)
+      .name("Simulated Hexes")
+      .onChange((value: number) => {
+        PerformanceMonitor.setSimulatedHexCount(value);
+      });
+
+    perfFolder.add(perfParams, "logReport").name("Log Performance Report");
+    perfFolder.add(perfParams, "exploreHexes1k").name("Simulate 1K Hexes");
+    perfFolder.add(perfParams, "exploreAllHexes").name("Simulate 5K Hexes");
+    perfFolder.add(perfParams, "exploreHexes9k").name("Simulate 9K Hexes");
+    perfFolder.add(perfParams, "clearSimulation").name("Clear Simulation");
+
+    // Phase 1 Performance Optimizations
+    const optimizeFolder = perfFolder.addFolder("Optimizations");
+
+    optimizeFolder
+      .add(this, "biomeShadowsEnabled")
+      .name("Biome Shadows")
+      .onChange((value: boolean) => {
+        this.setBiomeShadowsEnabled(value);
+      });
+
+    optimizeFolder
+      .add(this, "biomeAnimationsEnabled")
+      .name("Biome Animations")
+      .onChange((value: boolean) => {
+        console.log(`[Performance] Biome animations: ${value}`);
+      });
+
+    optimizeFolder
+      .add(this, "animationDistanceThreshold", 20, 200, 10)
+      .name("Anim Distance")
+      .onChange((value: number) => {
+        console.log(`[Performance] Animation distance threshold: ${value}`);
+      });
+
+    // Stats button
+    const statsParams = {
+      logStats: () => {
+        this.logRenderStats();
+      },
+    };
+    optimizeFolder.add(statsParams, "logStats").name("Log Render Stats");
+
+    optimizeFolder.open();
+    perfFolder.close();
+  }
+
+  /**
+   * Log rendering statistics for debugging performance
+   */
+  protected logRenderStats(): void {
+    let totalMeshes = 0;
+    let totalInstances = 0;
+    let activeBiomes = 0;
+
+    console.group("Render Stats");
+
+    this.biomeModels.forEach((biome, biomeType) => {
+      const meshCount = biome.instancedMeshes.length;
+      let biomeInstances = 0;
+
+      biome.instancedMeshes.forEach((mesh) => {
+        biomeInstances += mesh.count;
+      });
+
+      if (biomeInstances > 0) {
+        activeBiomes++;
+        console.log(`${biomeType}: ${meshCount} meshes, ${biomeInstances} instances`);
+      }
+
+      totalMeshes += meshCount;
+      totalInstances += biomeInstances;
+    });
+
+    console.log("---");
+    console.log(`Total: ${activeBiomes} active biomes, ${totalMeshes} meshes, ${totalInstances} instances`);
+    console.log(`Estimated draw calls: ${totalMeshes} (each InstancedMesh = 1 draw call)`);
+    console.groupEnd();
+  }
+
+  /**
+   * Enable or disable shadow casting on all biome meshes.
+   * Disabling shadows can improve GPU performance by ~30-50%.
+   */
+  protected setBiomeShadowsEnabled(enabled: boolean): void {
+    console.log(`[Performance] Biome shadows: ${enabled}`);
+    this.biomeShadowsEnabled = enabled;
+    this.biomeModels.forEach((biome) => {
+      biome.setShadowsEnabled(enabled);
+    });
+  }
+
+  /**
+   * Simulate hex exploration for performance testing
+   * For WorldMap: renders a large grid of hexes centered on current camera target
+   * For Hexception: adds hexes to the persistent collection
+   */
+  protected simulateHexExploration(hexCount: number): void {
+    console.log(`Simulating exploration of ${hexCount} hexes...`);
+    PerformanceMonitor.begin("simulateHexExploration");
+    PerformanceMonitor.setSimulatedHexCount(hexCount);
+    PerformanceMonitor.setSimulating(true);
+
+    // Calculate grid dimensions to approximate hexCount
+    // For a square-ish grid: width * height ≈ hexCount
+    const gridSize = Math.ceil(Math.sqrt(hexCount));
+
+    // Get current camera target position for centering
+    const target = this.controls.target;
+    const centerHex = this.getHexFromWorldPosition(target);
+
+    if (this.sceneName === SceneName.Hexception) {
+      // For Hexception (persistent mode): use addHex + renderAllHexes
+      const hexes: Array<{ col: number; row: number }> = [];
+      let col = 0;
+      let row = 0;
+      let direction = 0;
+      let ringSize = 1;
+      let stepsInCurrentDirection = 0;
+      let directionsCompleted = 0;
+
+      hexes.push({ col: centerHex.col, row: centerHex.row });
+
+      const directions = [
+        { col: 1, row: 0 },
+        { col: 0, row: 1 },
+        { col: -1, row: 1 },
+        { col: -1, row: 0 },
+        { col: 0, row: -1 },
+        { col: 1, row: -1 },
+      ];
+
+      col = centerHex.col;
+      row = centerHex.row;
+
+      while (hexes.length < hexCount) {
+        col += directions[direction].col;
+        row += directions[direction].row;
+        hexes.push({ col, row });
+        stepsInCurrentDirection++;
+
+        if (stepsInCurrentDirection >= ringSize) {
+          stepsInCurrentDirection = 0;
+          direction = (direction + 1) % 6;
+          directionsCompleted++;
+
+          if (directionsCompleted >= 6) {
+            directionsCompleted = 0;
+            ringSize++;
+          }
+        }
+      }
+
+      hexes.forEach((hex) => {
+        this.interactiveHexManager.addHex(hex);
+      });
+      this.interactiveHexManager.renderAllHexes();
+    } else {
+      // For WorldMap (non-persistent mode): use updateVisibleHexes with large window
+      // This simulates having many hexes in the render window
+      this.interactiveHexManager.updateVisibleHexes(centerHex.row, centerHex.col, gridSize, gridSize);
+    }
+
+    const duration = PerformanceMonitor.end("simulateHexExploration");
+    console.log(`Simulated ${hexCount} hexes (${gridSize}x${gridSize} grid) in ${duration.toFixed(2)}ms`);
+
+    // Log matrix pool stats
+    const matrixStats = MatrixPool.getInstance().getStats();
+    console.log(
+      `Matrix Pool: ${matrixStats.inUse} in use, ${matrixStats.totalAllocated} allocated (${matrixStats.memoryEstimateMB.toFixed(2)}MB)`,
+    );
+  }
+
+  /**
+   * Clear simulated hex exploration
+   */
+  protected clearHexSimulation(): void {
+    console.log("Clearing hex simulation...");
+    PerformanceMonitor.setSimulatedHexCount(0);
+    PerformanceMonitor.setSimulating(false);
+    this.interactiveHexManager.clearHexes();
   }
 
   private setupGroundMeshGUI(): void {
@@ -401,6 +647,42 @@ export abstract class HexagonScene {
 
   public closeNavigationViews() {
     this.state.setLeftNavigationView(LeftView.None);
+  }
+
+  public applyQualityFeatures(features: QualityFeatures): void {
+    const shadowsEnabledChanged = this.shadowsEnabledByQuality !== features.shadows;
+    this.shadowsEnabledByQuality = features.shadows;
+    if (features.shadowMapSize > 0) {
+      this.shadowMapSizeByQuality = features.shadowMapSize;
+    }
+
+    const nextFogQualityEnabled = !IS_FLAT_MODE && features.pixelRatio > 1;
+    if (nextFogQualityEnabled !== this.fogEnabledByQuality) {
+      this.fogEnabledByQuality = nextFogQualityEnabled;
+      if (!this.fogEnabledByQuality) {
+        this.scene.fog = null;
+      }
+    }
+
+    if (this.mainDirectionalLight) {
+      this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality && this.currentCameraView !== CameraView.Far;
+      if (this.shadowMapSizeByQuality > 0) {
+        this.mainDirectionalLight.shadow.mapSize.set(this.shadowMapSizeByQuality, this.shadowMapSizeByQuality);
+      }
+    }
+
+    if (features.animationFPS > 0) {
+      this.biomeModels.forEach((model) => {
+        model.setAnimationFPS?.(features.animationFPS);
+      });
+    }
+
+    if (shadowsEnabledChanged) {
+      this.cameraViewListeners.forEach((listener) => listener(this.currentCameraView));
+    }
+
+    const distance = this.controls.object.position.distanceTo(this.controls.target);
+    this.updateFogForDistance(distance);
   }
 
   public isNavigationViewOpen() {
@@ -587,6 +869,7 @@ export abstract class HexagonScene {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
       texture.repeat.set(scale, scale / 2.5);
+      texture.anisotropy = 4; // Sharper terrain at tilted viewing angles
     });
 
     const material = new MeshStandardMaterial({
@@ -610,7 +893,7 @@ export abstract class HexagonScene {
   }
 
   protected shouldUpdateBiomeAnimations(): boolean {
-    return true;
+    return this.biomeAnimationsEnabled;
   }
 
   protected onBiomeModelLoaded(_model: InstancedBiome): void {
@@ -618,23 +901,56 @@ export abstract class HexagonScene {
   }
 
   update(deltaTime: number): void {
+    PerformanceMonitor.recordFrame();
+    PerformanceMonitor.begin("scene.update");
+
+    PerformanceMonitor.begin("interactiveHexManager.update");
     this.interactiveHexManager.update();
+    PerformanceMonitor.end("interactiveHexManager.update");
+
     this.updateLights();
     this.updateHighlightPulse();
     this.thunderBoltManager.update();
+
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
     }
+
     if (this.shouldUpdateBiomeAnimations()) {
+      PerformanceMonitor.begin("biomeAnimations.total");
       const animationContext = this.getAnimationVisibilityContext();
-      this.biomeModels.forEach((biome) => {
+      this.biomeModels.forEach((biome, biomeType) => {
         try {
+          PerformanceMonitor.begin(`biome.${biomeType}`);
           biome.updateAnimations(deltaTime, animationContext);
+          PerformanceMonitor.end(`biome.${biomeType}`);
         } catch (error) {
           console.error(`Error updating biome animations:`, error);
         }
       });
+      PerformanceMonitor.end("biomeAnimations.total");
     }
+
+    PerformanceMonitor.end("scene.update");
+  }
+
+  protected updateOutlineOpacityForDistance(distance: number): void {
+    const outlineKey = "Outline" as unknown as BiomeType;
+    const outlineModel = this.biomeModels.get(outlineKey);
+    if (!outlineModel) {
+      return;
+    }
+
+    const minDistance = 10;
+    const maxDistance = 40;
+    const t = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
+    const opacity = 0.04 + t * 0.06;
+
+    outlineModel.instancedMeshes.forEach((mesh) => {
+      const material = mesh.material as MeshStandardMaterial;
+      material.transparent = true;
+      material.opacity = opacity;
+    });
   }
 
   protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
@@ -648,11 +964,12 @@ export abstract class HexagonScene {
         visibilityManager: this.visibilityManager,
         frustumManager: this.frustumManager, // Keep for backward compatibility
         cameraPosition: this.animationCameraTarget,
-        maxDistance: this.animationVisibilityDistance,
+        maxDistance: this.animationDistanceThreshold, // Use configurable threshold
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
       this.animationVisibilityContext.frustumManager = this.frustumManager;
+      this.animationVisibilityContext.maxDistance = this.animationDistanceThreshold;
     }
 
     return this.animationVisibilityContext;
@@ -698,11 +1015,29 @@ export abstract class HexagonScene {
       this.stormLight.intensity = stormIntensity;
     }
 
-    const purpleFlicker = 0.08 + Math.sin(elapsedTime * 2) * 0.03;
-    this.ambientPurpleLight.intensity = purpleFlicker;
+    // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
+    const dayNightEnabled = this.dayNightCycleManager?.params?.enabled === true;
 
-    const hemisphereFlicker = 1.2 + Math.sin(elapsedTime * 1.5) * 0.05;
-    this.hemisphereLight.intensity = hemisphereFlicker;
+    const ambientBase = dayNightEnabled
+      ? this.ambientPurpleLight.intensity
+      : (this.stormAmbientBaseIntensity ?? this.ambientPurpleLight.intensity);
+    const hemisphereBase = dayNightEnabled
+      ? this.hemisphereLight.intensity
+      : (this.stormHemisphereBaseIntensity ?? this.hemisphereLight.intensity);
+
+    if (dayNightEnabled) {
+      this.stormAmbientBaseIntensity = ambientBase;
+      this.stormHemisphereBaseIntensity = hemisphereBase;
+    } else {
+      this.stormAmbientBaseIntensity ??= ambientBase;
+      this.stormHemisphereBaseIntensity ??= hemisphereBase;
+    }
+
+    const ambientFlicker = 1 + Math.sin(elapsedTime * 2) * 0.06;
+    this.ambientPurpleLight.intensity = ambientBase * ambientFlicker;
+
+    const hemisphereFlicker = 1 + Math.sin(elapsedTime * 1.5) * 0.06;
+    this.hemisphereLight.intensity = hemisphereBase * hemisphereFlicker;
   }
 
   private startLightningSequence(): void {
@@ -914,6 +1249,10 @@ export abstract class HexagonScene {
     return this.currentCameraView;
   }
 
+  public getShadowsEnabledByQuality(): boolean {
+    return this.shadowsEnabledByQuality;
+  }
+
   public addCameraViewListener(listener: (view: CameraView) => void) {
     console.log("HexagonScene addCameraViewListener:", this.currentCameraView, "->", listener);
     this.cameraViewListeners.add(listener);
@@ -927,19 +1266,20 @@ export abstract class HexagonScene {
 
   public changeCameraView(position: CameraView) {
     console.log("HexagonScene changeCameraView:", this.currentCameraView, "->", position);
+    const previousView = this.currentCameraView;
     const target = this.controls.target;
     this.currentCameraView = position;
 
     switch (position) {
       case CameraView.Close: // Close view
-        this.mainDirectionalLight.castShadow = true;
-        this.mainDirectionalLight.shadow.bias = -0.025;
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.02;
         this.cameraDistance = 10;
         this.cameraAngle = Math.PI / 6; // 30 degrees
         break;
       case CameraView.Medium: // Medium view
-        this.mainDirectionalLight.castShadow = true;
-        this.mainDirectionalLight.shadow.bias = -0.02;
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.015;
         this.cameraDistance = 20;
         this.cameraAngle = Math.PI / 3; // 60 degrees
         break;
@@ -954,9 +1294,64 @@ export abstract class HexagonScene {
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
 
     const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
-    this.cameraAnimate(newPosition, target, 1);
+    const viewDelta = Math.abs(position - previousView);
+    const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
+    this.updateOutlineOpacityForDistance(this.cameraDistance);
+    this.updateCameraClipPlanesForDistance(this.cameraDistance);
+    this.updateFogForDistance(this.cameraDistance);
+    this.cameraAnimate(newPosition, target, duration);
 
     // Notify all listeners of the camera view change
     this.cameraViewListeners.forEach((listener) => listener(position));
+  }
+
+  private updateCameraClipPlanesForDistance(distance: number): void {
+    const minNear = 0.1;
+    const maxNear = 1.5;
+    const minFar = 50;
+    const maxFar = 140;
+    const farMultiplier = 3.5;
+
+    const desiredNear = Math.min(maxNear, Math.max(minNear, distance * 0.02));
+    const desiredFar = Math.min(maxFar, Math.max(minFar, distance * farMultiplier));
+
+    if (Math.abs(desiredNear - this.lastClipNear) < 0.005 && Math.abs(desiredFar - this.lastClipFar) < 0.5) {
+      return;
+    }
+
+    this.camera.near = desiredNear;
+    this.camera.far = desiredFar;
+    this.camera.updateProjectionMatrix();
+    this.lastClipNear = desiredNear;
+    this.lastClipFar = desiredFar;
+  }
+
+  private updateFogForDistance(distance: number): void {
+    if (!this.fogEnabledByQuality || !this.fogEnabledByUser || this.currentCameraView === CameraView.Close) {
+      if (this.scene.fog) {
+        this.scene.fog = null;
+      }
+      return;
+    }
+
+    if (!this.scene.fog) {
+      this.scene.fog = this.fog;
+    }
+
+    const clipFar = Math.min(this.camera.far, distance * 3.5);
+    const startFactor = this.currentCameraView === CameraView.Medium ? 0.35 : 0.45;
+    const endFactor = this.currentCameraView === CameraView.Medium ? 0.85 : 0.9;
+
+    const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
+    const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
+
+    if (Math.abs(desiredNear - this.lastFogNear) < 0.5 && Math.abs(desiredFar - this.lastFogFar) < 0.5) {
+      return;
+    }
+
+    this.fog.near = desiredNear;
+    this.fog.far = desiredFar;
+    this.lastFogNear = desiredNear;
+    this.lastFogFar = desiredFar;
   }
 }

@@ -109,7 +109,9 @@ export class CentralizedVisibilityManager {
     this.config = {
       debug: false,
       animationMaxDistance: 140,
-      maxRegisteredChunks: 256,
+      // Reduced from 256 to 50 (Phase 1 optimization)
+      // Only ~25 chunks (5x5 neighborhood) are visible at once
+      maxRegisteredChunks: 50,
       ...config,
     };
 
