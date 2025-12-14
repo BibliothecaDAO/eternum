@@ -16,8 +16,8 @@ packages:
 catalog:
   starknet: ^8.5.2
   starknetkit: ^2.10.4
-  "@cartridge/controller": 0.11.2
-  "@cartridge/connector": 0.11.2
+  "@cartridge/controller": ^0.10.2
+  "@cartridge/connector": ^0.10.2
   "@starknet-react/core": "5.0.3"
   "@starknet-react/chains": 5.0.3
   "@metamask/sdk": ^0.32.1
@@ -27,14 +27,14 @@ catalog:
   react-dom: ^18
   "@types/react": ^18
   "@types/react-dom": ^18
-  "@dojoengine/react": "1.8.7"
+  "@dojoengine/react": "1.7.0-preview.3"
   "@dojoengine/core": "1.7.0-preview.3"
-  "@dojoengine/sdk": "1.8.7"
-  "@dojoengine/predeployed-connector": "1.8.3"
+  "@dojoengine/sdk": "1.7.0-preview.3"
+  "@dojoengine/predeployed-connector": "1.7.0-preview.3"
   "@dojoengine/recs": ^2.0.13
-  "@dojoengine/state": "1.8.4"
-  "@dojoengine/torii-client": "1.8.2"
-  "@dojoengine/torii-wasm": "1.8.2"
-  "@dojoengine/utils": "1.8.3"
+  "@dojoengine/state": "1.7.0-preview.3"
+  "@dojoengine/torii-client": "1.7.0-preview.3"
+  "@dojoengine/torii-wasm": "1.7.0-preview.3"
+  "@dojoengine/utils": "1.7.0-preview.3"
   "posthog-js": ^1.160.0
   "bignumber.js": "^9.3.0"
