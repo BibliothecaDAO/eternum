@@ -1,11 +1,12 @@
 import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { uint256 } from "starknet";
 
-import { Market, MarketCreated, VaultDenominator, VaultNumerator } from "@/pm/bindings";
+import { ConditionResolution, Market, MarketCreated, VaultDenominator, VaultNumerator } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { useConfig } from "@/pm/providers";
-import { deepEqual, formatCurrency, formatUnits, replaceAndFormat } from "@/pm/utils";
+import { deepEqual, replaceAndFormat } from "@/pm/utils";
 
 export interface MarketFiltersParams {
   status: MarketStatusFilter;
@@ -35,6 +36,7 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
   const [vaultDenominators, setVaultDenominators] = useState<VaultDenominator[]>([]);
   const [allVaultNumerators, setAllVaultNumerators] = useState<VaultNumerator[]>([]);
   const [marketEvents, setMarketEvents] = useState<MarketCreated[]>([]);
+  const [conditionResolutions, setConditionResolutions] = useState<ConditionResolution[]>([]);
   const [markets, setMarkets] = useState<MarketClass[]>([]);
 
   const now = BigInt(Math.ceil(Date.now() / 1_000));
@@ -119,6 +121,35 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
       .includeHashedKeys();
   }, []);
 
+  const conditionResolutionsQuery = useMemo(() => {
+    if (!rawMarkets.length) {
+      return undefined;
+    }
+
+    const clauses = rawMarkets.map((market) => {
+      const conditionId_u256 = uint256.bnToUint256(market.condition_id);
+      const questionId_u256 = uint256.bnToUint256(market.question_id);
+
+      return new ClauseBuilder().keys(
+        ["pm-ConditionResolution"],
+        [
+          conditionId_u256.low.toString(),
+          conditionId_u256.high.toString(),
+          market.oracle.toString(),
+          questionId_u256.low.toString(),
+          questionId_u256.high.toString(),
+        ],
+        "FixedLen",
+      );
+    });
+
+    return new ToriiQueryBuilder()
+      .withEntityModels(["pm-ConditionResolution"])
+      .withClause(new ClauseBuilder().compose().or(clauses).build())
+      .withLimit(10_000)
+      .includeHashedKeys();
+  }, [rawMarkets]);
+
   const refresh = useCallback(() => setRefreshNonce((prev) => prev + 1), []);
 
   useEffect(() => {
@@ -177,6 +208,30 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
   }, [sdk, marketEventsQuery, refreshNonce]);
 
   useEffect(() => {
+    if (!conditionResolutionsQuery) {
+      setConditionResolutions([]);
+      return;
+    }
+
+    const fetchConditionResolutions = async () => {
+      try {
+        const entities = (await sdk.getEventMessages({ query: conditionResolutionsQuery })).getItems();
+
+        const resolutions = entities.flatMap((i) => {
+          const item = i.models.pm.ConditionResolution as ConditionResolution;
+          return item ? [item] : [];
+        });
+
+        setConditionResolutions(resolutions);
+      } catch (error) {
+        console.error("[pm-sdk] Failed to fetch condition resolutions", error);
+      }
+    };
+
+    void fetchConditionResolutions();
+  }, [conditionResolutionsQuery, sdk, refreshNonce]);
+
+  useEffect(() => {
     if (!registeredOracles || registeredOracles.length === 0) return;
     if (!registeredTokens || registeredTokens.length === 0) return;
 
@@ -208,6 +263,12 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
         const vaultNumerators = allVaultNumerators
           .filter((i) => i.market_id === market.market_id)
           .sort((a, b) => Number(a.index) - Number(b.index));
+        const conditionResolution = conditionResolutions.find(
+          (i) =>
+            BigInt(i.condition_id) === BigInt(market.condition_id) &&
+            BigInt(i.question_id) === BigInt(market.question_id) &&
+            i.oracle === market.oracle,
+        );
 
         if (!market || !marketCreated) return [];
         const collateralToken = getRegisteredToken(market.collateral_token);
@@ -218,7 +279,7 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
           collateralToken,
           vaultDenominator,
           vaultNumerators,
-          conditionResolution: undefined,
+          conditionResolution,
         });
 
         return [value];
@@ -234,6 +295,7 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
     registeredTokens,
     allVaultNumerators,
     vaultDenominators,
+    conditionResolutions,
     marketFilters.type,
     marketEvents,
     getRegisteredToken,
