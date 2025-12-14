@@ -385,8 +385,6 @@ export default class WorldmapScene extends HexagonScene {
   private hoverLabelManager: HoverLabelManager;
   private toriiStreamManager?: ToriiStreamManager;
 
-  // Chunk lifecycle integration for deterministic loading
-  private chunkIntegration?: import("@/three/chunk-system").ChunkIntegration;
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
 
@@ -3988,9 +3986,6 @@ export default class WorldmapScene extends HexagonScene {
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();
 
-    // Clean up chunk integration
-    this.chunkIntegration?.destroy();
-
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
       this.visibilityChangeHandler = undefined;
@@ -3998,55 +3993,6 @@ export default class WorldmapScene extends HexagonScene {
 
     super.destroy();
   }
-
-  // NOTE: Chunk integration system is disabled for performance.
-  // The methods below are kept for future use if advanced chunk lifecycle debugging is needed.
-  // Uncomment initializeChunkIntegration() in constructor and these methods to re-enable.
-  //
-  // private initializeChunkIntegration(): void {
-  //   const toriiClient = this.dojo.network?.toriiClient;
-  //   const contractComponents = this.dojo.network?.contractComponents;
-  //
-  //   if (!toriiClient || !contractComponents) {
-  //     console.warn("[WorldmapScene] Cannot initialize chunk integration - missing Torii client or components");
-  //     return;
-  //   }
-  //
-  //   import("@/three/chunk-system").then(({ createChunkIntegration, EntityType }) => {
-  //     this.chunkIntegration = createChunkIntegration(
-  //       {
-  //         toriiClient,
-  //         contractComponents: contractComponents as any,
-  //         structurePositions: this.structuresPositions,
-  //         chunkSize: this.chunkSize,
-  //         renderChunkSize: this.renderChunkSize,
-  //         debug: import.meta.env.DEV,
-  //       },
-  //       {
-  //         structureManager: this.structureManager,
-  //         armyManager: this.armyManager,
-  //         questManager: this.questManager,
-  //         chestManager: this.chestManager,
-  //       },
-  //     );
-  //     (this as any)._chunkEntityType = EntityType;
-  //     if (import.meta.env.DEV) {
-  //       console.log("[WorldmapScene] Chunk integration initialized");
-  //     }
-  //   }).catch((error) => {
-  //     console.error("[WorldmapScene] Failed to initialize chunk integration:", error);
-  //   });
-  // }
-  //
-  // private notifyChunkEntityHydrated(entityId: ID, entityType: string): void {
-  //   if (!this.chunkIntegration) return;
-  //   const EntityType = (this as any)._chunkEntityType;
-  //   if (!EntityType) return;
-  //   const type = EntityType[entityType as keyof typeof EntityType];
-  //   if (type !== undefined) {
-  //     this.chunkIntegration.notifyEntityHydrated(entityId, type);
-  //   }
-  // }
 
   /**
    * Display a resource gain/loss effect at a hex position
