@@ -77,6 +77,27 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
   return new Vector3(x, y, z);
 };
 
+export const getWorldPositionForHexCoordsInto = (
+  col: number,
+  row: number,
+  out: Vector3,
+  flat: boolean = true,
+): Vector3 => {
+  const hexRadius = HEX_SIZE;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
+
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const x = col * horizDist - rowOffset;
+  const z = row * vertDist;
+  const y = flat ? 0 : pseudoRandom(x, z) * 2;
+
+  out.set(x, y, z);
+  return out;
+};
+
 export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
   const hexRadius = HEX_SIZE;
   const hexHeight = hexRadius * 2;

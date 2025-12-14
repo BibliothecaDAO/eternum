@@ -11,7 +11,6 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { FrustumManager } from "../utils/frustum-manager";
 import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
@@ -41,14 +40,12 @@ export class ChestManager {
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
-  private frustumManager?: FrustumManager;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
-    frustumManager?: FrustumManager,
     chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
   ) {
     this.scene = scene;
@@ -57,7 +54,6 @@ export class ChestManager {
     this.renderChunkSize = renderChunkSize;
     this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.frustumManager = frustumManager;
     this.loadModel().then(() => {
       if (this.currentChunkKey) {
         this.renderVisibleChests(this.currentChunkKey);
@@ -77,6 +73,14 @@ export class ChestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled);
+
+    // Cheap grounding in zoomed-out views (and as a fallback if shadows are disabled).
+    if (this.chestModel) {
+      this.chestModel.setContactShadowsEnabled(enableContactShadows);
+    }
+
     if (this.currentCameraView === view) return;
 
     // If we're moving away from Medium view, clean up transition state
@@ -172,6 +176,9 @@ export class ChestManager {
         this.chestModel = model;
         this.animationClips = clips;
         this.scene.add(model.group);
+        const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+        const enableContactShadows = !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled);
+        this.chestModel.setContactShadowsEnabled(enableContactShadows);
       })
       .catch((error) => {
         console.error(`Failed to load chest model:`, error);
@@ -257,13 +264,10 @@ export class ChestManager {
       return false;
     }
 
-    if (!this.frustumManager) {
-      return true;
-    }
-
-    const worldPos = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
-    worldPos.y += 0.05;
-    return this.frustumManager.isPointVisible(worldPos);
+    // Skip frustum culling during chunk updates - bounds check is sufficient.
+    // Frustum culling can fail when the camera is still animating to the new chunk position,
+    // causing chests to not appear until the next frame/click.
+    return true;
   }
 
   private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {

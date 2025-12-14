@@ -326,6 +326,12 @@ export const getEntitiesFromTorii = async <S extends Schema>(
   entityIDs: ID[],
   entityModels: string[],
 ) => {
+  // Debug: Track what's calling this function repeatedly
+  if (import.meta.env.DEV) {
+    console.log(`[getEntitiesFromTorii] Called with ${entityIDs.length} entities, models:`, entityModels);
+    console.trace("[getEntitiesFromTorii] Call stack:");
+  }
+
   const validEntityIDs = entityIDs.filter((id) => {
     const valid = isValidId(id);
 

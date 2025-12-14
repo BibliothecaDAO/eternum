@@ -5,8 +5,9 @@ import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
+import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
-import { getHexagonCoordinates, getWorldPositionForHex } from "../utils";
+import { getHexagonCoordinates, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils";
 
 export class InteractiveHexManager {
   private scene: THREE.Scene;
@@ -26,6 +27,14 @@ export class InteractiveHexManager {
   private hexGeometryPool: HexGeometryPool;
   private readonly bucketSize = 16;
   private instanceCapacity = 0;
+
+  // Phase 1 optimization: Typed array cache to avoid string parsing
+  // Stores [col, row] pairs for all hexes in insertion order
+  private hexCoordsCache: Int32Array = new Int32Array(0);
+  private hexCoordsCount: number = 0;
+  private hexCoordsCapacity: number = 0;
+  // Map from hex string key to index in the coords cache
+  private hexKeyToIndex: Map<string, number> = new Map();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -193,10 +202,36 @@ export class InteractiveHexManager {
 
     this.allHexes.add(key);
 
+    // Phase 1 optimization: Store in typed array cache
+    this.addToHexCoordsCache(key, hex.col, hex.row);
+
     const bucketKey = this.getBucketKey(hex.col, hex.row);
     const bucket = this.hexBuckets.get(bucketKey) ?? new Set<string>();
     bucket.add(key);
     this.hexBuckets.set(bucketKey, bucket);
+  }
+
+  /**
+   * Phase 1 optimization: Add hex coordinates to typed array cache
+   */
+  private addToHexCoordsCache(key: string, col: number, row: number): void {
+    // Grow cache if needed
+    if (this.hexCoordsCount >= this.hexCoordsCapacity) {
+      const newCapacity = Math.max(1024, this.hexCoordsCapacity * 2);
+      const newCache = new Int32Array(newCapacity * 2); // 2 ints per hex (col, row)
+      if (this.hexCoordsCache.length > 0) {
+        newCache.set(this.hexCoordsCache);
+      }
+      this.hexCoordsCache = newCache;
+      this.hexCoordsCapacity = newCapacity;
+    }
+
+    // Store coordinates
+    const idx = this.hexCoordsCount;
+    this.hexCoordsCache[idx * 2] = col;
+    this.hexCoordsCache[idx * 2 + 1] = row;
+    this.hexKeyToIndex.set(key, idx);
+    this.hexCoordsCount++;
   }
 
   // Filter visible hexes for the current chunk
@@ -244,6 +279,10 @@ export class InteractiveHexManager {
     this.visibleHexes.clear();
     this.hexBuckets.clear();
 
+    // Clear typed array cache
+    this.hexCoordsCount = 0;
+    this.hexKeyToIndex.clear();
+
     if (this.instanceMesh) {
       this.instanceMesh.count = 0;
       this.instanceMesh.instanceMatrix.needsUpdate = true;
@@ -253,55 +292,90 @@ export class InteractiveHexManager {
   // For backward compatibility with Hexception scene
   // Renders all hexes in the allHexes collection
   renderAllHexes() {
+    PerformanceMonitor.begin("renderAllHexes");
     const instanceCount = this.allHexes.size;
     this.ensureInstanceMeshCapacity(Math.max(instanceCount, 1));
 
     if (!this.instanceMesh) {
+      PerformanceMonitor.end("renderAllHexes");
       return;
     }
 
     const mesh = this.instanceMesh;
+    const previousCount = mesh.count;
     mesh.count = instanceCount;
 
     if (instanceCount === 0) {
       mesh.instanceMatrix.needsUpdate = true;
       mesh.boundingBox = null;
       mesh.boundingSphere = null;
+      PerformanceMonitor.end("renderAllHexes");
       return;
     }
 
-    let index = 0;
-    this.allHexes.forEach((hexString) => {
-      const [col, row] = hexString.split(",").map(Number);
-      const position = getWorldPositionForHex({ col, row });
-      this.dummy.position.set(position.x, 0.1, position.z);
-      this.dummy.rotation.x = -Math.PI / 2;
-      this.dummy.updateMatrix();
-      mesh.setMatrixAt(index, this.dummy.matrix);
-      index++;
-    });
+    PerformanceMonitor.begin("renderAllHexes.setMatrices");
+
+    // Phase 1 optimization: Use typed array cache instead of string parsing
+    // This avoids O(n) string splits and Number() conversions
+    if (this.hexCoordsCount > 0 && this.hexCoordsCount === instanceCount) {
+      // Fast path: use typed array cache
+      for (let i = 0; i < this.hexCoordsCount; i++) {
+        const col = this.hexCoordsCache[i * 2];
+        const row = this.hexCoordsCache[i * 2 + 1];
+        getWorldPositionForHexCoordsInto(col, row, this.position);
+        this.dummy.position.set(this.position.x, 0.1, this.position.z);
+        this.dummy.rotation.x = -Math.PI / 2;
+        this.dummy.updateMatrix();
+        mesh.setMatrixAt(i, this.dummy.matrix);
+      }
+    } else {
+      // Fallback: use string parsing (when cache is out of sync)
+      let index = 0;
+      this.allHexes.forEach((hexString) => {
+        const [col, row] = hexString.split(",").map(Number);
+        const position = getWorldPositionForHex({ col, row });
+        this.dummy.position.set(position.x, 0.1, position.z);
+        this.dummy.rotation.x = -Math.PI / 2;
+        this.dummy.updateMatrix();
+        mesh.setMatrixAt(index, this.dummy.matrix);
+        index++;
+      });
+    }
+    PerformanceMonitor.end("renderAllHexes.setMatrices");
 
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingBox();
-    mesh.computeBoundingSphere();
+
+    // Only recompute bounds if count changed (Phase 1 optimization)
+    if (previousCount !== instanceCount) {
+      PerformanceMonitor.begin("renderAllHexes.computeBounds");
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
+      PerformanceMonitor.end("renderAllHexes.computeBounds");
+    }
+    PerformanceMonitor.end("renderAllHexes");
   }
 
   renderHexes() {
+    PerformanceMonitor.begin("renderHexes");
     if (!this.instanceMesh) {
+      PerformanceMonitor.end("renderHexes");
       return;
     }
 
     const instanceCount = this.visibleHexes.size;
     const mesh = this.instanceMesh;
+    const previousCount = mesh.count;
     mesh.count = instanceCount;
 
     if (instanceCount === 0) {
       mesh.instanceMatrix.needsUpdate = true;
       mesh.boundingBox = null;
       mesh.boundingSphere = null;
+      PerformanceMonitor.end("renderHexes");
       return;
     }
 
+    PerformanceMonitor.begin("renderHexes.setMatrices");
     let index = 0;
     this.visibleHexes.forEach((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
@@ -312,10 +386,18 @@ export class InteractiveHexManager {
       mesh.setMatrixAt(index, this.dummy.matrix);
       index++;
     });
+    PerformanceMonitor.end("renderHexes.setMatrices");
 
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingBox();
-    mesh.computeBoundingSphere();
+
+    // Only recompute bounds if count changed (Phase 1 optimization)
+    if (previousCount !== instanceCount) {
+      PerformanceMonitor.begin("renderHexes.computeBounds");
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
+      PerformanceMonitor.end("renderHexes.computeBounds");
+    }
+    PerformanceMonitor.end("renderHexes");
   }
 
   update() {
@@ -346,6 +428,12 @@ export class InteractiveHexManager {
     this.allHexes.clear();
     this.visibleHexes.clear();
     this.hexBuckets.clear();
+
+    // Clear typed array cache
+    this.hexCoordsCache = new Int32Array(0);
+    this.hexCoordsCount = 0;
+    this.hexCoordsCapacity = 0;
+    this.hexKeyToIndex.clear();
 
     console.log("InteractiveHexManager: Destroyed and cleaned up");
   }
