@@ -32,16 +32,9 @@ export class WorldmapPerfSimulation {
   setupPerformanceSimulationGUI(): void {
     const perfFolder = this.config.guiFolder.addFolder("Perf Simulation");
 
-    // Create a proxy object for the GUI binding
+    // Create a state object for the GUI binding
     const simulationState = {
-      get simulateAllExplored() {
-        return this._getSimulateAllExplored();
-      },
-      set simulateAllExplored(value: boolean) {
-        this._setSimulateAllExplored(value);
-      },
-      _getSimulateAllExplored: this.config.getSimulateAllExplored,
-      _setSimulateAllExplored: this.config.setSimulateAllExplored,
+      simulateAllExplored: this.config.getSimulateAllExplored(),
     };
 
     perfFolder
@@ -49,6 +42,7 @@ export class WorldmapPerfSimulation {
       .name("Show All Biomes")
       .onChange((value: boolean) => {
         console.log(`[Performance] Simulate all explored: ${value}`);
+        this.config.setSimulateAllExplored(value);
         this.config.requestChunkRefresh(true);
       });
 
