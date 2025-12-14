@@ -187,12 +187,11 @@ export function MarketTrade({
 
   const manifestMarketAddress = getContractByName(manifest, "pm", "Markets")?.address;
   const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions")?.address;
+  const conditionalTokensAddress = getContractByName(manifest, "pm", "ConditionalTokens")?.address;
   const marketContractAddress = (env.VITE_PUBLIC_PM_ADDRESS ?? manifestMarketAddress ?? DEFAULT_MARKET_ADDRESS).trim();
   const nowSec = Math.floor(Date.now() / 1_000);
   const isResolved = market.isResolved();
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
-
-  const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
   const { claimableDisplay, hasRedeemablePositions } = useClaimablePayout(
     market,
@@ -322,6 +321,11 @@ export function MarketTrade({
       return;
     }
 
+    if (!conditionalTokensAddress) {
+      toast.error("Conditional tokens contract address is missing.");
+      return;
+    }
+
     if (!isResolved) {
       toast.error("You can only redeem after the market is resolved.");
       return;
@@ -332,21 +336,31 @@ export function MarketTrade({
       return;
     }
 
-    if (positionIds.length === 0) {
-      toast.error("Unable to find position ids for this market.");
+    if (!market.outcome_slot_count || market.outcome_slot_count <= 0) {
+      toast.error("Unable to compute redeemable positions for this market.");
       return;
     }
 
-    const marketIdU256 = toUint256(market.market_id);
-    const positionsCalldata = positionIds.flatMap((id) => {
-      const idU256 = toUint256(id);
-      return [idU256.low, idU256.high];
+    const parentCollectionId = toUint256(0n);
+    const conditionId = toUint256(market.condition_id);
+    const indexSets = Array.from({ length: Number(market.outcome_slot_count) }, (_value, idx) => 1n << BigInt(idx));
+    const indexSetsCalldata = indexSets.flatMap((indexSet) => {
+      const asU256 = toUint256(indexSet);
+      return [asU256.low, asU256.high];
     });
 
-    const redeemCall: Call = {
-      contractAddress: marketContractAddress,
-      entrypoint: "redeem",
-      calldata: [marketIdU256.low, marketIdU256.high, positionIds.length, ...positionsCalldata],
+    const redeemPositionsCall: Call = {
+      contractAddress: conditionalTokensAddress,
+      entrypoint: "redeem_positions",
+      calldata: [
+        market.collateral_token,
+        parentCollectionId.low,
+        parentCollectionId.high,
+        conditionId.low,
+        conditionId.high,
+        indexSets.length,
+        ...indexSetsCalldata,
+      ],
     };
 
     const approveCall: Call = {
@@ -358,11 +372,11 @@ export function MarketTrade({
     try {
       setIsSubmitting(true);
 
-      await account.estimateInvokeFee([approveCall, redeemCall], {
+      await account.estimateInvokeFee([approveCall, redeemPositionsCall], {
         blockIdentifier: "pre_confirmed",
       });
 
-      const resultTx = await account.execute([approveCall, redeemCall]);
+      const resultTx = await account.execute([approveCall, redeemPositionsCall]);
 
       if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
         await account.waitForTransaction(resultTx.transaction_hash);
