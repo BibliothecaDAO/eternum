@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { useTokens } from "@/pm/hooks/dojo/useTokens";
+import { computeRedeemableValue } from "@/pm/hooks/markets/calcRedeemable";
 import { formatUnits } from "@/pm/utils";
 import { TokenIcon } from "../TokenIcon";
 import { MaybeController } from "../MaybeController";
@@ -15,8 +16,11 @@ type HolderPosition = {
   positions: Array<{
     label: string;
     amountFormatted: string;
+    valueFormatted: string;
+    valueRaw: bigint;
   }>;
   totalRaw: bigint;
+  totalRedeemable: bigint;
 };
 
 const HolderAvatar = ({ address, highlight }: { address: string; highlight?: boolean }) => {
@@ -88,15 +92,24 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
         account: balance.account_address,
         positions: [],
         totalRaw: 0n,
+        totalRedeemable: 0n,
       };
 
       const amountFormatted = formatBalance(balance, token, Number(market.collateralToken.decimals));
       holder.totalRaw += BigInt(balance.balance);
 
       const outcome = outcomes[positionIndex];
+      const { valueFormatted, valueRaw } = computeRedeemableValue({
+        market,
+        positionIndex,
+        balance,
+      });
+      holder.totalRedeemable += valueRaw;
       holder.positions.push({
         label: outcome?.name ?? `Outcome #${positionIndex + 1}`,
         amountFormatted,
+        valueFormatted,
+        valueRaw,
       });
 
       map.set(balance.account_address, holder);
@@ -154,6 +167,15 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                     <span className="text-white font-semibold">{totalFormatted}</span>
                     {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={16} /> : null}
                   </div>
+                  {market.isResolved() ? (
+                    <div className="flex items-center gap-1 text-gold/60">
+                      <span>Redeemable</span>
+                      <span className="text-white font-semibold">
+                        {formatUnits(holder.totalRedeemable, Number(market.collateralToken.decimals), 4)}
+                      </span>
+                      {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={16} /> : null}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -173,6 +195,18 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                         <span className="text-gold/60">•</span>
                         <span className="text-white font-semibold">{pos.amountFormatted}</span>
                         {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={14} /> : null}
+                        {market.isResolved() ? (
+                          <>
+                            <span className="text-gold/60">•</span>
+                            <span className="text-gold/60">Redeemable</span>
+                            <span className="text-white font-semibold">
+                              {pos.valueRaw > 0n ? pos.valueFormatted : "-"}
+                            </span>
+                            {pos.valueRaw > 0n && tokenForIcon ? (
+                              <TokenIcon token={tokenForIcon as any} size={14} />
+                            ) : null}
+                          </>
+                        ) : null}
                       </div>
                     );
                   })}

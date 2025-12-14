@@ -7,6 +7,7 @@ import { SqlApi } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
 import { useAccount } from "@starknet-react/core";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
 
@@ -304,6 +305,25 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
         return;
       }
 
+      if (playerAddresses.length === 1) {
+        const solePlayer = playerAddresses[0];
+        if (!solePlayer) {
+          toast.error("Could not determine the registered player address.");
+          setComputeStatus(null);
+          return;
+        }
+        setComputeStatus("Submitting single-player claim...");
+        const claimCall: Call = {
+          contractAddress: prizeContract.address,
+          entrypoint: "blitz_prize_claim_no_game",
+          calldata: [solePlayer],
+        };
+        await account.execute([claimCall]);
+        setComputeStatus("Single-player claim submitted.");
+        toast.success("Single registered player — prize claim submitted.");
+        return;
+      }
+
       const total = playerAddresses.length;
 
       const batches = chunk(playerAddresses, 200);
@@ -343,6 +363,12 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
     toriiBaseUrl,
   });
 
+  useEffect(() => {
+    if (finalTrialId) {
+      console.debug("[MarketResolution] Final ranking trial id", finalTrialId.toString());
+    }
+  }, [finalTrialId]);
+
   const hasFinalRanking = Boolean(finalTrialId);
   const canComputeScores =
     market.isEnded() && hasRankedPlayers && !playersLoading && serverLookupStatus === "done" && !hasFinalRanking;
@@ -364,16 +390,25 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
       <VStack className="mt-4 items-start gap-3">
         <HStack className="flex-wrap gap-3">
-          <Button onClick={onResolve} disabled={!canResolve || isResolving} isLoading={isResolving}>
-            {isResolving ? "Resolving..." : "Resolve Market"}
+          <Button onClick={onResolve} disabled={!canResolve || isResolving}>
+            <span className="flex items-center gap-2">
+              {isResolving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {isResolving ? "Submitting..." : "Resolve Market"}
+            </span>
           </Button>
           <Button
             variant="outline"
             onClick={onComputeScores}
             disabled={!canComputeScores || isComputingScores}
-            isLoading={isComputingScores}
           >
-            {hasFinalRanking ? "Scores Finalized" : isComputingScores ? "Computing..." : "Compute Scores"}
+            {hasFinalRanking ? (
+              "Scores Finalized"
+            ) : (
+              <span className="flex items-center gap-2">
+                {isComputingScores ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isComputingScores ? "Submitting..." : "Compute Scores"}
+              </span>
+            )}
           </Button>
           {!canResolve && <span className="text-xs text-gold/60">Resolution opens after the resolve time.</span>}
           {!canComputeScores && (
@@ -393,7 +428,6 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
           <div className="w-full rounded-md border border-white/10 bg-white/5 p-3">
             <div className="flex items-center justify-between text-sm text-gold/80">
               <span className="text-white font-semibold">Final ranking</span>
-              <span className="text-xs text-gold/60">Trial {finalTrialId?.toString()}</span>
             </div>
             {ranksLoading ? <p className="mt-2 text-xs text-gold/60">Loading ranking...</p> : null}
             {ranksError ? <p className="mt-2 text-xs text-danger">{ranksError}</p> : null}

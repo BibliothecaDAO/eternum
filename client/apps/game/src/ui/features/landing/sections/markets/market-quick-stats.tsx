@@ -7,6 +7,7 @@ import { useAccount } from "@starknet-react/core";
 import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/useDojoSdk";
 import { useTokens } from "@/pm/hooks/dojo/useTokens";
+import { useClaimablePayout } from "@/pm/hooks/markets/useClaimablePayout";
 import { formatUnits } from "@/pm/utils";
 
 import { TokenIcon } from "./TokenIcon";
@@ -80,6 +81,9 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
   const tradingEndsLabel = formatTimeLeft(market.end_at ?? null);
 
   const isEnded = tradingEndsLabel === "Ended";
+  const { claimableDisplay } = useClaimablePayout(market, account?.address);
+  const showRedeemable = market.isResolved() && account?.address;
+  const redeemableValue = claimableDisplay ?? "0";
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gold/80">
@@ -92,10 +96,10 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
         <Users className="h-3 w-3" />
         <span className="text-white">{holdersCount != null ? holdersCount : "--"} holders</span>
       </span>
-      <span className="flex items-center gap-1">
+      <span className={`flex items-center gap-1 ${showRedeemable ? "text-progress-bar-good" : ""}`}>
         <Wallet className="h-3 w-3" />
-        <span className="text-white">
-          {account?.address ? playerLockedAmount ?? "0" : "--"}
+        <span className={`${showRedeemable ? "font-semibold" : "text-white"}`}>
+          {account?.address ? (showRedeemable ? `+${redeemableValue}` : playerLockedAmount ?? "0") : "--"}
         </span>
         {market.collateralToken ? <TokenIcon token={market.collateralToken as any} size={12} /> : null}
       </span>

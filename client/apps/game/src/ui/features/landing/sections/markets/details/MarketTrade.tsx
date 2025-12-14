@@ -1,6 +1,6 @@
+import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
 
@@ -199,10 +199,7 @@ export function MarketTrade({
   const isResolved = market.isResolved();
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
 
-  const { claimableDisplay, hasRedeemablePositions } = useClaimablePayout(
-    market,
-    account?.address || undefined,
-  );
+  const { claimableDisplay, hasRedeemablePositions } = useClaimablePayout(market, account?.address || undefined);
 
   const tradePreview = useMemo(() => {
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
@@ -347,6 +344,12 @@ export function MarketTrade({
       return;
     }
 
+    const positionIds = market.position_ids;
+    if (!positionIds || positionIds.length === 0) {
+      toast.error("No position IDs found for this market.");
+      return;
+    }
+
     const parentCollectionId = toUint256(0n);
     const conditionId = toUint256(market.condition_id);
     const indexSets = Array.from({ length: Number(market.outcome_slot_count) }, (_value, idx) => 1n << BigInt(idx));
@@ -369,6 +372,17 @@ export function MarketTrade({
       ],
     };
 
+    const marketIdU256 = toUint256(market.market_id);
+    const positionsCalldata = positionIds.flatMap((id) => {
+      const asU256 = toUint256(id);
+      return [asU256.low, asU256.high];
+    });
+    const redeemCall: Call = {
+      contractAddress: marketContractAddress,
+      entrypoint: "redeem",
+      calldata: [marketIdU256.low, marketIdU256.high, positionIds.length, ...positionsCalldata],
+    };
+
     const approveCall: Call = {
       contractAddress: vaultPositionsAddress,
       entrypoint: "set_approval_for_all",
@@ -378,11 +392,11 @@ export function MarketTrade({
     try {
       setIsSubmitting(true);
 
-      await account.estimateInvokeFee([approveCall, redeemPositionsCall], {
+      await account.estimateInvokeFee([approveCall, redeemCall, redeemPositionsCall], {
         blockIdentifier: "pre_confirmed",
       });
 
-      const resultTx = await account.execute([approveCall, redeemPositionsCall]);
+      const resultTx = await account.execute([approveCall, redeemCall, redeemPositionsCall]);
 
       if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
         await account.waitForTransaction(resultTx.transaction_hash);
@@ -424,8 +438,12 @@ export function MarketTrade({
           className="w-full bg-progress-bar-good/80 text-white hover:bg-progress-bar-good"
           disabled={claimDisabled}
           onClick={onRedeem}
+          // Show loading feedback while submitting claim
         >
-          Claim
+          <span className="flex items-center justify-center gap-2">
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {isSubmitting ? "Submitting..." : "Claim"}
+          </span>
         </Button>
       </div>
     ) : (
