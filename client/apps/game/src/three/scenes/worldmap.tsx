@@ -2,8 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
 import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
-import { getSyncSimulator, initializeSyncSimulator } from "@/dojo/sync-simulator";
-import { ToriiStreamManager } from "@/dojo/torii-stream-manager";
+import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -18,10 +17,10 @@ import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager"
 import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
-import type GUI from "lil-gui";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -118,26 +117,16 @@ interface PrefetchQueueItem {
   fetchStructures: boolean;
 }
 
-//const dummyObject = new Object3D();
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-// const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = [
-//   { model: "s1_eternum-BattleEvent" },
-//   { model: "s1_eternum-ExplorerMoveEvent" }, // rewards
-//   { model: "s1_eternum-StoryEvent" },
-//   { model: "s1_eternum-StructureBuildings" },
-//   { model: "s1_eternum-ProductionBoostBonus" },
-//   { model: "s1_eternum-Building" },
-//   { model: "s1_eternum-OpenRelicChestEvent" }, // get relic crate output
-// ];
 
 export default class WorldmapScene extends HexagonScene {
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
   private readonly chunkGeometry = {
     size: 24, // Smaller stride to reduce edge gaps
     renderSize: {
-      width: 64,
-      height: 64,
+      width: 48,
+      height: 48,
     },
     overlap: 0,
   };
@@ -275,6 +264,8 @@ export default class WorldmapScene extends HexagonScene {
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
 
+  // Performance simulation helper
+  private perfSimulation: WorldmapPerfSimulation | null = null;
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
   private async ensureStructureSynced(structureId: ID, hexCoords: HexPosition) {
@@ -383,10 +374,7 @@ export default class WorldmapScene extends HexagonScene {
 
   // Hover-based label expansion manager
   private hoverLabelManager: HoverLabelManager;
-  private toriiStreamManager?: ToriiStreamManager;
 
-  // Chunk lifecycle integration for deterministic loading
-  private chunkIntegration?: import("@/three/chunk-system").ChunkIntegration;
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
 
@@ -414,7 +402,22 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
-    this.setupPerformanceSimulationGUI();
+
+    // Initialize performance simulation helper
+    this.perfSimulation = new WorldmapPerfSimulation({
+      guiFolder: this.GUIFolder,
+      getSimulateAllExplored: () => this.simulateAllExplored,
+      setSimulateAllExplored: (value: boolean) => {
+        this.simulateAllExplored = value;
+      },
+      getRenderChunkSize: () => this.renderChunkSize,
+      setRenderChunkSize: (width: number, height: number) => {
+        this.renderChunkSize = { width, height };
+      },
+      requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
+      hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
+    });
+    this.perfSimulation.setupPerformanceSimulationGUI();
 
     // Initialize sync simulator with dojo context for ECS injection
     initializeSyncSimulator(dojoContext);
@@ -466,18 +469,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
-
-    const toriiClient = this.dojo.network?.toriiClient;
-    if (toriiClient) {
-      // this.toriiStreamManager = new ToriiStreamManager({
-      //   client: toriiClient,
-      //   setup: this.dojo,
-      //   logging: Boolean(import.meta.env.DEV),
-      // });
-      // this.toriiStreamManager
-      //   .setGlobalModels(GLOBAL_STREAM_MODELS)
-      //   .catch((error) => console.error("[WorldmapScene] Failed to start global Torii stream", error));
-    }
 
     // NOTE: Chunk integration system disabled for performance
     // The core fix for chunk loading (awaiting refreshStructuresForChunks) doesn't require it.
@@ -543,12 +534,10 @@ export default class WorldmapScene extends HexagonScene {
         this.cancelPendingArmyRemoval(update.entityId);
 
         if (update.removed) {
-          // console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
           this.scheduleArmyRemoval(update.entityId, "tile");
           return;
         }
 
-        // console.debug(`[WorldMap] Army tile update received for entity ${update.entityId}`);
         this.updateArmyHexes(update);
 
         // Add combat relationship
@@ -577,7 +566,6 @@ export default class WorldmapScene extends HexagonScene {
         // Update positions for the moved army
         const armyEntityId = update.entityId;
         const prevPosition = this.armiesPositions.get(armyEntityId);
-        // this.armiesPositions.set(armyEntityId, normalizedPos);
 
         // Recalculate arrows for this army when it moves
         this.recalculateArrowsForEntity(armyEntityId);
@@ -594,13 +582,8 @@ export default class WorldmapScene extends HexagonScene {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
         this.cancelPendingArmyRemoval(update.entityId);
-        // console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
-        //   troopCount: update.troopCount,
-        //   owner: update.ownerAddress,
-        // });
 
         if (update.troopCount <= 0) {
-          // console.debug(`[WorldMap] ExplorerTroops update indicates removal for entity ${update.entityId}`);
           this.scheduleArmyRemoval(update.entityId, "zero");
           return;
         }
@@ -612,8 +595,6 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for dead army updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onDeadArmy((entityId) => {
-        // console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
-
         // Remove the army visuals/hex before dropping tracking data so we can clean up the correct tile
         this.deleteArmy(entityId);
 
@@ -626,9 +607,6 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for battle events and update army/structure labels
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
-        // console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
-        // console.log("🗺️ WorldMap: Received battle event update:", update);
-
         // Update both attacker and defender information using the public methods
         const { attackerId, defenderId } = update.battleData;
 
@@ -1876,7 +1854,6 @@ export default class WorldmapScene extends HexagonScene {
 
     this.disposeStoreSubscriptions();
     this.disposeWorldUpdateSubscriptions();
-    this.toriiStreamManager?.shutdown();
 
     // Remove label groups from scene
     this.scene.remove(this.armyLabelsGroup);
@@ -1886,12 +1863,9 @@ export default class WorldmapScene extends HexagonScene {
 
     // Clean up labels
     this.armyManager.removeLabelsFromScene();
-    // console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
-    // console.debug("[WorldMap] Removing structure labels from scene");
     this.questManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
-    // console.debug("[WorldMap] Removing quest labels from scene");
 
     // Clear any pending army removals
     this.pendingArmyRemovals.forEach((timeout) => clearTimeout(timeout));
@@ -1926,7 +1900,6 @@ export default class WorldmapScene extends HexagonScene {
   public deleteArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
     const { playDefeatFx = true } = options;
     this.cancelPendingArmyRemoval(entityId);
-    // console.debug(`[WorldMap] deleteArmy invoked for entity ${entityId}`);
     this.armyManager.removeArmy(entityId, { playDefeatFx });
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
@@ -1955,17 +1928,12 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
-    // Increased delays to allow tile updates to propagate properly
-    // - tile removals now wait longer (1500ms instead of 600ms) to ensure movement updates arrive
-    // - zero troop removals are immediate (0ms) since they're confirmed deaths
+    // Tile removals wait longer (1500ms) to ensure movement updates arrive
+    // Zero troop removals are immediate (0ms) since they're confirmed deaths
     const baseDelay = reason === "tile" ? 1500 : 0;
     const initialDelay = hasPendingMovement ? 3000 : baseDelay;
     const retryDelay = 500;
-    const maxPendingWaitMs = 10000; // Increased from 8000ms to 10000ms
-
-    // console.debug(
-    //   `[WorldMap] Scheduling army removal for entity ${entityId} (reason: ${reason}, delay: ${initialDelay}ms, hasPendingMovement: ${hasPendingMovement})`,
-    // );
+    const maxPendingWaitMs = 10000;
 
     const scheduledAt = Date.now();
     this.pendingArmyRemovalMeta.set(entityId, {
@@ -1985,18 +1953,12 @@ export default class WorldmapScene extends HexagonScene {
         if (reason === "tile") {
           const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
           if (lastUpdate > meta.scheduledAt) {
-            // console.debug(
-            //   `[WorldMap] Skipping removal for entity ${entityId} - newer tile data detected (${lastUpdate - meta.scheduledAt}ms delta)`,
-            // );
             this.pendingArmyRemovalMeta.delete(entityId);
             this.pendingArmyRemovals.delete(entityId);
             return;
           }
 
           if (this.currentChunk !== meta.chunkKey) {
-            // console.debug(
-            //   `[WorldMap] Deferring tile-based removal for entity ${entityId} due to chunk switch (${meta.chunkKey} -> ${this.currentChunk})`,
-            // );
             this.deferArmyRemovalDuringChunkSwitch(entityId, reason, meta.scheduledAt);
             return;
           }
@@ -2004,27 +1966,16 @@ export default class WorldmapScene extends HexagonScene {
           if (this.pendingArmyMovements.has(entityId)) {
             const elapsed = Date.now() - meta.scheduledAt;
             if (elapsed < maxPendingWaitMs) {
-              // console.debug(
-              //   `[WorldMap] Army ${entityId} still has pending movement, retrying removal in ${retryDelay}ms (elapsed: ${elapsed.toFixed(
-              //     0,
-              //   )}ms)`,
-              // );
               schedule(retryDelay);
               return;
             }
 
-            // console.warn(
-            //   `[WorldMap] Pending movement timeout while removing entity ${entityId}, forcing cleanup after ${elapsed.toFixed(
-            //     0,
-            //   )}ms`,
-            // );
             this.pendingArmyMovements.delete(entityId);
           }
         }
 
         this.pendingArmyRemovals.delete(entityId);
         this.pendingArmyRemovalMeta.delete(entityId);
-        // console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
         const playDefeatFx = reason !== "tile";
         this.deleteArmy(entityId, { playDefeatFx });
       }, delay);
@@ -2057,9 +2008,6 @@ export default class WorldmapScene extends HexagonScene {
     deferred.forEach(([entityId, { reason, scheduledAt }]) => {
       const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
       if (lastUpdate > scheduledAt) {
-        // console.debug(
-        //   `[WorldMap] Skipping deferred removal for entity ${entityId} - newer tile data detected after chunk switch (${lastUpdate - scheduledAt}ms delta)`,
-        // );
         return;
       }
 
@@ -2075,7 +2023,6 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingArmyRemovals.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
     this.deferredChunkRemovals.delete(entityId);
-    // console.debug(`[WorldMap] Cancelled pending removal for entity ${entityId}`);
   }
 
   public deleteChest(entityId: ID) {
@@ -2691,26 +2638,6 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private prunePrefetchQueue(): void {
-    if (this.prefetchQueue.length === 0) {
-      return;
-    }
-
-    const allowed = new Set<string>([...this.pinnedChunkKeys, ...this.prefetchedAhead]);
-    this.prefetchQueue = this.prefetchQueue.filter((item) => {
-      if (allowed.has(item.chunkKey)) {
-        return true;
-      }
-      if (item.fetchTiles) {
-        this.queuedPrefetchAreaKeys.delete(item.fetchKey);
-      }
-      if (item.fetchStructures) {
-        this.queuedPrefetchKeys.delete(item.chunkKey);
-      }
-      return false;
-    });
-  }
-
   clearCache() {
     for (const chunkKey of this.cachedMatrices.keys()) {
       this.disposeCachedMatrices(chunkKey);
@@ -2842,7 +2769,6 @@ export default class WorldmapScene extends HexagonScene {
 
       const tempMatrix = new Matrix4();
       const tempPosition = new Vector3();
-      const rotationMatrix = new Matrix4();
       const matrixPool = matrixPoolInstance;
       const hexRadius = HEX_SIZE;
       const hexHeight = hexRadius * 2;
@@ -2962,25 +2888,16 @@ export default class WorldmapScene extends HexagonScene {
         }
 
         tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-
-        const rotationSeed = this.hashCoordinates(globalCol, globalRow);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-
-        if (!IS_FLAT_MODE) {
-          tempPosition.y += 0.05;
-          // rotationMatrix.makeRotationY(randomRotation);
-          // tempMatrix.multiply(rotationMatrix);
-        } else {
-          tempPosition.y += 0.05;
-        }
+        tempPosition.y += 0.05;
 
         // Performance simulation: treat all hexes as explored when flag is set
         const effectivelyExplored = isExplored || this.simulateAllExplored;
 
         if (effectivelyExplored) {
           // Use actual biome if explored, or generate deterministic biome for simulation
-          const biome = isExplored ? (isExplored as BiomeType) : this.getSimulatedBiome(globalCol, globalRow);
+          const biome = isExplored
+            ? (isExplored as BiomeType)
+            : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
           const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
           tempMatrix.setPosition(tempPosition);
 
@@ -3112,51 +3029,11 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateUnsubscribes = [];
   }
 
-  private async refreshStructuresForChunks(chunkKeys: string[]): Promise<void> {
-    // Debug: Track what's calling this function
-    if (import.meta.env.DEV) {
-      console.log(`[refreshStructuresForChunks] Called for chunks: ${chunkKeys.join(", ")}`);
-      console.trace("[refreshStructuresForChunks] Call stack:");
-    }
-
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents;
-
-    if (!toriiClient || !contractComponents) {
-      return;
-    }
-
-    const structuresToSync: { entityId: ID; position: HexPosition }[] = [];
-    const seen = new Set<ID>();
-
-    chunkKeys.forEach((chunkKey) => {
-      const { minRow, maxRow, minCol, maxCol } = this.getRenderFetchBounds(chunkKey);
-
-      this.structuresPositions.forEach((pos, entityId) => {
-        if (seen.has(entityId)) {
-          return;
-        }
-        if (pos.col >= minCol && pos.col <= maxCol && pos.row >= minRow && pos.row <= maxRow) {
-          const contractCoords = new Position({ x: pos.col, y: pos.row }).getContract();
-          structuresToSync.push({
-            entityId,
-            position: { col: contractCoords.x, row: contractCoords.y },
-          });
-          seen.add(entityId);
-        }
-      });
-    });
-
-    if (structuresToSync.length === 0) {
-      return;
-    }
-
-    try {
-      const typedContractComponents = contractComponents as any;
-      // await getStructuresDataFromTorii(toriiClient, typedContractComponents, structuresToSync);
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to refresh structures for chunks", chunkKeys, error);
-    }
+  // NOTE: Structure refresh via Torii is currently disabled for performance.
+  // This method is kept as a no-op to maintain call-site compatibility.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async refreshStructuresForChunks(_chunkKeys: string[]): Promise<void> {
+    // No-op: structure syncing disabled
   }
 
   private beginToriiFetch() {
@@ -3201,7 +3078,7 @@ export default class WorldmapScene extends HexagonScene {
       );
     }
 
-    const fetchPromise = this.executeTileEntitiesFetch(fetchKey, chunkKey, minCol, maxCol, minRow, maxRow);
+    const fetchPromise = this.executeTileEntitiesFetch(fetchKey, minCol, maxCol, minRow, maxRow);
     this.pendingChunks.set(fetchKey, fetchPromise);
 
     return fetchPromise;
@@ -3209,7 +3086,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private async executeTileEntitiesFetch(
     fetchKey: string,
-    chunkKey: string,
     minCol: number,
     maxCol: number,
     minRow: number,
@@ -3240,7 +3116,6 @@ export default class WorldmapScene extends HexagonScene {
       // Always remove from pending chunks
       this.pendingChunks.delete(fetchKey);
       this.endToriiFetch();
-      //const end = performance.now();
     }
   }
 
@@ -3572,9 +3447,6 @@ export default class WorldmapScene extends HexagonScene {
       console.error("[WorldmapScene] Tile fetch failed:", error);
     });
 
-    // Don't await - this is also async but not critical for initial render
-    void this.updateToriiStreamBoundsForChunk(startRow, startCol);
-
     if (force) {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
@@ -3618,15 +3490,8 @@ export default class WorldmapScene extends HexagonScene {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
       if (preChunkStats && postChunkStats) {
         const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        if (import.meta.env.DEV) {
-          // console.log(
-          //   `[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
-          // );
-        }
-
-        if (Math.abs(memoryDelta) > 20) {
-          // console.warn(`[CHUNK SYNC] Large memory change during chunk switch: ${memoryDelta.toFixed(1)}MB`);
-        }
+        // Memory monitoring hooks - intentionally silent unless threshold exceeded
+        void memoryDelta;
       }
     }
 
@@ -3634,28 +3499,6 @@ export default class WorldmapScene extends HexagonScene {
       this.lastChunkSwitchPosition = switchPosition;
       this.hasChunkSwitchAnchor = true;
     }
-  }
-
-  private async updateToriiStreamBoundsForChunk(startRow: number, startCol: number) {
-    if (!this.toriiStreamManager) {
-      return;
-    }
-
-    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-    const halfWidth = this.renderChunkSize.width / 2;
-    const halfHeight = this.renderChunkSize.height / 2;
-
-    const bounds = {
-      minCol: chunkCenterCol - halfWidth + FELT_CENTER(),
-      maxCol: chunkCenterCol + halfWidth + FELT_CENTER(),
-      minRow: chunkCenterRow - halfHeight + FELT_CENTER(),
-      maxRow: chunkCenterRow + halfHeight + FELT_CENTER(),
-      padding: this.renderChunkSize.width,
-      // models intentionally omitted while streaming is disabled
-    };
-
-    // Streaming is currently disabled; keep bounds calculation for future re-enable.
-    void bounds;
   }
 
   private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number) {
@@ -3697,15 +3540,8 @@ export default class WorldmapScene extends HexagonScene {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
       if (preChunkStats && postChunkStats) {
         const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        if (import.meta.env.DEV) {
-          console.log(
-            `[CHUNK SYNC] Chunk refresh memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
-          );
-        }
-
-        if (Math.abs(memoryDelta) > 20) {
-          // console.warn(`[CHUNK SYNC] Large memory change during chunk refresh: ${memoryDelta.toFixed(1)}MB`);
-        }
+        // Memory monitoring hooks - intentionally silent unless threshold exceeded
+        void memoryDelta;
       }
     }
   }
@@ -3988,9 +3824,6 @@ export default class WorldmapScene extends HexagonScene {
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();
 
-    // Clean up chunk integration
-    this.chunkIntegration?.destroy();
-
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
       this.visibilityChangeHandler = undefined;
@@ -3998,55 +3831,6 @@ export default class WorldmapScene extends HexagonScene {
 
     super.destroy();
   }
-
-  // NOTE: Chunk integration system is disabled for performance.
-  // The methods below are kept for future use if advanced chunk lifecycle debugging is needed.
-  // Uncomment initializeChunkIntegration() in constructor and these methods to re-enable.
-  //
-  // private initializeChunkIntegration(): void {
-  //   const toriiClient = this.dojo.network?.toriiClient;
-  //   const contractComponents = this.dojo.network?.contractComponents;
-  //
-  //   if (!toriiClient || !contractComponents) {
-  //     console.warn("[WorldmapScene] Cannot initialize chunk integration - missing Torii client or components");
-  //     return;
-  //   }
-  //
-  //   import("@/three/chunk-system").then(({ createChunkIntegration, EntityType }) => {
-  //     this.chunkIntegration = createChunkIntegration(
-  //       {
-  //         toriiClient,
-  //         contractComponents: contractComponents as any,
-  //         structurePositions: this.structuresPositions,
-  //         chunkSize: this.chunkSize,
-  //         renderChunkSize: this.renderChunkSize,
-  //         debug: import.meta.env.DEV,
-  //       },
-  //       {
-  //         structureManager: this.structureManager,
-  //         armyManager: this.armyManager,
-  //         questManager: this.questManager,
-  //         chestManager: this.chestManager,
-  //       },
-  //     );
-  //     (this as any)._chunkEntityType = EntityType;
-  //     if (import.meta.env.DEV) {
-  //       console.log("[WorldmapScene] Chunk integration initialized");
-  //     }
-  //   }).catch((error) => {
-  //     console.error("[WorldmapScene] Failed to initialize chunk integration:", error);
-  //   });
-  // }
-  //
-  // private notifyChunkEntityHydrated(entityId: ID, entityType: string): void {
-  //   if (!this.chunkIntegration) return;
-  //   const EntityType = (this as any)._chunkEntityType;
-  //   if (!EntityType) return;
-  //   const type = EntityType[entityType as keyof typeof EntityType];
-  //   if (type !== undefined) {
-  //     this.chunkIntegration.notifyEntityHydrated(entityId, type);
-  //   }
-  // }
 
   /**
    * Display a resource gain/loss effect at a hex position
@@ -4387,7 +4171,6 @@ export default class WorldmapScene extends HexagonScene {
    * Recalculate arrow directions for a specific entity
    */
   private recalculateArrowsForEntity(entityId: ID) {
-    // console.log(`[RECALCULATE ARROWS FOR ENTITY] Recalculating arrows for entity ${entityId}`);
     this.battleDirectionManager.recalculateArrowsForEntity(entityId);
   }
 
@@ -4408,145 +4191,5 @@ export default class WorldmapScene extends HexagonScene {
 
     // Remove from battle direction relationships
     this.battleDirectionManager.removeEntityFromTracking(entityId);
-  }
-
-  // ============================================================================
-  // Performance Simulation - Show all biomes for benchmarking
-  // ============================================================================
-
-  /**
-   * Setup GUI controls for performance simulation
-   */
-  private setupPerformanceSimulationGUI(): void {
-    const perfFolder = this.GUIFolder.addFolder("Perf Simulation");
-
-    perfFolder
-      .add(this, "simulateAllExplored")
-      .name("Show All Biomes")
-      .onChange((value: boolean) => {
-        console.log(`[Performance] Simulate all explored: ${value}`);
-        // Force chunk refresh to apply the change
-        this.requestChunkRefresh(true);
-      });
-
-    // Render window size control
-    const renderSizeOptions = {
-      renderSize: this.renderChunkSize.width,
-    };
-
-    perfFolder
-      .add(renderSizeOptions, "renderSize", [32, 48, 64, 80, 96])
-      .name("Render Size")
-      .onChange((value: number) => {
-        this.setRenderChunkSize(value);
-      });
-
-    // Sync simulation controls
-    this.setupSyncSimulationGUI(perfFolder);
-
-    perfFolder.close();
-  }
-
-  /**
-   * Setup GUI controls for sync traffic simulation
-   */
-  private setupSyncSimulationGUI(parentFolder: GUI): void {
-    const syncFolder = parentFolder.addFolder("Sync Simulation");
-    const simulator = getSyncSimulator();
-
-    // Control state object for GUI binding
-    const syncControls = {
-      entitiesPerSecond: 100,
-      burstSize: 10,
-      injectIntoECS: true,
-      running: false,
-      startStop: () => {
-        if (simulator.isRunning()) {
-          simulator.stop();
-          syncControls.running = false;
-        } else {
-          simulator.updateConfig({
-            entitiesPerSecond: syncControls.entitiesPerSecond,
-            burstSize: syncControls.burstSize,
-            injectIntoECS: syncControls.injectIntoECS,
-            logging: false,
-          });
-          simulator.start();
-          syncControls.running = true;
-        }
-      },
-      burst100: () => {
-        simulator.updateConfig({ injectIntoECS: syncControls.injectIntoECS });
-        simulator.burst(100);
-      },
-      burst1000: () => {
-        simulator.updateConfig({ injectIntoECS: syncControls.injectIntoECS });
-        simulator.burst(1000);
-      },
-      logStats: () => {
-        simulator.logStats();
-      },
-    };
-
-    syncFolder.add(syncControls, "entitiesPerSecond", 10, 1000, 10).name("Entities/sec");
-    syncFolder.add(syncControls, "burstSize", 1, 100, 1).name("Burst Size");
-    syncFolder.add(syncControls, "injectIntoECS").name("Inject into ECS");
-    syncFolder.add(syncControls, "startStop").name("Start/Stop Sync");
-    syncFolder.add(syncControls, "burst100").name("Burst 100");
-    syncFolder.add(syncControls, "burst1000").name("Burst 1000");
-    syncFolder.add(syncControls, "logStats").name("Log Stats");
-
-    syncFolder.close();
-  }
-
-  /**
-   * Update the render chunk size dynamically.
-   * Smaller values = fewer hexes rendered = better performance.
-   */
-  private setRenderChunkSize(size: number): void {
-    const oldSize = this.renderChunkSize.width;
-    if (size === oldSize) return;
-
-    console.log(`[Performance] Changing render size from ${oldSize}x${oldSize} to ${size}x${size}`);
-    console.log(
-      `[Performance] Hex count: ${oldSize * oldSize} -> ${size * size} (${Math.round(((size * size) / (oldSize * oldSize)) * 100)}%)`,
-    );
-
-    this.renderChunkSize = { width: size, height: size };
-
-    // Force a full chunk refresh with the new size
-    this.requestChunkRefresh(true);
-  }
-
-  /**
-   * Generate a deterministic biome type for unexplored hexes during simulation.
-   * Uses the same hash function as other visual randomization for consistency.
-   */
-  private getSimulatedBiome(col: number, row: number): BiomeType {
-    // Use hash to generate deterministic but varied biomes
-    const hash = this.hashCoordinates(col * 7.31, row * 13.17);
-
-    // Distribute across biome types (excluding special types)
-    const biomeTypes = [
-      BiomeType.DeepOcean,
-      BiomeType.Ocean,
-      BiomeType.Beach,
-      BiomeType.Scorched,
-      BiomeType.Bare,
-      BiomeType.Tundra,
-      BiomeType.Snow,
-      BiomeType.TemperateDesert,
-      BiomeType.Shrubland,
-      BiomeType.Taiga,
-      BiomeType.Grassland,
-      BiomeType.TemperateDeciduousForest,
-      BiomeType.TemperateRainForest,
-      BiomeType.SubtropicalDesert,
-      BiomeType.TropicalSeasonalForest,
-      BiomeType.TropicalRainForest,
-    ];
-
-    const index = Math.floor(hash * biomeTypes.length);
-    return biomeTypes[index];
   }
 }
