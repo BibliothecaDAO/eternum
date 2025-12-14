@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
 
@@ -39,8 +40,9 @@ const Button = ({
 
 const Dialog = ({ open, children, onClose }: { open: boolean; children: React.ReactNode; onClose?: () => void }) => {
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+
+  const content = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="relative min-w-[300px] max-w-[360px] rounded-lg border border-white/10 bg-black/90 p-6 shadow-2xl">
         {onClose ? (
           <button
@@ -55,6 +57,9 @@ const Dialog = ({ open, children, onClose }: { open: boolean; children: React.Re
       </div>
     </div>
   );
+
+  // Render in a portal so the overlay is not clipped by scrollable parents.
+  return typeof document !== "undefined" ? createPortal(content, document.body) : content;
 };
 
 const DialogHeader = ({ children }: { children: React.ReactNode }) => (
