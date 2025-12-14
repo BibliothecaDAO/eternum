@@ -30,7 +30,7 @@ import {
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
 import type { ArmyInstanceData } from "../types/army";
-import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
+import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
@@ -905,15 +905,11 @@ export class ArmyManager {
       return false;
     }
 
-    // Use actual world position for frustum check if available, otherwise use the hex that's in bounds
-    const frustumPoint = worldPos ?? getWorldPositionForHexCoordsInto(x, y, this.tempPosition);
-    if (this.visibilityManager) {
-      return this.visibilityManager.isPointVisible(frustumPoint);
-    }
-    if (!this.frustumManager) {
-      return true;
-    }
-    return this.frustumManager.isPointVisible(frustumPoint);
+    // Skip frustum culling during chunk updates - bounds check is sufficient.
+    // Frustum culling can fail when the camera is still animating to the new chunk position,
+    // causing armies to not appear until the next frame/click.
+    // The bounds check already ensures we only render armies in the current chunk area.
+    return true;
   }
 
   private getSpatialKey(col: number, row: number): string {

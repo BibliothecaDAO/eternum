@@ -1505,15 +1505,11 @@ export class StructureManager {
       return false;
     }
 
-    const position = getWorldPositionForHexCoordsInto(col, row, this.tempVisibilityPosition);
-    position.y += 0.05;
-    if (this.visibilityManager) {
-      return this.visibilityManager.isPointVisible(position);
-    }
-    if (!this.frustumManager) {
-      return true;
-    }
-    return this.frustumManager.isPointVisible(position);
+    // Skip frustum culling during chunk updates - bounds check is sufficient.
+    // Frustum culling can fail when the camera is still animating to the new chunk position,
+    // causing structures to not appear until the next frame/click.
+    // The bounds check already ensures we only render structures in the current chunk area.
+    return true;
   }
 
   public getEntityIdFromInstance(structureType: StructureType, instanceId: number): ID | undefined {

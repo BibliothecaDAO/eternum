@@ -271,13 +271,10 @@ export class ChestManager {
       return false;
     }
 
-    if (!this.frustumManager) {
-      return true;
-    }
-
-    const worldPos = getWorldPositionForHexCoordsInto(x, y, this.tempVisibilityPosition);
-    worldPos.y += 0.05;
-    return this.frustumManager.isPointVisible(worldPos);
+    // Skip frustum culling during chunk updates - bounds check is sufficient.
+    // Frustum culling can fail when the camera is still animating to the new chunk position,
+    // causing chests to not appear until the next frame/click.
+    return true;
   }
 
   private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {
