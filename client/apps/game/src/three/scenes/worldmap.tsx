@@ -2997,6 +2997,7 @@ export default class WorldmapScene extends HexagonScene {
 
           if (matrices.length === 0) {
             hexMesh.setCount(0);
+            hexMesh.updateMeshVisibility(); // Hide meshes with 0 instances to skip draw calls
             continue;
           }
 
@@ -3008,6 +3009,7 @@ export default class WorldmapScene extends HexagonScene {
             hexMesh.setMatrixAt(index, matrix);
           });
           hexMesh.setCount(matrices.length);
+          hexMesh.updateMeshVisibility(); // Show meshes that have instances
           hexMesh.needsUpdate();
 
           const offsets = biomeColorOffsets[biome];
@@ -3503,6 +3505,7 @@ export default class WorldmapScene extends HexagonScene {
         } else {
           hexMesh.setCount(count);
         }
+        hexMesh.updateMeshVisibility(); // Update visibility based on count
 
         if (landColors && count > 0) {
           const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
@@ -4641,7 +4644,36 @@ export default class WorldmapScene extends HexagonScene {
         this.requestChunkRefresh(true);
       });
 
+    // Render window size control
+    const renderSizeOptions = {
+      renderSize: this.renderChunkSize.width,
+    };
+
+    perfFolder
+      .add(renderSizeOptions, "renderSize", [32, 48, 64, 80, 96])
+      .name("Render Size")
+      .onChange((value: number) => {
+        this.setRenderChunkSize(value);
+      });
+
     perfFolder.close();
+  }
+
+  /**
+   * Update the render chunk size dynamically.
+   * Smaller values = fewer hexes rendered = better performance.
+   */
+  private setRenderChunkSize(size: number): void {
+    const oldSize = this.renderChunkSize.width;
+    if (size === oldSize) return;
+
+    console.log(`[Performance] Changing render size from ${oldSize}x${oldSize} to ${size}x${size}`);
+    console.log(`[Performance] Hex count: ${oldSize * oldSize} -> ${size * size} (${Math.round((size * size) / (oldSize * oldSize) * 100)}%)`);
+
+    this.renderChunkSize = { width: size, height: size };
+
+    // Force a full chunk refresh with the new size
+    this.requestChunkRefresh(true);
   }
 
   /**

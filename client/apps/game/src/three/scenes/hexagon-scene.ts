@@ -117,6 +117,11 @@ export abstract class HexagonScene {
   private lastClipFar = 0;
   private fogEnabledByQuality = false;
   private fogEnabledByUser = false;
+
+  // Performance tuning options (optimized defaults for better FPS)
+  protected biomeShadowsEnabled = false;
+  protected biomeAnimationsEnabled = false;
+  protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
   private lastFogNear = 0;
   private lastFogFar = 0;
 
@@ -443,7 +448,85 @@ export abstract class HexagonScene {
     perfFolder.add(perfParams, "exploreHexes9k").name("Simulate 9K Hexes");
     perfFolder.add(perfParams, "clearSimulation").name("Clear Simulation");
 
+    // Phase 1 Performance Optimizations
+    const optimizeFolder = perfFolder.addFolder("Optimizations");
+
+    optimizeFolder
+      .add(this, "biomeShadowsEnabled")
+      .name("Biome Shadows")
+      .onChange((value: boolean) => {
+        this.setBiomeShadowsEnabled(value);
+      });
+
+    optimizeFolder
+      .add(this, "biomeAnimationsEnabled")
+      .name("Biome Animations")
+      .onChange((value: boolean) => {
+        console.log(`[Performance] Biome animations: ${value}`);
+      });
+
+    optimizeFolder
+      .add(this, "animationDistanceThreshold", 20, 200, 10)
+      .name("Anim Distance")
+      .onChange((value: number) => {
+        console.log(`[Performance] Animation distance threshold: ${value}`);
+      });
+
+    // Stats button
+    const statsParams = {
+      logStats: () => {
+        this.logRenderStats();
+      },
+    };
+    optimizeFolder.add(statsParams, "logStats").name("Log Render Stats");
+
+    optimizeFolder.open();
     perfFolder.close();
+  }
+
+  /**
+   * Log rendering statistics for debugging performance
+   */
+  protected logRenderStats(): void {
+    let totalMeshes = 0;
+    let totalInstances = 0;
+    let activeBiomes = 0;
+
+    console.group("Render Stats");
+
+    this.biomeModels.forEach((biome, biomeType) => {
+      const meshCount = biome.instancedMeshes.length;
+      let biomeInstances = 0;
+
+      biome.instancedMeshes.forEach((mesh) => {
+        biomeInstances += mesh.count;
+      });
+
+      if (biomeInstances > 0) {
+        activeBiomes++;
+        console.log(`${biomeType}: ${meshCount} meshes, ${biomeInstances} instances`);
+      }
+
+      totalMeshes += meshCount;
+      totalInstances += biomeInstances;
+    });
+
+    console.log("---");
+    console.log(`Total: ${activeBiomes} active biomes, ${totalMeshes} meshes, ${totalInstances} instances`);
+    console.log(`Estimated draw calls: ${totalMeshes} (each InstancedMesh = 1 draw call)`);
+    console.groupEnd();
+  }
+
+  /**
+   * Enable or disable shadow casting on all biome meshes.
+   * Disabling shadows can improve GPU performance by ~30-50%.
+   */
+  protected setBiomeShadowsEnabled(enabled: boolean): void {
+    console.log(`[Performance] Biome shadows: ${enabled}`);
+    this.biomeShadowsEnabled = enabled;
+    this.biomeModels.forEach((biome) => {
+      biome.setShadowsEnabled(enabled);
+    });
   }
 
   /**
@@ -813,7 +896,7 @@ export abstract class HexagonScene {
   }
 
   protected shouldUpdateBiomeAnimations(): boolean {
-    return true;
+    return this.biomeAnimationsEnabled;
   }
 
   protected onBiomeModelLoaded(_model: InstancedBiome): void {
@@ -884,11 +967,12 @@ export abstract class HexagonScene {
         visibilityManager: this.visibilityManager,
         frustumManager: this.frustumManager, // Keep for backward compatibility
         cameraPosition: this.animationCameraTarget,
-        maxDistance: this.animationVisibilityDistance,
+        maxDistance: this.animationDistanceThreshold, // Use configurable threshold
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
       this.animationVisibilityContext.frustumManager = this.frustumManager;
+      this.animationVisibilityContext.maxDistance = this.animationDistanceThreshold;
     }
 
     return this.animationVisibilityContext;

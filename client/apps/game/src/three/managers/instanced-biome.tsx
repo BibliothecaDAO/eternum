@@ -7,6 +7,12 @@ import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+
+// Biomes that should never cast shadows (flat/water biomes)
+const NO_SHADOW_BIOMES = new Set(["ocean", "deepocean"]);
+
+// Biomes that don't have meaningful animations (static or flat)
+const STATIC_BIOMES = new Set(["ocean", "deepocean", "outline"]);
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
@@ -31,9 +37,22 @@ export default class InstancedModel {
   private bucketToIndices: Map<number, Uint16Array> = new Map();
   private bucketIndicesBuilt: boolean = false;
 
+  // Biome-specific optimization flags
+  private biomeName: string = "";
+  private isStaticBiome: boolean = false;
+  private canCastShadows: boolean = true;
+  private hasAnimations: boolean = false;
+
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
     this.count = count;
+
+    // Store biome name and compute optimization flags
+    this.biomeName = name;
+    const lowerName = name.toLowerCase();
+    this.isStaticBiome = STATIC_BIOMES.has(lowerName);
+    this.canCastShadows = !NO_SHADOW_BIOMES.has(lowerName);
+    this.hasAnimations = gltf.animations.length > 0 && !this.isStaticBiome;
 
     this.animationBuckets = new Uint8Array(count);
     for (let i = 0; i < count; i++) {
@@ -115,6 +134,58 @@ export default class InstancedModel {
   public setAnimationFPS(fps: number): void {
     const resolved = Math.max(1, fps);
     this.animationUpdateInterval = 1000 / resolved;
+  }
+
+  /**
+   * Enable or disable shadow casting on all meshes in this biome.
+   * Disabling shadows can significantly improve GPU performance.
+   * Note: Ocean and DeepOcean biomes never cast shadows regardless of this setting.
+   */
+  public setShadowsEnabled(enabled: boolean): void {
+    // Skip if this biome type can never cast shadows
+    if (!this.canCastShadows) {
+      return;
+    }
+
+    this.instancedMeshes.forEach((mesh) => {
+      // Only toggle castShadow - receiveShadow is less expensive
+      // Land meshes don't cast shadows (already set in constructor)
+      if (mesh.name !== LAND_NAME) {
+        mesh.castShadow = enabled;
+      }
+    });
+  }
+
+  /**
+   * Check if this biome can cast shadows.
+   */
+  public getCanCastShadows(): boolean {
+    return this.canCastShadows;
+  }
+
+  /**
+   * Check if this biome has meaningful animations.
+   */
+  public getHasAnimations(): boolean {
+    return this.hasAnimations;
+  }
+
+  /**
+   * Get the biome name for debugging.
+   */
+  public getBiomeName(): string {
+    return this.biomeName;
+  }
+
+  /**
+   * Update mesh visibility based on instance count.
+   * Meshes with 0 instances are hidden to skip draw calls entirely.
+   * Call this after setCount() to optimize rendering.
+   */
+  public updateMeshVisibility(): void {
+    this.instancedMeshes.forEach((mesh) => {
+      mesh.visible = mesh.count > 0;
+    });
   }
 
   getCount(): number {
@@ -276,6 +347,11 @@ export default class InstancedModel {
   }
 
   updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext) {
+    // Skip animations for static biomes (ocean, deepocean, outline)
+    if (!this.hasAnimations) {
+      return;
+    }
+
     if (!this.shouldAnimate(visibility)) {
       return;
     }

@@ -36,8 +36,8 @@ export interface WorldChunkConfig {
 export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   stride: 24,
   renderSize: {
-    width: 64,
-    height: 64,
+    width: 48,
+    height: 48,
   },
   pinRadius: 2, // 5x5 pinned neighborhood
   switchPadding: 0.05,
