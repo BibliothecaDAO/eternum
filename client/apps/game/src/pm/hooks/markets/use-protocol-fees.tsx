@@ -1,4 +1,4 @@
-import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
+import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { uint256 } from "starknet";
 import { ProtocolFees } from "../../bindings";
@@ -32,7 +32,8 @@ export const useProtocolFees = (address: string) => {
 
     const fetchProtocolFees = async () => {
       try {
-        const entities = (await sdk.getEntities({ query: protocolFeesQuery })).getItems();
+        const entitiesResponse = await sdk.getEntities({ query: protocolFeesQuery });
+        const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
 
         const newFees = entities.flatMap((entity) => {
           const item = entity.models.pm.ProtocolFees as ProtocolFees;

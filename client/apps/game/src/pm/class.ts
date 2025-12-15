@@ -15,7 +15,6 @@ import { formatUnits, replaceAndFormat } from "./utils";
 
 export type MarketOutcome = {
   index: number;
-  label: string;
   name: string;
   odds: string;
   gain: number;

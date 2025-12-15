@@ -1,4 +1,4 @@
-import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
+import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding, BigNumberish } from "starknet";
 import { MarketBuy } from "../../bindings";
@@ -27,7 +27,7 @@ export const useMarketActivity = (marketId: BigNumberish) => {
   const refresh = async () => {
     const res = await sdk.getEventMessages({ query });
 
-    const items = res.getItems();
+    const items: StandardizedQueryResult<SchemaType> = res.getItems();
     const parsedItems = items
       .flatMap((i) => {
         if (!i.models.pm.MarketBuy) return [];

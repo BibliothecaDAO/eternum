@@ -1,4 +1,4 @@
-import type { Market } from "@pm/sdk";
+import type { MarketClass } from "@/pm/class";
 import { HStack, VStack } from "@pm/ui";
 import { Flag, Snail } from "lucide-react";
 
@@ -17,7 +17,7 @@ const formatTimestamp = (value: unknown) => {
   return date ? date.toLocaleString() : null;
 };
 
-export const MarketTimeline = ({ market }: { market: Market }) => {
+export const MarketTimeline = ({ market }: { market: MarketClass }) => {
   const createdAt = toDate((market as any).created_at ?? (market as any).createdAt);
   const startAt = toDate((market as any).start_at ?? (market as any).startAt ?? createdAt);
   const endAt = toDate((market as any).end_at ?? (market as any).endAt ?? (market as any).resolve_at);

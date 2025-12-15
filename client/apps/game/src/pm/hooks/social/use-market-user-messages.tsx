@@ -1,4 +1,4 @@
-import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
+import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { AccountInterface, addAddressPadding, BigNumberish, cairo } from "starknet";
 import { UserMessage } from "../../bindings";
@@ -29,7 +29,7 @@ export const useMarketUserMessages = (marketId: BigNumberish) => {
 
   const refresh = async () => {
     const res = await sdk.getEntities({ query });
-    const items = res.getItems();
+    const items: StandardizedQueryResult<SchemaType> = res.getItems();
     const parsedItems = items.flatMap((i) => {
       if (!i.models.pm.UserMessage) return [];
       return [i.models.pm.UserMessage as unknown as UserMessage];

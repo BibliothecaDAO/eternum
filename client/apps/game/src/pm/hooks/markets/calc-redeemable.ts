@@ -17,7 +17,7 @@ export const computeRedeemableValue = ({
   if (!payouts || payouts.length === 0) return { valueRaw: 0n, valueFormatted: "0" };
 
   const payout = payouts[positionIndex] ?? 0;
-  const totalPayout = payouts.reduce((sum, val) => sum + Number(val), 0);
+  const totalPayout = payouts.reduce((sum, val) => Number(sum) + Number(val), 0);
   if (totalPayout === 0 || payout === 0) return { valueRaw: 0n, valueFormatted: "0" };
 
   const denominatorRaw = market.vaultDenominator?.value;
@@ -28,7 +28,7 @@ export const computeRedeemableValue = ({
   const numerator = BigInt(numeratorRaw);
   if (numerator === 0n) return { valueRaw: 0n, valueFormatted: "0" };
 
-  const totalShare = BigInt((Number(payout) * 10_000) / totalPayout);
+  const totalShare = BigInt((Number(payout) * 10_000) / Number(totalPayout));
   if (totalShare === 0n) return { valueRaw: 0n, valueFormatted: "0" };
 
   const share = (totalShare * denominator) / numerator;

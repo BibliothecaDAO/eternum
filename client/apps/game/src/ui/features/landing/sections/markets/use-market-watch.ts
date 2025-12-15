@@ -142,10 +142,13 @@ export const useMarketWatch = () => {
 
   const updateWatchState = useCallback(
     (marketId: string, next: Partial<{ status: "idle" | "checking" | "ready" | "offline"; worldName?: string }>) => {
-      setWatchStates((prev) => ({
-        ...prev,
-        [marketId]: { status: "idle", ...prev[marketId], ...next },
-      }));
+      setWatchStates((prev) => {
+        const previous = prev[marketId] ?? { status: "idle" as const };
+        return {
+          ...prev,
+          [marketId]: { ...previous, ...next },
+        };
+      });
     },
     [],
   );

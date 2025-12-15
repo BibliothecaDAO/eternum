@@ -1,5 +1,5 @@
 import { getContractByName } from "@dojoengine/core";
-import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
+import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
 import { Token, TokenBalance } from "@dojoengine/torii-wasm";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
@@ -84,31 +84,33 @@ export const useAllPositions = (address?: string) => {
         new Set(balancesFull.flatMap((i) => (i.metadata?.market_id ? [i.metadata.market_id] : []))),
       ).map((i) => addAddressPadding(i));
 
-      const marketEntities = await sdk.getEntities({
+      const marketEntitiesResponse = await sdk.getEntities({
         query: new ToriiQueryBuilder()
           .withEntityModels(["pm-Market", "pm-VaultDenominator"])
           .withClause(new ClauseBuilder().where("pm-Market", "market_id", "In", [...marketIds]).build())
           .includeHashedKeys(),
       });
+      const marketItems: StandardizedQueryResult<SchemaType> = marketEntitiesResponse.getItems();
 
-      const marketCreatedEntities = await sdk.getEventMessages({
+      const marketCreatedEntitiesResponse = await sdk.getEventMessages({
         query: new ToriiQueryBuilder()
           .withEntityModels(["pm-MarketCreated"])
           .withClause(new ClauseBuilder().where("pm-MarketCreated", "market_id", "In", [...marketIds]).build())
           .includeHashedKeys(),
       });
+      const marketCreatedItems: StandardizedQueryResult<SchemaType> = marketCreatedEntitiesResponse.getItems();
 
-      const markets = marketEntities.getItems().flatMap((i) => {
+      const markets = marketItems.flatMap((i) => {
         const item = i.models.pm.Market as Market;
         return item ? [item] : [];
       });
 
-      const marketsCreated = marketCreatedEntities.getItems().flatMap((i) => {
+      const marketsCreated = marketCreatedItems.flatMap((i) => {
         const item = i.models.pm.MarketCreated as MarketCreated;
         return item ? [item] : [];
       });
 
-      const vaultDenominators = marketEntities.getItems().flatMap((i) => {
+      const vaultDenominators = marketItems.flatMap((i) => {
         const item = i.models.pm.VaultDenominator as VaultDenominator;
         return item ? [item] : [];
       });

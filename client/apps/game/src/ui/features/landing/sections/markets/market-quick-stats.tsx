@@ -77,7 +77,7 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
     return formatUnits(total, Number(market.collateralToken?.decimals ?? 0), 4);
   }, [account?.address, balances, market.collateralToken?.decimals, positionIds, vaultPositionsAddress]);
 
-  const tvl = market.getTvl ? market.getTvl() : (market.tvl ?? 0);
+  const tvl = market.getTvl ? market.getTvl() : undefined;
   const tradingEndsLabel = formatTimeLeft(market.end_at ?? null);
 
   const isEnded = tradingEndsLabel === "Ended";

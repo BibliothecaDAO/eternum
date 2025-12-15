@@ -104,7 +104,7 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
           <div className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault fees</div>
           <div className="text-lg font-semibold text-white">Claim your market share</div>
         </VStack>
-        <Button variant="secondary" size="sm" className="gap-2" onClick={claim} disabled={!canClaim}>
+        <Button variant="secondary" size="md" className="gap-2" onClick={claim} disabled={!canClaim}>
           <ArrowDown className="h-4 w-4" />
           Claim
         </Button>

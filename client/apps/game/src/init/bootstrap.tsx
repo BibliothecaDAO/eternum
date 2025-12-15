@@ -5,6 +5,7 @@ import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
 import { ensureActiveWorldProfileWithUI, getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
+import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";

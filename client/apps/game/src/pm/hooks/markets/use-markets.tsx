@@ -1,4 +1,4 @@
-import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
+import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { uint256 } from "starknet";
 
@@ -154,7 +154,8 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
 
   useEffect(() => {
     const initAsync = async () => {
-      const entities = (await sdk.getEntities({ query: marketsQuery })).getItems();
+      const entitiesResponse = await sdk.getEntities({ query: marketsQuery });
+      const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
 
       const markets = entities.flatMap((i) => {
         const item = i.models.pm.Market as Market;
@@ -175,7 +176,8 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
 
   useEffect(() => {
     const initAsync = async () => {
-      const entities = (await sdk.getEntities({ query: allVaultNumeratorsQuery })).getItems();
+      const entitiesResponse = await sdk.getEntities({ query: allVaultNumeratorsQuery });
+      const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
 
       const vaultNumerators = entities.flatMap((i) => {
         const item = i.models.pm.VaultNumerator as VaultNumerator;
@@ -191,7 +193,8 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
   useEffect(() => {
     const fetchMarketEvents = async () => {
       try {
-        const entities = (await sdk.getEventMessages({ query: marketEventsQuery })).getItems();
+        const entitiesResponse = await sdk.getEventMessages({ query: marketEventsQuery });
+        const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
 
         const events = entities.flatMap((i) => {
           const item = i.models.pm.MarketCreated as MarketCreated;
@@ -215,7 +218,8 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
 
     const fetchConditionResolutions = async () => {
       try {
-        const entities = (await sdk.getEventMessages({ query: conditionResolutionsQuery })).getItems();
+        const entitiesResponse = await sdk.getEventMessages({ query: conditionResolutionsQuery });
+        const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
 
         const resolutions = entities.flatMap((i) => {
           const item = i.models.pm.ConditionResolution as ConditionResolution;

@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, type TooltipProps } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import type { Payload as TooltipPayload } from "recharts/types/component/DefaultTooltipContent";
+import type { TooltipContentProps } from "recharts/types/component/Tooltip";
 
 import type { MarketClass } from "@/pm/class";
 import { useMarketHistory } from "@/pm/hooks/markets/use-market-history";
@@ -30,7 +32,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
     }),
   );
 
-  const renderTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+  const renderTooltip = ({ active, payload }: TooltipContentProps<number, string>) => {
     if (!active || !payload?.length) return null;
 
     const tooltipDate = payload?.[0]?.payload?.date as number | undefined;
@@ -45,7 +47,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
       : undefined;
 
     const playerPayloads = payload
-      .filter((item) => typeof item.dataKey === "string")
+      .filter((item): item is TooltipPayload<number, string> & { dataKey: string } => typeof item.dataKey === "string")
       .sort((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
 
     return (

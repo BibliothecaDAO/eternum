@@ -1,13 +1,13 @@
-import { ClauseBuilder, HistoricalToriiQueryBuilder } from "@dojoengine/sdk";
+import { ClauseBuilder, HistoricalToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding, hash, uint256, type BigNumberish } from "starknet";
 
-import type { MarketClass } from "@/pm/class";
 import type { RegisteredToken, VaultDenominatorEvent, VaultNumeratorEvent } from "@/pm/bindings";
+import type { MarketClass } from "@/pm/class";
+import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 import { useControllers } from "@/pm/hooks/controllers/use-controllers";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { formatUnits } from "@/pm/utils";
-import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 
 const toBigInt = (value: BigNumberish | undefined) => {
   if (value === undefined || value === null) return 0n;
@@ -55,7 +55,7 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
   useEffect(() => {
     const initAsync = async () => {
       const res = await sdk.getEventMessages({ query });
-      const items = res.getItems();
+      const items: StandardizedQueryResult<SchemaType> = res.getItems();
 
       const denominators = items
         .flatMap((i) => {
@@ -120,7 +120,9 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
         const numeratorEntityId = numeratorsEntityIds[i];
 
         const numerator = vaultNumerators.findLast(
-          (item) => BigInt(item.entityId) === BigInt(numeratorEntityId) && BigInt(item.timestamp) <= BigInt(denominator.timestamp),
+          (item) =>
+            BigInt(item.entityId) === BigInt(numeratorEntityId) &&
+            BigInt(item.timestamp) <= BigInt(denominator.timestamp),
         );
 
         const numRaw = toBigInt(numerator?.value);

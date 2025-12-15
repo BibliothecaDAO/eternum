@@ -1,4 +1,4 @@
-import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
+import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
@@ -103,12 +103,12 @@ export const useMarketEventsSnapshot = () => {
         sdk.getEventMessages({ query: payoutQuery }),
       ]);
 
-      const nextBuys = buysRes
-        .getItems()
+      const buyItems: StandardizedQueryResult<SchemaType> = buysRes.getItems();
+      const nextBuys = buyItems
         .flatMap((item) => {
           const event = item.models.pm.MarketBuy as MarketBuy | undefined;
           if (!event) return [];
-          const ts = Number((event as any).timestamp ?? item.timestamp ?? 0);
+          const ts = Number((event as any).timestamp ?? 0);
           return [
             {
               ...event,
@@ -118,12 +118,12 @@ export const useMarketEventsSnapshot = () => {
         })
         .sort((a, b) => b.timestampMs - a.timestampMs);
 
-      const nextPayouts = payoutsRes
-        .getItems()
+      const payoutItems: StandardizedQueryResult<SchemaType> = payoutsRes.getItems();
+      const nextPayouts = payoutItems
         .flatMap((item) => {
           const event = item.models.pm.PayoutRedemption as PayoutRedemption | undefined;
           if (!event) return [];
-          const ts = Number((event as any).timestamp ?? item.timestamp ?? 0);
+          const ts = Number((event as any).timestamp ?? 0);
           return [
             {
               ...event,
@@ -165,7 +165,7 @@ export const buildLeaderboard = ({
   buys: EnrichedMarketBuy[];
   payouts: EnrichedPayoutRedemption[];
   range: MarketLeaderboardRange;
-  getRegisteredToken?: (address?: string) => { decimals?: number };
+  getRegisteredToken?: (address?: string) => { decimals?: number | string | bigint };
 }): LeaderboardEntry[] => {
   const marketById = new Map<string, MarketClass>();
   markets.forEach((market) => {
@@ -267,7 +267,7 @@ export const buildPlayerSummary = ({
   markets: MarketClass[];
   buys: EnrichedMarketBuy[];
   payouts: EnrichedPayoutRedemption[];
-  getRegisteredToken?: (address?: string) => { decimals?: number };
+  getRegisteredToken?: (address?: string) => { decimals?: number | string | bigint };
 }): PlayerSummary => {
   const normalized = address ? addAddressPadding(address.toLowerCase()) : null;
 

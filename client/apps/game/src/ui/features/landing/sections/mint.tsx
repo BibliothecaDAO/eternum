@@ -79,7 +79,7 @@ const MintContent = () => {
           <span>&larr;</span>
           <span>Back to markets</span>
         </Link>
-        <Button variant="secondary" size="sm" onClick={() => setRecipient(account?.address || "")}>
+        <Button variant="secondary" size="md" onClick={() => setRecipient(account?.address || "")}>
           Use my wallet
         </Button>
       </HStack>
@@ -97,7 +97,7 @@ const MintContent = () => {
           <label className="text-xs font-semibold uppercase tracking-[0.08em] text-white/70">Recipient address</label>
           <TextInput
             value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
+            onChange={(value) => setRecipient(value)}
             placeholder="0x..."
             className="bg-black/30"
           />
