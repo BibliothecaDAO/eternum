@@ -52,6 +52,7 @@ pub impl iGuardImpl of iGuardTrait {
         tick: TickInterval,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
+        stamina_revert_initial_amount: bool,
     ) {
         let current_tick: u64 = tick.current();
         if troops.count.is_zero() {
@@ -87,6 +88,10 @@ pub impl iGuardImpl of iGuardTrait {
             troops.stamina.amount = 0;
         }
 
+        if stamina_revert_initial_amount {
+            troops.stamina.revert_initial_amount(troop_stamina_config, current_tick);
+        }
+
         // update troop count
         troops.count += amount;
 
@@ -113,7 +118,7 @@ pub impl iGuardImpl of iGuardTrait {
     ) {
         // clear troop
         troops.count = 0;
-        troops.stamina.reset(current_tick);
+        troops.stamina.reset();
         // note: mitigate exploits if we decide to change destroy_tick to a different value
         guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
         StructureTroopGuardStoreImpl::store(ref guards, ref world, structure_id);
@@ -586,6 +591,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         tick,
                         troop_limit_config,
                         troop_stamina_config,
+                        false
                     );
                 },
                 Option::None => { break; },
