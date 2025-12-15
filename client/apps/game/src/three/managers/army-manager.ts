@@ -2413,6 +2413,12 @@ ${
     // Update ownership status - this ensures armies are correctly marked as owned when the user's account
     // becomes available after initial load, since tile updates may occur before account authentication
     army.isMine = isAddressEqualToAccount(resolvedOwnerAddress);
+    // Update color to reflect new ownership
+    army.color = this.getArmyColor({
+      isMine: army.isMine,
+      isDaydreamsAgent: army.isDaydreamsAgent,
+      owner: { address: resolvedOwnerAddress },
+    });
     army.onChainStamina = update.onChainStamina;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
