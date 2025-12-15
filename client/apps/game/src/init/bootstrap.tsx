@@ -22,6 +22,7 @@ export type SetupResult = Awaited<ReturnType<typeof setup>>;
 type BootstrapResult = SetupResult;
 
 let bootstrapPromise: Promise<BootstrapResult> | null = null;
+let bootstrappedWorldName: string | null = null;
 
 const deriveWorldFromPath = (): string | null => {
   try {
@@ -125,7 +126,21 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 };
 
 export const bootstrapGame = async (): Promise<BootstrapResult> => {
+  // Check if we need to re-bootstrap for a different world
+  const currentWorld = getActiveWorld();
+  const currentWorldName = currentWorld?.name ?? null;
+
+  if (bootstrapPromise && bootstrappedWorldName !== currentWorldName) {
+    // World changed, need to re-bootstrap
+    // Note: This requires a page reload for proper cleanup of the old Dojo context
+    console.log(`[BOOTSTRAP] World changed from "${bootstrappedWorldName}" to "${currentWorldName}", reloading...`);
+    window.location.reload();
+    // Return a never-resolving promise to prevent further execution
+    return new Promise(() => {});
+  }
+
   if (!bootstrapPromise) {
+    bootstrappedWorldName = currentWorldName;
     bootstrapPromise = runBootstrap();
   }
 
@@ -133,6 +148,7 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
     return await bootstrapPromise;
   } catch (error) {
     bootstrapPromise = null;
+    bootstrappedWorldName = null;
     captureSystemError(error, {
       error_type: "dojo_setup",
       setup_phase: "bootstrap",

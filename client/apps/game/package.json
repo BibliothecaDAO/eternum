@@ -60,7 +60,7 @@
     "recharts": "^3.5.1",
     "socket.io-client": "^4.8.1",
     "starknet": "catalog:",
-    "three": "^0.166.0",
+    "three": "^0.182.0",
     "three-stdlib": "^2.29.5",
     "uuid": "^11.1.0",
     "vite-plugin-pwa": "^0.20.5",

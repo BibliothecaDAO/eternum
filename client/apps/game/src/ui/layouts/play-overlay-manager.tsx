@@ -1,18 +1,10 @@
 import type { PointerEvent } from "react";
-import { Suspense, lazy, useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
-
-const BlankOverlayContainer = lazy(() =>
-  import("@/ui/shared/containers/blank-overlay-container").then((module) => ({
-    default: module.BlankOverlayContainer,
-  })),
-);
-
-const Onboarding = lazy(() =>
-  import("@/ui/layouts/onboarding/index").then((module) => ({ default: module.Onboarding })),
-);
+import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
+import { Onboarding } from "@/ui/layouts/onboarding";
 
 interface PlayOverlayManagerProps {
   backgroundImage: string;
@@ -57,18 +49,14 @@ export const PlayOverlayManager = ({ backgroundImage, enableOnboarding = true }:
 
   return (
     <>
-      <Suspense fallback={null}>
-        <BlankOverlayContainer zIndex={120} open={showModal} onPointerDown={handleModalOverlayPointerDown}>
-          {modalContent}
-        </BlankOverlayContainer>
-      </Suspense>
+      <BlankOverlayContainer zIndex={120} open={showModal} onPointerDown={handleModalOverlayPointerDown}>
+        {modalContent}
+      </BlankOverlayContainer>
 
       {enableOnboarding ? (
-        <Suspense fallback={null}>
-          <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
-            <Onboarding backgroundImage={backgroundImage} />
-          </BlankOverlayContainer>
-        </Suspense>
+        <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
+          <Onboarding backgroundImage={backgroundImage} />
+        </BlankOverlayContainer>
       ) : null}
 
       <LoadingOroborus loading={isLoadingScreenEnabled} />
