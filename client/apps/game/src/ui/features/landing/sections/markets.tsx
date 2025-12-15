@@ -20,8 +20,8 @@ import { PlayerMarketsView } from "./markets/player-markets-view";
 import { buildPlayerSummary, useMarketEventsSnapshot } from "./markets/use-market-stats";
 
 export const PREDICTION_MARKET_CONFIG = {
-  toriiUrl: "https://localhost:8080",
-  // toriiUrl: "https://api.cartridge.gg/x/blitz-slot-pm-1/torii",
+  // toriiUrl: "https://localhost:8080",
+  toriiUrl: "https://api.cartridge.gg/x/blitz-slot-pm-1/torii",
   worldAddress: "0x0172e470e28b6ad5f4c397019a3aca0c9b451a5e06f5255fbb8c4eefcd6f2b58",
 };
 
