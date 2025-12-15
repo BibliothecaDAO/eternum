@@ -1,6 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
 
-import { useAccount } from "@starknet-react/core";
 import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
 import { useConfig } from "@/pm/providers";
@@ -11,18 +10,14 @@ import {
   useMarkets,
   type MarketFiltersParams,
 } from "@pm/sdk";
+import { useAccount } from "@starknet-react/core";
 
 import { MarketFilters } from "./markets/market-filters";
-import { MarketsList } from "./markets/markets-list";
-import { MarketsLeaderboardView } from "./markets/markets-leaderboard-view";
-import { PlayerMarketsView } from "./markets/player-markets-view";
 import { MARKET_TABS, TabButton, type MarketTab } from "./markets/market-tabs";
-import {
-  buildLeaderboard,
-  buildPlayerSummary,
-  useMarketEventsSnapshot,
-  type MarketLeaderboardRange,
-} from "./markets/use-market-stats";
+import { MarketsLeaderboardView } from "./markets/markets-leaderboard-view";
+import { MarketsList } from "./markets/markets-list";
+import { PlayerMarketsView } from "./markets/player-markets-view";
+import { buildPlayerSummary, useMarketEventsSnapshot } from "./markets/use-market-stats";
 
 export const PREDICTION_MARKET_CONFIG = {
   toriiUrl: "https://localhost:8080",
@@ -63,25 +58,12 @@ export const MarketsSection = ({ children, description }: { children: ReactNode;
 export const LandingMarkets = () => {
   const [marketFilters, setMarketFilters] = useState<MarketFiltersParams>({ ...MARKET_FILTERS_ALL });
   const [activeTab, setActiveTab] = useState<MarketTab>("markets");
-  const [leaderboardRange, setLeaderboardRange] = useState<MarketLeaderboardRange>("all");
 
   const { getRegisteredToken } = useConfig();
   const { address } = useAccount();
 
   const { markets: allMarkets } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
   const { buys, payouts, isLoading: isStatsLoading, refresh } = useMarketEventsSnapshot();
-
-  const leaderboardEntries = useMemo(
-    () =>
-      buildLeaderboard({
-        markets: allMarkets,
-        buys,
-        payouts,
-        range: leaderboardRange,
-        getRegisteredToken,
-      }),
-    [allMarkets, buys, getRegisteredToken, leaderboardRange, payouts],
-  );
 
   const playerSummary = useMemo(
     () =>
@@ -101,7 +83,12 @@ export const LandingMarkets = () => {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-2">
             {MARKET_TABS.map((tab) => (
-              <TabButton key={tab.id} isActive={tab.id === activeTab} label={tab.label} onClick={() => setActiveTab(tab.id)} />
+              <TabButton
+                key={tab.id}
+                isActive={tab.id === activeTab}
+                label={tab.label}
+                onClick={() => setActiveTab(tab.id)}
+              />
             ))}
           </div>
         </div>
@@ -113,15 +100,7 @@ export const LandingMarkets = () => {
           </>
         ) : null}
 
-        {activeTab === "leaderboard" ? (
-          <MarketsLeaderboardView
-            entries={leaderboardEntries}
-            range={leaderboardRange}
-            onRangeChange={setLeaderboardRange}
-            isLoading={isStatsLoading}
-            onRefresh={refresh}
-          />
-        ) : null}
+        {activeTab === "leaderboard" ? <MarketsLeaderboardView /> : null}
 
         {activeTab === "player" ? (
           <PlayerMarketsView

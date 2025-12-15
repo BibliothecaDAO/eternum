@@ -20,11 +20,11 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
   }, []);
 
   const fetchTokens = useCallback(async () => {
-    const tokens = await sdk.getTokens({
-      contractAddresses: request.contractAddresses ?? [],
-      tokenIds: request.tokenIds,
-    });
-    setTokens(tokens.items);
+    // const tokens = await sdk.getTokens({
+    //   contractAddresses: request.contractAddresses ?? [],
+    //   tokenIds: request.tokenIds,
+    // });
+    // setTokens(tokens.items);
   }, [sdk]);
 
   const fetchTokenBalances = useCallback(async () => {

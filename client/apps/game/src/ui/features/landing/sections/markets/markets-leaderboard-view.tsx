@@ -3,24 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle, HStack, ScrollArea, VStack } 
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 
-import type { LeaderboardEntry, MarketLeaderboardRange } from "./use-market-stats";
 import { LEADERBOARD_RANGES, TabButton, formatNumber } from "./market-tabs";
+import type { MarketLeaderboardRange } from "./use-market-stats";
+import { useMarketsLeaderboard } from "./use-markets-leaderboard";
 
 type MarketsLeaderboardViewProps = {
-  entries: LeaderboardEntry[];
-  range: MarketLeaderboardRange;
-  onRangeChange: (next: MarketLeaderboardRange) => void;
-  isLoading: boolean;
-  onRefresh: () => void;
+  initialRange?: MarketLeaderboardRange;
 };
 
-export const MarketsLeaderboardView = ({
-  entries,
-  range,
-  onRangeChange,
-  isLoading,
-  onRefresh,
-}: MarketsLeaderboardViewProps) => {
+export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderboardViewProps) => {
+  const { entries, range, setRange, isLoading, refresh } = useMarketsLeaderboard(initialRange);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -30,19 +23,17 @@ export const MarketsLeaderboardView = ({
               key={option.id}
               isActive={range === option.id}
               label={option.label}
-              onClick={() => onRangeChange(option.id)}
+              onClick={() => setRange(option.id)}
             />
           ))}
         </div>
-        <RefreshButton aria-label="Refresh leaderboard" isLoading={isLoading} onClick={onRefresh} disabled={isLoading} />
+        <RefreshButton aria-label="Refresh leaderboard" isLoading={isLoading} onClick={refresh} disabled={isLoading} />
       </div>
 
       <Card className="border-white/10 bg-black/50">
         <CardHeader className="flex items-center justify-between gap-2 px-2 sm:px-3">
           <CardTitle className="text-lg text-white">Top earners</CardTitle>
-          <span className="text-xs text-gold/70">
-            Ranked by LORDS earned, showing {entries.length || 0} players
-          </span>
+          <span className="text-xs text-gold/70">Ranked by LORDS earned, showing {entries.length || 0} players</span>
         </CardHeader>
         <CardContent className="px-2 sm:px-3">
           {isLoading ? (

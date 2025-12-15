@@ -2,8 +2,8 @@ import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQue
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
-import type { MarketClass } from "@/pm/class";
 import type { MarketBuy, PayoutRedemption } from "@/pm/bindings";
+import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { formatUnits } from "@/pm/utils";
 
@@ -279,10 +279,7 @@ export const buildPlayerSummary = ({
     }
   });
 
-  const perMarket = new Map<
-    string,
-    { market?: MarketClass; volume: number; earned: number; lastActivity: number }
-  >();
+  const perMarket = new Map<string, { market?: MarketClass; volume: number; earned: number; lastActivity: number }>();
 
   if (!normalized) {
     return {

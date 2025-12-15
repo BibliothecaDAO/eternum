@@ -4,9 +4,11 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { toast } from "sonner";
 import { CairoCustomEnum, Call, CallData, uint256, type RawArgsObject, type Uint256 } from "starknet";
 
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import { ChainType } from "@/ui/features/admin/utils/manifest-loader";
 import { Chain, getGameManifest } from "@contracts";
+import { getContractByName } from "@dojoengine/core";
 import { env } from "../../../../../env";
 import { MarketServerCard, type MarketServerFormState } from "./markets/market-server-card";
 import {
@@ -255,16 +257,18 @@ const buildMarketParams = (
 };
 
 export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarketProps = {}) => {
+  const {
+    config: { manifest },
+  } = useDojoSdk();
   const account = useAccountStore((state) => state.account);
   const { servers, loading, error, nowSec, refresh, loadPlayers } = useMarketServers({
     allowFakePlayerFallback: includeEnded,
   });
 
-  const marketAddress = env.VITE_PUBLIC_PM_ADDRESS ?? DEFAULT_MARKET_ADDRESS;
+  const marketAddress = getContractByName(manifest, "pm", "Markets")?.address;
   const [forms, setForms] = useState<Record<string, MarketServerFormState>>({});
   const [creatingServer, setCreatingServer] = useState<string | null>(null);
   const [blitzOracleAddresses, setBlitzOracleAddresses] = useState<Partial<Record<string, string | null>>>({});
-  console.log({ blitzOracleAddresses });
   const oracleFetchInFlight = useRef(new Set<string>());
 
   const resolveBlitzOracleAddress = useCallback(async (worldName: string) => {
@@ -463,7 +467,7 @@ export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarke
 
       const targetMarketAddress = marketAddress.trim();
       if (!targetMarketAddress) {
-        toast.error("Market contract address is not configured (VITE_PUBLIC_PM_ADDRESS).");
+        toast.error("Market contract address is not configured.");
         return;
       }
 

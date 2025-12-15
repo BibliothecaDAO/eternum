@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
 
-import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
@@ -191,10 +190,9 @@ export function MarketTrade({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const account = useAccountStore((state) => state.account);
 
-  const manifestMarketAddress = getContractByName(manifest, "pm", "Markets")?.address;
   const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions")?.address;
   const conditionalTokensAddress = getContractByName(manifest, "pm", "ConditionalTokens")?.address;
-  const marketContractAddress = (env.VITE_PUBLIC_PM_ADDRESS ?? manifestMarketAddress ?? DEFAULT_MARKET_ADDRESS).trim();
+  const marketContractAddress = getContractByName(manifest, "pm", "Markets")?.address;
   const nowSec = Math.floor(Date.now() / 1_000);
   const isResolved = market.isResolved();
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
