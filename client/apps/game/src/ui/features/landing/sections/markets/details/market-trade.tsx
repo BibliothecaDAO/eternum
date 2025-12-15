@@ -9,13 +9,13 @@ import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useUser } from "@/pm/hooks/dojo/user";
-import { useClaimablePayout } from "@/pm/hooks/markets/use-claimable-payout";
 import { formatUnits } from "@/pm/utils";
 import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
 import { parseLordsToBaseUnits } from "../market-utils";
 import { MaybeController } from "../maybe-controller";
 import { TokenIcon } from "../token-icon";
+import { useMarketRedeem } from "../use-market-redeem";
 
 // Lightweight stand-ins for UI pieces used in the reference implementation.
 const Button = ({
@@ -197,7 +197,7 @@ export function MarketTrade({
   const isResolved = market.isResolved();
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
 
-  const { claimableDisplay, hasRedeemablePositions } = useClaimablePayout(market, account?.address || undefined);
+  const { claimableDisplay, hasRedeemablePositions, isRedeeming, redeem } = useMarketRedeem(market);
 
   const tradePreview = useMemo(() => {
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
@@ -306,114 +306,11 @@ export function MarketTrade({
     }
   };
 
-  const onRedeem = async () => {
-    if (!account) {
-      toast.error("Connect a wallet to claim.");
-      return;
-    }
-
-    if (!marketContractAddress) {
-      toast.error("Market contract address is not configured.");
-      return;
-    }
-
-    if (!vaultPositionsAddress) {
-      toast.error("Vault positions contract address is missing.");
-      return;
-    }
-
-    if (!conditionalTokensAddress) {
-      toast.error("Conditional tokens contract address is missing.");
-      return;
-    }
-
-    if (!isResolved) {
-      toast.error("You can only redeem after the market is resolved.");
-      return;
-    }
-
-    if (!hasRedeemablePositions) {
-      toast.error("No redeemable positions found for this market.");
-      return;
-    }
-
-    if (!market.outcome_slot_count || market.outcome_slot_count <= 0) {
-      toast.error("Unable to compute redeemable positions for this market.");
-      return;
-    }
-
-    const positionIds = market.position_ids;
-    if (!positionIds || positionIds.length === 0) {
-      toast.error("No position IDs found for this market.");
-      return;
-    }
-
-    const parentCollectionId = toUint256(0n);
-    const conditionId = toUint256(market.condition_id);
-    const indexSets = Array.from({ length: Number(market.outcome_slot_count) }, (_value, idx) => 1n << BigInt(idx));
-    const indexSetsCalldata = indexSets.flatMap((indexSet) => {
-      const asU256 = toUint256(indexSet);
-      return [asU256.low, asU256.high];
-    });
-
-    const redeemPositionsCall: Call = {
-      contractAddress: conditionalTokensAddress,
-      entrypoint: "redeem_positions",
-      calldata: [
-        market.collateral_token,
-        parentCollectionId.low,
-        parentCollectionId.high,
-        conditionId.low,
-        conditionId.high,
-        indexSets.length,
-        ...indexSetsCalldata,
-      ],
-    };
-
-    const marketIdU256 = toUint256(market.market_id);
-    const positionsCalldata = positionIds.flatMap((id) => {
-      const asU256 = toUint256(id);
-      return [asU256.low, asU256.high];
-    });
-    const redeemCall: Call = {
-      contractAddress: marketContractAddress,
-      entrypoint: "redeem",
-      calldata: [marketIdU256.low, marketIdU256.high, positionIds.length, ...positionsCalldata],
-    };
-
-    const approveCall: Call = {
-      contractAddress: vaultPositionsAddress,
-      entrypoint: "set_approval_for_all",
-      calldata: [marketContractAddress, true],
-    };
-
-    try {
-      setIsSubmitting(true);
-
-      await account.estimateInvokeFee([approveCall, redeemCall, redeemPositionsCall], {
-        blockIdentifier: "pre_confirmed",
-      });
-
-      const resultTx = await account.execute([approveCall, redeemCall, redeemPositionsCall]);
-
-      if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
-        await account.waitForTransaction(resultTx.transaction_hash);
-      }
-
-      toast.success("Redeem submitted.");
-    } catch (error) {
-      console.error(error);
-      toast.error(tryBetterErrorMsg(error));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const outcomes = market.getMarketOutcomes();
   if (!outcomes) return null;
 
   if (!isTradeable) {
-    const claimDisabled = isSubmitting || !isResolved || (!!account && !hasRedeemablePositions);
+    const claimDisabled = isSubmitting || isRedeeming || !isResolved || (!!account && !hasRedeemablePositions);
     const claimMessage = !account
       ? "Connect a wallet to check if you have redeemable positions."
       : !isResolved
@@ -435,12 +332,12 @@ export function MarketTrade({
         <Button
           className="w-full bg-progress-bar-good/80 text-white hover:bg-progress-bar-good"
           disabled={claimDisabled}
-          onClick={onRedeem}
+          onClick={() => redeem()}
           // Show loading feedback while submitting claim
         >
           <span className="flex items-center justify-center gap-2">
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {isSubmitting ? "Submitting..." : "Claim"}
+            {isRedeeming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {isRedeeming ? "Submitting..." : "Claim"}
           </span>
         </Button>
       </div>

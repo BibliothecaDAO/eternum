@@ -65,6 +65,18 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
                         <span>Volume {formatNumber(entry.volume, 2)}</span>
                         {entry.collateralToken ? <TokenIcon token={entry.collateralToken as any} size={14} /> : null}
                       </span>
+                      <span
+                        className={`hidden items-center gap-2 rounded-md px-2 py-1 sm:inline-flex ${
+                          entry.pnl >= 0 ? "bg-emerald-500/10 text-emerald-200" : "bg-red-500/10 text-red-200"
+                        }`}
+                      >
+                        <span>PnL</span>
+                        <span>
+                          {entry.pnl >= 0 ? "+" : ""}
+                          {formatNumber(entry.pnl, 4)}
+                        </span>
+                        {entry.collateralToken ? <TokenIcon token={entry.collateralToken as any} size={14} /> : null}
+                      </span>
                       <span className="hidden rounded-md bg-white/5 px-2 py-1 text-gold/80 sm:inline">
                         {entry.trades} trades · {entry.markets} markets
                       </span>

@@ -43,6 +43,7 @@ export type LeaderboardEntry = {
   address: string;
   earned: number;
   volume: number;
+  pnl: number;
   trades: number;
   markets: number;
   lastActive: number;
@@ -265,6 +266,7 @@ export const buildLeaderboard = ({
   return Array.from(scores.values())
     .map((entry) => ({
       ...entry,
+      pnl: entry.earned - entry.volume,
       markets: marketsByAddress.get(entry.address)?.size ?? entry.markets,
     }))
     .sort((a, b) => {
@@ -375,8 +377,9 @@ export const buildPlayerSummary = ({
 
   const knownMarkets = marketsList.filter((entry) => entry.market);
   const activeMarkets = knownMarkets.filter((entry) => entry.market && !entry.market.isResolved()).length;
-  const totalVolume = knownMarkets.reduce((acc, curr) => acc + curr.volume, 0);
-  const totalEarned = knownMarkets.reduce((acc, curr) => acc + curr.earned, 0);
+  // Include unmatched payouts in totals so player summary stays consistent with leaderboard
+  const totalVolume = marketsList.reduce((acc, curr) => acc + curr.volume, 0);
+  const totalEarned = marketsList.reduce((acc, curr) => acc + curr.earned, 0);
 
   return {
     address: normalized,

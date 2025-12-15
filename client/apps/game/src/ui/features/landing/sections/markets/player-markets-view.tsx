@@ -1,17 +1,95 @@
-import { Card, CardContent, CardHeader, CardTitle, ScrollArea, VStack } from "@pm/ui";
+import { Card, CardContent, CardHeader, CardTitle, HStack, ScrollArea, VStack } from "@pm/ui";
 import { Link } from "react-router-dom";
 
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 
+import { Loader2 } from "lucide-react";
+import { MarketStatusBadge } from "./market-status-badge";
 import { formatNumber } from "./market-tabs";
 import { TokenIcon } from "./token-icon";
 import type { PlayerSummary } from "./use-market-stats";
+import { useMarketRedeem } from "./use-market-redeem";
 
 type PlayerMarketsViewProps = {
   isLoading: boolean;
   onRefresh: () => void;
   hasWallet: boolean;
   summary: PlayerSummary;
+};
+
+const PlayerMarketRow = ({ entry }: { entry: PlayerSummary["markets"][number] }) => {
+  const market = entry.market as any;
+  const { claimableDisplay, hasRedeemablePositions, redeem, isRedeeming } = useMarketRedeem(market);
+
+  const href =
+    market && market.market_id
+      ? (() => {
+          try {
+            return `/markets/0x${BigInt(market.market_id).toString(16)}`;
+          } catch {
+            return "#";
+          }
+        })()
+      : "#";
+  const isLinkable = href !== "#";
+  const isResolved = market?.isResolved();
+  const showClaim = Boolean(isResolved && hasRedeemablePositions);
+
+  return (
+    <div className="group flex items-center justify-between gap-3 py-3 text-sm text-white/90">
+      <div className="min-w-0 space-y-1">
+        <HStack className="items-center gap-2">
+          {isLinkable ? (
+            <Link className="font-semibold leading-tight text-white hover:text-gold" to={href} title={market?.title}>
+              {market?.title || "Unknown market"}
+            </Link>
+          ) : (
+            <div className="font-semibold leading-tight text-white">{market?.title || "Unknown market"}</div>
+          )}
+          {market ? <MarketStatusBadge market={market} /> : null}
+        </HStack>
+        <div className="text-xs text-gold/70">
+          <span className="inline-flex items-center gap-1">
+            Volume {formatNumber(entry.volume, 2)}
+            {market?.collateralToken ? <TokenIcon token={market.collateralToken as any} size={14} /> : null}
+          </span>
+          <span className="mx-1 text-white/40">·</span>
+          <span className="inline-flex items-center gap-1">
+            Earned {formatNumber(entry.earned, 2)}
+            {market?.collateralToken ? <TokenIcon token={market.collateralToken as any} size={14} /> : null}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        {showClaim ? (
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-md bg-progress-bar-good/80 px-3 py-2 text-xs font-semibold text-white hover:bg-progress-bar-good"
+            onClick={() => redeem()}
+            disabled={isRedeeming}
+          >
+            {isRedeeming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            <span>
+              Claim {claimableDisplay}
+              {market?.collateralToken ? <TokenIcon token={market.collateralToken as any} size={14} /> : null}
+            </span>
+          </button>
+        ) : (
+          <div
+            className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${
+              entry.pnl >= 0 ? "bg-emerald-500/10 text-emerald-200" : "bg-red-500/10 text-red-200"
+            }`}
+          >
+            <span className="inline-flex items-center gap-2">
+              {entry.pnl >= 0 ? "+" : ""}
+              {formatNumber(entry.pnl, 4)}
+              {market?.collateralToken ? <TokenIcon token={market.collateralToken as any} size={14} /> : null}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export const PlayerMarketsView = ({ isLoading, onRefresh, hasWallet, summary }: PlayerMarketsViewProps) => {
@@ -45,6 +123,15 @@ export const PlayerMarketsView = ({ isLoading, onRefresh, hasWallet, summary }: 
                 {summary.pnl >= 0 ? "+" : ""}
                 {formatNumber(summary.pnl, 4)}
               </span>
+              {summary.markets[0]?.market?.collateralToken ? (
+                <TokenIcon token={summary.markets[0].market.collateralToken as any} size={16} />
+              ) : null}
+            </div>
+          </Card>
+          <Card className="bg-white/5 p-3 text-center text-sm text-white/90">
+            <div className="text-xs uppercase tracking-wider text-gold/60">Earned</div>
+            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
+              <span>{formatNumber(summary.earned, 2)}</span>
               {summary.markets[0]?.market?.collateralToken ? (
                 <TokenIcon token={summary.markets[0].market.collateralToken as any} size={16} />
               ) : null}
@@ -87,64 +174,9 @@ export const PlayerMarketsView = ({ isLoading, onRefresh, hasWallet, summary }: 
           ) : (
             <ScrollArea className="max-h-[360px] pr-1">
               <VStack className="divide-y divide-white/5">
-                {summary.markets.map((entry) => {
-                  const href =
-                    entry.market && entry.market.market_id
-                      ? (() => {
-                          try {
-                            return `/markets/0x${BigInt(entry.market.market_id).toString(16)}`;
-                          } catch {
-                            return "#";
-                          }
-                        })()
-                      : "#";
-                  const isLinkable = href !== "#";
-
-                  return (
-                    <div
-                      key={entry.marketId}
-                      className="group flex items-center justify-between gap-3 py-3 text-sm text-white/90"
-                    >
-                      <div className="min-w-0">
-                        {isLinkable ? (
-                          <Link
-                            className="font-semibold leading-tight text-white hover:text-gold"
-                            to={href}
-                            title={entry.market?.title}
-                          >
-                            {entry.market?.title || "Unknown market"}
-                          </Link>
-                        ) : (
-                          <div className="font-semibold leading-tight text-white">
-                            {entry.market?.title || "Unknown market"}
-                          </div>
-                        )}
-                        <div className="mt-1 text-xs text-gold/70">
-                          <span className="inline-flex items-center gap-1">
-                            Volume {formatNumber(entry.volume, 2)}
-                            {entry.market?.collateralToken ? <TokenIcon token={entry.market.collateralToken as any} size={14} /> : null}
-                          </span>
-                          <span className="mx-1 text-white/40">·</span>
-                          <span className="inline-flex items-center gap-1">
-                            Earned {formatNumber(entry.earned, 2)}
-                            {entry.market?.collateralToken ? <TokenIcon token={entry.market.collateralToken as any} size={14} /> : null}
-                          </span>
-                        </div>
-                      </div>
-                      <div
-                        className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${
-                          entry.pnl >= 0 ? "bg-emerald-500/10 text-emerald-200" : "bg-red-500/10 text-red-200"
-                        }`}
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          {entry.pnl >= 0 ? "+" : ""}
-                          {formatNumber(entry.pnl, 4)}
-                          {entry.market?.collateralToken ? <TokenIcon token={entry.market.collateralToken as any} size={14} /> : null}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                {summary.markets.map((entry) => (
+                  <PlayerMarketRow key={entry.marketId} entry={entry} />
+                ))}
               </VStack>
             </ScrollArea>
           )}
