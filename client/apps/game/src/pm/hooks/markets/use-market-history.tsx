@@ -7,7 +7,7 @@ import type { MarketClass } from "@/pm/class";
 import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 import { useControllers } from "@/pm/hooks/controllers/use-controllers";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
-import { formatUnits } from "@/pm/utils";
+import { formatUnits, shortAddress } from "@/pm/utils";
 
 const toBigInt = (value: BigNumberish | undefined) => {
   if (value === undefined || value === null) return 0n;
@@ -22,6 +22,24 @@ const toBigInt = (value: BigNumberish | undefined) => {
 const getEntityIdFromKeys = (keys: bigint[]) => {
   const poseidon = hash.computePoseidonHashOnElements(keys);
   return addAddressPadding(BigInt(poseidon));
+};
+
+const compactLabel = (value: string) => {
+  const trimmed = value.trim();
+
+  if (trimmed.startsWith("0x")) {
+    try {
+      return shortAddress(trimmed);
+    } catch {
+      // fall through to generic truncation
+    }
+  }
+
+  if (trimmed.length > 16) {
+    return `${trimmed.slice(0, 6)}...${trimmed.slice(-4)}`;
+  }
+
+  return trimmed;
 };
 
 export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
@@ -94,7 +112,7 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
         return [
           `p${idx}`,
           {
-            label: controller ? controller.username : outcomesText[idx],
+            label: controller ? controller.username : compactLabel(outcomesText[idx]),
             color: getOutcomeColor(idx),
           },
         ];
