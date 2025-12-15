@@ -24,6 +24,7 @@ import {
   LandingPlayer,
   LandingWelcome,
 } from "./ui/features/landing";
+import { MarketsProviders } from "./ui/features/landing/sections/markets";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
 import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
@@ -127,7 +128,14 @@ function App() {
               <Route path="create-market" element={<LandingCreateMarket />} />
               <Route path="create-market-test" element={<LandingCreateMarketTest />} />
               <Route path="mint" element={<LandingMint />} />
-              <Route path="markets" element={<LandingMarkets />} />
+              <Route
+                path="markets"
+                element={
+                  <MarketsProviders>
+                    <LandingMarkets />
+                  </MarketsProviders>
+                }
+              />
               <Route path="markets/:marketId" element={<LandingMarketDetails />} />
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>

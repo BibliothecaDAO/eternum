@@ -46,6 +46,7 @@ export type LeaderboardEntry = {
   trades: number;
   markets: number;
   lastActive: number;
+  collateralToken?: { symbol?: string; decimals?: number | string | bigint };
 };
 
 export type PlayerMarketBreakdown = {
@@ -90,7 +91,7 @@ export const useMarketEventsSnapshot = () => {
         .addEntityModel("pm-PayoutRedemption")
         .withClause(new ClauseBuilder().keys(["pm-PayoutRedemption"], [undefined], "VariableLen").build())
         .withLimit(2_000)
-        .addOrderBy("timestamp", "Desc")
+        // .addOrderBy("timestamp", "Desc")
         .includeHashedKeys(),
     [],
   );
@@ -193,6 +194,7 @@ export const buildLeaderboard = ({
       trades: 0,
       markets: 0,
       lastActive: 0,
+      collateralToken: undefined,
     };
 
     touchMarket(address, marketId);
@@ -214,6 +216,7 @@ export const buildLeaderboard = ({
       trades: 0,
       markets: 0,
       lastActive: 0,
+      collateralToken: undefined,
     };
     scores.set(address, {
       ...existing,
@@ -232,6 +235,13 @@ export const buildLeaderboard = ({
     const decimals = market?.collateralToken?.decimals ?? 18;
     const amount = toNumericAmount(buy.amount_in ?? buy.amount ?? 0, Number(decimals));
     addVolume(address, marketId, amount, buy.timestampMs);
+    if (market?.collateralToken) {
+      const current = scores.get(address);
+      scores.set(address, {
+        ...(current ?? { address, earned: 0, volume: 0, trades: 0, markets: 0, lastActive: 0 }),
+        collateralToken: market.collateralToken,
+      });
+    }
   });
 
   payouts.forEach((payout) => {
@@ -239,9 +249,17 @@ export const buildLeaderboard = ({
     const rawAddress = payout.redeemer;
     if (!rawAddress) return;
     const address = addAddressPadding(rawAddress.toLowerCase());
-    const decimals = getRegisteredToken ? Number(getRegisteredToken(payout.collateral_token)?.decimals ?? 18) : 18;
+    const registeredToken = getRegisteredToken ? getRegisteredToken(payout.collateral_token) : undefined;
+    const decimals = registeredToken ? Number(registeredToken.decimals ?? 18) : 18;
     const amount = toNumericAmount(payout.payout ?? 0, decimals);
     addEarnings(address, amount, payout.timestampMs);
+    if (registeredToken) {
+      const current = scores.get(address);
+      scores.set(address, {
+        ...(current ?? { address, earned: 0, volume: 0, trades: 0, markets: 0, lastActive: 0 }),
+        collateralToken: registeredToken,
+      });
+    }
   });
 
   return Array.from(scores.values())

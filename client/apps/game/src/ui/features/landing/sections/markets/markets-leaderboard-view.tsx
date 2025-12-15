@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, HStack, ScrollArea, VStack } 
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 
+import { TokenIcon } from "./token-icon";
 import { LEADERBOARD_RANGES, TabButton, formatNumber } from "./market-tabs";
 import type { MarketLeaderboardRange } from "./use-market-stats";
 import { useMarketsLeaderboard } from "./use-markets-leaderboard";
@@ -33,7 +34,7 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
       <Card className="border-white/10 bg-black/50">
         <CardHeader className="flex items-center justify-between gap-2 px-2 sm:px-3">
           <CardTitle className="text-lg text-white">Top earners</CardTitle>
-          <span className="text-xs text-gold/70">Ranked by LORDS earned, showing {entries.length || 0} players</span>
+          <span className="text-xs text-gold/70">Ranked by earned collateral, showing {entries.length || 0} players</span>
         </CardHeader>
         <CardContent className="px-2 sm:px-3">
           {isLoading ? (
@@ -57,11 +58,13 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
                       <span className="font-semibold">{displayAddress(entry.address)}</span>
                     </HStack>
                     <HStack className="gap-4 text-xs sm:text-sm">
-                      <span className="rounded-md bg-white/5 px-2 py-1 text-emerald-200">
-                        Earned {formatNumber(entry.earned, 4)} LORDS
+                      <span className="inline-flex items-center gap-2 rounded-md bg-white/5 px-2 py-1 text-emerald-200">
+                        <span>Earned {formatNumber(entry.earned, 4)}</span>
+                        {entry.collateralToken ? <TokenIcon token={entry.collateralToken as any} size={14} /> : null}
                       </span>
-                      <span className="rounded-md bg-white/5 px-2 py-1 text-white/80">
-                        Volume {formatNumber(entry.volume, 2)} LORDS
+                      <span className="inline-flex items-center gap-2 rounded-md bg-white/5 px-2 py-1 text-white/80">
+                        <span>Volume {formatNumber(entry.volume, 2)}</span>
+                        {entry.collateralToken ? <TokenIcon token={entry.collateralToken as any} size={14} /> : null}
                       </span>
                       <span className="hidden rounded-md bg-white/5 px-2 py-1 text-gold/80 sm:inline">
                         {entry.trades} trades · {entry.markets} markets

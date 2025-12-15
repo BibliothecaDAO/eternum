@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 
 import { formatNumber } from "./market-tabs";
+import { TokenIcon } from "./token-icon";
 import type { PlayerSummary } from "./use-market-stats";
 
 type PlayerMarketsViewProps = {
@@ -37,14 +38,26 @@ export const PlayerMarketsView = ({ isLoading, onRefresh, hasWallet, summary }: 
         <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
           <Card className="bg-white/5 p-3 text-center text-sm text-white/90">
             <div className="text-xs uppercase tracking-wider text-gold/60">PnL</div>
-            <div className={`text-lg font-semibold ${summary.pnl >= 0 ? "text-emerald-300" : "text-red-300"}`}>
-              {summary.pnl >= 0 ? "+" : ""}
-              {formatNumber(summary.pnl, 4)} LORDS
+            <div
+              className={`flex items-center justify-center gap-2 text-lg font-semibold ${summary.pnl >= 0 ? "text-emerald-300" : "text-red-300"}`}
+            >
+              <span>
+                {summary.pnl >= 0 ? "+" : ""}
+                {formatNumber(summary.pnl, 4)}
+              </span>
+              {summary.markets[0]?.market?.collateralToken ? (
+                <TokenIcon token={summary.markets[0].market.collateralToken as any} size={16} />
+              ) : null}
             </div>
           </Card>
           <Card className="bg-white/5 p-3 text-center text-sm text-white/90">
             <div className="text-xs uppercase tracking-wider text-gold/60">Volume</div>
-            <div className="text-lg font-semibold text-white">{formatNumber(summary.volume, 2)} LORDS</div>
+            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
+              <span>{formatNumber(summary.volume, 2)}</span>
+              {summary.markets[0]?.market?.collateralToken ? (
+                <TokenIcon token={summary.markets[0].market.collateralToken as any} size={16} />
+              ) : null}
+            </div>
           </Card>
           <Card className="bg-white/5 p-3 text-center text-sm text-white/90">
             <div className="text-xs uppercase tracking-wider text-gold/60">Markets joined</div>
@@ -56,7 +69,12 @@ export const PlayerMarketsView = ({ isLoading, onRefresh, hasWallet, summary }: 
           </Card>
         </div>
 
-        <RefreshButton aria-label="Refresh player stats" isLoading={isLoading} onClick={onRefresh} disabled={isLoading} />
+        <RefreshButton
+          aria-label="Refresh player stats"
+          isLoading={isLoading}
+          onClick={onRefresh}
+          disabled={isLoading}
+        />
       </div>
 
       <Card className="bg-white/5">
@@ -97,10 +115,20 @@ export const PlayerMarketsView = ({ isLoading, onRefresh, hasWallet, summary }: 
                             {entry.market?.title || "Unknown market"}
                           </Link>
                         ) : (
-                          <div className="font-semibold leading-tight text-white">{entry.market?.title || "Unknown market"}</div>
+                          <div className="font-semibold leading-tight text-white">
+                            {entry.market?.title || "Unknown market"}
+                          </div>
                         )}
                         <div className="mt-1 text-xs text-gold/70">
-                          Volume {formatNumber(entry.volume, 2)} LORDS · Earned {formatNumber(entry.earned, 2)} LORDS
+                          <span className="inline-flex items-center gap-1">
+                            Volume {formatNumber(entry.volume, 2)}
+                            {entry.market?.collateralToken ? <TokenIcon token={entry.market.collateralToken as any} size={14} /> : null}
+                          </span>
+                          <span className="mx-1 text-white/40">·</span>
+                          <span className="inline-flex items-center gap-1">
+                            Earned {formatNumber(entry.earned, 2)}
+                            {entry.market?.collateralToken ? <TokenIcon token={entry.market.collateralToken as any} size={14} /> : null}
+                          </span>
                         </div>
                       </div>
                       <div
@@ -108,8 +136,11 @@ export const PlayerMarketsView = ({ isLoading, onRefresh, hasWallet, summary }: 
                           entry.pnl >= 0 ? "bg-emerald-500/10 text-emerald-200" : "bg-red-500/10 text-red-200"
                         }`}
                       >
-                        {entry.pnl >= 0 ? "+" : ""}
-                        {formatNumber(entry.pnl, 4)} LORDS
+                        <span className="inline-flex items-center gap-2">
+                          {entry.pnl >= 0 ? "+" : ""}
+                          {formatNumber(entry.pnl, 4)}
+                          {entry.market?.collateralToken ? <TokenIcon token={entry.market.collateralToken as any} size={14} /> : null}
+                        </span>
                       </div>
                     </div>
                   );

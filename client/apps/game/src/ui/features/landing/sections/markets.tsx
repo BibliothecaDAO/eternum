@@ -78,39 +78,32 @@ export const LandingMarkets = () => {
   );
 
   return (
-    <MarketsProviders>
-      <MarketsSection description="Browse live prediction markets, inspect their odds, and hop into the ones that interest you.">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap gap-2">
-            {MARKET_TABS.map((tab) => (
-              <TabButton
-                key={tab.id}
-                isActive={tab.id === activeTab}
-                label={tab.label}
-                onClick={() => setActiveTab(tab.id)}
-              />
-            ))}
-          </div>
+    <MarketsSection description="Browse live prediction markets, inspect their odds, and hop into the ones that interest you.">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-2">
+          {MARKET_TABS.map((tab) => (
+            <TabButton key={tab.id} isActive={tab.id === activeTab} label={tab.label} onClick={() => setActiveTab(tab.id)} />
+          ))}
         </div>
+      </div>
 
-        {activeTab === "markets" ? (
-          <>
-            <MarketFilters marketFilters={marketFilters} setMarketFilters={setMarketFilters} />
-            <MarketsList marketFilters={marketFilters} />
-          </>
-        ) : null}
+      {activeTab === "markets" ? (
+        <>
+          <MarketFilters marketFilters={marketFilters} setMarketFilters={setMarketFilters} />
+          <MarketsList marketFilters={marketFilters} />
+        </>
+      ) : null}
 
-        {activeTab === "leaderboard" ? <MarketsLeaderboardView /> : null}
+      {activeTab === "leaderboard" ? <MarketsLeaderboardView /> : null}
 
-        {activeTab === "player" ? (
-          <PlayerMarketsView
-            isLoading={isStatsLoading}
-            onRefresh={refresh}
-            hasWallet={Boolean(address)}
-            summary={playerSummary}
-          />
-        ) : null}
-      </MarketsSection>
-    </MarketsProviders>
+      {activeTab === "player" ? (
+        <PlayerMarketsView
+          isLoading={isStatsLoading}
+          onRefresh={refresh}
+          hasWallet={Boolean(address)}
+          summary={playerSummary}
+        />
+      ) : null}
+    </MarketsSection>
   );
 };
