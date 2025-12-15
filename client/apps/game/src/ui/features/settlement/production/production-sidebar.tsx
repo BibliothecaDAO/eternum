@@ -14,9 +14,8 @@ import clsx from "clsx";
 import { CheckCircle2Icon, SparklesIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
-import { REALM_PRESETS, RealmPresetId, calculateLimitedPresetPercentages } from "@/utils/automation-presets";
-import { useAutomationStore, type ResourceAutomationPercentages } from "@/hooks/store/use-automation-store";
-import { buildRealmResourceSnapshot } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
+import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
@@ -295,11 +294,6 @@ export const ProductionSidebar = memo(
   ({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
     const upsertRealm = useAutomationStore((state) => state.upsertRealm);
     const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
-    const setRealmPresetConfig = useAutomationStore((state) => state.setRealmPresetConfig);
-    const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
-    const {
-      setup: { components },
-    } = useDojo();
     const isBlitz = getIsBlitz();
 
     const structuresByType = useMemo(() => {
@@ -419,8 +413,6 @@ export const ProductionSidebar = memo(
     const handleSavePreset = () => {
       if (!pendingPreset || pendingPreset.realmIds.length === 0) return;
 
-      const { currentDefaultTick } = getBlockTimestamp();
-
       pendingPreset.realmIds.forEach((realmId) => {
         const realmInfo = structureMap.get(realmId);
         if (!realmInfo) return;
@@ -428,52 +420,7 @@ export const ProductionSidebar = memo(
         const entityType = realmInfo.structure?.category === StructureType.Village ? "village" : "realm";
         const realmName = getStructureName(realmInfo.structure, isBlitz).name;
         upsertRealm(realmId, { realmName, entityType });
-
-        const realmConfig = getRealmConfig(realmId);
-        if (!realmConfig) {
-          setRealmPreset(realmId, pendingPreset.presetId);
-          return;
-        }
-
-        const numericRealmId = Number(realmId);
-        const snapshot =
-          Number.isFinite(numericRealmId) && numericRealmId > 0
-            ? buildRealmResourceSnapshot({
-                components,
-                realmId: numericRealmId,
-                currentTick: currentDefaultTick,
-              })
-            : new Map();
-
-        const producedResourceIds: ResourcesIds[] = [];
-        snapshot.forEach((entry) => {
-          if (entry.hasActiveProduction) {
-            producedResourceIds.push(entry.resourceId);
-          }
-        });
-
-        if (producedResourceIds.length === 0) {
-          setRealmPreset(realmId, pendingPreset.presetId);
-          return;
-        }
-
-        const limitedPercentagesMap = calculateLimitedPresetPercentages(
-          realmConfig,
-          pendingPreset.presetId,
-          producedResourceIds,
-        );
-
-        if (limitedPercentagesMap.size === 0) {
-          setRealmPreset(realmId, pendingPreset.presetId);
-          return;
-        }
-
-        const percentages: Record<number, ResourceAutomationPercentages> = {};
-        limitedPercentagesMap.forEach((value, key) => {
-          percentages[key] = value;
-        });
-
-        setRealmPresetConfig(realmId, pendingPreset.presetId, percentages);
+        setRealmPreset(realmId, pendingPreset.presetId);
       });
 
       setPendingPreset(null);

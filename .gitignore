@@ -12,3 +12,4 @@ client/apps/eternum-mobile/dist
 .env.local
 venv/
 __pycache__/
+client/apps/game/minimap

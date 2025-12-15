@@ -9,7 +9,7 @@ import {
   dangerActionClasses,
   standardActionClasses,
 } from "@/ui/features/world/components/entities/action-button-classes";
-import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
+import { RealmUpgradeCompact, RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -160,7 +160,7 @@ export const BuildingEntityDetails = () => {
     <div className="building-entity-details-selector flex flex-col h-full">
       {isCastleSelected ? (
         <div className="flex-grow w-full space-y-1 text-sm">
-          <RealmVillageDetails />
+          <RealmUpgradeCompact />
         </div>
       ) : (
         <>

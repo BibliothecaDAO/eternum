@@ -1,13 +1,20 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Headline } from "@/ui/design-system/molecules/headline";
-import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { memo } from "react";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { memo, useEffect, useState } from "react";
 
 export const AllResourceArrivals = memo(
   ({ className = "", hasArrivals = false }: { className?: string; hasArrivals?: boolean }) => {
     const playerStructures = useUIStore((state) => state.playerStructures);
+    const { currentBlockTimestamp } = getBlockTimestamp();
+    const [now, setNow] = useState(currentBlockTimestamp);
+
+    useEffect(() => {
+      if (!hasArrivals || !currentBlockTimestamp || typeof window === "undefined") return;
+      setNow(currentBlockTimestamp);
+      const interval = window.setInterval(() => setNow((prev) => prev + 1), 1000);
+      return () => window.clearInterval(interval);
+    }, [hasArrivals, currentBlockTimestamp]);
 
     if (!hasArrivals) {
       return (
@@ -22,15 +29,8 @@ export const AllResourceArrivals = memo(
 
     return (
       <div className={`p-2 flex flex-col space-y-1 overflow-y-auto gap-2 ${className}`}>
-        <Headline>
-          <div className="flex gap-2">
-            <div className="self-center">Transfers</div>
-            <HintModalButton section={HintSection.Transfers} />
-          </div>
-        </Headline>
-
         {playerStructures.map((structure) => (
-          <StructureArrivals key={structure.entityId} structure={structure} />
+          <StructureArrivals key={structure.entityId} structure={structure} now={now} />
         ))}
       </div>
     );

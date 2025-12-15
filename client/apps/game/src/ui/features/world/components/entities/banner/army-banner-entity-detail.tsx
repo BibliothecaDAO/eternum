@@ -1,25 +1,21 @@
-import { Loader } from "lucide-react";
+import { Loader, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
-import { EntityType, HexPosition, ID, RelicRecipientType } from "@bibliothecadao/types";
-
-import { CompactArmyChip } from "@/ui/features/military/components/compact-army-chip";
-import clsx from "clsx";
+import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { ArmyWarning } from "../../armies/army-warning";
-import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
-import { useArmyEntityDetail, useBannerArmyInfo } from "../hooks/use-army-entity-detail";
+import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
+import { HexPosition, ID, RelicRecipientType, EntityType, BiomeType, TroopType } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
 
 export interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
   className?: string;
   compact?: boolean;
-  maxInventory?: number;
   showButtons?: boolean;
-  bannerPosition?: HexPosition;
   layoutVariant?: EntityDetailLayoutVariant;
 }
 
@@ -31,10 +27,9 @@ const ArmyBannerEntityDetailContent = memo(
   ({
     armyEntityId,
     className,
-    bannerPosition,
     compact = true,
-    showButtons = false,
-    variant,
+    showButtons: _showButtons = false,
+    variant: _variant,
   }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
@@ -44,11 +39,9 @@ const ArmyBannerEntityDetailContent = memo(
       derivedData,
       isLoadingExplorer,
       isLoadingStructure,
+      handleDeleteExplorer,
+      isLoadingDelete,
     } = useArmyEntityDetail({ armyEntityId });
-    const isBanner = variant === "banner";
-    const isCompactLayout = compact;
-
-    const bannerArmyInfo = useBannerArmyInfo(explorer, derivedData, armyEntityId, bannerPosition);
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
@@ -61,120 +54,73 @@ const ArmyBannerEntityDetailContent = memo(
 
     if (!explorer || !derivedData) return null;
 
-    const containerClass = cn(
-      "flex h-full min-h-0 flex-col overflow-auto",
-      isCompactLayout ? "gap-1.5" : "gap-2",
-      className,
-    );
-
-    const wantsGridLayout = true;
-    const gridContainerClass = wantsGridLayout
-      ? "grid flex-1 min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr"
-      : "flex min-h-0 flex-1 flex-col gap-2";
-    const cellBaseClass = wantsGridLayout ? "sm:col-span-1 sm:row-span-1" : undefined;
-    const subtleTextClass = clsx("text-gold/60", isCompactLayout ? "text-xxs" : "text-xs");
-    const emptyTextClass = clsx(isCompactLayout ? "text-xxs" : "text-xs", "text-gold/60", "italic");
     const hasWarnings = Boolean(structureResources && explorerResources);
+    const ownerDisplay = derivedData.addressName ?? `Army Owner`;
+    const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
 
     return (
-      <div className={containerClass}>
-        <div className={gridContainerClass}>
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
-            tone={hasWarnings ? "highlight" : "default"}
-          >
-            {hasWarnings && explorerResources && structureResources ? (
-              <ArmyWarning
-                army={explorer}
-                explorerResources={explorerResources}
-                structureResources={structureResources}
-              />
-            ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                No proximity warnings.
-              </BottomHudEmptyState>
-            )}
-          </EntityDetailSection>
-
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
-          >
-            {bannerArmyInfo ? (
-              <CompactArmyChip army={bannerArmyInfo} className="border border-gold/25 bg-dark/60" />
-            ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                Army data unavailable.
-              </BottomHudEmptyState>
-            )}
-          </EntityDetailSection>
-
-          <EntityDetailSection
-            compact={compact}
-            className={cn(
-              cellBaseClass,
-              "min-h-0 flex flex-col overflow-auto",
-              wantsGridLayout && "sm:col-start-1 sm:row-start-2",
-            )}
-          >
-            {explorerResources ? (
-              <CompactEntityInventory
-                resources={explorerResources}
-                activeRelicIds={activeRelicIds}
-                recipientType={RelicRecipientType.Explorer}
-                entityId={armyEntityId}
-                entityType={EntityType.ARMY}
-                allowRelicActivation={derivedData.isMine}
-                variant={isBanner ? "tight" : "default"}
-              />
-            ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                No supplies carried.
-              </BottomHudEmptyState>
-            )}
-          </EntityDetailSection>
-
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-2", "min-h-0")}
-          >
-            {isBanner ? (
-              relicEffects.length > 0 ? (
-                <span className={cn(subtleTextClass)}>
-                  {`${relicEffects.length} active relic${relicEffects.length > 1 ? "s" : ""}.`}
-                </span>
-              ) : (
-                <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                  No relics assigned.
-                </BottomHudEmptyState>
-              )
-            ) : relicEffects.length > 0 ? (
-              <div className="max-h-[200px] overflow-auto pr-1">
-                <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact={isCompactLayout} />
-              </div>
-            ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                No relics assigned.
-              </BottomHudEmptyState>
-            )}
-          </EntityDetailSection>
+      <EntityDetailSection
+        compact={compact}
+        tone={hasWarnings ? "highlight" : "default"}
+        className={cn("flex flex-col gap-3", className)}
+      >
+        <div className="flex flex-col gap-1 text-gold">
+          <span className="text-xs flex flex-wrap items-center gap-2">
+            <span className="font-normal text-gold">
+              {derivedData.isMine ? "🟢" : "🔴"} {ownerDisplay}
+              <span className="px-1 text-gold/50">·</span>
+              {stationedDisplay}
+            </span>
+            {derivedData.isMine ? (
+              <button
+                type="button"
+                onClick={handleDeleteExplorer}
+                disabled={isLoadingDelete}
+                className="inline-flex items-center rounded border border-red-500/40 p-1 text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                title={isLoadingDelete ? "Deleting" : "Delete Army"}
+              >
+                {isLoadingDelete ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                <span className="sr-only">Delete Army</span>
+              </button>
+            ) : null}
+          </span>
         </div>
-      </div>
+
+        <div className="flex flex-col gap-2">
+          <TroopChip troops={explorer.troops} size="sm" className="w-full" />
+          {derivedData.stamina && derivedData.maxStamina ? (
+            <InlineStaminaBar stamina={derivedData.stamina} maxStamina={derivedData.maxStamina} />
+          ) : null}
+        </div>
+
+        {hasWarnings && explorerResources && structureResources ? (
+          <ArmyWarning army={explorer} explorerResources={explorerResources} structureResources={structureResources} />
+        ) : null}
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relics</span>
+          {explorerResources ? (
+            <CompactEntityInventory
+              resources={explorerResources}
+              activeRelicIds={activeRelicIds}
+              recipientType={RelicRecipientType.Explorer}
+              entityId={armyEntityId}
+              entityType={EntityType.ARMY}
+              allowRelicActivation={derivedData.isMine}
+              variant="tight"
+            />
+          ) : (
+            <p className="text-xxs text-gold/60 italic">No relics attached.</p>
+          )}
+        </div>
+      </EntityDetailSection>
     );
   },
 );
 ArmyBannerEntityDetailContent.displayName = "ArmyBannerEntityDetailContent";
 
 export const ArmyBannerEntityDetail = memo(
-  ({
-    armyEntityId,
-    className,
-    compact = true,
-    showButtons = false,
-    bannerPosition,
-    layoutVariant,
-  }: ArmyBannerEntityDetailProps) => {
+  ({ armyEntityId, className, compact = true, showButtons = false, layoutVariant }: ArmyBannerEntityDetailProps) => {
     const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
     return (
@@ -183,7 +129,6 @@ export const ArmyBannerEntityDetail = memo(
         className={className}
         compact={compact}
         showButtons={showButtons}
-        bannerPosition={bannerPosition}
         variant={resolvedVariant}
       />
     );
@@ -191,3 +136,35 @@ export const ArmyBannerEntityDetail = memo(
 );
 
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
+
+const InlineStaminaBar = ({
+  stamina,
+  maxStamina,
+}: {
+  stamina: { amount: bigint; updated_tick: bigint };
+  maxStamina: number;
+}) => {
+  if (!stamina || maxStamina === 0) return null;
+  const staminaValue = Number(stamina.amount);
+  const percentage = (staminaValue / maxStamina) * 100;
+  const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
+
+  let fillClass = "bg-progress-bar-danger";
+  if (staminaValue >= minTravelCost) {
+    fillClass =
+      percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-xxs text-gold/80">
+      <Lightning className="h-3 w-3 fill-order-power" />
+      <div className="flex-1 h-2 rounded-full border border-gray-600 overflow-hidden">
+        <div
+          className={`${fillClass} h-full rounded-full transition-all duration-300`}
+          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+        />
+      </div>
+      <span className="whitespace-nowrap">{`${staminaValue}/${maxStamina}`}</span>
+    </div>
+  );
+};

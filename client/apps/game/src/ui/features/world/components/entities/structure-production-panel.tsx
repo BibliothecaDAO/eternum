@@ -3,8 +3,8 @@ import { useBuildings } from "@bibliothecadao/react";
 import { ClientComponents, ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { ProductionStatusBadge } from "@/ui/shared";
+import { currencyIntlFormat } from "@/ui/utils/utils";
 import { ComponentValue } from "@dojoengine/recs";
 import { formatTimeRemaining } from "../../../economy/resources/entity-resource-table/utils";
 
@@ -15,6 +15,7 @@ interface StructureProductionPanelProps {
   smallTextClass: string;
   showProductionSummary?: boolean;
   showTooltip?: boolean;
+  badgeVariant?: "default" | "detailed";
 }
 
 interface ResourceProductionSummaryItem {
@@ -28,6 +29,13 @@ interface ResourceProductionSummaryItem {
   calculatedAt: number;
 }
 
+const formatOutputAmount = (value: number | null | undefined): string | undefined => {
+  if (value === null || value === undefined || Number.isNaN(value)) return undefined;
+  const abs = Math.abs(value);
+  const decimals = abs >= 1000 ? 1 : 0;
+  return currencyIntlFormat(abs, decimals);
+};
+
 export const StructureProductionPanel = memo(
   ({
     structure,
@@ -36,6 +44,7 @@ export const StructureProductionPanel = memo(
     smallTextClass,
     showProductionSummary = true,
     showTooltip = true,
+    badgeVariant = "default",
   }: StructureProductionPanelProps) => {
     const [timerTick, setTimerTick] = useState(0);
 
@@ -52,7 +61,7 @@ export const StructureProductionPanel = memo(
     }, []);
 
     const currentTime = useMemo(() => Date.now(), [timerTick]);
-    const productionBadgeSize = compact ? "xs" : "sm";
+    const productionBadgeSize = badgeVariant === "detailed" ? "md" : compact ? "xs" : "sm";
 
     const { currentDefaultTick } = getBlockTimestamp();
 
@@ -135,11 +144,7 @@ export const StructureProductionPanel = memo(
     );
 
     if (!resourceProductionSummary.length) {
-      return (
-        <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={`${smallTextClass} text-gold/60 italic`}>
-          No production buildings.
-        </BottomHudEmptyState>
-      );
+      return <p className={`${smallTextClass} text-gold/60 italic`}>No production buildings.</p>;
     }
 
     return (
@@ -149,7 +154,11 @@ export const StructureProductionPanel = memo(
             {`${activeProductionBuildings}/${totalProductionBuildings} producing`}
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-2">
+        <div
+          className={
+            badgeVariant === "detailed" ? "flex flex-wrap items-center gap-3" : "flex flex-wrap items-center gap-2"
+          }
+        >
           {[...resourceProductionSummary]
             .sort((a, b) => {
               if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
@@ -159,6 +168,13 @@ export const StructureProductionPanel = memo(
             .map((summary) => {
               const resourceLabel = ResourcesIds[summary.resourceId];
               const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
+              const effectiveOutputRemaining =
+                summary.isProducing &&
+                summary.outputRemaining !== null &&
+                summary.productionPerSecond !== null &&
+                Number.isFinite(summary.productionPerSecond)
+                  ? Math.max(summary.outputRemaining - elapsedSeconds * summary.productionPerSecond, 0)
+                  : summary.outputRemaining;
               const effectiveRemainingSeconds =
                 summary.timeRemainingSeconds !== null
                   ? Math.max(summary.timeRemainingSeconds - elapsedSeconds, 0)
@@ -177,6 +193,17 @@ export const StructureProductionPanel = memo(
                     resourceLabel,
                     `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
                   ];
+              const outputLabel = summary.isProducing ? formatOutputAmount(effectiveOutputRemaining) : undefined;
+              const badgeProps =
+                badgeVariant === "detailed"
+                  ? {
+                      cornerTopLeft: summary.totalBuildings > 0 ? `${summary.totalBuildings}` : undefined,
+                      cornerTopRight: outputLabel,
+                      cornerBottomRight: formattedRemaining ?? undefined,
+                    }
+                  : {
+                      totalCount: summary.totalBuildings,
+                    };
 
               return (
                 <ProductionStatusBadge
@@ -185,9 +212,9 @@ export const StructureProductionPanel = memo(
                   tooltipText={tooltipParts.filter(Boolean).join(" • ")}
                   isProducing={summary.isProducing}
                   timeRemainingSeconds={effectiveRemainingSeconds}
-                  totalCount={summary.totalBuildings}
                   size={productionBadgeSize}
                   showTooltip={showTooltip}
+                  {...badgeProps}
                 />
               );
             })}

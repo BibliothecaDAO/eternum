@@ -36,6 +36,7 @@ const createMainThreadQueueProcessor = (
 ): QueueProcessor => {
   const updateQueue: Array<{ entityId: string; data: ToriiEntity }> = [];
   let isProcessing = false;
+  let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   const mergeDeep = (target: ToriiEntity, source: ToriiEntity): ToriiEntity => {
     if (!source) return target;
@@ -105,7 +106,7 @@ const createMainThreadQueueProcessor = (
 
     isProcessing = false;
     if (updateQueue.length > 0) {
-      setTimeout(processNextInQueue, 0);
+      pendingTimeoutId = setTimeout(processNextInQueue, 0);
     }
   };
 
@@ -113,10 +114,14 @@ const createMainThreadQueueProcessor = (
     queueUpdate: (entityId: string, data: ToriiEntity) => {
       updateQueue.push({ entityId, data });
       if (!isProcessing) {
-        setTimeout(processNextInQueue, 200);
+        pendingTimeoutId = setTimeout(processNextInQueue, 200);
       }
     },
     dispose: () => {
+      if (pendingTimeoutId !== null) {
+        clearTimeout(pendingTimeoutId);
+        pendingTimeoutId = null;
+      }
       updateQueue.length = 0;
     },
   };
@@ -197,20 +202,43 @@ export const syncEntitiesDebounced = async (
     }
   };
 
+  // Debug: Track update frequency
+  let entityUpdateCount = 0;
+  let eventUpdateCount = 0;
+  let lastLogTime = Date.now();
+  const LOG_INTERVAL = 5000; // Log every 5 seconds
+
   const entitySub = await client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Entity updated", data);
+    entityUpdateCount++;
     queueUpdate(data, "entity");
   });
 
   const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Event message updated", data.hashed_keys);
+    eventUpdateCount++;
     queueUpdate(data, "event");
   });
+
+  // Periodic logging of update rates
+  const debugInterval = setInterval(() => {
+    const now = Date.now();
+    const elapsed = (now - lastLogTime) / 1000;
+    const entityRate = entityUpdateCount / elapsed;
+    const eventRate = eventUpdateCount / elapsed;
+    console.log(
+      `[SYNC DEBUG] Entity updates: ${entityUpdateCount} (${entityRate.toFixed(1)}/sec), Event updates: ${eventUpdateCount} (${eventRate.toFixed(1)}/sec)`,
+    );
+    entityUpdateCount = 0;
+    eventUpdateCount = 0;
+    lastLogTime = now;
+  }, LOG_INTERVAL);
 
   setupResult.network.provider.recordStreamActivity();
 
   return {
     cancel: () => {
+      clearInterval(debugInterval);
       entitySub.cancel();
       eventSub.cancel();
       queueProcessor.dispose();

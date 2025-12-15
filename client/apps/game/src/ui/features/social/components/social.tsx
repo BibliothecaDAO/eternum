@@ -14,7 +14,7 @@ import { getIsBlitz, getPlayerInfo, LeaderboardManager } from "@bibliothecadao/e
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Shapes, Users } from "lucide-react";
-import { ReactNode, useEffect, useMemo } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
 
@@ -24,6 +24,16 @@ interface SocialTabConfig {
   component: ReactNode;
   expandedContent: ReactNode;
 }
+
+type PlayerStructureCounts = {
+  banks: number;
+  mines: number;
+  realms: number;
+  hyperstructures: number;
+  villages: number;
+};
+
+const PLAYER_STRUCTURE_REFRESH_INTERVAL_MS = 60_000;
 
 export const Social = () => {
   const {
@@ -51,6 +61,13 @@ export const Social = () => {
 
   const isBlitz = getIsBlitz();
 
+  const refreshPlayerData = usePlayerStore((state) => state.refreshPlayerData);
+  const lastPlayerDataRefreshTime = usePlayerStore((state) => state.lastRefreshTime);
+
+  const [playerStructureCountsMap, setPlayerStructureCountsMap] = useState<Map<bigint, PlayerStructureCounts>>(
+    () => new Map(),
+  );
+
   useEffect(() => {
     // update first time - initialize with interval on first call
     const manager = LeaderboardManager.instance(
@@ -74,41 +91,54 @@ export const Social = () => {
   }, [components, setPlayersByRank]);
 
   useEffect(() => {
-    const loadPlayerData = async () => {
-      // Create a Map to store address -> structure counts mapping (using bigint keys)
-      const playerStructureCountsMap = new Map<
-        bigint,
-        {
-          banks: number;
-          mines: number;
-          realms: number;
-          hyperstructures: number;
-          villages: number;
-        }
-      >();
+    void refreshPlayerData();
+    const intervalId = window.setInterval(() => {
+      void refreshPlayerData();
+    }, PLAYER_STRUCTURE_REFRESH_INTERVAL_MS);
 
+    return () => window.clearInterval(intervalId);
+  }, [refreshPlayerData]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStructureCounts = async () => {
       const playerStore = usePlayerStore.getState();
       const allPlayersData = await playerStore.getAllPlayersData();
 
-      if (allPlayersData) {
-        allPlayersData.forEach((playerData: PlayerDataTransformed) => {
-          playerStructureCountsMap.set(BigInt(playerData.ownerAddress), {
+      if (cancelled) return;
+
+      const nextCounts = new Map<bigint, PlayerStructureCounts>();
+
+      allPlayersData.forEach((playerData: PlayerDataTransformed) => {
+        try {
+          nextCounts.set(BigInt(playerData.ownerAddress), {
             banks: playerData.bankCount ?? 0,
             mines: playerData.mineCount ?? 0,
             realms: playerData.realmsCount ?? 0,
             hyperstructures: playerData.hyperstructuresCount ?? 0,
             villages: playerData.villageCount ?? 0,
           });
-        });
-      }
+        } catch {
+          // ignore invalid owner addresses
+        }
+      });
 
-      setPlayerInfo(
-        getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
-      );
+      setPlayerStructureCountsMap(nextCounts);
     };
 
-    loadPlayerData();
-  }, [players, account.address, playersByRank, components, setPlayerInfo]);
+    void loadStructureCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lastPlayerDataRefreshTime]);
+
+  useEffect(() => {
+    setPlayerInfo(
+      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
+    );
+  }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
 
   const viewGuildMembers = (guildEntityId: ContractAddress) => {
     if (selectedGuild === guildEntityId) {

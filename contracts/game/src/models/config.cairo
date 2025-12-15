@@ -567,6 +567,7 @@ pub struct BlitzRegistrationConfig {
     pub collectibles_cosmetics_address: ContractAddress,
     pub collectibles_timelock_address: ContractAddress,
     pub collectibles_lootchest_address: ContractAddress,
+    pub collectibles_elitenft_address: ContractAddress,
     pub registration_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
@@ -628,9 +629,12 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 
     fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x101 // @note to be changed 
+        0x101 // @todo @note to be changed 
     }
 
+    fn collectibles_elitenft_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
+        0x101 // @todo @note to be changed 
+    }
 
     fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {
         let dispatcher = ICollectibleDispatcher {contract_address: self.entry_token_address};

@@ -622,6 +622,7 @@ export interface Config {
       collectible_cosmetics_address: string;
       collectible_timelock_address: string;
       collectibles_lootchest_address: string;
+      collectibles_elitenft_address: string;
     };
   };
 

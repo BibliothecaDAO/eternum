@@ -12,25 +12,30 @@ import { ResourcesIds, Structure } from "@bibliothecadao/types";
 import { Loader2, Clock3 } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
-export const StructureArrivals = memo(({ structure }: { structure: Structure }) => {
+export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {
   const { currentBlockTimestamp } = getBlockTimestamp();
-  const [now, setNow] = useState(currentBlockTimestamp);
+  const [internalNow, setInternalNow] = useState(currentBlockTimestamp);
   const arrivals = useArrivalsByStructure(structure.entityId);
 
   useEffect(() => {
+    if (nowOverride !== undefined) {
+      return;
+    }
     if (!currentBlockTimestamp) return;
-    setNow(currentBlockTimestamp);
+    setInternalNow(currentBlockTimestamp);
 
     const interval = setInterval(() => {
-      setNow((prev) => prev + 1);
+      setInternalNow((prev) => prev + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [currentBlockTimestamp]);
+  }, [currentBlockTimestamp, nowOverride]);
 
+  const now = nowOverride ?? internalNow;
+  const isBlitz = getIsBlitz();
   const structureName = useMemo(() => {
-    return getStructureName(structure.structure, getIsBlitz()).name;
-  }, [structure]);
+    return getStructureName(structure.structure, isBlitz).name;
+  }, [structure, isBlitz]);
 
   const arrivalsWithResources = useMemo(
     () =>

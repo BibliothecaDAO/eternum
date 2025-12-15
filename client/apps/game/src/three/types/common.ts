@@ -27,6 +27,7 @@ export interface StructureInfo {
   structureType: StructureType;
   hasWonder: boolean;
   cosmeticId?: string;
+  cosmeticAssetPaths?: string[];
   attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
@@ -50,6 +51,7 @@ export interface ArmyData {
   tier: TroopTier;
   isDaydreamsAgent: boolean;
   cosmeticId?: string;
+  cosmeticAssetPaths?: string[];
   attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   troopCount: number;

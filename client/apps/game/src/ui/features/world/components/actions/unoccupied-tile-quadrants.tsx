@@ -1,10 +1,14 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
+import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
+import { battleSimulation } from "@/ui/features/world/components/config";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
+import { CrosshairIcon } from "lucide-react";
 
 const unoccupiedTileTroopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
 
@@ -29,33 +33,7 @@ const unoccupiedTileTroopConfig: Record<
   },
 };
 
-enum BiomeQuadrantFilenames {
-  Bare = "bare.png",
-  Beach = "beach.png",
-  TemperateDeciduousForest = "decidiousforest.png",
-  DeepOcean = "deepocean.png",
-  Grassland = "grassland.png",
-  Ocean = "ocean.png",
-  Outline = "outline.png",
-  Scorched = "scorched.png",
-  Tundra = "tundra.png",
-  TemperateDesert = "temperatedesert.png",
-  Shrubland = "shrublands.png",
-  Snow = "snow.png",
-  Taiga = "taiga.png",
-  TemperateRainForest = "temperaterainforest.png",
-  SubtropicalDesert = "subtropicaldesert.png",
-  TropicalRainForest = "rainforest.png",
-  TropicalSeasonalForest = "tropicalseasonalforest.png",
-  Empty = "empty.png",
-}
-
-const getQuadrantBiomeImage = (biome: BiomeType) => {
-  const biomeKey = biome as keyof typeof BiomeQuadrantFilenames;
-  return `/images/biomes/${BiomeQuadrantFilenames[biomeKey]}`;
-};
-
-const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
+export const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
   const label = biome.toString();
   return label
     .replace(/_/g, " ")
@@ -65,7 +43,7 @@ const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
     .trim();
 };
 
-const getQuadrantBonusStyles = (bonus: number) => {
+export const getQuadrantBonusStyles = (bonus: number) => {
   if (bonus > 1) {
     return {
       containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
@@ -84,37 +62,68 @@ const getQuadrantBonusStyles = (bonus: number) => {
   };
 };
 
-const BiomeQuadrant = ({ biome }: { biome: BiomeType }) => {
+interface BiomeSummaryCardProps {
+  biome: BiomeType;
+  onSimulateBattle?: () => void;
+  showSimulateAction?: boolean;
+}
+
+export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction = false }: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(
     () =>
-      unoccupiedTileTroopTypes.map((troopType) => {
-        const config = unoccupiedTileTroopConfig[troopType];
-        const bonus = configManager.getBiomeCombatBonus(troopType, biome);
-        const styles = getQuadrantBonusStyles(bonus);
-        return {
-          troopType,
-          config,
-          bonus,
-          styles,
-          summaryTextClass: bonus > 1 ? "text-green-300" : bonus < 1 ? "text-red-300" : "text-gold/80",
-        };
-      }),
+      unoccupiedTileTroopTypes
+        .map((troopType) => {
+          const config = unoccupiedTileTroopConfig[troopType];
+          const bonus = configManager.getBiomeCombatBonus(troopType, biome);
+          const styles = getQuadrantBonusStyles(bonus);
+          return {
+            troopType,
+            config,
+            bonus,
+            styles,
+          };
+        })
+        .sort((a, b) => a.bonus - b.bonus),
     [biome],
   );
 
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col">
+    <div className="flex h-full flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
-          <span className="text-sm font-semibold text-gold">{formatQuadrantBiomeLabel(biome)}</span>
+          {showSimulateAction && onSimulateBattle ? (
+            <Button
+              variant="outline"
+              size="xs"
+              className="gap-2 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+              forceUppercase={false}
+              onClick={onSimulateBattle}
+              withoutSound
+            >
+              <CrosshairIcon className="h-3.5 w-3.5" />
+              Battle
+            </Button>
+          ) : null}
         </div>
-        <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
-          {troopBonuses.map(({ troopType, config, bonus, summaryTextClass }) => (
-            <div key={troopType} className="flex items-center gap-1 rounded-md bg-dark/60 px-1.5 py-0.5">
-              <ResourceIcon resource={config.resourceName} size="xs" withTooltip={false} />
-              <span className={`text-[11px] font-semibold leading-none ${summaryTextClass}`}>
-                {formatBiomeBonus(bonus)}
+        <span className="text-sm font-semibold text-gold truncate" title={formatQuadrantBiomeLabel(biome)}>
+          {formatQuadrantBiomeLabel(biome)}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Army bonuses</span>
+        <div className="grid grid-cols-1 gap-1.5">
+          {troopBonuses.map(({ troopType, config, bonus, styles }) => (
+            <div
+              key={troopType}
+              className={`flex items-center justify-between rounded-lg border px-3 py-2 shadow-sm ${styles.containerClass}`}
+            >
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+                <span className="text-[11px] font-semibold text-gold/90">{config.label}</span>
+              </div>
+              <span className={`text-sm font-semibold ${styles.textClass}`}>
+                {bonus === 1 ? "0%" : formatBiomeBonus(bonus)}
               </span>
             </div>
           ))}
@@ -125,14 +134,22 @@ const BiomeQuadrant = ({ biome }: { biome: BiomeType }) => {
 };
 
 export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
+  const openPopup = useUIStore((state) => state.openPopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
+
+  const handleSimulateBattle = useCallback(() => {
+    setCombatSimulationBiome(biome);
+    if (!isPopupOpen(battleSimulation)) {
+      openPopup(battleSimulation);
+    }
+  }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
+
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-auto sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr">
+    <div className="h-full min-h-0 overflow-auto">
       <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
-        <BiomeQuadrant biome={biome} />
+        <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
       </EntityDetailSection>
-      <EntityDetailSection compact className="min-h-0" />
-      <EntityDetailSection compact className="min-h-0" />
-      <EntityDetailSection compact className="min-h-0" />
     </div>
   );
 };

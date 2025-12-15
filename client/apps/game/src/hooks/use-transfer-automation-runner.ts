@@ -29,6 +29,29 @@ const getStructureCategory = (
   }
 };
 
+const normalizeOwnerValue = (owner: unknown): string | null => {
+  if (typeof owner === "string") return owner.trim().toLowerCase();
+  if (typeof owner === "bigint") return `0x${owner.toString(16)}`;
+  if (typeof owner === "number" && Number.isFinite(owner)) return `0x${BigInt(owner).toString(16)}`;
+  return null;
+};
+
+const isEntityOwnedByAccount = (
+  components: ClientComponents | null | undefined,
+  entityId: number,
+  accountAddress: string | undefined,
+): boolean => {
+  if (!components || !entityId || !accountAddress) return false;
+  try {
+    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+    const owner = normalizeOwnerValue(structure?.owner);
+    const accountOwner = normalizeOwnerValue(accountAddress);
+    return Boolean(owner && accountOwner && owner === accountOwner);
+  } catch {
+    return false;
+  }
+};
+
 export const useTransferAutomationRunner = () => {
   const {
     setup: { components, systemCalls },
@@ -100,6 +123,18 @@ export const useTransferAutomationRunner = () => {
             const sourceId = Number(entry.sourceEntityId);
             const destId = Number(entry.destinationEntityId);
             if (!Number.isFinite(sourceId) || !Number.isFinite(destId) || sourceId <= 0 || destId <= 0) {
+              scheduleNext(entry.id, nowMs);
+              continue;
+            }
+
+            if (!isEntityOwnedByAccount(components, sourceId, account.address)) {
+              toast.warning("Scheduled transfer skipped: source structure is no longer owned.");
+              scheduleNext(entry.id, nowMs);
+              continue;
+            }
+
+            if (!isEntityOwnedByAccount(components, destId, account.address)) {
+              toast.warning("Scheduled transfer skipped: destination structure is no longer owned.");
               scheduleNext(entry.id, nowMs);
               continue;
             }

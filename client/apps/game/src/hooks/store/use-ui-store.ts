@@ -1,7 +1,7 @@
-import { BattleViewInfo, LeftView, RightView } from "@/types";
+import { BattleViewInfo, LeftView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
-import { ContractAddress, ID } from "@bibliothecadao/types";
+import { BiomeType, ContractAddress } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
@@ -12,6 +12,8 @@ import { createThreeStoreSlice, ThreeStore } from "./use-three-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
 type TooltipPlacement = "top" | "left" | "right" | "bottom";
+
+export type BottomPanelTabId = "tile" | "minimap";
 
 let lastResolvedAnchor: HTMLElement | null = null;
 
@@ -129,17 +131,16 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
+  combatSimulationBiome: BiomeType | null;
+  setCombatSimulationBiome: (biome: BiomeType | null) => void;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
   setLeftNavigationView: (view: LeftView) => void;
-  rightNavigationView: RightView;
-  setRightNavigationView: (view: RightView) => void;
+  activeBottomPanelTab: BottomPanelTabId | null;
+  setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => void;
   showMinimap: boolean;
   setShowMinimap: (show: boolean) => void;
-  isBottomHudMinimized: boolean;
-  setIsBottomHudMinimized: (minimized: boolean) => void;
-  toggleBottomHudMinimized: () => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
   hasAcceptedTS: boolean;
@@ -147,6 +148,8 @@ interface UIStore {
   showToS: boolean;
   setShowToS: (show: boolean) => void;
   setModal: (content: React.ReactNode | null, show: boolean) => void;
+  transferPanelSourceId: number | null;
+  setTransferPanelSourceId: (entityId: number | null) => void;
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
@@ -250,17 +253,16 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: !!content, tooltip: null });
     },
     showModal: false,
+    combatSimulationBiome: null,
+    setCombatSimulationBiome: (biome: BiomeType | null) => set({ combatSimulationBiome: biome }),
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
-    leftNavigationView: LeftView.None,
+    leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
-    rightNavigationView: RightView.None,
-    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
+    activeBottomPanelTab: "tile",
+    setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => set({ activeBottomPanelTab: tab }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
-    isBottomHudMinimized: false,
-    setIsBottomHudMinimized: (minimized: boolean) => set({ isBottomHudMinimized: minimized }),
-    toggleBottomHudMinimized: () => set((state) => ({ isBottomHudMinimized: !state.isBottomHudMinimized })),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
     hasAcceptedTS: localStorage.getItem("hasAcceptedTS") ? localStorage.getItem("hasAcceptedTS") === "true" : false,
@@ -272,6 +274,8 @@ export const useUIStore = create(
     setShowToS: (show: boolean) => set({ showToS: show }),
     setModal: (content: React.ReactNode | null, show: boolean) =>
       set({ modalContent: content, showModal: show, tooltip: null }),
+    transferPanelSourceId: null,
+    setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

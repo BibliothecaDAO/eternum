@@ -22,32 +22,24 @@ export const CompactArmyChip = ({ army, className }: { army: ArmyInfo; className
     return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
   }, [army.troops]);
 
-  const statusEmoji = army.isMine ? "🟢" : "🔴";
-
   return (
-    <div className="flex w-full h-full justify-between gap-2">
-      <div className="flex flex-col justify-between w-[55%]">
-        <div className="flex flex-col items-start">
-          <div
-            className="text-xxs mr-1 truncate cursor-default max-w-full"
-            onMouseEnter={() =>
-              setTooltip({
-                content: `Army ID: ${army.entityId}`,
-                position: "bottom",
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-          >
-            <span className="mr-0.5">{statusEmoji}</span>
-            <span className="truncate">{army.name}</span>
-          </div>
-          <div className="flex flex-col items-end gap-0.5">
-            <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} />
-          </div>
-        </div>
+    <div className={`flex w-full flex-col gap-1 ${className ?? ""}`}>
+      <div
+        className="text-xxs mr-1 truncate cursor-default max-w-full text-gold/80"
+        onMouseEnter={() =>
+          setTooltip({
+            content: `Army ID: ${army.entityId}`,
+            position: "bottom",
+          })
+        }
+        onMouseLeave={() => setTooltip(null)}
+      >
+        <span className="truncate">{army.name}</span>
       </div>
-      <div className="flex flex-col w-[45%] gap-1">
-        <TroopChip troops={army.troops} className="h-auto" size="sm" />
+      <TroopChip troops={army.troops} className="h-auto w-full" size="sm" />
+      <div className="flex flex-col items-start gap-0.5 w-full">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-gold/60">Stamina</span>
+        <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} className="w-full" />
       </div>
     </div>
   );

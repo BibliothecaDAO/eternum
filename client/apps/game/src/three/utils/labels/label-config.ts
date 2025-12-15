@@ -1,3 +1,4 @@
+import { playerColorManager, PlayerColorProfile } from "../../systems/player-colors";
 import type { CameraView } from "../../scenes/hexagon-scene";
 import { resolveCameraView } from "./label-view";
 import { LabelConfig, LabelStyle } from "./label-types";
@@ -154,6 +155,60 @@ export function getOwnershipStyle(isMine: boolean, isDaydreams?: boolean): { def
   return {
     default: LABEL_STYLES[styleKey],
     hover: HOVER_STYLES[styleKey],
+  };
+}
+
+/**
+ * Get player-specific ownership style that uses unique colors for each enemy player
+ * This provides visual distinction between different enemy players on the battlefield
+ *
+ * @param isMine - Is this the current player's unit/structure?
+ * @param isAlly - Is this an ally's unit/structure?
+ * @param isDaydreams - Is this an AI agent?
+ * @param ownerAddress - Owner's wallet address for enemy color assignment
+ */
+export function getPlayerOwnershipStyle(
+  isMine: boolean,
+  isAlly: boolean,
+  isDaydreams: boolean,
+  ownerAddress?: bigint | string,
+): { default: LabelStyle; hover: LabelStyle; profile: PlayerColorProfile } {
+  const profile = playerColorManager.getProfileForUnit(isMine, isAlly, isDaydreams, ownerAddress);
+
+  // For self, ally, and agent - use predefined styles
+  if (isMine || isAlly || isDaydreams) {
+    let styleKey = "ENEMY";
+    if (isDaydreams) {
+      styleKey = "DAYDREAMS";
+    } else if (isMine) {
+      styleKey = "MINE";
+    } else if (isAlly) {
+      styleKey = "ALLY";
+    }
+
+    return {
+      default: LABEL_STYLES[styleKey],
+      hover: HOVER_STYLES[styleKey],
+      profile,
+    };
+  }
+
+  // For enemies - use player-specific colors from the color profile
+  const defaultStyle: LabelStyle = {
+    backgroundColor: profile.backgroundColor,
+    textColor: profile.textColor,
+    borderColor: profile.borderColor,
+  };
+
+  // Create a slightly brighter hover version
+  const hoverStyle: LabelStyle = {
+    backgroundColor: profile.backgroundColor.replace("0.3", "0.4"),
+  };
+
+  return {
+    default: defaultStyle,
+    hover: hoverStyle,
+    profile,
   };
 }
 

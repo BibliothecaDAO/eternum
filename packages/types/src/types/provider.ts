@@ -710,6 +710,7 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   collectibles_cosmetics_address: BigNumberish;
   collectibles_timelock_address: BigNumberish;
   collectibles_lootchest_address: BigNumberish;
+  collectibles_elitenft_address: BigNumberish;
   registration_count_max: BigNumberish;
   registration_start_at: BigNumberish;
   entry_token_class_hash: BigNumberish;

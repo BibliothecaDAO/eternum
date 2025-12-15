@@ -7,6 +7,12 @@ import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+
+// Biomes that should never cast shadows (flat/water biomes)
+const NO_SHADOW_BIOMES = new Set(["ocean", "deepocean"]);
+
+// Biomes that don't have meaningful animations (static or flat)
+const STATIC_BIOMES = new Set(["ocean", "deepocean", "outline"]);
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
@@ -22,9 +28,31 @@ export default class InstancedModel {
   private animationUpdateInterval = 1000 / 20; // 20 FPS
   private readonly ANIMATION_BUCKETS = 20;
 
+  // Pre-allocated buffer for morph animation optimization
+  // Reused every frame to avoid allocations in the hot path
+  private bucketWeightsBuffer: Float32Array | null = null;
+
+  // Bucket-to-indices mapping for cache-friendly batch updates
+  // Built once on initialization, maps bucket number to array of instance indices
+  private bucketToIndices: Map<number, Uint16Array> = new Map();
+  private bucketIndicesBuilt: boolean = false;
+
+  // Biome-specific optimization flags
+  private biomeName: string = "";
+  private isStaticBiome: boolean = false;
+  private canCastShadows: boolean = true;
+  private hasAnimations: boolean = false;
+
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
     this.count = count;
+
+    // Store biome name and compute optimization flags
+    this.biomeName = name;
+    const lowerName = name.toLowerCase();
+    this.isStaticBiome = STATIC_BIOMES.has(lowerName);
+    this.canCastShadows = !NO_SHADOW_BIOMES.has(lowerName);
+    this.hasAnimations = gltf.animations.length > 0 && !this.isStaticBiome;
 
     this.animationBuckets = new Uint8Array(count);
     for (let i = 0; i < count; i++) {
@@ -61,8 +89,18 @@ export default class InstancedModel {
           tmp.morphTexture!.needsUpdate = true;
         }
 
+        const isLand = child.name.includes(LAND_NAME) || (child.parent?.name && child.parent.name.includes(LAND_NAME));
+
+        if (isLand && child.material) {
+          // Enable per-instance vertex colors on terrain base.
+          (child.material as THREE.MeshStandardMaterial).vertexColors = true;
+          (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
+          tmp.name = LAND_NAME;
+        }
+
         if (name !== "Outline" && !name.toLowerCase().includes("ocean")) {
-          tmp.castShadow = true;
+          // Terrain base should receive shadows but not cast them to avoid far-view noise.
+          tmp.castShadow = !isLand;
           tmp.receiveShadow = true;
           tmp.renderOrder = renderOrder;
         }
@@ -89,6 +127,63 @@ export default class InstancedModel {
         this.instancedMeshes.push(tmp);
         this.biomeMeshes.push(biomeMesh);
       }
+    });
+  }
+
+  public setAnimationFPS(fps: number): void {
+    const resolved = Math.max(1, fps);
+    this.animationUpdateInterval = 1000 / resolved;
+  }
+
+  /**
+   * Enable or disable shadow casting on all meshes in this biome.
+   * Disabling shadows can significantly improve GPU performance.
+   * Note: Ocean and DeepOcean biomes never cast shadows regardless of this setting.
+   */
+  public setShadowsEnabled(enabled: boolean): void {
+    // Skip if this biome type can never cast shadows
+    if (!this.canCastShadows) {
+      return;
+    }
+
+    this.instancedMeshes.forEach((mesh) => {
+      // Only toggle castShadow - receiveShadow is less expensive
+      // Land meshes don't cast shadows (already set in constructor)
+      if (mesh.name !== LAND_NAME) {
+        mesh.castShadow = enabled;
+      }
+    });
+  }
+
+  /**
+   * Check if this biome can cast shadows.
+   */
+  public getCanCastShadows(): boolean {
+    return this.canCastShadows;
+  }
+
+  /**
+   * Check if this biome has meaningful animations.
+   */
+  public getHasAnimations(): boolean {
+    return this.hasAnimations;
+  }
+
+  /**
+   * Get the biome name for debugging.
+   */
+  public getBiomeName(): string {
+    return this.biomeName;
+  }
+
+  /**
+   * Update mesh visibility based on instance count.
+   * Meshes with 0 instances are hidden to skip draw calls entirely.
+   * Call this after setCount() to optimize rendering.
+   */
+  public updateMeshVisibility(): void {
+    this.instancedMeshes.forEach((mesh) => {
+      mesh.visible = mesh.count > 0;
     });
   }
 
@@ -213,7 +308,49 @@ export default class InstancedModel {
     this.group.updateMatrixWorld(true);
   }
 
+  /**
+   * Builds bucket-to-indices mapping for cache-friendly batch updates.
+   * Called once lazily on first animation update.
+   */
+  private buildBucketIndices(instanceCount: number): void {
+    if (this.bucketIndicesBuilt && instanceCount <= this.count) {
+      return;
+    }
+
+    // Count instances per bucket
+    const bucketCounts = new Uint16Array(this.ANIMATION_BUCKETS);
+    for (let i = 0; i < instanceCount; i++) {
+      bucketCounts[this.animationBuckets[i]]++;
+    }
+
+    // Create arrays for each bucket
+    this.bucketToIndices.clear();
+    const bucketCurrentIndex = new Uint16Array(this.ANIMATION_BUCKETS);
+
+    for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+      if (bucketCounts[b] > 0) {
+        this.bucketToIndices.set(b, new Uint16Array(bucketCounts[b]));
+      }
+    }
+
+    // Populate bucket arrays with instance indices
+    for (let i = 0; i < instanceCount; i++) {
+      const bucket = this.animationBuckets[i];
+      const indices = this.bucketToIndices.get(bucket);
+      if (indices) {
+        indices[bucketCurrentIndex[bucket]++] = i;
+      }
+    }
+
+    this.bucketIndicesBuilt = true;
+  }
+
   updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext) {
+    // Skip animations for static biomes (ocean, deepocean, outline)
+    if (!this.hasAnimations) {
+      return;
+    }
+
     if (!this.shouldAnimate(visibility)) {
       return;
     }
@@ -232,6 +369,15 @@ export default class InstancedModel {
       let needsUpdate = false;
 
       this.instancedMeshes.forEach((mesh, meshIndex) => {
+        // Skip if no instances to animate
+        const instanceCount = mesh.count;
+        if (instanceCount === 0) {
+          return;
+        }
+
+        // Build bucket indices lazily (once per model)
+        this.buildBucketIndices(instanceCount);
+
         // Create a single action for each mesh if it doesn't exist
         if (!this.animationActions.has(meshIndex)) {
           const action = this.mixer!.clipAction(this.animation!);
@@ -241,25 +387,71 @@ export default class InstancedModel {
         const action = this.animationActions.get(meshIndex)!;
         action.play();
 
-        // Optimization: Quantize animations into buckets to reduce mixer updates
-        // Calculate weights for each bucket once
-        const bucketWeights: number[][] = [];
         const baseMesh = this.biomeMeshes[meshIndex];
+        const morphInfluences = baseMesh.morphTargetInfluences;
+        if (!morphInfluences || morphInfluences.length === 0) {
+          return;
+        }
 
+        const morphCount = morphInfluences.length;
+
+        // Initialize or resize the pre-allocated buffer if needed
+        const requiredSize = this.ANIMATION_BUCKETS * morphCount;
+        if (!this.bucketWeightsBuffer || this.bucketWeightsBuffer.length < requiredSize) {
+          this.bucketWeightsBuffer = new Float32Array(requiredSize);
+        }
+
+        // Calculate weights for each bucket once, store in pre-allocated buffer
         for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
           const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
           this.mixer!.setTime(t);
-          // Clone the influences array to cache it
-          bucketWeights[b] = [...(baseMesh.morphTargetInfluences || [])];
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.bucketWeightsBuffer[offset + m] = morphInfluences[m];
+          }
         }
 
-        for (let i = 0; i < mesh.count; i++) {
-          const bucket = this.animationBuckets[i];
-          // Pass a lightweight object with the pre-calculated weights
-          mesh.setMorphAt(i, { morphTargetInfluences: bucketWeights[bucket] } as any);
+        // Direct texture data manipulation - much faster than setMorphAt per instance
+        const morphTexture = mesh.morphTexture;
+        if (morphTexture && morphTexture.image && morphTexture.image.data) {
+          const textureData = morphTexture.image.data as unknown as Float32Array;
+          const textureWidth = morphTexture.image.width;
+
+          // OPTIMIZED: Batch by bucket for cache locality
+          // Process all instances in the same bucket together, using TypedArray.set()
+          // for bulk copies when morphCount is small enough
+          for (let bucket = 0; bucket < this.ANIMATION_BUCKETS; bucket++) {
+            const indices = this.bucketToIndices.get(bucket);
+            if (!indices || indices.length === 0) continue;
+
+            const srcOffset = bucket * morphCount;
+
+            // For small morphCount (typical case: 1-4 morph targets), use subarray.set()
+            // For larger morphCount, the overhead of subarray creation isn't worth it
+            if (morphCount <= 8) {
+              const bucketWeights = this.bucketWeightsBuffer.subarray(srcOffset, srcOffset + morphCount);
+              for (let idx = 0; idx < indices.length; idx++) {
+                const i = indices[idx];
+                if (i >= instanceCount) continue;
+                const dstOffset = i * textureWidth;
+                textureData.set(bucketWeights, dstOffset);
+              }
+            } else {
+              // Fallback for many morph targets: direct copy is still faster than setMorphAt
+              for (let idx = 0; idx < indices.length; idx++) {
+                const i = indices[idx];
+                if (i >= instanceCount) continue;
+                const dstOffset = i * textureWidth;
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = this.bucketWeightsBuffer[srcOffset + m];
+                }
+              }
+            }
+          }
+
+          morphTexture.needsUpdate = true;
+          needsUpdate = true;
         }
-        mesh.morphTexture!.needsUpdate = true;
-        needsUpdate = true;
       });
 
       if (needsUpdate) {
@@ -278,6 +470,11 @@ export default class InstancedModel {
 
     // Dispose of animation actions
     this.animationActions.clear();
+
+    // Clear pre-allocated buffers and bucket indices
+    this.bucketWeightsBuffer = null;
+    this.bucketToIndices.clear();
+    this.bucketIndicesBuilt = false;
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {
@@ -318,6 +515,16 @@ export default class InstancedModel {
       return true;
     }
 
+    // Prefer centralized visibility manager for better performance (cached per-frame results)
+    if (context.visibilityManager && this.worldBounds) {
+      return context.visibilityManager.shouldAnimate(
+        this.worldBounds.box,
+        this.worldBounds.sphere?.center,
+        this.worldBounds.sphere?.radius ?? 0,
+      );
+    }
+
+    // Fallback to legacy frustum manager check (deprecated path)
     if (context.frustumManager && this.worldBounds?.box && !context.frustumManager.isBoxVisible(this.worldBounds.box)) {
       return false;
     }

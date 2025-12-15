@@ -5,9 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
-import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, ResourceManager, getIsBlitz } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   EntityType,
@@ -17,6 +15,7 @@ import {
   RelicRecipientType,
   resources as resourceDefs,
   ResourcesIds,
+  getResourceTiers,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
@@ -30,8 +29,8 @@ interface CompactEntityInventoryProps {
   className?: string;
   variant?: "default" | "tight";
   showLabels?: boolean;
-  maxItems?: number;
   allowRelicActivation?: boolean;
+  maxItems?: number;
 }
 
 interface DisplayItem {
@@ -41,6 +40,19 @@ interface DisplayItem {
   isActive: boolean;
   canActivate: boolean;
 }
+
+const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+const formatInventoryAmount = (value: number): string => {
+  const flooredValue = Math.floor(value);
+  if (flooredValue >= 1000) {
+    return compactInventoryFormatter.format(flooredValue);
+  }
+  return flooredValue.toLocaleString();
+};
 
 const buildDisplayItems = (
   resourceComponent?: ComponentValue<ClientComponents["Resource"]["schema"]> | null,
@@ -55,10 +67,42 @@ const buildDisplayItems = (
   );
 
   const activeRelicSet = new Set(activeRelicIds);
+  const resourceTiers = getResourceTiers(getIsBlitz());
+  const tierOrder = [
+    "lords",
+    "relics",
+    "essence",
+    "labor",
+    "military",
+    "transport",
+    "food",
+    "common",
+    "uncommon",
+    "rare",
+    "unique",
+    "mythic",
+  ] as const;
+
+  const priorityMap = new Map<number, { group: number; position: number }>();
+  tierOrder.forEach((key, groupIndex) => {
+    const ids = (resourceTiers as Record<string, ResourcesIds[]>)[key] ?? [];
+    ids.forEach((id, index) => {
+      // Use resource id as position for materials to ensure stable asc sorting across buckets.
+      const isMaterialGroup = groupIndex >= tierOrder.indexOf("common");
+      priorityMap.set(id, { group: groupIndex, position: isMaterialGroup ? id : index });
+    });
+  });
+
+  const resolvePriority = (resourceId: number) => {
+    const match = priorityMap.get(resourceId);
+    if (match) return match;
+    // Fallback: send unknowns to the end, sorted by id.
+    return { group: tierOrder.length, position: resourceId };
+  };
 
   const items: DisplayItem[] = balances
     .map((resource) => {
-      const amount = Number(resource.amount);
+      const amount = divideByPrecision(Number(resource.amount));
       if (amount <= 0) return null;
 
       const resourceId = Number(resource.resourceId);
@@ -75,13 +119,13 @@ const buildDisplayItems = (
     .filter(Boolean) as DisplayItem[];
 
   return items.sort((a, b) => {
-    if (a.isRelic && b.isRelic) {
-      if (a.isActive && !b.isActive) return -1;
-      if (!a.isActive && b.isActive) return 1;
-    }
-    if (a.isRelic && !b.isRelic) return -1;
-    if (!a.isRelic && b.isRelic) return 1;
-    return b.amount - a.amount;
+    const priA = resolvePriority(a.resourceId);
+    const priB = resolvePriority(b.resourceId);
+    if (priA.group !== priB.group) return priA.group - priB.group;
+    if (priA.position !== priB.position) return priA.position - priB.position;
+    // Stable fallback: higher amount first, then id.
+    if (b.amount !== a.amount) return b.amount - a.amount;
+    return a.resourceId - b.resourceId;
   });
 };
 
@@ -95,14 +139,19 @@ export const CompactEntityInventory = memo(
     className,
     variant = "default",
     showLabels = false,
-    maxItems,
     allowRelicActivation = false,
+    maxItems,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
     const items = useMemo(
       () => buildDisplayItems(resources, activeRelicIds, recipientType),
       [resources, activeRelicIds, recipientType],
     );
+
+    const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
+    const limit = hasLimit ? Math.max(0, Number(maxItems)) : undefined;
+    const visibleItems = hasLimit && limit !== undefined ? items.slice(0, limit) : items;
+    const hiddenCount = hasLimit && limit !== undefined ? Math.max(items.length - limit, 0) : 0;
 
     const handleRelicClick = useCallback(
       (item: DisplayItem) => {
@@ -119,7 +168,7 @@ export const CompactEntityInventory = memo(
         toggleModal(
           <RelicActivationSelector
             resourceId={item.resourceId}
-            displayAmount={currencyFormat(item.amount, 0)}
+            displayAmount={formatInventoryAmount(item.amount)}
             holders={[holder]}
             onClose={() => toggleModal(null)}
           />,
@@ -129,15 +178,8 @@ export const CompactEntityInventory = memo(
     );
 
     if (items.length === 0) {
-      return (
-        <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName="text-xxs text-gold/60 italic">
-          No inventory.
-        </BottomHudEmptyState>
-      );
+      return <p className="text-xxs text-gold/60 italic">No inventory.</p>;
     }
-
-    const effectiveItems = maxItems && Number.isFinite(maxItems) ? items.slice(0, maxItems) : items;
-    const showMoreIndicator = effectiveItems.length < items.length;
 
     const baseGrid =
       variant === "tight"
@@ -151,7 +193,7 @@ export const CompactEntityInventory = memo(
     return (
       <div className={cn("flex flex-col gap-1", className)}>
         <div className={cn(baseGrid)}>
-          {effectiveItems.map((item) => {
+          {visibleItems.map((item) => {
             const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
             const isClickableRelic =
               allowRelicActivation &&
@@ -179,7 +221,9 @@ export const CompactEntityInventory = memo(
                 onClick={() => handleRelicClick(item)}
               >
                 <ResourceIcon resource={ResourcesIds[item.resourceId]} size={iconSize} withTooltip={false} />
-                <span className={cn(amountClass, "font-semibold text-gold/90")}>{currencyFormat(item.amount, 0)}</span>
+                <span className={cn(amountClass, "font-semibold text-gold/90")}>
+                  {formatInventoryAmount(item.amount)}
+                </span>
                 {showLabels && resourceDef && (
                   <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
                     {resourceDef.ticker ?? resourceDef.trait}
@@ -190,10 +234,10 @@ export const CompactEntityInventory = memo(
             );
           })}
         </div>
-        {showMoreIndicator && (
-          <div className="text-[9px] uppercase tracking-[0.2em] text-gold/50">
-            +{items.length - effectiveItems.length} more
-          </div>
+        {hiddenCount > 0 && (
+          <span className="text-[10px] text-gold/60">
+            Showing {visibleItems.length} of {items.length}
+          </span>
         )}
       </div>
     );

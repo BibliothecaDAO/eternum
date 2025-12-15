@@ -10,6 +10,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, getLevelName } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 
 interface RawUpgradeCost {
   resource: number;
@@ -41,11 +42,20 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const dojo = useDojo();
   const { currentDefaultTick } = useBlockTimestamp();
 
-  const structureInfo = useMemo(() => {
-    if (!structureEntityId) return null;
+  const realmEntity = useMemo(
+    () => (structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : null),
+    [structureEntityId],
+  );
 
-    return getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), dojo.setup.components);
-  }, [structureEntityId, dojo.setup.components]);
+  const liveStructure = useComponentValue(dojo.setup.components.Structure, realmEntity as any);
+  const liveStructureBuildings = useComponentValue(dojo.setup.components.StructureBuildings, realmEntity as any);
+  const liveResources = useComponentValue(dojo.setup.components.Resource, realmEntity as any);
+
+  const structureInfo = useMemo(() => {
+    if (!structureEntityId || !realmEntity || !liveStructure) return null;
+
+    return getRealmInfo(realmEntity, dojo.setup.components);
+  }, [structureEntityId, realmEntity, dojo.setup.components, liveStructure, liveStructureBuildings, liveResources]);
 
   const nextLevel = useMemo(() => {
     if (!structureInfo) return null;
@@ -74,7 +84,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
         progress,
       };
     });
-  }, [structureInfo, nextLevel, rawCosts, structureEntityId, currentDefaultTick, dojo.setup.components]);
+  }, [structureInfo, nextLevel, rawCosts, structureEntityId, currentDefaultTick, dojo.setup.components, liveResources]);
 
   const { canUpgrade, upgradeProgress, missingRequirements } = useMemo(() => {
     if (!structureInfo || !nextLevel) {

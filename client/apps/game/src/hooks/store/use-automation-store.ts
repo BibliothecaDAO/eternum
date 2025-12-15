@@ -1,8 +1,4 @@
-import {
-  calculatePresetAllocations,
-  calculateResourceBootstrapAllocation,
-  RealmPresetId,
-} from "@/utils/automation-presets";
+import type { RealmPresetId } from "@/utils/automation-presets";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
@@ -45,14 +41,6 @@ export interface ResourceAutomationPercentages {
   laborToResource: number;
 }
 
-export interface ResourceAutomationSettings {
-  resourceId: ResourcesIds;
-  label?: string;
-  percentages: ResourceAutomationPercentages;
-  autoManaged: boolean;
-  updatedAt: number;
-}
-
 export interface ResourceConsumptionRecord {
   resourceId: ResourcesIds;
   amount: number;
@@ -81,7 +69,7 @@ export interface RealmAutomationConfig {
   entityType: RealmEntityType;
   presetId: RealmPresetId;
   autoBalance: boolean;
-  resources: Record<number, ResourceAutomationSettings>;
+  customPercentages: Record<number, ResourceAutomationPercentages>;
   createdAt: number;
   updatedAt: number;
   lastExecution?: RealmAutomationExecutionSummary;
@@ -94,7 +82,9 @@ export enum ProductionType {
   Transfer = "transfer",
 }
 
-type RealmAutomationInput = Partial<Omit<RealmAutomationConfig, "realmId" | "resources" | "createdAt" | "updatedAt">>;
+type RealmAutomationInput = Partial<
+  Omit<RealmAutomationConfig, "realmId" | "customPercentages" | "createdAt" | "updatedAt">
+>;
 
 interface ProductionAutomationState {
   realms: Record<string, RealmAutomationConfig>;
@@ -107,18 +97,11 @@ interface ProductionAutomationState {
     realmId: string,
     metadata: Pick<RealmAutomationConfig, "realmName" | "entityType" | "autoBalance">,
   ) => void;
-  ensureResourceConfig: (
-    realmId: string,
-    resourceId: ResourcesIds,
-    options?: { autoManaged?: boolean; label?: string; defaults?: Partial<ResourceAutomationPercentages> },
-  ) => ResourceAutomationSettings;
   setResourcePercentages: (
     realmId: string,
     resourceId: ResourcesIds,
     percentages: Partial<ResourceAutomationPercentages>,
   ) => void;
-  markResourceAutoManaged: (realmId: string, resourceId: ResourcesIds, autoManaged: boolean) => void;
-  removeResourceConfig: (realmId: string, resourceId: ResourcesIds) => void;
   removeRealm: (realmId: string) => void;
   resetRealm: (realmId: string) => void;
   resetAll: () => void;
@@ -126,11 +109,6 @@ interface ProductionAutomationState {
   recordExecution: (realmId: string, summary: RealmAutomationExecutionSummary) => void;
   getRealmConfig: (realmId: string) => RealmAutomationConfig | undefined;
   setHydrated: (value: boolean) => void;
-  setRealmPresetConfig: (
-    realmId: string,
-    presetId: RealmPresetId,
-    percentages: Record<number, ResourceAutomationPercentages>,
-  ) => void;
   pruneForGame: (gameId: string) => void;
 }
 
@@ -139,35 +117,6 @@ const clampPercent = (value: number): number => {
   if (value < 0) return 0;
   if (value > MAX_RESOURCE_ALLOCATION_PERCENT) return MAX_RESOURCE_ALLOCATION_PERCENT;
   return Math.round(value);
-};
-
-const createDefaultResourceSettings = (
-  resourceId: ResourcesIds,
-  overrides?: Partial<ResourceAutomationSettings>,
-  defaults?: Partial<ResourceAutomationPercentages>,
-): ResourceAutomationSettings => {
-  const now = Date.now();
-  const basePercentages = {
-    ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
-    ...(resourceId === ResourcesIds.Donkey
-      ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
-      : {}),
-    ...defaults,
-  };
-  return {
-    resourceId,
-    autoManaged: overrides?.autoManaged ?? true,
-    label: overrides?.label,
-    updatedAt: now,
-    percentages: {
-      resourceToResource: clampPercent(
-        basePercentages.resourceToResource ?? DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
-      ),
-      laborToResource: clampPercent(
-        basePercentages.laborToResource ?? DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
-      ),
-    },
-  };
 };
 
 const normalizePercentages = (
@@ -191,33 +140,29 @@ const normalizePercentages = (
 };
 
 const normalizePresetId = (preset?: RealmPresetId | string | null): RealmPresetId => {
-  if (preset === "labor" || preset === "resource" || preset === "idle" || preset === "custom") {
+  if (preset === "smart" || preset === "idle" || preset === "custom") {
     return preset;
   }
-  return "labor";
+  return "smart";
 };
 
-const sanitizeRealmResources = (
-  resources: Record<number, ResourceAutomationSettings> | undefined,
+const sanitizeCustomPercentages = (
+  percentages: Record<number, ResourceAutomationPercentages> | undefined,
   entityType: RealmEntityType = "realm",
-): Record<number, ResourceAutomationSettings> => {
-  if (!resources) return {};
+): Record<number, ResourceAutomationPercentages> => {
+  if (!percentages) return {};
 
-  const sanitized: Record<number, ResourceAutomationSettings> = {};
+  const sanitized: Record<number, ResourceAutomationPercentages> = {};
 
-  Object.entries(resources).forEach(([key, value]) => {
+  Object.entries(percentages).forEach(([key, value]) => {
     if (!value) return;
     const resourceId = Number(key) as ResourcesIds;
     if (isAutomationResourceBlocked(resourceId, entityType)) return;
 
-    sanitized[resourceId] = {
-      ...value,
+    sanitized[resourceId] = normalizePercentages(
+      value as Partial<ResourceAutomationPercentages> & { resourceToLabor?: number },
       resourceId,
-      percentages: normalizePercentages(
-        value.percentages as Partial<ResourceAutomationPercentages> & { resourceToLabor?: number },
-        resourceId,
-      ),
-    };
+    );
   });
 
   return sanitized;
@@ -243,8 +188,8 @@ export const useAutomationStore = create<ProductionAutomationState>()(
 
             const sanitizedExisting: RealmAutomationConfig = {
               ...existing,
-              resources: sanitizeRealmResources(existing.resources, existing.entityType),
               presetId: normalizePresetId(existing.presetId),
+              customPercentages: sanitizeCustomPercentages(existing.customPercentages, existing.entityType),
             };
             const nextRealm: RealmAutomationConfig = metadataChanged
               ? {
@@ -269,20 +214,16 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             realmName: data?.realmName,
             entityType: data?.entityType ?? "realm",
             autoBalance: data?.autoBalance ?? true,
-            // Default to labor preset for new realms so bootstrapped
-            // resources start from a labor-friendly baseline.
-            presetId: normalizePresetId(data?.presetId ?? "labor"),
-            resources: {},
+            // Default to smart preset for new realms.
+            presetId: normalizePresetId(data?.presetId ?? "smart"),
+            customPercentages: {},
             createdAt: now,
             updatedAt: now,
           };
           return {
             realms: {
               ...state.realms,
-              [realmId]: {
-                ...config,
-                resources: sanitizeRealmResources(config.resources, config.entityType),
-              },
+              [realmId]: config,
             },
           };
         }),
@@ -291,119 +232,14 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           const target = state.realms[realmId];
           if (!target) return state;
 
-          const normalizedPreset = presetId;
-          const allocations = calculatePresetAllocations(target, normalizedPreset);
-          if (allocations.size === 0) {
-            const nextState = {
-              realms: {
-                ...state.realms,
-                [realmId]: {
-                  ...target,
-                  presetId: normalizedPreset,
-                  updatedAt: Date.now(),
-                },
-              },
-            };
-            return nextState;
-          }
-
-          const nextResources: Record<number, ResourceAutomationSettings> = {
-            ...target.resources,
-          };
-
-          allocations.forEach((values, resourceId) => {
-            const existing = nextResources[resourceId] ?? createDefaultResourceSettings(resourceId as ResourcesIds);
-            nextResources[resourceId] = {
-              ...existing,
-              percentages: values,
-              updatedAt: Date.now(),
-            };
-          });
-
-          Object.keys(nextResources).forEach((key) => {
-            const resourceId = Number(key) as ResourcesIds;
-            if (isAutomationResourceBlocked(resourceId, target.entityType)) return;
-            if (!allocations.has(Number(key))) {
-              const existing = nextResources[Number(key)]!;
-              nextResources[Number(key)] = {
-                ...existing,
-                percentages: {
-                  resourceToResource: 0,
-                  laborToResource: 0,
-                },
-                updatedAt: Date.now(),
-              };
-            }
-          });
-
-          const nextState = {
-            realms: {
-              ...state.realms,
-              [realmId]: {
-                ...target,
-                presetId: normalizedPreset,
-                resources: sanitizeRealmResources(nextResources, target.entityType),
-                updatedAt: Date.now(),
-              },
-            },
-          };
-          return nextState;
-        }),
-      setRealmPresetConfig: (realmId, presetId, percentages) =>
-        set((state) => {
-          const target = state.realms[realmId];
-          if (!target) return state;
-
-          const now = Date.now();
-          const entityType = target.entityType;
-
-          const nextResources: Record<number, ResourceAutomationSettings> = {
-            ...target.resources,
-          };
-
-          Object.entries(percentages).forEach(([key, value]) => {
-            const resourceId = Number(key) as ResourcesIds;
-            if (isAutomationResourceBlocked(resourceId, entityType)) {
-              return;
-            }
-
-            const existing = nextResources[resourceId] ?? createDefaultResourceSettings(resourceId);
-            nextResources[resourceId] = {
-              ...existing,
-              percentages: {
-                resourceToResource: value.resourceToResource,
-                laborToResource: value.laborToResource,
-              },
-              updatedAt: now,
-            };
-          });
-
-          Object.keys(nextResources).forEach((key) => {
-            const resourceId = Number(key) as ResourcesIds;
-            if (isAutomationResourceBlocked(resourceId, entityType)) {
-              return;
-            }
-            if (!(resourceId in percentages)) {
-              const existing = nextResources[resourceId]!;
-              nextResources[resourceId] = {
-                ...existing,
-                percentages: {
-                  resourceToResource: 0,
-                  laborToResource: 0,
-                },
-                updatedAt: now,
-              };
-            }
-          });
-
+          const normalizedPreset = normalizePresetId(presetId);
           return {
             realms: {
               ...state.realms,
               [realmId]: {
                 ...target,
-                presetId,
-                resources: sanitizeRealmResources(nextResources, entityType),
-                updatedAt: now,
+                presetId: normalizedPreset,
+                updatedAt: Date.now(),
               },
             },
           };
@@ -418,103 +254,15 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               [realmId]: {
                 ...target,
                 ...metadata,
-                resources: sanitizeRealmResources(target.resources, metadata.entityType ?? target.entityType),
-                updatedAt: Date.now(),
-              },
-            },
-          };
-        }),
-      ensureResourceConfig: (realmId, resourceId, options) => {
-        const store = get();
-        const realmContext = store.realms[realmId];
-        const realmEntityType = realmContext?.entityType ?? "realm";
-
-        if (isAutomationResourceBlocked(resourceId, realmEntityType)) {
-          return createDefaultResourceSettings(
-            resourceId,
-            { autoManaged: false },
-            { resourceToResource: 0, laborToResource: 0 },
-          );
-        }
-
-        const targetRealm = realmContext;
-        if (!targetRealm) {
-          store.upsertRealm(realmId, { entityType: "realm" });
-        }
-        const realm = get().realms[realmId];
-        const existing = realm?.resources[resourceId];
-        if (existing) {
-          return existing;
-        }
-
-        const shouldReapplyResourcePreset = realm?.presetId === "resource";
-
-        const baseConfig = createDefaultResourceSettings(
-          resourceId,
-          { autoManaged: options?.autoManaged ?? true, label: options?.label },
-          options?.defaults,
-        );
-
-        let newConfig = baseConfig;
-        if (realm && realm.presetId === "custom") {
-          const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
-          // Only bootstrap from the resource preset when there are already
-          // other resources configured; for the very first resource on a realm,
-          // prefer the default labor-friendly baseline (0% resource, 5% labor).
-          if (hasExistingResources) {
-            const configWithResource: RealmAutomationConfig = {
-              ...realm,
-              resources: {
-                ...realm.resources,
-                [resourceId]: baseConfig,
-              },
-            };
-            const bootstrapAllocation = calculateResourceBootstrapAllocation(configWithResource, resourceId);
-            if (bootstrapAllocation && bootstrapAllocation.resourceToResource > 0) {
-              newConfig = {
-                ...baseConfig,
-                percentages: {
-                  resourceToResource: bootstrapAllocation.resourceToResource,
-                  laborToResource: bootstrapAllocation.laborToResource,
-                },
-              };
-            }
-          }
-        }
-
-        set((state) => {
-          const realmConfig = state.realms[realmId];
-          if (!realmConfig) return state;
-
-          const nextState = {
-            realms: {
-              ...state.realms,
-              [realmId]: {
-                ...realmConfig,
-                resources: sanitizeRealmResources(
-                  {
-                    ...realmConfig.resources,
-                    [resourceId]: newConfig,
-                  },
-                  realmConfig.entityType,
+                customPercentages: sanitizeCustomPercentages(
+                  target.customPercentages,
+                  metadata.entityType ?? target.entityType,
                 ),
                 updatedAt: Date.now(),
               },
             },
           };
-          // quiet
-          return nextState;
-        });
-
-        if (shouldReapplyResourcePreset) {
-          // If the realm is currently using the resource preset,
-          // re-apply it so the new building/resource is included
-          // in the preset allocation across all resources.
-          store.setRealmPreset(realmId, "resource");
-        }
-
-        return newConfig;
-      },
+        }),
       setResourcePercentages: (realmId, resourceId, percentages) =>
         set((state) => {
           const realm = state.realms[realmId];
@@ -523,27 +271,27 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             return state;
           }
 
-          const current = realm.resources[resourceId] ?? createDefaultResourceSettings(resourceId);
-          const updatedPercentages = normalizePercentages({ ...current.percentages, ...percentages }, resourceId);
-          const changed =
-            updatedPercentages.resourceToResource !== current.percentages.resourceToResource ||
-            updatedPercentages.laborToResource !== current.percentages.laborToResource;
+          const existingPercentages = realm.customPercentages?.[resourceId];
+          const current = existingPercentages
+            ? normalizePercentages(existingPercentages, resourceId)
+            : normalizePercentages(undefined, resourceId);
 
-          if (!changed && realm.resources[resourceId]) {
+          const updatedPercentages = normalizePercentages({ ...current, ...percentages }, resourceId);
+          const changed =
+            updatedPercentages.resourceToResource !== current.resourceToResource ||
+            updatedPercentages.laborToResource !== current.laborToResource;
+
+          if (!changed && existingPercentages) {
             return state;
           }
 
           const nextRealm: RealmAutomationConfig = {
             ...realm,
             presetId: "custom",
-            resources: sanitizeRealmResources(
+            customPercentages: sanitizeCustomPercentages(
               {
-                ...realm.resources,
-                [resourceId]: {
-                  ...current,
-                  percentages: updatedPercentages,
-                  updatedAt: Date.now(),
-                },
+                ...realm.customPercentages,
+                [resourceId]: updatedPercentages,
               },
               realm.entityType,
             ),
@@ -557,54 +305,6 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           };
           // quiet
           return nextState;
-        }),
-      markResourceAutoManaged: (realmId, resourceId, autoManaged) =>
-        set((state) => {
-          const realm = state.realms[realmId];
-          if (!realm) return state;
-          if (isAutomationResourceBlocked(resourceId, realm.entityType)) {
-            return state;
-          }
-          const target = realm.resources[resourceId];
-          if (!target) return state;
-          return {
-            realms: {
-              ...state.realms,
-              [realmId]: {
-                ...realm,
-                resources: sanitizeRealmResources(
-                  {
-                    ...realm.resources,
-                    [resourceId]: {
-                      ...target,
-                      autoManaged,
-                      updatedAt: Date.now(),
-                    },
-                  },
-                  realm.entityType,
-                ),
-                updatedAt: Date.now(),
-              },
-            },
-          };
-        }),
-      removeResourceConfig: (realmId, resourceId) =>
-        set((state) => {
-          const realm = state.realms[realmId];
-          if (!realm || !realm.resources[resourceId]) return state;
-
-          const { [resourceId]: _, ...remaining } = realm.resources;
-
-          return {
-            realms: {
-              ...state.realms,
-              [realmId]: {
-                ...realm,
-                resources: sanitizeRealmResources(remaining, realm.entityType),
-                updatedAt: Date.now(),
-              },
-            },
-          };
         }),
       removeRealm: (realmId) =>
         set((state) => {
@@ -621,8 +321,8 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               ...state.realms,
               [realmId]: {
                 ...realm,
-                resources: {},
-                presetId: "labor",
+                customPercentages: {},
+                presetId: "smart",
                 updatedAt: Date.now(),
                 lastExecution: undefined,
               },
@@ -646,7 +346,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               [realmId]: {
                 ...realm,
                 lastExecution: summary,
-                resources: sanitizeRealmResources(realm.resources, realm.entityType),
+                customPercentages: sanitizeCustomPercentages(realm.customPercentages, realm.entityType),
                 updatedAt: Date.now(),
               },
             },
@@ -658,7 +358,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         if (!realm) return undefined;
         return {
           ...realm,
-          resources: sanitizeRealmResources(realm.resources, realm.entityType),
+          customPercentages: sanitizeCustomPercentages(realm.customPercentages, realm.entityType),
         };
       },
       setHydrated: (value) => set({ hydrated: value }),
@@ -675,7 +375,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     {
       name: "eternum-production-automation",
       storage: createJSONStorage(() => localStorage),
-      version: 6,
+      version: 8,
       partialize: (state) => ({
         realms: state.realms,
         nextRunTimestamp: state.nextRunTimestamp,
@@ -700,12 +400,8 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         Object.entries(incomingRealms).forEach(([realmId, realmValue]) => {
           if (!realmValue || typeof realmValue !== "object") return;
 
-          const realm = realmValue as RealmAutomationConfig & {
-            resources?: Record<number, ResourceAutomationSettings>;
-            lastExecution?: any;
-          };
-
-          const sanitizedResources = sanitizeRealmResources(realm.resources, realm.entityType ?? "realm");
+          const realm = realmValue as any;
+          const entityType: RealmEntityType = realm.entityType ?? "realm";
 
           let sanitizedLastExecution: RealmAutomationExecutionSummary | undefined;
           if (realm.lastExecution && typeof realm.lastExecution === "object") {
@@ -721,21 +417,49 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           }
 
           const rawPreset = realm.presetId;
-          let normalizedPreset: RealmPresetId = "labor";
-          if (rawPreset === "labor" || rawPreset === "resource" || rawPreset === "idle" || rawPreset === "custom") {
+          let normalizedPreset: RealmPresetId = "smart";
+          if (rawPreset === "smart" || rawPreset === "idle" || rawPreset === "custom") {
             normalizedPreset = rawPreset;
+          } else if (rawPreset === "labor" || rawPreset === "resource") {
+            normalizedPreset = "smart";
           } else if (rawPreset === null) {
             normalizedPreset = "custom";
           } else if (typeof rawPreset === "string") {
             normalizedPreset = "custom";
           }
 
+          // Migrate legacy resources → customPercentages, preserving any saved values.
+          const legacyResources = realm.resources as Record<number, any> | undefined;
+          const incomingCustom = realm.customPercentages as Record<number, any> | undefined;
+
+          let customPercentages: Record<number, ResourceAutomationPercentages> = {};
+          if (incomingCustom && typeof incomingCustom === "object") {
+            customPercentages = sanitizeCustomPercentages(incomingCustom, entityType);
+          } else if (legacyResources && typeof legacyResources === "object") {
+            const legacyPercentages: Record<number, ResourceAutomationPercentages> = {};
+            Object.entries(legacyResources).forEach(([key, settings]) => {
+              if (!settings) return;
+              const resourceId = Number(key) as ResourcesIds;
+              const percentages = (settings as any).percentages ?? settings;
+              if (!percentages) return;
+              legacyPercentages[resourceId] = {
+                resourceToResource: Number((percentages as any).resourceToResource ?? 0),
+                laborToResource: Number((percentages as any).laborToResource ?? 0),
+              };
+            });
+            customPercentages = sanitizeCustomPercentages(legacyPercentages, entityType);
+          }
+
+          const { resources: _deprecatedResources, customPercentages: _deprecatedCustom, ...restRealm } = realm;
+
           nextRealms[realmId] = {
-            ...realm,
+            ...restRealm,
+            entityType,
             presetId: normalizedPreset,
-            resources: sanitizedResources,
+            autoBalance: typeof restRealm.autoBalance === "boolean" ? restRealm.autoBalance : true,
+            customPercentages,
             lastExecution: sanitizedLastExecution,
-          };
+          } as RealmAutomationConfig;
         });
 
         const nextRunTimestamp =

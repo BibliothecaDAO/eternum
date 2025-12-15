@@ -3033,6 +3033,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       collectibles_cosmetics_address,
       collectibles_timelock_address,
       collectibles_lootchest_address,
+      collectibles_elitenft_address,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -3054,6 +3055,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         collectibles_cosmetics_address,
         collectibles_timelock_address,
         collectibles_lootchest_address,
+        collectibles_elitenft_address,
       ],
     });
   }

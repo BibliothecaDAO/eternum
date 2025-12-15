@@ -8,8 +8,8 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
+import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { FrustumManager } from "../utils/frustum-manager";
 import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
 import { LabelManager } from "../utils/labels/label-manager";
 import { gltfLoader } from "../utils/utils";
@@ -29,24 +29,24 @@ export class QuestManager {
   private questInstanceOrder: Map<QuestType, ID[]> = new Map();
   private questInstanceIndices: Map<ID, { questType: QuestType; index: number }> = new Map();
   private scale: number = 1;
+  private chunkSize: number;
   private currentCameraView: CameraView;
   private labelManager: LabelManager;
   questHexCoords: Map<number, Set<number>> = new Map();
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
-  private frustumManager?: FrustumManager;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
-    frustumManager?: FrustumManager,
+    chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
     this.renderChunkSize = renderChunkSize;
+    this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.frustumManager = frustumManager;
 
     // Initialize the label manager
     this.labelManager = new LabelManager({
@@ -70,6 +70,12 @@ export class QuestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled);
+    this.questModels.forEach((models) => {
+      models.forEach((model) => model.setContactShadowsEnabled(enableContactShadows));
+    });
+
     if (this.currentCameraView === view) return;
     this.currentCameraView = view;
 
@@ -85,6 +91,10 @@ export class QuestManager {
 
     // Clean up the label manager
     this.labelManager.destroy();
+  }
+
+  public getVisibleCount(): number {
+    return this.visibleQuests.length;
   }
 
   private loadQuestModel(questType: QuestType): Promise<void> {
@@ -109,6 +119,9 @@ export class QuestManager {
           const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest" + QuestType[questType]);
           this.questModels.set(questType, [instancedModel]);
           this.scene.add(instancedModel.group);
+          const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+          const enableContactShadows = !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled);
+          instancedModel.setContactShadowsEnabled(enableContactShadows);
           resolve();
         },
         undefined,
@@ -205,23 +218,17 @@ export class QuestManager {
 
   private isQuestVisible(quest: QuestData, startRow: number, startCol: number) {
     const { x, y } = quest.hexCoords.getNormalized();
-    const insideChunk =
-      x >= startCol - this.renderChunkSize.width / 2 &&
-      x <= startCol + this.renderChunkSize.width / 2 &&
-      y >= startRow - this.renderChunkSize.height / 2 &&
-      y <= startRow + this.renderChunkSize.height / 2;
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
 
     if (!insideChunk) {
       return false;
     }
 
-    if (!this.frustumManager) {
-      return true;
-    }
-
-    const worldPos = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
-    worldPos.y += 0.05;
-    return this.frustumManager.isPointVisible(worldPos);
+    // Skip frustum culling during chunk updates - bounds check is sufficient.
+    // Frustum culling can fail when the camera is still animating to the new chunk position,
+    // causing quests to not appear until the next frame/click.
+    return true;
   }
 
   private getVisibleQuestsForChunk(quests: Map<ID, QuestData>, startRow: number, startCol: number): QuestData[] {

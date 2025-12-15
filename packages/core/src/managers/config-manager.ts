@@ -502,7 +502,6 @@ export class ClientConfigManager {
   getTroopConfig() {
     // Default config structure matching the expected types
     const defaultTroopConfig = {
-      troop_max_size: 30_000,
       troop_damage_config: {
         damage_biome_bonus_num: 0,
         damage_beta_small: 0n,
@@ -552,7 +551,6 @@ export class ClientConfigManager {
       const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
 
       return {
-        troop_max_size: 30_000,
         troop_damage_config,
         troop_limit_config: {
           ...troop_limit_config,
@@ -844,6 +842,7 @@ export class ClientConfigManager {
             collectibles_cosmetics_address: BigInt(blitzRegistrationConfig.collectibles_cosmetics_address || 0),
             collectibles_timelock_address: BigInt(blitzRegistrationConfig.collectibles_timelock_address || 0),
             collectibles_lootchest_address: BigInt(blitzRegistrationConfig.collectibles_lootchest_address || 0),
+            collectibles_elitenft_address: BigInt(blitzRegistrationConfig.collectibles_elitenft_address || 0),
             registration_count: Number(blitzRegistrationConfig.registration_count),
             registration_count_max: Number(blitzRegistrationConfig.registration_count_max),
             registration_start_at: Number(blitzRegistrationConfig.registration_start_at),
@@ -872,6 +871,7 @@ export class ClientConfigManager {
           collectibles_cosmetics_address: BigInt(0),
           collectibles_timelock_address: BigInt(0),
           collectibles_lootchest_address: BigInt(0),
+          collectibles_elitenft_address: BigInt(0),
           registration_count: 0,
           registration_count_max: 0,
           registration_start_at: 0,

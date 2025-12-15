@@ -14,11 +14,11 @@
  */
 
 // ====== Parameters (edit as needed) ======
-const FROM_JSON = 'contracts/game/manifest_local.json';
-const TO_JSON = 'contracts/game/manifest_mainnet.json';
-const WORLD_ONLY = false;       // if true, copy only world.abi
-const CONTRACTS_ONLY = false;   // if true, copy only contract ABIs by tag
-const DRY_RUN = false;          // if true, do not write file
+const FROM_JSON = "contracts/game/manifest_local.json";
+const TO_JSON = "contracts/game/manifest_mainnet.json";
+const WORLD_ONLY = false; // if true, copy only world.abi
+const CONTRACTS_ONLY = false; // if true, copy only contract ABIs by tag
+const DRY_RUN = false; // if true, do not write file
 // ========================================
 
 import fs from "fs";
@@ -61,7 +61,7 @@ function copyContractAbis(source, target) {
 
 async function main() {
   if (WORLD_ONLY && CONTRACTS_ONLY) {
-    throw new Error('Set only one of WORLD_ONLY or CONTRACTS_ONLY to true');
+    throw new Error("Set only one of WORLD_ONLY or CONTRACTS_ONLY to true");
   }
   const { json: src, fullPath: srcPath } = readJson(FROM_JSON);
   const { json: dst, fullPath: dstPath } = readJson(TO_JSON);
@@ -84,9 +84,7 @@ async function main() {
   }
 
   writeJson(TO_JSON, dst);
-  console.log(
-    `Copied world ABI (${worldCount}) and ${contractCount} contract ABI(s) from ${srcPath} -> ${dstPath}`,
-  );
+  console.log(`Copied world ABI (${worldCount}) and ${contractCount} contract ABI(s) from ${srcPath} -> ${dstPath}`);
 }
 
 main().catch((e) => {

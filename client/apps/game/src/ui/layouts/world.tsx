@@ -4,7 +4,7 @@ import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useQuery } from "@bibliothecadao/react";
 import { Leva } from "leva";
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense } from "react";
 import { env } from "../../../env";
 import { StoryEventStream } from "../features";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
@@ -27,13 +27,8 @@ const ActionInstructions = lazy(() =>
   })),
 );
 
-const WorldContextMenu = lazy(() =>
-  import("../features/world/components/context-menu").then((module) => ({ default: module.WorldContextMenu })),
-);
-
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
-const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
 const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
 const Tooltip = lazy(() =>
   import("../design-system/molecules/tooltip").then((module) => ({ default: module.Tooltip })),
@@ -41,24 +36,19 @@ const Tooltip = lazy(() =>
 const TopMiddleNavigation = lazy(() =>
   import("../features/world/containers/top-navigation").then((module) => ({ default: module.TopNavigation })),
 );
-const LeftNavigationModule = lazy(() =>
-  import("../features/world/containers/left-navigation-module").then((module) => ({
-    default: module.LeftNavigationModule,
+const LeftCommandSidebar = lazy(() =>
+  import("../features/world/containers/left-command-sidebar").then((module) => ({
+    default: module.LeftCommandSidebar,
   })),
 );
-const RightNavigationModule = lazy(() =>
-  import("../features/world/containers/right-navigation-module").then((module) => ({
-    default: module.RightNavigationModule,
+const TopHeader = lazy(() =>
+  import("../features/world/containers/top-header/top-header").then((module) => ({
+    default: module.TopHeader,
   })),
 );
-const TopLeftNavigation = lazy(() =>
-  import("../features/world/containers/top-left-navigation/top-left-navigation").then((module) => ({
-    default: module.TopLeftNavigation,
-  })),
-);
-const BottomHud = lazy(() =>
-  import("../features/world/components/hud-bottom/bottom-hud").then((module) => ({
-    default: module.BottomHud,
+const BottomRightPanel = lazy(() =>
+  import("../features/world/components/bottom-right-panel").then((module) => ({
+    default: module.BottomRightPanel,
   })),
 );
 
@@ -68,44 +58,11 @@ const RealmTransferManager = lazy(() =>
   })),
 );
 
-const BottomHudViewSync = () => {
-  const { isMapView } = useQuery();
-  const isBottomHudMinimized = useUIStore((state) => state.isBottomHudMinimized);
-  const setIsBottomHudMinimized = useUIStore((state) => state.setIsBottomHudMinimized);
-
-  const autoMinimizedForLocalRef = useRef(false);
-  const prevIsMapViewRef = useRef<boolean | null>(null);
-
-  useEffect(() => {
-    if (prevIsMapViewRef.current === null) {
-      prevIsMapViewRef.current = isMapView;
-      return;
-    }
-
-    const prevIsMapView = prevIsMapViewRef.current;
-    prevIsMapViewRef.current = isMapView;
-
-    // World (map) -> Local (hex)
-    if (prevIsMapView && !isMapView) {
-      if (!isBottomHudMinimized) {
-        setIsBottomHudMinimized(true);
-        autoMinimizedForLocalRef.current = true;
-      } else {
-        autoMinimizedForLocalRef.current = false;
-      }
-    }
-
-    // Local (hex) -> World (map)
-    if (!prevIsMapView && isMapView) {
-      if (autoMinimizedForLocalRef.current) {
-        setIsBottomHudMinimized(false);
-      }
-      autoMinimizedForLocalRef.current = false;
-    }
-  }, [isMapView, isBottomHudMinimized, setIsBottomHudMinimized]);
-
-  return null;
-};
+const CombatSimulation = lazy(() =>
+  import("../modules/simulation/combat-simulation").then((module) => ({
+    default: module.CombatSimulation,
+  })),
+);
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
@@ -131,6 +88,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Suspense fallback={<WorldSuspenseFallback backgroundImage={backgroundImage} />}>
           <RealmTransferManager zIndex={100} />
           <PlayOverlayManager backgroundImage={backgroundImage} />
+          <CombatSimulation />
           <WorldInteractiveLayers />
 
           <StoryEventStream />
@@ -173,31 +131,25 @@ const WorldInteractiveLayers = () => (
   <>
     <ActionInstructions />
     <ActionInfo />
-    <WorldContextMenu />
     <WorldHud />
   </>
 );
 
 const WorldHud = () => (
   <div>
-    <BottomHudViewSync />
     <LeftMiddleContainer>
-      <LeftNavigationModule />
+      <LeftCommandSidebar />
     </LeftMiddleContainer>
 
     <TopCenterContainer>
       <TopMiddleNavigation />
     </TopCenterContainer>
 
-    <RightMiddleContainer>
-      <RightNavigationModule />
-    </RightMiddleContainer>
-
     <TopLeftContainer>
-      <TopLeftNavigation />
+      <TopHeader />
     </TopLeftContainer>
 
-    <BottomHud />
+    <BottomRightPanel />
   </div>
 );
 

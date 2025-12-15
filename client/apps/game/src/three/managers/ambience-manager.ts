@@ -62,6 +62,7 @@ export class AmbienceManager {
   private activeSounds: Map<string, ActiveAmbienceSound> = new Map();
   private layerIdCounter: number = 0;
   private isFirstUpdate: boolean = true;
+  private debugIntervalId: ReturnType<typeof setInterval> | null = null;
 
   // Configurable ambient sound layers
   private readonly soundLayers: AmbienceSoundConfig[] = [
@@ -495,8 +496,8 @@ export class AmbienceManager {
     ambienceFolder.add(debugInfo, "weather").name("Weather").listen();
     ambienceFolder.add(debugInfo, "activeSounds").name("Active Sounds").listen();
 
-    // Update debug info
-    setInterval(() => {
+    // Update debug info - store interval ID for cleanup
+    this.debugIntervalId = setInterval(() => {
       debugInfo.timeOfDay = this.currentTimeOfDay;
       debugInfo.weather = this.currentWeather;
       debugInfo.activeSounds = this.activeSounds.size;
@@ -509,6 +510,12 @@ export class AmbienceManager {
    * Dispose of all resources
    */
   dispose(): void {
+    // Clear debug interval if it exists
+    if (this.debugIntervalId !== null) {
+      clearInterval(this.debugIntervalId);
+      this.debugIntervalId = null;
+    }
+
     // Stop all active sounds
     this.activeSounds.forEach((activeSound) => {
       try {

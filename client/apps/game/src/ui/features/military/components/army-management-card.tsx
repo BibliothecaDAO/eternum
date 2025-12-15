@@ -121,7 +121,7 @@ export const ArmyCreate = ({
   const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
-  const troopMaxSizeRaw = configManager.getTroopConfig().troop_max_size;
+  const troopMaxSizeRaw = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
   const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
   const hasTroopCap = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0;
   const troopCapacityLimit = hasTroopCap ? parsedTroopCap : null;

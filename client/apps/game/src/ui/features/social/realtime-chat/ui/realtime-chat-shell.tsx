@@ -25,6 +25,7 @@ export interface RealtimeChatShellProps {
   children?: ReactNode;
   displayMode?: "floating" | "embedded";
   showInlineToggle?: boolean;
+  autoInitializeClient?: boolean;
 }
 
 export function RealtimeChatShell({
@@ -36,13 +37,14 @@ export function RealtimeChatShell({
   children,
   displayMode = "floating",
   showInlineToggle = true,
+  autoInitializeClient = true,
 }: RealtimeChatShellProps) {
   const isEmbedded = displayMode === "embedded";
   const actions = useRealtimeChatActions();
   const isExpanded = useRealtimeChatSelector((state) => state.isShellOpen);
   const openTabs = useRealtimeChatSelector((state) => state.openTabs);
   const activeTabId = useRealtimeChatSelector((state) => state.activeTabId);
-  useRealtimeChatInitializer(initializer);
+  useRealtimeChatInitializer(autoInitializeClient ? initializer : null);
   const { connectionStatus, lastConnectionError } = useRealtimeConnection();
   const presence = useRealtimePresence();
   const [showUserDropdown, setShowUserDropdown] = useState(false);

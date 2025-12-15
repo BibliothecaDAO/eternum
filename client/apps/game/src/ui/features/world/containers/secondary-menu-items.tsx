@@ -4,7 +4,6 @@ import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { latestFeatures, leaderboard, rewards, settings, shortcuts } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
-import { RealtimeChatToggleButton } from "@/ui/features/social";
 import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
@@ -76,8 +75,6 @@ export const SecondaryMenuItems = () => {
   return (
     <div className="flex h-full ml-auto">
       <div className="top-right-navigation-selector self-center flex space-x-2 mr-1">
-        {/* Chat */}
-        <RealtimeChatToggleButton variant="menu" className="chat-toggle-selector" />
         {/* Leaderboard/Rewards */}
         {leaderboardButtons.map((a, index) => (
           <div key={index}>{a.button}</div>

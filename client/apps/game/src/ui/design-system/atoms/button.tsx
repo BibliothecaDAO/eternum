@@ -37,7 +37,7 @@ const STYLES = {
   success: "border border-green !text-brilliance bg-transparent hover:bg-green/10",
   red: "border border-danger !text-danger bg-transparent hover:bg-danger/10",
   outline: "border border-gold text-gold bg-transparent hover:bg-gold/10",
-  danger: "bg-red border-red text-gold bg-transparent hover:bg-red/90 ",
+  danger: "border border-red-500 bg-red-700 text-white hover:bg-red-600",
   secondary: "border border-orange text-orange bg-transparent hover:bg-orange/10",
   opaque:
     "px-6 py-2 bg-brown/90 font-semibold text-lg tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:text-black/90",
