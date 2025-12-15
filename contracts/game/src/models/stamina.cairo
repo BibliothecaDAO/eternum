@@ -11,7 +11,7 @@ pub struct Stamina {
 
 #[generate_trait]
 pub impl StaminaImpl of StaminaTrait {
-    fn reset(ref self: Stamina, current_tick: u64) {
+    fn reset(ref self: Stamina) {
         self.amount = 0;
         self.updated_tick = 0;
     }

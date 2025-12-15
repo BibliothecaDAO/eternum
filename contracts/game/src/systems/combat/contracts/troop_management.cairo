@@ -335,6 +335,25 @@ pub mod troop_management_systems {
 
             // add troops to explorer
             explorer.troops.count += amount;
+
+            // reintialize troop stamina
+            explorer.troops.stamina.reset();
+
+            let tick = TickImpl::get_tick_interval(ref world);
+            let current_tick: u64 = tick.current();
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            explorer
+                .troops
+                .stamina
+                .refill(
+                    ref explorer.troops.boosts,
+                    explorer.troops.category,
+                    explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
+
+            // update explorer model
             world.write_model(@explorer);
 
             // update troop capacity

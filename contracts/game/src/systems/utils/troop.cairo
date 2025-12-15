@@ -113,7 +113,7 @@ pub impl iGuardImpl of iGuardTrait {
     ) {
         // clear troop
         troops.count = 0;
-        troops.stamina.reset(current_tick);
+        troops.stamina.reset();
         // note: mitigate exploits if we decide to change destroy_tick to a different value
         guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
         StructureTroopGuardStoreImpl::store(ref guards, ref world, structure_id);
