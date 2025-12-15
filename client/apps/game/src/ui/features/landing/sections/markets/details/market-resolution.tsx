@@ -64,9 +64,9 @@ const normalizeAddressString = (value: any): string | null => {
   }
 };
 
-const fetchLeaderboardAddresses = async (toriiBaseUrl: string, limit: number): Promise<string[]> => {
+const fetchRegisteredPlayers = async (toriiBaseUrl: string, limit: number): Promise<string[]> => {
   const client = new SqlApi(`${toriiBaseUrl}/sql`);
-  const rows = await client.fetchPlayerLeaderboard(limit, 0);
+  const rows = await client.fetchRegisteredPlayerPoints(limit, 0);
   return rows
     .map((row: any) => normalizeAddressString(row.playerAddress ?? row.player_address ?? row.address))
     .filter((addr): addr is string => Boolean(addr));
@@ -99,6 +99,8 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
   const [players, setPlayers] = useState<string[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersError, setPlayersError] = useState<string | null>(null);
+  const [hasFinalRanking, setHasFinalRanking] = useState(false);
+  const isSubmittingTx = isResolving || isComputingScores;
   const [serverName, setServerName] = useState<string | null>(null);
   const [serverLookupStatus, setServerLookupStatus] = useState<"pending" | "done">("pending");
   const toriiBaseUrl = useMemo(() => (serverName ? buildToriiBaseUrl(serverName) : null), [serverName]);
@@ -193,6 +195,13 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
   const loadPlayers = useCallback(async (): Promise<string[]> => {
     if (serverLookupStatus !== "done") return [];
+    if (hasFinalRanking) {
+      // Final rankings already exist; no need to reload registered players for computation.
+      setPlayersLoading(false);
+      setPlayersError(null);
+      setPlayers([]);
+      return [];
+    }
     if (!serverName) {
       setPlayersError("Could not determine the game name for this market.");
       return [];
@@ -203,30 +212,24 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
     try {
       const toriiBaseUrl = buildToriiBaseUrl(serverName);
-      // Prefer leaderboard order when Torii is reachable
-      try {
-        const leaderboardAddresses = await fetchLeaderboardAddresses(toriiBaseUrl, 500);
-        if (leaderboardAddresses.length > 0) {
-          setPlayers(leaderboardAddresses);
-          return leaderboardAddresses;
-        }
-      } catch (leaderboardError) {
-        console.error("Failed to fetch leaderboard order", leaderboardError);
+      const rankedPlayers = await fetchRegisteredPlayers(toriiBaseUrl, 500);
+      if (rankedPlayers.length > 0) {
+        setPlayers(rankedPlayers);
+        return rankedPlayers;
       }
 
-      // If both leaderboard and registrations fail, we cannot compute scores (ranking required)
-      setPlayersError("Could not load ranked players from Torii; leaderboard required to compute scores.");
+      setPlayersError("Could not load registered players from Torii.");
       setPlayers([]);
       return [];
     } catch (playerFetchError) {
-      console.error("Failed to load players, falling back to market outcomes", playerFetchError);
-      setPlayersError("Could not load ranked players from Torii; leaderboard required to compute scores.");
+      console.error("Failed to load registered players", playerFetchError);
+      setPlayersError("Could not load registered players from Torii.");
       setPlayers([]);
       return [];
     } finally {
       setPlayersLoading(false);
     }
-  }, [serverLookupStatus, serverName]);
+  }, [hasFinalRanking, serverLookupStatus, serverName]);
 
   useEffect(() => {
     if (serverLookupStatus === "done") {
@@ -264,6 +267,10 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
   };
 
   const onComputeScores = async () => {
+    if (hasFinalRanking) {
+      toast.success("Scores are already computed (PlayersRankFinal exists).");
+      return;
+    }
     if (!market.isEnded()) {
       toast.error("Scores can only be computed after the game ends.");
       return;
@@ -364,19 +371,23 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
   });
 
   useEffect(() => {
+    setHasFinalRanking(Boolean(finalTrialId));
+  }, [finalTrialId]);
+
+  useEffect(() => {
     if (finalTrialId) {
       console.debug("[MarketResolution] Final ranking trial id", finalTrialId.toString());
     }
   }, [finalTrialId]);
 
-  const hasFinalRanking = Boolean(finalTrialId);
   const canComputeScores =
     market.isEnded() && hasRankedPlayers && !playersLoading && serverLookupStatus === "done" && !hasFinalRanking;
   const playersLabel = useMemo(() => {
+    if (hasFinalRanking) return "Scores already computed — final ranking published.";
     if (serverLookupStatus !== "done") return "Resolving game name...";
     if (playersLoading) return "Loading players...";
     if (players.length === 0 && playersError) return playersError;
-    if (players.length === 0) return "No ranked players loaded yet.";
+    if (players.length === 0) return "No registered players loaded yet.";
     const rankedList = players.map((addr, idx) => `${idx + 1}. ${addr}`).join("\n");
     return `Players (${players.length}) \n${rankedList}`;
   }, [players, playersError, playersLoading, serverLookupStatus]);
@@ -390,22 +401,18 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
       <VStack className="mt-4 items-start gap-3">
         <HStack className="flex-wrap gap-3">
-          <Button onClick={onResolve} disabled={!canResolve || isResolving}>
+          <Button onClick={onResolve} disabled={!canResolve || isSubmittingTx}>
             <span className="flex items-center gap-2">
-              {isResolving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {isSubmittingTx ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {isResolving ? "Submitting..." : "Resolve Market"}
             </span>
           </Button>
-          <Button
-            variant="outline"
-            onClick={onComputeScores}
-            disabled={!canComputeScores || isComputingScores}
-          >
+          <Button variant="outline" onClick={onComputeScores} disabled={!canComputeScores || isSubmittingTx}>
             {hasFinalRanking ? (
               "Scores Finalized"
             ) : (
               <span className="flex items-center gap-2">
-                {isComputingScores ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isSubmittingTx ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {isComputingScores ? "Submitting..." : "Compute Scores"}
               </span>
             )}
@@ -418,12 +425,17 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
                 : playersLoading
                   ? "Loading players..."
                   : !hasRankedPlayers
-                    ? "Leaderboard unavailable — ranked order required to compute scores."
+                    ? "Registered players list unavailable — required to compute scores."
                     : "Score computation opens after the game ends."}
             </span>
           )}
         </HStack>
-        {computeStatus && <div className="text-xs text-gold/70">{computeStatus}</div>}
+        {computeStatus && (
+          <div className="flex items-center gap-2 text-xs text-gold/70">
+            {isSubmittingTx ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+            <span>{computeStatus}</span>
+          </div>
+        )}
         {hasFinalRanking ? (
           <div className="w-full rounded-md border border-white/10 bg-white/5 p-3">
             <div className="flex items-center justify-between text-sm text-gold/80">

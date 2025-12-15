@@ -13,6 +13,7 @@ import {
   Hyperstructure,
   HyperstructureRealmCountDataRaw,
   PlayerLeaderboardRow,
+  RawPlayerLeaderboardRow,
   PlayerRelicsData,
   PlayersData,
   PlayerStructure,
@@ -48,6 +49,7 @@ import {
   sanitizeLeaderboardPagination,
   sortLeaderboardEntries,
 } from "./leaderboard-helpers";
+import { LEADERBOARD_QUERIES } from "./leaderboard";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
 import { extractRelicsFromResourceData } from "./relics-utils";
@@ -603,6 +605,36 @@ export class SqlApi {
     const results = await fetchWithErrorHandling<{ total_count: number }>(url, "Failed to count story events");
     const firstResult = extractFirstOrNull(results);
     return firstResult?.total_count ?? 0;
+  }
+
+  /**
+   * Fetches registered player points directly from PlayerRegisteredPoints and ranks them client-side.
+   * Uses buildRegisteredLeaderboardEntries to keep parsing consistent with the main leaderboard helpers.
+   */
+  async fetchRegisteredPlayerPoints(limit: number = 10, offset: number = 0): Promise<PlayerLeaderboardRow[]> {
+    const { safeLimit, safeOffset, effectiveLimit } = sanitizeLeaderboardPagination(limit, offset);
+
+    if (safeLimit === 0) {
+      return [];
+    }
+
+    const query = LEADERBOARD_QUERIES.REGISTERED_PLAYER_POINTS.replace("{limit}", effectiveLimit.toString()).replace(
+      "{offset}",
+      "0",
+    );
+    const url = buildApiUrl(this.baseUrl, query);
+    const registeredRows = await fetchWithErrorHandling<RawPlayerLeaderboardRow>(
+      url,
+      "Failed to fetch registered player points",
+    );
+
+    const { entries } = buildRegisteredLeaderboardEntries({
+      registeredRows,
+      unregisteredShareholderPoints: new Map<string, number>(),
+    });
+
+    const rankedEntries = addLeaderboardRanks(sortLeaderboardEntries(entries));
+    return rankedEntries.slice(safeOffset, safeOffset + safeLimit);
   }
 
   /**
