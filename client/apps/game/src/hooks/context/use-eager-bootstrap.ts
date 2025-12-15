@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
@@ -38,7 +38,8 @@ const BOOTSTRAP_TASKS: BootstrapTask[] = [
  * 1. Can start before account is connected
  * 2. Provides granular task status for better UX
  * 3. Waits for world selection if not already set
- * 4. Re-bootstraps when world selection changes
+ *
+ * Note: World changes trigger a page reload via bootstrap.tsx for clean state reset.
  */
 export const useEagerBootstrap = (): EagerBootstrapState => {
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
@@ -47,7 +48,6 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
   const [error, setError] = useState<Error | null>(null);
   const [tasks, setTasks] = useState<BootstrapTask[]>(BOOTSTRAP_TASKS);
   const [currentTask, setCurrentTask] = useState<string | null>(null);
-  const [bootstrappedWorldName, setBootstrappedWorldName] = useState<string | null>(null);
   const inFlightRef = useRef<Promise<SetupResult> | null>(null);
   const hasStartedRef = useRef(false);
 
@@ -73,7 +73,6 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
     setError(null);
     setStatus("loading");
     setSetupResult(null); // Clear previous result when starting new bootstrap
-    setBootstrappedWorldName(activeWorld.name); // Track which world we're bootstrapping
     setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
 
     // Mark world as complete since we have one
@@ -147,38 +146,8 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
     }
   }, [syncProgress, status, updateTask]);
 
-  // Watch for world CHANGES (different from initial selection)
-  // If user selects a different world, we need to re-bootstrap
-  useEffect(() => {
-    // Only check for changes if we've already bootstrapped a world
-    if (!bootstrappedWorldName) return;
-    // Don't interrupt an in-flight bootstrap
-    if (inFlightRef.current) return;
-
-    const checkWorldChange = () => {
-      const activeWorld = getActiveWorld();
-      if (activeWorld && activeWorld.name !== bootstrappedWorldName) {
-        console.log(
-          `[EAGER BOOTSTRAP] World changed from "${bootstrappedWorldName}" to "${activeWorld.name}", re-bootstrapping...`,
-        );
-        // Reset state for new bootstrap
-        hasStartedRef.current = false;
-        setStatus("idle");
-        setSetupResult(null);
-        setError(null);
-        setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
-        // Trigger new bootstrap on next tick
-        setTimeout(() => {
-          hasStartedRef.current = true;
-          beginBootstrap();
-        }, 0);
-      }
-    };
-
-    // Poll for world changes
-    const interval = window.setInterval(checkWorldChange, 500);
-    return () => window.clearInterval(interval);
-  }, [bootstrappedWorldName, beginBootstrap]);
+  // Note: World change detection is handled by bootstrap.tsx which triggers a page reload
+  // This avoids complex state cleanup and ensures a clean re-bootstrap
 
   const retry = useCallback(() => {
     if (status === "loading") return;
@@ -204,8 +173,8 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
     }
   }, [status, beginBootstrap]);
 
-  // Calculate overall progress
-  const progress = (() => {
+  // Calculate overall progress (memoized to avoid recalculation on unrelated renders)
+  const progress = useMemo(() => {
     if (status === "ready") return 100;
     if (status === "error" || status === "idle" || status === "pending-world") return 0;
 
@@ -229,7 +198,7 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
     });
 
     return Math.min(99, Math.round(completed));
-  })();
+  }, [status, tasks, syncProgress]);
 
   return {
     status,

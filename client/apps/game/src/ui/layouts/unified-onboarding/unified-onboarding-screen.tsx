@@ -6,7 +6,6 @@ import type { UnifiedOnboardingState } from "@/hooks/context/use-unified-onboard
 import { AccountPanel } from "./account-panel";
 import { BackgroundProgress } from "./background-progress";
 import { LoadingPanel } from "./loading-panel";
-import { SettlementPanel } from "./settlement-panel";
 import { StepIndicator } from "./step-indicator";
 import { WorldSelectPanel } from "./world-select-panel";
 
@@ -16,7 +15,7 @@ interface UnifiedOnboardingScreenProps {
 }
 
 export const UnifiedOnboardingScreen = ({ backgroundImage, state }: UnifiedOnboardingScreenProps) => {
-  const { phase, bootstrap, isConnecting, selectWorld, connectWallet, spectate, enterGame } = state;
+  const { phase, bootstrap, isConnecting, selectWorld, connectWallet, spectate } = state;
 
   const isBootstrapRunning = bootstrap.status === "loading";
   const currentTaskLabel = bootstrap.tasks.find((t) => t.status === "running")?.label ?? null;
@@ -102,19 +101,6 @@ export const UnifiedOnboardingScreen = ({ backgroundImage, state }: UnifiedOnboa
                         error={bootstrap.error}
                         onRetry={bootstrap.retry}
                       />
-                    </motion.div>
-                  )}
-
-                  {phase === "settlement" && (
-                    <motion.div
-                      key="settlement"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.2 }}
-                      className="h-full"
-                    >
-                      <SettlementPanel onEnterGame={enterGame} />
                     </motion.div>
                   )}
                 </AnimatePresence>
