@@ -16,6 +16,18 @@ pub impl StaminaImpl of StaminaTrait {
         self.updated_tick = 0;
     }
 
+    fn grant_initial_amount(ref self: Stamina, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
+        self.amount = troop_stamina_config.stamina_initial.into();
+        self.updated_tick = current_tick;
+    }
+
+    fn revert_initial_amount(ref self: Stamina, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
+        if self.amount > troop_stamina_config.stamina_initial.into() {
+            self.grant_initial_amount(troop_stamina_config, current_tick);
+        }
+    }
+
+
     fn refill(
         ref self: Stamina,
         ref troop_boosts: TroopBoosts,
@@ -30,8 +42,7 @@ pub impl StaminaImpl of StaminaTrait {
 
         if (self.updated_tick.is_zero()) {
             // initialize stamina
-            self.amount = troop_stamina_config.stamina_initial.into();
-            self.updated_tick = current_tick;
+            self.grant_initial_amount(troop_stamina_config, current_tick);
         } else {
             // regular stamina gain
             let mut regular_gain_per_tick = troop_stamina_config.stamina_gain_per_tick.into();

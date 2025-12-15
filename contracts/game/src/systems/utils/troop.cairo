@@ -52,6 +52,7 @@ pub impl iGuardImpl of iGuardTrait {
         tick: TickInterval,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
+        stamina_revert_initial_amount: bool,
     ) {
         let current_tick: u64 = tick.current();
         if troops.count.is_zero() {
@@ -85,6 +86,10 @@ pub impl iGuardImpl of iGuardTrait {
         // through the refill function and guard deletion
         if troops.count.is_zero() {
             troops.stamina.amount = 0;
+        }
+
+        if stamina_revert_initial_amount {
+            troops.stamina.revert_initial_amount(troop_stamina_config, current_tick);
         }
 
         // update troop count
@@ -586,6 +591,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         tick,
                         troop_limit_config,
                         troop_stamina_config,
+                        false
                     );
                 },
                 Option::None => { break; },

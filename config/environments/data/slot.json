@@ -13059,7 +13059,7 @@
         },
         {
           "address": "0x5d13f08d6cf02111d0b0dacf67756067702d2af9c012910b2eac6ca12e3fee2",
-          "class_hash": "0x7e0adcc1af66f0d635cde6f1323b78ee6671330a8f1a4cca20e3597ee504a93",
+          "class_hash": "0x57f74585540f64df397bbd1c986d0cd109df49e2dba088dd2055ad2af06b248",
           "init_calldata": [],
           "tag": "s1_eternum-troop_management_systems",
           "selector": "0x49b9809fc3839b4eb765c5d1db1d1a835678574e42bf24bf70235cecf2f8437",
