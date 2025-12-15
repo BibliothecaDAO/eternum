@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, HStack, ScrollArea, VStack } from "@pm/ui";
 
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
-import { displayAddress } from "@/ui/utils/utils";
-
+import { MaybeController } from "./maybe-controller";
 import { TokenIcon } from "./token-icon";
 import { LEADERBOARD_RANGES, TabButton, formatNumber } from "./market-tabs";
 import type { MarketLeaderboardRange } from "./use-market-stats";
@@ -55,7 +54,7 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
                   >
                     <HStack className="gap-3">
                       <span className="min-w-[28px] text-right text-gold/80">#{index + 1}</span>
-                      <span className="font-semibold">{displayAddress(entry.address)}</span>
+                      <MaybeController address={entry.address} className="font-semibold" />
                     </HStack>
                     <HStack className="gap-4 text-xs sm:text-sm">
                       <span className="inline-flex items-center gap-2 rounded-md bg-white/5 px-2 py-1 text-emerald-200">
