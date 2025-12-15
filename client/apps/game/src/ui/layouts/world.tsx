@@ -1,61 +1,25 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
-import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { Leva } from "leva";
-import { lazy, Suspense } from "react";
 import { env } from "../../../env";
+import { Tooltip } from "../design-system/molecules/tooltip";
 import { StoryEventStream } from "../features";
+import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
+import { ActionInfo } from "../features/world/components/actions/action-info";
+import { ActionInstructions } from "../features/world/components/actions/action-instructions";
+import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
+import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
+import { TopHeader } from "../features/world/containers/top-header/top-header";
+import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
+import { CombatSimulation } from "../modules/simulation/combat-simulation";
 import { NetworkDesyncDebugControls } from "../shared/components/network-desync-debug-controls";
 import { NetworkDesyncIndicator } from "../shared/components/network-desync-indicator";
 import { ProviderHeartbeatWatcher } from "../shared/components/provider-heartbeat-watcher";
 import { StoreManagers } from "../store-managers";
 import { PlayOverlayManager } from "./play-overlay-manager";
-
-// Lazy load HUD components
-const ActionInfo = lazy(() =>
-  import("../features/world/components/actions/action-info").then((module) => ({ default: module.ActionInfo })),
-);
-const ActionInstructions = lazy(() =>
-  import("../features/world/components/actions/action-instructions").then((module) => ({
-    default: module.ActionInstructions,
-  })),
-);
-const Tooltip = lazy(() =>
-  import("../design-system/molecules/tooltip").then((module) => ({ default: module.Tooltip })),
-);
-const ModalWindows = lazy(() =>
-  import("../features/world/containers/top-navigation").then((module) => ({ default: module.TopNavigation })),
-);
-const LeftCommandSidebar = lazy(() =>
-  import("../features/world/containers/left-command-sidebar").then((module) => ({
-    default: module.LeftCommandSidebar,
-  })),
-);
-const TopHeader = lazy(() =>
-  import("../features/world/containers/top-header/top-header").then((module) => ({
-    default: module.TopHeader,
-  })),
-);
-const BottomRightPanel = lazy(() =>
-  import("../features/world/components/bottom-right-panel").then((module) => ({
-    default: module.BottomRightPanel,
-  })),
-);
-
-// Lazy load game systems
-const RealmTransferManager = lazy(() =>
-  import("../features/economy/resources").then((module) => ({
-    default: module.RealmTransferManager,
-  })),
-);
-const CombatSimulation = lazy(() =>
-  import("../modules/simulation/combat-simulation").then((module) => ({
-    default: module.CombatSimulation,
-  })),
-);
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
@@ -73,22 +37,20 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       >
         <div className="vignette" />
 
-        <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-          {/* Game systems */}
-          <GameSystems backgroundImage={backgroundImage} />
+        {/* Game systems */}
+        <GameSystems backgroundImage={backgroundImage} />
 
-          {/* Action feedback overlays */}
-          <ActionOverlays />
+        {/* Action feedback overlays */}
+        <ActionOverlays />
 
-          {/* HUD (heads-up display) elements */}
-          <HUD />
+        {/* HUD (heads-up display) elements */}
+        <HUD />
 
-          {/* Utility overlays */}
-          <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
-          <Tooltip />
-          <VersionDisplay />
-          <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
-        </Suspense>
+        {/* Utility overlays */}
+        <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
+        <Tooltip />
+        <VersionDisplay />
+        <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>
   );

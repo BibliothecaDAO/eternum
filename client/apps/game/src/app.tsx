@@ -27,7 +27,8 @@ import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
-const World = lazy(() => import("./ui/layouts/world").then((module) => ({ default: module.World })));
+import { World } from "./ui/layouts/world";
+
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
 
 type ReadyAppProps = {
@@ -47,9 +48,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
           <StoryEventToastProvider>
             <StoryEventToastBridge />
             <TransactionNotification />
-            <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-              <World backgroundImage={backgroundImage} />
-            </Suspense>
+            <World backgroundImage={backgroundImage} />
             <WorldLoading />
           </StoryEventToastProvider>
         </ErrorBoundary>
