@@ -1975,6 +1975,10 @@ export class StructureManager {
     if (label) {
       this.updateStructureLabelData(structure, label);
     }
+
+    // Refresh visible structures to update point icons (e.g., myRealm vs enemyRealm)
+    // when ownership changes
+    this.updateVisibleStructures();
   }
 
   /**

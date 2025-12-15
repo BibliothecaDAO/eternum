@@ -802,24 +802,27 @@ export class ArmyModel {
   }
 
   private updateModelAnimations(modelData: ModelData, time: number, now: number): void {
-    // Throttling: Calculate update frequency based on camera distance
-    // We sample the position of the first active instance as a proxy for the group
+    // OPTIMIZATION: Early exit if no instanced meshes or no visible instances
+    // This prevents unnecessary animation work for loaded but invisible models
+    if (modelData.instancedMeshes.length === 0) {
+      return;
+    }
+
+    const primaryMesh = modelData.instancedMeshes[0];
+    if (!primaryMesh || primaryMesh.count === 0) {
+      return;
+    }
+
+    // Throttling: Calculate update frequency based on instance count
+    // More instances = more aggressive throttling to maintain FPS
+    const totalInstances = primaryMesh.count;
     let updateFrequency = 1;
 
-    if (modelData.instancedMeshes.length > 0 && modelData.instancedMeshes[0].count > 0) {
-      // Get position of first instance
-      modelData.instancedMeshes[0].getMatrixAt(0, this.dummyMatrix);
-      this.tempVector1.setFromMatrixPosition(this.dummyMatrix);
-
-      // Assuming camera position is available (or pass it in)
-      // Since we don't have easy access to camera position here without coupling,
-      // we can use a simple frame-based throttling based on instance count
-      // More instances = more throttling to maintain FPS
-      const totalInstances = modelData.instancedMeshes[0].count;
-      if (totalInstances > 100) updateFrequency = 2;
-      if (totalInstances > 300) updateFrequency = 3;
-      if (totalInstances > 500) updateFrequency = 4;
-    }
+    // OPTIMIZATION: Lower thresholds for earlier throttling with many armies
+    if (totalInstances > 15) updateFrequency = 2; // Start throttling earlier
+    if (totalInstances > 40) updateFrequency = 3;
+    if (totalInstances > 80) updateFrequency = 4;
+    if (totalInstances > 150) updateFrequency = 5;
 
     // Skip update if throttled
     // Use a deterministic frame counter simulation based on time

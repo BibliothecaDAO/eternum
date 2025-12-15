@@ -265,6 +265,9 @@ export class ArmyManager {
       .name("Delete army");
     deleteArmyFolder.close();
 
+    // Debug Army Spawner - for performance testing
+    this.setupDebugArmySpawner();
+
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.recheckOwnership();
     });
@@ -312,6 +315,184 @@ export class ArmyManager {
 
     // Start initial cleanup after 60 seconds
     this.cleanupTimeout = setTimeout(cleanup, 60000);
+  }
+
+  // Debug army spawner state
+  private debugArmyEntityIdCounter = 900000; // Start high to avoid collisions with real armies
+  private debugSpawnedArmyIds: Set<ID> = new Set();
+
+  /**
+   * Setup debug GUI for spawning multiple armies for performance testing
+   */
+  private setupDebugArmySpawner(): void {
+    const debugFolder = GUIManager.addFolder("Debug Army Spawner");
+
+    const spawnParams = {
+      count: 20,
+      spread: 10,
+      troopType: "Paladin" as "Knight" | "Crossbowman" | "Paladin",
+      troopTier: "T1" as "T1" | "T2" | "T3",
+      mixTypes: true,
+      mixTiers: false,
+      isMine: false,
+    };
+
+    debugFolder.add(spawnParams, "count", 1, 100, 1).name("Army Count");
+    debugFolder.add(spawnParams, "spread", 1, 30, 1).name("Spread (hexes)");
+    debugFolder.add(spawnParams, "troopType", ["Knight", "Crossbowman", "Paladin"]).name("Troop Type");
+    debugFolder.add(spawnParams, "troopTier", ["T1", "T2", "T3"]).name("Troop Tier");
+    debugFolder.add(spawnParams, "mixTypes").name("Mix Types");
+    debugFolder.add(spawnParams, "mixTiers").name("Mix Tiers");
+    debugFolder.add(spawnParams, "isMine").name("Is Mine");
+
+    debugFolder
+      .add(
+        {
+          spawnArmies: () => {
+            this.spawnDebugArmies(spawnParams);
+          },
+        },
+        "spawnArmies",
+      )
+      .name("Spawn Armies");
+
+    debugFolder
+      .add(
+        {
+          clearDebugArmies: () => {
+            this.clearDebugArmies();
+          },
+        },
+        "clearDebugArmies",
+      )
+      .name("Clear Debug Armies");
+
+    // Stats display (read-only) - use closure to capture `this`
+    const self = this;
+    const statsParams = {
+      debugArmyCount: "Debug: 0",
+      totalArmyCount: "Total: 0",
+      visibleArmyCount: "Visible: 0",
+    };
+
+    // Update stats periodically
+    const updateStats = () => {
+      statsParams.debugArmyCount = `Debug: ${self.debugSpawnedArmyIds?.size ?? 0}`;
+      statsParams.totalArmyCount = `Total: ${self.armies?.size ?? 0}`;
+      statsParams.visibleArmyCount = `Visible: ${self.visibleArmyOrder?.length ?? 0}`;
+    };
+    setInterval(updateStats, 500);
+
+    const statsFolder = debugFolder.addFolder("Stats");
+    statsFolder.add(statsParams, "debugArmyCount").name("Debug Armies").listen();
+    statsFolder.add(statsParams, "totalArmyCount").name("Total Armies").listen();
+    statsFolder.add(statsParams, "visibleArmyCount").name("Visible Armies").listen();
+    statsFolder.open();
+
+    debugFolder.close();
+  }
+
+  /**
+   * Spawn multiple debug armies around the current view center
+   */
+  private spawnDebugArmies(params: {
+    count: number;
+    spread: number;
+    troopType: "Knight" | "Crossbowman" | "Paladin";
+    troopTier: "T1" | "T2" | "T3";
+    mixTypes: boolean;
+    mixTiers: boolean;
+    isMine: boolean;
+  }): void {
+    if (!this.currentChunkKey) {
+      console.warn("[Debug Spawner] No current chunk key available");
+      return;
+    }
+
+    // Parse current chunk to get center position
+    const [startRow, startCol] = this.currentChunkKey.split(",").map(Number);
+    const bounds = this.getChunkBounds(startRow, startCol);
+    const centerCol = Math.floor((bounds.minCol + bounds.maxCol) / 2);
+    const centerRow = Math.floor((bounds.minRow + bounds.maxRow) / 2);
+
+    const troopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
+    const troopTiers: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
+
+    const getTroopType = (index: number): TroopType => {
+      if (params.mixTypes) {
+        return troopTypes[index % troopTypes.length];
+      }
+      return TroopType[params.troopType as keyof typeof TroopType];
+    };
+
+    const getTroopTier = (index: number): TroopTier => {
+      if (params.mixTiers) {
+        return troopTiers[index % troopTiers.length];
+      }
+      return TroopTier[params.troopTier as keyof typeof TroopTier];
+    };
+
+    console.log(
+      `[Debug Spawner] Spawning ${params.count} armies around (${centerCol}, ${centerRow}) with spread ${params.spread}`,
+    );
+
+    // Spawn armies in a spiral pattern for even distribution
+    for (let i = 0; i < params.count; i++) {
+      const entityId = this.debugArmyEntityIdCounter++;
+
+      // Spiral placement for even distribution
+      const angle = i * 2.4; // Golden angle approximation for good distribution
+      const radius = Math.sqrt(i) * (params.spread / Math.sqrt(params.count));
+      const offsetCol = Math.round(Math.cos(angle) * radius);
+      const offsetRow = Math.round(Math.sin(angle) * radius);
+
+      const col = centerCol + offsetCol;
+      const row = centerRow + offsetRow;
+
+      const category = getTroopType(i);
+      const tier = getTroopTier(i);
+
+      this.debugSpawnedArmyIds.add(entityId);
+
+      this.addArmy({
+        entityId,
+        hexCoords: new Position({ x: col, y: row }),
+        owner: {
+          address: params.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : BigInt(i + 1),
+          ownerName: `Debug Army ${i + 1}`,
+          guildName: "Debug Guild",
+        },
+        category,
+        tier,
+        isDaydreamsAgent: false,
+        troopCount: Math.floor(Math.random() * 100) + 10,
+        currentStamina: Math.floor(Math.random() * 100),
+        onChainStamina: {
+          amount: 100n,
+          updatedTick: getBlockTimestamp().currentArmiesTick,
+        },
+        maxStamina: 100,
+      });
+    }
+
+    console.log(
+      `[Debug Spawner] Spawned ${params.count} armies. Total debug armies: ${this.debugSpawnedArmyIds.size}, Total armies: ${this.armies.size}`,
+    );
+  }
+
+  /**
+   * Clear all debug-spawned armies
+   */
+  private clearDebugArmies(): void {
+    const count = this.debugSpawnedArmyIds.size;
+    console.log(`[Debug Spawner] Clearing ${count} debug armies...`);
+
+    for (const entityId of this.debugSpawnedArmyIds) {
+      this.removeArmy(entityId, { playDefeatFx: false });
+    }
+
+    this.debugSpawnedArmyIds.clear();
+    console.log(`[Debug Spawner] Cleared ${count} debug armies. Total armies remaining: ${this.armies.size}`);
   }
 
   public onMouseMove(raycaster: Raycaster) {
@@ -2245,6 +2426,11 @@ ${
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
+
+    // Update point icon to reflect ownership change (e.g., player vs enemy)
+    this.removeArmyPointIcon(update.entityId);
+    const position = this.getArmyWorldPosition(update.entityId, army.hexCoords);
+    this.updateArmyPointIcon(army, position);
   }
 
   public destroy() {
