@@ -21,7 +21,6 @@ import {
 } from "./ui/features/landing";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
-import { PlayOverlayManager } from "./ui/layouts/play-overlay-manager";
 import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
@@ -61,58 +60,19 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
 
 // Admin sub-app removed; /factory is a standalone route now
 
-// Settlement screen that requires Dojo context
-const SettlementWithDojo = ({
-  backgroundImage,
-  setupResult,
-  account,
-}: {
-  backgroundImage: string;
-  setupResult: SetupResult;
-  account: Account | AccountInterface;
-}) => {
-  return (
-    <DojoProvider value={setupResult} account={account}>
-      <MetagameProvider>
-        <ErrorBoundary>
-          {/* Background for settlement screen */}
-          <div className="relative min-h-screen w-full">
-            <img
-              className="absolute h-screen w-screen object-cover"
-              src={`/images/covers/blitz/${backgroundImage}.png`}
-              alt="Cover"
-            />
-            <div className="absolute z-10 w-screen h-screen">
-              <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-                <PlayOverlayManager backgroundImage={backgroundImage} enableOnboarding={true} />
-              </Suspense>
-            </div>
-          </div>
-        </ErrorBoundary>
-      </MetagameProvider>
-    </DojoProvider>
-  );
-};
-
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, canEnterGame, setupResult, account } = state;
+  const { phase, setupResult, account } = state;
 
   // Phases that don't need Dojo: world-select, account, loading
   if (phase === "world-select" || phase === "account" || phase === "loading") {
     return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={state} />;
   }
 
-  // Settlement phase needs Dojo context - use original onboarding flow
-  if (phase === "settlement") {
-    if (!setupResult || !account) {
-      return <LoadingScreen backgroundImage={backgroundImage} />;
-    }
-    return <SettlementWithDojo backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
-  }
-
-  // Ready phase - render the full game
-  if (!canEnterGame || !setupResult || !account) {
+  // Settlement and Ready phases both render the full game
+  // The onboarding overlay (PlayOverlayManager) handles showing settlement UI
+  // when showBlankOverlay is true in the UI store
+  if (!setupResult || !account) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
