@@ -48,13 +48,9 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
       <div className="flex flex-col h-full items-center justify-center text-center">
         <AlertCircle className="w-12 h-12 text-danger/60 mb-4" />
         <h2 className="text-xl font-bold text-gold mb-2">Unable to Start</h2>
-        <p className="text-sm text-white/70 max-w-md mb-2">
-          Something went wrong while preparing the world.
-        </p>
+        <p className="text-sm text-white/70 max-w-md mb-2">Something went wrong while preparing the world.</p>
         {error.message && (
-          <p className="text-xs text-white/50 max-w-md mb-4 font-mono bg-black/20 px-3 py-2 rounded">
-            {error.message}
-          </p>
+          <p className="text-xs text-white/50 max-w-md mb-4 font-mono bg-black/20 px-3 py-2 rounded">{error.message}</p>
         )}
         <Button variant="outline" onClick={onRetry} className="mt-2">
           <RefreshCw className="w-4 h-4 mr-2" />
@@ -67,11 +63,7 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
   return (
     <div className="flex flex-col h-full">
       <div className="text-center mb-6">
-        <img
-          src="/images/logos/eternum-loader.png"
-          className="mx-auto w-24 mb-4"
-          alt="Loading"
-        />
+        <img src="/images/logos/eternum-loader.png" className="mx-auto w-24 mb-4" alt="Loading" />
         <h2 className="text-lg font-semibold text-gold">{currentStatement}</h2>
       </div>
 

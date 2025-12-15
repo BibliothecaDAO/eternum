@@ -129,7 +129,9 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
 
         // If switching to a different world (not just initial selection), reset onboarding state
         if (selectedWorldName !== null && newWorldName !== null && newWorldName !== selectedWorldName) {
-          console.log(`[UNIFIED ONBOARDING] World changed from "${selectedWorldName}" to "${newWorldName}", resetting onboarding state...`);
+          console.log(
+            `[UNIFIED ONBOARDING] World changed from "${selectedWorldName}" to "${newWorldName}", resetting onboarding state...`,
+          );
           setIsSpectating(false);
           setShowBlankOverlay(true); // Show onboarding overlay again
           setPlaceholderAccount(null); // Clear placeholder account from old world

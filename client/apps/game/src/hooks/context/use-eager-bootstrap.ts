@@ -97,9 +97,7 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
         setError(normalisedError);
         setStatus("error");
         // Mark current task as error
-        setTasks((prev) =>
-          prev.map((t) => (t.status === "running" ? { ...t, status: "error" } : t)),
-        );
+        setTasks((prev) => prev.map((t) => (t.status === "running" ? { ...t, status: "error" } : t)));
       })
       .finally(() => {
         inFlightRef.current = null;
@@ -160,7 +158,9 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
     const checkWorldChange = () => {
       const activeWorld = getActiveWorld();
       if (activeWorld && activeWorld.name !== bootstrappedWorldName) {
-        console.log(`[EAGER BOOTSTRAP] World changed from "${bootstrappedWorldName}" to "${activeWorld.name}", re-bootstrapping...`);
+        console.log(
+          `[EAGER BOOTSTRAP] World changed from "${bootstrappedWorldName}" to "${activeWorld.name}", re-bootstrapping...`,
+        );
         // Reset state for new bootstrap
         hasStartedRef.current = false;
         setStatus("idle");

@@ -16,15 +16,7 @@ interface UnifiedOnboardingScreenProps {
 }
 
 export const UnifiedOnboardingScreen = ({ backgroundImage, state }: UnifiedOnboardingScreenProps) => {
-  const {
-    phase,
-    bootstrap,
-    isConnecting,
-    selectWorld,
-    connectWallet,
-    spectate,
-    enterGame,
-  } = state;
+  const { phase, bootstrap, isConnecting, selectWorld, connectWallet, spectate, enterGame } = state;
 
   const isBootstrapRunning = bootstrap.status === "loading";
   const currentTaskLabel = bootstrap.tasks.find((t) => t.status === "running")?.label ?? null;

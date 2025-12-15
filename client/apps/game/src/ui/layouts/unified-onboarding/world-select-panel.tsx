@@ -374,11 +374,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
       {/* Enter button */}
       {selected && (
         <div className="mt-4">
-          <Button
-            className="w-full !h-12"
-            variant="gold"
-            onClick={() => handleEnterWorld(selected)}
-          >
+          <Button className="w-full !h-12" variant="gold" onClick={() => handleEnterWorld(selected)}>
             Enter {selected}
           </Button>
         </div>
