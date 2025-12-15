@@ -8,7 +8,7 @@ import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
-import { usePlayFlow } from "./hooks/context/use-play-flow";
+import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import "./index.css";
 import type { SetupResult } from "./init/bootstrap";
 import { IS_MOBILE } from "./ui/config";
@@ -22,6 +22,7 @@ import {
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
 import { PlayOverlayManager } from "./ui/layouts/play-overlay-manager";
+import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
@@ -60,73 +61,62 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
 
 // Admin sub-app removed; /factory is a standalone route now
 
-const BootstrapError = ({ error, onRetry }: { error?: Error | null; onRetry: () => void }) => {
+// Settlement screen that requires Dojo context
+const SettlementWithDojo = ({
+  backgroundImage,
+  setupResult,
+  account,
+}: {
+  backgroundImage: string;
+  setupResult: SetupResult;
+  account: Account | AccountInterface;
+}) => {
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#0f0f0f] p-6 text-center text-white">
-      <h1 className="text-xl font-semibold">Unable to start Eternum</h1>
-      <p className="mt-2 max-w-md text-sm text-white/70">
-        Something went wrong while preparing the world. Please try reloading the page.
-      </p>
-      {error?.message ? <p className="mt-2 max-w-md text-xs text-white/50">{error.message}</p> : null}
-      <button
-        className="mt-6 rounded-md bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-        onClick={onRetry}
-      >
-        Retry
-      </button>
-    </div>
+    <DojoProvider value={setupResult} account={account}>
+      <MetagameProvider>
+        <ErrorBoundary>
+          {/* Background for settlement screen */}
+          <div className="relative min-h-screen w-full">
+            <img
+              className="absolute h-screen w-screen object-cover"
+              src={`/images/covers/blitz/${backgroundImage}.png`}
+              alt="Cover"
+            />
+            <div className="absolute z-10 w-screen h-screen">
+              <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
+                <PlayOverlayManager backgroundImage={backgroundImage} enableOnboarding={true} />
+              </Suspense>
+            </div>
+          </div>
+        </ErrorBoundary>
+      </MetagameProvider>
+    </DojoProvider>
   );
 };
 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
-  const { activeStep, steps } = usePlayFlow(backgroundImage);
+  const state = useUnifiedOnboarding(backgroundImage);
+  const { phase, canEnterGame, setupResult, account } = state;
 
-  // Ensure modals (world selector, etc.) can render before world is ready
-  const EarlyOverlays = <PlayOverlayManager backgroundImage={backgroundImage} enableOnboarding={false} />;
-
-  if (activeStep === "world") {
-    return (
-      <>
-        {EarlyOverlays}
-        {steps.world.fallback ?? <LoadingScreen backgroundImage={backgroundImage} />}
-      </>
-    );
+  // Phases that don't need Dojo: world-select, account, loading
+  if (phase === "world-select" || phase === "account" || phase === "loading") {
+    return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={state} />;
   }
 
-  if (activeStep === "bootstrap-error") {
-    return (
-      <>
-        {EarlyOverlays}
-        <BootstrapError error={steps.bootstrap.error} onRetry={steps.bootstrap.retry} />
-      </>
-    );
+  // Settlement phase needs Dojo context - use original onboarding flow
+  if (phase === "settlement") {
+    if (!setupResult || !account) {
+      return <LoadingScreen backgroundImage={backgroundImage} />;
+    }
+    return <SettlementWithDojo backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
   }
 
-  if (activeStep === "bootstrap") {
-    return (
-      <>
-        {EarlyOverlays}
-        <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />
-      </>
-    );
+  // Ready phase - render the full game
+  if (!canEnterGame || !setupResult || !account) {
+    return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
-  if (activeStep === "account" && steps.account.fallback) {
-    return (
-      <>
-        {EarlyOverlays}
-        {steps.account.fallback}
-      </>
-    );
-  }
-
-  const readyData = steps.ready;
-
-  if (!readyData.setupResult || !readyData.account) {
-    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
-  }
-
-  return <ReadyApp backgroundImage={backgroundImage} setupResult={readyData.setupResult} account={readyData.account} />;
+  return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
 };
 
 // Admin route wrapper removed
