@@ -45,7 +45,6 @@ export type UnifiedOnboardingState = {
   selectWorld: (worldName: string) => void;
   connectWallet: () => void;
   spectate: () => void;
-  enterGame: () => void;
 
   // Ready state
   canEnterGame: boolean;
@@ -118,30 +117,8 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     void resolveUsername();
   }, [connector, setAccountName]);
 
-  // Watch for world selection changes in localStorage
-  // When world changes, reset onboarding state to go through the flow again
-  useEffect(() => {
-    const checkWorld = () => {
-      const active = getActiveWorld();
-      if (active?.name !== selectedWorldName) {
-        const newWorldName = active?.name ?? null;
-        setSelectedWorldName(newWorldName);
-
-        // If switching to a different world (not just initial selection), reset onboarding state
-        if (selectedWorldName !== null && newWorldName !== null && newWorldName !== selectedWorldName) {
-          console.log(
-            `[UNIFIED ONBOARDING] World changed from "${selectedWorldName}" to "${newWorldName}", resetting onboarding state...`,
-          );
-          setIsSpectating(false);
-          setShowBlankOverlay(true); // Show onboarding overlay again
-          setPlaceholderAccount(null); // Clear placeholder account from old world
-        }
-      }
-    };
-
-    const interval = window.setInterval(checkWorld, 500);
-    return () => window.clearInterval(interval);
-  }, [selectedWorldName, setShowBlankOverlay]);
+  // Note: World change detection is handled by bootstrap.tsx which triggers a page reload
+  // This avoids complex state cleanup and ensures a clean re-bootstrap
 
   // Actions
   const selectWorld = useCallback(
@@ -171,10 +148,6 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     spectatorNavigate();
     setShowBlankOverlay(false);
   }, [spectatorNavigate, setShowBlankOverlay]);
-
-  const enterGame = useCallback(() => {
-    setShowBlankOverlay(false);
-  }, [setShowBlankOverlay]);
 
   // Determine resolved account
   const resolvedAccount = useMemo(() => {
@@ -247,7 +220,6 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     selectWorld,
     connectWallet,
     spectate,
-    enterGame,
     canEnterGame,
     setupResult: bootstrap.setupResult,
   };
