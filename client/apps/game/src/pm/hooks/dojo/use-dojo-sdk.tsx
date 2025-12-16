@@ -1,25 +1,9 @@
-import { init, SchemaType, type SDK } from "@dojoengine/sdk";
-import { createContext, type PropsWithChildren, useContext, useEffect, useState } from "react";
+import type { SDK } from "@dojoengine/sdk";
+import { DojoSdkProvider, useDojoSDK } from "@dojoengine/sdk/react";
+import { type PropsWithChildren, useEffect, useState } from "react";
 import type { StarknetDomain } from "starknet";
-import manifestBlitz from "../../manifests/manifest_blitz.json";
-
-const defaultSdk = {
-  getEntities: async () => ({
-    getItems: () => [],
-  }),
-  getControllers: async () => [],
-  getEventMessages: async () => ({
-    getItems: () => [],
-  }),
-  generateTypedData: () => ({
-    types: {
-      "pm-UserMessage": [],
-    },
-  }),
-  client: {
-    publishMessage: async () => undefined,
-  },
-};
+import { setupWorld, type SchemaType } from "../../bindings";
+import { DojoConfigProvider, useDojoConfig } from "./dojo-config";
 
 export const appDomain: StarknetDomain = {
   name: "WORLD_NAME",
@@ -28,18 +12,56 @@ export const appDomain: StarknetDomain = {
   revision: "1",
 };
 
-const DojoSdkContext = createContext({
-  sdk: defaultSdk as any,
-  config: {
-    manifest: manifestBlitz,
-  },
-});
-
-export const DojoSdkProvider = DojoSdkContext.Provider;
-
 export const useDojoSdk = () => {
-  return useContext(DojoSdkContext);
+  return useDojoSDK<typeof setupWorld, SchemaType>();
 };
+
+function DojoSdkProviderInner({
+  children,
+  domain = appDomain,
+}: PropsWithChildren<{
+  domain?: StarknetDomain;
+}>) {
+  const { dojoConfig } = useDojoConfig();
+  const [sdk, setSdk] = useState<SDK<SchemaType>>();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const initAsync = async () => {
+      try {
+        const { init } = await import("@dojoengine/sdk");
+        const initialized = await init<SchemaType>({
+          client: {
+            toriiUrl: dojoConfig.toriiUrl,
+            worldAddress: dojoConfig.manifest.world.address,
+          },
+          domain,
+        });
+
+        if (!cancelled) {
+          setSdk(initialized);
+        }
+      } catch (error) {
+        console.error("[pm-sdk] Failed to init Dojo SDK", error);
+      }
+    };
+
+    void initAsync();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dojoConfig, domain]);
+
+  if (!sdk) return null;
+
+  return (
+    <DojoSdkProvider sdk={sdk} dojoConfig={dojoConfig} clientFn={setupWorld}>
+      {children}
+    </DojoSdkProvider>
+  );
+}
 
 export const DojoSdkProviderInitialized = ({
   children,
@@ -51,46 +73,9 @@ export const DojoSdkProviderInitialized = ({
   toriiUrl?: string;
   worldAddress?: string;
 }>) => {
-  const [sdk, setSdk] = useState<SDK<SchemaType>>();
-  const [config, setConfig] = useState({
-    manifest: manifestBlitz,
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const initAsync = async () => {
-      try {
-        const initialized = await init({
-          client: {
-            toriiUrl,
-            worldAddress,
-          },
-          domain,
-        });
-
-        if (!cancelled) {
-          setSdk(initialized);
-          setConfig({
-            manifest: manifestBlitz,
-          });
-        }
-      } catch (error) {
-        console.error("[pm-sdk] Failed to init Dojo SDK", error);
-        if (!cancelled) {
-          setSdk(defaultSdk as any);
-        }
-      }
-    };
-
-    void initAsync();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [domain, toriiUrl, worldAddress]);
-
-  if (!sdk) return null;
-
-  return <DojoSdkProvider value={{ sdk, config }}>{children}</DojoSdkProvider>;
+  return (
+    <DojoConfigProvider toriiUrl={toriiUrl} worldAddress={worldAddress}>
+      <DojoSdkProviderInner domain={domain}>{children}</DojoSdkProviderInner>
+    </DojoConfigProvider>
+  );
 };

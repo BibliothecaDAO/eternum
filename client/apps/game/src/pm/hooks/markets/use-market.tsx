@@ -1,7 +1,6 @@
-import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
-import { useEntityId, useEntityQuery, useModel, useModels } from "@dojoengine/sdk/react";
-import { useEffect, useMemo, useState } from "react";
-import { uint256 } from "starknet";
+import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { addAddressPadding, uint256 } from "starknet";
 
 import type {
   ConditionResolution,
@@ -10,138 +9,134 @@ import type {
   VaultDenominator,
   VaultFeesDenominator,
   VaultNumerator,
-} from "@/pm/bindings";
-import { MarketClass } from "@/pm/class";
-import { useConfig } from "@/pm/providers";
-import { deepEqual } from "@/pm/utils";
+} from "../../bindings";
+import { MarketClass } from "../../class";
+import { useConfig } from "../../providers";
 import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
+// TODO: need to use useModel and useEntityQuery
 export const useMarket = (marketId: bigint) => {
   const { sdk } = useDojoSdk();
   const { getRegisteredToken } = useConfig();
-  const marketId_u256 = uint256.bnToUint256(marketId);
-  const entityId = useEntityId(marketId_u256.low, marketId_u256.high);
 
-  useEntityQuery(
-    new ToriiQueryBuilder()
-      .withEntityModels(["pm-Market"])
-      .withClause(
-        new ClauseBuilder()
-          .keys(["pm-Market"], [marketId_u256.low.toString(), marketId_u256.high.toString()], "FixedLen")
-          .build(),
-      )
-      .includeHashedKeys(),
-  );
-
-  useEntityQuery(
-    new ToriiQueryBuilder()
-      .withEntityModels(["pm-VaultDenominator", "pm-VaultFeesDenominator"])
-      .withClause(
-        new ClauseBuilder()
-          .keys(["pm-VaultDenominator"], [marketId_u256.low.toString(), marketId_u256.high.toString()], "FixedLen")
-          .build(),
-      )
-      .includeHashedKeys(),
-  );
-
-  useEntityQuery(
-    new ToriiQueryBuilder()
-      .withEntityModels(["pm-VaultNumerator"])
-      .withClause(
-        new ClauseBuilder()
-          .keys(["pm-VaultNumerator"], [marketId_u256.low.toString(), marketId_u256.high.toString()], "VariableLen")
-          .build(),
-      )
-      .includeHashedKeys(),
-  );
-
-  const market = useModel(entityId, "pm-Market") as Market;
-
-  const vaultDenominator = useModel(entityId, "pm-VaultDenominator") as VaultDenominator;
-
-  const vaultFeesDenominator = useModel(entityId, "pm-VaultFeesDenominator") as VaultFeesDenominator;
-
-  const marketCreatedQuery = new ToriiQueryBuilder()
-    .withEntityModels(["pm-MarketCreated"])
-    .withClause(
-      new ClauseBuilder()
-        .keys(["pm-MarketCreated"], [marketId_u256.low.toString(), marketId_u256.high.toString()], "VariableLen")
-        .build(),
-    )
-    .withLimit(10_000)
-    .includeHashedKeys();
-
+  const [market, setMarket] = useState<Market | undefined>();
   const [marketCreated, setMarketCreated] = useState<MarketCreated | undefined>();
-
-  useEffect(() => {
-    const initAsync = async () => {
-      const entities = (await sdk.getEventMessages({ query: marketCreatedQuery })).getItems();
-
-      if (entities[0]) {
-        setMarketCreated(entities[0].models.pm.MarketCreated as MarketCreated);
-      }
-    };
-    initAsync();
-  }, [marketId, market, marketCreatedQuery, sdk]);
-
-  const conditionResolutionQuery = useMemo(() => {
-    const conditionId_u256 = uint256.bnToUint256(market?.condition_id || 0);
-    const questionId_u256 = uint256.bnToUint256(market?.question_id || 0);
-
-    const keys = [
-      conditionId_u256.low.toString(),
-      conditionId_u256.high.toString(),
-      market?.oracle?.toString() || "0",
-      questionId_u256.low.toString(),
-      questionId_u256.high.toString(),
-    ];
-
-    const query = new ToriiQueryBuilder()
-      .withEntityModels(["pm-ConditionResolution"])
-      .withClause(new ClauseBuilder().keys(["pm-ConditionResolution"], keys, "FixedLen").build())
-      .withLimit(10_000)
-      .includeHashedKeys();
-
-    return query;
-  }, [market]);
-
+  const [vaultDenominator, setVaultDenominator] = useState<VaultDenominator | undefined>();
+  const [vaultFeesDenominator, setVaultFeesDenominator] = useState<VaultFeesDenominator | undefined>();
+  const [vaultNumerators, setVaultNumerators] = useState<VaultNumerator[]>([]);
   const [conditionResolution, setConditionResolution] = useState<ConditionResolution | undefined>();
 
-  useEffect(() => {
-    const initAsync = async () => {
-      const entities = (await sdk.getEventMessages({ query: conditionResolutionQuery })).getItems();
+  const marketIdPadded = useMemo(() => addAddressPadding(`0x${marketId.toString(16)}`), [marketId]);
+  console.log("loop raschel");
 
-      if (entities[0]) {
-        setConditionResolution(entities[0].models.pm.ConditionResolution as ConditionResolution);
+  const fetchMarketData = useCallback(async () => {
+    if (marketId === 0n) return;
+
+    try {
+      // Fetch market entity
+      const marketQuery = new ToriiQueryBuilder()
+        .withEntityModels(["pm-Market", "pm-VaultDenominator", "pm-VaultFeesDenominator"])
+        .withClause(new ClauseBuilder().where("pm-Market", "market_id", "Eq", marketIdPadded).build())
+        .includeHashedKeys();
+
+      const marketResponse = await sdk.getEntities({ query: marketQuery });
+      const marketItems: StandardizedQueryResult<SchemaType> = marketResponse.getItems();
+
+      if (marketItems[0]) {
+        const entity = marketItems[0];
+        if (entity.models.pm?.Market) {
+          setMarket(entity.models.pm.Market as Market);
+        }
+        if (entity.models.pm?.VaultDenominator) {
+          setVaultDenominator(entity.models.pm.VaultDenominator as VaultDenominator);
+        }
+        if (entity.models.pm?.VaultFeesDenominator) {
+          setVaultFeesDenominator(entity.models.pm.VaultFeesDenominator as VaultFeesDenominator);
+        }
+      }
+
+      // Fetch vault numerators
+      const vaultNumeratorQuery = new ToriiQueryBuilder()
+        .withEntityModels(["pm-VaultNumerator"])
+        .withClause(new ClauseBuilder().where("pm-VaultNumerator", "market_id", "Eq", marketIdPadded).build())
+        .withLimit(100)
+        .includeHashedKeys();
+
+      const vaultNumeratorResponse = await sdk.getEntities({ query: vaultNumeratorQuery });
+      const vaultNumeratorItems: StandardizedQueryResult<SchemaType> = vaultNumeratorResponse.getItems();
+
+      const numerators = vaultNumeratorItems
+        .flatMap((item) => (item.models.pm?.VaultNumerator ? [item.models.pm.VaultNumerator as VaultNumerator] : []))
+        .sort((a, b) => Number(a.index) - Number(b.index));
+
+      setVaultNumerators(numerators);
+
+      // Fetch market created event
+      const marketCreatedQuery = new ToriiQueryBuilder()
+        .withEntityModels(["pm-MarketCreated"])
+        .withClause(new ClauseBuilder().where("pm-MarketCreated", "market_id", "Eq", marketIdPadded).build())
+        .withLimit(1)
+        .includeHashedKeys();
+
+      const marketCreatedResponse = await sdk.getEventMessages({ query: marketCreatedQuery });
+      const marketCreatedItems: StandardizedQueryResult<SchemaType> = marketCreatedResponse.getItems();
+
+      if (marketCreatedItems[0]?.models.pm?.MarketCreated) {
+        setMarketCreated(marketCreatedItems[0].models.pm.MarketCreated as MarketCreated);
+      }
+    } catch (error) {
+      console.error("[useMarket] Failed to fetch market data:", error);
+    }
+  }, [sdk, marketId, marketIdPadded]);
+
+  // Fetch condition resolution when market is loaded
+  useEffect(() => {
+    if (!market) return;
+
+    const fetchConditionResolution = async () => {
+      try {
+        const conditionId_u256 = uint256.bnToUint256(market.condition_id || 0);
+        const questionId_u256 = uint256.bnToUint256(market.question_id || 0);
+
+        const keys = [
+          conditionId_u256.low.toString(),
+          conditionId_u256.high.toString(),
+          market.oracle?.toString() || "0",
+          questionId_u256.low.toString(),
+          questionId_u256.high.toString(),
+        ];
+
+        const query = new ToriiQueryBuilder()
+          .withEntityModels(["pm-ConditionResolution"])
+          .withClause(new ClauseBuilder().keys(["pm-ConditionResolution"], keys, "FixedLen").build())
+          .withLimit(1)
+          .includeHashedKeys();
+
+        const response = await sdk.getEventMessages({ query });
+        const items: StandardizedQueryResult<SchemaType> = response.getItems();
+
+        if (items[0]?.models.pm?.ConditionResolution) {
+          setConditionResolution(items[0].models.pm.ConditionResolution as ConditionResolution);
+        }
+      } catch (error) {
+        console.error("[useMarket] Failed to fetch condition resolution:", error);
       }
     };
-    initAsync();
-  }, [marketId, conditionResolutionQuery, sdk]);
 
-  const [vaultNumerators, setVaultNumerators] = useState<VaultNumerator[]>([]);
-  const rawVaultNumerators = useModels("pm-VaultNumerator");
+    fetchConditionResolution();
+  }, [sdk, market]);
+
+  // Initial fetch
   useEffect(() => {
-    if (!market || !rawVaultNumerators) return;
-
-    const newVaultNumerators = Object.keys(rawVaultNumerators).flatMap((key) => {
-      return Object.values(rawVaultNumerators[key] as VaultNumerator[]);
-    });
-
-    const numerators = newVaultNumerators
-      .filter((i) => BigInt(i.market_id) === BigInt(market.market_id))
-      .sort((a, b) => Number(a.index) - Number(b.index));
-
-    if (!deepEqual(vaultNumerators, numerators)) {
-      setVaultNumerators(numerators);
-    }
-  }, [rawVaultNumerators, market]);
+    fetchMarketData();
+  }, [fetchMarketData]);
 
   const marketMemo = useMemo(() => {
     if (!market || !marketCreated) return undefined;
 
     const collateralToken = getRegisteredToken(market.collateral_token);
 
-    const value = new MarketClass({
+    return new MarketClass({
       market,
       marketCreated,
       collateralToken,
@@ -150,8 +145,6 @@ export const useMarket = (marketId: bigint) => {
       conditionResolution,
       vaultFeesDenominator,
     });
-
-    return value;
   }, [
     market,
     marketCreated,

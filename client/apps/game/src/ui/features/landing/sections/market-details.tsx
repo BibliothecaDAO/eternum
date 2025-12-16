@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { MarketClass, type MarketOutcome } from "@/pm/class";
-import { useMarkets } from "@pm/sdk";
+import { useMarket, useMarkets } from "@pm/sdk";
 import { ScrollArea } from "@pm/ui";
 import { ArrowLeft, Play, RefreshCw } from "lucide-react";
 
@@ -206,7 +206,15 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
   const { markets, refresh: refreshMarkets } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Use useMarket hook for real-time updates when we have a valid marketId
+  const liveMarket = useMarket(targetId ?? 0n);
+
+  console.log("loop LandingMarketDetailsContent");
   const market = useMemo(() => {
+    // Prefer the live market data from useMarket hook for real-time updates
+    if (liveMarket) return liveMarket;
+
+    // Fallback to finding from the markets list
     if (targetId == null) return undefined;
 
     return markets.find((candidate) => {
@@ -218,7 +226,7 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
     });
   }, [markets, targetId]);
 
-  const isLoading = !market && markets.length === 0;
+  const isLoading = !market && markets.length === 0 && targetId != null;
 
   const handleRefresh = () => {
     refreshMarkets();

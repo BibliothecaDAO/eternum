@@ -63,10 +63,8 @@ export const useMarketUserMessages = (marketId: BigNumberish) => {
         await sdk.client.publishMessage({
           world_address: worldAddress,
           message: JSON.stringify(msg),
-          // @ts-ignore
-          signature: [...signature] as string[],
-          // signature: [signature.r.toString() , signature.s.toString()] as string[],
-        });
+          signature: Array.isArray(signature) ? signature : [signature.r.toString(), signature.s.toString()],
+        } as Parameters<typeof sdk.client.publishMessage>[0]);
         setTimeout(() => {
           refresh();
         }, 1_000);
