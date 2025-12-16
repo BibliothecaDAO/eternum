@@ -115,28 +115,24 @@ export class AmbienceManager {
       maxInterval: 100,
     },
 
-    // Weather-based ambient sounds
+    // Weather-based ambient sounds - rain should loop continuously
     {
       assetId: "ambient.rain.light",
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY, TimeOfDay.DUSK, TimeOfDay.EVENING, TimeOfDay.NIGHT],
       weather: [WeatherType.RAIN],
-      baseVolume: 0.25,
-      fadeInDuration: 3.0,
-      fadeOutDuration: 3.0,
-      playbackMode: "random_interval",
-      minInterval: 15,
-      maxInterval: 50,
+      baseVolume: 0.1,
+      fadeInDuration: 5.0,
+      fadeOutDuration: 5.0,
+      playbackMode: "loop",
     },
     {
       assetId: "ambient.rain.heavy",
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY, TimeOfDay.DUSK, TimeOfDay.EVENING, TimeOfDay.NIGHT],
       weather: [WeatherType.STORM],
-      baseVolume: 0.3,
-      fadeInDuration: 2.0,
-      fadeOutDuration: 2.0,
-      playbackMode: "random_interval",
-      minInterval: 15,
-      maxInterval: 50,
+      baseVolume: 0.125,
+      fadeInDuration: 4.0,
+      fadeOutDuration: 4.0,
+      playbackMode: "loop",
     },
     {
       assetId: ["ambient.thunder.distant.1", "ambient.thunder.distant.2", "ambient.thunder.distant.3"],
@@ -290,9 +286,10 @@ export class AmbienceManager {
 
       const targetVolume = layer.baseVolume * this.params.masterVolume;
 
+      // Start at volume 0 for fade-in effect
       const source = await this.audioManager.play(selectedAssetId, {
         loop: shouldLoop,
-        volume: targetVolume, // TODO: Implement proper fade-in/out with GainNode control
+        volume: 0, // Start silent, will fade in
         onComplete: () => {
           // For random_interval mode, schedule next play
           if (playbackMode === "random_interval") {
@@ -313,7 +310,7 @@ export class AmbienceManager {
         assetId: selectedAssetId,
         source,
         targetVolume,
-        currentVolume: targetVolume, // Start at target volume (no fade for now)
+        currentVolume: 0, // Start at 0 for fade-in
         fadeSpeed,
         isFadingOut: false,
       };
@@ -417,8 +414,8 @@ export class AmbienceManager {
         }
       }
 
-      // Update volume (would need to be implemented in AudioManager if we want dynamic volume control)
-      // For now, we set volume at playback time
+      // Apply the calculated volume to the actual audio source
+      this.audioManager.setSourceVolume(activeSound.source, activeSound.currentVolume);
     });
 
     // Remove stopped sounds

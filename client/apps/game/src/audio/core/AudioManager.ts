@@ -19,8 +19,14 @@ export class AudioManager {
   // Variation tracking to avoid immediate repeats
   private lastPlayedVariation: Map<string, number> = new Map();
 
+  // Anti-spam: track last play time per asset to prevent rapid repeats
+  private lastPlayTime: Map<string, number> = new Map();
+
   // Ramp duration for volume changes to prevent clicks/pops (in seconds)
   private static readonly VOLUME_RAMP_DURATION = 0.015; // 15ms
+
+  // Minimum interval between repeated plays of the same sound (in milliseconds)
+  private static readonly MIN_REPEAT_INTERVAL_MS = 50;
 
   private constructor() {
     this.state = this.loadPersistedState();
@@ -249,6 +255,16 @@ export class AudioManager {
       return null;
     }
 
+    // Anti-spam: skip if same sound played too recently (except for music which should always play)
+    if (asset.category !== AudioCategory.MUSIC) {
+      const now = performance.now();
+      const lastTime = this.lastPlayTime.get(assetId) ?? 0;
+      if (now - lastTime < AudioManager.MIN_REPEAT_INTERVAL_MS) {
+        return null; // Skip rapid repeat
+      }
+      this.lastPlayTime.set(assetId, now);
+    }
+
     // Select variation URL (or main URL if no variations)
     const selectedUrl = this.selectVariationUrl(asset);
     const hasVariations = asset.variations && asset.variations.length > 0;
@@ -367,6 +383,17 @@ export class AudioManager {
     }
   }
 
+  /**
+   * Update volume on an active audio source (for dynamic volume control like fades)
+   * Uses ramping to prevent clicks/pops
+   */
+  setSourceVolume(source: AudioBufferSourceNode, volume: number): void {
+    const gainNode = this.sourceGainNodes.get(source);
+    if (gainNode && this.audioContext) {
+      this.rampGain(gainNode, Math.max(0, Math.min(1, volume)));
+    }
+  }
+
   stopAllMusic(): void {
     this.musicSources.forEach((source) => {
       try {
@@ -455,7 +482,7 @@ export class AudioManager {
     this.state.categoryVolumes[category] = Math.max(0, Math.min(1, volume));
     const gainNode = this.categoryGainNodes.get(category);
     if (gainNode) {
-      gainNode.gain.value = this.state.categoryVolumes[category];
+      this.rampGain(gainNode, this.state.categoryVolumes[category]);
     }
     this.saveState();
   }
@@ -463,7 +490,7 @@ export class AudioManager {
   setMuted(muted: boolean): void {
     this.state.muted = muted;
     if (this.masterGainNode) {
-      this.masterGainNode.gain.value = muted ? 0 : this.state.masterVolume;
+      this.rampGain(this.masterGainNode, muted ? 0 : this.state.masterVolume);
     }
     this.saveState();
   }
