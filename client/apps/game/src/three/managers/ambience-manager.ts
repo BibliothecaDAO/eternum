@@ -44,6 +44,8 @@ interface ActiveAmbienceSound {
 interface AmbienceParams {
   enabled: boolean;
   masterVolume: number;
+  weatherIntensity: number;
+  stormIntensity: number;
 }
 
 /**
@@ -55,6 +57,8 @@ export class AmbienceManager {
   private params: AmbienceParams = {
     enabled: true,
     masterVolume: 1.0,
+    weatherIntensity: 0,
+    stormIntensity: 0,
   };
 
   private currentTimeOfDay: TimeOfDay = TimeOfDay.DAY;
@@ -504,6 +508,68 @@ export class AmbienceManager {
     }, 100);
 
     ambienceFolder.close();
+  }
+
+  /**
+   * Update ambience based on weather intensity from WeatherManager
+   * This provides smoother transitions than binary weather type changes
+   *
+   * @param weatherIntensity - Overall weather intensity 0-1
+   * @param stormIntensity - Storm-specific intensity 0-1 (for thunder)
+   */
+  updateFromWeather(weatherIntensity: number, stormIntensity: number): void {
+    this.params.weatherIntensity = weatherIntensity;
+    this.params.stormIntensity = stormIntensity;
+
+    // Map intensity to weather type for sound layer activation
+    // This creates a graduated transition rather than binary switching
+    let effectiveWeather: WeatherType;
+
+    if (stormIntensity > 0.3) {
+      effectiveWeather = WeatherType.STORM;
+    } else if (weatherIntensity > 0.2) {
+      effectiveWeather = WeatherType.RAIN;
+    } else {
+      effectiveWeather = WeatherType.CLEAR;
+    }
+
+    // Only update if weather type changed (to avoid constant sound restarts)
+    if (effectiveWeather !== this.currentWeather) {
+      this.currentWeather = effectiveWeather;
+      this.updateSoundLayers();
+    }
+
+    // Modulate active rain/storm sound volumes based on intensity
+    // This provides smooth volume transitions during weather phases
+    this.activeSounds.forEach((activeSound, layerId) => {
+      const layerIndex = parseInt(layerId.split("_")[1]);
+      const layer = this.soundLayers[layerIndex];
+
+      if (!layer || !layer.weather) return;
+
+      // Calculate intensity-based volume multiplier
+      let volumeMultiplier = 1.0;
+
+      if (layer.weather.includes(WeatherType.RAIN) || layer.weather.includes(WeatherType.STORM)) {
+        // Rain sounds: scale with weather intensity
+        volumeMultiplier = Math.max(0.3, weatherIntensity);
+      }
+
+      if (layer.weather.includes(WeatherType.STORM)) {
+        // Storm sounds (thunder): scale with storm intensity
+        volumeMultiplier = Math.max(0.2, stormIntensity);
+      }
+
+      // Update target volume with intensity multiplier
+      activeSound.targetVolume = layer.baseVolume * this.params.masterVolume * volumeMultiplier;
+    });
+  }
+
+  /**
+   * Get current weather intensity
+   */
+  getWeatherIntensity(): number {
+    return this.params.weatherIntensity;
   }
 
   /**

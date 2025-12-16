@@ -15,6 +15,29 @@ export interface MountBaseTransform {
   scale?: Vector3;
 }
 
+// Pre-allocated reusable objects for mount transform calculations (avoids per-frame GC pressure)
+const _tempOffsetVector = new Vector3();
+const _tempPosition = new Vector3();
+const _tempRotation = new Euler();
+const _tempScale = new Vector3();
+
+// Cache of reusable AttachmentTransform objects keyed by mount point name
+// This avoids allocating new objects every frame
+const _transformCache: Map<string, AttachmentTransform> = new Map();
+
+function getOrCreateCachedTransform(mountPoint: string): AttachmentTransform {
+  let transform = _transformCache.get(mountPoint);
+  if (!transform) {
+    transform = {
+      position: new Vector3(),
+      rotation: new Euler(),
+      scale: new Vector3(),
+    };
+    _transformCache.set(mountPoint, transform);
+  }
+  return transform;
+}
+
 const HUMANOID_DEFAULTS: Record<string, MountDefinition> = {
   origin: {
     offset: [0, 0, 0],
@@ -71,7 +94,6 @@ const STRUCTURE_MOUNT_OVERRIDES: Partial<Record<StructureType, Record<string, Mo
 };
 
 const UNIT_SCALE_IDENTITY = new Vector3(1, 1, 1);
-const ZERO_ROTATION = new Euler(0, 0, 0);
 
 function applyDefinitions(
   definitions: Record<string, MountDefinition> | undefined,
@@ -84,43 +106,58 @@ function applyDefinitions(
     const offset = definition.offset ?? [0, 0, 0];
     const baseScale = base.scale ?? UNIT_SCALE_IDENTITY;
 
-    const position = base.position.clone();
-    const offsetVector = new Vector3(offset[0], offset[1], offset[2]);
-    offsetVector.x *= baseScale.x;
-    offsetVector.y *= baseScale.y;
-    offsetVector.z *= baseScale.z;
+    // Use cached transform object to avoid allocations
+    const transform = getOrCreateCachedTransform(mountPoint);
+
+    // Calculate position using temp vectors (no allocations)
+    _tempPosition.copy(base.position);
+    _tempOffsetVector.set(offset[0], offset[1], offset[2]);
+    _tempOffsetVector.x *= baseScale.x;
+    _tempOffsetVector.y *= baseScale.y;
+    _tempOffsetVector.z *= baseScale.z;
 
     if (base.rotation) {
-      offsetVector.applyEuler(base.rotation);
+      _tempOffsetVector.applyEuler(base.rotation);
     }
 
-    position.add(offsetVector);
+    _tempPosition.add(_tempOffsetVector);
+    transform.position.copy(_tempPosition);
 
-    let rotation: Euler | undefined;
+    // Calculate rotation
     if (base.rotation || definition.rotation) {
-      rotation = base.rotation ? base.rotation.clone() : ZERO_ROTATION.clone();
+      if (base.rotation) {
+        _tempRotation.copy(base.rotation);
+      } else {
+        _tempRotation.set(0, 0, 0);
+      }
       if (definition.rotation) {
-        rotation.x += definition.rotation[0];
-        rotation.y += definition.rotation[1];
-        rotation.z += definition.rotation[2];
+        _tempRotation.x += definition.rotation[0];
+        _tempRotation.y += definition.rotation[1];
+        _tempRotation.z += definition.rotation[2];
       }
+      transform.rotation!.copy(_tempRotation);
+    } else {
+      transform.rotation!.set(0, 0, 0);
     }
 
-    let scale: Vector3 | undefined;
+    // Calculate scale
     if (base.scale || definition.scale) {
-      scale = base.scale ? base.scale.clone() : UNIT_SCALE_IDENTITY.clone();
-      if (definition.scale) {
-        scale.x *= definition.scale[0];
-        scale.y *= definition.scale[1];
-        scale.z *= definition.scale[2];
+      if (base.scale) {
+        _tempScale.copy(base.scale);
+      } else {
+        _tempScale.set(1, 1, 1);
       }
+      if (definition.scale) {
+        _tempScale.x *= definition.scale[0];
+        _tempScale.y *= definition.scale[1];
+        _tempScale.z *= definition.scale[2];
+      }
+      transform.scale!.copy(_tempScale);
+    } else {
+      transform.scale!.set(1, 1, 1);
     }
 
-    out.set(mountPoint, {
-      position,
-      rotation,
-      scale,
-    });
+    out.set(mountPoint, transform);
   }
 }
 

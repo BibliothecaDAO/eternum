@@ -77,7 +77,7 @@ export class ArmyModel {
   private readonly animationBuckets: Uint8Array;
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
-  private readonly ANIMATION_BUCKETS = 20;
+  private readonly ANIMATION_BUCKETS = 10;
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
   private nextInstanceIndex = 0;
@@ -451,32 +451,57 @@ export class ArmyModel {
   }
 
   private clearInstanceSlot(matrixIndex: number): void {
-    this.models.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, matrixIndex + 1);
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.userData.entityIdMap?.delete(matrixIndex);
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    // O(1) slot clearing: only clear the specific model(s) that own this slot
+    const entityId = this.matrixIndexOwners.get(matrixIndex);
+
+    if (entityId !== undefined) {
+      // Clear from the active base model (if any)
+      const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+      if (activeBaseModel) {
+        const modelData = this.models.get(activeBaseModel);
+        if (modelData) {
+          modelData.activeInstances.delete(matrixIndex);
+          this.clearModelSlot(modelData, matrixIndex);
+        }
       }
-    });
-    // Also clear from cosmetic models
-    this.cosmeticModels.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, matrixIndex + 1);
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.userData.entityIdMap?.delete(matrixIndex);
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+
+      // Clear from the active cosmetic model (if any)
+      const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+      if (activeCosmetic) {
+        const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+        if (cosmeticData) {
+          cosmeticData.activeInstances.delete(matrixIndex);
+          this.clearModelSlot(cosmeticData, matrixIndex);
+        }
       }
-    });
+    } else {
+      // Fallback: if we don't know the owner, clear all models (legacy behavior)
+      // This should rarely happen in practice
+      this.models.forEach((modelData) => {
+        this.clearModelSlot(modelData, matrixIndex);
+      });
+      this.cosmeticModels.forEach((modelData) => {
+        this.clearModelSlot(modelData, matrixIndex);
+      });
+    }
+
     this.setAnimationState(matrixIndex, false);
+  }
+
+  /**
+   * Helper to clear a single slot from a model's meshes
+   */
+  private clearModelSlot(modelData: ModelData, matrixIndex: number): void {
+    this.ensureModelCapacity(modelData, matrixIndex + 1);
+    modelData.instancedMeshes.forEach((mesh) => {
+      mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.userData.entityIdMap?.delete(matrixIndex);
+    });
+    if (modelData.contactShadowMesh) {
+      modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   // Instance Management Methods
@@ -643,6 +668,8 @@ export class ArmyModel {
       if (prevActiveBaseModel) {
         const prevModelData = this.models.get(prevActiveBaseModel);
         if (prevModelData) {
+          // Remove from previous model's active instances
+          prevModelData.activeInstances.delete(index);
           this.ensureModelCapacity(prevModelData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevModelData, index, entityId, state.position, state.color);
@@ -655,6 +682,8 @@ export class ArmyModel {
       if (prevActiveCosmetic) {
         const prevCosmeticData = this.cosmeticModels.get(prevActiveCosmetic);
         if (prevCosmeticData) {
+          // Remove from previous cosmetic's active instances
+          prevCosmeticData.activeInstances.delete(index);
           this.ensureModelCapacity(prevCosmeticData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.position, state.color);
@@ -666,6 +695,8 @@ export class ArmyModel {
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
+        // Add to model's active instances
+        modelData.activeInstances.add(index);
         const targetScale = this.getScaleForModelType(activeBaseModel);
         this.ensureModelCapacity(modelData, index + 1);
         this.updateInstanceTransform(state.position, targetScale, state.rotation);
@@ -676,6 +707,8 @@ export class ArmyModel {
     if (activeCosmetic) {
       const cosmeticData = this.cosmeticModels.get(activeCosmetic);
       if (cosmeticData) {
+        // Add to cosmetic's active instances
+        cosmeticData.activeInstances.add(index);
         this.ensureModelCapacity(cosmeticData, index + 1);
         this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
         this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
@@ -843,26 +876,44 @@ export class ArmyModel {
       if (mesh.count === 0) return;
       hasAnimatedInstances = true;
 
-      // Pre-calculate weights for all buckets and states
+      // Determine which animation states are actually needed by scanning instances
+      let needsIdleWeights = false;
+      let needsMovingWeights = false;
+      for (let i = 0; i < mesh.count; i++) {
+        const state = this.animationStates[i];
+        if (this.shouldSkipAnimation(state)) continue;
+        if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
+        else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
+        if (needsIdleWeights && needsMovingWeights) break;
+      }
+
+      // Early exit if no animations needed
+      if (!needsIdleWeights && !needsMovingWeights) return;
+
+      // Pre-calculate weights only for needed states
       // This significantly reduces CPU load by batching mixer updates
       const idleWeights: number[][] = [];
       const movingWeights: number[][] = [];
       const actions = this.getOrCreateAnimationActions(modelData, 0); // Shared actions
 
-      // 1. Sample Idle Weights
-      this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
-      for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
-        const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
-        modelData.mixer.setTime(t);
-        idleWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+      // 1. Sample Idle Weights (only if needed)
+      if (needsIdleWeights) {
+        this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
+        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          idleWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+        }
       }
 
-      // 2. Sample Moving Weights
-      this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
-      for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
-        const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
-        modelData.mixer.setTime(t);
-        movingWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+      // 2. Sample Moving Weights (only if needed)
+      if (needsMovingWeights) {
+        this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
+        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          movingWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+        }
       }
 
       // 3. Apply to instances
@@ -895,16 +946,6 @@ export class ArmyModel {
     const weights = animationState === ANIMATION_STATE_MOVING ? movingWeights[bucket] : idleWeights[bucket];
 
     mesh.setMorphAt(instanceIndex, { morphTargetInfluences: weights } as any);
-  }
-
-  private updateInstanceAnimation(
-    modelData: ModelData,
-    mesh: AnimatedInstancedMesh,
-    meshIndex: number,
-    instanceIndex: number,
-    time: number,
-  ): void {
-    // Deprecated in favor of updateInstanceAnimationOptimized
   }
 
   private shouldSkipAnimation(animationState: number): boolean {
@@ -1157,8 +1198,9 @@ export class ArmyModel {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    const direction = new Vector3().subVectors(toPos, fromPos).normalize();
-    const baseAngle = Math.atan2(direction.x, direction.z);
+    // Use pre-allocated vector to avoid GC pressure
+    this.tempVector3.subVectors(toPos, fromPos).normalize();
+    const baseAngle = Math.atan2(this.tempVector3.x, this.tempVector3.z);
 
     movement.targetRotation = baseAngle;
     if (movement.currentRotation === 0) {
@@ -1386,12 +1428,21 @@ export class ArmyModel {
   }
 
   /**
-   * Gets the appropriate easing type for an army's movement
+   * Get instance data for an entity (avoids type casting in consumers)
    * @param entityId - The entity ID
+   * @returns The instance data or undefined if not found
+   */
+  public getInstanceData(entityId: number): ArmyInstanceData | undefined {
+    return this.instanceData.get(entityId);
+  }
+
+  /**
+   * Gets the appropriate easing type for an army's movement
+   * @param _entityId - The entity ID (unused, kept for future extensibility)
    * @param instanceData - The army instance data
    * @returns The easing type to use
    */
-  private getEasingTypeForMovement(entityId: number, instanceData: ArmyInstanceData): EasingType {
+  private getEasingTypeForMovement(_entityId: number, instanceData: ArmyInstanceData): EasingType {
     // Use tier-specific easing if available
     if (instanceData.tier && this.tierEasingMap.has(instanceData.tier)) {
       return this.tierEasingMap.get(instanceData.tier)!;
@@ -1544,28 +1595,53 @@ export class ArmyModel {
     }
 
     this.currentVisibleCount = activeCount;
-    const drawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
+    const globalDrawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
 
+    // Set per-model draw counts based on their active instances
+    // Models with no active instances get mesh.count = 0 (skip rendering/raycasting/animation)
     this.models.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, drawCount);
+      this.ensureModelCapacity(modelData, globalDrawCount);
+      const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = drawCount;
+        mesh.count = modelDrawCount;
       });
       if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = drawCount;
+        modelData.contactShadowMesh.count = modelDrawCount;
       }
     });
 
-    // Also update cosmetic models
+    // Also update cosmetic models with per-model counts
     this.cosmeticModels.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, drawCount);
+      this.ensureModelCapacity(modelData, globalDrawCount);
+      const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = drawCount;
+        mesh.count = modelDrawCount;
       });
       if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = drawCount;
+        modelData.contactShadowMesh.count = modelDrawCount;
       }
     });
+  }
+
+  /**
+   * Calculate the draw count for a specific model based on its active instances.
+   * Returns 0 if no active instances (model won't render/raycast/animate).
+   * Returns maxSlotIndex + 1 if there are active instances.
+   */
+  private getModelDrawCount(modelData: ModelData): number {
+    if (modelData.activeInstances.size === 0) {
+      return 0;
+    }
+
+    // Find the max slot index among active instances
+    let maxSlot = -1;
+    for (const slot of modelData.activeInstances) {
+      if (slot > maxSlot) {
+        maxSlot = slot;
+      }
+    }
+
+    return maxSlot + 1;
   }
 
   public setVisibleCount(count: number): void {
@@ -1599,7 +1675,7 @@ export class ArmyModel {
   }
 
   public raycastAll(raycaster: Raycaster): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
-    const results: Array<{ instanceId: number | undefined; mesh: InstancedMesh }> = [];
+    const results: Array<{ instanceId: number | undefined; mesh: InstancedMesh; distance: number }> = [];
 
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
@@ -1608,23 +1684,16 @@ export class ArmyModel {
           results.push({
             instanceId: intersects[0].instanceId,
             mesh: mesh,
+            distance: intersects[0].distance,
           });
         }
       });
     });
 
-    return this.sortRaycastResults(results, raycaster);
-  }
+    // Sort by cached distance (avoids repeated raycast calls in comparator)
+    results.sort((a, b) => a.distance - b.distance);
 
-  private sortRaycastResults(
-    results: Array<{ instanceId: number | undefined; mesh: InstancedMesh }>,
-    raycaster: Raycaster,
-  ): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
-    return results.sort((a, b) => {
-      const intersectsA = raycaster.intersectObject(a.mesh);
-      const intersectsB = raycaster.intersectObject(b.mesh);
-      return intersectsA[0].distance - intersectsB[0].distance;
-    });
+    return results;
   }
 
   /**

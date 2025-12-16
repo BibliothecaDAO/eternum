@@ -29,7 +29,6 @@ import {
   resolveArmyMountTransforms,
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
-import type { ArmyInstanceData } from "../types/army";
 import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
@@ -904,16 +903,13 @@ export class ArmyManager {
       return;
     }
 
-    const instanceDataMap = (this.armyModel as unknown as { instanceData?: Map<number, ArmyInstanceData> })
-      .instanceData as Map<number, ArmyInstanceData> | undefined;
-
     this.visibleArmies.forEach((army) => {
       const entityId = this.toNumericId(army.entityId);
       if (!this.activeArmyAttachmentEntities.has(entityId)) {
         return;
       }
 
-      const instanceData = instanceDataMap?.get(entityId);
+      const instanceData = this.armyModel.getInstanceData(entityId);
       if (instanceData?.position) {
         this.tempCosmeticPosition.copy(instanceData.position);
       } else {
@@ -947,18 +943,15 @@ export class ArmyManager {
     let visibleArmies = computeVisibleArmies();
     let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
 
+    // Preload all required models once
     if (requiredModelTypes.size > 0) {
       await this.armyModel.preloadModels(requiredModelTypes);
     }
 
-    // Recompute after any async work to capture the latest data
+    // Recompute after async work to capture any armies added during preload
     visibleArmies = computeVisibleArmies();
     visibleArmies.sort((a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId));
-    ({ modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies));
-
-    if (requiredModelTypes.size > 0) {
-      await this.armyModel.preloadModels(requiredModelTypes);
-    }
+    ({ modelTypesByEntity } = this.collectModelInfo(visibleArmies));
 
     let buffersDirty = false;
 
@@ -1694,37 +1687,9 @@ export class ArmyManager {
     // Update FX
     this.fxManager.update(deltaTime);
 
-    // Update point icon positions for moving armies
-    if (this.pointsRenderers) {
-      const instanceDataMap = (this.armyModel as unknown as { instanceData?: Map<number, ArmyInstanceData> })
-        .instanceData as Map<number, ArmyInstanceData> | undefined;
-
-      if (instanceDataMap) {
-        this.visibleArmies.forEach((army) => {
-          const instanceData = instanceDataMap.get(this.toNumericId(army.entityId));
-          if (instanceData && instanceData.isMoving) {
-            // Get current interpolated position
-            const iconPosition = this.tempIconPosition.copy(instanceData.position);
-            iconPosition.y += 2.1; // Match CSS2D label height
-
-            // Update point in appropriate renderer
-            const renderer = army.isDaydreamsAgent
-              ? this.pointsRenderers!.agent
-              : army.isMine
-                ? this.pointsRenderers!.player
-                : this.pointsRenderers!.enemy;
-            renderer.setPoint({
-              entityId: army.entityId,
-              position: iconPosition,
-            });
-          }
-        });
-      }
-    }
-
-    // Update relic effect positions to follow moving armies
-    this.updateArmyAttachmentTransforms();
-    this.updateRelicEffectPositions();
+    // Batch update: single pass over visible armies for all per-frame operations
+    // This consolidates point icons, attachment transforms, and relic effects
+    this.updateVisibleArmiesBatched();
 
     if (this.frustumVisibilityDirty) {
       this.applyFrustumVisibilityToLabels();
@@ -1733,6 +1698,91 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+  }
+
+  /**
+   * Batched update for all visible army per-frame operations.
+   * Consolidates point icon updates, attachment transforms, and relic effect positions
+   * into a single iteration over visibleArmies to reduce iteration overhead.
+   */
+  private updateVisibleArmiesBatched() {
+    const hasPointsRenderers = this.pointsRenderers !== undefined;
+    const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
+    const hasRelicEffects = this.armyRelicEffects.size > 0;
+
+    // Early exit if nothing to update
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasRelicEffects) {
+      return;
+    }
+
+    // Single pass over visible armies
+    for (let i = 0; i < this.visibleArmies.length; i++) {
+      const army = this.visibleArmies[i];
+      const numericEntityId = this.toNumericId(army.entityId);
+      const instanceData = this.armyModel.getInstanceData(numericEntityId);
+
+      // 1. Update point icon positions for moving armies
+      if (hasPointsRenderers && instanceData?.isMoving) {
+        const iconPosition = this.tempIconPosition.copy(instanceData.position);
+        iconPosition.y += 2.1; // Match CSS2D label height
+
+        const renderer = army.isDaydreamsAgent
+          ? this.pointsRenderers!.agent
+          : army.isMine
+            ? this.pointsRenderers!.player
+            : this.pointsRenderers!.enemy;
+        renderer.setPoint({
+          entityId: army.entityId,
+          position: iconPosition,
+        });
+      }
+
+      // 2. Update attachment transforms
+      if (hasActiveAttachments && this.activeArmyAttachmentEntities.has(numericEntityId)) {
+        if (instanceData?.position) {
+          this.tempCosmeticPosition.copy(instanceData.position);
+        } else {
+          const worldPosition = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+          this.tempCosmeticPosition.copy(worldPosition);
+        }
+
+        const baseTransform = {
+          position: this.tempCosmeticPosition,
+          rotation: instanceData?.rotation,
+          scale: instanceData?.scale ?? this.scale,
+        };
+
+        const { x, y } = army.hexCoords.getContract();
+        const biome = Biome.getBiome(x, y);
+        const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
+
+        const mountTransforms = resolveArmyMountTransforms(
+          modelType,
+          baseTransform,
+          this.armyAttachmentTransformScratch,
+        );
+
+        this.attachmentManager.updateAttachmentTransforms(numericEntityId, baseTransform, mountTransforms);
+      }
+
+      // 3. Update relic effect positions for moving armies
+      if (hasRelicEffects && instanceData?.isMoving) {
+        const relicEffects = this.armyRelicEffects.get(army.entityId);
+        if (relicEffects) {
+          this.tempPosition.copy(instanceData.position);
+          this.tempPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
+
+          for (let j = 0; j < relicEffects.length; j++) {
+            const relicEffect = relicEffects[j];
+            if (relicEffect.fx.instance) {
+              relicEffect.fx.instance.initialX = this.tempPosition.x;
+              relicEffect.fx.instance.initialY = this.tempPosition.y;
+              relicEffect.fx.instance.initialZ = this.tempPosition.z;
+            }
+          }
+        }
+      }
+    }
   }
 
   private applyFrustumVisibilityToLabels() {
@@ -2109,8 +2159,8 @@ export class ArmyManager {
       return false;
     }
 
-    // Check if army is in the visible armies list
-    return this.visibleArmies.some((army) => army.entityId === entityId);
+    // Check if army is in the visible armies list (O(1) lookup vs O(n) scan)
+    return this.visibleArmyIndices.has(entityId);
   }
 
   public hasArmy(entityId: ID): boolean {
@@ -2169,7 +2219,7 @@ ${
       if (!army) return;
 
       // Get the current position of the army (might be interpolated during movement)
-      const instanceData = this.armyModel["instanceData"]?.get(this.toNumericId(entityId));
+      const instanceData = this.armyModel.getInstanceData(this.toNumericId(entityId));
       if (instanceData && instanceData.isMoving) {
         // Army is currently moving, update relic effects to follow the current interpolated position
         // Use reusable vector to avoid cloning every frame
@@ -2266,6 +2316,14 @@ ${
     if (existingLabel.parent !== this.labelsGroup) {
       return;
     }
+
+    // Optimization: Skip DOM update if data hasn't changed (dirty-flag pattern)
+    const dataKey = `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}`;
+    if (existingLabel.userData.lastDataKey === dataKey) {
+      return;
+    }
+    existingLabel.userData.lastDataKey = dataKey;
+
     // Update the existing label content in-place with correct camera view
     updateArmyLabel(existingLabel.element, army, this.currentCameraView);
   }
