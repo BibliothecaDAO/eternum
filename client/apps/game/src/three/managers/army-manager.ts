@@ -2162,8 +2162,8 @@ export class ArmyManager {
       return false;
     }
 
-    // Check if army is in the visible armies list
-    return this.visibleArmies.some((army) => army.entityId === entityId);
+    // Check if army is in the visible armies list (O(1) lookup vs O(n) scan)
+    return this.visibleArmyIndices.has(entityId);
   }
 
   public hasArmy(entityId: ID): boolean {

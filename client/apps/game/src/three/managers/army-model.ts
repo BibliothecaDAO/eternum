@@ -1617,7 +1617,7 @@ export class ArmyModel {
   }
 
   public raycastAll(raycaster: Raycaster): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
-    const results: Array<{ instanceId: number | undefined; mesh: InstancedMesh }> = [];
+    const results: Array<{ instanceId: number | undefined; mesh: InstancedMesh; distance: number }> = [];
 
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
@@ -1626,23 +1626,16 @@ export class ArmyModel {
           results.push({
             instanceId: intersects[0].instanceId,
             mesh: mesh,
+            distance: intersects[0].distance,
           });
         }
       });
     });
 
-    return this.sortRaycastResults(results, raycaster);
-  }
+    // Sort by cached distance (avoids repeated raycast calls in comparator)
+    results.sort((a, b) => a.distance - b.distance);
 
-  private sortRaycastResults(
-    results: Array<{ instanceId: number | undefined; mesh: InstancedMesh }>,
-    raycaster: Raycaster,
-  ): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
-    return results.sort((a, b) => {
-      const intersectsA = raycaster.intersectObject(a.mesh);
-      const intersectsB = raycaster.intersectObject(b.mesh);
-      return intersectsA[0].distance - intersectsB[0].distance;
-    });
+    return results;
   }
 
   /**
