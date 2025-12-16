@@ -451,32 +451,57 @@ export class ArmyModel {
   }
 
   private clearInstanceSlot(matrixIndex: number): void {
-    this.models.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, matrixIndex + 1);
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.userData.entityIdMap?.delete(matrixIndex);
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    // O(1) slot clearing: only clear the specific model(s) that own this slot
+    const entityId = this.matrixIndexOwners.get(matrixIndex);
+
+    if (entityId !== undefined) {
+      // Clear from the active base model (if any)
+      const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+      if (activeBaseModel) {
+        const modelData = this.models.get(activeBaseModel);
+        if (modelData) {
+          modelData.activeInstances.delete(matrixIndex);
+          this.clearModelSlot(modelData, matrixIndex);
+        }
       }
-    });
-    // Also clear from cosmetic models
-    this.cosmeticModels.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, matrixIndex + 1);
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.userData.entityIdMap?.delete(matrixIndex);
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+
+      // Clear from the active cosmetic model (if any)
+      const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+      if (activeCosmetic) {
+        const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+        if (cosmeticData) {
+          cosmeticData.activeInstances.delete(matrixIndex);
+          this.clearModelSlot(cosmeticData, matrixIndex);
+        }
       }
-    });
+    } else {
+      // Fallback: if we don't know the owner, clear all models (legacy behavior)
+      // This should rarely happen in practice
+      this.models.forEach((modelData) => {
+        this.clearModelSlot(modelData, matrixIndex);
+      });
+      this.cosmeticModels.forEach((modelData) => {
+        this.clearModelSlot(modelData, matrixIndex);
+      });
+    }
+
     this.setAnimationState(matrixIndex, false);
+  }
+
+  /**
+   * Helper to clear a single slot from a model's meshes
+   */
+  private clearModelSlot(modelData: ModelData, matrixIndex: number): void {
+    this.ensureModelCapacity(modelData, matrixIndex + 1);
+    modelData.instancedMeshes.forEach((mesh) => {
+      mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.userData.entityIdMap?.delete(matrixIndex);
+    });
+    if (modelData.contactShadowMesh) {
+      modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   // Instance Management Methods
@@ -643,6 +668,8 @@ export class ArmyModel {
       if (prevActiveBaseModel) {
         const prevModelData = this.models.get(prevActiveBaseModel);
         if (prevModelData) {
+          // Remove from previous model's active instances
+          prevModelData.activeInstances.delete(index);
           this.ensureModelCapacity(prevModelData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevModelData, index, entityId, state.position, state.color);
@@ -655,6 +682,8 @@ export class ArmyModel {
       if (prevActiveCosmetic) {
         const prevCosmeticData = this.cosmeticModels.get(prevActiveCosmetic);
         if (prevCosmeticData) {
+          // Remove from previous cosmetic's active instances
+          prevCosmeticData.activeInstances.delete(index);
           this.ensureModelCapacity(prevCosmeticData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.position, state.color);
@@ -666,6 +695,8 @@ export class ArmyModel {
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
+        // Add to model's active instances
+        modelData.activeInstances.add(index);
         const targetScale = this.getScaleForModelType(activeBaseModel);
         this.ensureModelCapacity(modelData, index + 1);
         this.updateInstanceTransform(state.position, targetScale, state.rotation);
@@ -676,6 +707,8 @@ export class ArmyModel {
     if (activeCosmetic) {
       const cosmeticData = this.cosmeticModels.get(activeCosmetic);
       if (cosmeticData) {
+        // Add to cosmetic's active instances
+        cosmeticData.activeInstances.add(index);
         this.ensureModelCapacity(cosmeticData, index + 1);
         this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
         this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
@@ -1562,28 +1595,53 @@ export class ArmyModel {
     }
 
     this.currentVisibleCount = activeCount;
-    const drawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
+    const globalDrawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
 
+    // Set per-model draw counts based on their active instances
+    // Models with no active instances get mesh.count = 0 (skip rendering/raycasting/animation)
     this.models.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, drawCount);
+      this.ensureModelCapacity(modelData, globalDrawCount);
+      const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = drawCount;
+        mesh.count = modelDrawCount;
       });
       if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = drawCount;
+        modelData.contactShadowMesh.count = modelDrawCount;
       }
     });
 
-    // Also update cosmetic models
+    // Also update cosmetic models with per-model counts
     this.cosmeticModels.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, drawCount);
+      this.ensureModelCapacity(modelData, globalDrawCount);
+      const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = drawCount;
+        mesh.count = modelDrawCount;
       });
       if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = drawCount;
+        modelData.contactShadowMesh.count = modelDrawCount;
       }
     });
+  }
+
+  /**
+   * Calculate the draw count for a specific model based on its active instances.
+   * Returns 0 if no active instances (model won't render/raycast/animate).
+   * Returns maxSlotIndex + 1 if there are active instances.
+   */
+  private getModelDrawCount(modelData: ModelData): number {
+    if (modelData.activeInstances.size === 0) {
+      return 0;
+    }
+
+    // Find the max slot index among active instances
+    let maxSlot = -1;
+    for (const slot of modelData.activeInstances) {
+      if (slot > maxSlot) {
+        maxSlot = slot;
+      }
+    }
+
+    return maxSlot + 1;
   }
 
   public setVisibleCount(count: number): void {
