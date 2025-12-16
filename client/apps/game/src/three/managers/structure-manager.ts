@@ -24,7 +24,7 @@ import {
 import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { FrustumManager } from "../utils/frustum-manager";
@@ -134,6 +134,10 @@ export class StructureManager {
   private activeStructureAttachmentEntities: Set<number> = new Set();
   private chunkToStructures: Map<string, Set<ID>> = new Map();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
+  // Scratch vectors for performVisibleStructuresUpdate to avoid allocations
+  private readonly scratchPosition: Vector3 = new Vector3();
+  private readonly scratchLabelPosition: Vector3 = new Vector3();
+  private readonly scratchIconPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private readonly animationCullDistance = 140;
@@ -1119,6 +1123,11 @@ export class StructureManager {
     // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
     const modelInstanceCounts = new Map<InstancedModel, number>();
 
+    // Begin batch mode for all point renderers (avoids computeBoundingSphere per setPoint)
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
+    }
+
     for (const [structureType, structures] of structuresByType) {
       const models = this.structureModels.get(structureType);
 
@@ -1132,23 +1141,26 @@ export class StructureManager {
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
-        const position = getWorldPositionForHex(structure.hexCoords);
-        position.y += 0.05;
+        // Use scratch vector to avoid allocation
+        const { col, row } = structure.hexCoords;
+        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+        this.scratchPosition.y += 0.05;
 
         const existingLabel = this.entityIdLabels.get(structure.entityId);
         if (existingLabel) {
           this.updateStructureLabelData(structure, existingLabel);
-          const newPosition = getWorldPositionForHex(structure.hexCoords);
-          newPosition.y += 2;
-          existingLabel.position.copy(newPosition);
+          // Use scratch vector for label position
+          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+          this.scratchLabelPosition.y += 2;
+          existingLabel.position.copy(this.scratchLabelPosition);
         }
 
-        this.dummy.position.copy(position);
+        this.dummy.position.copy(this.scratchPosition);
 
         if (structureType === StructureType.Bank) {
           this.dummy.rotation.y = (4 * Math.PI) / 6;
         } else {
-          const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+          const rotationSeed = hashCoordinates(col, row);
           const rotationIndex = Math.floor(rotationSeed * 6);
           const randomRotation = (rotationIndex * Math.PI) / 3;
           this.dummy.rotation.y = randomRotation;
@@ -1157,14 +1169,15 @@ export class StructureManager {
 
         // Add point icon for this structure (always visible)
         if (this.pointsRenderers) {
-          const iconPosition = position.clone();
-          iconPosition.y += 2; // Match CSS2D label height
+          // Use scratch vector for icon position
+          this.scratchIconPosition.copy(this.scratchPosition);
+          this.scratchIconPosition.y += 2; // Match CSS2D label height
 
           const renderer = this.getRendererForStructure(structure);
           if (renderer) {
             renderer.setPoint({
               entityId: structure.entityId,
-              position: iconPosition,
+              position: this.scratchIconPosition,
             });
           }
         }
@@ -1181,7 +1194,7 @@ export class StructureManager {
             this.activeStructureAttachmentEntities.add(entityNumericId);
           }
 
-          this.tempCosmeticPosition.copy(position);
+          this.tempCosmeticPosition.copy(this.scratchPosition);
           this.tempCosmeticRotation.copy(this.dummy.rotation);
 
           const baseTransform = {
@@ -1246,20 +1259,23 @@ export class StructureManager {
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
-        const position = getWorldPositionForHex(structure.hexCoords);
-        position.y += 0.05;
+        // Use scratch vector to avoid allocation
+        const { col, row } = structure.hexCoords;
+        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+        this.scratchPosition.y += 0.05;
 
         const existingLabel = this.entityIdLabels.get(structure.entityId);
         if (existingLabel) {
           this.updateStructureLabelData(structure, existingLabel);
-          const newPosition = getWorldPositionForHex(structure.hexCoords);
-          newPosition.y += 2;
-          existingLabel.position.copy(newPosition);
+          // Use scratch vector for label position
+          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+          this.scratchLabelPosition.y += 2;
+          existingLabel.position.copy(this.scratchLabelPosition);
         }
 
-        this.dummy.position.copy(position);
+        this.dummy.position.copy(this.scratchPosition);
 
-        const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+        const rotationSeed = hashCoordinates(col, row);
         const rotationIndex = Math.floor(rotationSeed * 6);
         const randomRotation = (rotationIndex * Math.PI) / 3;
         this.dummy.rotation.y = randomRotation;
@@ -1267,14 +1283,15 @@ export class StructureManager {
 
         // Add point icon for this structure
         if (this.pointsRenderers) {
-          const iconPosition = position.clone();
-          iconPosition.y += 2;
+          // Use scratch vector for icon position
+          this.scratchIconPosition.copy(this.scratchPosition);
+          this.scratchIconPosition.y += 2;
 
           const renderer = this.getRendererForStructure(structure);
           if (renderer) {
             renderer.setPoint({
               entityId: structure.entityId,
-              position: iconPosition,
+              position: this.scratchIconPosition,
             });
           }
         }
@@ -1292,7 +1309,7 @@ export class StructureManager {
             this.activeStructureAttachmentEntities.add(entityNumericId);
           }
 
-          this.tempCosmeticPosition.copy(position);
+          this.tempCosmeticPosition.copy(this.scratchPosition);
           this.tempCosmeticRotation.copy(this.dummy.rotation);
 
           const baseTransform = {
@@ -1331,6 +1348,11 @@ export class StructureManager {
     // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
     for (const [model, count] of modelInstanceCounts) {
       model.setCount(count);
+    }
+
+    // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
     }
 
     if (this.activeStructureAttachmentEntities.size > 0) {
