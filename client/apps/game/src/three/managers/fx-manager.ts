@@ -325,11 +325,9 @@ class TroopDiffFXInstance {
   public clock: THREE.Clock;
   public animationFrameId?: number;
   public isDestroyed = false;
-  public initialX: number;
   public initialY: number;
   public resolvePromise?: () => void;
   private floatHeight: number;
-  private floatRight: number;
   private duration: number;
   private fadeOutDuration: number;
   private isEnding: boolean = false;
@@ -349,10 +347,8 @@ class TroopDiffFXInstance {
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
-    this.initialX = x;
     this.initialY = y;
     this.floatHeight = floatHeight;
-    this.floatRight = floatHeight * 0.6; // Move right proportionally to height
     this.duration = duration;
     this.fadeOutDuration = fadeOutDuration;
 
@@ -363,9 +359,9 @@ class TroopDiffFXInstance {
     div.textContent = isHeal ? `+${diff}` : `${diff}`;
     div.style.color = isHeal ? "rgb(94, 232, 94)" : "rgb(255, 80, 80)";
     div.style.fontFamily = "Cinzel";
-    div.style.fontSize = "36px";
+    div.style.fontSize = "22px";
     div.style.fontWeight = "bold";
-    div.style.textShadow = "0 0 12px black, 0 0 6px black, 2px 2px 4px black";
+    div.style.textShadow = "0 0 8px black, 0 0 4px black";
     div.style.opacity = "0";
     div.style.transition = "none";
 
@@ -399,10 +395,8 @@ class TroopDiffFXInstance {
       if (endElapsed < this.fadeOutDuration) {
         const fadeProgress = endElapsed / this.fadeOutDuration;
         this.label.element.style.opacity = `${1 - fadeProgress}`;
-        // Continue moving top-right during fade
-        const extraMove = fadeProgress * 0.5;
-        this.group.position.x = this.initialX + this.floatRight + extraMove * 0.6;
-        this.group.position.y = this.initialY + this.floatHeight + extraMove;
+        const moveUp = fadeProgress * 0.5;
+        this.group.position.y = this.initialY + this.floatHeight + moveUp;
         this.animationFrameId = requestAnimationFrame(this.animate);
         return;
       } else {
@@ -413,17 +407,21 @@ class TroopDiffFXInstance {
     }
 
     if (elapsed <= this.duration) {
-      // Fade in (first 0.15 seconds)
-      if (elapsed < 0.15) {
-        this.label.element.style.opacity = `${elapsed / 0.15}`;
+      // Fade in (first 0.2 seconds)
+      if (elapsed < 0.2) {
+        this.label.element.style.opacity = `${elapsed / 0.2}`;
       } else {
         this.label.element.style.opacity = "1";
       }
 
-      // Float to top-right
+      // Float upward with ease-out
       const progress = Math.min(elapsed / this.duration, 1);
-      this.group.position.x = this.initialX + this.floatRight * progress;
-      this.group.position.y = this.initialY + this.floatHeight * progress;
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      this.group.position.y = this.initialY + this.floatHeight * easeOut;
+
+      // Slight horizontal sway
+      const sway = Math.sin(elapsed * 3) * 0.02;
+      this.group.position.x += sway;
 
       this.animationFrameId = requestAnimationFrame(this.animate);
     } else {
