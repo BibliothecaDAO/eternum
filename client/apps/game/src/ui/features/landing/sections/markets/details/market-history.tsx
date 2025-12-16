@@ -57,12 +57,12 @@ const formatRangeLabel = (range: TimeRange, data: ChartDataPoint[]): string => {
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 const TimeRangePills = ({ value, onChange }: { value: TimeRange; onChange: (range: TimeRange) => void }) => (
-  <div className="flex gap-1">
+  <div className="flex flex-wrap gap-1">
     {TIME_RANGES.map((range) => (
       <button
         key={range}
         onClick={() => onChange(range)}
-        className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+        className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors sm:px-2.5 sm:py-1 sm:text-xs ${
           value === range ? "bg-gold/20 text-gold" : "text-white/50 hover:bg-white/5 hover:text-white/70"
         }`}
       >
@@ -90,19 +90,17 @@ const HeaderStats = ({
   const isPositive = changePct >= 0;
 
   return (
-    <div className="mb-3 flex flex-col gap-1">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white/70">{title}</span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: color }} />
-            <span className="text-sm text-white">{focusedLabel}</span>
-          </span>
-        </div>
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm font-medium text-white/70">{title}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="h-2 w-2 shrink-0 rounded-sm" style={{ backgroundColor: color }} />
+          <span className="truncate text-sm text-white">{focusedLabel}</span>
+        </span>
         {rangeLabel && <span className="text-[10px] text-white/40">{rangeLabel}</span>}
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-semibold tabular-nums text-white">{currentValue.toFixed(1)}%</span>
+        <span className="text-xl font-semibold tabular-nums text-white sm:text-2xl">{currentValue.toFixed(1)}%</span>
         <span
           className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
             isPositive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
@@ -243,7 +241,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
   return (
     <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner">
       {/* Header with stats and time range pills */}
-      <div className="mb-4 flex items-start justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <HeaderStats
           title="Market history"
           focusedLabel={focusedLabel}
@@ -252,7 +250,9 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
           rangeLabel={rangeLabel}
           color={focusedColor}
         />
-        <TimeRangePills value={timeRange} onChange={setTimeRange} />
+        <div className="shrink-0">
+          <TimeRangePills value={timeRange} onChange={setTimeRange} />
+        </div>
       </div>
 
       {/* Chart */}

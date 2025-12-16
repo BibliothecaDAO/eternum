@@ -612,6 +612,7 @@ const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.bridge, // Bridge
   MenuEnum.chat, // Chat
   MenuEnum.storyEvents, // Chronicles
+  MenuEnum.predictionMarket, // Prediction Market
 ];
 
 type StructureLevelUpButtonProps = {
@@ -922,9 +923,27 @@ const buildEconomyNavigationItems = ({
         setLeftView(view === LeftView.StoryEvents ? LeftView.None : LeftView.StoryEvents);
       },
     },
+    {
+      id: MenuEnum.predictionMarket,
+      className: "prediction-market-selector",
+      image: BuildingThumbs.predictionMarket,
+      tooltipLocation: "top",
+      label: "Prediction Market",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: false,
+      active: view === LeftView.PredictionMarket,
+      onClick: () => {
+        setLeftView(view === LeftView.PredictionMarket ? LeftView.None : LeftView.PredictionMarket);
+      },
+    },
   ];
 
-  const allowedMenus: MenuEnum[] = [MenuEnum.transfer, ...(isBlitz ? [] : [MenuEnum.bridge]), MenuEnum.storyEvents];
+  const allowedMenus: MenuEnum[] = [
+    MenuEnum.transfer,
+    ...(isBlitz ? [] : [MenuEnum.bridge]),
+    MenuEnum.storyEvents,
+    MenuEnum.predictionMarket,
+  ];
 
   return items.filter((item) => allowedMenus.includes(item.id));
 };
@@ -981,6 +1000,11 @@ const BlitzHyperstructuresMenu = lazy(() =>
 const EternumHyperstructuresMenu = lazy(() =>
   import("@/ui/features/world").then((module) => ({
     default: module.EternumHyperstructuresMenu,
+  })),
+);
+const InGameMarket = lazy(() =>
+  import("@/ui/features/market").then((module) => ({
+    default: module.InGameMarket,
   })),
 );
 // const RelicsModule = lazy(() =>
@@ -1231,6 +1255,11 @@ export const LeftCommandSidebar = memo(() => {
                         <StoryEventsChronicles />
                       </div>
                     )}
+                    {view === LeftView.PredictionMarket && (
+                      <div className="prediction-market-selector flex h-full flex-col flex-1 overflow-y-auto">
+                        <InGameMarket />
+                      </div>
+                    )}
                     {view === LeftView.ChatView && (
                       <div className="h-full">
                         <LeftPanelChat
@@ -1240,26 +1269,31 @@ export const LeftCommandSidebar = memo(() => {
                         />
                       </div>
                     )}
-                    {view !== LeftView.StoryEvents && (view === LeftView.EntityView || view === LeftView.None) && (
-                      <EntityDetails />
-                    )}
-                    {view !== LeftView.StoryEvents && view === LeftView.MilitaryView && (
-                      <Military entityId={structureEntityId} />
-                    )}
-                    {view !== LeftView.StoryEvents && view === LeftView.ConstructionView && (
-                      <SelectPreviewBuildingMenu entityId={structureEntityId} />
-                    )}
                     {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      (view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
                       view === LeftView.HyperstructuresView &&
                       (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
-                    {view !== LeftView.StoryEvents && view === LeftView.ResourceArrivals && (
-                      <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                    )}
-                    {view !== LeftView.StoryEvents && view === LeftView.BridgeView && (
-                      <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                        <Bridge structures={structures} />
-                      </div>
-                    )}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.ResourceArrivals && (
+                        <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+                      )}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.BridgeView && (
+                        <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                          <Bridge structures={structures} />
+                        </div>
+                      )}
                     {showEmptyState && (
                       <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
                         Select a module to view details.

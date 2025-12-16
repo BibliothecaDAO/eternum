@@ -56,7 +56,7 @@ export function MarketResolved({
       className={`w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner ${className ?? ""}`}
       {...props}
     >
-      <VStack className="gap-4">
+      <VStack className="w-full gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-progress-bar-good">
             <CheckCircle2 className="h-4 w-4" />
@@ -118,18 +118,20 @@ export function MarketResolved({
         ) : null}
 
         {market.typCategorical() ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex w-full flex-col gap-3">
             {payouts.map((payout, idx) => {
               if (payout.payoutNumerator === 0n) return null;
               const upsidePercent = Math.ceil((100 / Number(market.odds![idx] || 1)) * 100);
               return (
                 <div
                   key={idx}
-                  className="flex flex-col gap-2 rounded-lg border border-progress-bar-good/50 bg-progress-bar-good/10 p-3"
+                  className="flex w-full flex-col gap-2 rounded-lg border border-progress-bar-good/50 bg-progress-bar-good/10 p-3"
                 >
-                  <div className="flex items-center justify-between text-sm">
-                    <MaybeController address={payout.name} className="text-white" />
-                    <span className="flex items-center gap-1 text-xs text-gold/70">
+                  <div className="flex w-full items-center justify-between gap-2 text-sm">
+                    <span className="text-white">
+                      <MaybeController address={payout.name} />
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1 text-xs text-gold/70">
                       <TrendingUp className="h-3 w-3" />
                       {upsidePercent}%
                     </span>

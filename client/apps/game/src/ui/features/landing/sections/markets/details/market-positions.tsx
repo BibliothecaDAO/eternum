@@ -152,8 +152,8 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
             >
               <HolderAvatar address={holder.account} highlight={isYou} />
 
-              <div className="flex flex-1 flex-col gap-2">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gold/70">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-gold/70">
                   <div className="flex items-center gap-2">
                     <MaybeController address={holder.account} className="text-white" />
                     {isYou ? (
@@ -163,13 +163,13 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                     ) : null}
                   </div>
                   <div className="flex items-center gap-1 text-gold/60">
-                    <span>Holdings</span>
+                    <span>Holdings:</span>
                     <span className="text-white font-semibold">{totalFormatted}</span>
                     {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={16} /> : null}
                   </div>
                   {market.isResolved() ? (
                     <div className="flex items-center gap-1 text-gold/60">
-                      <span>Redeemable</span>
+                      <span>Redeemable:</span>
                       <span className="text-white font-semibold">
                         {formatUnits(holder.totalRedeemable, Number(market.collateralToken.decimals), 4)}
                       </span>
@@ -178,13 +178,13 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                   ) : null}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col gap-2">
                   {holder.positions.map((pos, idx) => {
                     const labelIsAddress = /^0x[0-9a-fA-F]+$/.test(pos.label);
                     return (
                       <div
                         key={`${holder.account}-pos-${idx}`}
-                        className="flex items-center gap-2 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm"
+                        className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm"
                       >
                         <span className="rounded-full bg-white/10 px-2 py-[2px] text-[11px] uppercase tracking-wide text-gold/70">
                           Outcome
@@ -192,20 +192,22 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                         <span className="text-gold/70">
                           {labelIsAddress ? <MaybeController address={pos.label} /> : pos.label}
                         </span>
-                        <span className="text-gold/60">•</span>
-                        <span className="text-white font-semibold">{pos.amountFormatted}</span>
-                        {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={14} /> : null}
+
+                        <div className="flex items-center gap-1">
+                          <span className="text-white font-semibold">{pos.amountFormatted}</span>
+                          {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={14} /> : null}
+                        </div>
+
                         {market.isResolved() ? (
-                          <>
-                            <span className="text-gold/60">•</span>
-                            <span className="text-gold/60">Redeemable</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-gold/60">Redeemable:</span>
                             <span className="text-white font-semibold">
                               {pos.valueRaw > 0n ? pos.valueFormatted : "-"}
                             </span>
                             {pos.valueRaw > 0n && tokenForIcon ? (
                               <TokenIcon token={tokenForIcon as any} size={14} />
                             ) : null}
-                          </>
+                          </div>
                         ) : null}
                       </div>
                     );
