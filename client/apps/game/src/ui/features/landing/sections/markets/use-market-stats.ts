@@ -192,6 +192,7 @@ export const buildLeaderboard = ({
       address,
       earned: 0,
       volume: 0,
+      pnl: 0,
       trades: 0,
       markets: 0,
       lastActive: 0,
@@ -214,6 +215,7 @@ export const buildLeaderboard = ({
       address,
       earned: 0,
       volume: 0,
+      pnl: 0,
       trades: 0,
       markets: 0,
       lastActive: 0,
@@ -239,7 +241,7 @@ export const buildLeaderboard = ({
     if (market?.collateralToken) {
       const current = scores.get(address);
       scores.set(address, {
-        ...(current ?? { address, earned: 0, volume: 0, trades: 0, markets: 0, lastActive: 0 }),
+        ...(current ?? { address, earned: 0, volume: 0, pnl: 0, trades: 0, markets: 0, lastActive: 0 }),
         collateralToken: market.collateralToken,
       });
     }
@@ -257,7 +259,7 @@ export const buildLeaderboard = ({
     if (registeredToken) {
       const current = scores.get(address);
       scores.set(address, {
-        ...(current ?? { address, earned: 0, volume: 0, trades: 0, markets: 0, lastActive: 0 }),
+        ...(current ?? { address, earned: 0, volume: 0, pnl: 0, trades: 0, markets: 0, lastActive: 0 }),
         collateralToken: registeredToken,
       });
     }
