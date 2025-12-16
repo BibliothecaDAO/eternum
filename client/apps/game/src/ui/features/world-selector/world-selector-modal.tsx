@@ -131,12 +131,14 @@ export const WorldSelectorModal = ({
   const { nowSec, isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
   // Use cached availability hook for factory worlds
-  const { results: factoryAvailability, isAnyLoading: factoryCheckingAvailability, refetchAll: refetchFactory } =
-    useWorldsAvailability(factoryNames, factoryNames.length > 0);
+  const {
+    results: factoryAvailability,
+    isAnyLoading: factoryCheckingAvailability,
+    refetchAll: refetchFactory,
+  } = useWorldsAvailability(factoryNames, factoryNames.length > 0);
 
   // Use cached availability hook for saved worlds
-  const { results: savedAvailability, allSettled: savedChecksDone } =
-    useWorldsAvailability(saved, saved.length > 0);
+  const { results: savedAvailability, allSettled: savedChecksDone } = useWorldsAvailability(saved, saved.length > 0);
 
   // Derive statusMap from savedAvailability for backwards compatibility
   const statusMap = useMemo(() => {
@@ -761,7 +763,14 @@ export const WorldSelectorModal = ({
                     const gameIsOngoing = gameIsOnline && isOngoing(startMainAt, endAt);
                     const gameIsUpcoming = gameIsOnline && isUpcoming(startMainAt);
 
-                    return { name: s, isOnline: gameIsOnline, meta, isEnded: gameIsEnded, isOngoing: gameIsOngoing, isUpcoming: gameIsUpcoming };
+                    return {
+                      name: s,
+                      isOnline: gameIsOnline,
+                      meta,
+                      isEnded: gameIsEnded,
+                      isOngoing: gameIsOngoing,
+                      isUpcoming: gameIsUpcoming,
+                    };
                   });
 
                   // Sort: live (ongoing) first, then upcoming, then ended, then others
@@ -794,7 +803,9 @@ export const WorldSelectorModal = ({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className={`truncate font-bold text-base ${gameIsEnded ? "text-gold/50" : "text-gold"}`}>
+                            <div
+                              className={`truncate font-bold text-base ${gameIsEnded ? "text-gold/50" : "text-gold"}`}
+                            >
                               {s}
                             </div>
                             {selected === s && (

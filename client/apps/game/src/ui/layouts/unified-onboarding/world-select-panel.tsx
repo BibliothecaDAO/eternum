@@ -50,12 +50,14 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
   const { isOngoing } = useGameTimeStatus();
 
   // Use cached availability hook for factory worlds
-  const { results: factoryAvailability, isAnyLoading: factoryCheckingAvailability, refetchAll: refetchFactory } =
-    useWorldsAvailability(factoryNames, factoryNames.length > 0);
+  const {
+    results: factoryAvailability,
+    isAnyLoading: factoryCheckingAvailability,
+    refetchAll: refetchFactory,
+  } = useWorldsAvailability(factoryNames, factoryNames.length > 0);
 
   // Use cached availability hook for saved worlds
-  const { results: savedAvailability, allSettled: savedChecksDone } =
-    useWorldsAvailability(saved, saved.length > 0);
+  const { results: savedAvailability, allSettled: savedChecksDone } = useWorldsAvailability(saved, saved.length > 0);
 
   // Auto-delete offline saved games when checks complete
   useEffect(() => {
@@ -204,11 +206,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-white/60">
-                    <WorldCountdown
-                      startMainAt={fg.startMainAt}
-                      endAt={fg.endAt}
-                      status={fg.status}
-                    />
+                    <WorldCountdown startMainAt={fg.startMainAt} endAt={fg.endAt} status={fg.status} />
                     {fg.registrationCount != null && (
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" />

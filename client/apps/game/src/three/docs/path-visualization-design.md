@@ -1,4 +1,5 @@
 # Path Visualization System Design
+
 ## Technical Proposal for Troop Movement in Eternum
 
 ---
@@ -7,23 +8,23 @@
 
 ### When Paths Are Shown
 
-| Trigger | Path Visibility | Notes |
-|---------|-----------------|-------|
-| **Hover over own army** | Preview destination (if moving) | Subtle, low opacity |
-| **Select own army** | Full path + destination marker | Primary use case |
-| **Active movement** | Animated flow along path | Progress indicator |
-| **Hover destination while army selected** | Proposed path preview | Dashed, "hypothetical" style |
-| **Enemy army (moving)** | Destination marker only | No full path (fog of war) |
+| Trigger                                   | Path Visibility                 | Notes                        |
+| ----------------------------------------- | ------------------------------- | ---------------------------- |
+| **Hover over own army**                   | Preview destination (if moving) | Subtle, low opacity          |
+| **Select own army**                       | Full path + destination marker  | Primary use case             |
+| **Active movement**                       | Animated flow along path        | Progress indicator           |
+| **Hover destination while army selected** | Proposed path preview           | Dashed, "hypothetical" style |
+| **Enemy army (moving)**                   | Destination marker only         | No full path (fog of war)    |
 
 ### What Must Be Shown
 
-| Element | Required | Notes |
-|---------|----------|-------|
-| Full path polyline | Yes | Screen-space thickness, zoom-stable |
-| Destination marker | Yes | Pulsing ring at end hex |
-| Direction of travel | Yes | Animated flow texture (arrows/dashes) |
+| Element             | Required | Notes                                  |
+| ------------------- | -------- | -------------------------------------- |
+| Full path polyline  | Yes      | Screen-space thickness, zoom-stable    |
+| Destination marker  | Yes      | Pulsing ring at end hex                |
+| Direction of travel | Yes      | Animated flow texture (arrows/dashes)  |
 | Progress along path | Optional | Subtle highlight at army head position |
-| Origin marker | No | Army position serves this role |
+| Origin marker       | No       | Army position serves this role         |
 
 ### Path Characteristics
 
@@ -53,10 +54,10 @@ gameWorkerManager.findPath(start, end, maxHex)
 
 ```typescript
 interface PathSegment {
-  start: Vector3;      // World space
-  end: Vector3;        // World space
-  direction: Vector3;  // Normalized (end - start)
-  length: number;      // Segment length in world units
+  start: Vector3; // World space
+  end: Vector3; // World space
+  direction: Vector3; // Normalized (end - start)
+  length: number; // Segment length in world units
 }
 
 interface ArmyPath {
@@ -65,9 +66,9 @@ interface ArmyPath {
   totalLength: number;
 
   // Rendering state
-  ownerType: 'self' | 'ally' | 'enemy';
-  displayState: 'selected' | 'hover' | 'moving' | 'preview';
-  progress: number;           // 0-1, current position along path
+  ownerType: "self" | "ally" | "enemy";
+  displayState: "selected" | "hover" | "moving" | "preview";
+  progress: number; // 0-1, current position along path
 
   // Color (computed from owner)
   color: Color;
@@ -78,18 +79,18 @@ interface ArmyPath {
 
 interface PathInstanceData {
   // Per-segment instance attributes (Float32Array)
-  startPositions: Float32Array;  // vec3 × segmentCount
-  endPositions: Float32Array;    // vec3 × segmentCount
-  segmentLengths: Float32Array;  // float × segmentCount
-  pathProgress: Float32Array;    // float × segmentCount (cumulative)
-  colors: Float32Array;          // vec3 × segmentCount
-  opacities: Float32Array;       // float × segmentCount
+  startPositions: Float32Array; // vec3 × segmentCount
+  endPositions: Float32Array; // vec3 × segmentCount
+  segmentLengths: Float32Array; // float × segmentCount
+  pathProgress: Float32Array; // float × segmentCount (cumulative)
+  colors: Float32Array; // vec3 × segmentCount
+  opacities: Float32Array; // float × segmentCount
 }
 ```
 
 ### Path Computation Stability
 
-- **Deterministic**: A* with consistent tie-breaking
+- **Deterministic**: A\* with consistent tie-breaking
 - **Recomputation**: Only on:
   - New destination set
   - Blocked hex detected mid-movement
@@ -110,25 +111,24 @@ Segments: [A-B], [B-C], [C-D]
 Each segment = 1 instanced quad
 ```
 
-| Pros | Cons |
-|------|------|
-| Single draw call for ALL paths | Quad corners need shader computation |
-| CPU updates only on path change | Slight complexity in miter joins |
-| Easy per-segment coloring | |
-| Works naturally with chunks | |
-| Proven pattern (see Three.js Line2) | |
+| Pros                                | Cons                                 |
+| ----------------------------------- | ------------------------------------ |
+| Single draw call for ALL paths      | Quad corners need shader computation |
+| CPU updates only on path change     | Slight complexity in miter joins     |
+| Easy per-segment coloring           |                                      |
+| Works naturally with chunks         |                                      |
+| Proven pattern (see Three.js Line2) |                                      |
 
-**Draw calls**: 1 (all segments batched)
-**Memory**: ~128 bytes per segment
-**Max segments**: 5000 (supports 50 paths × 100 segments)
+**Draw calls**: 1 (all segments batched) **Memory**: ~128 bytes per segment **Max segments**: 5000 (supports 50 paths ×
+100 segments)
 
 ### Why Not Alternatives
 
-| Alternative | Why Rejected |
-|-------------|--------------|
+| Alternative      | Why Rejected                       |
+| ---------------- | ---------------------------------- |
 | GPU Path Texture | Over-engineered, resolution issues |
-| SDF Path Ribbon | Too expensive for dynamic paths |
-| THREE.Line | More draw calls, less control |
+| SDF Path Ribbon  | Too expensive for dynamic paths    |
+| THREE.Line       | More draw calls, less control      |
 
 ---
 
@@ -267,14 +267,14 @@ void main() {
 
 ### Uniforms Summary
 
-| Uniform | Type | Update Frequency | Source |
-|---------|------|------------------|--------|
-| `time` | float | Every frame | `clock.getElapsedTime()` |
-| `thickness` | float | On zoom change | 3.0 (pixels) |
-| `resolution` | vec2 | On resize | `renderer.getSize()` |
-| `armyProgress` | float | Every frame (if moving) | Movement system |
-| `dashScale` | float | Static | 8.0 |
-| `flowSpeed` | float | Static | 2.0 |
+| Uniform        | Type  | Update Frequency        | Source                   |
+| -------------- | ----- | ----------------------- | ------------------------ |
+| `time`         | float | Every frame             | `clock.getElapsedTime()` |
+| `thickness`    | float | On zoom change          | 3.0 (pixels)             |
+| `resolution`   | vec2  | On resize               | `renderer.getSize()`     |
+| `armyProgress` | float | Every frame (if moving) | Movement system          |
+| `dashScale`    | float | Static                  | 8.0                      |
+| `flowSpeed`    | float | Static                  | 2.0                      |
 
 ---
 
@@ -316,7 +316,7 @@ class PathRenderer {
 
 ```typescript
 // In ArmyManager.moveArmy()
-const worldPath = pathPositions.map(p => getWorldPositionForHex(p));
+const worldPath = pathPositions.map((p) => getWorldPositionForHex(p));
 pathRenderer.createPath(entityId, worldPath, ownerType);
 
 // In ArmyModel.updateMovements() - progress update
@@ -332,24 +332,24 @@ pathRenderer.removePath(entityId);
 
 ### Target Metrics
 
-| Metric | Budget | Notes |
-|--------|--------|-------|
-| Draw calls | 1-2 | 1 for paths, 1 for destination markers |
-| Max instances | 5000 segments | ~50 paths × 100 segments |
-| Instance buffer size | 640 KB | 5000 × 128 bytes |
-| CPU update/frame | <0.5 ms | Only time uniform + progress |
-| GPU time | <1 ms | Simple shader, low overdraw |
+| Metric               | Budget        | Notes                                  |
+| -------------------- | ------------- | -------------------------------------- |
+| Draw calls           | 1-2           | 1 for paths, 1 for destination markers |
+| Max instances        | 5000 segments | ~50 paths × 100 segments               |
+| Instance buffer size | 640 KB        | 5000 × 128 bytes                       |
+| CPU update/frame     | <0.5 ms       | Only time uniform + progress           |
+| GPU time             | <1 ms         | Simple shader, low overdraw            |
 
 ### Memory Layout (SoA)
 
 ```typescript
 class PathInstanceBuffer {
-  readonly startPositions: Float32Array;  // 5000 × 3 = 60 KB
-  readonly endPositions: Float32Array;    // 5000 × 3 = 60 KB
-  readonly lengths: Float32Array;         // 5000 × 1 = 20 KB
-  readonly pathProgress: Float32Array;    // 5000 × 1 = 20 KB
-  readonly colors: Float32Array;          // 5000 × 3 = 60 KB
-  readonly opacities: Float32Array;       // 5000 × 1 = 20 KB
+  readonly startPositions: Float32Array; // 5000 × 3 = 60 KB
+  readonly endPositions: Float32Array; // 5000 × 3 = 60 KB
+  readonly lengths: Float32Array; // 5000 × 1 = 20 KB
+  readonly pathProgress: Float32Array; // 5000 × 1 = 20 KB
+  readonly colors: Float32Array; // 5000 × 3 = 60 KB
+  readonly opacities: Float32Array; // 5000 × 1 = 20 KB
 }
 ```
 
@@ -357,13 +357,13 @@ class PathInstanceBuffer {
 
 ## 7. Quality Tiers
 
-| Feature | HIGH/MID | LOW |
-|---------|----------|-----|
-| Rendering | Instanced quads | THREE.Line |
-| Draw calls | 1 | 1 per path |
-| Animation | Flowing dashes | Static |
-| Anti-aliasing | Shader-based | Native line AA |
-| Thickness | Screen-space constant | 1px native |
+| Feature       | HIGH/MID              | LOW            |
+| ------------- | --------------------- | -------------- |
+| Rendering     | Instanced quads       | THREE.Line     |
+| Draw calls    | 1                     | 1 per path     |
+| Animation     | Flowing dashes        | Static         |
+| Anti-aliasing | Shader-based          | Native line AA |
+| Thickness     | Screen-space constant | 1px native     |
 
 ---
 
@@ -421,11 +421,11 @@ src/three/
 
 ## 10. Color Coding
 
-| State | Base Color | Opacity |
-|-------|------------|---------|
-| Selected (own) | Player primary | 0.8 |
-| Hover (own) | Player primary | 0.4 |
-| Moving (own) | Player primary | 0.6 |
-| Preview | Gray | 0.3 |
-| Ally | Ally green | 0.5 |
-| Enemy (dest only) | Enemy red | 0.4 |
+| State             | Base Color     | Opacity |
+| ----------------- | -------------- | ------- |
+| Selected (own)    | Player primary | 0.8     |
+| Hover (own)       | Player primary | 0.4     |
+| Moving (own)      | Player primary | 0.6     |
+| Preview           | Gray           | 0.3     |
+| Ally              | Ally green     | 0.5     |
+| Enemy (dest only) | Enemy red      | 0.4     |

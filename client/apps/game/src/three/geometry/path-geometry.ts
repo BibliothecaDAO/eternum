@@ -1,4 +1,10 @@
-import { BufferAttribute, BufferGeometry, Float32BufferAttribute, InstancedBufferAttribute, InstancedBufferGeometry } from "three";
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Float32BufferAttribute,
+  InstancedBufferAttribute,
+  InstancedBufferGeometry,
+} from "three";
 import { DEFAULT_PATH_CONFIG } from "../types/path";
 
 /**
@@ -21,24 +27,40 @@ export function createPathQuadGeometry(): BufferGeometry {
   // 4 vertices for a quad
   // Position is dummy - actual position computed in shader from instance attributes
   const positions = new Float32Array([
-    0, 0, 0, // vertex 0 (top-left)
-    0, 0, 0, // vertex 1 (top-right)
-    0, 0, 0, // vertex 2 (bottom-left)
-    0, 0, 0, // vertex 3 (bottom-right)
+    0,
+    0,
+    0, // vertex 0 (top-left)
+    0,
+    0,
+    0, // vertex 1 (top-right)
+    0,
+    0,
+    0, // vertex 2 (bottom-left)
+    0,
+    0,
+    0, // vertex 3 (bottom-right)
   ]);
 
   // UVs encode which corner of the quad this vertex is
   const uvs = new Float32Array([
-    0, 0, // vertex 0: left edge, segment start
-    1, 0, // vertex 1: right edge, segment start
-    0, 1, // vertex 2: left edge, segment end
-    1, 1, // vertex 3: right edge, segment end
+    0,
+    0, // vertex 0: left edge, segment start
+    1,
+    0, // vertex 1: right edge, segment start
+    0,
+    1, // vertex 2: left edge, segment end
+    1,
+    1, // vertex 3: right edge, segment end
   ]);
 
   // Two triangles forming the quad
   const indices = new Uint16Array([
-    0, 2, 1, // first triangle
-    1, 2, 3, // second triangle
+    0,
+    2,
+    1, // first triangle
+    1,
+    2,
+    3, // second triangle
   ]);
 
   geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));

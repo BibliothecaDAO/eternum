@@ -151,9 +151,7 @@ export const useWorldsAvailability = (worldNames: string[], enabled = true) => {
 /**
  * Get availability status string for a world.
  */
-export const getAvailabilityStatus = (
-  availability: WorldAvailability | undefined,
-): "checking" | "ok" | "fail" => {
+export const getAvailabilityStatus = (availability: WorldAvailability | undefined): "checking" | "ok" | "fail" => {
   if (!availability) return "checking";
   if (availability.isLoading) return "checking";
   return availability.isAvailable ? "ok" : "fail";
