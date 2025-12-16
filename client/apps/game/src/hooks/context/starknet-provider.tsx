@@ -2,6 +2,7 @@ import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
+import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { constants, shortString } from "starknet";
@@ -102,6 +103,20 @@ const katanaLocalChain = {
   },
 } as const satisfies Chain;
 
+// Custom QueryClient with game-appropriate defaults
+// - Disable refetchOnWindowFocus to prevent surprise refetch storms when alt-tabbing
+// - Disable refetchOnReconnect for similar reasons in a real-time game
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: 1,
+      staleTime: 5000, // 5 seconds default stale time
+    },
+  },
+});
+
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
@@ -135,6 +150,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       connectors={isLocal ? predeployedConnectors : [controller as unknown as Connector]}
       explorer={voyager}
       autoConnect
+      queryClient={queryClient}
     >
       <StarknetAccountSync>{children}</StarknetAccountSync>
     </StarknetConfig>

@@ -184,12 +184,17 @@ export const UnifiedArmyCreationModal = ({
     queryKey: ["guards", String(activeStructureId)],
     queryFn: async () => {
       if (!activeStructureId) return [];
-      const guards = await sqlApi.fetchGuardsByStructure(activeStructureId);
-      return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
+      return await sqlApi.fetchGuardsByStructure(activeStructureId);
     },
     staleTime: 10000,
     enabled: activeStructureId > 0,
   });
+
+  // Filter to non-empty guards for display purposes
+  const nonEmptyGuards = useMemo(
+    () => (guardsData ?? []).filter((guard) => guard.troops?.count && guard.troops.count > 0n),
+    [guardsData],
+  );
 
   const currentExplorersCount = explorers.length;
   const currentGuardsCount =

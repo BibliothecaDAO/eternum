@@ -17,7 +17,7 @@ export const useResourceBalance = ({
     address: resourceAddress as `0x${string}`,
     args: [(account?.address as `0x${string}`) ?? "0"],
     watch: true,
-    refetchInterval: 1000,
+    refetchInterval: 5000, // Reduced from 1000ms to prevent excessive RPC calls
     enabled: !!account?.address && !!resourceAddress && !disabled,
   });
 
