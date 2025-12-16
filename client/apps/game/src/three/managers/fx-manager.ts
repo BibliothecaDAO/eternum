@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
-type FXType = "skull" | "compass" | string;
+type FXType = "skull" | "compass" | "troopDiff" | string;
 
 interface FXConfig {
   textureUrl: string;
@@ -318,12 +318,144 @@ class FXInstance {
   }
 }
 
+// -------------------- TroopDiffFXInstance --------------------
+class TroopDiffFXInstance {
+  public group: THREE.Group;
+  public label: CSS2DObject;
+  public clock: THREE.Clock;
+  public animationFrameId?: number;
+  public isDestroyed = false;
+  public initialY: number;
+  public resolvePromise?: () => void;
+  private floatHeight: number;
+  private duration: number;
+  private fadeOutDuration: number;
+  private isEnding: boolean = false;
+  private endStartTime: number = 0;
+
+  constructor(
+    scene: THREE.Scene,
+    diff: number,
+    x: number,
+    y: number,
+    z: number,
+    floatHeight: number = 2.0,
+    duration: number = 1.5,
+    fadeOutDuration: number = 0.5,
+  ) {
+    this.clock = new THREE.Clock();
+    this.group = new THREE.Group();
+    this.group.renderOrder = Infinity;
+    this.group.position.set(x, y, z);
+    this.initialY = y;
+    this.floatHeight = floatHeight;
+    this.duration = duration;
+    this.fadeOutDuration = fadeOutDuration;
+
+    // Create floating damage/heal text
+    const div = document.createElement("div");
+    div.className = "troop-diff-fx";
+    const isHeal = diff > 0;
+    div.textContent = isHeal ? `+${diff}` : `${diff}`;
+    div.style.color = isHeal ? "rgb(94, 232, 94)" : "rgb(255, 80, 80)";
+    div.style.fontFamily = "Cinzel";
+    div.style.fontSize = "22px";
+    div.style.fontWeight = "bold";
+    div.style.textShadow = "0 0 8px black, 0 0 4px black";
+    div.style.opacity = "0";
+    div.style.transition = "none";
+
+    this.label = new CSS2DObject(div);
+    this.label.position.set(0, 0, 0);
+    this.group.add(this.label);
+
+    scene.add(this.group);
+    this.animate();
+  }
+
+  public onComplete(resolve: () => void) {
+    this.resolvePromise = resolve;
+  }
+
+  public startEnding() {
+    if (!this.isEnding) {
+      this.isEnding = true;
+      this.endStartTime = this.clock.getElapsedTime();
+    }
+  }
+
+  private animate = () => {
+    if (this.isDestroyed) return;
+
+    const elapsed = this.clock.getElapsedTime();
+
+    // Handle ending animation
+    if (this.isEnding) {
+      const endElapsed = elapsed - this.endStartTime;
+      if (endElapsed < this.fadeOutDuration) {
+        const fadeProgress = endElapsed / this.fadeOutDuration;
+        this.label.element.style.opacity = `${1 - fadeProgress}`;
+        const moveUp = fadeProgress * 0.5;
+        this.group.position.y = this.initialY + this.floatHeight + moveUp;
+        this.animationFrameId = requestAnimationFrame(this.animate);
+        return;
+      } else {
+        this.resolvePromise?.();
+        this.destroy();
+        return;
+      }
+    }
+
+    if (elapsed <= this.duration) {
+      // Fade in (first 0.2 seconds)
+      if (elapsed < 0.2) {
+        this.label.element.style.opacity = `${elapsed / 0.2}`;
+      } else {
+        this.label.element.style.opacity = "1";
+      }
+
+      // Float upward with ease-out
+      const progress = Math.min(elapsed / this.duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      this.group.position.y = this.initialY + this.floatHeight * easeOut;
+
+      // Slight horizontal sway
+      const sway = Math.sin(elapsed * 3) * 0.02;
+      this.group.position.x += sway;
+
+      this.animationFrameId = requestAnimationFrame(this.animate);
+    } else {
+      this.startEnding();
+      this.animationFrameId = requestAnimationFrame(this.animate);
+    }
+  };
+
+  public destroy() {
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
+
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+
+    if (this.label && this.label.element) {
+      this.label.element.remove();
+      this.group.remove(this.label);
+    }
+
+    if (this.group.parent) {
+      this.group.parent.remove(this.group);
+    }
+  }
+}
+
 // -------------------- FXManager --------------------
 export class FXManager {
   private scene: THREE.Scene;
   private fxConfigs: Map<FXType, FXConfig> = new Map();
   private textures: Map<string, THREE.Texture> = new Map();
   private activeFX: Set<FXInstance> = new Set();
+  private activeTroopDiffFX: Set<TroopDiffFXInstance> = new Set();
   private defaultSize: number;
 
   // Batched system support
@@ -569,9 +701,45 @@ export class FXManager {
     };
   }
 
+  /**
+   * Play a floating troop count diff effect (damage in red, heal in green)
+   * @param diff The troop count difference (negative = damage, positive = heal)
+   * @param x X coordinate
+   * @param y Y coordinate
+   * @param z Z coordinate
+   * @returns Promise that resolves when animation completes
+   */
+  playTroopDiffFx(diff: number, x: number, y: number, z: number): Promise<void> {
+    if (diff === 0) {
+      return Promise.resolve();
+    }
+
+    let fxInstance: TroopDiffFXInstance | null = null;
+    const promise = new Promise<void>((resolve) => {
+      fxInstance = new TroopDiffFXInstance(this.scene, diff, x, y, z);
+
+      fxInstance.onComplete(resolve);
+      this.activeTroopDiffFX.add(fxInstance);
+
+      const cleanup = () => {
+        this.activeTroopDiffFX.delete(fxInstance!);
+      };
+
+      const originalDestroy = fxInstance.destroy;
+      fxInstance.destroy = () => {
+        originalDestroy.call(fxInstance);
+        cleanup();
+      };
+    });
+
+    return promise;
+  }
+
   destroy() {
     this.activeFX.forEach((fx) => fx.destroy());
     this.activeFX.clear();
+    this.activeTroopDiffFX.forEach((fx) => fx.destroy());
+    this.activeTroopDiffFX.clear();
     this.textures.forEach((texture) => texture.dispose());
     this.textures.clear();
   }
