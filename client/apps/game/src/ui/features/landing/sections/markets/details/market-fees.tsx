@@ -16,7 +16,7 @@ const settingsQuery = new ToriiQueryBuilder()
 export const MarketFees = ({ market }: { market: MarketClass }) => {
   const { sdk } = useDojoSdk();
   const [settings, setSettings] = useState<CoreSettings>();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [timer, setTimer] = useState(0);
 
   const marketModelVault = market.model.unwrap() as MarketModelVault;
