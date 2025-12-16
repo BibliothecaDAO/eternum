@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { Navigator } from "@/three/managers/navigator";
-import { WeatherManager } from "@/three/managers/weather-manager";
+import { WeatherManager, WeatherType } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GUIManager } from "@/three/utils/";
@@ -134,13 +134,25 @@ export default class HUDScene {
     // Update weather system (handles rain, wind, transitions)
     this.weatherManager.update(deltaTime, this.camera.position);
 
-    // Update ambience based on weather state
+    // Track cycle progress for ambience
+    if (cycleProgress !== undefined) {
+      this.cycleProgress = cycleProgress;
+    }
+
+    // Get current weather state
     const weatherState = this.weatherManager.getState();
+    const currentWeatherType = this.weatherManager.getCurrentWeather();
+
+    // CRITICAL: Call ambienceManager.update() to drive time-of-day sounds and scheduling.
+    // Previously only updateFromWeather() was called, which doesn't start/stop sounds
+    // based on time of day - it only modulates volumes for weather intensity.
+    this.ambienceManager.update(this.cycleProgress, currentWeatherType, deltaTime);
+
+    // Additionally modulate ambience volumes based on weather intensity
     this.ambienceManager.updateFromWeather(weatherState.intensity, weatherState.stormIntensity);
 
     // Update ambient particles (dust motes, fireflies)
     if (cycleProgress !== undefined) {
-      this.cycleProgress = cycleProgress;
       this.ambientParticles.setTimeProgress(cycleProgress);
     }
 

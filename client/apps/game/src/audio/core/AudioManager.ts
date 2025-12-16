@@ -11,6 +11,7 @@ export class AudioManager {
   private activeSources: Set<AudioBufferSourceNode> = new Set();
   private musicSources: Set<AudioBufferSourceNode> = new Set(); // Track music sources separately
   private musicGainNodes: Map<AudioBufferSourceNode, GainNode> = new Map();
+  private sourceGainNodes: Map<AudioBufferSourceNode, GainNode> = new Map(); // Track ALL per-play gain nodes for cleanup
   private poolManager: AudioPoolManager | null = null;
   private state: AudioState;
   private static readonly STORAGE_KEY = "ETERNUM_AUDIO_SETTINGS";
@@ -165,10 +166,10 @@ export class AudioManager {
     const asset = this.audioAssets.get(assetId)!;
     const buffer = await this.loadAsset(assetId);
 
-    // If this is a music track, stop all existing music first
-    if (asset.category === AudioCategory.MUSIC) {
-      this.stopAllMusic();
-    }
+    // NOTE: Music exclusivity is now managed by MusicRouterProvider, not here.
+    // This allows proper crossfade transitions where the provider fades out
+    // the previous track before starting the new one. Previously, stopAllMusic()
+    // was called here which killed sources mid-fade.
 
     // Try to get a pooled node first, fallback to creating new one
     let source: AudioBufferSourceNode;
@@ -211,8 +212,23 @@ export class AudioManager {
     source.connect(gainNode);
     gainNode.connect(categoryGain);
 
+    // Track gain node for cleanup (prevents WebAudio graph bloat)
+    this.sourceGainNodes.set(source, gainNode);
+
     source.onended = () => {
       this.activeSources.delete(source);
+
+      // Disconnect and cleanup the per-play gain node to prevent graph bloat
+      const perPlayGain = this.sourceGainNodes.get(source);
+      if (perPlayGain) {
+        try {
+          perPlayGain.disconnect();
+        } catch {
+          // Already disconnected, ignore
+        }
+        this.sourceGainNodes.delete(source);
+      }
+
       if (asset.category === AudioCategory.MUSIC) {
         this.musicSources.delete(source);
         this.musicGainNodes.delete(source);
@@ -240,13 +256,21 @@ export class AudioManager {
       }
       this.activeSources.delete(source);
       this.musicSources.delete(source);
-      const gainNode = this.musicGainNodes.get(source);
-      if (gainNode) {
+
+      // Disconnect the per-play gain node (all sounds, not just music)
+      const perPlayGain = this.sourceGainNodes.get(source);
+      if (perPlayGain) {
         try {
-          gainNode.disconnect();
-        } catch (error) {
-          console.warn("Failed to disconnect music gain node", error);
+          perPlayGain.disconnect();
+        } catch {
+          // Already disconnected, ignore
         }
+        this.sourceGainNodes.delete(source);
+      }
+
+      // Also cleanup music-specific tracking
+      const musicGain = this.musicGainNodes.get(source);
+      if (musicGain) {
         this.musicGainNodes.delete(source);
       }
     }
@@ -256,18 +280,20 @@ export class AudioManager {
     this.musicSources.forEach((source) => {
       try {
         source.stop();
-      } catch (e) {
+      } catch {
         // Ignore errors if source already stopped
       }
       this.activeSources.delete(source);
-      const gainNode = this.musicGainNodes.get(source);
-      if (gainNode) {
+
+      // Cleanup per-play gain node
+      const perPlayGain = this.sourceGainNodes.get(source);
+      if (perPlayGain) {
         try {
-          gainNode.disconnect();
-        } catch (error) {
-          console.warn("Failed to disconnect music gain node", error);
+          perPlayGain.disconnect();
+        } catch {
+          // Already disconnected, ignore
         }
-        this.musicGainNodes.delete(source);
+        this.sourceGainNodes.delete(source);
       }
     });
     this.musicSources.clear();
@@ -275,16 +301,25 @@ export class AudioManager {
   }
 
   stopAll(): void {
-    this.activeSources.forEach((source) => source.stop());
-    this.activeSources.clear();
-    this.musicSources.clear();
-    this.musicGainNodes.forEach((gainNode) => {
+    this.activeSources.forEach((source) => {
       try {
-        gainNode.disconnect();
-      } catch (error) {
-        console.warn("Failed to disconnect music gain node", error);
+        source.stop();
+      } catch {
+        // Ignore if already stopped
       }
     });
+    this.activeSources.clear();
+    this.musicSources.clear();
+
+    // Disconnect ALL per-play gain nodes (not just music)
+    this.sourceGainNodes.forEach((gainNode) => {
+      try {
+        gainNode.disconnect();
+      } catch {
+        // Already disconnected, ignore
+      }
+    });
+    this.sourceGainNodes.clear();
     this.musicGainNodes.clear();
   }
 
@@ -387,6 +422,7 @@ export class AudioManager {
     this.audioAssets.clear();
     this.musicSources.clear();
     this.musicGainNodes.clear();
+    this.sourceGainNodes.clear();
     AudioManager.instance = null as any;
   }
 }
