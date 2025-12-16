@@ -47,9 +47,9 @@ export class AudioManager {
         [AudioCategory.UI]: 0.5, // Reduced from 0.8 - clear but not overpowering
         [AudioCategory.RESOURCE]: 0.5, // Reduced from 0.6 - frequent actions
         [AudioCategory.BUILDING]: 0.5, // Reduced from 0.6 - frequent actions
-        [AudioCategory.COMBAT]: 0.7, // Reduced from 0.8 - still important but not overpowering
+        [AudioCategory.COMBAT]: 0.5, // Reduced from 0.8 - still important but not overpowering
         [AudioCategory.AMBIENT]: 0.3, // Reduced from 0.4 - subtle atmosphere
-        [AudioCategory.ENVIRONMENT]: 0.45, // Reduced from 0.5 - weather effects
+        [AudioCategory.ENVIRONMENT]: 0.35, // Reduced from 0.5 - weather effects
       },
       muted: false,
       spatialEnabled: true,
