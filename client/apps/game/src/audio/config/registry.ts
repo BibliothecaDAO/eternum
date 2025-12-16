@@ -531,6 +531,16 @@ export const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     loop: false,
     volume: 0.9,
   },
+  "combat.under_attack": {
+    id: "combat.under_attack",
+    url: "/sound/events/battle_defeat.mp3",
+    category: AudioCategory.COMBAT,
+    priority: 8,
+    poolSize: 2,
+    spatial: false,
+    loop: false,
+    volume: 0.85,
+  },
   "unit.march": {
     id: "unit.march",
     url: "/sound/units/marching1.mp3",
