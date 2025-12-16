@@ -775,7 +775,7 @@ export default class WorldmapScene extends HexagonScene {
             const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
             if (isOwnArmy) {
               // Play the sound for the resource gain only when it belongs to the local player
-              playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+              playResourceSound(resourceId);
             }
             // Display the resource gain at the army's position
             this.displayResourceGain(
@@ -1277,9 +1277,8 @@ export default class WorldmapScene extends HexagonScene {
       });
 
       if (isMine) {
-        if (this.state.isSoundOn) {
-          AudioManager.getInstance().play("ui.click", { volume: this.state.effectsLevel / 100 });
-        }
+        // AudioManager handles muted state internally - no need to check isSoundOn
+        AudioManager.getInstance().play("ui.click");
         // Note: Label filtering is now handled in entity selection methods
         // to avoid removing labels too aggressively on initial selection
       }
@@ -1312,8 +1311,6 @@ export default class WorldmapScene extends HexagonScene {
         structure,
         hexCoords,
         components: this.dojo.components,
-        isSoundOn: this.state.isSoundOn,
-        effectsLevel: this.state.effectsLevel,
       });
       return;
     }
@@ -1356,9 +1353,8 @@ export default class WorldmapScene extends HexagonScene {
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-      if (this.state.isSoundOn) {
-        AudioManager.getInstance().play("unit.march", { volume: this.state.effectsLevel / 100 });
-      }
+      // AudioManager handles muted state internally - no need to check isSoundOn
+      AudioManager.getInstance().play("unit.march");
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
@@ -4049,23 +4045,9 @@ export default class WorldmapScene extends HexagonScene {
       ),
     );
 
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
-        (state) => state.isSoundOn,
-        (isSoundOn) => {
-          this.state.isSoundOn = isSoundOn;
-        },
-      ),
-    );
-
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
-        (state) => state.effectsLevel,
-        (effectsLevel) => {
-          this.state.effectsLevel = effectsLevel;
-        },
-      ),
-    );
+    // NOTE: isSoundOn and effectsLevel subscriptions removed - AudioManager is now
+    // the single source of truth for audio settings. See AudioManager.state.muted
+    // and AudioManager.state.categoryVolumes.
 
     this.storeSubscriptions.push(
       useUIStore.subscribe(
@@ -4113,8 +4095,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.state.entityActions = uiState.entityActions;
     this.state.selectedHex = uiState.selectedHex;
-    this.state.isSoundOn = uiState.isSoundOn;
-    this.state.effectsLevel = uiState.effectsLevel;
+    // NOTE: isSoundOn and effectsLevel removed - AudioManager is now the source of truth
 
     if (this.controls) {
       this.controls.enableZoom = uiState.enableMapZoom;

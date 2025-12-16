@@ -16,6 +16,12 @@ export class AudioManager {
   private state: AudioState;
   private static readonly STORAGE_KEY = "ETERNUM_AUDIO_SETTINGS";
 
+  // Variation tracking to avoid immediate repeats
+  private lastPlayedVariation: Map<string, number> = new Map();
+
+  // Ramp duration for volume changes to prevent clicks/pops (in seconds)
+  private static readonly VOLUME_RAMP_DURATION = 0.015; // 15ms
+
   private constructor() {
     this.state = this.loadPersistedState();
   }
@@ -101,6 +107,19 @@ export class AudioManager {
     }
   }
 
+  /**
+   * Smoothly ramp a gain node to a target value to prevent clicks/pops
+   */
+  private rampGain(gainNode: GainNode, targetValue: number): void {
+    if (!this.audioContext) return;
+
+    const now = this.audioContext.currentTime;
+    // Cancel any pending ramps and set current value as starting point
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+    gainNode.gain.linearRampToValueAtTime(targetValue, now + AudioManager.VOLUME_RAMP_DURATION);
+  }
+
   registerAsset(asset: AudioAsset): void {
     this.audioAssets.set(asset.id, asset);
   }
@@ -156,15 +175,88 @@ export class AudioManager {
     }
   }
 
-  async play(assetId: string, options: AudioPlayOptions = {}): Promise<AudioBufferSourceNode> {
+  /**
+   * Load audio buffer by URL (used for variations)
+   * Caches by URL to avoid re-fetching
+   */
+  private async loadAudioByUrl(url: string): Promise<AudioBuffer> {
+    const cached = this.loadedAudio.get(url);
+    if (cached) {
+      return cached;
+    }
+
+    if (!this.audioContext) {
+      throw new Error("AudioContext not initialized");
+    }
+
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      this.loadedAudio.set(url, audioBuffer);
+      return audioBuffer;
+    } catch (error) {
+      throw new Error(`Failed to load audio from ${url}: ${error}`);
+    }
+  }
+
+  /**
+   * Select a variation URL for an asset, avoiding immediate repeats
+   * Returns the main asset URL if no variations exist
+   */
+  private selectVariationUrl(asset: AudioAsset): string {
+    const variations = asset.variations;
+
+    // No variations - use main URL
+    if (!variations || variations.length === 0) {
+      return asset.url;
+    }
+
+    // Single variation - always use it
+    if (variations.length === 1) {
+      return variations[0];
+    }
+
+    // Multiple variations - pick randomly but avoid immediate repeat
+    const lastIndex = this.lastPlayedVariation.get(asset.id);
+    let selectedIndex: number;
+
+    if (lastIndex === undefined) {
+      // First play - pick any
+      selectedIndex = Math.floor(Math.random() * variations.length);
+    } else {
+      // Avoid the last played index
+      const availableIndices = variations
+        .map((_, i) => i)
+        .filter((i) => i !== lastIndex);
+      selectedIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    }
+
+    this.lastPlayedVariation.set(asset.id, selectedIndex);
+    return variations[selectedIndex];
+  }
+
+  async play(assetId: string, options: AudioPlayOptions = {}): Promise<AudioBufferSourceNode | null> {
+    // Silent no-op when muted or uninitialized - don't throw, just return null
+    // This allows fire-and-forget calls without try/catch everywhere
     if (!this.audioContext || this.state.muted) {
-      throw new Error("AudioContext not available or muted");
+      return null;
     }
 
     await this.resumeContext();
 
-    const asset = this.audioAssets.get(assetId)!;
-    const buffer = await this.loadAsset(assetId);
+    const asset = this.audioAssets.get(assetId);
+    if (!asset) {
+      console.warn(`Audio asset ${assetId} not found`);
+      return null;
+    }
+
+    // Select variation URL (or main URL if no variations)
+    const selectedUrl = this.selectVariationUrl(asset);
+    const hasVariations = asset.variations && asset.variations.length > 0;
+
+    // Load the audio buffer
+    const buffer = hasVariations ? await this.loadAudioByUrl(selectedUrl) : await this.loadAsset(assetId);
 
     // NOTE: Music exclusivity is now managed by MusicRouterProvider, not here.
     // This allows proper crossfade transitions where the provider fades out
@@ -172,8 +264,9 @@ export class AudioManager {
     // was called here which killed sources mid-fade.
 
     // Try to get a pooled node first, fallback to creating new one
+    // Note: Pooling is only used for assets without variations (pooled by assetId)
     let source: AudioBufferSourceNode;
-    if (this.poolManager) {
+    if (this.poolManager && !hasVariations) {
       const pooledNode = this.poolManager.getNode(assetId);
       if (pooledNode) {
         // Using pooled node - buffer already set
@@ -186,7 +279,7 @@ export class AudioManager {
         source.loop = options.loop ?? asset.loop;
       }
     } else {
-      // No pool manager, create directly
+      // No pool manager or has variations - create directly
       source = this.audioContext.createBufferSource();
       source.buffer = buffer;
       source.loop = options.loop ?? asset.loop;
@@ -355,7 +448,7 @@ export class AudioManager {
   setMasterVolume(volume: number): void {
     this.state.masterVolume = Math.max(0, Math.min(1, volume));
     if (this.masterGainNode) {
-      this.masterGainNode.gain.value = this.state.muted ? 0 : this.state.masterVolume;
+      this.rampGain(this.masterGainNode, this.state.muted ? 0 : this.state.masterVolume);
     }
     this.saveState();
   }

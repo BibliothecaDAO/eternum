@@ -17,8 +17,6 @@ interface OpenStructureContextMenuParams {
   structure: HexEntityInfo;
   hexCoords: HexPosition;
   components: Components;
-  isSoundOn: boolean;
-  effectsLevel: number;
 }
 
 export const openStructureContextMenu = ({
@@ -26,8 +24,6 @@ export const openStructureContextMenu = ({
   structure,
   hexCoords,
   components,
-  isSoundOn,
-  effectsLevel,
 }: OpenStructureContextMenuParams) => {
   const uiStore = useUIStore.getState();
   const idString = structure.id.toString();
@@ -63,7 +59,8 @@ export const openStructureContextMenu = ({
     uiStore.setLeftNavigationView(view);
 
     if (resource !== undefined) {
-      playResourceSound(resource, isSoundOn, effectsLevel);
+      // AudioManager handles muted state internally
+      playResourceSound(resource);
     }
   };
 
