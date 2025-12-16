@@ -1103,7 +1103,8 @@ export class StructureManager {
 
     this.wonderEntityIdMaps.clear();
 
-    // Reset all model counts
+    // Reset all model counts - use a batched approach to avoid repeated needsUpdate/computeBoundingSphere
+    // We'll track counts per model and call setCount once at the end
     this.structureModels.forEach((models) => {
       models.forEach((model) => model.setCount(0));
     });
@@ -1112,6 +1113,9 @@ export class StructureManager {
     });
     this.entityIdMaps.clear();
     this.cosmeticEntityIdMaps.clear();
+
+    // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
+    const modelInstanceCounts = new Map<InstancedModel, number>();
 
     for (const [structureType, structures] of structuresByType) {
       const models = this.structureModels.get(structureType);
@@ -1201,27 +1205,29 @@ export class StructureManager {
         if (structureType === StructureType.Realm) {
           modelType = models[structure.level];
 
-          const currentCount = modelType.getCount();
+          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+          const currentCount = modelInstanceCounts.get(modelType) ?? 0;
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
-          modelType.setCount(currentCount + 1);
+          modelInstanceCounts.set(modelType, currentCount + 1);
           this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
 
           if (structure.hasWonder) {
             const wonderModel = models[WONDER_MODEL_INDEX];
-            const wonderCount = wonderModel.getCount();
+            const wonderCount = modelInstanceCounts.get(wonderModel) ?? 0;
             wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
-            wonderModel.setCount(wonderCount + 1);
+            modelInstanceCounts.set(wonderModel, wonderCount + 1);
             this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
           }
         } else {
-          const currentCount = modelType.getCount();
+          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+          const currentCount = modelInstanceCounts.get(modelType) ?? 0;
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
-          modelType.setCount(currentCount + 1);
+          modelInstanceCounts.set(modelType, currentCount + 1);
           this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
         }
       });
 
-      models.forEach((model) => model.needsUpdate());
+      // Note: setCount will be called once per model after all structures are processed
     }
 
     // Render structures with cosmetic skins
@@ -1309,14 +1315,20 @@ export class StructureManager {
         // Cosmetic skins typically have a single model (index 0)
         const model = models[0];
         if (model) {
-          const currentCount = model.getCount();
+          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+          const currentCount = modelInstanceCounts.get(model) ?? 0;
           model.setMatrixAt(currentCount, this.dummy.matrix);
-          model.setCount(currentCount + 1);
+          modelInstanceCounts.set(model, currentCount + 1);
           this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
         }
       });
 
-      models.forEach((model) => model.needsUpdate());
+      // Note: setCount will be called once per model after all structures are processed
+    }
+
+    // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
+    for (const [model, count] of modelInstanceCounts) {
+      model.setCount(count);
     }
 
     if (this.activeStructureAttachmentEntities.size > 0) {
