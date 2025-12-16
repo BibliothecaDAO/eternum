@@ -125,8 +125,22 @@ function App() {
               <Route path="cosmetics" element={<LandingCosmetics />} />
               <Route path="account" element={<LandingAccount />} />
               <Route path="player" element={<LandingPlayer />} />
-              <Route path="create-market" element={<LandingCreateMarket />} />
-              <Route path="create-market-test" element={<LandingCreateMarketTest />} />
+              <Route
+                path="create-market"
+                element={
+                  <MarketsProviders>
+                    <LandingCreateMarket />
+                  </MarketsProviders>
+                }
+              />
+              <Route
+                path="create-market-test"
+                element={
+                  <MarketsProviders>
+                    <LandingCreateMarketTest />
+                  </MarketsProviders>
+                }
+              />
               <Route path="mint" element={<LandingMint />} />
               <Route
                 path="markets"
