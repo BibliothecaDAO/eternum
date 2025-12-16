@@ -94,6 +94,17 @@ export class AmbienceManager {
       maxInterval: 75,
     },
     {
+      assetId: ["ambient.birds.night.1"],
+      timeOfDay: [TimeOfDay.NIGHT, TimeOfDay.EVENING],
+      weather: [WeatherType.CLEAR],
+      baseVolume: 0.175,
+      fadeInDuration: 5.0,
+      fadeOutDuration: 5.0,
+      playbackMode: "random_interval",
+      minInterval: 25,
+      maxInterval: 75,
+    },
+    {
       assetId: ["ambient.wolves.night.1", "ambient.wolves.night.2"], // Only 2 wolf sounds available
       timeOfDay: [TimeOfDay.NIGHT],
       weather: [WeatherType.CLEAR],
@@ -138,7 +149,7 @@ export class AmbienceManager {
       assetId: ["ambient.thunder.distant.1", "ambient.thunder.distant.2", "ambient.thunder.distant.3"],
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY, TimeOfDay.DUSK, TimeOfDay.EVENING, TimeOfDay.NIGHT],
       weather: [WeatherType.STORM],
-      baseVolume: 0.2,
+      baseVolume: 0.125,
       fadeInDuration: 1.0,
       fadeOutDuration: 2.0,
       playbackMode: "random_interval",
