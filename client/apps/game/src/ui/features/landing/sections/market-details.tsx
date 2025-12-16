@@ -92,12 +92,15 @@ const MarketDetailsContent = ({
   market,
   onRefresh,
   refreshKey = 0,
+  isRefreshing = false,
 }: {
   market: MarketClass;
   onRefresh?: () => void;
   refreshKey?: number;
+  isRefreshing?: boolean;
 }) => {
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
+  console.log("hello");
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
@@ -140,9 +143,10 @@ const MarketDetailsContent = ({
                   forceUppercase={false}
                   className="gap-2"
                   onClick={() => onRefresh?.()}
+                  disabled={isRefreshing}
                   title="Refresh market data"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                   <span>Refresh</span>
                 </Button>
                 <Button
@@ -207,9 +211,8 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Use useMarket hook for real-time updates when we have a valid marketId
-  const liveMarket = useMarket(targetId ?? 0n);
+  const { market: liveMarket, refresh: refreshLiveMarket, isLoading: isLiveMarketLoading } = useMarket(targetId ?? 0n);
 
-  console.log("loop LandingMarketDetailsContent");
   const market = useMemo(() => {
     // Prefer the live market data from useMarket hook for real-time updates
     if (liveMarket) return liveMarket;
@@ -224,12 +227,13 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
         return false;
       }
     });
-  }, [markets, targetId]);
+  }, [markets, targetId, liveMarket]);
 
-  const isLoading = !market && markets.length === 0 && targetId != null;
+  const isInitialLoading = !market && markets.length === 0 && targetId != null;
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     refreshMarkets();
+    await refreshLiveMarket();
     setRefreshKey((prev) => prev + 1);
   };
 
@@ -242,9 +246,9 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
         </Link>
       </div>
 
-      {isLoading ? <p className="text-sm text-gold/70">Loading market data...</p> : null}
+      {isInitialLoading ? <p className="text-sm text-gold/70">Loading market data...</p> : null}
 
-      {!isLoading && !market ? (
+      {!isInitialLoading && !market ? (
         <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-gold/80">
           {marketId ? (
             <span>
@@ -256,7 +260,14 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
         </div>
       ) : null}
 
-      {market ? <MarketDetailsContent market={market} onRefresh={handleRefresh} refreshKey={refreshKey} /> : null}
+      {market ? (
+        <MarketDetailsContent
+          market={market}
+          onRefresh={() => void handleRefresh()}
+          refreshKey={refreshKey}
+          isRefreshing={isLiveMarketLoading}
+        />
+      ) : null}
     </MarketsSection>
   );
 };

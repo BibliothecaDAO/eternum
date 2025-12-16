@@ -14,8 +14,14 @@ import { MarketClass } from "../../class";
 import { useConfig } from "../../providers";
 import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
+export interface UseMarketResult {
+  market: MarketClass | undefined;
+  refresh: () => Promise<void>;
+  isLoading: boolean;
+}
+
 // TODO: need to use useModel and useEntityQuery
-export const useMarket = (marketId: bigint) => {
+export const useMarket = (marketId: bigint): UseMarketResult => {
   const { sdk } = useDojoSdk();
   const { getRegisteredToken } = useConfig();
 
@@ -25,13 +31,14 @@ export const useMarket = (marketId: bigint) => {
   const [vaultFeesDenominator, setVaultFeesDenominator] = useState<VaultFeesDenominator | undefined>();
   const [vaultNumerators, setVaultNumerators] = useState<VaultNumerator[]>([]);
   const [conditionResolution, setConditionResolution] = useState<ConditionResolution | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
 
   const marketIdPadded = useMemo(() => addAddressPadding(`0x${marketId.toString(16)}`), [marketId]);
-  console.log("loop raschel");
 
   const fetchMarketData = useCallback(async () => {
     if (marketId === 0n) return;
 
+    setIsLoading(true);
     try {
       // Fetch market entity
       const marketQuery = new ToriiQueryBuilder()
@@ -86,22 +93,22 @@ export const useMarket = (marketId: bigint) => {
       }
     } catch (error) {
       console.error("[useMarket] Failed to fetch market data:", error);
+    } finally {
+      setIsLoading(false);
     }
   }, [sdk, marketId, marketIdPadded]);
 
-  // Fetch condition resolution when market is loaded
-  useEffect(() => {
-    if (!market) return;
-
-    const fetchConditionResolution = async () => {
+  // Function to fetch condition resolution
+  const fetchConditionResolution = useCallback(
+    async (marketData: Market) => {
       try {
-        const conditionId_u256 = uint256.bnToUint256(market.condition_id || 0);
-        const questionId_u256 = uint256.bnToUint256(market.question_id || 0);
+        const conditionId_u256 = uint256.bnToUint256(marketData.condition_id || 0);
+        const questionId_u256 = uint256.bnToUint256(marketData.question_id || 0);
 
         const keys = [
           conditionId_u256.low.toString(),
           conditionId_u256.high.toString(),
-          market.oracle?.toString() || "0",
+          marketData.oracle?.toString() || "0",
           questionId_u256.low.toString(),
           questionId_u256.high.toString(),
         ];
@@ -121,15 +128,34 @@ export const useMarket = (marketId: bigint) => {
       } catch (error) {
         console.error("[useMarket] Failed to fetch condition resolution:", error);
       }
-    };
+    },
+    [sdk],
+  );
 
-    fetchConditionResolution();
-  }, [sdk, market]);
+  // Fetch condition resolution when market is loaded
+  useEffect(() => {
+    if (!market) return;
+    fetchConditionResolution(market);
+  }, [market, fetchConditionResolution]);
 
   // Initial fetch
   useEffect(() => {
     fetchMarketData();
   }, [fetchMarketData]);
+
+  // Combined refresh function that fetches all data
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await fetchMarketData();
+      // Fetch condition resolution with the latest market data
+      if (market) {
+        await fetchConditionResolution(market);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchMarketData, fetchConditionResolution, market]);
 
   const marketMemo = useMemo(() => {
     if (!market || !marketCreated) return undefined;
@@ -155,5 +181,5 @@ export const useMarket = (marketId: bigint) => {
     getRegisteredToken,
   ]);
 
-  return marketMemo;
+  return { market: marketMemo, refresh, isLoading };
 };
