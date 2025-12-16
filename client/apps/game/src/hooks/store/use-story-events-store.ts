@@ -22,6 +22,10 @@ export const useStoryEventsStore = create<StoryEventsState>((set) => ({
   setLastRefreshTimestamp: (timestamp: number) => set({ lastRefreshTimestamp: timestamp }),
 }));
 
+/**
+ * Main hook for fetching story events.
+ * Returns the full React Query result including data, isLoading, error, etc.
+ */
 export const useStoryEvents = (limit: number = 100) => {
   const {
     setup: { components },
@@ -65,86 +69,28 @@ export const useStoryEvents = (limit: number = 100) => {
   });
 };
 
-export const useStoryEventsLoading = () => {
-  const {
-    setup: { components },
-  } = useDojo();
-
-  return useQuery({
-    queryKey: ["storyEvents", 100],
-    queryFn: async (): Promise<ProcessedStoryEvent[]> => {
-      const rawEvents = await sqlApi.fetchStoryEvents(100, 0);
-
-      return rawEvents.map((event, index): ProcessedStoryEvent => {
-        const timestampMs = parseInt(event.timestamp, 16) * 1000;
-
-        const storyEventUpdate = {
-          ownerAddress: event.owner,
-          ownerName: null,
-          entityId: event.entity_id,
-          txHash: event.tx_hash,
-          timestamp: timestampMs,
-          storyType: event.story,
-          storyPayload: buildStoryPayloadFromEvent(event),
-          rawStory: event,
-        };
-
-        const presentation = buildStoryEventPresentation(storyEventUpdate, components);
-
-        const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
-
-        return {
-          ...event,
-          id,
-          timestampMs,
-          presentation,
-        };
-      });
-    },
-    staleTime: POLLING_INTERVALS.storyEventsStaleMs,
-    refetchInterval: POLLING_INTERVALS.storyEventsMs,
-  }).isLoading;
+/**
+ * Selector hook for story events loading state.
+ * Uses the same query as useStoryEvents - just returns isLoading.
+ */
+export const useStoryEventsLoading = (limit: number = 100) => {
+  return useStoryEvents(limit).isLoading;
 };
 
-export const useStoryEventsError = () => {
-  const {
-    setup: { components },
-  } = useDojo();
+/**
+ * Selector hook for story events error state.
+ * Uses the same query as useStoryEvents - just returns error message.
+ */
+export const useStoryEventsError = (limit: number = 100) => {
+  return useStoryEvents(limit).error?.message;
+};
 
-  return useQuery({
-    queryKey: ["storyEvents", 100],
-    queryFn: async (): Promise<ProcessedStoryEvent[]> => {
-      const rawEvents = await sqlApi.fetchStoryEvents(100, 0);
-
-      return rawEvents.map((event, index): ProcessedStoryEvent => {
-        const timestampMs = parseInt(event.timestamp, 16) * 1000;
-
-        const storyEventUpdate = {
-          ownerAddress: event.owner,
-          ownerName: null,
-          entityId: event.entity_id,
-          txHash: event.tx_hash,
-          timestamp: timestampMs,
-          storyType: event.story,
-          storyPayload: buildStoryPayloadFromEvent(event),
-          rawStory: event,
-        };
-
-        const presentation = buildStoryEventPresentation(storyEventUpdate, components);
-
-        const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
-
-        return {
-          ...event,
-          id,
-          timestampMs,
-          presentation,
-        };
-      });
-    },
-    staleTime: POLLING_INTERVALS.storyEventsStaleMs,
-    refetchInterval: POLLING_INTERVALS.storyEventsMs,
-  }).error?.message;
+/**
+ * Selector hook for story events data only.
+ * Uses the same query as useStoryEvents - just returns data array.
+ */
+export const useStoryEventsData = (limit: number = 100) => {
+  return useStoryEvents(limit).data ?? [];
 };
 
 function parseMaybeJson<T = unknown>(value: unknown): unknown {
