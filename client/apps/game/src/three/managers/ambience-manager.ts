@@ -301,6 +301,11 @@ export class AmbienceManager {
         },
       });
 
+      // If source is null (audio muted), skip adding to active sounds
+      if (!source) {
+        return;
+      }
+
       const fadeSpeed = layer.baseVolume / layer.fadeInDuration;
 
       const activeSound: ActiveAmbienceSound = {

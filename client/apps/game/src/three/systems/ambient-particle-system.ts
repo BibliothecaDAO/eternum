@@ -198,8 +198,7 @@ export class AmbientParticleSystem {
     const radius = Math.random() * this.spawnRadius * 0.8;
     const x = this.spawnCenter.x + Math.cos(angle) * radius;
     const z = this.spawnCenter.z + Math.sin(angle) * radius;
-    const baseY =
-      this.spawnCenter.y + this.fireflyParams.heightOffset + Math.random() * this.fireflyParams.heightRange;
+    const baseY = this.spawnCenter.y + this.fireflyParams.heightOffset + Math.random() * this.fireflyParams.heightRange;
     const y = randomizePosition ? baseY : this.spawnCenter.y + this.fireflyParams.heightOffset;
 
     return {

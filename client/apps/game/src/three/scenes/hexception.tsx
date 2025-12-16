@@ -566,15 +566,14 @@ export default class HexceptionScene extends HexagonScene {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
 
-      const { isSoundOn, effectsLevel } = useUIStore.getState();
-
       if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
         const building = getComponentValue(
           this.dojo.components.Building,
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(building?.category as BuildingType, isSoundOn, effectsLevel);
+        // AudioManager handles muted state internally
+        playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -589,7 +588,8 @@ export default class HexceptionScene extends HexagonScene {
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(building?.category as BuildingType, isSoundOn, effectsLevel);
+        // AudioManager handles muted state internally
+        playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
           outerCol,

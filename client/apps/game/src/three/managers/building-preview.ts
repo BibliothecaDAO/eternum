@@ -115,8 +115,8 @@ export class BuildingPreview {
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
       if (!this.currentHexHovered || !this.currentHexHovered.equals(position)) {
-        const { isSoundOn, effectsLevel } = useUIStore.getState();
-        this.hoverSound.play(isSoundOn, effectsLevel);
+        // AudioManager handles muted state internally
+        this.hoverSound.play();
         this.currentHexHovered = position;
       }
       const { buildingGroup, buildingType } = this.getBuildingType();
