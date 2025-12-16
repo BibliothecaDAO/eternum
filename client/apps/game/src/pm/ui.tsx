@@ -252,15 +252,16 @@ export const ChartLegendContent = ({
   nameKey,
   mouseEnter,
   mouseLeave,
-}: React.ComponentProps<"div"> &
-  {
-    payload?: ReadonlyArray<LegendPayload>;
-    verticalAlign?: VerticalAlignmentType;
-    hideIcon?: boolean;
-    nameKey?: string;
-    mouseEnter?: (e: LegendPayload) => void;
-    mouseLeave?: (e: LegendPayload) => void;
-  }) => {
+  onItemClick,
+}: React.ComponentProps<"div"> & {
+  payload?: ReadonlyArray<LegendPayload>;
+  verticalAlign?: VerticalAlignmentType;
+  hideIcon?: boolean;
+  nameKey?: string;
+  mouseEnter?: (e: LegendPayload) => void;
+  mouseLeave?: (e: LegendPayload) => void;
+  onItemClick?: (e: LegendPayload) => void;
+}) => {
   const { config } = useChart();
 
   if (!payload?.length) return null;
@@ -281,8 +282,9 @@ export const ChartLegendContent = ({
           <div
             onMouseEnter={() => mouseEnter?.(item)}
             onMouseLeave={() => mouseLeave?.(item)}
+            onClick={() => onItemClick?.(item)}
             key={item.value}
-            className="flex items-center gap-1.5"
+            className={cx("flex items-center gap-1.5", onItemClick && "cursor-pointer")}
           >
             {!hideIcon ? (
               itemConfig?.icon ? (
