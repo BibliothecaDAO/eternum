@@ -943,18 +943,15 @@ export class ArmyManager {
     let visibleArmies = computeVisibleArmies();
     let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
 
+    // Preload all required models once
     if (requiredModelTypes.size > 0) {
       await this.armyModel.preloadModels(requiredModelTypes);
     }
 
-    // Recompute after any async work to capture the latest data
+    // Recompute after async work to capture any armies added during preload
     visibleArmies = computeVisibleArmies();
     visibleArmies.sort((a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId));
-    ({ modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies));
-
-    if (requiredModelTypes.size > 0) {
-      await this.armyModel.preloadModels(requiredModelTypes);
-    }
+    ({ modelTypesByEntity } = this.collectModelInfo(visibleArmies));
 
     let buffersDirty = false;
 
