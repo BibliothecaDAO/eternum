@@ -95,11 +95,7 @@ export class WindSystem {
     this.targetSpeed = this.lerp(this.params.baseSpeed, this.params.stormSpeed, weatherIntensity);
 
     // Smoothly interpolate current speed toward target
-    this.currentSpeed = this.lerp(
-      this.currentSpeed,
-      this.targetSpeed,
-      deltaTime * this.params.weatherResponseSpeed,
-    );
+    this.currentSpeed = this.lerp(this.currentSpeed, this.targetSpeed, deltaTime * this.params.weatherResponseSpeed);
 
     // Update wind direction (slow rotation)
     this.updateDirection(deltaTime);
@@ -135,10 +131,11 @@ export class WindSystem {
       this.gustDurationRemaining -= deltaTime;
 
       // Gust envelope: quick attack, slow release
-      const gustProgress = 1 - (this.gustDurationRemaining / this.params.gustDuration);
-      const gustEnvelope = gustProgress < 0.2
-        ? gustProgress / 0.2 // Attack
-        : 1 - ((gustProgress - 0.2) / 0.8); // Release
+      const gustProgress = 1 - this.gustDurationRemaining / this.params.gustDuration;
+      const gustEnvelope =
+        gustProgress < 0.2
+          ? gustProgress / 0.2 // Attack
+          : 1 - (gustProgress - 0.2) / 0.8; // Release
 
       const gustStrength = 1 + (this.params.gustStrengthMax - 1) * gustEnvelope * weatherIntensity;
       this.gustMultiplier = this.lerp(this.gustMultiplier, gustStrength, deltaTime * 8);
@@ -168,8 +165,8 @@ export class WindSystem {
   }
 
   private scheduleNextGust(): void {
-    this.gustTimer = this.params.gustIntervalMin +
-      Math.random() * (this.params.gustIntervalMax - this.params.gustIntervalMin);
+    this.gustTimer =
+      this.params.gustIntervalMin + Math.random() * (this.params.gustIntervalMax - this.params.gustIntervalMin);
     this.gustDurationRemaining = 0;
   }
 

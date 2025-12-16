@@ -1,4 +1,13 @@
-import { Scene, LineSegments, BufferGeometry, LineBasicMaterial, BufferAttribute, Vector3, Vector2, Color } from "three";
+import {
+  Scene,
+  LineSegments,
+  BufferGeometry,
+  LineBasicMaterial,
+  BufferAttribute,
+  Vector3,
+  Vector2,
+  Color,
+} from "three";
 
 interface RainSpawnVolume {
   width: number;
@@ -13,9 +22,9 @@ interface RainSpawnVolume {
  * Drop size category for visual variety
  */
 enum DropSize {
-  SMALL = 0,  // Fine mist, distant drops
+  SMALL = 0, // Fine mist, distant drops
   MEDIUM = 1, // Standard rain
-  LARGE = 2,  // Heavy drops, close to camera
+  LARGE = 2, // Heavy drops, close to camera
 }
 
 export class RainEffect {
@@ -50,10 +59,10 @@ export class RainEffect {
   private weatherIntensity: number = 1.0;
 
   // Per-drop properties for size/speed variance
-  private dropLengths!: Float32Array;      // Individual drop lengths
+  private dropLengths!: Float32Array; // Individual drop lengths
   private dropSpeedMultipliers!: Float32Array; // Individual fall speed multipliers
-  private dropSizes!: Uint8Array;          // Size category (0=small, 1=medium, 2=large)
-  private rainColors!: Float32Array;       // Per-vertex colors (RGB per vertex, 2 vertices per drop)
+  private dropSizes!: Uint8Array; // Size category (0=small, 1=medium, 2=large)
+  private rainColors!: Float32Array; // Per-vertex colors (RGB per vertex, 2 vertices per drop)
 
   private windParams = {
     maxStrength: 0.06,
@@ -77,9 +86,9 @@ export class RainEffect {
   // Size variance settings
   private sizeParams = {
     // Distribution: what percentage of drops are each size
-    smallPercent: 0.4,   // 40% small (distant, fine)
-    mediumPercent: 0.4,  // 40% medium (standard)
-    largePercent: 0.2,   // 20% large (heavy, close)
+    smallPercent: 0.4, // 40% small (distant, fine)
+    mediumPercent: 0.4, // 40% medium (standard)
+    largePercent: 0.2, // 20% large (heavy, close)
 
     // Length multipliers for each size
     smallLengthMin: 0.15,
@@ -98,9 +107,9 @@ export class RainEffect {
     largeDropCenterBias: 0.6, // 0-1, how much large drops prefer center
 
     // Brightness multipliers (simulates distance/opacity via color)
-    smallBrightness: 0.4,   // Faint, distant drops
-    mediumBrightness: 0.7,  // Standard visibility
-    largeBrightness: 1.0,   // Bright, close drops
+    smallBrightness: 0.4, // Faint, distant drops
+    mediumBrightness: 0.7, // Standard visibility
+    largeBrightness: 1.0, // Bright, close drops
   };
 
   constructor(scene: Scene) {
@@ -201,19 +210,22 @@ export class RainEffect {
     if (rand < smallPercent) {
       // Small drops - fine mist
       size = DropSize.SMALL;
-      length = this.sizeParams.smallLengthMin +
+      length =
+        this.sizeParams.smallLengthMin +
         Math.random() * (this.sizeParams.smallLengthMax - this.sizeParams.smallLengthMin);
       speedMult = this.sizeParams.smallSpeedMult * (0.9 + Math.random() * 0.2);
     } else if (rand < smallPercent + mediumPercent) {
       // Medium drops - standard rain
       size = DropSize.MEDIUM;
-      length = this.sizeParams.mediumLengthMin +
+      length =
+        this.sizeParams.mediumLengthMin +
         Math.random() * (this.sizeParams.mediumLengthMax - this.sizeParams.mediumLengthMin);
       speedMult = this.sizeParams.mediumSpeedMult * (0.9 + Math.random() * 0.2);
     } else {
       // Large drops - heavy rain
       size = DropSize.LARGE;
-      length = this.sizeParams.largeLengthMin +
+      length =
+        this.sizeParams.largeLengthMin +
         Math.random() * (this.sizeParams.largeLengthMax - this.sizeParams.largeLengthMin);
       speedMult = this.sizeParams.largeSpeedMult * (0.9 + Math.random() * 0.2);
     }
@@ -293,11 +305,7 @@ export class RainEffect {
     if (this.useExternalWind) {
       // Use wind from WindSystem - direction * speed * multiplier
       const strength = this.externalWindSpeed * this.windParams.externalWindMultiplier;
-      this.windTarget.set(
-        this.externalWindDirection.x * strength,
-        0,
-        this.externalWindDirection.y * strength,
-      );
+      this.windTarget.set(this.externalWindDirection.x * strength, 0, this.externalWindDirection.y * strength);
     } else {
       // Internal wind simulation (fallback)
       this.windTimer -= deltaTime;

@@ -226,9 +226,7 @@ export class AudioManager {
       selectedIndex = Math.floor(Math.random() * variations.length);
     } else {
       // Avoid the last played index
-      const availableIndices = variations
-        .map((_, i) => i)
-        .filter((i) => i !== lastIndex);
+      const availableIndices = variations.map((_, i) => i).filter((i) => i !== lastIndex);
       selectedIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
     }
 

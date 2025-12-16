@@ -554,33 +554,19 @@ export class WeatherManager {
         this.transitionToWeather(value);
       });
 
-    weatherFolder
-      .add({ instant: () => this.setWeather(this.targetType) }, "instant")
-      .name("Skip to Target");
+    weatherFolder.add({ instant: () => this.setWeather(this.targetType) }, "instant").name("Skip to Target");
 
-    weatherFolder
-      .add({ random: () => this.triggerRandomWeather() }, "random")
-      .name("Random Weather");
+    weatherFolder.add({ random: () => this.triggerRandomWeather() }, "random").name("Random Weather");
 
-    weatherFolder
-      .add({ clear: () => this.clearWeather() }, "clear")
-      .name("Clear Weather");
+    weatherFolder.add({ clear: () => this.clearWeather() }, "clear").name("Clear Weather");
 
     // Timing controls
     const timingFolder = weatherFolder.addFolder("Timing");
 
-    timingFolder
-      .add(this.weatherConfigs[WeatherType.RAIN], "approachDuration", 5, 60, 1)
-      .name("Rain Approach (s)");
-    timingFolder
-      .add(this.weatherConfigs[WeatherType.RAIN], "arriveDuration", 5, 30, 1)
-      .name("Rain Arrive (s)");
-    timingFolder
-      .add(this.weatherConfigs[WeatherType.STORM], "approachDuration", 5, 60, 1)
-      .name("Storm Approach (s)");
-    timingFolder
-      .add(this.weatherConfigs[WeatherType.STORM], "arriveDuration", 5, 30, 1)
-      .name("Storm Arrive (s)");
+    timingFolder.add(this.weatherConfigs[WeatherType.RAIN], "approachDuration", 5, 60, 1).name("Rain Approach (s)");
+    timingFolder.add(this.weatherConfigs[WeatherType.RAIN], "arriveDuration", 5, 30, 1).name("Rain Arrive (s)");
+    timingFolder.add(this.weatherConfigs[WeatherType.STORM], "approachDuration", 5, 60, 1).name("Storm Approach (s)");
+    timingFolder.add(this.weatherConfigs[WeatherType.STORM], "arriveDuration", 5, 30, 1).name("Storm Arrive (s)");
     timingFolder.add(this.params, "peakDuration", 30, 180, 10).name("Peak Duration (s)");
 
     timingFolder.close();

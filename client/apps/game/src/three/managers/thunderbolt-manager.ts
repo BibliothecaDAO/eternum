@@ -194,7 +194,11 @@ export class ThunderBoltManager {
    * @param baseRadius - Base radius (will be scaled for each layer)
    * @param isBranch - Whether this is a branch (thinner, less prominent)
    */
-  private createLightningSegment(points: THREE.Vector3[], baseRadius: number, isBranch: boolean = false): LightningSegment {
+  private createLightningSegment(
+    points: THREE.Vector3[],
+    baseRadius: number,
+    isBranch: boolean = false,
+  ): LightningSegment {
     const curve = new THREE.CatmullRomCurve3(points);
     const tubularSegments = Math.max(12, points.length * 2);
     const layers: LightningLayer[] = [];
@@ -203,14 +207,14 @@ export class ThunderBoltManager {
     const layerConfigs = isBranch
       ? [
           // Branch: simpler, 2 layers
-          { radiusMult: 0.4, color: 0xffffff, opacity: 0.9, radialSegments: 4 },  // Core
-          { radiusMult: 1.0, color: 0xaaccff, opacity: 0.4, radialSegments: 5 },  // Glow
+          { radiusMult: 0.4, color: 0xffffff, opacity: 0.9, radialSegments: 4 }, // Core
+          { radiusMult: 1.0, color: 0xaaccff, opacity: 0.4, radialSegments: 5 }, // Glow
         ]
       : [
           // Main bolt: 3 layers for dramatic effect
-          { radiusMult: 0.25, color: 0xffffff, opacity: 1.0, radialSegments: 4 },  // Bright core
-          { radiusMult: 0.6, color: 0xddeeff, opacity: 0.7, radialSegments: 5 },   // Body
-          { radiusMult: 1.5, color: 0x88aadd, opacity: 0.25, radialSegments: 6 },  // Outer glow
+          { radiusMult: 0.25, color: 0xffffff, opacity: 1.0, radialSegments: 4 }, // Bright core
+          { radiusMult: 0.6, color: 0xddeeff, opacity: 0.7, radialSegments: 5 }, // Body
+          { radiusMult: 1.5, color: 0x88aadd, opacity: 0.25, radialSegments: 6 }, // Outer glow
         ];
 
     for (const config of layerConfigs) {
