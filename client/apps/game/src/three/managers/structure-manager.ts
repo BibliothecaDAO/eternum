@@ -2000,20 +2000,6 @@ export class StructureManager {
       return;
     }
 
-    // Log guard troop count diff for battle damage tracking
-    if (structure.guardArmies) {
-      for (const newGuard of update.guardArmies) {
-        const oldGuard = structure.guardArmies.find((g) => g.slot === newGuard.slot);
-        if (oldGuard && oldGuard.count !== newGuard.count) {
-          const diff = newGuard.count - oldGuard.count;
-          const diffSign = diff > 0 ? "+" : "";
-          console.log(
-            `[TroopCountDiff] Structure #${entityId} Guard Slot ${newGuard.slot} | Previous: ${oldGuard.count} | Current: ${newGuard.count} | Diff: ${diffSign}${diff}`,
-          );
-        }
-      }
-    }
-
     // Update cached guard armies data
     structure.guardArmies = update.guardArmies.map((guard) => ({
       slot: guard.slot,
