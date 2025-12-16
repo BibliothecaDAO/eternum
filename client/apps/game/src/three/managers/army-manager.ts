@@ -2387,7 +2387,7 @@ ${
       return;
     }
 
-    // Log troop count diff and play visual FX for battle damage/healing
+    // Log troop count diff for battle damage tracking
     const previousCount = army.troopCount;
     const newCount = update.troopCount;
     if (previousCount !== newCount) {
@@ -2396,11 +2396,6 @@ ${
       console.log(
         `[TroopCountDiff] Army #${update.entityId} | Previous: ${previousCount} | Current: ${newCount} | Diff: ${diffSign}${diff}`,
       );
-
-      // Play floating damage/heal FX at the army's position
-      const normalizedHex = army.hexCoords.getNormalized();
-      const worldPos = getWorldPositionForHex({ col: normalizedHex.x, row: normalizedHex.y });
-      this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
     }
 
     // Update cached army data
