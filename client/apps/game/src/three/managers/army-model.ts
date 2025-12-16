@@ -1418,6 +1418,29 @@ export class ArmyModel {
     return this.movingInstances.has(entityId);
   }
 
+  /**
+   * Get the movement progress for an entity (0-1 across entire path)
+   * @param entityId - The entity ID
+   * @returns Progress value 0-1, or undefined if not moving
+   */
+  public getMovementProgress(entityId: number): number | undefined {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return undefined;
+
+    const instanceData = this.instanceData.get(entityId);
+    if (!instanceData?.path || instanceData.path.length < 2) return undefined;
+
+    // Calculate overall progress across all path segments
+    const totalSegments = instanceData.path.length - 1;
+    const completedSegments = movement.currentPathIndex;
+    const currentSegmentProgress = movement.progress;
+
+    // During descent (currentPathIndex === -1), return 1 (complete)
+    if (completedSegments === -1) return 1;
+
+    return (completedSegments + currentSegmentProgress) / totalSegments;
+  }
+
   public getEntityWorldPosition(entityId: number): Vector3 | undefined {
     const instanceData = this.instanceData.get(entityId);
     if (!instanceData) {
