@@ -2387,6 +2387,17 @@ ${
       return;
     }
 
+    // Log troop count diff for battle damage tracking
+    const previousCount = army.troopCount;
+    const newCount = update.troopCount;
+    if (previousCount !== newCount) {
+      const diff = newCount - previousCount;
+      const diffSign = diff > 0 ? "+" : "";
+      console.log(
+        `[TroopCountDiff] Army #${update.entityId} | Previous: ${previousCount} | Current: ${newCount} | Diff: ${diffSign}${diff}`,
+      );
+    }
+
     // Update cached army data
     army.troopCount = update.troopCount;
 
