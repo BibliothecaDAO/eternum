@@ -159,6 +159,7 @@ export class StructureManager {
   private chunkStride: number;
   private needsSpatialReindex = false;
   private visibleStructureCount = 0;
+  private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
@@ -549,6 +550,7 @@ export class StructureManager {
     this.structureUpdateSources.clear();
     this.chunkToStructures.clear();
     this.structuresWithActiveBattleTimer.clear();
+    this.previousVisibleIds.clear();
 
     // Clean up points renderers
     if (this.pointsRenderers) {
@@ -1357,21 +1359,22 @@ export class StructureManager {
       this.removeEntityIdLabel(entityId);
     });
 
-    // Remove points for structures no longer visible
+    // Remove points for structures no longer visible (diff-based: O(previously_visible) instead of O(all_structures))
     if (this.pointsRenderers) {
-      Object.values(this.pointsRenderers).forEach((renderer) => {
-        // We need to iterate all points in renderer and remove if not in visibleStructureIds
-        // But PointsLabelRenderer doesn't expose iteration easily.
-        // Instead, we can iterate all known structures and remove those not visible
-        this.structures.getStructures().forEach((structures) => {
-          structures.forEach((structure) => {
-            if (!visibleStructureIds.has(structure.entityId) && renderer.hasPoint(structure.entityId)) {
-              renderer.removePoint(structure.entityId);
-            }
-          });
-        });
-      });
+      for (const entityId of this.previousVisibleIds) {
+        if (!visibleStructureIds.has(entityId)) {
+          // Structure was visible last frame but not anymore - remove its point
+          const structure = this.structures.getStructureByEntityId(entityId);
+          if (structure) {
+            const renderer = this.getRendererForStructure(structure);
+            renderer?.removePoint(entityId);
+          }
+        }
+      }
     }
+
+    // Update tracking for next frame's diff
+    this.previousVisibleIds = visibleStructureIds;
 
     this.frustumVisibilityDirty = true;
   }
