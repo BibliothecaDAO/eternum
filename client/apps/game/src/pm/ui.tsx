@@ -1,10 +1,7 @@
 import type { HTMLAttributes } from "react";
 import React, { createContext, useContext, useId, useMemo } from "react";
 import * as RechartsPrimitive from "recharts";
-import type {
-  LegendPayload,
-  VerticalAlignmentType,
-} from "recharts/types/component/DefaultLegendContent";
+import type { LegendPayload, VerticalAlignmentType } from "recharts/types/component/DefaultLegendContent";
 import type { NameType, Payload as TooltipPayload, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import type { TooltipContentProps } from "recharts/types/component/Tooltip";
 
@@ -15,15 +12,10 @@ type DivProps = HTMLAttributes<HTMLDivElement>;
 type HeadingProps = HTMLAttributes<HTMLHeadingElement>;
 
 export const Card = ({ className, ...props }: DivProps) => (
-  <div
-    {...props}
-    className={cx("rounded-lg border border-white/10 bg-black/40 p-4 text-white", className)}
-  />
+  <div {...props} className={cx("rounded-lg border border-white/10 bg-black/40 p-4 text-white", className)} />
 );
 
-export const CardHeader = ({ className, ...props }: DivProps) => (
-  <div {...props} className={cx("mb-2", className)} />
-);
+export const CardHeader = ({ className, ...props }: DivProps) => <div {...props} className={cx("mb-2", className)} />;
 
 export const CardTitle = ({ className, ...props }: HeadingProps) => (
   <h3 {...props} className={cx("text-lg font-semibold", className)} />
@@ -58,10 +50,7 @@ export type ChartConfig = {
   [k in string]: {
     label?: React.ReactNode;
     icon?: React.ComponentType;
-  } & (
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<"light" | "dark", string> }
-  );
+  } & ({ color?: string; theme?: never } | { color?: never; theme: Record<"light" | "dark", string> });
 };
 
 type ChartContextProps = {
@@ -158,16 +147,10 @@ export const ChartTooltipContent = ({
     const key = `${labelKey || item?.dataKey || item?.name || "value"}`;
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
     const value =
-      !labelKey && typeof label === "string"
-        ? config[label as keyof typeof config]?.label || label
-        : itemConfig?.label;
+      !labelKey && typeof label === "string" ? config[label as keyof typeof config]?.label || label : itemConfig?.label;
 
     if (labelFormatter) {
-      return (
-        <div className={cx("font-medium", labelClassName)}>
-          {labelFormatter(value, payload as any)}
-        </div>
-      );
+      return <div className={cx("font-medium", labelClassName)}>{labelFormatter(value, payload as any)}</div>;
     }
 
     if (!value) return null;
@@ -267,13 +250,7 @@ export const ChartLegendContent = ({
   if (!payload?.length) return null;
 
   return (
-    <div
-      className={cx(
-        "flex items-center justify-center gap-4",
-        verticalAlign === "top" ? "pb-3" : "pt-3",
-        className,
-      )}
-    >
+    <div className={cx("flex items-center justify-center gap-4", verticalAlign === "top" ? "pb-3" : "pt-3", className)}>
       {payload.map((item) => {
         const key = `${nameKey || item.dataKey || "value"}`;
         const itemConfig = getPayloadConfigFromPayload(config, item, key);

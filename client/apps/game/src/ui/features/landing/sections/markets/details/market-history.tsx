@@ -49,30 +49,21 @@ const formatRangeLabel = (range: TimeRange, data: ChartDataPoint[]): string => {
     return `${formatTime(first)} – ${formatTime(last)}`;
   }
 
-  const formatDate = (ts: number) =>
-    new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const formatDate = (ts: number) => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return `${formatDate(first)} – ${formatDate(last)}`;
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const TimeRangePills = ({
-  value,
-  onChange,
-}: {
-  value: TimeRange;
-  onChange: (range: TimeRange) => void;
-}) => (
+const TimeRangePills = ({ value, onChange }: { value: TimeRange; onChange: (range: TimeRange) => void }) => (
   <div className="flex gap-1">
     {TIME_RANGES.map((range) => (
       <button
         key={range}
         onClick={() => onChange(range)}
         className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-          value === range
-            ? "bg-gold/20 text-gold"
-            : "text-white/50 hover:bg-white/5 hover:text-white/70"
+          value === range ? "bg-gold/20 text-gold" : "text-white/50 hover:bg-white/5 hover:text-white/70"
         }`}
       >
         {range}
@@ -111,9 +102,7 @@ const HeaderStats = ({
         {rangeLabel && <span className="text-[10px] text-white/40">{rangeLabel}</span>}
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-semibold tabular-nums text-white">
-          {currentValue.toFixed(1)}%
-        </span>
+        <span className="text-2xl font-semibold tabular-nums text-white">{currentValue.toFixed(1)}%</span>
         <span
           className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
             isPositive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
@@ -176,8 +165,8 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
     );
   }
 
-  const minTime = Math.min(...filteredData.map((i) => i.date));
-  const maxTime = Math.max(...filteredData.map((i) => i.date));
+  const minTime = Math.min(...filteredData.map((i) => i.date as number));
+  const maxTime = Math.max(...filteredData.map((i) => i.date as number));
 
   const maxValue = Math.max(
     ...filteredData.map((item) => {

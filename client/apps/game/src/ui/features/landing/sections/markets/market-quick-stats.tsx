@@ -99,7 +99,7 @@ export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
       <span className={`flex items-center gap-1 ${showRedeemable ? "text-progress-bar-good" : ""}`}>
         <Wallet className="h-3 w-3" />
         <span className={`${showRedeemable ? "font-semibold" : "text-white"}`}>
-          {account?.address ? (showRedeemable ? `+${redeemableValue}` : playerLockedAmount ?? "0") : "--"}
+          {account?.address ? (showRedeemable ? `+${redeemableValue}` : (playerLockedAmount ?? "0")) : "--"}
         </span>
         {market.collateralToken ? <TokenIcon token={market.collateralToken as any} size={12} /> : null}
       </span>

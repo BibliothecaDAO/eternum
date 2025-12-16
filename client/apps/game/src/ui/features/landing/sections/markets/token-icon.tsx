@@ -24,7 +24,11 @@ export function TokenIcon({ token, size = 24, className, style, ...props }: Toke
       style={mergedStyle}
       {...props}
     >
-      <img src={`/tokens/${token?.symbol.toLowerCase()}.png`} alt={token?.symbol} className="h-full w-full rounded-full object-contain" />
+      <img
+        src={`/tokens/${token?.symbol.toLowerCase()}.png`}
+        alt={token?.symbol}
+        className="h-full w-full rounded-full object-contain"
+      />
     </span>
   );
 }

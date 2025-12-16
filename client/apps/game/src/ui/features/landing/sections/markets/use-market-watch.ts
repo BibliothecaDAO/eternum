@@ -135,10 +135,9 @@ export const resolveMarketWorldName = async (market: MarketClass): Promise<strin
 
 export const useMarketWatch = () => {
   const [watchingMarketId, setWatchingMarketId] = useState<string | null>(null);
-  const [watchStates, setWatchStates] = useState<Record<
-    string,
-    { status: "idle" | "checking" | "ready" | "offline"; worldName?: string }
-  >>({});
+  const [watchStates, setWatchStates] = useState<
+    Record<string, { status: "idle" | "checking" | "ready" | "offline"; worldName?: string }>
+  >({});
 
   const updateWatchState = useCallback(
     (marketId: string, next: Partial<{ status: "idle" | "checking" | "ready" | "offline"; worldName?: string }>) => {
@@ -186,32 +185,35 @@ export const useMarketWatch = () => {
     [checkWatchability, watchStates],
   );
 
-  const watchMarket = useCallback(async (market: MarketClass) => {
-    const marketId = String(market.market_id ?? "");
-    setWatchingMarketId(marketId);
+  const watchMarket = useCallback(
+    async (market: MarketClass) => {
+      const marketId = String(market.market_id ?? "");
+      setWatchingMarketId(marketId);
 
-    try {
-      const worldName = await checkWatchability(market);
-      if (!worldName) {
-        toast.error("This game is offline or unavailable.");
-        return;
+      try {
+        const worldName = await checkWatchability(market);
+        if (!worldName) {
+          toast.error("This game is offline or unavailable.");
+          return;
+        }
+
+        const chain = env.VITE_PUBLIC_CHAIN as Chain;
+        await buildWorldProfile(chain, worldName);
+
+        const playUrl = `/play/${encodeURIComponent(worldName)}`;
+        const newTab = window.open(playUrl, "_blank", "noopener,noreferrer");
+        if (!newTab) {
+          toast.error("Enable pop-ups to watch this game.");
+        }
+      } catch (error) {
+        console.error("[market-watch] Failed to open game for market", error);
+        toast.error("Failed to open the game for this market.");
+      } finally {
+        setWatchingMarketId((current) => (current === marketId ? null : current));
       }
-
-      const chain = env.VITE_PUBLIC_CHAIN as Chain;
-      await buildWorldProfile(chain, worldName);
-
-      const playUrl = `/play/${encodeURIComponent(worldName)}`;
-      const newTab = window.open(playUrl, "_blank", "noopener,noreferrer");
-      if (!newTab) {
-        toast.error("Enable pop-ups to watch this game.");
-      }
-    } catch (error) {
-      console.error("[market-watch] Failed to open game for market", error);
-      toast.error("Failed to open the game for this market.");
-    } finally {
-      setWatchingMarketId((current) => (current === marketId ? null : current));
-    }
-  }, [checkWatchability]);
+    },
+    [checkWatchability],
+  );
 
   return {
     watchMarket,

@@ -18,15 +18,7 @@ export const LEADERBOARD_RANGES: Array<{ id: MarketLeaderboardRange; label: stri
 export const formatNumber = (value: number, maximumFractionDigits = 2) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(value || 0);
 
-export const TabButton = ({
-  isActive,
-  label,
-  onClick,
-}: {
-  isActive: boolean;
-  label: string;
-  onClick: () => void;
-}) => (
+export const TabButton = ({ isActive, label, onClick }: { isActive: boolean; label: string; onClick: () => void }) => (
   <button
     className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
       isActive ? "bg-gold/30 text-white shadow-lg shadow-gold/10" : "bg-white/5 text-gold/70 hover:bg-white/10"

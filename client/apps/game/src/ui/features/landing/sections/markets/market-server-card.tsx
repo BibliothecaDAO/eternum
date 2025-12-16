@@ -128,8 +128,18 @@ export const MarketServerCard = ({
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          <span className={clsx("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold", statusStyles[status])}>
-            <div className={clsx("h-2 w-2 rounded-full", status === "started" ? "bg-brilliance" : status === "ended" ? "bg-danger" : "bg-gold")} />
+          <span
+            className={clsx(
+              "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
+              statusStyles[status],
+            )}
+          >
+            <div
+              className={clsx(
+                "h-2 w-2 rounded-full",
+                status === "started" ? "bg-brilliance" : status === "ended" ? "bg-danger" : "bg-gold",
+              )}
+            />
             {status === "registration" ? "Registration" : status === "started" ? "Started" : "Ended"}
           </span>
           {server.loadingPlayers && (
@@ -177,7 +187,8 @@ export const MarketServerCard = ({
         <p className="text-xs text-gold/60">
           Edit in your local timezone (datetime-local). Leave blank to use the server schedule (Start:{" "}
           {formatTimestamp(defaultSchedule.start)}, End: {formatTimestamp(defaultSchedule.end)}, Resolve:{" "}
-          {formatTimestamp(defaultSchedule.resolve)}). You can also paste unix seconds; they&apos;ll convert automatically.
+          {formatTimestamp(defaultSchedule.resolve)}). You can also paste unix seconds; they&apos;ll convert
+          automatically.
         </p>
       </div>
 
@@ -189,9 +200,7 @@ export const MarketServerCard = ({
           placeholder={`Who wins ${server.name}?`}
           className="w-full rounded-lg border border-gold/30 bg-black/30 px-3 py-2 text-sm text-gold outline-none transition focus:border-gold/60"
         />
-        <p className="text-xs text-gold/60">
-          Optional override. Leave blank to use the default title for this server.
-        </p>
+        <p className="text-xs text-gold/60">Optional override. Leave blank to use the default title for this server.</p>
       </div>
       <div className="mt-4 space-y-3 rounded-xl border border-gold/20 bg-gold/5 p-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-gold">
@@ -210,7 +219,9 @@ export const MarketServerCard = ({
                   className="grid grid-cols-1 gap-2 rounded-lg border border-gold/15 bg-black/30 p-3 sm:grid-cols-3 sm:items-center"
                 >
                   <div className="min-w-0 sm:col-span-1 sm:pr-2">
-                    <div className="truncate text-sm font-semibold text-gold">{player.name || displayAddress(player.address)}</div>
+                    <div className="truncate text-sm font-semibold text-gold">
+                      {player.name || displayAddress(player.address)}
+                    </div>
                     <div className="truncate text-[11px] text-gold/60">{displayAddress(player.address)}</div>
                   </div>
                   <div className="sm:col-span-1 sm:px-2">
@@ -223,7 +234,9 @@ export const MarketServerCard = ({
                       onChange={(value) => onWeightChange(player.address, value)}
                     />
                   </div>
-                  <div className="sm:col-span-1 sm:pl-2 text-sm font-semibold text-gold/80 sm:text-right">{renderPlayerProbability(weight)}</div>
+                  <div className="sm:col-span-1 sm:pl-2 text-sm font-semibold text-gold/80 sm:text-right">
+                    {renderPlayerProbability(weight)}
+                  </div>
                 </div>
               );
             })}
@@ -242,7 +255,9 @@ export const MarketServerCard = ({
                   onChange={(value) => onNoneWeightChange(value)}
                 />
               </div>
-              <div className="sm:col-span-1 sm:pl-2 text-sm font-semibold text-gold/80 sm:text-right">{renderPlayerProbability(form.noneWeight ?? 1)}</div>
+              <div className="sm:col-span-1 sm:pl-2 text-sm font-semibold text-gold/80 sm:text-right">
+                {renderPlayerProbability(form.noneWeight ?? 1)}
+              </div>
             </div>
           </div>
         ) : (

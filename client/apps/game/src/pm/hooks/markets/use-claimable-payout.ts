@@ -15,10 +15,7 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string)
 
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
-  const vaultPositionsAddress = useMemo(
-    () => getContractByName(manifest, "pm", "VaultPositions")?.address,
-    [manifest],
-  );
+  const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
 
   const { balances } = useTokens(
     {

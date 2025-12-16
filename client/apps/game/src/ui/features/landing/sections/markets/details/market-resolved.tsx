@@ -62,9 +62,7 @@ export function MarketResolved({
             <CheckCircle2 className="h-4 w-4" />
             <span className="font-semibold uppercase tracking-[0.08em] text-progress-bar-good">Resolved</span>
           </div>
-          <div className="text-xs text-gold/70">
-            Oracle outcome posted. Winning selections are highlighted below.
-          </div>
+          <div className="text-xs text-gold/70">Oracle outcome posted. Winning selections are highlighted below.</div>
         </div>
 
         {market.typBinary() && !market.typBinaryScalar() ? (

@@ -9,5 +9,4 @@ export const MARKET_OUTCOME_COLORS = [
   "#FF2D55",
 ] as const;
 
-export const getOutcomeColor = (index: number) =>
-  MARKET_OUTCOME_COLORS[index % MARKET_OUTCOME_COLORS.length];
+export const getOutcomeColor = (index: number) => MARKET_OUTCOME_COLORS[index % MARKET_OUTCOME_COLORS.length];

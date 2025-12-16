@@ -1,4 +1,9 @@
-import { ClauseBuilder, HistoricalToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
+import {
+  ClauseBuilder,
+  HistoricalToriiQueryBuilder,
+  type SchemaType,
+  type StandardizedQueryResult,
+} from "@dojoengine/sdk";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding, hash, uint256, type BigNumberish } from "starknet";
 

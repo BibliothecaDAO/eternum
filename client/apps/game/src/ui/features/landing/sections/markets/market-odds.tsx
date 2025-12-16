@@ -86,8 +86,7 @@ export const MarketOdds = ({
         const odds = formatOdds(oddsRaw);
         const isSelected = isSelectable && selectedOutcomeIndex === order;
         const color = getOutcomeColor(order);
-        const isWinner =
-          market.isResolved() && resolvedPayouts.length > 0 && winningOutcomeOrdersSet.has(order);
+        const isWinner = market.isResolved() && resolvedPayouts.length > 0 && winningOutcomeOrdersSet.has(order);
 
         return (
           <button

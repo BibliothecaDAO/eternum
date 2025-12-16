@@ -113,7 +113,7 @@ export const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFak
         return;
       }
 
-      const queryUrl = `${factorySqlBaseUrl}?query=${encodeURIComponent('SELECT name FROM [wf-WorldDeployed] LIMIT 300;')}`;
+      const queryUrl = `${factorySqlBaseUrl}?query=${encodeURIComponent("SELECT name FROM [wf-WorldDeployed] LIMIT 300;")}`;
       const res = await fetch(queryUrl);
       if (!res.ok) throw new Error(`Factory query failed: ${res.statusText}`);
       const rows = (await res.json()) as any[];
@@ -179,44 +179,47 @@ export const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFak
     void refresh();
   }, [refresh]);
 
-  const loadPlayers = useCallback(async (serverName: string) => {
-    const server = serversRef.current.find((s) => s.name === serverName);
-    if (!server) return;
+  const loadPlayers = useCallback(
+    async (serverName: string) => {
+      const server = serversRef.current.find((s) => s.name === serverName);
+      if (!server) return;
 
-    setServers((prev) =>
-      prev.map((s) => (s.name === serverName ? { ...s, loadingPlayers: true, playerError: null } : s)),
-    );
+      setServers((prev) =>
+        prev.map((s) => (s.name === serverName ? { ...s, loadingPlayers: true, playerError: null } : s)),
+      );
 
-    try {
-      const players = await fetchRegisteredPlayers(server.toriiBaseUrl);
-      // In test mode we need at least two players to create a market; when only one is registered,
-      // add a temporary fake player so creation flows don’t fail during debugging.
-      const augmentedPlayers =
-        allowFakePlayerFallback && players.length === 1
-          ? [
-              ...players,
-              {
-                address:
-                  "0x" +
-                  Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16))
-                    .join("")
-                    .padStart(64, "0"),
-                name: `DebugPlayer-${Math.random().toString(36).slice(2, 8)}`,
-              },
-            ]
-          : players;
-      setServers((prev) =>
-        prev.map((s) =>
-          s.name === serverName ? { ...s, players: augmentedPlayers, playersLoaded: true, loadingPlayers: false } : s,
-        ),
-      );
-    } catch (e: any) {
-      const message = e?.message ?? "Failed to load players";
-      setServers((prev) =>
-        prev.map((s) => (s.name === serverName ? { ...s, playerError: message, loadingPlayers: false } : s)),
-      );
-    }
-  }, [allowFakePlayerFallback]);
+      try {
+        const players = await fetchRegisteredPlayers(server.toriiBaseUrl);
+        // In test mode we need at least two players to create a market; when only one is registered,
+        // add a temporary fake player so creation flows don’t fail during debugging.
+        const augmentedPlayers =
+          allowFakePlayerFallback && players.length === 1
+            ? [
+                ...players,
+                {
+                  address:
+                    "0x" +
+                    Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16))
+                      .join("")
+                      .padStart(64, "0"),
+                  name: `DebugPlayer-${Math.random().toString(36).slice(2, 8)}`,
+                },
+              ]
+            : players;
+        setServers((prev) =>
+          prev.map((s) =>
+            s.name === serverName ? { ...s, players: augmentedPlayers, playersLoaded: true, loadingPlayers: false } : s,
+          ),
+        );
+      } catch (e: any) {
+        const message = e?.message ?? "Failed to load players";
+        setServers((prev) =>
+          prev.map((s) => (s.name === serverName ? { ...s, playerError: message, loadingPlayers: false } : s)),
+        );
+      }
+    },
+    [allowFakePlayerFallback],
+  );
 
   const registrationTotal = useMemo(() => {
     return servers.reduce((acc, server) => acc + (server.registrationCount ?? 0), 0);

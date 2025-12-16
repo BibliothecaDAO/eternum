@@ -82,7 +82,12 @@ export const LandingMarkets = () => {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">
           {MARKET_TABS.map((tab) => (
-            <TabButton key={tab.id} isActive={tab.id === activeTab} label={tab.label} onClick={() => setActiveTab(tab.id)} />
+            <TabButton
+              key={tab.id}
+              isActive={tab.id === activeTab}
+              label={tab.label}
+              onClick={() => setActiveTab(tab.id)}
+            />
           ))}
         </div>
       </div>
