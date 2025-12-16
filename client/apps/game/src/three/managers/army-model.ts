@@ -77,7 +77,7 @@ export class ArmyModel {
   private readonly animationBuckets: Uint8Array;
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
-  private readonly ANIMATION_BUCKETS = 20;
+  private readonly ANIMATION_BUCKETS = 10;
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
   private nextInstanceIndex = 0;
@@ -843,26 +843,44 @@ export class ArmyModel {
       if (mesh.count === 0) return;
       hasAnimatedInstances = true;
 
-      // Pre-calculate weights for all buckets and states
+      // Determine which animation states are actually needed by scanning instances
+      let needsIdleWeights = false;
+      let needsMovingWeights = false;
+      for (let i = 0; i < mesh.count; i++) {
+        const state = this.animationStates[i];
+        if (this.shouldSkipAnimation(state)) continue;
+        if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
+        else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
+        if (needsIdleWeights && needsMovingWeights) break;
+      }
+
+      // Early exit if no animations needed
+      if (!needsIdleWeights && !needsMovingWeights) return;
+
+      // Pre-calculate weights only for needed states
       // This significantly reduces CPU load by batching mixer updates
       const idleWeights: number[][] = [];
       const movingWeights: number[][] = [];
       const actions = this.getOrCreateAnimationActions(modelData, 0); // Shared actions
 
-      // 1. Sample Idle Weights
-      this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
-      for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
-        const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
-        modelData.mixer.setTime(t);
-        idleWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+      // 1. Sample Idle Weights (only if needed)
+      if (needsIdleWeights) {
+        this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
+        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          idleWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+        }
       }
 
-      // 2. Sample Moving Weights
-      this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
-      for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
-        const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
-        modelData.mixer.setTime(t);
-        movingWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+      // 2. Sample Moving Weights (only if needed)
+      if (needsMovingWeights) {
+        this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
+        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          movingWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+        }
       }
 
       // 3. Apply to instances
@@ -895,16 +913,6 @@ export class ArmyModel {
     const weights = animationState === ANIMATION_STATE_MOVING ? movingWeights[bucket] : idleWeights[bucket];
 
     mesh.setMorphAt(instanceIndex, { morphTargetInfluences: weights } as any);
-  }
-
-  private updateInstanceAnimation(
-    modelData: ModelData,
-    mesh: AnimatedInstancedMesh,
-    meshIndex: number,
-    instanceIndex: number,
-    time: number,
-  ): void {
-    // Deprecated in favor of updateInstanceAnimationOptimized
   }
 
   private shouldSkipAnimation(animationState: number): boolean {
@@ -1157,8 +1165,9 @@ export class ArmyModel {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    const direction = new Vector3().subVectors(toPos, fromPos).normalize();
-    const baseAngle = Math.atan2(direction.x, direction.z);
+    // Use pre-allocated vector to avoid GC pressure
+    this.tempVector3.subVectors(toPos, fromPos).normalize();
+    const baseAngle = Math.atan2(this.tempVector3.x, this.tempVector3.z);
 
     movement.targetRotation = baseAngle;
     if (movement.currentRotation === 0) {
@@ -1386,12 +1395,21 @@ export class ArmyModel {
   }
 
   /**
-   * Gets the appropriate easing type for an army's movement
+   * Get instance data for an entity (avoids type casting in consumers)
    * @param entityId - The entity ID
+   * @returns The instance data or undefined if not found
+   */
+  public getInstanceData(entityId: number): ArmyInstanceData | undefined {
+    return this.instanceData.get(entityId);
+  }
+
+  /**
+   * Gets the appropriate easing type for an army's movement
+   * @param _entityId - The entity ID (unused, kept for future extensibility)
    * @param instanceData - The army instance data
    * @returns The easing type to use
    */
-  private getEasingTypeForMovement(entityId: number, instanceData: ArmyInstanceData): EasingType {
+  private getEasingTypeForMovement(_entityId: number, instanceData: ArmyInstanceData): EasingType {
     // Use tier-specific easing if available
     if (instanceData.tier && this.tierEasingMap.has(instanceData.tier)) {
       return this.tierEasingMap.get(instanceData.tier)!;
