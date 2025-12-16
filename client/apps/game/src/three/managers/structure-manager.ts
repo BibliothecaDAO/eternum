@@ -127,6 +127,7 @@ export class StructureManager {
   private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
+  private structuresWithActiveBattleTimer: Set<ID> = new Set(); // Track structures with active battle timers for O(1) lookup
   private unsubscribeAccountStore?: () => void;
   private attachmentManager: CosmeticAttachmentManager;
   private structureAttachmentSignatures: Map<number, string> = new Map();
@@ -163,6 +164,9 @@ export class StructureManager {
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
     this.structureAttachmentSignatures.delete(entityNumericId);
+
+    // Remove from battle timer tracking
+    this.structuresWithActiveBattleTimer.delete(structure.entityId);
 
     // Remove from spatial index
     const { col, row } = structure.hexCoords;
@@ -544,6 +548,7 @@ export class StructureManager {
     this.structureUpdateTimestamps.clear();
     this.structureUpdateSources.clear();
     this.chunkToStructures.clear();
+    this.structuresWithActiveBattleTimer.clear();
 
     // Clean up points renderers
     if (this.pointsRenderers) {
@@ -879,6 +884,9 @@ export class StructureManager {
       structureRecord.cosmeticAssetPaths = cosmetic.registryEntry?.assetPaths;
       structureRecord.attachments = cosmetic.attachments;
     }
+
+    // Track structures with active battle timers for efficient timer updates
+    this.updateBattleTimerTracking(entityId, battleCooldownEnd);
 
     const existingLabel = this.entityIdLabels.get(entityId);
     if (existingLabel && structureRecord) {
@@ -1968,6 +1976,9 @@ export class StructureManager {
     structure.battleCooldownEnd = update.battleCooldownEnd;
     structure.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
+    // Track structures with active battle timers for efficient timer updates
+    this.updateBattleTimerTracking(entityId, update.battleCooldownEnd);
+
     this.structures.updateStructure(entityId, structure);
 
     // Update the label if it exists
@@ -2066,6 +2077,21 @@ export class StructureManager {
   }
 
   /**
+   * Update battle timer tracking for a structure.
+   * Adds to or removes from the active timer set based on whether the timer is active.
+   */
+  private updateBattleTimerTracking(entityId: ID, battleCooldownEnd: number | undefined): void {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const isActive = battleCooldownEnd !== undefined && battleCooldownEnd > currentTimestamp;
+
+    if (isActive) {
+      this.structuresWithActiveBattleTimer.add(entityId);
+    } else {
+      this.structuresWithActiveBattleTimer.delete(entityId);
+    }
+  }
+
+  /**
    * Start the battle timer update system
    */
   private startBattleTimerUpdates(): void {
@@ -2075,31 +2101,52 @@ export class StructureManager {
   }
 
   /**
-   * Update battle timers for all structures and update visible labels
+   * Update battle timers for structures with active timers and update visible labels.
+   * Only iterates structures in structuresWithActiveBattleTimer set (O(active) instead of O(total)).
    */
   private recomputeBattleTimersForAllStructures(): void {
-    const allStructures = this.structures.getStructures();
+    // Collect expired timers to remove after iteration (can't modify Set while iterating)
+    const expiredTimers: ID[] = [];
 
-    // Update all structure data
-    allStructures.forEach((structures) => {
-      structures.forEach((structure, entityId) => {
-        // Update battle timer if structure has a battle cooldown
-        if (structure.battleCooldownEnd) {
-          const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
+    for (const entityId of this.structuresWithActiveBattleTimer) {
+      const structure = this.structures.getStructureByEntityId(entityId);
+      if (!structure) {
+        // Structure was removed, clean up tracking
+        expiredTimers.push(entityId);
+        continue;
+      }
 
-          // Only update if timer has changed or expired
-          if (structure.battleTimerLeft !== newBattleTimerLeft) {
-            structure.battleTimerLeft = newBattleTimerLeft;
+      const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
 
-            // Update visible label if it exists
-            const label = this.entityIdLabels.get(entityId);
-            if (label) {
-              this.updateStructureLabelData(structure, label);
-            }
-          }
+      // Timer has expired
+      if (newBattleTimerLeft === undefined) {
+        expiredTimers.push(entityId);
+        structure.battleTimerLeft = undefined;
+
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateStructureLabelData(structure, label);
         }
-      });
-    });
+        continue;
+      }
+
+      // Only update if timer has changed
+      if (structure.battleTimerLeft !== newBattleTimerLeft) {
+        structure.battleTimerLeft = newBattleTimerLeft;
+
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateStructureLabelData(structure, label);
+        }
+      }
+    }
+
+    // Remove expired timers from tracking set
+    for (const entityId of expiredTimers) {
+      this.structuresWithActiveBattleTimer.delete(entityId);
+    }
   }
 
   /**
