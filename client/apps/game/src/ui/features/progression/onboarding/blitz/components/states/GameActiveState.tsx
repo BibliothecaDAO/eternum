@@ -59,12 +59,7 @@ export const GameActiveState = ({
   };
 
   return (
-    <motion.div
-      variants={fadeInUp}
-      initial="initial"
-      animate="animate"
-      className={`space-y-6 ${className}`}
-    >
+    <motion.div variants={fadeInUp} initial="initial" animate="animate" className={`space-y-6 ${className}`}>
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-2">
@@ -114,21 +109,13 @@ export const GameActiveState = ({
 
 // Play button sub-component
 const PlayButton = ({ onClick }: { onClick: () => void }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="space-y-4"
-  >
+  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
     <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 text-center">
       <p className="text-emerald-400 font-medium">Your realm is ready!</p>
       <p className="text-xs text-gold/60 mt-1">Enter the game and start your conquest</p>
     </div>
 
-    <Button
-      onClick={onClick}
-      className="w-full h-14 !text-brown !bg-gold rounded-md"
-      forceUppercase={false}
-    >
+    <Button onClick={onClick} className="w-full h-14 !text-brown !bg-gold rounded-md" forceUppercase={false}>
       <div className="flex items-center justify-center gap-3">
         <Sword className="w-6 h-6 fill-brown" />
         <span className="text-lg font-bold">Play Blitz</span>
@@ -143,9 +130,7 @@ const NotRegisteredBanner = ({ onSpectate }: { onSpectate?: () => void }) => (
     <AlertCircle className="w-8 h-8 mx-auto text-gold/50" />
     <div>
       <p className="text-gold/70 font-medium">You are not registered for this game</p>
-      <p className="text-xs text-gold/50 mt-1">
-        Registration has closed. You can spectate or wait for the next game.
-      </p>
+      <p className="text-xs text-gold/50 mt-1">Registration has closed. You can spectate or wait for the next game.</p>
     </div>
     {onSpectate && (
       <Button onClick={onSpectate} variant="outline" size="md" forceUppercase={false}>

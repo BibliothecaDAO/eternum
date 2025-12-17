@@ -64,12 +64,7 @@ export const RegistrationState = ({
   };
 
   return (
-    <motion.div
-      variants={fadeInUp}
-      initial="initial"
-      animate="animate"
-      className={`space-y-6 ${className}`}
-    >
+    <motion.div variants={fadeInUp} initial="initial" animate="animate" className={`space-y-6 ${className}`}>
       {/* Header */}
       <div className="text-center space-y-4">
         <h3 className="text-xl font-bold text-gold">Registration Open</h3>
@@ -122,9 +117,7 @@ export const RegistrationState = ({
 
             {/* Token requirement hint */}
             {requiresEntryToken && !tokenReady && (
-              <p className="text-xs text-gold/50 text-center">
-                Obtain an entry token above before registering
-              </p>
+              <p className="text-xs text-gold/50 text-center">Obtain an entry token above before registering</p>
             )}
           </div>
         )}
@@ -144,13 +137,9 @@ const RegisteredConfirmation = () => (
       <CheckCircle className="w-8 h-8 text-emerald-400" />
     </div>
     <h4 className="text-lg font-semibold text-emerald-400">You're Registered!</h4>
-    <p className="text-sm text-gold/70 mt-2">
-      Your spot is secured. The game will begin when registration closes.
-    </p>
+    <p className="text-sm text-gold/70 mt-2">Your spot is secured. The game will begin when registration closes.</p>
     <div className="mt-4 pt-4 border-t border-emerald-500/20">
-      <p className="text-xs text-gold/50">
-        Prepare your strategy while you wait. Good luck, commander!
-      </p>
+      <p className="text-xs text-gold/50">Prepare your strategy while you wait. Good luck, commander!</p>
     </div>
   </motion.div>
 );

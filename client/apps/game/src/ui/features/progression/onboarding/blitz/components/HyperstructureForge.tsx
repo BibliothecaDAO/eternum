@@ -66,15 +66,7 @@ export const HyperstructureForge = ({
 };
 
 // Forge button sub-component
-const ForgeButton = ({
-  count,
-  isLoading,
-  onClick,
-}: {
-  count: number;
-  isLoading: boolean;
-  onClick: () => void;
-}) => {
+const ForgeButton = ({ count, isLoading, onClick }: { count: number; isLoading: boolean; onClick: () => void }) => {
   return (
     <motion.button
       onClick={onClick}
@@ -104,7 +96,8 @@ const ForgeButton = ({
       {/* Content */}
       <motion.div
         className="flex items-center justify-center w-full h-full text-4xl font-black text-amber-900"
-        animate={isLoading ? {} : numberVariants.breathing}
+        variants={numberVariants}
+        animate={isLoading ? undefined : "breathing"}
       >
         {isLoading ? (
           <motion.img

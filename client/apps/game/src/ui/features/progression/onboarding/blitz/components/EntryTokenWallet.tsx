@@ -137,9 +137,7 @@ export const EntryTokenWallet = ({
             Mint failed. Please try again.
           </p>
         )}
-        {isLoadingTokens && (
-          <p className="text-xs text-gold/60 text-center">Checking for entry tokens...</p>
-        )}
+        {isLoadingTokens && <p className="text-xs text-gold/60 text-center">Checking for entry tokens...</p>}
         {!isLoadingTokens && entryTokenStatus === "timeout" && entryTokenBalance === 0n && (
           <p className="text-xs text-gold/60 text-center">
             Minted! Waiting for token to appear. Try again shortly if it doesn't show.

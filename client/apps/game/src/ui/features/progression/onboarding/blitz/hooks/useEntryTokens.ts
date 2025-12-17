@@ -70,7 +70,10 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
 
   const feeAmount = configFeeAmount ?? 0n;
   const feeTokenAddressHex = useMemo(
-    () => (configFeeToken !== undefined && configFeeAmount !== undefined && configFeeAmount > 0n ? toHexString(configFeeToken) : undefined),
+    () =>
+      configFeeToken !== undefined && configFeeAmount !== undefined && configFeeAmount > 0n
+        ? toHexString(configFeeToken)
+        : undefined,
     [configFeeToken, configFeeAmount],
   );
 
@@ -144,7 +147,14 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
   }, [accountAddress, entryTokenAddress, entryTokenBalance, requiresEntryToken, getEntryTokenIdByIndex]);
 
   const obtainEntryToken = useCallback(async () => {
-    if (!account || !accountAddress || !requiresEntryToken || configFeeToken === undefined || configFeeAmount === undefined) return;
+    if (
+      !account ||
+      !accountAddress ||
+      !requiresEntryToken ||
+      configFeeToken === undefined ||
+      configFeeAmount === undefined
+    )
+      return;
 
     setEntryTokenStatus("minting");
     try {

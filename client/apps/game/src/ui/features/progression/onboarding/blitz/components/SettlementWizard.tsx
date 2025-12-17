@@ -159,7 +159,9 @@ export const SettlementWizard = ({
                   >
                     {step.label}
                   </span>
-                  {status === "active" && <span className="text-[10px] text-gold/60 animate-pulse">In progress...</span>}
+                  {status === "active" && (
+                    <span className="text-[10px] text-gold/60 animate-pulse">In progress...</span>
+                  )}
                 </div>
                 <p className="text-xs text-gold/50 truncate">{step.description}</p>
               </div>
@@ -199,9 +201,7 @@ export const SettlementWizard = ({
       </Button>
 
       {/* Error state */}
-      {stage === "error" && (
-        <p className="text-xs text-red-300 text-center">Settlement failed. Please try again.</p>
-      )}
+      {stage === "error" && <p className="text-xs text-red-300 text-center">Settlement failed. Please try again.</p>}
     </motion.div>
   );
 };

@@ -1,8 +1,7 @@
 # Fog of War System + World Map Visual Improvements Proposal
 
-**Author:** Claude Code Analysis
-**Date:** December 2024
-**Scope:** FoW System Redesign + Multi-Level Terrain Visual Enhancements
+**Author:** Claude Code Analysis **Date:** December 2024 **Scope:** FoW System Redesign + Multi-Level Terrain Visual
+Enhancements
 
 ---
 
@@ -30,23 +29,26 @@
 private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
 ```
 
-| Property | Current Value |
-|----------|--------------|
-| **Resolution** | Per-tile (hexagonal grid) |
-| **Format** | Nested Map structure (`Map<col, Map<row, BiomeType>>`) |
-| **States** | Binary: Explored (stored with BiomeType) / Unexplored (absent from map) |
-| **Storage** | Client-side JavaScript Map, no GPU texture |
+| Property       | Current Value                                                           |
+| -------------- | ----------------------------------------------------------------------- |
+| **Resolution** | Per-tile (hexagonal grid)                                               |
+| **Format**     | Nested Map structure (`Map<col, Map<row, BiomeType>>`)                  |
+| **States**     | Binary: Explored (stored with BiomeType) / Unexplored (absent from map) |
+| **Storage**    | Client-side JavaScript Map, no GPU texture                              |
 
-**Key Insight:** There is no traditional "fog texture" - the system uses a binary explored/unexplored state stored in a CPU-side data structure.
+**Key Insight:** There is no traditional "fog texture" - the system uses a binary explored/unexplored state stored in a
+CPU-side data structure.
 
 ### 1.2 FoW Update Mechanism
 
 **Vision Sources:**
+
 - **Explorer Troops:** Primary exploration via `troop_movement.cairo:62-159`
 - **Contracts:** `map.cairo:explore()` and `explore_ring()` functions
 - **Event-Driven:** Tile updates flow through Torii → `WorldUpdateListener` → `updateExploredHex()`
 
 **Update Flow:**
+
 ```
 On-Chain Exploration → Torii Indexer → WorldUpdateListener.Tile.onTileUpdate()
                                               ↓
@@ -65,15 +67,16 @@ On-Chain Exploration → Torii Indexer → WorldUpdateListener.Tile.onTileUpdate
 // worldmap.tsx:2892-2909
 if (effectivelyExplored) {
   const biome = isExplored as BiomeType;
-  tempPosition.y += 0.05;  // Explored: Y = 0.05
+  tempPosition.y += 0.05; // Explored: Y = 0.05
   biomeHexes[biomeVariant].push(pooledMatrix);
 } else {
-  tempPosition.y = 0.01;   // Unexplored: Y = 0.01
-  biomeHexes.Outline.push(pooledMatrix);  // Render as outline
+  tempPosition.y = 0.01; // Unexplored: Y = 0.01
+  biomeHexes.Outline.push(pooledMatrix); // Render as outline
 }
 ```
 
 **Rendering Characteristics:**
+
 - No fog texture overlay
 - No alpha blending or soft transitions
 - Unexplored hexes render as "Outline" biome at lower Y (0.01)
@@ -84,14 +87,15 @@ if (effectivelyExplored) {
 
 **Configuration:** `world-chunk-config.ts`
 
-| Setting | Value |
-|---------|-------|
-| **Stride** | 24 hexes |
-| **Render Size** | 48x48 hexes |
-| **Pin Radius** | 2 (5x5 neighborhood) |
-| **Max Cache** | 20 chunks (LRU) |
+| Setting         | Value                |
+| --------------- | -------------------- |
+| **Stride**      | 24 hexes             |
+| **Render Size** | 48x48 hexes          |
+| **Pin Radius**  | 2 (5x5 neighborhood) |
+| **Max Cache**   | 20 chunks (LRU)      |
 
 **Chunk Lifecycle:**
+
 1. **Creation:** Camera enters new chunk → `updateVisibleChunks()`
 2. **Caching:** `cacheMatricesForChunk()` stores instance matrices per biome
 3. **Disposal:** LRU eviction via `ensureMatrixCacheLimit()`
@@ -102,19 +106,20 @@ if (effectivelyExplored) {
 
 ```typescript
 export const biomes = {
-  deep_ocean:    { depth: 0.1 },  // Low elevation
-  ocean:         { depth: 0.1 },
-  beach:         { depth: 0.2 },
-  scorched:      { depth: 0.8 },  // High elevation
-  bare:          { depth: 0.7 },
-  tundra:        { depth: 0.6 },
-  snow:          { depth: 0.5 },
-  grassland:     { depth: 0.4 },
+  deep_ocean: { depth: 0.1 }, // Low elevation
+  ocean: { depth: 0.1 },
+  beach: { depth: 0.2 },
+  scorched: { depth: 0.8 }, // High elevation
+  bare: { depth: 0.7 },
+  tundra: { depth: 0.6 },
+  snow: { depth: 0.5 },
+  grassland: { depth: 0.4 },
   // ... etc
 };
 ```
 
-**Critical Finding:** These `depth` values exist but are **NOT currently used** in rendering. All biomes render at the same Y position (0.05 for explored, 0.01 for unexplored).
+**Critical Finding:** These `depth` values exist but are **NOT currently used** in rendering. All biomes render at the
+same Y position (0.05 for explored, 0.01 for unexplored).
 
 ---
 
@@ -173,42 +178,42 @@ export const biomes = {
 
 ### 3.1 FoW System Issues
 
-| Issue | Severity | Evidence | Impact |
-|-------|----------|----------|--------|
-| **No soft transitions** | HIGH | Binary explored/unexplored only | Harsh visual edges, no gradual reveal |
-| **No "seen but hidden" state** | HIGH | Only two states in Map | Cannot show previously explored but currently obscured areas |
-| **No fog texture** | MEDIUM | No texture sampling in render | Cannot do distance-based fog falloff |
-| **Per-hex CPU lookup** | MEDIUM | `exploredTiles.get(col)?.get(row)` | O(1) but repeated per hex per frame during chunk rebuild |
-| **Full chunk invalidation** | MEDIUM | `removeCachedMatricesForChunk()` | Single hex change invalidates entire chunk cache |
+| Issue                          | Severity | Evidence                           | Impact                                                       |
+| ------------------------------ | -------- | ---------------------------------- | ------------------------------------------------------------ |
+| **No soft transitions**        | HIGH     | Binary explored/unexplored only    | Harsh visual edges, no gradual reveal                        |
+| **No "seen but hidden" state** | HIGH     | Only two states in Map             | Cannot show previously explored but currently obscured areas |
+| **No fog texture**             | MEDIUM   | No texture sampling in render      | Cannot do distance-based fog falloff                         |
+| **Per-hex CPU lookup**         | MEDIUM   | `exploredTiles.get(col)?.get(row)` | O(1) but repeated per hex per frame during chunk rebuild     |
+| **Full chunk invalidation**    | MEDIUM   | `removeCachedMatricesForChunk()`   | Single hex change invalidates entire chunk cache             |
 
 ### 3.2 Visual Limitations
 
-| Issue | Severity | Evidence | Impact |
-|-------|----------|----------|--------|
-| **Flat world** | HIGH | All biomes at Y=0.05 | No terrain depth perception |
-| **Unused depth values** | HIGH | `biomes.depth` defined but unused | Existing data wasted |
-| **No parallax** | HIGH | No height offset in vertex shader | Map feels 2D at strategy zoom |
-| **Uniform fog** | MEDIUM | `FOG_CONFIG` is distance-only | No biome-aware fog density |
-| **No edge effects** | MEDIUM | Standard materials only | No FoW edge glow or shadow |
+| Issue                   | Severity | Evidence                          | Impact                        |
+| ----------------------- | -------- | --------------------------------- | ----------------------------- |
+| **Flat world**          | HIGH     | All biomes at Y=0.05              | No terrain depth perception   |
+| **Unused depth values** | HIGH     | `biomes.depth` defined but unused | Existing data wasted          |
+| **No parallax**         | HIGH     | No height offset in vertex shader | Map feels 2D at strategy zoom |
+| **Uniform fog**         | MEDIUM   | `FOG_CONFIG` is distance-only     | No biome-aware fog density    |
+| **No edge effects**     | MEDIUM   | Standard materials only           | No FoW edge glow or shadow    |
 
 ### 3.3 Performance Concerns
 
-| Issue | Severity | Evidence | Impact |
-|-------|----------|----------|--------|
-| **Chunk rebuild on FoW change** | HIGH | Lines 2225-2262 | Single tile exploration rebuilds chunk |
-| **No dirty rect tracking** | MEDIUM | Full grid recompute | Unnecessary work on local changes |
-| **CPU-bound matrix generation** | MEDIUM | `processCell()` loop | Frame budget allocation needed |
-| **Large cache memory** | LOW | 20 chunks × matrices | ~several MB per chunk |
+| Issue                           | Severity | Evidence             | Impact                                 |
+| ------------------------------- | -------- | -------------------- | -------------------------------------- |
+| **Chunk rebuild on FoW change** | HIGH     | Lines 2225-2262      | Single tile exploration rebuilds chunk |
+| **No dirty rect tracking**      | MEDIUM   | Full grid recompute  | Unnecessary work on local changes      |
+| **CPU-bound matrix generation** | MEDIUM   | `processCell()` loop | Frame budget allocation needed         |
+| **Large cache memory**          | LOW      | 20 chunks × matrices | ~several MB per chunk                  |
 
 ### 3.4 Verification Methods
 
 ```typescript
 // To verify FoW lookup overhead:
-console.time('exploredLookup');
+console.time("exploredLookup");
 for (let i = 0; i < 10000; i++) {
   this.exploredTiles.get(col)?.get(row);
 }
-console.timeEnd('exploredLookup');
+console.timeEnd("exploredLookup");
 
 // To verify chunk invalidation:
 // Add logging in removeCachedMatricesForChunk()
@@ -223,12 +228,12 @@ console.timeEnd('exploredLookup');
 
 ### 4.1 Strategy Comparison Matrix
 
-| Strategy | Soft Edges | Seen State | GPU Cost | CPU Cost | Implementation Complexity |
-|----------|------------|------------|----------|----------|--------------------------|
-| **A: Chunk-local FoW Textures** | Yes | Yes | Low | Medium | Medium |
-| **B: Global FoW Atlas** | Yes | Yes | Low | Low | High |
-| **C: Distance-Field FoW** | Best | Yes | Medium | High (gen) | High |
-| **D: Current + Enhancements** | Partial | No | Lowest | Lowest | Low |
+| Strategy                        | Soft Edges | Seen State | GPU Cost | CPU Cost   | Implementation Complexity |
+| ------------------------------- | ---------- | ---------- | -------- | ---------- | ------------------------- |
+| **A: Chunk-local FoW Textures** | Yes        | Yes        | Low      | Medium     | Medium                    |
+| **B: Global FoW Atlas**         | Yes        | Yes        | Low      | Low        | High                      |
+| **C: Distance-Field FoW**       | Best       | Yes        | Medium   | High (gen) | High                      |
+| **D: Current + Enhancements**   | Partial    | No         | Lowest   | Lowest     | Low                       |
 
 ### 4.2 Recommended: Strategy A - Chunk-Local FoW Textures
 
@@ -263,10 +268,10 @@ Update Strategy:
 
 ```typescript
 interface FoWTextureData {
-  visibility: number;   // 0.0 = hidden, 1.0 = fully visible
-  explored: number;     // 0.0 = never seen, 1.0 = has been seen
-  heightMod: number;    // Reserved for height-based fog
-  timestamp: number;    // For temporal smoothing
+  visibility: number; // 0.0 = hidden, 1.0 = fully visible
+  explored: number; // 0.0 = never seen, 1.0 = has been seen
+  heightMod: number; // Reserved for height-based fog
+  timestamp: number; // For temporal smoothing
 }
 
 // Pack into RGBA8:
@@ -282,7 +287,7 @@ interface FoWTextureData {
 class ChunkFoWTexture {
   private texture: THREE.DataTexture;
   private data: Uint8Array;
-  private dirtyRegion: { minX, minY, maxX, maxY } | null = null;
+  private dirtyRegion: { minX; minY; maxX; maxY } | null = null;
 
   setVisibility(localCol: number, localRow: number, visibility: number, explored: boolean) {
     const idx = (localRow * this.width + localCol) * 4;
@@ -313,6 +318,7 @@ class ChunkFoWTexture {
 If full FoW texture system is too complex, these incremental improvements are valuable:
 
 1. **Add "seen" state** to exploredTiles Map:
+
    ```typescript
    private exploredTiles: Map<number, Map<number, { biome: BiomeType, visible: boolean }>>
    ```
@@ -337,7 +343,7 @@ Using existing `depth` values from `hex.ts`, normalized to visual range:
 const BIOME_HEIGHT_OFFSETS: Record<BiomeType, number> = {
   // Water (lowest)
   DeepOcean: -0.15,
-  Ocean: -0.10,
+  Ocean: -0.1,
   Beach: 0.0,
 
   // Plains (baseline)
@@ -347,17 +353,17 @@ const BIOME_HEIGHT_OFFSETS: Record<BiomeType, number> = {
   TemperateDesert: 0.06,
 
   // Forests (medium)
-  TemperateDeciduousForest: 0.10,
-  TropicalSeasonalForest: 0.10,
+  TemperateDeciduousForest: 0.1,
+  TropicalSeasonalForest: 0.1,
   TemperateRainForest: 0.15,
   TropicalRainForest: 0.12,
   Taiga: 0.12,
 
   // Highlands (elevated)
   Tundra: 0.18,
-  Snow: 0.20,
+  Snow: 0.2,
   Bare: 0.22,
-  Scorched: 0.25,  // Highest - volcanic peaks
+  Scorched: 0.25, // Highest - volcanic peaks
 };
 
 // Visual range: -0.15 to +0.25 = 0.40 total units
@@ -369,11 +375,13 @@ const BIOME_HEIGHT_OFFSETS: Record<BiomeType, number> = {
 #### Option A: Vertex Shader Offset (Recommended)
 
 **Pros:**
+
 - Real parallax effect
 - Cheap GPU cost
 - True depth in depth buffer
 
 **Cons:**
+
 - Affects raycasting/selection (must account for offset)
 - Requires biome ID attribute or texture lookup
 
@@ -392,8 +400,8 @@ class InstancedBiome {
     this.heightOffsets = new Float32Array(count);
     this.heightAttribute = new THREE.InstancedBufferAttribute(this.heightOffsets, 1);
 
-    this.instancedMeshes.forEach(mesh => {
-      mesh.geometry.setAttribute('instanceHeightOffset', this.heightAttribute);
+    this.instancedMeshes.forEach((mesh) => {
+      mesh.geometry.setAttribute("instanceHeightOffset", this.heightAttribute);
     });
   }
 
@@ -433,10 +441,12 @@ void main() {
 #### Option B: Fragment Shader Lighting Offset (Fallback)
 
 **Pros:**
+
 - No geometry impact
 - No raycasting changes
 
 **Cons:**
+
 - No true parallax
 - Less convincing depth
 
@@ -465,7 +475,7 @@ void main() {
 Combine small vertex offset with enhanced lighting:
 
 ```typescript
-const VERTEX_HEIGHT_SCALE = 0.6;   // Reduce vertex offset
+const VERTEX_HEIGHT_SCALE = 0.6; // Reduce vertex offset
 const LIGHTING_HEIGHT_SCALE = 0.4; // Add lighting bias
 
 // Vertex offset (real parallax, reduced to minimize selection issues)
@@ -606,11 +616,13 @@ void fragmentMain() {
 ```typescript
 // Create custom material extending MeshStandardMaterial
 class BiomeFoWMaterial extends THREE.MeshStandardMaterial {
-  constructor(params: THREE.MeshStandardMaterialParameters & {
-    fowTexture?: THREE.Texture,
-    fowEdgeSoftness?: number,
-    heightScale?: number,
-  }) {
+  constructor(
+    params: THREE.MeshStandardMaterialParameters & {
+      fowTexture?: THREE.Texture;
+      fowEdgeSoftness?: number;
+      heightScale?: number;
+    },
+  ) {
     super(params);
 
     this.onBeforeCompile = (shader) => {
@@ -622,28 +634,28 @@ class BiomeFoWMaterial extends THREE.MeshStandardMaterial {
 
       // Inject vertex shader code
       shader.vertexShader = shader.vertexShader.replace(
-        '#include <common>',
+        "#include <common>",
         `
         #include <common>
         attribute float instanceHeightOffset;
         varying float vHeight;
         varying vec2 vWorldUV;
-        `
+        `,
       );
 
       shader.vertexShader = shader.vertexShader.replace(
-        '#include <begin_vertex>',
+        "#include <begin_vertex>",
         `
         #include <begin_vertex>
         transformed.y += instanceHeightOffset * heightScale;
         vHeight = instanceHeightOffset;
         vWorldUV = (modelMatrix * vec4(transformed, 1.0)).xz / 24.0;
-        `
+        `,
       );
 
       // Inject fragment shader code
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <common>',
+        "#include <common>",
         `
         #include <common>
         uniform sampler2D fowTexture;
@@ -651,11 +663,11 @@ class BiomeFoWMaterial extends THREE.MeshStandardMaterial {
         uniform vec3 fowColor;
         varying float vHeight;
         varying vec2 vWorldUV;
-        `
+        `,
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <output_fragment>',
+        "#include <output_fragment>",
         `
         // FoW sampling and blending
         vec4 fowSample = texture2D(fowTexture, vWorldUV);
@@ -666,7 +678,7 @@ class BiomeFoWMaterial extends THREE.MeshStandardMaterial {
         outgoingLight *= (1.0 + heightNorm * 0.2);
 
         #include <output_fragment>
-        `
+        `,
       );
     };
   }
@@ -740,7 +752,7 @@ class ChunkFoWManager {
         localCoords.x,
         localCoords.y,
         visible ? 1.0 : 0.3, // 0.3 = "remembered" state
-        true // explored stays true
+        true, // explored stays true
       );
       texture.flush();
     }
@@ -798,10 +810,10 @@ class ChunkFoWTexture {
 
   // Copy border pixels from neighbor chunks
   syncBorders(neighbors: {
-    north?: ChunkFoWTexture,
-    south?: ChunkFoWTexture,
-    east?: ChunkFoWTexture,
-    west?: ChunkFoWTexture,
+    north?: ChunkFoWTexture;
+    south?: ChunkFoWTexture;
+    east?: ChunkFoWTexture;
+    west?: ChunkFoWTexture;
   }) {
     if (neighbors.north) {
       // Copy bottom row of north chunk to our top border
@@ -818,38 +830,38 @@ class ChunkFoWTexture {
 
 ### 8.1 Memory Budget
 
-| Component | Low Quality | Medium Quality | High Quality |
-|-----------|-------------|----------------|--------------|
-| **FoW Texture per chunk** | 32x32 RGBA (~4KB) | 64x64 RGBA (~16KB) | 128x128 RGBA (~64KB) |
-| **Max cached chunks** | 10 | 20 | 30 |
-| **Total FoW memory** | ~40KB | ~320KB | ~1.9MB |
-| **Height offset attribute** | N/A (use Y position) | Per-instance float | Per-instance float |
+| Component                   | Low Quality          | Medium Quality     | High Quality         |
+| --------------------------- | -------------------- | ------------------ | -------------------- |
+| **FoW Texture per chunk**   | 32x32 RGBA (~4KB)    | 64x64 RGBA (~16KB) | 128x128 RGBA (~64KB) |
+| **Max cached chunks**       | 10                   | 20                 | 30                   |
+| **Total FoW memory**        | ~40KB                | ~320KB             | ~1.9MB               |
+| **Height offset attribute** | N/A (use Y position) | Per-instance float | Per-instance float   |
 
 ### 8.2 GPU Performance Budget
 
-| Operation | Low | Medium | High |
-|-----------|-----|--------|------|
-| **FoW texture samples/pixel** | 1 | 1 | 1 (with filtering) |
-| **Height offset** | None | Vertex only | Vertex + fragment bias |
-| **Soft edges** | Hard cutoff | smoothstep | smoothstep + glow |
-| **Target additional cost** | <5% | <10% | <15% |
+| Operation                     | Low         | Medium      | High                   |
+| ----------------------------- | ----------- | ----------- | ---------------------- |
+| **FoW texture samples/pixel** | 1           | 1           | 1 (with filtering)     |
+| **Height offset**             | None        | Vertex only | Vertex + fragment bias |
+| **Soft edges**                | Hard cutoff | smoothstep  | smoothstep + glow      |
+| **Target additional cost**    | <5%         | <10%        | <15%                   |
 
 ### 8.3 CPU Performance Budget
 
-| Operation | Budget |
-|-----------|--------|
-| **FoW texture update (partial)** | <1ms per dirty region |
-| **Height offset calculation** | Precomputed (0ms runtime) |
-| **Chunk matrix generation** | Existing budget (frame-budgeted) |
-| **Max FoW updates per frame** | 100 tiles (with dirty rect) |
+| Operation                        | Budget                           |
+| -------------------------------- | -------------------------------- |
+| **FoW texture update (partial)** | <1ms per dirty region            |
+| **Height offset calculation**    | Precomputed (0ms runtime)        |
+| **Chunk matrix generation**      | Existing budget (frame-budgeted) |
+| **Max FoW updates per frame**    | 100 tiles (with dirty rect)      |
 
 ### 8.4 Quality Tiers
 
 ```typescript
 enum FoWQualityTier {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
 }
 
 const FOW_QUALITY_CONFIG: Record<FoWQualityTier, FoWQualitySettings> = {
@@ -897,12 +909,14 @@ class FoWPerformanceMonitor {
     const avgFrameTime = this.frameTimeHistory.reduce((a, b) => a + b) / this.frameTimeHistory.length;
 
     // Auto-downgrade if performance drops
-    if (avgFrameTime > 33 && this.currentTier !== FoWQualityTier.LOW) { // <30 FPS
+    if (avgFrameTime > 33 && this.currentTier !== FoWQualityTier.LOW) {
+      // <30 FPS
       this.downgradeTier();
     }
 
     // Auto-upgrade if stable good performance
-    if (avgFrameTime < 20 && this.currentTier !== FoWQualityTier.HIGH) { // >50 FPS
+    if (avgFrameTime < 20 && this.currentTier !== FoWQualityTier.HIGH) {
+      // >50 FPS
       this.upgradeTier();
     }
   }
@@ -918,6 +932,7 @@ class FoWPerformanceMonitor {
 **Goal:** Basic height offsets + improved FoW visuals without texture system
 
 **Tasks:**
+
 1. [ ] Add `instanceHeightOffset` attribute to `InstancedBiome`
 2. [ ] Implement height offset calculation using existing `biomes.depth` values
 3. [ ] Modify `processCell()` in worldmap.tsx to apply height offsets
@@ -927,6 +942,7 @@ class FoWPerformanceMonitor {
 7. [ ] Vary outline opacity based on seen/unseen state
 
 **Verification:**
+
 - Map shows visible depth variation at strategy zoom
 - Hex selection works correctly with height offsets
 - Previously seen hexes render differently from never-seen
@@ -936,6 +952,7 @@ class FoWPerformanceMonitor {
 **Goal:** Introduce per-chunk FoW textures for soft edges
 
 **Tasks:**
+
 1. [ ] Implement `ChunkFoWTexture` class with dirty rect tracking
 2. [ ] Create `ChunkFoWManager` for texture lifecycle
 3. [ ] Modify biome materials to sample FoW texture
@@ -944,6 +961,7 @@ class FoWPerformanceMonitor {
 6. [ ] Integrate with existing chunk cache system
 
 **Verification:**
+
 - FoW edges are soft and gradual
 - No seams visible at chunk boundaries
 - Memory usage within budget
@@ -953,6 +971,7 @@ class FoWPerformanceMonitor {
 **Goal:** Height-aware fog and advanced lighting
 
 **Tasks:**
+
 1. [ ] Implement height-based fog density variation
 2. [ ] Add vertex shader height offset (Option A from 5.2)
 3. [ ] Implement lighting bias for elevated terrain
@@ -961,6 +980,7 @@ class FoWPerformanceMonitor {
 6. [ ] Implement quality tier system with fallbacks
 
 **Verification:**
+
 - Mountains "poke through" fog slightly
 - Valleys appear deeper/shadowed
 - Performance remains within budget across tiers
@@ -970,6 +990,7 @@ class FoWPerformanceMonitor {
 **Goal:** Production-ready system
 
 **Tasks:**
+
 1. [ ] Performance profiling and optimization
 2. [ ] Memory leak testing
 3. [ ] Quality tier auto-detection
@@ -977,6 +998,7 @@ class FoWPerformanceMonitor {
 5. [ ] Documentation and code cleanup
 
 **Verification:**
+
 - No memory leaks over extended sessions
 - Smooth quality tier transitions
 - User-facing configuration works
@@ -985,14 +1007,21 @@ class FoWPerformanceMonitor {
 
 ## Summary
 
-This proposal outlines a staged approach to dramatically improve the visual quality of the Eternum world map while maintaining performance. The key improvements are:
+This proposal outlines a staged approach to dramatically improve the visual quality of the Eternum world map while
+maintaining performance. The key improvements are:
 
-1. **Biome Height Offsets:** Utilize existing `depth` values to create subtle terrain elevation, making the world feel three-dimensional without heavy geometry.
+1. **Biome Height Offsets:** Utilize existing `depth` values to create subtle terrain elevation, making the world feel
+   three-dimensional without heavy geometry.
 
-2. **FoW Texture System:** Replace binary explored/unexplored with a texture-based system supporting soft edges, "remembered" areas, and gradual reveal.
+2. **FoW Texture System:** Replace binary explored/unexplored with a texture-based system supporting soft edges,
+   "remembered" areas, and gradual reveal.
 
-3. **Height-Aware Fog:** Make fog density vary with terrain elevation, so peaks emerge from the mist while valleys remain shrouded.
+3. **Height-Aware Fog:** Make fog density vary with terrain elevation, so peaks emerge from the mist while valleys
+   remain shrouded.
 
-4. **Shader-Based Effects:** Custom material modifications to add depth perception through lighting, ambient occlusion, and fog blending.
+4. **Shader-Based Effects:** Custom material modifications to add depth perception through lighting, ambient occlusion,
+   and fog blending.
 
-The guiding principle throughout: **Depth without geometry wins.** By focusing on perceptual tricks—height offsets, lighting bias, fog density variation—we can create a layered, dimensional world that reads beautifully at strategy zoom without the performance cost of true 3D terrain.
+The guiding principle throughout: **Depth without geometry wins.** By focusing on perceptual tricks—height offsets,
+lighting bias, fog density variation—we can create a layered, dimensional world that reads beautifully at strategy zoom
+without the performance cost of true 3D terrain.
