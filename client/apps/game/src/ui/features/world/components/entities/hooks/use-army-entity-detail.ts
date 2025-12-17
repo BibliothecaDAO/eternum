@@ -73,7 +73,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     isLoading: isLoadingStructure,
     refetch: refetchStructure,
   } = useQuery({
-    queryKey: ["structure", explorer?.owner ? String(explorer.owner) : undefined],
+    queryKey: ["structure", String(explorer?.owner ?? "")],
     queryFn: async () => {
       if (!toriiClient || !explorer?.owner) return undefined;
       return getStructureFromToriiClient(toriiClient, explorer.owner);

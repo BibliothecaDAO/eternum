@@ -47,18 +47,18 @@ export const DojoProvider = ({ children, value, account }: DojoProviderProps) =>
   const masterAccount = useMemo(() => createMasterAccount(rpcProvider), [rpcProvider]);
   const accountAddress = "address" in account ? account.address : "";
 
-  return (
-    <DojoContext.Provider
-      value={{
-        ...value,
-        masterAccount,
-        account: {
-          account,
-          accountDisplay: displayAddress(accountAddress ?? ""),
-        },
-      }}
-    >
-      {children}
-    </DojoContext.Provider>
+  // Memoize the context value to prevent unnecessary re-renders of all useDojo() consumers
+  const contextValue = useMemo(
+    () => ({
+      ...value,
+      masterAccount,
+      account: {
+        account,
+        accountDisplay: displayAddress(accountAddress ?? ""),
+      },
+    }),
+    [value, masterAccount, account, accountAddress],
   );
+
+  return <DojoContext.Provider value={contextValue}>{children}</DojoContext.Provider>;
 };

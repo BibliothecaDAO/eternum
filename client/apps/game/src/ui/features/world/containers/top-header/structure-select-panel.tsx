@@ -107,7 +107,6 @@ const getRealmLevelLabel = (level: number): string => {
 };
 
 const getStructureIcon = (selectedStructure: SelectedStructure) => {
-  console.log("selectedStructure", selectedStructure);
   if (!selectedStructure || !selectedStructure.structure) {
     return null;
   }

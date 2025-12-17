@@ -51,10 +51,14 @@ export const TravelInfo = ({
     );
 
     if (setCanCarry) {
+      // Calculate needed donkeys from totalWeight directly to avoid stale state
+      const donkeysNeeded = calculateDonkeysNeeded(totalWeight);
       // TODO: hacky way to set can carry to true if only donkeys and lords
-      onlyDonkeysAndLords ? setCanCarry(true) : setCanCarry(calculatedDonkeyBalance >= neededDonkeys);
+      onlyDonkeysAndLords ? setCanCarry(true) : setCanCarry(calculatedDonkeyBalance >= donkeysNeeded);
     }
-  }, [resources, entityId, resourceWeightKg, donkeyBalance, setCanCarry]);
+    // Note: resourceWeightKg and donkeyBalance are outputs of this effect, not inputs.
+    // They were removed from deps to fix the circular dependency that caused re-render storms.
+  }, [resources, entityId, currentDefaultTick, dojo.setup.components, isAmm, setCanCarry]);
 
   return (
     <>
