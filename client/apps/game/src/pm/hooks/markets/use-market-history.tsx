@@ -125,14 +125,65 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
     );
   }, [market.outcome_slot_count, outcomesText, findController, controllers]);
 
+  // Pre-compute entity IDs for each outcome slot
+  const numeratorsEntityIds = useMemo(
+    () =>
+      new Array(market.outcome_slot_count).fill(0).map((_i, idx) => {
+        return getEntityIdFromKeys([BigInt(marketId_u256.low), BigInt(marketId_u256.high), BigInt(idx)]);
+      }),
+    [market.outcome_slot_count, marketId_u256],
+  );
+
+  // Pre-index numerators by entityId for O(1) lookup, sorted by timestamp for binary search
+  const numeratorsByEntityId = useMemo(() => {
+    const map = new Map<string, Array<(typeof vaultNumerators)[number]>>();
+
+    for (const n of vaultNumerators) {
+      // Use padded hex format to match getEntityIdFromKeys output
+      const key = addAddressPadding(`0x${n.entityId.toString(16)}`);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(n);
+    }
+
+    // Sort each group by timestamp ascending for efficient "find last <= timestamp" lookups
+    for (const arr of map.values()) {
+      arr.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+    }
+
+    return map;
+  }, [vaultNumerators]);
+
   const chartData = useMemo(() => {
-    const numeratorsEntityIds = new Array(market.outcome_slot_count).fill(0).map((_i, idx) => {
-      return getEntityIdFromKeys([BigInt(marketId_u256.low), BigInt(marketId_u256.high), BigInt(idx)]);
-    });
+    // Binary search helper to find the last numerator with timestamp <= target
+    const findLastLessThanOrEqual = (
+      numerators: Array<(typeof vaultNumerators)[number]>,
+      targetTimestamp: bigint,
+    ): (typeof vaultNumerators)[number] | undefined => {
+      if (numerators.length === 0) return undefined;
+
+      let left = 0;
+      let right = numerators.length - 1;
+      let result: (typeof vaultNumerators)[number] | undefined = undefined;
+
+      while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const midTimestamp = BigInt(numerators[mid].timestamp);
+
+        if (midTimestamp <= targetTimestamp) {
+          result = numerators[mid];
+          left = mid + 1; // Look for a later one
+        } else {
+          right = mid - 1;
+        }
+      }
+
+      return result;
+    };
 
     return vaultDenominators.map((denominator) => {
       const denomRaw = toBigInt(denominator.value);
       const denom = formatUnits(denomRaw, Number(collateralToken.decimals || 0));
+      const denomTimestamp = BigInt(denominator.timestamp);
 
       const entry: Record<string, any> = {
         date: Number(denominator.timestamp) * 1_000,
@@ -140,13 +191,11 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
       };
 
       for (let i = 0; i < numeratorsEntityIds.length; i++) {
-        const numeratorEntityId = numeratorsEntityIds[i];
+        const entityId = numeratorsEntityIds[i];
+        const numerators = numeratorsByEntityId.get(entityId) ?? [];
 
-        const numerator = vaultNumerators.findLast(
-          (item) =>
-            BigInt(item.entityId) === BigInt(numeratorEntityId) &&
-            BigInt(item.timestamp) <= BigInt(denominator.timestamp),
-        );
+        // O(log n) binary search instead of O(n) findLast
+        const numerator = findLastLessThanOrEqual(numerators, denomTimestamp);
 
         const numRaw = toBigInt(numerator?.value);
         entry[`p${i}`] = denomRaw === 0n ? 0 : Number((numRaw * 100n) / denomRaw);
@@ -154,7 +203,7 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
 
       return entry;
     });
-  }, [vaultDenominators, vaultNumerators, market.outcome_slot_count, marketId_u256, collateralToken.decimals]);
+  }, [vaultDenominators, numeratorsByEntityId, numeratorsEntityIds, collateralToken.decimals]);
 
   return {
     chartData,

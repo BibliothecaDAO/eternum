@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { MarketClass, MarketOutcome } from "@/pm/class";
 import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 import { HStack } from "@pm/ui";
@@ -41,37 +43,42 @@ export const MarketOdds = ({
   onSelect?: (outcome: MarketOutcome) => void;
   selectedOutcomeIndex?: number;
 }) => {
-  const outcomes = getOutcomes(market);
-  const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
-  const winningOutcomeOrders = resolvedPayouts
-    .map((payout, idx) => (payout != null && Number(payout) > 0 ? idx : null))
-    .filter((idx): idx is number => idx !== null);
-  const winningOutcomeOrdersSet = new Set(winningOutcomeOrders);
+  const outcomes = useMemo(() => getOutcomes(market), [market]);
 
-  const baseSortedOutcomes = [...outcomes]
-    .map((outcome, idx) => {
-      const normalizedOrder = Number((outcome as any)?.index);
-      return { outcome, order: Number.isFinite(normalizedOrder) ? normalizedOrder : idx };
-    })
-    .sort((a, b) => {
-      const aOdds = parseNumericOdds(a.outcome);
-      const bOdds = parseNumericOdds(b.outcome);
+  const { sortedOutcomes, winningOutcomeOrdersSet } = useMemo(() => {
+    const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
+    const winningOutcomeOrders = resolvedPayouts
+      .map((payout, idx) => (payout != null && Number(payout) > 0 ? idx : null))
+      .filter((idx): idx is number => idx !== null);
+    const winningSet = new Set(winningOutcomeOrders);
 
-      if (aOdds == null && bOdds == null) return a.order - b.order;
-      if (aOdds == null) return 1;
-      if (bOdds == null) return -1;
-      if (aOdds === bOdds) return a.order - b.order;
-      return bOdds - aOdds;
-    });
+    const baseSorted = [...outcomes]
+      .map((outcome, idx) => {
+        const normalizedOrder = Number((outcome as any)?.index);
+        return { outcome, order: Number.isFinite(normalizedOrder) ? normalizedOrder : idx };
+      })
+      .sort((a, b) => {
+        const aOdds = parseNumericOdds(a.outcome);
+        const bOdds = parseNumericOdds(b.outcome);
 
-  const sortedOutcomes =
-    market.isResolved() && winningOutcomeOrders.length > 0
-      ? [
-          // Move winning outcome(s) to the top once resolution is known.
-          ...baseSortedOutcomes.filter(({ order }) => winningOutcomeOrdersSet.has(order)),
-          ...baseSortedOutcomes.filter(({ order }) => !winningOutcomeOrdersSet.has(order)),
-        ]
-      : baseSortedOutcomes;
+        if (aOdds == null && bOdds == null) return a.order - b.order;
+        if (aOdds == null) return 1;
+        if (bOdds == null) return -1;
+        if (aOdds === bOdds) return a.order - b.order;
+        return bOdds - aOdds;
+      });
+
+    const sorted =
+      market.isResolved() && winningOutcomeOrders.length > 0
+        ? [
+            // Move winning outcome(s) to the top once resolution is known.
+            ...baseSorted.filter(({ order }) => winningSet.has(order)),
+            ...baseSorted.filter(({ order }) => !winningSet.has(order)),
+          ]
+        : baseSorted;
+
+    return { sortedOutcomes: sorted, winningOutcomeOrdersSet: winningSet };
+  }, [outcomes, market]);
 
   if (outcomes.length === 0) {
     return <p className="text-xs text-gold/70">No odds available.</p>;
@@ -86,7 +93,7 @@ export const MarketOdds = ({
         const odds = formatOdds(oddsRaw);
         const isSelected = isSelectable && selectedOutcomeIndex === order;
         const color = getOutcomeColor(order);
-        const isWinner = market.isResolved() && resolvedPayouts.length > 0 && winningOutcomeOrdersSet.has(order);
+        const isWinner = market.isResolved() && winningOutcomeOrdersSet.size > 0 && winningOutcomeOrdersSet.has(order);
 
         return (
           <button

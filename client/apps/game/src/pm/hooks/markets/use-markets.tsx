@@ -235,17 +235,54 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
     void fetchConditionResolutions();
   }, [conditionResolutionsQuery, sdk, refreshNonce]);
 
+  // Build lookup maps for O(1) access instead of O(n) finds
+  // Use string keys since market_id is BigNumberish
+  const marketEventsByIdMap = useMemo(() => {
+    const map = new Map<string, (typeof marketEvents)[number]>();
+    for (const event of marketEvents) {
+      map.set(String(event.market_id), {
+        ...event,
+        title: replaceAndFormat(event.title),
+        terms: replaceAndFormat(event.terms),
+      });
+    }
+    return map;
+  }, [marketEvents]);
+
+  const vaultDenominatorByMarketIdMap = useMemo(
+    () => new Map(vaultDenominators.map((d) => [String(d.market_id), d])),
+    [vaultDenominators],
+  );
+
+  const vaultNumeratorsByMarketIdMap = useMemo(() => {
+    const map = new Map<string, VaultNumerator[]>();
+    for (const n of allVaultNumerators) {
+      const key = String(n.market_id);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(n);
+    }
+    // Sort each group by index
+    for (const arr of map.values()) {
+      arr.sort((a, b) => Number(a.index) - Number(b.index));
+    }
+    return map;
+  }, [allVaultNumerators]);
+
+  const conditionResolutionByKeyMap = useMemo(() => {
+    const map = new Map<string, (typeof conditionResolutions)[number]>();
+    for (const r of conditionResolutions) {
+      // Create a composite key for condition resolution lookup
+      const key = `${r.condition_id}-${r.question_id}-${r.oracle}`;
+      map.set(key, r);
+    }
+    return map;
+  }, [conditionResolutions]);
+
   useEffect(() => {
     if (!registeredOracles || registeredOracles.length === 0) return;
     if (!registeredTokens || registeredTokens.length === 0) return;
 
     if (!rawMarkets) return;
-
-    const newEvents = marketEvents.map((i) => ({
-      ...i,
-      title: replaceAndFormat(i.title),
-      terms: replaceAndFormat(i.terms),
-    }));
 
     const parsedMarkets = rawMarkets
       .filter((market: Market) => {
@@ -261,18 +298,15 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
         }
       })
       .flatMap((market: Market) => {
-        const marketCreated = newEvents.find((i) => i.market_id === market.market_id)!;
+        // O(1) lookups instead of O(n) finds - use String keys
+        const marketIdKey = String(market.market_id);
+        const marketCreated = marketEventsByIdMap.get(marketIdKey);
+        const vaultDenominator = vaultDenominatorByMarketIdMap.get(marketIdKey);
+        const vaultNumerators = vaultNumeratorsByMarketIdMap.get(marketIdKey) ?? [];
 
-        const vaultDenominator = vaultDenominators.find((i) => i.market_id === market.market_id);
-        const vaultNumerators = allVaultNumerators
-          .filter((i) => i.market_id === market.market_id)
-          .sort((a, b) => Number(a.index) - Number(b.index));
-        const conditionResolution = conditionResolutions.find(
-          (i) =>
-            BigInt(i.condition_id) === BigInt(market.condition_id) &&
-            BigInt(i.question_id) === BigInt(market.question_id) &&
-            i.oracle === market.oracle,
-        );
+        // Composite key lookup for condition resolution
+        const conditionKey = `${market.condition_id}-${market.question_id}-${market.oracle}`;
+        const conditionResolution = conditionResolutionByKeyMap.get(conditionKey);
 
         if (!market || !marketCreated) return [];
         const collateralToken = getRegisteredToken(market.collateral_token);
@@ -297,11 +331,11 @@ export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersPara
     rawMarkets,
     registeredOracles,
     registeredTokens,
-    allVaultNumerators,
-    vaultDenominators,
-    conditionResolutions,
+    marketEventsByIdMap,
+    vaultDenominatorByMarketIdMap,
+    vaultNumeratorsByMarketIdMap,
+    conditionResolutionByKeyMap,
     marketFilters.type,
-    marketEvents,
     getRegisteredToken,
   ]);
 

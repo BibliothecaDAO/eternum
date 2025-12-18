@@ -1,29 +1,26 @@
+import { useMemo } from "react";
+
 import { useControllers } from "@/pm/hooks/controllers/use-controllers";
 import { shortAddress } from "@/pm/utils";
-import { useEffect, useState } from "react";
 
 export function MaybeController({ address, className, ...props }: { address: string; className?: string }) {
   const { findController } = useControllers();
-  const [username, setUsername] = useState("");
 
-  useEffect(() => {
+  const label = useMemo(() => {
     const controller = findController(address);
-
     if (controller) {
-      setUsername(`${controller.username} (${shortAddress(address)})`);
-    } else {
-      let short = address;
-      try {
-        short = shortAddress(address);
-      } catch (e: any) {}
-
-      setUsername(`${short}`);
+      return `${controller.username} (${shortAddress(address)})`;
+    }
+    try {
+      return shortAddress(address);
+    } catch {
+      return address;
     }
   }, [address, findController]);
 
   return (
     <div className={className} {...props}>
-      {username}
+      {label}
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 
 import { getContractByName } from "@dojoengine/core";
+import type { TokenBalance } from "@dojoengine/torii-wasm";
 import { Clock3, Lock, Users, Wallet } from "lucide-react";
 import { useAccount } from "@starknet-react/core";
 
 import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
-import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import { useClaimablePayout } from "@/pm/hooks/markets/use-claimable-payout";
 import { formatUnits } from "@/pm/utils";
 
@@ -27,25 +27,21 @@ const formatTimeLeft = (targetSeconds: number | null) => {
   return `${minutes}m`;
 };
 
-export const MarketQuickStats = ({ market }: { market: MarketClass }) => {
+interface MarketQuickStatsProps {
+  market: MarketClass;
+  /** Optional: pass balances from parent to avoid per-card subscriptions */
+  balances?: TokenBalance[];
+}
+
+export const MarketQuickStats = ({ market, balances = [] }: MarketQuickStatsProps) => {
   const { account } = useAccount();
   const {
     config: { manifest },
   } = useDojoSdk();
 
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
-  const positionIdsAsStrings = useMemo(() => positionIds.map((id) => id.toString()), [positionIds]);
 
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
-
-  const { balances } = useTokens(
-    {
-      accountAddresses: undefined,
-      contractAddresses: vaultPositionsAddress ? [vaultPositionsAddress] : [],
-      // tokenIds: positionIdsAsStrings,
-    },
-    false,
-  );
 
   const holdersCount = useMemo(() => {
     if (!vaultPositionsAddress || positionIds.length === 0) return null;

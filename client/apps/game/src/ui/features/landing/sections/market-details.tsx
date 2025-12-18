@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { MarketClass, type MarketOutcome } from "@/pm/class";
-import { useMarket, useMarkets } from "@pm/sdk";
+import { useMarket } from "@pm/sdk";
 import { ScrollArea } from "@pm/ui";
 import { ArrowLeft, Play, RefreshCw } from "lucide-react";
 
 import Button from "@/ui/design-system/atoms/button";
 
-import { MARKET_FILTERS_ALL, MarketsProviders, MarketsSection } from "./markets";
+import { MarketsProviders, MarketsSection } from "./markets";
 import { MarketActivity } from "./markets/details/market-activity";
 import { MarketCreatedBy } from "./markets/details/market-created-by";
 import { MarketFees } from "./markets/details/market-fees";
@@ -100,7 +100,6 @@ const MarketDetailsContent = ({
   isRefreshing?: boolean;
 }) => {
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
-  console.log("hello");
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
@@ -207,33 +206,15 @@ const MarketDetailsContent = ({
 
 const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
   const targetId = useMemo(() => parseMarketId(marketId), [marketId]);
-  const { markets, refresh: refreshMarkets } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Use useMarket hook for real-time updates when we have a valid marketId
-  const { market: liveMarket, refresh: refreshLiveMarket, isLoading: isLiveMarketLoading } = useMarket(targetId ?? 0n);
+  // Fetch the specific market directly - no need to fetch ALL markets
+  const { market, refresh: refreshMarket, isLoading } = useMarket(targetId ?? 0n);
 
-  const market = useMemo(() => {
-    // Prefer the live market data from useMarket hook for real-time updates
-    if (liveMarket) return liveMarket;
-
-    // Fallback to finding from the markets list
-    if (targetId == null) return undefined;
-
-    return markets.find((candidate) => {
-      try {
-        return BigInt(candidate.market_id) === targetId;
-      } catch {
-        return false;
-      }
-    });
-  }, [markets, targetId, liveMarket]);
-
-  const isInitialLoading = !market && markets.length === 0 && targetId != null;
+  const isInitialLoading = !market && isLoading && targetId != null;
 
   const handleRefresh = async () => {
-    refreshMarkets();
-    await refreshLiveMarket();
+    await refreshMarket();
     setRefreshKey((prev) => prev + 1);
   };
 
@@ -265,7 +246,7 @@ const LandingMarketDetailsContent = ({ marketId }: { marketId?: string }) => {
           market={market}
           onRefresh={() => void handleRefresh()}
           refreshKey={refreshKey}
-          isRefreshing={isLiveMarketLoading}
+          isRefreshing={isLoading}
         />
       ) : null}
     </MarketsSection>

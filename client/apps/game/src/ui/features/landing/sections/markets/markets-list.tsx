@@ -1,7 +1,11 @@
+import { getContractByName } from "@dojoengine/core";
 import { type MarketFiltersParams, useMarkets } from "@pm/sdk";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, HStack, ScrollArea, VStack } from "@pm/ui";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 
 import { MarketImage } from "./market-image";
 import { MarketOdds } from "./market-odds";
@@ -13,6 +17,19 @@ import { useMarketWatch } from "./use-market-watch";
 export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersParams }) {
   const { markets } = useMarkets({ marketFilters });
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
+  const {
+    config: { manifest },
+  } = useDojoSdk();
+
+  // Single subscription for all vault position balances - hoisted from MarketQuickStats
+  const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
+  const { balances: allBalances } = useTokens(
+    {
+      accountAddresses: undefined,
+      contractAddresses: vaultPositionsAddress ? [vaultPositionsAddress] : [],
+    },
+    false,
+  );
 
   const sortedMarkets = useMemo(() => {
     const getCreatedAt = (value: unknown) => {
@@ -92,7 +109,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
             <CardContent className="flex flex-col gap-3 px-0">
               <VStack className="w-full">
                 <VStack className="w-auto items-end">{/* <MarketTvl market={market} /> */}</VStack>
-                <MarketQuickStats market={market} />
+                <MarketQuickStats market={market} balances={allBalances} />
               </VStack>
 
               <ScrollArea className="h-[120px] w-full pr-2">
