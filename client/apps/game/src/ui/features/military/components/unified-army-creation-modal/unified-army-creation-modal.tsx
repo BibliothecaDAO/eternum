@@ -472,7 +472,7 @@ export const UnifiedArmyCreationModal = ({
           throw new Error("No available defense slot for new troops");
         }
         // Use effectiveGuardSlot which falls back to first available if current selection is invalid
-        const slotToUse = availableGuardSlotSet.has(guardSlot) ? guardSlot : availableGuardSlots[0] ?? guardSlot;
+        const slotToUse = availableGuardSlotSet.has(guardSlot) ? guardSlot : (availableGuardSlots[0] ?? guardSlot);
         if (!availableGuardSlotSet.has(slotToUse)) {
           throw new Error("Selected defense slot is locked for this structure level");
         }
