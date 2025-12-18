@@ -173,6 +173,9 @@ export class StructureManager {
     // Remove from battle timer tracking
     this.structuresWithActiveBattleTimer.delete(structure.entityId);
 
+    // Remove associated label to prevent stale content
+    this.removeEntityIdLabel(structure.entityId);
+
     // Remove from spatial index
     const { col, row } = structure.hexCoords;
     const key = this.getSpatialKey(col, row);
@@ -1673,6 +1676,8 @@ export class StructureManager {
     label.position.copy(position);
     label.position.y += 2;
     label.userData.entityId = structure.entityId;
+    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
+    label.userData.lastDataKey = null;
 
     this.configureStructureLabelInteractions(label);
 
