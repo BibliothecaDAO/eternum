@@ -190,12 +190,6 @@ export const UnifiedArmyCreationModal = ({
     enabled: activeStructureId > 0,
   });
 
-  // Filter to non-empty guards for display purposes
-  const nonEmptyGuards = useMemo(
-    () => (guardsData ?? []).filter((guard) => guard.troops?.count && guard.troops.count > 0n),
-    [guardsData],
-  );
-
   const currentExplorersCount = explorers.length;
   const currentGuardsCount =
     guardsData?.filter(
@@ -477,7 +471,9 @@ export const UnifiedArmyCreationModal = ({
         if (isDefenseSlotCreationBlocked) {
           throw new Error("No available defense slot for new troops");
         }
-        if (!availableGuardSlotSet.has(guardSlot)) {
+        // Use effectiveGuardSlot which falls back to first available if current selection is invalid
+        const slotToUse = availableGuardSlotSet.has(guardSlot) ? guardSlot : (availableGuardSlots[0] ?? guardSlot);
+        if (!availableGuardSlotSet.has(slotToUse)) {
           throw new Error("Selected defense slot is locked for this structure level");
         }
         await armyManager.addTroopsToGuard(
@@ -485,7 +481,7 @@ export const UnifiedArmyCreationModal = ({
           selectedTroopCombo.type,
           selectedTroopCombo.tier,
           troopCount,
-          guardSlot,
+          slotToUse,
         );
         if (activeStructureId > 0) {
           queryClient

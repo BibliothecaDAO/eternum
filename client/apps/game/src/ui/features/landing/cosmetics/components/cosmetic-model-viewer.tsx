@@ -8,6 +8,8 @@ interface CosmeticModelViewerProps {
   modelPath: string;
   variant?: CosmeticModelViewerVariant;
   autoRotate?: boolean;
+  /** For card variant: whether the tile is being hovered (triggers RAF) */
+  isHovered?: boolean;
 }
 
 const CAMERA_PRESETS: Record<
@@ -38,14 +40,33 @@ const CAMERA_PRESETS: Record<
 
 /**
  * Lightweight viewer that normalises scale/centering for cosmetics and exposes optional rotation controls.
+ *
+ * Performance optimization: RAF loop only runs when:
+ * - variant="showcase" (always needs interaction support)
+ * - variant="card" AND (isHovered OR autoRotate is true)
+ * Otherwise renders once after model loads, then stops.
  */
-export const CosmeticModelViewer = ({ modelPath, variant = "card", autoRotate = false }: CosmeticModelViewerProps) => {
+export const CosmeticModelViewer = ({
+  modelPath,
+  variant = "card",
+  autoRotate = false,
+  isHovered = false,
+}: CosmeticModelViewerProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const autoRotateRef = useRef(autoRotate);
+  const isHoveredRef = useRef(isHovered);
+
+  // Track whether RAF should be running
+  // For showcase: always run (needs drag support)
+  // For card: only run when hovered or autoRotating
+  const shouldAnimate = variant === "showcase" || isHovered || autoRotate;
+  const shouldAnimateRef = useRef(shouldAnimate);
 
   useEffect(() => {
     autoRotateRef.current = autoRotate;
-  }, [autoRotate]);
+    isHoveredRef.current = isHovered;
+    shouldAnimateRef.current = variant === "showcase" || isHovered || autoRotate;
+  }, [autoRotate, isHovered, variant]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -59,7 +80,7 @@ export const CosmeticModelViewer = ({ modelPath, variant = "card", autoRotate = 
 
     const camera = new THREE.PerspectiveCamera(preset.fov, 1, 0.1, 100);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = false;
@@ -80,7 +101,7 @@ export const CosmeticModelViewer = ({ modelPath, variant = "card", autoRotate = 
     scene.add(ambientLight, keyLight, fillLight, rimLight);
 
     let mounted = true;
-    let animationFrame: number;
+    let animationFrame: number = 0;
     let model: THREE.Object3D | null = null;
     let isDragging = false;
 
@@ -128,6 +149,9 @@ export const CosmeticModelViewer = ({ modelPath, variant = "card", autoRotate = 
         model.rotation.y = Math.PI / 6;
 
         scene.add(model);
+
+        // Render once immediately after model loads for initial static display
+        renderer.render(scene, camera);
       } catch (error) {
         console.error("Failed to load cosmetic model", error);
       }
@@ -141,6 +165,8 @@ export const CosmeticModelViewer = ({ modelPath, variant = "card", autoRotate = 
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      // Re-render after resize to prevent blank canvas when not animating
+      renderer.render(scene, camera);
     };
 
     handleResize();
@@ -196,19 +222,51 @@ export const CosmeticModelViewer = ({ modelPath, variant = "card", autoRotate = 
       interactionElement.addEventListener("pointercancel", pointerUp);
     }
 
-    const renderScene = () => {
+    // Single render function
+    const render = () => {
       if (autoRotateRef.current && model && !isDragging) {
         model.rotation.y += variant === "showcase" ? 0.004 : 0.006;
       }
-
       renderer.render(scene, camera);
-      animationFrame = window.requestAnimationFrame(renderScene);
     };
 
-    animationFrame = window.requestAnimationFrame(renderScene);
+    // RAF loop - only runs when shouldAnimate is true
+    const renderLoop = () => {
+      if (!mounted) return;
+
+      render();
+
+      // Only continue loop if we should be animating
+      if (shouldAnimateRef.current) {
+        animationFrame = window.requestAnimationFrame(renderLoop);
+      } else {
+        animationFrame = 0;
+      }
+    };
+
+    // Start/restart RAF loop when shouldAnimate becomes true
+    const startLoop = () => {
+      if (animationFrame === 0 && mounted) {
+        animationFrame = window.requestAnimationFrame(renderLoop);
+      }
+    };
+
+    // Check periodically if we should start the loop (for when hover/autoRotate changes)
+    // This is needed because the effect closure captures initial values
+    const checkInterval = window.setInterval(() => {
+      if (shouldAnimateRef.current && animationFrame === 0 && mounted) {
+        startLoop();
+      }
+    }, 100);
+
+    // Start loop if we should animate from the beginning, otherwise just wait for model load
+    if (shouldAnimate) {
+      animationFrame = window.requestAnimationFrame(renderLoop);
+    }
 
     return () => {
       mounted = false;
+      window.clearInterval(checkInterval);
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
       if (resizeObserver) {
         resizeObserver.disconnect();
