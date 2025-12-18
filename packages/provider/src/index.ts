@@ -2932,13 +2932,23 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async blitz_prize_claim(props: SystemProps.BlitzPrizeClaimProps) {
     const { players, signer } = props;
 
-    const call = this.createProviderCall(signer, {
+    const calls = [];
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`), 0, signer.address],
+      };
+
+      calls.push(requestRandomCall);
+    }
+
+    calls.push({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
       entrypoint: "blitz_prize_claim",
       calldata: [players.length, ...players],
     });
-
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
   }
 
   // Blitz prize: single-registrant no-game claim
