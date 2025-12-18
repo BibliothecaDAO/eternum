@@ -32,11 +32,11 @@ const tryBetterErrorMsg = (error: unknown) => {
   return "Something went wrong while creating the market.";
 };
 
-const DEFAULT_MARKET_ADDRESS = "";
+// TODO: need to change all these addresses depending on if i'm on slot or mainnet
 const DEFAULT_COLLATERAL_TOKEN = "0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5";
 const DEFAULT_ORACLE_ADDRESS = "0x0693278fb06d7041f884c50cb9d0e2d4620ed16f282cf8c76fddb712ef1060d2";
 const CREATOR_FEE = "10";
-const DEFAULT_FUNDING_LORDS = "100";
+const DEFAULT_FUNDING_LORDS = "1000";
 const DEFAULT_FEE_CURVE_RANGE = {
   start: 0,
   end: 2000,
