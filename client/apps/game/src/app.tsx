@@ -6,13 +6,7 @@ import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
 import { IS_MOBILE } from "./ui/config";
-import {
-  LandingAccount,
-  LandingCosmetics,
-  LandingLeaderboard,
-  LandingPlayer,
-  LandingWelcome,
-} from "./ui/features/landing";
+import { LandingAccount, LandingLeaderboard, LandingPlayer, LandingWelcome } from "./ui/features/landing";
 import { LandingLayout } from "./ui/layouts/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
@@ -23,6 +17,11 @@ import { getRandomBackgroundImage } from "./ui/utils/utils";
 const LazyGameRoute = lazy(() => import("./game-route").then((module) => ({ default: module.GameRoute })));
 
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
+
+// Lazy load cosmetics to avoid pulling three.js into the main landing bundle
+const LazyLandingCosmetics = lazy(() =>
+  import("./ui/features/landing/sections/cosmetics").then((module) => ({ default: module.LandingCosmetics })),
+);
 
 // Served from client/public/videos/landing/background.mp4
 const LANDING_BACKGROUND_VIDEO = "/videos/menu.mp4";
@@ -63,7 +62,14 @@ function App() {
               element={<LandingLayout backgroundImage={backgroundImage} backgroundVideo={LANDING_BACKGROUND_VIDEO} />}
             >
               <Route index element={<LandingWelcome />} />
-              <Route path="cosmetics" element={<LandingCosmetics />} />
+              <Route
+                path="cosmetics"
+                element={
+                  <Suspense fallback={<div className="flex h-full items-center justify-center text-gold/60">Loading cosmetics...</div>}>
+                    <LazyLandingCosmetics />
+                  </Suspense>
+                }
+              />
               <Route path="account" element={<LandingAccount />} />
               <Route path="player" element={<LandingPlayer />} />
               <Route path="leaderboard" element={<LandingLeaderboard />} />
