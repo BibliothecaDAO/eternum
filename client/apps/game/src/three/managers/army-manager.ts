@@ -2381,19 +2381,24 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    // Optimization: Don't update DOM if label is culled/invisible
-    if (existingLabel.parent !== this.labelsGroup) {
+    // Build data key from fields that affect label appearance
+    const dataKey = `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
+
+    // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
+    // Only skip if label is currently visible - culled labels need update when shown
+    const isVisible = existingLabel.parent === this.labelsGroup;
+    if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
 
-    // Optimization: Skip DOM update if data hasn't changed (dirty-flag pattern)
-    const dataKey = `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}`;
-    if (existingLabel.userData.lastDataKey === dataKey) {
+    // If label is culled, mark it dirty so it updates when becoming visible
+    if (!isVisible) {
+      existingLabel.userData.lastDataKey = null; // Force update on next show
       return;
     }
-    existingLabel.userData.lastDataKey = dataKey;
 
     // Update the existing label content in-place with correct camera view
+    existingLabel.userData.lastDataKey = dataKey;
     updateArmyLabel(existingLabel.element, army, this.currentCameraView);
   }
 
