@@ -238,9 +238,12 @@ export const UnifiedArmyCreationModal = ({
 
   const selectedGuardCategory = selectedGuard?.troops?.category as TroopType | undefined;
   const selectedGuardTier = selectedGuard?.troops?.tier as TroopTier | undefined;
-  const isSelectedSlotOccupied = Boolean(selectedGuard);
+  // A slot is only truly "occupied" if it has troops with count > 0
+  const isSelectedSlotOccupied = selectedGuardCount > 0;
+  // Slot is compatible if empty (no guard or count = 0) OR same troop type/tier
   const isDefenseSlotCompatible =
     !selectedGuard ||
+    selectedGuardCount === 0 ||
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
   const structureCoordX = structureBase?.coord_x;
