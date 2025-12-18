@@ -444,7 +444,7 @@ const GameActiveState = ({
           <div className="space-y-3">
             <Button onClick={onPlay} className="w-full">
               <div className="flex items-center justify-center gap-2">
-                <span>⚡ Play Blitz</span>
+                <span>⚡ Play Blitz </span>
               </div>
             </Button>
             <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
