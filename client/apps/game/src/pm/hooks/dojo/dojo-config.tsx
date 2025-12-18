@@ -1,6 +1,9 @@
 import { createDojoConfig, DojoConfig, getContractByName } from "@dojoengine/core";
 import { createContext, useCallback, useContext, useMemo, type PropsWithChildren } from "react";
-import manifestBlitz from "../../manifests/manifest_blitz.json";
+import manifestMainnet from "../../manifests/manifest_mainnet.json";
+import manifestSlot from "../../manifests/manifest_slot.json";
+// todo: use mainnet or slot depending on the network
+console.log({ manifestMainnet });
 
 type DojoConfigProviderProps = PropsWithChildren<{
   toriiUrl: string;
@@ -19,9 +22,9 @@ export function DojoConfigProvider({ children, toriiUrl, worldAddress }: DojoCon
     return createDojoConfig({
       toriiUrl,
       manifest: {
-        ...manifestBlitz,
+        ...manifestSlot,
         world: {
-          ...manifestBlitz.world,
+          ...manifestSlot.world,
           address: worldAddress,
         },
       },
