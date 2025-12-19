@@ -102,24 +102,13 @@ const TokenAmountInput = ({
   setAmount: (val: string) => void;
   token: RegisteredToken;
 }) => {
-  const {
-    tokens: { getBalances },
-  } = useUser();
+  const { lordsBalance } = useUser();
 
-  const balances = useMemo(
-    () => (token?.contract_address ? getBalances([token.contract_address]) : []),
-    [getBalances, token?.contract_address],
-  );
-
-  const { balanceFormatted } = useMemo(() => {
-    if (!token) return { balanceFormatted: "0" };
-
-    const raw = balances?.[0]?.balance ? BigInt(balances[0].balance) : 0n;
+  const balanceFormatted = useMemo(() => {
+    if (!token) return "0";
     const decimals = Number(token.decimals ?? 0);
-    const formatted = formatUnits(raw, decimals, 4);
-
-    return { balanceFormatted: formatted };
-  }, [balances, token]);
+    return formatUnits(lordsBalance, decimals, 4);
+  }, [lordsBalance, token]);
 
   return (
     <div className="w-full rounded-md border border-white/10 bg-black/60 px-3 py-3 text-xs text-gold/70">
@@ -190,8 +179,6 @@ export function MarketTrade({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const account = useAccountStore((state) => state.account);
 
-  const vaultPositionsAddress = getContractByName(manifest, "pm", "VaultPositions")?.address;
-  const conditionalTokensAddress = getContractByName(manifest, "pm", "ConditionalTokens")?.address;
   const marketContractAddress = getContractByName(manifest, "pm", "Markets")?.address;
   const nowSec = Math.floor(Date.now() / 1_000);
   const isResolved = market.isResolved();
