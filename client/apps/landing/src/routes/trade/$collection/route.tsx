@@ -3,7 +3,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
-import { OG_IMAGE_META } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useLocation, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
@@ -11,7 +10,6 @@ import { env } from "../../../../env";
 
 export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,
-  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function TradeLayout() {

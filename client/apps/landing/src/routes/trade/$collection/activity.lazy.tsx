@@ -5,7 +5,6 @@ import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { marketplaceCollections } from "@/config";
 import { fetchMarketOrderEvents } from "@/hooks/services";
-import { OG_IMAGE_META } from "@/lib/seo";
 import { formatRelativeTime } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
@@ -17,7 +16,6 @@ import { env } from "../../../../env";
 export const Route = createLazyFileRoute("/trade/$collection/activity")({
   component: ActivityPage,
   pendingComponent: FullPageLoader,
-  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function ActivityPage() {
