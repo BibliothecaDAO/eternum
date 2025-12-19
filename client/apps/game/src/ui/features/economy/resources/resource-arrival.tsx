@@ -2,12 +2,7 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-import {
-  divideByPrecision,
-  formatTime,
-  getIsBlitz,
-  getStructureName,
-} from "@bibliothecadao/eternum";
+import { divideByPrecision, formatTime, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
 import { Loader2, Clock3 } from "lucide-react";
@@ -38,10 +33,7 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
         amount: divideByPrecision(resource.amount),
       }));
 
-      const secondsUntilArrival = Math.max(
-        0,
-        Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS - now,
-      );
+      const secondsUntilArrival = Math.max(0, Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS - now);
       const isReady = secondsUntilArrival === 0;
 
       return {

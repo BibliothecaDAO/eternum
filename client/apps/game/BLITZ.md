@@ -17,7 +17,7 @@ implementation plan (with concrete code pointers). Where details are missing, qu
 
 ## 1) Bugfixes
 
-### 1.1 Transfer desync (auto arrival triggering too soon)
+### 1.1 Transfer desync (auto arrival triggering too soon) - DONE
 
 **Observed symptom**  
 Auto-offload (“auto arrival”) triggers before the arrival is actually claimable, causing a failed/pending tx and a
@@ -34,8 +34,8 @@ This is driven by the on-chain `ResourceArrival` component, not by the UI travel
 
 **Root cause in this codebase**
 
-- The previous `now` source for claimability was `getBlockTimestamp()` (`packages/core/src/utils/timestamp.ts`), which is
-  derived from the local wall clock (`Date.now()`).
+- The previous `now` source for claimability was `getBlockTimestamp()` (`packages/core/src/utils/timestamp.ts`), which
+  is derived from the local wall clock (`Date.now()`).
 - If a player’s clock is ahead of the sequencer/indexer time, the client hits `now >= arrivesAt` early and submits
   `arrivals_offload` too soon.
 
@@ -67,7 +67,7 @@ Status: Implemented in code (no SQL).
 
 ---
 
-### 1.2 Capping a hyperstructure triggers an “allocate shares” tx you can’t act on
+### 1.2 Capping a hyperstructure triggers an “allocate shares” tx you can’t act on - DONE
 
 **Observed symptom**  
 On capturing (“capping”) a hyperstructure, an `allocate_shares` transaction is triggered automatically and appears
@@ -75,7 +75,8 @@ un-actionable (unexpected wallet prompt, stuck queue, or modal weirdness).
 
 **Where in code**
 
-- Auto allocation component: `client/apps/game/src/ui/features/world/components/hyperstructures/blitz-hyperstructure-shareholder.tsx`
+- Auto allocation component:
+  `client/apps/game/src/ui/features/world/components/hyperstructures/blitz-hyperstructure-shareholder.tsx`
   - `BlitzSetHyperstructureShareholdersTo100` calls `allocate_shares` when you own a hyperstructure but aren’t at 100%
 
 **Why this can happen in this codebase**
@@ -100,13 +101,13 @@ Status: Implemented (mitigation).
 
 **Questions**
 
-- What does “can’t do anything with” mean exactly: wallet prompt never appears, appears behind overlay, or tx is stuck in
-  an internal queue?
+- What does “can’t do anything with” mean exactly: wallet prompt never appears, appears behind overlay, or tx is stuck
+  in an internal queue?
 - Do you want this to be fully automatic, or a one-click prompt after capture?
 
 ---
 
-### 1.3 Map labels/state not syncing (defenses not refreshed after a fight / reinforcement)
+### 1.3 Map labels/state not syncing (defenses not refreshed after a fight / reinforcement) - DONE
 
 **Observed symptom**  
 Selected tile panel shows correct defense state, but world-map labels (3D CSS labels) are stale after fights or defense
@@ -136,7 +137,8 @@ changes.
 
 **Validation**
 
-- After combat or reinforcement, label state (counts + stamina bars) updates immediately without needing a chunk refresh.
+- After combat or reinforcement, label state (counts + stamina bars) updates immediately without needing a chunk
+  refresh.
 
 **Questions**
 
@@ -152,8 +154,8 @@ Using “Auto build” sometimes fails with an on-chain (or preflight) error tha
 **Where in code**
 
 - Auto build selection logic: `client/apps/game/src/ui/features/settlement/construction/select-preview-building.tsx`
-  - `handleAutoBuild()` picks `availableSpot` by checking `TileManager.isHexOccupied()` plus optimistic `occupied/vacated`
-    sets
+  - `handleAutoBuild()` picks `availableSpot` by checking `TileManager.isHexOccupied()` plus optimistic
+    `occupied/vacated` sets
 
 **Why this can happen in this codebase**
 
@@ -186,7 +188,7 @@ Using “Auto build” sometimes fails with an on-chain (or preflight) error tha
 
 ---
 
-### 1.5 Transfer relics then troops if merging troops that own relics
+### 1.5 Transfer relics then troops if merging troops that own relics - DONE
 
 **Observed symptom**  
 When moving/merging troops away from an explorer that holds relics, relic handling happens too late (or not at all),
@@ -233,12 +235,12 @@ Status: Implemented.
 
 - Should we apply the same safeguard to any other flow that can delete an explorer (outside of
   `transfer-troops-container.tsx`)?
-- Should the auto-transfer include only relic ids “valid” for the destination type, or always transfer all relic ids
-  to avoid loss? (Current behavior: transfer all relic ids found on the explorer.)
+- Should the auto-transfer include only relic ids “valid” for the destination type, or always transfer all relic ids to
+  avoid loss? (Current behavior: transfer all relic ids found on the explorer.)
 
 ---
 
-### 1.6 Secondary popup auto-close is annoying
+### 1.6 Secondary popup auto-close is annoying - DONE
 
 **Observed symptom**  
 Certain SecondaryPopup-based flows close when clicking outside (or otherwise lose focus), disrupting multi-step actions.
@@ -267,7 +269,8 @@ Certain SecondaryPopup-based flows close when clicking outside (or otherwise los
    - `closeOnOverlayClick` (default `true`)
    - `closeOnEscape` (default `true`)
 2. Update `client/apps/game/src/ui/layouts/play-overlay-manager.tsx` to respect these options.
-3. Mark SecondaryPopup-based “window” flows as `closeOnOverlayClick: false` so accidental outside clicks don’t kill them.
+3. Mark SecondaryPopup-based “window” flows as `closeOnOverlayClick: false` so accidental outside clicks don’t kill
+   them.
 4. (Optional, better UX) Split “modal” vs “window” concepts:
    - windows rendered without a full-screen overlay, allowing map interaction while open
 
@@ -282,14 +285,15 @@ Certain SecondaryPopup-based flows close when clicking outside (or otherwise los
 
 ---
 
-### 1.7 Swap realms while in the army creation popup
+### 1.7 Swap realms while in the army creation popup - DONE
 
 **Observed symptom**  
 While the army creation UI is open, you cannot switch the active realm without closing/reopening the popup.
 
 **Where in code**
 
-- Army creation popup: `client/apps/game/src/ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx`
+- Army creation popup:
+  `client/apps/game/src/ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx`
   - `activeStructureId` is derived from `structureId` prop and is not user-changeable
 
 **Proposed solution**
@@ -318,12 +322,13 @@ While the army creation UI is open, you cannot switch the active realm without c
 ### 1.8 Fix bottom-right panel when a relic is active
 
 **Observed symptom**  
-When an entity has an active relic effect, the bottom-right selected tile panel behaves incorrectly (layout/scroll/visual
-bugs).
+When an entity has an active relic effect, the bottom-right selected tile panel behaves incorrectly
+(layout/scroll/visual bugs).
 
 **Where in code**
 
-- Bottom-right panel shell: `client/apps/game/src/ui/features/world/components/bottom-right-panel/bottom-right-panel.tsx`
+- Bottom-right panel shell:
+  `client/apps/game/src/ui/features/world/components/bottom-right-panel/bottom-right-panel.tsx`
 - Active relic effects rendering:
   - `client/apps/game/src/ui/features/world/components/entities/active-relic-effects.tsx`
   - embedded in `client/apps/game/src/ui/features/world/components/entities/banner/structure-banner-entity-detail.tsx`
@@ -331,7 +336,8 @@ bugs).
 **Likely causes in this codebase**
 
 - `StructureBannerEntityDetail` wraps `ActiveRelicEffects` with its own “Active Relic Effects” header, but
-  `ActiveRelicEffects` also renders a header + divider. This can lead to duplicated headers/dividers and awkward spacing.
+  `ActiveRelicEffects` also renders a header + divider. This can lead to duplicated headers/dividers and awkward
+  spacing.
 - Height constraints: bottom-right panel is `35vh`. The relic section may push tab controls out of view if scroll isn’t
   correctly applied to the right container.
 
@@ -405,8 +411,10 @@ When selecting a camp (Blitz `StructureType.Village`), provide a one-click entry
 
 **Where in code**
 
-- Camp is surfaced as “Camp”: `client/apps/game/src/ui/features/story-events/story-event-stream.tsx` (`getLocationLabel`)
-- Camp structure detail UI: `client/apps/game/src/ui/features/world/components/entities/banner/structure-banner-entity-detail.tsx`
+- Camp is surfaced as “Camp”: `client/apps/game/src/ui/features/story-events/story-event-stream.tsx`
+  (`getLocationLabel`)
+- Camp structure detail UI:
+  `client/apps/game/src/ui/features/world/components/entities/banner/structure-banner-entity-detail.tsx`
 - Existing battle system calls:
   - `client/apps/game/src/ui/features/military/battle/quick-attack-preview.tsx`
   - `client/apps/game/src/ui/features/military/battle/raid-container.tsx`
@@ -662,7 +670,8 @@ Selecting a realm via UI (sidebar/header) or navigating to a battle location sho
   - `client/apps/game/src/ui/features/world/containers/left-command-sidebar.tsx` (`setSelectedHex(...)`)
   - `client/apps/game/src/ui/features/story-events/story-event-stream.tsx` (`setSelectedHex(...)`)
 - 3D selection highlight is only updated on in-scene clicks:
-  - `client/apps/game/src/three/scenes/worldmap.tsx` (`handleHexSelection()` calls `selectedHexManager.setPosition(...)`)
+  - `client/apps/game/src/three/scenes/worldmap.tsx` (`handleHexSelection()` calls
+    `selectedHexManager.setPosition(...)`)
 - Store subscription in scene base class does **not** include `selectedHex`:
   - `client/apps/game/src/three/scenes/hexagon-scene.ts` subscribes to `leftNavigationView/structureEntityId/cycle*`
 

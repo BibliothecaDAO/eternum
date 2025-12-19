@@ -4,10 +4,7 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import {
-  RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS,
-  RESOURCE_ARRIVAL_READY_BUFFER_SECONDS,
-} from "@/ui/constants";
+import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import {
   formatArmies,
   getAddressName,

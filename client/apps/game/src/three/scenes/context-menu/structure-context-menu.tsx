@@ -2,7 +2,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView } from "@/types";
-import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
@@ -34,7 +33,10 @@ export const openStructureContextMenu = ({
       return;
     }
     uiStore.setStructureEntityId(structure.id);
-    uiStore.toggleModal(<UnifiedArmyCreationModal structureId={Number(structure.id)} isExplorer={isExplorer} />);
+    uiStore.openArmyCreationPopup({
+      structureId: Number(structure.id),
+      isExplorer,
+    });
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
