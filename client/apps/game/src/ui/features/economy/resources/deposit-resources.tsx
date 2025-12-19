@@ -1,7 +1,8 @@
 import { useUISound } from "@/audio";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { ConfirmationPopup } from "@/ui/features/economy/banking";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { ResourceArrivalManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -26,7 +27,9 @@ export const DepositResources = ({
   // stone as proxy for depositing resources
   const playDeposit = useUISound("resources.stone.add");
 
-  const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
+  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const currentBlockTimestamp = Math.floor(chainNowMs / 1000);
+  const isArrivalReady = currentBlockTimestamp >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS;
 
   const onOffload = async () => {
     if (isMaxCapacity) {
@@ -58,7 +61,7 @@ export const DepositResources = ({
         size="xs"
         className="w-full"
         isLoading={isLoading}
-        disabled={arrival.arrivesAt > currentBlockTimestamp}
+        disabled={!isArrivalReady}
         onClick={() => onOffload()}
         variant="primary"
         withoutSound

@@ -1,37 +1,23 @@
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
 import {
   divideByPrecision,
   formatTime,
-  getBlockTimestamp,
   getIsBlitz,
   getStructureName,
 } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
 import { Loader2, Clock3 } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 
 export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {
-  const { currentBlockTimestamp } = getBlockTimestamp();
-  const [internalNow, setInternalNow] = useState(currentBlockTimestamp);
+  const chainNowMs = useChainTimeStore((state) => state.nowMs);
   const arrivals = useArrivalsByStructure(structure.entityId);
 
-  useEffect(() => {
-    if (nowOverride !== undefined) {
-      return;
-    }
-    if (!currentBlockTimestamp) return;
-    setInternalNow(currentBlockTimestamp);
-
-    const interval = setInterval(() => {
-      setInternalNow((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentBlockTimestamp, nowOverride]);
-
-  const now = nowOverride ?? internalNow;
+  const now = nowOverride ?? Math.floor(chainNowMs / 1000);
   const isBlitz = getIsBlitz();
   const structureName = useMemo(() => {
     return getStructureName(structure.structure, isBlitz).name;
@@ -52,7 +38,10 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
         amount: divideByPrecision(resource.amount),
       }));
 
-      const secondsUntilArrival = Math.max(0, Number(arrival.arrivesAt) - now);
+      const secondsUntilArrival = Math.max(
+        0,
+        Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS - now,
+      );
       const isReady = secondsUntilArrival === 0;
 
       return {
