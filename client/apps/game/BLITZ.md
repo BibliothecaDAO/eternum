@@ -20,66 +20,50 @@ implementation plan (with concrete code pointers). Where details are missing, qu
 ### 1.1 Transfer desync (auto arrival triggering too soon)
 
 **Observed symptom**  
-Auto-offload (“auto arrival”) triggers before the arrival is actually claimable, causing a failed/pending tx and
-potentially a client “desync” experience.
+Auto-offload (“auto arrival”) triggers before the arrival is actually claimable, causing a failed/pending tx and a
+desync-ish UX (arrivals show “ready” but chain rejects/doesn’t apply yet).
 
-**Where in code**
+**How transfer/arrival time is calculated on the client (today)**  
+This is driven by the on-chain `ResourceArrival` component, not by the UI travel-time estimate:
 
-- Auto-claim loop + indicators: `client/apps/game/src/ui/store-managers.tsx` (`ResourceArrivalsStoreManager`)
-- Arrival schedule derivation: `packages/core/src/utils/resource-arrivals.ts` (`getAllArrivals` / `formatArrivals`)
-- Time source: `packages/core/src/utils/timestamp.ts` (`getBlockTimestamp()` uses `Date.now()`)
+- Client flattens `ResourceArrival.day` + `slot_1..slot_48` into `ResourceArrivalInfo[]` via
+  `packages/core/src/utils/resource-arrivals.ts` (`formatArrivals()`).
+- Each slot becomes an `arrivesAt` (seconds) computed from the configured delivery tick:
+  - `arrivesAt = day * TickIds.Delivery * 48 + slotNumber * TickIds.Delivery`
+- UI/auto-claim considers an arrival claimable when `nowSeconds >= arrivesAt (+ buffer)`.
 
-**Why this can happen in this codebase (likely contributors)**
+**Root cause in this codebase**
 
-- **Client time drift**: `getBlockTimestamp()` is derived from local wall clock, not chain time. If the user clock is
-  ahead, the client believes `now >= arrivesAt` earlier than the chain does, so it submits `arrivals_offload` too soon.
-- **Too-aggressive safety buffer**: auto-claim currently adds `configManager.getTick(TickIds.Default)` as a delay
-  (`blockDelaySeconds` in `client/apps/game/src/ui/store-managers.tsx`). If `TickIds.Default` is small, it may not cover
-  Torii/indexer lag (and it is not explicitly tied to delivery tick cadence).
-- **Potential BigInt/number mixing**: `ResourceArrivalInfo.arrivesAt` is a `bigint` (`packages/types/src/types/common.ts`)
-  but `updateArrivalIndicators()` compares `arrival.arrivesAt <= now` where `now` is a `number`
-  (`client/apps/game/src/ui/store-managers.tsx`). That can throw in JS and break the scheduler/indicators, amplifying
-  “desync” perception.
+- The previous `now` source for claimability was `getBlockTimestamp()` (`packages/core/src/utils/timestamp.ts`), which is
+  derived from the local wall clock (`Date.now()`).
+- If a player’s clock is ahead of the sequencer/indexer time, the client hits `now >= arrivesAt` early and submits
+  `arrivals_offload` too soon.
 
-**Proposed solution (preferred)**
+**Implemented solution (Option A + 5s buffer + 5s retry)**  
+Status: Implemented in code (no SQL).
 
-- Make arrival readiness use a **network-derived timestamp** (Torii/provider) instead of local time, plus a configurable
-  **safety buffer**.
-- Fix all `bigint` vs `number` comparisons consistently to avoid runtime exceptions.
+- Added a heartbeat-anchored chain time store: `client/apps/game/src/hooks/store/use-chain-time-store.ts`
+  - Anchors to `ProviderHeartbeat.timestamp` and advances using `performance.now()` deltas (monotonic).
+- Wired Torii/provider heartbeats into it: `client/apps/game/src/ui/shared/components/provider-heartbeat-watcher.tsx`
+- Switched arrival readiness + auto-claim to chain time and added a fixed leeway:
+  - Buffer: `RESOURCE_ARRIVAL_READY_BUFFER_SECONDS = 5` (`client/apps/game/src/ui/constants.ts`)
+  - Retry: `RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS = 5` (`client/apps/game/src/ui/constants.ts`)
+  - Auto-claim gating: `client/apps/game/src/ui/store-managers.tsx` (`ResourceArrivalsStoreManager`)
+  - Manual deposit gating: `client/apps/game/src/ui/features/economy/resources/deposit-resources.tsx`
+  - Countdown/UI readiness: `client/apps/game/src/ui/features/economy/resources/resource-arrival.tsx`
+- Normalized comparisons by casting `arrivesAt` to `Number(...)` at the comparison sites to avoid `bigint` vs `number`
+  runtime issues.
 
-**Implementation plan (M / Med risk)**
+**Validation checklist**
 
-1. **Fix BigInt comparisons**
-   - In `client/apps/game/src/ui/store-managers.tsx`, update `updateArrivalIndicators()` to compare using either
-     `Number(arrival.arrivesAt)` or `BigInt(now)`.
-   - Audit other arrival comparisons (e.g. `client/apps/game/src/ui/features/economy/resources/deposit-resources.tsx`)
-     to ensure they always `Number()` the BigInt side or use BigInt consistently.
-2. **Introduce a network-sourced “now”**
-   - Option A (preferred): derive current block timestamp from Torii/provider heartbeats and store it in a store
-     (e.g. `use-network-status-store` or a new `use-chain-time-store`).
-   - Option B: poll a lightweight endpoint for current block timestamp (if already available in Torii SQL).
-   - Use the network “now” (with drift correction) for auto-claim readiness and for UI countdowns.
-3. **Tune auto-claim readiness**
-   - Replace `blockDelaySeconds = configManager.getTick(TickIds.Default)` with a dedicated constant
-     (e.g. `AUTO_CLAIM_SAFETY_BUFFER_SECONDS = 10–30`) or tie to `TickIds.Delivery`.
-   - Add “desync aware” gating: if network status is desynced/pending-tx, pause auto-claims.
-4. **Improve backoff semantics**
-   - Current retry uses `retryDelaySeconds = max(blockDelaySeconds, 1)`; move to exponential backoff capped at e.g. 60s
-     per arrival key.
-5. **Add debug instrumentation**
-   - In dev builds, log `{ arrivalKey, arrivesAt, now, driftSeconds }` when submitting offloads.
-
-**Validation**
-
-- With a skewed system clock (±60s), auto-claim should not submit early.
-- No runtime exceptions from BigInt/number comparisons.
-- Auto-claim submits once per arrival and doesn’t spam failures under Torii lag.
+- Set local system clock +60s and confirm auto-claim does not trigger early.
+- Observe auto-claim attempts retry at ~5s intervals after a failure (not every second).
+- Confirm the UI “ready” state matches the 5s buffer (ready slightly after the slot time, not before).
 
 **Questions**
 
-- Is this repro’d mostly on specific machines/browsers (clock drift), or universally?
-- When it happens, do you see reverted txs for `arrivals_offload`, or do they hang pending?
-- What’s the expected UX: always auto-claim, or only when player is idle / not in combat?
+- Is the 5s buffer enough on production Torii, or should it be 10–15s?
+- Should auto-claim pause when `NetworkDesyncIndicator` is active (pending tx / forced desync)?
 
 ---
 
@@ -87,49 +71,38 @@ potentially a client “desync” experience.
 
 **Observed symptom**  
 On capturing (“capping”) a hyperstructure, an `allocate_shares` transaction is triggered automatically and appears
-un-actionable (likely an unexpected wallet prompt or stuck internal tx state).
+un-actionable (unexpected wallet prompt, stuck queue, or modal weirdness).
 
 **Where in code**
 
 - Auto allocation component: `client/apps/game/src/ui/features/world/components/hyperstructures/blitz-hyperstructure-shareholder.tsx`
-- Mounted globally: `client/apps/game/src/ui/layouts/world.tsx` (`<BlitzSetHyperstructureShareholdersTo100 />`)
-- Share tx messaging: `client/apps/game/src/ui/shared/components/tx-emit.tsx` (`TransactionType.SET_CO_OWNERS`)
+  - `BlitzSetHyperstructureShareholdersTo100` calls `allocate_shares` when you own a hyperstructure but aren’t at 100%
 
 **Why this can happen in this codebase**
 
-- The component executes `allocate_shares` inside a `useEffect` whenever `ownedHyperstructures` changes (including right
-  after a capture), with no explicit user intent, no gating on wallet type, and no queueing relative to the capture tx.
-- If the capture is optimistic / pending, ownership might not be final, making the call revert or produce a confusing
-  prompt.
+- The auto-allocation runs in a `useEffect` reacting to “newly owned hyperstructure”.
+- Immediately after a capture tx, wallet/provider state can still be busy (pending tx), and firing a second tx can be
+  confusing (or blocked by the wallet/provider queue).
 
-**Proposed solution (preferred)**
+**Implemented mitigation (leeway after capture)**  
+Status: Implemented (mitigation).
 
-- Remove “silent auto-tx” behavior. Either:
-  1. **Contract-side fix**: ensure new/captured hyperstructures default to `[(owner, 100%)]` (best, but contract change),
-     or
-  2. **Client-side UX fix**: prompt once (“Set shares to 100%?”) and run it on user click, not automatically.
+- Added a fixed 5s delay after detecting a newly owned hyperstructure before attempting `allocate_shares`:
+  - `ALLOCATE_SHARES_AFTER_CAPTURE_DELAY_MS = 5000` in
+    `client/apps/game/src/ui/features/world/components/hyperstructures/blitz-hyperstructure-shareholder.tsx`
 
-**Implementation plan (S/M / Med risk)**
+**If the issue persists (next steps)**
 
-1. Add hard gates in `client/apps/game/src/ui/features/world/components/hyperstructures/blitz-hyperstructure-shareholder.tsx`:
-   - skip if `account.address === "0x0"` or no signer
-   - skip if provider has a pending tx queue
-   - skip if the hyperstructure was already processed in this session (track in `useRef<Set<ID>>()`)
-2. Replace auto execution with an explicit UX surface:
-   - Add a small banner/button inside the hyperstructure panel (or a toast) to “Normalize shares (100%)”.
-   - Only auto-run if the account is a burner / auto-sign account (if the provider exposes that signal).
-3. Longer-term: consider a contract/system change so capture/creation sets shares automatically.
-
-**Validation**
-
-- Capturing a hyperstructure no longer triggers unexpected `allocate_shares` prompts.
-- If the user chooses to normalize shares, tx is actionable and succeeds.
+1. Gate auto-allocation behind “no pending tx / not desynced” (use `useNetworkStatusStore.status`).
+2. Make it user-driven instead of automatic:
+   - Show a toast/banner “Set shares to 100%” after capture and only submit on click.
+3. Add per-hyperstructure “already attempted” persistence for the session to avoid repeated prompts.
 
 **Questions**
 
-- Is this strictly a Blitz behavior requirement, or should it apply in Eternum too?
 - What does “can’t do anything with” mean exactly: wallet prompt never appears, appears behind overlay, or tx is stuck in
-  internal queue?
+  an internal queue?
+- Do you want this to be fully automatic, or a one-click prompt after capture?
 
 ---
 
@@ -145,31 +118,25 @@ changes.
   - `updateStructureLabelData()` builds a `dataKey` for skipping DOM updates
   - `guardKey` currently uses `slot:category:tier:count` but not stamina
 - Guard label UI includes stamina bars: `client/apps/game/src/three/utils/labels/label-factory.ts`
-  - `createGuardArmyDisplay()` (via `label-components`) uses `stamina`
-- Structure updates come from:
-  - `packages/core/src/systems/world-update-listener.ts` (`Structure.onStructureUpdate`)
-  - consumed in `client/apps/game/src/three/scenes/worldmap.tsx` (`Structure.onStructureUpdate` subscription)
+  - `createGuardArmyDisplay()` reads `stamina`
 
 **Why this can happen in this codebase**
 
-- `StructureLabelType` displays stamina (bars) but the dirty-key omits stamina, so stamina-only changes won’t re-render.
-- After combat, stamina changes are very likely even when troop counts don’t.
+- Label renders stamina, but the dirty-key does not include stamina, so stamina-only changes won’t re-render.
 
 **Proposed solution**
 
-- Include stamina (and any other label-relevant fields) in the label `dataKey`.
+- Include stamina (and any other label-driven fields) in the label `dataKey`.
 
 **Implementation plan (S / Low risk)**
 
 1. In `client/apps/game/src/three/managers/structure-manager.ts`, update:
    - `guardKey` to include stamina (e.g. `${slot}:${category}:${tier}:${count}:${stamina}`).
-2. (Optional) Include any other label-driven fields not currently covered (e.g. guildName if shown).
-3. Validate that performance impact is acceptable (this increases update frequency, but still gated by visibility).
+2. (Optional) Include any other label-driven fields not currently covered (ownership marker, guild tag, etc).
 
 **Validation**
 
-- After a fight, defense stamina bars and any “cooldown” indicators update without requiring a chunk refresh.
-- After reinforcement, label matches selected panel immediately.
+- After combat or reinforcement, label state (counts + stamina bars) updates immediately without needing a chunk refresh.
 
 **Questions**
 
@@ -240,30 +207,34 @@ causing relics to be stranded/lost.
 - If the source explorer ends up at 0 troops and gets removed/invalidated, relics attached to that explorer become hard
   to recover.
 
-**Proposed solution (safe UX-first)**
+**Implemented solution (auto-transfer relics when explorer will be deleted)**  
+Status: Implemented.
 
-- Detect “source explorer has relics AND this operation will empty it” and enforce relic transfer first (or batch).
+- In `client/apps/game/src/ui/features/military/components/transfer-troops-container.tsx`, when the transfer direction
+  is **Explorer → Explorer** or **Explorer → Structure** and the selected explorer’s troop `count` will reach `0` after
+  the swap, the client **auto-transfers all relic balances** off the explorer first via adjacent resource transfer:
+  - Explorer → Explorer: `troop_troop_adjacent_transfer`
+  - Explorer → Structure: `troop_structure_adjacent_transfer`
+- Relic balances are derived from the explorer `Resource` component (Torii client) by iterating `RELICS` ids and reading
+  balances via `ResourceManager.balanceWithProduction(...)`.
 
-**Implementation plan (M / Med risk)**
+**Behavior**
 
-1. Add preflight checks in `client/apps/game/src/ui/features/military/components/transfer-troops-container.tsx`:
-   - Determine the “from explorer id” for the chosen direction.
-   - Determine if `troopAmount` equals the explorer’s current troop count.
-   - Lookup relics for that explorer from `useUIStore.playerRelics.armies`.
-2. If relics exist and transfer would empty the explorer:
-   - Block the action with an inline warning panel and disable the submit button.
-   - Provide CTA: “Transfer relics first” that switches the Help modal to the Relics tab (or deep-links).
-3. (If supported by the underlying provider): build a single multi-call:
-   - transfer relics → transfer troops.
+- If relic transfer fails (capacity/ownership/etc), the troop transfer is not executed (prevents explorer deletion and
+  relic loss).
+- If the explorer has no relics, troop transfer behavior is unchanged.
 
 **Validation**
 
-- Explorers with relics cannot be emptied via troop transfer unless relics are moved first.
+- Emptying a relic-holding explorer via troop transfer results in relics landing on the destination entity before the
+  explorer is deleted.
 
 **Questions**
 
-- Should this guard apply only when emptying the explorer, or always warn on any troop transfer from a relic-holder?
-- Are relics expected to follow troops automatically in-game design, or remain independent assets?
+- Should we apply the same safeguard to any other flow that can delete an explorer (outside of
+  `transfer-troops-container.tsx`)?
+- Should the auto-transfer include only relic ids “valid” for the destination type, or always transfer all relic ids
+  to avoid loss? (Current behavior: transfer all relic ids found on the explorer.)
 
 ---
 
@@ -726,4 +697,3 @@ The Three scene never reacts to store-driven `selectedHex` updates unless the se
 3. **1.5 (relic safety)**: prevents asset-loss scenarios.
 4. **1.1 (auto arrival timing)**: more involved, but reduces desync/pending tx pain.
 5. QoL buttons: **2.3 (send donkeys)**, **2.2 (plunder camp)**, then header/notifications polish.
-
