@@ -3066,12 +3066,7 @@ export default class WorldmapScene extends HexagonScene {
     const structuresToSync: { entityId: number; position: { col: number; row: number } }[] = [];
 
     for (const structure of mapDataStore.getAllStructures()) {
-      if (
-        structure.coordX < minX ||
-        structure.coordX > maxX ||
-        structure.coordY < minY ||
-        structure.coordY > maxY
-      ) {
+      if (structure.coordX < minX || structure.coordX > maxX || structure.coordY < minY || structure.coordY > maxY) {
         continue;
       }
 
