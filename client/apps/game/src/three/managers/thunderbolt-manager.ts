@@ -12,15 +12,19 @@ interface ThunderBoltConfig {
   debug: boolean;
 }
 
-interface LightningSegment {
+interface LightningLayer {
   mesh: THREE.Mesh;
   material: THREE.MeshBasicMaterial;
+}
+
+interface LightningSegment {
+  layers: LightningLayer[]; // Multiple layers: core, body, glow
 }
 
 interface ActiveThunderBolt {
   group: THREE.Group;
   segments: LightningSegment[];
-  glow?: THREE.Mesh;
+  glow?: THREE.Group;
   startTime: number;
   duration: number;
   hexPosition: HexPosition;
@@ -106,8 +110,8 @@ export class ThunderBoltManager {
 
   private generateBranchPaths(mainPath: THREE.Vector3[], height: number): THREE.Vector3[][] {
     const branches: THREE.Vector3[][] = [];
-    const branchCount = Math.random() < 0.5 ? 1 : 2;
-    const minIndex = Math.floor(mainPath.length * 0.35);
+    const branchCount = 2 + Math.floor(Math.random() * 2); // 2-3 main branches
+    const minIndex = Math.floor(mainPath.length * 0.25);
     const maxIndex = Math.floor(mainPath.length * 0.85);
 
     if (maxIndex <= minIndex) {
@@ -117,85 +121,203 @@ export class ThunderBoltManager {
     for (let i = 0; i < branchCount; i++) {
       const anchorIndex = THREE.MathUtils.randInt(minIndex, maxIndex);
       const anchor = mainPath[anchorIndex];
-      const branchLength = height * (0.25 + Math.random() * 0.2);
-      const segmentCount = 3 + Math.floor(Math.random() * 3);
+      const branchLength = height * (0.2 + Math.random() * 0.25);
+      const segmentCount = 4 + Math.floor(Math.random() * 3);
+
+      // Direction tends outward and slightly downward
       const direction = new THREE.Vector3(
-        Math.random() - 0.5,
-        0.6 + Math.random() * 0.6,
-        Math.random() - 0.5,
+        (Math.random() - 0.5) * 1.5,
+        0.3 + Math.random() * 0.5,
+        (Math.random() - 0.5) * 1.5,
       ).normalize();
 
       const branch: THREE.Vector3[] = [anchor.clone()];
       const step = branchLength / segmentCount;
 
       for (let j = 1; j <= segmentCount; j++) {
+        const jitter = step * (0.3 + (j / segmentCount) * 0.4); // More jitter toward end
         const stepPoint = anchor
           .clone()
           .add(direction.clone().multiplyScalar(step * j))
           .add(
             new THREE.Vector3(
-              (Math.random() - 0.5) * step,
-              (Math.random() - 0.5) * step * 0.5,
-              (Math.random() - 0.5) * step,
+              (Math.random() - 0.5) * jitter,
+              (Math.random() - 0.5) * jitter * 0.5,
+              (Math.random() - 0.5) * jitter,
             ),
           );
         branch.push(stepPoint);
       }
 
       branches.push(branch);
+
+      // Add sub-branches (smaller forks off main branches)
+      if (Math.random() < 0.6 && branch.length > 3) {
+        const subAnchorIndex = Math.floor(branch.length * (0.3 + Math.random() * 0.4));
+        const subAnchor = branch[subAnchorIndex];
+        const subLength = branchLength * 0.4;
+        const subSegments = 2 + Math.floor(Math.random() * 2);
+
+        const subDirection = new THREE.Vector3(
+          direction.x + (Math.random() - 0.5) * 0.8,
+          direction.y * 0.5,
+          direction.z + (Math.random() - 0.5) * 0.8,
+        ).normalize();
+
+        const subBranch: THREE.Vector3[] = [subAnchor.clone()];
+        const subStep = subLength / subSegments;
+
+        for (let k = 1; k <= subSegments; k++) {
+          const subPoint = subAnchor
+            .clone()
+            .add(subDirection.clone().multiplyScalar(subStep * k))
+            .add(
+              new THREE.Vector3(
+                (Math.random() - 0.5) * subStep * 0.5,
+                (Math.random() - 0.5) * subStep * 0.3,
+                (Math.random() - 0.5) * subStep * 0.5,
+              ),
+            );
+          subBranch.push(subPoint);
+        }
+
+        branches.push(subBranch);
+      }
     }
 
     return branches;
   }
 
-  private createLightningSegment(points: THREE.Vector3[], radius: number): LightningSegment {
+  /**
+   * Create a multi-layered lightning segment with core, body, and glow
+   * @param points - Path points for the lightning
+   * @param baseRadius - Base radius (will be scaled for each layer)
+   * @param isBranch - Whether this is a branch (thinner, less prominent)
+   */
+  private createLightningSegment(
+    points: THREE.Vector3[],
+    baseRadius: number,
+    isBranch: boolean = false,
+  ): LightningSegment {
     const curve = new THREE.CatmullRomCurve3(points);
     const tubularSegments = Math.max(12, points.length * 2);
-    const tube = new THREE.TubeGeometry(curve, tubularSegments, radius, 6, false);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xbedbff,
-      transparent: true,
-      opacity: 0.85,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
+    const layers: LightningLayer[] = [];
 
-    const mesh = new THREE.Mesh(tube, material);
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
+    // Layer configuration based on whether it's main bolt or branch
+    const layerConfigs = isBranch
+      ? [
+          // Branch: simpler, 2 layers
+          { radiusMult: 0.4, color: 0xffffff, opacity: 0.9, radialSegments: 4 }, // Core
+          { radiusMult: 1.0, color: 0xaaccff, opacity: 0.4, radialSegments: 5 }, // Glow
+        ]
+      : [
+          // Main bolt: 3 layers for dramatic effect
+          { radiusMult: 0.25, color: 0xffffff, opacity: 1.0, radialSegments: 4 }, // Bright core
+          { radiusMult: 0.6, color: 0xddeeff, opacity: 0.7, radialSegments: 5 }, // Body
+          { radiusMult: 1.5, color: 0x88aadd, opacity: 0.25, radialSegments: 6 }, // Outer glow
+        ];
 
-    return { mesh, material };
+    for (const config of layerConfigs) {
+      const radius = baseRadius * config.radiusMult;
+      const tube = new THREE.TubeGeometry(curve, tubularSegments, radius, config.radialSegments, false);
+      const material = new THREE.MeshBasicMaterial({
+        color: config.color,
+        transparent: true,
+        opacity: config.opacity,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+      const mesh = new THREE.Mesh(tube, material);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+
+      layers.push({ mesh, material });
+    }
+
+    return { layers };
   }
 
-  private createImpactGlow(radius: number): THREE.Mesh {
-    const geometry = new THREE.CircleGeometry(radius, 16);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x97c2ff,
+  private createImpactGlow(radius: number): THREE.Group {
+    const glowGroup = new THREE.Group();
+
+    // Inner bright core
+    const coreGeometry = new THREE.CircleGeometry(radius * 0.3, 16);
+    const coreMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.9,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    const glow = new THREE.Mesh(geometry, material);
-    glow.rotation.x = -Math.PI / 2;
-    glow.castShadow = false;
-    glow.receiveShadow = false;
-    glow.position.y = 0.02;
-    return glow;
+    const core = new THREE.Mesh(coreGeometry, coreMaterial);
+    core.rotation.x = -Math.PI / 2;
+    core.position.y = 0.03;
+    glowGroup.add(core);
+
+    // Middle glow
+    const midGeometry = new THREE.CircleGeometry(radius * 0.7, 16);
+    const midMaterial = new THREE.MeshBasicMaterial({
+      color: 0xaaccff,
+      transparent: true,
+      opacity: 0.5,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const mid = new THREE.Mesh(midGeometry, midMaterial);
+    mid.rotation.x = -Math.PI / 2;
+    mid.position.y = 0.02;
+    glowGroup.add(mid);
+
+    // Outer soft glow
+    const outerGeometry = new THREE.CircleGeometry(radius * 1.5, 16);
+    const outerMaterial = new THREE.MeshBasicMaterial({
+      color: 0x6688bb,
+      transparent: true,
+      opacity: 0.25,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const outer = new THREE.Mesh(outerGeometry, outerMaterial);
+    outer.rotation.x = -Math.PI / 2;
+    outer.position.y = 0.01;
+    glowGroup.add(outer);
+
+    return glowGroup;
+  }
+
+  private updateGlowOpacity(glow: THREE.Group, multiplier: number): void {
+    const opacities = [0.9, 0.5, 0.25]; // Core, mid, outer base opacities
+    let index = 0;
+    glow.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const mat = child.material as THREE.MeshBasicMaterial;
+        mat.opacity = opacities[index] * multiplier;
+        index++;
+      }
+    });
   }
 
   private disposeThunderBolt(bolt: ActiveThunderBolt): void {
     bolt.segments.forEach((segment) => {
-      bolt.group.remove(segment.mesh);
-      segment.material.dispose();
-      segment.mesh.geometry.dispose();
+      segment.layers.forEach((layer) => {
+        bolt.group.remove(layer.mesh);
+        layer.material.dispose();
+        layer.mesh.geometry.dispose();
+      });
     });
 
     if (bolt.glow) {
+      bolt.glow.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
       bolt.group.remove(bolt.glow);
-      (bolt.glow.material as THREE.Material).dispose();
-      bolt.glow.geometry.dispose();
     }
 
     this.thunderBolts.remove(bolt.group);
@@ -236,14 +358,16 @@ export class ThunderBoltManager {
     const boltGroup = new THREE.Group();
     const segments: LightningSegment[] = [];
 
-    const mainSegment = this.createLightningSegment(mainPath, 0.12);
+    // Create main bolt with layered glow (not a branch)
+    const mainSegment = this.createLightningSegment(mainPath, 0.15, false);
     segments.push(mainSegment);
-    boltGroup.add(mainSegment.mesh);
+    mainSegment.layers.forEach((layer) => boltGroup.add(layer.mesh));
 
+    // Create branches (thinner, simpler)
     branches.forEach((branch) => {
-      const branchSegment = this.createLightningSegment(branch, 0.08);
+      const branchSegment = this.createLightningSegment(branch, 0.08, true);
       segments.push(branchSegment);
-      boltGroup.add(branchSegment.mesh);
+      branchSegment.layers.forEach((layer) => boltGroup.add(layer.mesh));
     });
 
     const glow = this.createImpactGlow(0.55 + Math.random() * 0.25);
@@ -352,31 +476,45 @@ export class ThunderBoltManager {
         const fadeIn = Math.min(1, progress / 0.15);
         const fadeOut = progress > 0.35 ? 1 - (progress - 0.35) / 0.65 : 1;
         const flicker = 0.65 + Math.sin(elapsed * thunderBolt.flickerSpeed * 0.015) * 0.35;
-        const opacity = THREE.MathUtils.clamp(fadeIn * fadeOut * (0.7 + flicker * 0.3), 0.05, 1);
+        const baseFade = fadeIn * fadeOut;
         const intensity = THREE.MathUtils.lerp(0.8, 1.35, flicker);
 
-        thunderBolt.segments.forEach(({ material }) => {
-          material.opacity = opacity;
-          material.color.setRGB(intensity, intensity * 0.86, 1.0);
+        // Update all layers in each segment
+        thunderBolt.segments.forEach((segment) => {
+          segment.layers.forEach((layer, layerIndex) => {
+            // Core layers (index 0) stay brighter, outer layers fade more
+            const layerFade = layerIndex === 0 ? 1.0 : 0.7 + layerIndex * 0.1;
+            const opacity = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade, 0.02, 1);
+            layer.material.opacity = opacity * (layer.material.opacity > 0.5 ? 1.0 : 0.8);
+
+            // Only tint non-white layers
+            if (layerIndex > 0) {
+              layer.material.color.setRGB(intensity * 0.9, intensity * 0.85, 1.0);
+            }
+          });
         });
 
         if (thunderBolt.glow) {
-          const glowMaterial = thunderBolt.glow.material as THREE.MeshBasicMaterial;
-          glowMaterial.opacity = opacity * 0.6;
+          this.updateGlowOpacity(thunderBolt.glow, baseFade * flicker);
         }
       } else {
         // For persistent bolts, just keep them flickering
         const intensity = Math.sin(elapsed * thunderBolt.flickerSpeed * 0.015) * 0.4 + 1.0;
-        const opacity = 0.75 + Math.sin(elapsed * thunderBolt.flickerSpeed * 0.006) * 0.2;
+        const baseOpacity = 0.75 + Math.sin(elapsed * thunderBolt.flickerSpeed * 0.006) * 0.2;
 
-        thunderBolt.segments.forEach(({ material }) => {
-          material.opacity = opacity;
-          material.color.setRGB(intensity, intensity * 0.88, 1.05);
+        thunderBolt.segments.forEach((segment) => {
+          segment.layers.forEach((layer, layerIndex) => {
+            const layerMult = layerIndex === 0 ? 1.0 : 0.6;
+            layer.material.opacity = baseOpacity * layerMult;
+
+            if (layerIndex > 0) {
+              layer.material.color.setRGB(intensity, intensity * 0.88, 1.05);
+            }
+          });
         });
 
         if (thunderBolt.glow) {
-          const glowMaterial = thunderBolt.glow.material as THREE.MeshBasicMaterial;
-          glowMaterial.opacity = opacity * 0.55;
+          this.updateGlowOpacity(thunderBolt.glow, baseOpacity);
         }
       }
     }

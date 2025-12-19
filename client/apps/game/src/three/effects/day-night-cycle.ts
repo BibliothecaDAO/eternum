@@ -348,12 +348,16 @@ export class DayNightCycleManager {
     // 75 = sunset (western horizon)
     // 100 = midnight (below horizon)
 
-    const angle = (progress / 100) * Math.PI * 2;
+    // Offset angle by π so that:
+    // - progress=0 (midnight): cos(π) = -1 → sun below horizon
+    // - progress=50 (noon): cos(0) = 1 → sun at peak
+    const angle = (progress / 100) * Math.PI * 2 + Math.PI;
 
     // Calculate sun position offset in an arc
+    // Using -cos for Y so sun is LOW at midnight, HIGH at noon
     const offsetX = Math.sin(angle) * this.params.sunDistance;
-    const offsetY = Math.cos(angle) * this.params.sunHeight;
-    const offsetZ = Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
+    const offsetY = -Math.cos(angle) * this.params.sunHeight;
+    const offsetZ = -Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
 
     // Calculate target sun position and target
     let targetSunPosition: Vector3;
@@ -380,6 +384,44 @@ export class DayNightCycleManager {
     this.directionalLight.position.copy(this.currentSunPosition);
     this.directionalLight.target.position.copy(this.currentSunTarget);
     this.directionalLight.target.updateMatrixWorld();
+  }
+
+  /**
+   * Apply weather modulation to lighting
+   * Call this after update() to overlay weather effects on the day/night cycle
+   *
+   * @param skyDarkness - How much to darken the sky (0-1)
+   * @param fogDensity - How much to increase fog density (0-1)
+   * @param sunOcclusion - How much clouds block the sun (0-1)
+   */
+  applyWeatherModulation(skyDarkness: number, fogDensity: number, sunOcclusion: number = 0): void {
+    if (!this.params.enabled) return;
+
+    // Darken sky color based on weather
+    if (skyDarkness > 0) {
+      const currentSky = this.scene.background as Color;
+      const darkenFactor = 1 - skyDarkness * 0.5; // Max 50% darkening
+      currentSky.multiplyScalar(darkenFactor);
+    }
+
+    // Reduce sun intensity (clouds blocking light)
+    if (sunOcclusion > 0) {
+      const reductionFactor = 1 - sunOcclusion * 0.4; // Max 40% reduction
+      this.directionalLight.intensity *= reductionFactor;
+      // Also soften shadows by reducing contrast
+      this.hemisphereLight.intensity *= 1 + sunOcclusion * 0.3; // Increase ambient to fill shadows
+    }
+
+    // Increase fog density for storm atmosphere
+    if (fogDensity > 0) {
+      const fogIncrease = fogDensity * 0.4; // Max 40% closer fog
+      this.fog.near *= 1 - fogIncrease;
+      this.fog.far *= 1 - fogIncrease * 0.5;
+
+      // Tint fog slightly gray-blue during storms
+      const stormTint = new Color(0x606880);
+      this.fog.color.lerp(stormTint, fogDensity * 0.3);
+    }
   }
 
   /**

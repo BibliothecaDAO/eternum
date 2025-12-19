@@ -1,14 +1,14 @@
 import { POLLING_INTERVALS } from "@/config/polling";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import {
-  configManager,
   formatArmies,
   getAddressName,
   getAllArrivals,
-  getBlockTimestamp,
   getEntityIdFromKeys,
   getEntityInfo,
   getGuildFromPlayerAddress,
@@ -18,7 +18,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
-import { ContractAddress, ResourceArrivalInfo, TickIds, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
@@ -32,6 +32,7 @@ const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
   const setPendingArrivalsNumber = useUIStore((state) => state.setPendingArrivalsNumber);
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
   const {
     account: { account },
     setup: { components, systemCalls },
@@ -44,15 +45,17 @@ const ResourceArrivalsStoreManager = () => {
 
   const updateArrivalIndicators = useCallback(
     (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
-      const now = nowOverride ?? getBlockTimestamp().currentBlockTimestamp;
+      const now = nowOverride ?? getChainNowSeconds();
       const filteredArrivals = arrivals.filter((arrival) => !autoClaimedArrivals.current.has(getArrivalKey(arrival)));
-      const arrived = filteredArrivals.filter((arrival) => arrival.arrivesAt <= now);
+      const arrived = filteredArrivals.filter(
+        (arrival) => now >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS,
+      );
       const pending = Math.max(filteredArrivals.length - arrived.length, 0);
 
       setArrivedArrivalsNumber(arrived.length);
       setPendingArrivalsNumber(pending);
     },
-    [setArrivedArrivalsNumber, setPendingArrivalsNumber],
+    [getChainNowSeconds, setArrivedArrivalsNumber, setPendingArrivalsNumber],
   );
 
   const scheduleNextAutoClaim = useCallback(() => {
@@ -139,13 +142,12 @@ const ResourceArrivalsStoreManager = () => {
       });
       staleFailureKeys.forEach((key) => lastFailureRef.current.delete(key));
 
-      const blockDelaySeconds = Number(configManager.getTick(TickIds.Default));
-      const retryDelaySeconds = Math.max(blockDelaySeconds, 1);
-      const now = getBlockTimestamp().currentBlockTimestamp;
+      const retryDelaySeconds = RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS;
+      const now = getChainNowSeconds();
       updateArrivalIndicators(arrivals, now);
       const readyArrivals = arrivals
         .filter((arrival) => arrival.resources.length > 0)
-        .filter((arrival) => now >= Number(arrival.arrivesAt) + blockDelaySeconds);
+        .filter((arrival) => now >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS);
 
       if (readyArrivals.length === 0) {
         scheduleNextAutoClaim();
@@ -194,7 +196,15 @@ const ResourceArrivalsStoreManager = () => {
       }
       isAutoClaimingRef.current = false;
     };
-  }, [account?.address, components, systemCalls, playerStructures, scheduleNextAutoClaim]);
+  }, [
+    account,
+    components,
+    getChainNowSeconds,
+    playerStructures,
+    scheduleNextAutoClaim,
+    systemCalls,
+    updateArrivalIndicators,
+  ]);
 
   return null;
 };

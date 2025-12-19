@@ -11,7 +11,6 @@ import { Shield, Sword } from "lucide-react";
 import { useMemo } from "react";
 import { ArmyChip } from "./army-chip";
 import { CompactDefenseDisplay } from "./compact-defense-display";
-import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 export const ArmyList = ({ structure }: { structure: ComponentValue<ClientComponents["Structure"]["schema"]> }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -22,7 +21,7 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
   });
 
   const { data: guardsData } = useQuery({
-    queryKey: ["guards", "with-empty", String(structureId)],
+    queryKey: ["guards", String(structureId)],
     queryFn: async () => {
       if (!structureId) return [];
       return await sqlApi.fetchGuardsByStructure(structureId);
@@ -51,20 +50,21 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
   const hasExistingGuards = guards.length > 0;
   const canOpenDefenseModal = !isDefenseFull || hasExistingGuards;
 
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
 
   const handleCreateAttack = () => {
-    toggleModal(<UnifiedArmyCreationModal structureId={structureId} isExplorer={true} />);
+    openArmyCreationPopup({
+      structureId,
+      isExplorer: true,
+    });
   };
 
   const handleCreateDefense = () => {
-    toggleModal(
-      <UnifiedArmyCreationModal
-        structureId={structureId}
-        isExplorer={false}
-        maxDefenseSlots={structure.base.troop_max_guard_count}
-      />,
-    );
+    openArmyCreationPopup({
+      structureId,
+      isExplorer: false,
+      maxDefenseSlots: structure.base.troop_max_guard_count,
+    });
   };
 
   return (

@@ -452,6 +452,24 @@ export const SettingsWindow = () => {
                 onChange={(value) => setCategoryVolume(AudioCategory.RESOURCE, value / 100)}
                 title="Resource Effects"
               />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.BUILDING] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.BUILDING, value / 100)}
+                title="Building Effects"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.AMBIENT] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.AMBIENT, value / 100)}
+                title="Ambient"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.ENVIRONMENT] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.ENVIRONMENT, value / 100)}
+                title="Weather"
+              />
             </div>
           </section>
 

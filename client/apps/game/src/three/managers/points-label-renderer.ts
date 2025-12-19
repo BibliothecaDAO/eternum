@@ -45,6 +45,7 @@ export class PointsLabelRenderer {
   private frustumManager?: FrustumManager;
   private unsubscribeFrustum?: () => void;
   private boundsDirty = true;
+  private batchMode = false; // When true, setPoint() skips refreshFrustumVisibility()
 
   constructor(
     scene: THREE.Scene,
@@ -120,6 +121,23 @@ export class PointsLabelRenderer {
   }
 
   /**
+   * Begin batch mode - setPoint() calls will not trigger refreshFrustumVisibility()
+   * Call endBatch() when done to apply all updates at once
+   */
+  public beginBatch(): void {
+    this.batchMode = true;
+  }
+
+  /**
+   * End batch mode and apply all pending updates
+   * Calls refreshFrustumVisibility() once for all batched setPoint() calls
+   */
+  public endBatch(): void {
+    this.batchMode = false;
+    this.refreshFrustumVisibility();
+  }
+
+  /**
    * Add or update a point label
    */
   public setPoint(config: PointLabelConfig): void {
@@ -161,7 +179,11 @@ export class PointsLabelRenderer {
     // Update draw range
     this.geometry.setDrawRange(0, this.currentCount);
     this.boundsDirty = true;
-    this.refreshFrustumVisibility();
+
+    // Skip refresh in batch mode - will be called once in endBatch()
+    if (!this.batchMode) {
+      this.refreshFrustumVisibility();
+    }
   }
 
   /**

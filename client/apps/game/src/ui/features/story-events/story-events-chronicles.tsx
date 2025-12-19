@@ -1,10 +1,5 @@
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import {
-  ProcessedStoryEvent,
-  useStoryEvents,
-  useStoryEventsError,
-  useStoryEventsLoading,
-} from "@/hooks/store/use-story-events-store";
+import { ProcessedStoryEvent, useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { sqlApi } from "@/services/api";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -780,10 +775,11 @@ const groupEventsByDate = (events: ProcessedStoryEvent[]) => {
   return groups;
 };
 
+const STORY_EVENTS_LIMIT = 350;
+
 export const StoryEventsChronicles: React.FC = () => {
-  const storyEvents = useStoryEvents(350);
-  const isLoading = useStoryEventsLoading();
-  const error = useStoryEventsError();
+  // Single query - destructure what we need
+  const { data, isLoading, error, refetch } = useStoryEvents(STORY_EVENTS_LIMIT);
   const { setup } = useDojo();
   const { isMapView } = useQuery();
   const goToStructure = useGoToStructure(setup);
@@ -815,7 +811,7 @@ export const StoryEventsChronicles: React.FC = () => {
     }
   }, [mapDataStore]);
 
-  const allEvents = storyEvents.data ?? [];
+  const allEvents = data ?? [];
 
   const getEventLocation = useCallback(
     (event: ProcessedStoryEvent | null): EventLocation | null => {
@@ -929,8 +925,8 @@ export const StoryEventsChronicles: React.FC = () => {
   const highlightedLocation = useMemo(() => getEventLocation(highlightedEvent), [getEventLocation, highlightedEvent]);
 
   const handleRefresh = useCallback(() => {
-    storyEvents.refetch();
-  }, [storyEvents]);
+    refetch();
+  }, [refetch]);
 
   const handleResetFilters = useCallback(() => {
     setFilterState({ searchTerm: "", storyType: "all", sortOrder: "newest" });

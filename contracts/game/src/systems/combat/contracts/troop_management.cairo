@@ -144,6 +144,7 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
+                true
             );
 
             StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
@@ -335,6 +336,25 @@ pub mod troop_management_systems {
 
             // add troops to explorer
             explorer.troops.count += amount;
+
+            // reintialize troop stamina
+            let tick = TickImpl::get_tick_interval(ref world);
+            let current_tick: u64 = tick.current();
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            explorer
+                .troops
+                .stamina
+                .refill(
+                    ref explorer.troops.boosts,
+                    explorer.troops.category,
+                    explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
+
+            explorer.troops.stamina.revert_initial_amount(troop_stamina_config, current_tick);
+
+            // update explorer model
             world.write_model(@explorer);
 
             // update troop capacity
@@ -705,6 +725,7 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
+                false
             );
             StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
             StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);

@@ -11,9 +11,22 @@ export class AudioManager {
   private activeSources: Set<AudioBufferSourceNode> = new Set();
   private musicSources: Set<AudioBufferSourceNode> = new Set(); // Track music sources separately
   private musicGainNodes: Map<AudioBufferSourceNode, GainNode> = new Map();
+  private sourceGainNodes: Map<AudioBufferSourceNode, GainNode> = new Map(); // Track ALL per-play gain nodes for cleanup
   private poolManager: AudioPoolManager | null = null;
   private state: AudioState;
   private static readonly STORAGE_KEY = "ETERNUM_AUDIO_SETTINGS";
+
+  // Variation tracking to avoid immediate repeats
+  private lastPlayedVariation: Map<string, number> = new Map();
+
+  // Anti-spam: track last play time per asset to prevent rapid repeats
+  private lastPlayTime: Map<string, number> = new Map();
+
+  // Ramp duration for volume changes to prevent clicks/pops (in seconds)
+  private static readonly VOLUME_RAMP_DURATION = 0.015; // 15ms
+
+  // Minimum interval between repeated plays of the same sound (in milliseconds)
+  private static readonly MIN_REPEAT_INTERVAL_MS = 50;
 
   private constructor() {
     this.state = this.loadPersistedState();
@@ -34,9 +47,9 @@ export class AudioManager {
         [AudioCategory.UI]: 0.5, // Reduced from 0.8 - clear but not overpowering
         [AudioCategory.RESOURCE]: 0.5, // Reduced from 0.6 - frequent actions
         [AudioCategory.BUILDING]: 0.5, // Reduced from 0.6 - frequent actions
-        [AudioCategory.COMBAT]: 0.7, // Reduced from 0.8 - still important but not overpowering
+        [AudioCategory.COMBAT]: 0.5, // Reduced from 0.8 - still important but not overpowering
         [AudioCategory.AMBIENT]: 0.3, // Reduced from 0.4 - subtle atmosphere
-        [AudioCategory.ENVIRONMENT]: 0.45, // Reduced from 0.5 - weather effects
+        [AudioCategory.ENVIRONMENT]: 0.35, // Reduced from 0.5 - weather effects
       },
       muted: false,
       spatialEnabled: true,
@@ -100,6 +113,19 @@ export class AudioManager {
     }
   }
 
+  /**
+   * Smoothly ramp a gain node to a target value to prevent clicks/pops
+   */
+  private rampGain(gainNode: GainNode, targetValue: number): void {
+    if (!this.audioContext) return;
+
+    const now = this.audioContext.currentTime;
+    // Cancel any pending ramps and set current value as starting point
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+    gainNode.gain.linearRampToValueAtTime(targetValue, now + AudioManager.VOLUME_RAMP_DURATION);
+  }
+
   registerAsset(asset: AudioAsset): void {
     this.audioAssets.set(asset.id, asset);
   }
@@ -155,24 +181,106 @@ export class AudioManager {
     }
   }
 
-  async play(assetId: string, options: AudioPlayOptions = {}): Promise<AudioBufferSourceNode> {
+  /**
+   * Load audio buffer by URL (used for variations)
+   * Caches by URL to avoid re-fetching
+   */
+  private async loadAudioByUrl(url: string): Promise<AudioBuffer> {
+    const cached = this.loadedAudio.get(url);
+    if (cached) {
+      return cached;
+    }
+
+    if (!this.audioContext) {
+      throw new Error("AudioContext not initialized");
+    }
+
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      this.loadedAudio.set(url, audioBuffer);
+      return audioBuffer;
+    } catch (error) {
+      throw new Error(`Failed to load audio from ${url}: ${error}`);
+    }
+  }
+
+  /**
+   * Select a variation URL for an asset, avoiding immediate repeats
+   * Returns the main asset URL if no variations exist
+   */
+  private selectVariationUrl(asset: AudioAsset): string {
+    const variations = asset.variations;
+
+    // No variations - use main URL
+    if (!variations || variations.length === 0) {
+      return asset.url;
+    }
+
+    // Single variation - always use it
+    if (variations.length === 1) {
+      return variations[0];
+    }
+
+    // Multiple variations - pick randomly but avoid immediate repeat
+    const lastIndex = this.lastPlayedVariation.get(asset.id);
+    let selectedIndex: number;
+
+    if (lastIndex === undefined) {
+      // First play - pick any
+      selectedIndex = Math.floor(Math.random() * variations.length);
+    } else {
+      // Avoid the last played index
+      const availableIndices = variations.map((_, i) => i).filter((i) => i !== lastIndex);
+      selectedIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    }
+
+    this.lastPlayedVariation.set(asset.id, selectedIndex);
+    return variations[selectedIndex];
+  }
+
+  async play(assetId: string, options: AudioPlayOptions = {}): Promise<AudioBufferSourceNode | null> {
+    // Silent no-op when muted or uninitialized - don't throw, just return null
+    // This allows fire-and-forget calls without try/catch everywhere
     if (!this.audioContext || this.state.muted) {
-      throw new Error("AudioContext not available or muted");
+      return null;
     }
 
     await this.resumeContext();
 
-    const asset = this.audioAssets.get(assetId)!;
-    const buffer = await this.loadAsset(assetId);
-
-    // If this is a music track, stop all existing music first
-    if (asset.category === AudioCategory.MUSIC) {
-      this.stopAllMusic();
+    const asset = this.audioAssets.get(assetId);
+    if (!asset) {
+      console.warn(`Audio asset ${assetId} not found`);
+      return null;
     }
 
+    // Anti-spam: skip if same sound played too recently (except for music which should always play)
+    if (asset.category !== AudioCategory.MUSIC) {
+      const now = performance.now();
+      const lastTime = this.lastPlayTime.get(assetId) ?? 0;
+      if (now - lastTime < AudioManager.MIN_REPEAT_INTERVAL_MS) {
+        return null; // Skip rapid repeat
+      }
+      this.lastPlayTime.set(assetId, now);
+    }
+
+    // Select variation URL (or main URL if no variations)
+    const selectedUrl = this.selectVariationUrl(asset);
+    const hasVariations = asset.variations && asset.variations.length > 0;
+
+    // Load the audio buffer
+    const buffer = hasVariations ? await this.loadAudioByUrl(selectedUrl) : await this.loadAsset(assetId);
+
+    // NOTE: Music exclusivity is now managed by MusicRouterProvider, not here.
+    // This allows proper crossfade transitions where the provider fades out
+    // the previous track before starting the new one. Previously, stopAllMusic()
+    // was called here which killed sources mid-fade.
+
     // Try to get a pooled node first, fallback to creating new one
+    // Note: Pooling is only used for assets without variations (pooled by assetId)
     let source: AudioBufferSourceNode;
-    if (this.poolManager) {
+    if (this.poolManager && !hasVariations) {
       const pooledNode = this.poolManager.getNode(assetId);
       if (pooledNode) {
         // Using pooled node - buffer already set
@@ -185,7 +293,7 @@ export class AudioManager {
         source.loop = options.loop ?? asset.loop;
       }
     } else {
-      // No pool manager, create directly
+      // No pool manager or has variations - create directly
       source = this.audioContext.createBufferSource();
       source.buffer = buffer;
       source.loop = options.loop ?? asset.loop;
@@ -211,8 +319,23 @@ export class AudioManager {
     source.connect(gainNode);
     gainNode.connect(categoryGain);
 
+    // Track gain node for cleanup (prevents WebAudio graph bloat)
+    this.sourceGainNodes.set(source, gainNode);
+
     source.onended = () => {
       this.activeSources.delete(source);
+
+      // Disconnect and cleanup the per-play gain node to prevent graph bloat
+      const perPlayGain = this.sourceGainNodes.get(source);
+      if (perPlayGain) {
+        try {
+          perPlayGain.disconnect();
+        } catch {
+          // Already disconnected, ignore
+        }
+        this.sourceGainNodes.delete(source);
+      }
+
       if (asset.category === AudioCategory.MUSIC) {
         this.musicSources.delete(source);
         this.musicGainNodes.delete(source);
@@ -240,15 +363,34 @@ export class AudioManager {
       }
       this.activeSources.delete(source);
       this.musicSources.delete(source);
-      const gainNode = this.musicGainNodes.get(source);
-      if (gainNode) {
+
+      // Disconnect the per-play gain node (all sounds, not just music)
+      const perPlayGain = this.sourceGainNodes.get(source);
+      if (perPlayGain) {
         try {
-          gainNode.disconnect();
-        } catch (error) {
-          console.warn("Failed to disconnect music gain node", error);
+          perPlayGain.disconnect();
+        } catch {
+          // Already disconnected, ignore
         }
+        this.sourceGainNodes.delete(source);
+      }
+
+      // Also cleanup music-specific tracking
+      const musicGain = this.musicGainNodes.get(source);
+      if (musicGain) {
         this.musicGainNodes.delete(source);
       }
+    }
+  }
+
+  /**
+   * Update volume on an active audio source (for dynamic volume control like fades)
+   * Uses ramping to prevent clicks/pops
+   */
+  setSourceVolume(source: AudioBufferSourceNode, volume: number): void {
+    const gainNode = this.sourceGainNodes.get(source);
+    if (gainNode && this.audioContext) {
+      this.rampGain(gainNode, Math.max(0, Math.min(1, volume)));
     }
   }
 
@@ -256,18 +398,20 @@ export class AudioManager {
     this.musicSources.forEach((source) => {
       try {
         source.stop();
-      } catch (e) {
+      } catch {
         // Ignore errors if source already stopped
       }
       this.activeSources.delete(source);
-      const gainNode = this.musicGainNodes.get(source);
-      if (gainNode) {
+
+      // Cleanup per-play gain node
+      const perPlayGain = this.sourceGainNodes.get(source);
+      if (perPlayGain) {
         try {
-          gainNode.disconnect();
-        } catch (error) {
-          console.warn("Failed to disconnect music gain node", error);
+          perPlayGain.disconnect();
+        } catch {
+          // Already disconnected, ignore
         }
-        this.musicGainNodes.delete(source);
+        this.sourceGainNodes.delete(source);
       }
     });
     this.musicSources.clear();
@@ -275,16 +419,25 @@ export class AudioManager {
   }
 
   stopAll(): void {
-    this.activeSources.forEach((source) => source.stop());
-    this.activeSources.clear();
-    this.musicSources.clear();
-    this.musicGainNodes.forEach((gainNode) => {
+    this.activeSources.forEach((source) => {
       try {
-        gainNode.disconnect();
-      } catch (error) {
-        console.warn("Failed to disconnect music gain node", error);
+        source.stop();
+      } catch {
+        // Ignore if already stopped
       }
     });
+    this.activeSources.clear();
+    this.musicSources.clear();
+
+    // Disconnect ALL per-play gain nodes (not just music)
+    this.sourceGainNodes.forEach((gainNode) => {
+      try {
+        gainNode.disconnect();
+      } catch {
+        // Already disconnected, ignore
+      }
+    });
+    this.sourceGainNodes.clear();
     this.musicGainNodes.clear();
   }
 
@@ -320,7 +473,7 @@ export class AudioManager {
   setMasterVolume(volume: number): void {
     this.state.masterVolume = Math.max(0, Math.min(1, volume));
     if (this.masterGainNode) {
-      this.masterGainNode.gain.value = this.state.muted ? 0 : this.state.masterVolume;
+      this.rampGain(this.masterGainNode, this.state.muted ? 0 : this.state.masterVolume);
     }
     this.saveState();
   }
@@ -329,7 +482,7 @@ export class AudioManager {
     this.state.categoryVolumes[category] = Math.max(0, Math.min(1, volume));
     const gainNode = this.categoryGainNodes.get(category);
     if (gainNode) {
-      gainNode.gain.value = this.state.categoryVolumes[category];
+      this.rampGain(gainNode, this.state.categoryVolumes[category]);
     }
     this.saveState();
   }
@@ -337,7 +490,7 @@ export class AudioManager {
   setMuted(muted: boolean): void {
     this.state.muted = muted;
     if (this.masterGainNode) {
-      this.masterGainNode.gain.value = muted ? 0 : this.state.masterVolume;
+      this.rampGain(this.masterGainNode, muted ? 0 : this.state.masterVolume);
     }
     this.saveState();
   }
@@ -387,6 +540,7 @@ export class AudioManager {
     this.audioAssets.clear();
     this.musicSources.clear();
     this.musicGainNodes.clear();
+    this.sourceGainNodes.clear();
     AudioManager.instance = null as any;
   }
 }

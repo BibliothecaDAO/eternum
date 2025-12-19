@@ -44,6 +44,8 @@ interface ActiveAmbienceSound {
 interface AmbienceParams {
   enabled: boolean;
   masterVolume: number;
+  weatherIntensity: number;
+  stormIntensity: number;
 }
 
 /**
@@ -55,6 +57,8 @@ export class AmbienceManager {
   private params: AmbienceParams = {
     enabled: true,
     masterVolume: 1.0,
+    weatherIntensity: 0,
+    stormIntensity: 0,
   };
 
   private currentTimeOfDay: TimeOfDay = TimeOfDay.DAY;
@@ -90,6 +94,17 @@ export class AmbienceManager {
       maxInterval: 75,
     },
     {
+      assetId: ["ambient.birds.night.1"],
+      timeOfDay: [TimeOfDay.NIGHT, TimeOfDay.EVENING],
+      weather: [WeatherType.CLEAR],
+      baseVolume: 0.175,
+      fadeInDuration: 5.0,
+      fadeOutDuration: 5.0,
+      playbackMode: "random_interval",
+      minInterval: 25,
+      maxInterval: 75,
+    },
+    {
       assetId: ["ambient.wolves.night.1", "ambient.wolves.night.2"], // Only 2 wolf sounds available
       timeOfDay: [TimeOfDay.NIGHT],
       weather: [WeatherType.CLEAR],
@@ -111,34 +126,30 @@ export class AmbienceManager {
       maxInterval: 100,
     },
 
-    // Weather-based ambient sounds
+    // Weather-based ambient sounds - rain should loop continuously
     {
       assetId: "ambient.rain.light",
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY, TimeOfDay.DUSK, TimeOfDay.EVENING, TimeOfDay.NIGHT],
       weather: [WeatherType.RAIN],
-      baseVolume: 0.25,
-      fadeInDuration: 3.0,
-      fadeOutDuration: 3.0,
-      playbackMode: "random_interval",
-      minInterval: 15,
-      maxInterval: 50,
+      baseVolume: 0.1,
+      fadeInDuration: 5.0,
+      fadeOutDuration: 5.0,
+      playbackMode: "loop",
     },
     {
       assetId: "ambient.rain.heavy",
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY, TimeOfDay.DUSK, TimeOfDay.EVENING, TimeOfDay.NIGHT],
       weather: [WeatherType.STORM],
-      baseVolume: 0.3,
-      fadeInDuration: 2.0,
-      fadeOutDuration: 2.0,
-      playbackMode: "random_interval",
-      minInterval: 15,
-      maxInterval: 50,
+      baseVolume: 0.125,
+      fadeInDuration: 4.0,
+      fadeOutDuration: 4.0,
+      playbackMode: "loop",
     },
     {
       assetId: ["ambient.thunder.distant.1", "ambient.thunder.distant.2", "ambient.thunder.distant.3"],
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY, TimeOfDay.DUSK, TimeOfDay.EVENING, TimeOfDay.NIGHT],
       weather: [WeatherType.STORM],
-      baseVolume: 0.2,
+      baseVolume: 0.125,
       fadeInDuration: 1.0,
       fadeOutDuration: 2.0,
       playbackMode: "random_interval",
@@ -286,9 +297,10 @@ export class AmbienceManager {
 
       const targetVolume = layer.baseVolume * this.params.masterVolume;
 
+      // Start at volume 0 for fade-in effect
       const source = await this.audioManager.play(selectedAssetId, {
         loop: shouldLoop,
-        volume: targetVolume, // TODO: Implement proper fade-in/out with GainNode control
+        volume: 0, // Start silent, will fade in
         onComplete: () => {
           // For random_interval mode, schedule next play
           if (playbackMode === "random_interval") {
@@ -297,6 +309,11 @@ export class AmbienceManager {
         },
       });
 
+      // If source is null (audio muted), skip adding to active sounds
+      if (!source) {
+        return;
+      }
+
       const fadeSpeed = layer.baseVolume / layer.fadeInDuration;
 
       const activeSound: ActiveAmbienceSound = {
@@ -304,7 +321,7 @@ export class AmbienceManager {
         assetId: selectedAssetId,
         source,
         targetVolume,
-        currentVolume: targetVolume, // Start at target volume (no fade for now)
+        currentVolume: 0, // Start at 0 for fade-in
         fadeSpeed,
         isFadingOut: false,
       };
@@ -408,8 +425,8 @@ export class AmbienceManager {
         }
       }
 
-      // Update volume (would need to be implemented in AudioManager if we want dynamic volume control)
-      // For now, we set volume at playback time
+      // Apply the calculated volume to the actual audio source
+      this.audioManager.setSourceVolume(activeSound.source, activeSound.currentVolume);
     });
 
     // Remove stopped sounds
@@ -504,6 +521,68 @@ export class AmbienceManager {
     }, 100);
 
     ambienceFolder.close();
+  }
+
+  /**
+   * Update ambience based on weather intensity from WeatherManager
+   * This provides smoother transitions than binary weather type changes
+   *
+   * @param weatherIntensity - Overall weather intensity 0-1
+   * @param stormIntensity - Storm-specific intensity 0-1 (for thunder)
+   */
+  updateFromWeather(weatherIntensity: number, stormIntensity: number): void {
+    this.params.weatherIntensity = weatherIntensity;
+    this.params.stormIntensity = stormIntensity;
+
+    // Map intensity to weather type for sound layer activation
+    // This creates a graduated transition rather than binary switching
+    let effectiveWeather: WeatherType;
+
+    if (stormIntensity > 0.3) {
+      effectiveWeather = WeatherType.STORM;
+    } else if (weatherIntensity > 0.2) {
+      effectiveWeather = WeatherType.RAIN;
+    } else {
+      effectiveWeather = WeatherType.CLEAR;
+    }
+
+    // Only update if weather type changed (to avoid constant sound restarts)
+    if (effectiveWeather !== this.currentWeather) {
+      this.currentWeather = effectiveWeather;
+      this.updateSoundLayers();
+    }
+
+    // Modulate active rain/storm sound volumes based on intensity
+    // This provides smooth volume transitions during weather phases
+    this.activeSounds.forEach((activeSound, layerId) => {
+      const layerIndex = parseInt(layerId.split("_")[1]);
+      const layer = this.soundLayers[layerIndex];
+
+      if (!layer || !layer.weather) return;
+
+      // Calculate intensity-based volume multiplier
+      let volumeMultiplier = 1.0;
+
+      if (layer.weather.includes(WeatherType.RAIN) || layer.weather.includes(WeatherType.STORM)) {
+        // Rain sounds: scale with weather intensity
+        volumeMultiplier = Math.max(0.3, weatherIntensity);
+      }
+
+      if (layer.weather.includes(WeatherType.STORM)) {
+        // Storm sounds (thunder): scale with storm intensity
+        volumeMultiplier = Math.max(0.2, stormIntensity);
+      }
+
+      // Update target volume with intensity multiplier
+      activeSound.targetVolume = layer.baseVolume * this.params.masterVolume * volumeMultiplier;
+    });
+  }
+
+  /**
+   * Get current weather intensity
+   */
+  getWeatherIntensity(): number {
+    return this.params.weatherIntensity;
   }
 
   /**

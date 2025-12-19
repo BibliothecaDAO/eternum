@@ -2,7 +2,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView } from "@/types";
-import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
@@ -17,8 +16,6 @@ interface OpenStructureContextMenuParams {
   structure: HexEntityInfo;
   hexCoords: HexPosition;
   components: Components;
-  isSoundOn: boolean;
-  effectsLevel: number;
 }
 
 export const openStructureContextMenu = ({
@@ -26,8 +23,6 @@ export const openStructureContextMenu = ({
   structure,
   hexCoords,
   components,
-  isSoundOn,
-  effectsLevel,
 }: OpenStructureContextMenuParams) => {
   const uiStore = useUIStore.getState();
   const idString = structure.id.toString();
@@ -38,7 +33,10 @@ export const openStructureContextMenu = ({
       return;
     }
     uiStore.setStructureEntityId(structure.id);
-    uiStore.toggleModal(<UnifiedArmyCreationModal structureId={Number(structure.id)} isExplorer={isExplorer} />);
+    uiStore.openArmyCreationPopup({
+      structureId: Number(structure.id),
+      isExplorer,
+    });
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
@@ -63,7 +61,8 @@ export const openStructureContextMenu = ({
     uiStore.setLeftNavigationView(view);
 
     if (resource !== undefined) {
-      playResourceSound(resource, isSoundOn, effectsLevel);
+      // AudioManager handles muted state internally
+      playResourceSound(resource);
     }
   };
 

@@ -29,7 +29,6 @@ import {
   resolveArmyMountTransforms,
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
-import type { ArmyInstanceData } from "../types/army";
 import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
@@ -39,6 +38,7 @@ import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { FXManager } from "./fx-manager";
+import { PathRenderer } from "./path-renderer";
 import { PointsLabelRenderer } from "./points-label-renderer";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -145,6 +145,10 @@ export class ArmyManager {
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, string> = new Map();
 
+  // Path visualization
+  private pathRenderer: PathRenderer;
+  private selectedArmyForPath: ID | null = null;
+
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
@@ -209,6 +213,10 @@ export class ArmyManager {
     // Initialize points-based icon renderers
     this.initializePointsRenderers();
 
+    // Initialize path renderer for movement visualization
+    this.pathRenderer = PathRenderer.getInstance();
+    this.pathRenderer.initialize(scene);
+
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
 
@@ -265,6 +273,9 @@ export class ArmyManager {
       .name("Delete army");
     deleteArmyFolder.close();
 
+    // Debug Army Spawner - for performance testing
+    this.setupDebugArmySpawner();
+
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.recheckOwnership();
     });
@@ -314,6 +325,184 @@ export class ArmyManager {
     this.cleanupTimeout = setTimeout(cleanup, 60000);
   }
 
+  // Debug army spawner state
+  private debugArmyEntityIdCounter = 900000; // Start high to avoid collisions with real armies
+  private debugSpawnedArmyIds: Set<ID> = new Set();
+
+  /**
+   * Setup debug GUI for spawning multiple armies for performance testing
+   */
+  private setupDebugArmySpawner(): void {
+    const debugFolder = GUIManager.addFolder("Debug Army Spawner");
+
+    const spawnParams = {
+      count: 20,
+      spread: 10,
+      troopType: "Paladin" as "Knight" | "Crossbowman" | "Paladin",
+      troopTier: "T1" as "T1" | "T2" | "T3",
+      mixTypes: true,
+      mixTiers: false,
+      isMine: false,
+    };
+
+    debugFolder.add(spawnParams, "count", 1, 100, 1).name("Army Count");
+    debugFolder.add(spawnParams, "spread", 1, 30, 1).name("Spread (hexes)");
+    debugFolder.add(spawnParams, "troopType", ["Knight", "Crossbowman", "Paladin"]).name("Troop Type");
+    debugFolder.add(spawnParams, "troopTier", ["T1", "T2", "T3"]).name("Troop Tier");
+    debugFolder.add(spawnParams, "mixTypes").name("Mix Types");
+    debugFolder.add(spawnParams, "mixTiers").name("Mix Tiers");
+    debugFolder.add(spawnParams, "isMine").name("Is Mine");
+
+    debugFolder
+      .add(
+        {
+          spawnArmies: () => {
+            this.spawnDebugArmies(spawnParams);
+          },
+        },
+        "spawnArmies",
+      )
+      .name("Spawn Armies");
+
+    debugFolder
+      .add(
+        {
+          clearDebugArmies: () => {
+            this.clearDebugArmies();
+          },
+        },
+        "clearDebugArmies",
+      )
+      .name("Clear Debug Armies");
+
+    // Stats display (read-only) - use closure to capture `this`
+    const self = this;
+    const statsParams = {
+      debugArmyCount: "Debug: 0",
+      totalArmyCount: "Total: 0",
+      visibleArmyCount: "Visible: 0",
+    };
+
+    // Update stats periodically
+    const updateStats = () => {
+      statsParams.debugArmyCount = `Debug: ${self.debugSpawnedArmyIds?.size ?? 0}`;
+      statsParams.totalArmyCount = `Total: ${self.armies?.size ?? 0}`;
+      statsParams.visibleArmyCount = `Visible: ${self.visibleArmyOrder?.length ?? 0}`;
+    };
+    setInterval(updateStats, 500);
+
+    const statsFolder = debugFolder.addFolder("Stats");
+    statsFolder.add(statsParams, "debugArmyCount").name("Debug Armies").listen();
+    statsFolder.add(statsParams, "totalArmyCount").name("Total Armies").listen();
+    statsFolder.add(statsParams, "visibleArmyCount").name("Visible Armies").listen();
+    statsFolder.open();
+
+    debugFolder.close();
+  }
+
+  /**
+   * Spawn multiple debug armies around the current view center
+   */
+  private spawnDebugArmies(params: {
+    count: number;
+    spread: number;
+    troopType: "Knight" | "Crossbowman" | "Paladin";
+    troopTier: "T1" | "T2" | "T3";
+    mixTypes: boolean;
+    mixTiers: boolean;
+    isMine: boolean;
+  }): void {
+    if (!this.currentChunkKey) {
+      console.warn("[Debug Spawner] No current chunk key available");
+      return;
+    }
+
+    // Parse current chunk to get center position
+    const [startRow, startCol] = this.currentChunkKey.split(",").map(Number);
+    const bounds = this.getChunkBounds(startRow, startCol);
+    const centerCol = Math.floor((bounds.minCol + bounds.maxCol) / 2);
+    const centerRow = Math.floor((bounds.minRow + bounds.maxRow) / 2);
+
+    const troopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
+    const troopTiers: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
+
+    const getTroopType = (index: number): TroopType => {
+      if (params.mixTypes) {
+        return troopTypes[index % troopTypes.length];
+      }
+      return TroopType[params.troopType as keyof typeof TroopType];
+    };
+
+    const getTroopTier = (index: number): TroopTier => {
+      if (params.mixTiers) {
+        return troopTiers[index % troopTiers.length];
+      }
+      return TroopTier[params.troopTier as keyof typeof TroopTier];
+    };
+
+    console.log(
+      `[Debug Spawner] Spawning ${params.count} armies around (${centerCol}, ${centerRow}) with spread ${params.spread}`,
+    );
+
+    // Spawn armies in a spiral pattern for even distribution
+    for (let i = 0; i < params.count; i++) {
+      const entityId = this.debugArmyEntityIdCounter++;
+
+      // Spiral placement for even distribution
+      const angle = i * 2.4; // Golden angle approximation for good distribution
+      const radius = Math.sqrt(i) * (params.spread / Math.sqrt(params.count));
+      const offsetCol = Math.round(Math.cos(angle) * radius);
+      const offsetRow = Math.round(Math.sin(angle) * radius);
+
+      const col = centerCol + offsetCol;
+      const row = centerRow + offsetRow;
+
+      const category = getTroopType(i);
+      const tier = getTroopTier(i);
+
+      this.debugSpawnedArmyIds.add(entityId);
+
+      this.addArmy({
+        entityId,
+        hexCoords: new Position({ x: col, y: row }),
+        owner: {
+          address: params.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : BigInt(i + 1),
+          ownerName: `Debug Army ${i + 1}`,
+          guildName: "Debug Guild",
+        },
+        category,
+        tier,
+        isDaydreamsAgent: false,
+        troopCount: Math.floor(Math.random() * 100) + 10,
+        currentStamina: Math.floor(Math.random() * 100),
+        onChainStamina: {
+          amount: 100n,
+          updatedTick: getBlockTimestamp().currentArmiesTick,
+        },
+        maxStamina: 100,
+      });
+    }
+
+    console.log(
+      `[Debug Spawner] Spawned ${params.count} armies. Total debug armies: ${this.debugSpawnedArmyIds.size}, Total armies: ${this.armies.size}`,
+    );
+  }
+
+  /**
+   * Clear all debug-spawned armies
+   */
+  private clearDebugArmies(): void {
+    const count = this.debugSpawnedArmyIds.size;
+    console.log(`[Debug Spawner] Clearing ${count} debug armies...`);
+
+    for (const entityId of this.debugSpawnedArmyIds) {
+      this.removeArmy(entityId, { playDefeatFx: false });
+    }
+
+    this.debugSpawnedArmyIds.clear();
+    console.log(`[Debug Spawner] Cleared ${count} debug armies. Total armies remaining: ${this.armies.size}`);
+  }
+
   public onMouseMove(raycaster: Raycaster) {
     const intersectResults = this.armyModel.raycastAll(raycaster);
     if (intersectResults.length > 0) {
@@ -341,6 +530,7 @@ export class ArmyManager {
   async onTileUpdate(update: ExplorerTroopsTileSystemUpdate) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
+    console.log("[ArmyManager] onTileUpdate for", entityId, "at", hexCoords);
 
     const {
       battleCooldownEnd,
@@ -723,16 +913,13 @@ export class ArmyManager {
       return;
     }
 
-    const instanceDataMap = (this.armyModel as unknown as { instanceData?: Map<number, ArmyInstanceData> })
-      .instanceData as Map<number, ArmyInstanceData> | undefined;
-
     this.visibleArmies.forEach((army) => {
       const entityId = this.toNumericId(army.entityId);
       if (!this.activeArmyAttachmentEntities.has(entityId)) {
         return;
       }
 
-      const instanceData = instanceDataMap?.get(entityId);
+      const instanceData = this.armyModel.getInstanceData(entityId);
       if (instanceData?.position) {
         this.tempCosmeticPosition.copy(instanceData.position);
       } else {
@@ -766,18 +953,15 @@ export class ArmyManager {
     let visibleArmies = computeVisibleArmies();
     let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
 
+    // Preload all required models once
     if (requiredModelTypes.size > 0) {
       await this.armyModel.preloadModels(requiredModelTypes);
     }
 
-    // Recompute after any async work to capture the latest data
+    // Recompute after async work to capture any armies added during preload
     visibleArmies = computeVisibleArmies();
     visibleArmies.sort((a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId));
-    ({ modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies));
-
-    if (requiredModelTypes.size > 0) {
-      await this.armyModel.preloadModels(requiredModelTypes);
-    }
+    ({ modelTypesByEntity } = this.collectModelInfo(visibleArmies));
 
     let buffersDirty = false;
 
@@ -1257,6 +1441,7 @@ export class ArmyManager {
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position) {
+    console.log("[ArmyManager] moveArmy called for", entityId, "to", hexCoords);
     // Monitor memory usage before army movement
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
@@ -1325,6 +1510,8 @@ export class ArmyManager {
       this.armyPaths.delete(entityId);
       // Remove from source bucket now that movement is complete
       this.cleanupMovementSourceBucket(entityId);
+      // Remove path visualization
+      this.pathRenderer.removePath(numericEntityId);
     });
 
     // Don't remove relic effects during movement - they will follow the army
@@ -1332,6 +1519,11 @@ export class ArmyManager {
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
+
+    // Create path visualization with player-specific color
+    const colorProfile = this.getArmyColorProfile(armyData);
+    const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
+    this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
@@ -1411,6 +1603,12 @@ export class ArmyManager {
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
     this.lastKnownVisibleHexes.delete(entityId);
+
+    // Remove path visualization
+    this.pathRenderer.removePath(numericEntityId);
+    if (this.selectedArmyForPath === entityId) {
+      this.selectedArmyForPath = null;
+    }
 
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
@@ -1505,6 +1703,39 @@ export class ArmyManager {
     return this.visibleArmyOrder.length;
   }
 
+  /**
+   * Set the selected army for path visualization
+   * Shows the full path for the selected army, hides others or shows them as "moving"
+   */
+  public setSelectedArmyPath(entityId: ID | null): void {
+    const previousSelected = this.selectedArmyForPath;
+    this.selectedArmyForPath = entityId;
+
+    // Update display states for paths
+    if (previousSelected !== null && previousSelected !== entityId) {
+      const numericId = this.toNumericId(previousSelected);
+      if (this.pathRenderer.hasPath(numericId)) {
+        this.pathRenderer.setPathDisplayState(numericId, "moving");
+      }
+    }
+
+    if (entityId !== null) {
+      const numericId = this.toNumericId(entityId);
+      if (this.pathRenderer.hasPath(numericId)) {
+        this.pathRenderer.setSelectedPath(numericId);
+      }
+    } else {
+      this.pathRenderer.setSelectedPath(null);
+    }
+  }
+
+  /**
+   * Get the selected army for path visualization
+   */
+  public getSelectedArmyForPath(): ID | null {
+    return this.selectedArmyForPath;
+  }
+
   update(deltaTime: number) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
@@ -1513,37 +1744,21 @@ export class ArmyManager {
     // Update FX
     this.fxManager.update(deltaTime);
 
-    // Update point icon positions for moving armies
-    if (this.pointsRenderers) {
-      const instanceDataMap = (this.armyModel as unknown as { instanceData?: Map<number, ArmyInstanceData> })
-        .instanceData as Map<number, ArmyInstanceData> | undefined;
+    // Update path visualization animation
+    this.pathRenderer.update(deltaTime);
 
-      if (instanceDataMap) {
-        this.visibleArmies.forEach((army) => {
-          const instanceData = instanceDataMap.get(this.toNumericId(army.entityId));
-          if (instanceData && instanceData.isMoving) {
-            // Get current interpolated position
-            const iconPosition = this.tempIconPosition.copy(instanceData.position);
-            iconPosition.y += 2.1; // Match CSS2D label height
-
-            // Update point in appropriate renderer
-            const renderer = army.isDaydreamsAgent
-              ? this.pointsRenderers!.agent
-              : army.isMine
-                ? this.pointsRenderers!.player
-                : this.pointsRenderers!.enemy;
-            renderer.setPoint({
-              entityId: army.entityId,
-              position: iconPosition,
-            });
-          }
-        });
+    // Update path progress for selected army
+    if (this.selectedArmyForPath !== null) {
+      const numericId = this.toNumericId(this.selectedArmyForPath);
+      const progress = this.armyModel.getMovementProgress(numericId);
+      if (progress !== undefined) {
+        this.pathRenderer.updateProgress(numericId, progress);
       }
     }
 
-    // Update relic effect positions to follow moving armies
-    this.updateArmyAttachmentTransforms();
-    this.updateRelicEffectPositions();
+    // Batch update: single pass over visible armies for all per-frame operations
+    // This consolidates point icons, attachment transforms, and relic effects
+    this.updateVisibleArmiesBatched();
 
     if (this.frustumVisibilityDirty) {
       this.applyFrustumVisibilityToLabels();
@@ -1552,6 +1767,91 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+  }
+
+  /**
+   * Batched update for all visible army per-frame operations.
+   * Consolidates point icon updates, attachment transforms, and relic effect positions
+   * into a single iteration over visibleArmies to reduce iteration overhead.
+   */
+  private updateVisibleArmiesBatched() {
+    const hasPointsRenderers = this.pointsRenderers !== undefined;
+    const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
+    const hasRelicEffects = this.armyRelicEffects.size > 0;
+
+    // Early exit if nothing to update
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasRelicEffects) {
+      return;
+    }
+
+    // Single pass over visible armies
+    for (let i = 0; i < this.visibleArmies.length; i++) {
+      const army = this.visibleArmies[i];
+      const numericEntityId = this.toNumericId(army.entityId);
+      const instanceData = this.armyModel.getInstanceData(numericEntityId);
+
+      // 1. Update point icon positions for moving armies
+      if (hasPointsRenderers && instanceData?.isMoving) {
+        const iconPosition = this.tempIconPosition.copy(instanceData.position);
+        iconPosition.y += 2.1; // Match CSS2D label height
+
+        const renderer = army.isDaydreamsAgent
+          ? this.pointsRenderers!.agent
+          : army.isMine
+            ? this.pointsRenderers!.player
+            : this.pointsRenderers!.enemy;
+        renderer.setPoint({
+          entityId: army.entityId,
+          position: iconPosition,
+        });
+      }
+
+      // 2. Update attachment transforms
+      if (hasActiveAttachments && this.activeArmyAttachmentEntities.has(numericEntityId)) {
+        if (instanceData?.position) {
+          this.tempCosmeticPosition.copy(instanceData.position);
+        } else {
+          const worldPosition = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+          this.tempCosmeticPosition.copy(worldPosition);
+        }
+
+        const baseTransform = {
+          position: this.tempCosmeticPosition,
+          rotation: instanceData?.rotation,
+          scale: instanceData?.scale ?? this.scale,
+        };
+
+        const { x, y } = army.hexCoords.getContract();
+        const biome = Biome.getBiome(x, y);
+        const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
+
+        const mountTransforms = resolveArmyMountTransforms(
+          modelType,
+          baseTransform,
+          this.armyAttachmentTransformScratch,
+        );
+
+        this.attachmentManager.updateAttachmentTransforms(numericEntityId, baseTransform, mountTransforms);
+      }
+
+      // 3. Update relic effect positions for moving armies
+      if (hasRelicEffects && instanceData?.isMoving) {
+        const relicEffects = this.armyRelicEffects.get(army.entityId);
+        if (relicEffects) {
+          this.tempPosition.copy(instanceData.position);
+          this.tempPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
+
+          for (let j = 0; j < relicEffects.length; j++) {
+            const relicEffect = relicEffects[j];
+            if (relicEffect.fx.instance) {
+              relicEffect.fx.instance.initialX = this.tempPosition.x;
+              relicEffect.fx.instance.initialY = this.tempPosition.y;
+              relicEffect.fx.instance.initialZ = this.tempPosition.z;
+            }
+          }
+        }
+      }
+    }
   }
 
   private applyFrustumVisibilityToLabels() {
@@ -1693,6 +1993,8 @@ export class ArmyManager {
     label.position.copy(position);
     label.position.y += 2.1;
     label.userData.entityId = army.entityId;
+    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
+    label.userData.lastDataKey = null;
 
     this.configureArmyLabelInteractions(label);
 
@@ -1928,8 +2230,8 @@ export class ArmyManager {
       return false;
     }
 
-    // Check if army is in the visible armies list
-    return this.visibleArmies.some((army) => army.entityId === entityId);
+    // Check if army is in the visible armies list (O(1) lookup vs O(n) scan)
+    return this.visibleArmyIndices.has(entityId);
   }
 
   public hasArmy(entityId: ID): boolean {
@@ -1988,7 +2290,7 @@ ${
       if (!army) return;
 
       // Get the current position of the army (might be interpolated during movement)
-      const instanceData = this.armyModel["instanceData"]?.get(this.toNumericId(entityId));
+      const instanceData = this.armyModel.getInstanceData(this.toNumericId(entityId));
       if (instanceData && instanceData.isMoving) {
         // Army is currently moving, update relic effects to follow the current interpolated position
         // Use reusable vector to avoid cloning every frame
@@ -2081,11 +2383,24 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    // Optimization: Don't update DOM if label is culled/invisible
-    if (existingLabel.parent !== this.labelsGroup) {
+    // Build data key from fields that affect label appearance
+    const dataKey = `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
+
+    // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
+    // Only skip if label is currently visible - culled labels need update when shown
+    const isVisible = existingLabel.parent === this.labelsGroup;
+    if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
+
+    // If label is culled, mark it dirty so it updates when becoming visible
+    if (!isVisible) {
+      existingLabel.userData.lastDataKey = null; // Force update on next show
+      return;
+    }
+
     // Update the existing label content in-place with correct camera view
+    existingLabel.userData.lastDataKey = dataKey;
     updateArmyLabel(existingLabel.element, army, this.currentCameraView);
   }
 
@@ -2232,6 +2547,12 @@ ${
     // Update ownership status - this ensures armies are correctly marked as owned when the user's account
     // becomes available after initial load, since tile updates may occur before account authentication
     army.isMine = isAddressEqualToAccount(resolvedOwnerAddress);
+    // Update color to reflect new ownership
+    army.color = this.getArmyColor({
+      isMine: army.isMine,
+      isDaydreamsAgent: army.isDaydreamsAgent,
+      owner: { address: resolvedOwnerAddress },
+    });
     army.onChainStamina = update.onChainStamina;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
@@ -2245,6 +2566,11 @@ ${
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
+
+    // Update point icon to reflect ownership change (e.g., player vs enemy)
+    this.removeArmyPointIcon(update.entityId);
+    const position = this.getArmyWorldPosition(update.entityId, army.hexCoords);
+    this.updateArmyPointIcon(army, position);
   }
 
   public destroy() {
@@ -2294,6 +2620,10 @@ ${
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.chunkToArmies.clear();
+
+    // Clear path visualization
+    this.pathRenderer.clearAll();
+    this.selectedArmyForPath = null;
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();

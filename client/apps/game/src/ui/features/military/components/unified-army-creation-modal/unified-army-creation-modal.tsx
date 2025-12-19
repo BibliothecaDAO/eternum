@@ -1,6 +1,7 @@
 import { sqlApi } from "@/services/api";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import {
   ArmyManager,
   configManager,
@@ -49,12 +50,13 @@ import { TroopSelectionGrid } from "./troop-selection-grid";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
 
 interface UnifiedArmyCreationModalProps {
-  structureId: number;
+  structureId?: number;
   maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
   onClose?: () => void;
+  followSelectedStructure?: boolean;
 }
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
@@ -73,6 +75,7 @@ export const UnifiedArmyCreationModal = ({
   direction,
   initialGuardSlot,
   onClose,
+  followSelectedStructure,
 }: UnifiedArmyCreationModalProps) => {
   const {
     setup: { components, systemCalls },
@@ -83,6 +86,7 @@ export const UnifiedArmyCreationModal = ({
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
   const isBlitz = getIsBlitz();
+  const selectedStructureId = useUIStore((state) => state.structureEntityId);
 
   const playerStructures = useMemo(() => {
     return [...playerRealms, ...playerVillages]
@@ -125,7 +129,58 @@ export const UnifiedArmyCreationModal = ({
     }
   }, [initialGuardSlot]);
 
-  const activeStructureId = structureId ?? playerStructures[0]?.entityId ?? 0;
+  const resolveNumericId = (value: unknown): number | null => {
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value === "bigint") {
+      return Number(value);
+    }
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  };
+
+  const resolvedSelectedStructureId = resolveNumericId(selectedStructureId);
+  const resolvedStructureIdProp = resolveNumericId(structureId);
+  const [shouldFollowSelection] = useState(() => {
+    if (followSelectedStructure !== undefined) {
+      return followSelectedStructure;
+    }
+
+    if (
+      resolvedStructureIdProp === null ||
+      resolvedSelectedStructureId === null ||
+      resolvedStructureIdProp <= UNDEFINED_STRUCTURE_ENTITY_ID ||
+      resolvedSelectedStructureId <= UNDEFINED_STRUCTURE_ENTITY_ID
+    ) {
+      return false;
+    }
+
+    return resolvedStructureIdProp === resolvedSelectedStructureId;
+  });
+
+  const activeStructureId = useMemo(() => {
+    if (
+      shouldFollowSelection &&
+      resolvedSelectedStructureId &&
+      resolvedSelectedStructureId > UNDEFINED_STRUCTURE_ENTITY_ID
+    ) {
+      return resolvedSelectedStructureId;
+    }
+
+    if (resolvedStructureIdProp && resolvedStructureIdProp > UNDEFINED_STRUCTURE_ENTITY_ID) {
+      return resolvedStructureIdProp;
+    }
+
+    if (resolvedSelectedStructureId && resolvedSelectedStructureId > UNDEFINED_STRUCTURE_ENTITY_ID) {
+      return resolvedSelectedStructureId;
+    }
+
+    return playerStructures[0]?.entityId ?? 0;
+  }, [shouldFollowSelection, resolvedSelectedStructureId, resolvedStructureIdProp, playerStructures]);
 
   const structureComponent = useMemo(() => {
     if (!activeStructureId) return null;
@@ -184,8 +239,7 @@ export const UnifiedArmyCreationModal = ({
     queryKey: ["guards", String(activeStructureId)],
     queryFn: async () => {
       if (!activeStructureId) return [];
-      const guards = await sqlApi.fetchGuardsByStructure(activeStructureId);
-      return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
+      return await sqlApi.fetchGuardsByStructure(activeStructureId);
     },
     staleTime: 10000,
     enabled: activeStructureId > 0,
@@ -239,9 +293,12 @@ export const UnifiedArmyCreationModal = ({
 
   const selectedGuardCategory = selectedGuard?.troops?.category as TroopType | undefined;
   const selectedGuardTier = selectedGuard?.troops?.tier as TroopTier | undefined;
-  const isSelectedSlotOccupied = Boolean(selectedGuard);
+  // A slot is only truly "occupied" if it has troops with count > 0
+  const isSelectedSlotOccupied = selectedGuardCount > 0;
+  // Slot is compatible if empty (no guard or count = 0) OR same troop type/tier
   const isDefenseSlotCompatible =
     !selectedGuard ||
+    selectedGuardCount === 0 ||
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
   const structureCoordX = structureBase?.coord_x;
@@ -263,6 +320,10 @@ export const UnifiedArmyCreationModal = ({
       setGuardSlot(availableGuardSlots[availableGuardSlots.length - 1] ?? 0);
     }
   }, [armyType, availableGuardSlots, guardSlot]);
+
+  useEffect(() => {
+    setArmyType(isExplorer);
+  }, [isExplorer]);
 
   useEffect(() => {
     setLoadedDirectionsStructureId(null);
@@ -472,7 +533,9 @@ export const UnifiedArmyCreationModal = ({
         if (isDefenseSlotCreationBlocked) {
           throw new Error("No available defense slot for new troops");
         }
-        if (!availableGuardSlotSet.has(guardSlot)) {
+        // Use effectiveGuardSlot which falls back to first available if current selection is invalid
+        const slotToUse = availableGuardSlotSet.has(guardSlot) ? guardSlot : (availableGuardSlots[0] ?? guardSlot);
+        if (!availableGuardSlotSet.has(slotToUse)) {
           throw new Error("Selected defense slot is locked for this structure level");
         }
         await armyManager.addTroopsToGuard(
@@ -480,7 +543,7 @@ export const UnifiedArmyCreationModal = ({
           selectedTroopCombo.type,
           selectedTroopCombo.tier,
           troopCount,
-          guardSlot,
+          slotToUse,
         );
         if (activeStructureId > 0) {
           queryClient
@@ -604,7 +667,12 @@ export const UnifiedArmyCreationModal = ({
   }, [onClose, toggleModal]);
 
   return (
-    <SecondaryPopup width="800" name="unified-army-creation-modal" containerClassName="absolute left-0 top-0">
+    <SecondaryPopup
+      width="800"
+      name="unified-army-creation-modal"
+      containerClassName="absolute left-0 top-0"
+      onOutsideClick={handleClose}
+    >
       <SecondaryPopup.Head onClose={handleClose}>{modalTitle}</SecondaryPopup.Head>
       <SecondaryPopup.Body width="100%" height="auto">
         <div className="p-3">

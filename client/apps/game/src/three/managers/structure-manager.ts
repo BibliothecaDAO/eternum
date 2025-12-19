@@ -24,7 +24,7 @@ import {
 import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { FrustumManager } from "../utils/frustum-manager";
@@ -127,12 +127,17 @@ export class StructureManager {
   private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
+  private structuresWithActiveBattleTimer: Set<ID> = new Set(); // Track structures with active battle timers for O(1) lookup
   private unsubscribeAccountStore?: () => void;
   private attachmentManager: CosmeticAttachmentManager;
   private structureAttachmentSignatures: Map<number, string> = new Map();
   private activeStructureAttachmentEntities: Set<number> = new Set();
   private chunkToStructures: Map<string, Set<ID>> = new Map();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
+  // Scratch vectors for performVisibleStructuresUpdate to avoid allocations
+  private readonly scratchPosition: Vector3 = new Vector3();
+  private readonly scratchLabelPosition: Vector3 = new Vector3();
+  private readonly scratchIconPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private readonly animationCullDistance = 140;
@@ -158,11 +163,18 @@ export class StructureManager {
   private chunkStride: number;
   private needsSpatialReindex = false;
   private visibleStructureCount = 0;
+  private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
     this.structureAttachmentSignatures.delete(entityNumericId);
+
+    // Remove from battle timer tracking
+    this.structuresWithActiveBattleTimer.delete(structure.entityId);
+
+    // Remove associated label to prevent stale content
+    this.removeEntityIdLabel(structure.entityId);
 
     // Remove from spatial index
     const { col, row } = structure.hexCoords;
@@ -544,6 +556,8 @@ export class StructureManager {
     this.structureUpdateTimestamps.clear();
     this.structureUpdateSources.clear();
     this.chunkToStructures.clear();
+    this.structuresWithActiveBattleTimer.clear();
+    this.previousVisibleIds.clear();
 
     // Clean up points renderers
     if (this.pointsRenderers) {
@@ -880,6 +894,9 @@ export class StructureManager {
       structureRecord.attachments = cosmetic.attachments;
     }
 
+    // Track structures with active battle timers for efficient timer updates
+    this.updateBattleTimerTracking(entityId, battleCooldownEnd);
+
     const existingLabel = this.entityIdLabels.get(entityId);
     if (existingLabel && structureRecord) {
       this.updateStructureLabelData(structureRecord, existingLabel);
@@ -1095,7 +1112,8 @@ export class StructureManager {
 
     this.wonderEntityIdMaps.clear();
 
-    // Reset all model counts
+    // Reset all model counts - use a batched approach to avoid repeated needsUpdate/computeBoundingSphere
+    // We'll track counts per model and call setCount once at the end
     this.structureModels.forEach((models) => {
       models.forEach((model) => model.setCount(0));
     });
@@ -1104,6 +1122,14 @@ export class StructureManager {
     });
     this.entityIdMaps.clear();
     this.cosmeticEntityIdMaps.clear();
+
+    // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
+    const modelInstanceCounts = new Map<InstancedModel, number>();
+
+    // Begin batch mode for all point renderers (avoids computeBoundingSphere per setPoint)
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
+    }
 
     for (const [structureType, structures] of structuresByType) {
       const models = this.structureModels.get(structureType);
@@ -1118,23 +1144,26 @@ export class StructureManager {
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
-        const position = getWorldPositionForHex(structure.hexCoords);
-        position.y += 0.05;
+        // Use scratch vector to avoid allocation
+        const { col, row } = structure.hexCoords;
+        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+        this.scratchPosition.y += 0.05;
 
         const existingLabel = this.entityIdLabels.get(structure.entityId);
         if (existingLabel) {
           this.updateStructureLabelData(structure, existingLabel);
-          const newPosition = getWorldPositionForHex(structure.hexCoords);
-          newPosition.y += 2;
-          existingLabel.position.copy(newPosition);
+          // Use scratch vector for label position
+          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+          this.scratchLabelPosition.y += 2;
+          existingLabel.position.copy(this.scratchLabelPosition);
         }
 
-        this.dummy.position.copy(position);
+        this.dummy.position.copy(this.scratchPosition);
 
         if (structureType === StructureType.Bank) {
           this.dummy.rotation.y = (4 * Math.PI) / 6;
         } else {
-          const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+          const rotationSeed = hashCoordinates(col, row);
           const rotationIndex = Math.floor(rotationSeed * 6);
           const randomRotation = (rotationIndex * Math.PI) / 3;
           this.dummy.rotation.y = randomRotation;
@@ -1143,14 +1172,15 @@ export class StructureManager {
 
         // Add point icon for this structure (always visible)
         if (this.pointsRenderers) {
-          const iconPosition = position.clone();
-          iconPosition.y += 2; // Match CSS2D label height
+          // Use scratch vector for icon position
+          this.scratchIconPosition.copy(this.scratchPosition);
+          this.scratchIconPosition.y += 2; // Match CSS2D label height
 
           const renderer = this.getRendererForStructure(structure);
           if (renderer) {
             renderer.setPoint({
               entityId: structure.entityId,
-              position: iconPosition,
+              position: this.scratchIconPosition,
             });
           }
         }
@@ -1167,7 +1197,7 @@ export class StructureManager {
             this.activeStructureAttachmentEntities.add(entityNumericId);
           }
 
-          this.tempCosmeticPosition.copy(position);
+          this.tempCosmeticPosition.copy(this.scratchPosition);
           this.tempCosmeticRotation.copy(this.dummy.rotation);
 
           const baseTransform = {
@@ -1193,27 +1223,29 @@ export class StructureManager {
         if (structureType === StructureType.Realm) {
           modelType = models[structure.level];
 
-          const currentCount = modelType.getCount();
+          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+          const currentCount = modelInstanceCounts.get(modelType) ?? 0;
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
-          modelType.setCount(currentCount + 1);
+          modelInstanceCounts.set(modelType, currentCount + 1);
           this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
 
           if (structure.hasWonder) {
             const wonderModel = models[WONDER_MODEL_INDEX];
-            const wonderCount = wonderModel.getCount();
+            const wonderCount = modelInstanceCounts.get(wonderModel) ?? 0;
             wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
-            wonderModel.setCount(wonderCount + 1);
+            modelInstanceCounts.set(wonderModel, wonderCount + 1);
             this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
           }
         } else {
-          const currentCount = modelType.getCount();
+          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+          const currentCount = modelInstanceCounts.get(modelType) ?? 0;
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
-          modelType.setCount(currentCount + 1);
+          modelInstanceCounts.set(modelType, currentCount + 1);
           this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
         }
       });
 
-      models.forEach((model) => model.needsUpdate());
+      // Note: setCount will be called once per model after all structures are processed
     }
 
     // Render structures with cosmetic skins
@@ -1230,20 +1262,23 @@ export class StructureManager {
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
-        const position = getWorldPositionForHex(structure.hexCoords);
-        position.y += 0.05;
+        // Use scratch vector to avoid allocation
+        const { col, row } = structure.hexCoords;
+        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+        this.scratchPosition.y += 0.05;
 
         const existingLabel = this.entityIdLabels.get(structure.entityId);
         if (existingLabel) {
           this.updateStructureLabelData(structure, existingLabel);
-          const newPosition = getWorldPositionForHex(structure.hexCoords);
-          newPosition.y += 2;
-          existingLabel.position.copy(newPosition);
+          // Use scratch vector for label position
+          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+          this.scratchLabelPosition.y += 2;
+          existingLabel.position.copy(this.scratchLabelPosition);
         }
 
-        this.dummy.position.copy(position);
+        this.dummy.position.copy(this.scratchPosition);
 
-        const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+        const rotationSeed = hashCoordinates(col, row);
         const rotationIndex = Math.floor(rotationSeed * 6);
         const randomRotation = (rotationIndex * Math.PI) / 3;
         this.dummy.rotation.y = randomRotation;
@@ -1251,14 +1286,15 @@ export class StructureManager {
 
         // Add point icon for this structure
         if (this.pointsRenderers) {
-          const iconPosition = position.clone();
-          iconPosition.y += 2;
+          // Use scratch vector for icon position
+          this.scratchIconPosition.copy(this.scratchPosition);
+          this.scratchIconPosition.y += 2;
 
           const renderer = this.getRendererForStructure(structure);
           if (renderer) {
             renderer.setPoint({
               entityId: structure.entityId,
-              position: iconPosition,
+              position: this.scratchIconPosition,
             });
           }
         }
@@ -1276,7 +1312,7 @@ export class StructureManager {
             this.activeStructureAttachmentEntities.add(entityNumericId);
           }
 
-          this.tempCosmeticPosition.copy(position);
+          this.tempCosmeticPosition.copy(this.scratchPosition);
           this.tempCosmeticRotation.copy(this.dummy.rotation);
 
           const baseTransform = {
@@ -1301,14 +1337,25 @@ export class StructureManager {
         // Cosmetic skins typically have a single model (index 0)
         const model = models[0];
         if (model) {
-          const currentCount = model.getCount();
+          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+          const currentCount = modelInstanceCounts.get(model) ?? 0;
           model.setMatrixAt(currentCount, this.dummy.matrix);
-          model.setCount(currentCount + 1);
+          modelInstanceCounts.set(model, currentCount + 1);
           this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
         }
       });
 
-      models.forEach((model) => model.needsUpdate());
+      // Note: setCount will be called once per model after all structures are processed
+    }
+
+    // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
+    for (const [model, count] of modelInstanceCounts) {
+      model.setCount(count);
+    }
+
+    // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
     }
 
     if (this.activeStructureAttachmentEntities.size > 0) {
@@ -1337,21 +1384,22 @@ export class StructureManager {
       this.removeEntityIdLabel(entityId);
     });
 
-    // Remove points for structures no longer visible
+    // Remove points for structures no longer visible (diff-based: O(previously_visible) instead of O(all_structures))
     if (this.pointsRenderers) {
-      Object.values(this.pointsRenderers).forEach((renderer) => {
-        // We need to iterate all points in renderer and remove if not in visibleStructureIds
-        // But PointsLabelRenderer doesn't expose iteration easily.
-        // Instead, we can iterate all known structures and remove those not visible
-        this.structures.getStructures().forEach((structures) => {
-          structures.forEach((structure) => {
-            if (!visibleStructureIds.has(structure.entityId) && renderer.hasPoint(structure.entityId)) {
-              renderer.removePoint(structure.entityId);
-            }
-          });
-        });
-      });
+      for (const entityId of this.previousVisibleIds) {
+        if (!visibleStructureIds.has(entityId)) {
+          // Structure was visible last frame but not anymore - remove its point
+          const structure = this.structures.getStructureByEntityId(entityId);
+          if (structure) {
+            const renderer = this.getRendererForStructure(structure);
+            renderer?.removePoint(entityId);
+          }
+        }
+      }
     }
+
+    // Update tracking for next frame's diff
+    this.previousVisibleIds = visibleStructureIds;
 
     this.frustumVisibilityDirty = true;
   }
@@ -1628,6 +1676,8 @@ export class StructureManager {
     label.position.copy(position);
     label.position.y += 2;
     label.userData.entityId = structure.entityId;
+    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
+    label.userData.lastDataKey = null;
 
     this.configureStructureLabelInteractions(label);
 
@@ -1968,6 +2018,9 @@ export class StructureManager {
     structure.battleCooldownEnd = update.battleCooldownEnd;
     structure.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
+    // Track structures with active battle timers for efficient timer updates
+    this.updateBattleTimerTracking(entityId, update.battleCooldownEnd);
+
     this.structures.updateStructure(entityId, structure);
 
     // Update the label if it exists
@@ -1975,6 +2028,10 @@ export class StructureManager {
     if (label) {
       this.updateStructureLabelData(structure, label);
     }
+
+    // Refresh visible structures to update point icons (e.g., myRealm vs enemyRealm)
+    // when ownership changes
+    this.updateVisibleStructures();
   }
 
   /**
@@ -2062,6 +2119,21 @@ export class StructureManager {
   }
 
   /**
+   * Update battle timer tracking for a structure.
+   * Adds to or removes from the active timer set based on whether the timer is active.
+   */
+  private updateBattleTimerTracking(entityId: ID, battleCooldownEnd: number | undefined): void {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const isActive = battleCooldownEnd !== undefined && battleCooldownEnd > currentTimestamp;
+
+    if (isActive) {
+      this.structuresWithActiveBattleTimer.add(entityId);
+    } else {
+      this.structuresWithActiveBattleTimer.delete(entityId);
+    }
+  }
+
+  /**
    * Start the battle timer update system
    */
   private startBattleTimerUpdates(): void {
@@ -2071,42 +2143,90 @@ export class StructureManager {
   }
 
   /**
-   * Update battle timers for all structures and update visible labels
+   * Update battle timers for structures with active timers and update visible labels.
+   * Only iterates structures in structuresWithActiveBattleTimer set (O(active) instead of O(total)).
    */
   private recomputeBattleTimersForAllStructures(): void {
-    const allStructures = this.structures.getStructures();
+    // Collect expired timers to remove after iteration (can't modify Set while iterating)
+    const expiredTimers: ID[] = [];
 
-    // Update all structure data
-    allStructures.forEach((structures) => {
-      structures.forEach((structure, entityId) => {
-        // Update battle timer if structure has a battle cooldown
-        if (structure.battleCooldownEnd) {
-          const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
+    for (const entityId of this.structuresWithActiveBattleTimer) {
+      const structure = this.structures.getStructureByEntityId(entityId);
+      if (!structure) {
+        // Structure was removed, clean up tracking
+        expiredTimers.push(entityId);
+        continue;
+      }
 
-          // Only update if timer has changed or expired
-          if (structure.battleTimerLeft !== newBattleTimerLeft) {
-            structure.battleTimerLeft = newBattleTimerLeft;
+      const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
 
-            // Update visible label if it exists
-            const label = this.entityIdLabels.get(entityId);
-            if (label) {
-              this.updateStructureLabelData(structure, label);
-            }
-          }
+      // Timer has expired
+      if (newBattleTimerLeft === undefined) {
+        expiredTimers.push(entityId);
+        structure.battleTimerLeft = undefined;
+
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateStructureLabelData(structure, label);
         }
-      });
-    });
+        continue;
+      }
+
+      // Only update if timer has changed
+      if (structure.battleTimerLeft !== newBattleTimerLeft) {
+        structure.battleTimerLeft = newBattleTimerLeft;
+
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateStructureLabelData(structure, label);
+        }
+      }
+    }
+
+    // Remove expired timers from tracking set
+    for (const entityId of expiredTimers) {
+      this.structuresWithActiveBattleTimer.delete(entityId);
+    }
   }
 
   /**
    * Update a structure label with fresh data
    */
   private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
-    // Optimization: Don't update DOM if label is culled/invisible
-    if (existingLabel.parent !== this.labelsGroup) {
+    // Build a data key from fields that affect label appearance
+    const guardKey =
+      structure.guardArmies?.map((g) => `${g.slot}:${g.category ?? ""}:${g.tier}:${g.count}`).join(",") ?? "";
+    const productionKey =
+      structure.activeProductions?.map((p) => `${p.buildingType}:${p.buildingCount}`).join(",") ?? "";
+    const dataKey = [
+      structure.isMine,
+      structure.owner?.ownerName ?? "",
+      guardKey,
+      structure.battleTimerLeft ?? 0,
+      structure.attackedFromDegrees ?? "",
+      structure.attackedTowardDegrees ?? "",
+      productionKey,
+      structure.level,
+      structure.stage,
+    ].join("|");
+
+    // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
+    // Only skip if label is currently visible - culled labels need update when shown
+    const isVisible = existingLabel.parent === this.labelsGroup;
+    if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
+
+    // If label is culled, mark it dirty so it updates when becoming visible
+    if (!isVisible) {
+      existingLabel.userData.lastDataKey = null; // Force update on next show
+      return;
+    }
+
     // Update the existing label content in-place with correct camera view
+    existingLabel.userData.lastDataKey = dataKey;
     updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
 }

@@ -21,7 +21,11 @@ import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
 import { MatrixPool } from "@/three/utils/matrix-pool";
-import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "@/three/utils/navigation";
+import {
+  navigateToStructure,
+  toggleMapHexView,
+  selectNextStructure as utilSelectNextStructure,
+} from "@/three/utils/navigation";
 import { SceneShortcutManager } from "@/three/utils/shortcuts";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
@@ -192,13 +196,28 @@ export default class HexceptionScene extends HexagonScene {
 
     // Only register shortcuts if they haven't been registered already
     if (!this.shortcutManager.hasShortcuts()) {
+      const shouldCycleRealmsForTab = () => Boolean(useUIStore.getState().armyCreationPopup);
+      const getRealmStructuresForTab = () =>
+        this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+
       this.shortcutManager.registerShortcut({
         id: "cycle-structures",
         key: "Tab",
         description: "Cycle through structures",
         sceneRestriction: SceneName.Hexception,
-        condition: () => this.playerStructures.length > 0,
-        action: () => this.selectNextStructure(),
+        condition: () => {
+          if (shouldCycleRealmsForTab()) {
+            return getRealmStructuresForTab().length > 0;
+          }
+          return this.playerStructures.length > 0;
+        },
+        action: () => {
+          if (shouldCycleRealmsForTab()) {
+            this.selectNextRealmStructure();
+            return;
+          }
+          this.selectNextStructure();
+        },
       });
 
       this.shortcutManager.registerShortcut({
@@ -566,15 +585,14 @@ export default class HexceptionScene extends HexagonScene {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
 
-      const { isSoundOn, effectsLevel } = useUIStore.getState();
-
       if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
         const building = getComponentValue(
           this.dojo.components.Building,
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(building?.category as BuildingType, isSoundOn, effectsLevel);
+        // AudioManager handles muted state internally
+        playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -589,7 +607,8 @@ export default class HexceptionScene extends HexagonScene {
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(building?.category as BuildingType, isSoundOn, effectsLevel);
+        // AudioManager handles muted state internally
+        playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -1257,6 +1276,26 @@ export default class HexceptionScene extends HexagonScene {
       // Set the structure entity ID in the UI store
       this.state.setStructureEntityId(structure.entityId);
     }
+  }
+
+  private selectNextRealmStructure() {
+    const realmStructures = this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+    if (realmStructures.length === 0) {
+      return;
+    }
+
+    const currentId = this.state.structureEntityId;
+    const currentIndex = realmStructures.findIndex((structure) => structure.entityId === currentId);
+    const nextIndex = (currentIndex + 1) % realmStructures.length;
+    const structure = realmStructures[nextIndex];
+
+    const fullIndex = this.playerStructures.findIndex((candidate) => candidate.entityId === structure.entityId);
+    if (fullIndex >= 0) {
+      this.structureIndex = fullIndex;
+    }
+
+    navigateToStructure(structure.position.x, structure.position.y, "hex");
+    this.state.setStructureEntityId(structure.entityId);
   }
 
   public updatePlayerStructures(structures: Structure[]) {

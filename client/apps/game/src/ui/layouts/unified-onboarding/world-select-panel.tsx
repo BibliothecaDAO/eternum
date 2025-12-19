@@ -1,29 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Users } from "lucide-react";
 import { shortString } from "starknet";
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useWorldsAvailability, getAvailabilityStatus } from "@/hooks/use-world-availability";
 import { getActiveWorldName, getFactorySqlBaseUrl, listWorldNames } from "@/runtime/world";
-import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { deleteWorldProfile } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
+import { WorldCountdown, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { env } from "../../../../env";
-
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
-
-const formatCountdown = (secondsLeft: number): string => {
-  const total = Math.max(0, Math.floor(secondsLeft));
-  const d = Math.floor(total / 86400);
-  const h = Math.floor((total % 86400) / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const hh = h.toString().padStart(2, "0");
-  const mm = m.toString().padStart(2, "0");
-  const ss = s.toString().padStart(2, "0");
-  return d > 0 ? `${d}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
-};
 
 const decodePaddedFeltAscii = (hex: string): string => {
   try {
@@ -51,54 +35,6 @@ const decodePaddedFeltAscii = (hex: string): string => {
   }
 };
 
-const parseMaybeHexToNumber = (v: unknown): number | null => {
-  if (v == null) return null;
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    try {
-      if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-};
-
-const fetchWorldConfigMeta = async (
-  toriiBaseUrl: string,
-): Promise<{ startMainAt: number | null; endAt: number | null; registrationCount: number | null }> => {
-  const meta: { startMainAt: number | null; endAt: number | null; registrationCount: number | null } = {
-    startMainAt: null,
-    endAt: null,
-    registrationCount: null,
-  };
-  try {
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
-    const response = await fetch(url);
-    if (!response.ok) return meta;
-    const [row] = (await response.json()) as Record<string, unknown>[];
-    if (row) {
-      if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
-      if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
-      if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
-    }
-  } catch {
-    // ignore fetch errors; caller handles defaults
-  }
-  return meta;
-};
-
-type FactoryGame = {
-  name: string;
-  status: "checking" | "ok" | "fail";
-  toriiBaseUrl: string;
-  startMainAt: number | null;
-  endAt: number | null;
-  registrationCount: number | null;
-};
-
 interface WorldSelectPanelProps {
   onSelect: (worldName: string) => void;
 }
@@ -106,65 +42,51 @@ interface WorldSelectPanelProps {
 export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
   const [saved, setSaved] = useState<string[]>(() => listWorldNames());
   const [selected, setSelected] = useState<string | null>(getActiveWorldName());
-  const [statusMap, setStatusMap] = useState<Record<string, "checking" | "ok" | "fail">>({});
-  const [factoryGames, setFactoryGames] = useState<FactoryGame[]>([]);
-  const [factoryLoading, setFactoryLoading] = useState(false);
+  const [factoryNames, setFactoryNames] = useState<string[]>([]);
+  const [factoryNamesLoading, setFactoryNamesLoading] = useState(false);
   const [factoryError, setFactoryError] = useState<string | null>(null);
-  const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
-  const account = useAccountStore((state) => state.account);
-  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
 
-  // Ticking clock for countdowns
+  // Use hook for game status filtering (updates every 10s, not every 1s)
+  const { isOngoing } = useGameTimeStatus();
+
+  // Use cached availability hook for factory worlds
+  const {
+    results: factoryAvailability,
+    isAnyLoading: factoryCheckingAvailability,
+    refetchAll: refetchFactory,
+  } = useWorldsAvailability(factoryNames, factoryNames.length > 0);
+
+  // Use cached availability hook for saved worlds
+  const { results: savedAvailability, allSettled: savedChecksDone } = useWorldsAvailability(saved, saved.length > 0);
+
+  // Auto-delete offline saved games when checks complete
   useEffect(() => {
-    const id = window.setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+    if (!savedChecksDone || saved.length === 0) return;
 
-  // Check saved worlds availability
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      const entries = await Promise.all(
-        saved.map(async (n) => {
-          const ok = await isToriiAvailable(`https://api.cartridge.gg/x/${n}/torii`);
-          return [n, ok ? "ok" : "fail"] as const;
-        }),
-      );
-      if (!cancelled) {
-        const next: Record<string, "ok" | "fail"> = {};
-        const offlineGames: string[] = [];
-        entries.forEach(([k, v]) => {
-          next[k] = v;
-          if (v === "fail") offlineGames.push(k);
-        });
-        setStatusMap(next);
+    const offlineGames = saved.filter((name) => {
+      const availability = savedAvailability.get(name);
+      return availability && !availability.isLoading && !availability.isAvailable;
+    });
 
-        // Auto-delete offline games
-        if (offlineGames.length > 0) {
-          offlineGames.forEach((n) => deleteWorldProfile(n));
-          const updatedList = listWorldNames();
-          setSaved(updatedList);
-          if (selected && offlineGames.includes(selected)) {
-            setSelected(null);
-          }
-        }
+    if (offlineGames.length > 0) {
+      offlineGames.forEach((n) => deleteWorldProfile(n));
+      const updatedList = listWorldNames();
+      setSaved(updatedList);
+      if (selected && offlineGames.includes(selected)) {
+        setSelected(null);
       }
-    };
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [saved, selected]);
+    }
+  }, [savedChecksDone, saved, savedAvailability, selected]);
 
-  // Fetch factory games
-  const loadFactoryGames = useCallback(async () => {
+  // Fetch factory world names (just the list, not availability)
+  const loadFactoryNames = useCallback(async () => {
     try {
-      setFactoryLoading(true);
+      setFactoryNamesLoading(true);
       setFactoryError(null);
 
       const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as "mainnet" | "sepolia" | "slot" | "local");
       if (!factorySqlBaseUrl) {
-        setFactoryGames([]);
+        setFactoryNames([]);
         return;
       }
 
@@ -186,63 +108,39 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
         names.push(decoded);
       }
 
-      const initial: FactoryGame[] = names.map((n) => ({
-        name: n,
-        status: "checking",
-        toriiBaseUrl: buildToriiBaseUrl(n),
-        startMainAt: null,
-        endAt: null,
-        registrationCount: null,
-      }));
-      setFactoryGames(initial);
-
-      // Concurrency-limited status fetch
-      const limit = 8;
-      let index = 0;
-      const work = async () => {
-        while (index < initial.length) {
-          const i = index++;
-          const item = initial[i];
-          try {
-            const online = await isToriiAvailable(item.toriiBaseUrl);
-            const meta = online ? await fetchWorldConfigMeta(item.toriiBaseUrl) : null;
-            setFactoryGames((prev) => {
-              const copy = [...prev];
-              const idx = copy.findIndex((w) => w.name === item.name);
-              if (idx >= 0)
-                copy[idx] = {
-                  ...copy[idx],
-                  status: online ? "ok" : "fail",
-                  startMainAt: meta?.startMainAt ?? null,
-                  endAt: meta?.endAt ?? null,
-                  registrationCount: meta?.registrationCount ?? null,
-                };
-              return copy;
-            });
-          } catch {
-            setFactoryGames((prev) => {
-              const copy = [...prev];
-              const idx = copy.findIndex((w) => w.name === item.name);
-              if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
-              return copy;
-            });
-          }
-        }
-      };
-
-      const workers: Promise<void>[] = [];
-      for (let k = 0; k < limit; k++) workers.push(work());
-      await Promise.all(workers);
+      setFactoryNames(names);
     } catch (e: unknown) {
       setFactoryError(e instanceof Error ? e.message : String(e));
     } finally {
-      setFactoryLoading(false);
+      setFactoryNamesLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadFactoryGames();
-  }, [loadFactoryGames]);
+    void loadFactoryNames();
+  }, [loadFactoryNames]);
+
+  // Build factory games list from cached availability results
+  const factoryGames = useMemo(() => {
+    return factoryNames.map((name) => {
+      const availability = factoryAvailability.get(name);
+      const status = getAvailabilityStatus(availability);
+      return {
+        name,
+        status,
+        startMainAt: availability?.meta?.startMainAt ?? null,
+        endAt: availability?.meta?.endAt ?? null,
+        registrationCount: availability?.meta?.registrationCount ?? null,
+      };
+    });
+  }, [factoryNames, factoryAvailability]);
+
+  const factoryLoading = factoryNamesLoading || (factoryNames.length > 0 && factoryCheckingAvailability);
+
+  const handleRefresh = useCallback(async () => {
+    await loadFactoryNames();
+    await refetchFactory();
+  }, [loadFactoryNames, refetchFactory]);
 
   const handleSelectWorld = (worldName: string) => {
     setSelected(worldName);
@@ -252,28 +150,9 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
     onSelect(worldName);
   };
 
-  const getTimeLabel = (fg: FactoryGame) => {
-    if (fg.startMainAt == null) return fg.status === "ok" ? "Not Configured" : "";
-
-    if ((fg.endAt === 0 || fg.endAt == null) && fg.startMainAt != null) {
-      if (nowSec < fg.startMainAt) return `Starts in ${formatCountdown(fg.startMainAt - nowSec)}`;
-      return `Ongoing`;
-    }
-
-    const endT = fg.endAt as number;
-    if (nowSec < fg.startMainAt) return `Starts in ${formatCountdown(fg.startMainAt - nowSec)}`;
-    if (nowSec < endT) return `${formatCountdown(endT - nowSec)} left`;
-    return `Ended`;
-  };
-
-  // Filter and sort games
+  // Filter and sort games using the hook's isOngoing function
   const onlineGames = factoryGames.filter((fg) => fg.status === "ok");
-  const ongoingGames = onlineGames.filter(
-    (fg) =>
-      fg.startMainAt != null &&
-      nowSec >= fg.startMainAt &&
-      (fg.endAt === 0 || fg.endAt == null || nowSec < (fg.endAt as number)),
-  );
+  const ongoingGames = onlineGames.filter((fg) => isOngoing(fg.startMainAt, fg.endAt));
 
   return (
     <div className="flex flex-col h-full">
@@ -293,7 +172,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
             <AlertCircle className="w-8 h-8 text-danger/60 mx-auto mb-2" />
             <p className="text-sm text-danger">{factoryError}</p>
             <button
-              onClick={() => void loadFactoryGames()}
+              onClick={() => void handleRefresh()}
               className="mt-3 px-3 py-1.5 text-xs rounded-md bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20"
             >
               Try Again
@@ -327,7 +206,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-white/60">
-                    <span>{getTimeLabel(fg)}</span>
+                    <WorldCountdown startMainAt={fg.startMainAt} endAt={fg.endAt} status={fg.status} />
                     {fg.registrationCount != null && (
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" />
@@ -362,7 +241,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
       {/* Refresh button */}
       <div className="mt-4 flex justify-center">
         <button
-          onClick={() => void loadFactoryGames()}
+          onClick={() => void handleRefresh()}
           disabled={factoryLoading}
           className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gold/10 text-gold border border-gold/30 hover:bg-gold/20 disabled:opacity-50"
         >

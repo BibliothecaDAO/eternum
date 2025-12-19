@@ -81,7 +81,17 @@ export default class GameRenderer {
   private toneMappingEffect?: ToneMappingEffect;
   private hueSaturationEffect?: HueSaturationEffect;
   private brightnessContrastEffect?: BrightnessContrastEffect;
+  private vignetteEffect?: VignetteEffect;
   private postProcessingGUIInitialized = false;
+
+  // Weather-based post-processing modulation
+  private basePostProcessingValues = {
+    saturation: 0,
+    contrast: 0,
+    brightness: 0,
+    vignetteDarkness: 0,
+  };
+  private weatherPostProcessingEnabled = true;
   private unsubscribeQualityController?: () => void;
   private lastAppliedQuality?: QualityFeatures;
 
@@ -622,23 +632,23 @@ export default class GameRenderer {
   }
 
   private createVignetteEffect(config: PostProcessingConfig) {
-    const effect = new VignetteEffect({
+    this.vignetteEffect = new VignetteEffect({
       darkness: config.vignette.darkness,
       offset: config.vignette.offset,
     });
 
     const folder = GUIManager.addFolder("Vignette");
     folder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
-      effect.darkness = value;
+      this.vignetteEffect!.darkness = value;
     });
 
     folder.add(config.vignette, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
-      effect.offset = value;
+      this.vignetteEffect!.offset = value;
     });
 
     folder.close();
 
-    return effect;
+    return this.vignetteEffect;
   }
 
   private createBloomEffect(intensity: number) {
@@ -775,6 +785,65 @@ export default class GameRenderer {
     }
   }
 
+  /**
+   * Update post-processing effects based on weather state
+   * Weather modulates saturation, contrast, and vignette for atmospheric mood
+   *
+   * Clear: Normal values
+   * Rain: Slightly desaturated, lower contrast
+   * Storm: More desaturated, higher contrast, stronger vignette
+   */
+  private updateWeatherPostProcessing(): void {
+    if (!this.weatherPostProcessingEnabled) return;
+    if (!this.hudScene) return;
+
+    const weatherManager = this.hudScene.getWeatherManager();
+    if (!weatherManager) return;
+
+    const state = weatherManager.getState();
+    const intensity = state.intensity;
+    const stormIntensity = state.stormIntensity;
+
+    // Store base values on first call if not already stored
+    if (this.basePostProcessingValues.saturation === 0 && this.postProcessingConfig) {
+      this.basePostProcessingValues.saturation = this.postProcessingConfig.saturation;
+      this.basePostProcessingValues.contrast = this.postProcessingConfig.contrast;
+      this.basePostProcessingValues.brightness = this.postProcessingConfig.brightness;
+      this.basePostProcessingValues.vignetteDarkness = this.postProcessingConfig.vignette.darkness;
+    }
+
+    // Calculate weather-modulated values
+    // Saturation: reduce during weather (rain/storm feels more muted)
+    const saturationReduction = intensity * 0.35 + stormIntensity * 0.15; // Up to -0.5 at full storm
+    const targetSaturation = this.basePostProcessingValues.saturation - saturationReduction;
+
+    // Contrast: slightly increase during storms for dramatic effect
+    const contrastBoost = stormIntensity * 0.15; // Up to +0.15 during storms
+    const targetContrast = this.basePostProcessingValues.contrast + contrastBoost;
+
+    // Brightness: slightly reduce during heavy weather
+    const brightnessReduction = intensity * 0.05;
+    const targetBrightness = this.basePostProcessingValues.brightness - brightnessReduction;
+
+    // Vignette: increase during storms for tunnel vision effect
+    const vignetteIncrease = stormIntensity * 0.2; // Up to +0.2 during storms
+    const targetVignette = this.basePostProcessingValues.vignetteDarkness + vignetteIncrease;
+
+    // Apply to effects (if they exist)
+    if (this.hueSaturationEffect) {
+      (this.hueSaturationEffect as unknown as { saturation: number }).saturation = targetSaturation;
+    }
+
+    if (this.brightnessContrastEffect) {
+      (this.brightnessContrastEffect as unknown as { contrast: number }).contrast = targetContrast;
+      (this.brightnessContrastEffect as unknown as { brightness: number }).brightness = targetBrightness;
+    }
+
+    if (this.vignetteEffect) {
+      (this.vignetteEffect as unknown as { darkness: number }).darkness = targetVignette;
+    }
+  }
+
   animate() {
     // Stop animation if renderer has been destroyed
     if (this.isDestroyed) {
@@ -827,6 +896,10 @@ export default class GameRenderer {
     // Render the HUD scene without clearing the buffer
     const cycleProgress = useUIStore.getState().cycleProgress || 0;
     this.hudScene.update(deltaTime, cycleProgress);
+
+    // Update post-processing based on weather state
+    this.updateWeatherPostProcessing();
+
     this.renderer.clearDepth(); // Clear only the depth buffer
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
@@ -995,12 +1068,11 @@ export default class GameRenderer {
       effects.push(this.createBloomEffect(features.bloomIntensity));
     }
     if (features.vignette) {
-      effects.push(
-        new VignetteEffect({
-          darkness: this.postProcessingConfig.vignette.darkness,
-          offset: this.postProcessingConfig.vignette.offset,
-        }),
-      );
+      this.vignetteEffect = new VignetteEffect({
+        darkness: this.postProcessingConfig.vignette.darkness,
+        offset: this.postProcessingConfig.vignette.offset,
+      });
+      effects.push(this.vignetteEffect);
     }
 
     // Subtle chromatic aberration for cinematic lens effect (HIGH quality only)

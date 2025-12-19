@@ -6,6 +6,7 @@ import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { sqlApi } from "@/services/api";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
@@ -26,7 +27,6 @@ import { gameWorkerManager } from "../../managers/game-worker-manager";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
-import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { QuestModal } from "@/ui/features/progression";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -40,6 +40,8 @@ import {
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   isRelicActive,
+  MAP_DATA_REFRESH_INTERVAL,
+  MapDataStore,
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
   SelectableArmy,
@@ -59,6 +61,7 @@ import {
   ID,
   RelicEffect,
   Structure,
+  StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -324,6 +327,8 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = 16;
   private pinnedChunkKeys: Set<string> = new Set();
+  private syncedStructureIds: Set<ID> = new Set();
+  private syncingStructureIds: Set<ID> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
   private currentHexGridTask: symbol | null = null;
@@ -775,7 +780,7 @@ export default class WorldmapScene extends HexagonScene {
             const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
             if (isOwnArmy) {
               // Play the sound for the resource gain only when it belongs to the local player
-              playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+              playResourceSound(resourceId);
             }
             // Display the resource gain at the army's position
             this.displayResourceGain(
@@ -814,13 +819,28 @@ export default class WorldmapScene extends HexagonScene {
 
     // Only register shortcuts if they haven't been registered already
     if (!this.shortcutManager.hasShortcuts()) {
+      const shouldCycleStructuresForTab = () => Boolean(useUIStore.getState().armyCreationPopup);
+      const getRealmStructuresForTab = () =>
+        this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+
       this.shortcutManager.registerShortcut({
         id: "cycle-armies",
         key: "Tab",
-        description: "Cycle through armies",
+        description: "Cycle through armies (or structures when army creation is open)",
         sceneRestriction: SceneName.WorldMap,
-        condition: () => this.selectableArmies.length > 0,
-        action: () => void this.selectNextArmy(),
+        condition: () => {
+          if (shouldCycleStructuresForTab()) {
+            return getRealmStructuresForTab().length > 0;
+          }
+          return this.selectableArmies.length > 0;
+        },
+        action: () => {
+          if (shouldCycleStructuresForTab()) {
+            this.selectNextRealmStructure();
+            return;
+          }
+          void this.selectNextArmy();
+        },
       });
 
       this.shortcutManager.registerShortcut({
@@ -1277,9 +1297,8 @@ export default class WorldmapScene extends HexagonScene {
       });
 
       if (isMine) {
-        if (this.state.isSoundOn) {
-          AudioManager.getInstance().play("ui.click", { volume: this.state.effectsLevel / 100 });
-        }
+        // AudioManager handles muted state internally - no need to check isSoundOn
+        AudioManager.getInstance().play("ui.click");
         // Note: Label filtering is now handled in entity selection methods
         // to avoid removing labels too aggressively on initial selection
       }
@@ -1312,8 +1331,6 @@ export default class WorldmapScene extends HexagonScene {
         structure,
         hexCoords,
         components: this.dojo.components,
-        isSoundOn: this.state.isSoundOn,
-        effectsLevel: this.state.effectsLevel,
       });
       return;
     }
@@ -1356,9 +1373,8 @@ export default class WorldmapScene extends HexagonScene {
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-      if (this.state.isSoundOn) {
-        AudioManager.getInstance().play("unit.march", { volume: this.state.effectsLevel / 100 });
-      }
+      // AudioManager handles muted state internally - no need to check isSoundOn
+      AudioManager.getInstance().play("unit.march");
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
@@ -1457,9 +1473,11 @@ export default class WorldmapScene extends HexagonScene {
 
     if (direction === undefined || direction === null) return;
 
-    this.state.toggleModal(
-      <UnifiedArmyCreationModal structureId={selectedEntityId} direction={direction} isExplorer={true} />,
-    );
+    this.state.openArmyCreationPopup({
+      structureId: selectedEntityId,
+      isExplorer: true,
+      direction,
+    });
   }
 
   // actionPath is not normalized
@@ -3029,11 +3047,76 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateUnsubscribes = [];
   }
 
-  // NOTE: Structure refresh via Torii is currently disabled for performance.
-  // This method is kept as a no-op to maintain call-site compatibility.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private async refreshStructuresForChunks(_chunkKeys: string[]): Promise<void> {
-    // No-op: structure syncing disabled
+  private async refreshStructuresForChunks(chunkKeys: string[]): Promise<void> {
+    if (chunkKeys.length === 0 || this.currentChunk === "null") {
+      return;
+    }
+
+    if (!chunkKeys.includes(this.currentChunk)) {
+      return;
+    }
+
+    const { toriiClient, contractComponents } = this.dojo.network ?? {};
+    if (!toriiClient || !contractComponents) {
+      return;
+    }
+
+    const mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
+    await mapDataStore.waitForData();
+
+    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBounds(this.currentChunk);
+    const minX = minCol + FELT_CENTER();
+    const maxX = maxCol + FELT_CENTER();
+    const minY = minRow + FELT_CENTER();
+    const maxY = maxRow + FELT_CENTER();
+
+    const components = this.dojo.components as SetupResult["components"];
+    const structuresToSync: { entityId: number; position: { col: number; row: number } }[] = [];
+
+    for (const structure of mapDataStore.getAllStructures()) {
+      if (structure.coordX < minX || structure.coordX > maxX || structure.coordY < minY || structure.coordY > maxY) {
+        continue;
+      }
+
+      const entityId = structure.entityId;
+      if (this.syncedStructureIds.has(entityId) || this.syncingStructureIds.has(entityId)) {
+        continue;
+      }
+
+      if (components?.Structure) {
+        try {
+          const entityKey = getEntityIdFromKeys([BigInt(entityId)]) as string;
+          const existing = getComponentValue(components.Structure, entityKey as any);
+          if (existing) {
+            this.syncedStructureIds.add(entityId);
+            continue;
+          }
+        } catch (error) {
+          console.warn("[WorldmapScene] Unable to build entity key for structure", entityId, error);
+        }
+      }
+
+      structuresToSync.push({
+        entityId,
+        position: { col: structure.coordX, row: structure.coordY },
+      });
+      this.syncingStructureIds.add(entityId);
+    }
+
+    if (structuresToSync.length === 0) {
+      return;
+    }
+
+    this.beginToriiFetch();
+    try {
+      await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
+      structuresToSync.forEach((structure) => this.syncedStructureIds.add(structure.entityId));
+    } catch (error) {
+      console.error("[WorldmapScene] Failed to fetch structures for chunk", this.currentChunk, error);
+    } finally {
+      structuresToSync.forEach((structure) => this.syncingStructureIds.delete(structure.entityId));
+      this.endToriiFetch();
+    }
   }
 
   private beginToriiFetch() {
@@ -4049,23 +4132,9 @@ export default class WorldmapScene extends HexagonScene {
       ),
     );
 
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
-        (state) => state.isSoundOn,
-        (isSoundOn) => {
-          this.state.isSoundOn = isSoundOn;
-        },
-      ),
-    );
-
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
-        (state) => state.effectsLevel,
-        (effectsLevel) => {
-          this.state.effectsLevel = effectsLevel;
-        },
-      ),
-    );
+    // NOTE: isSoundOn and effectsLevel subscriptions removed - AudioManager is now
+    // the single source of truth for audio settings. See AudioManager.state.muted
+    // and AudioManager.state.categoryVolumes.
 
     this.storeSubscriptions.push(
       useUIStore.subscribe(
@@ -4113,8 +4182,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.state.entityActions = uiState.entityActions;
     this.state.selectedHex = uiState.selectedHex;
-    this.state.isSoundOn = uiState.isSoundOn;
-    this.state.effectsLevel = uiState.effectsLevel;
+    // NOTE: isSoundOn and effectsLevel removed - AudioManager is now the source of truth
 
     if (this.controls) {
       this.controls.enableZoom = uiState.enableMapZoom;
@@ -4133,6 +4201,36 @@ export default class WorldmapScene extends HexagonScene {
     if (this.structureIndex >= structures.length) {
       this.structureIndex = 0;
     }
+  }
+
+  private selectNextRealmStructure() {
+    const realmStructures = this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+    if (realmStructures.length === 0) {
+      return;
+    }
+
+    const currentId = this.state.structureEntityId;
+    const currentIndex = realmStructures.findIndex((structure) => structure.entityId === currentId);
+    const nextIndex = (currentIndex + 1) % realmStructures.length;
+    const structure = realmStructures[nextIndex];
+
+    const fullIndex = this.playerStructures.findIndex((candidate) => candidate.entityId === structure.entityId);
+    if (fullIndex >= 0) {
+      this.structureIndex = fullIndex;
+    }
+
+    navigateToStructure(structure.position.x, structure.position.y, "map");
+    this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
+    this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
+
+    const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+    this.state.setStructureEntityId(structure.entityId, {
+      worldMapPosition,
+      spectator: this.state.isSpectating,
+    });
+
+    const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
+    this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
   }
 
   private selectNextStructure() {

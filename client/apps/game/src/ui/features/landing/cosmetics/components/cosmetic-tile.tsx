@@ -1,5 +1,6 @@
 import { CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
 import { useCosmeticLoadoutStore } from "@/ui/features/landing/cosmetics/model";
+import { useState } from "react";
 import { CosmeticModelViewer } from "./cosmetic-model-viewer";
 
 interface CosmeticTileProps {
@@ -9,6 +10,7 @@ interface CosmeticTileProps {
 }
 
 export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
+  const [isHovered, setIsHovered] = useState(false);
   const attributes = item.attributes ?? item.metadata?.attributes ?? [];
   const rarity = attributes.find((attribute) => attribute.trait_type === "Rarity")?.value;
   const cosmeticType = attributes.find((attribute) => attribute.trait_type === "Type")?.value;
@@ -30,9 +32,15 @@ export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
     : "";
 
   return (
-    <button type="button" onClick={() => onSelect(item.id)} className={`${baseClass} ${activeClass} ${equippedClass}`}>
+    <button
+      type="button"
+      onClick={() => onSelect(item.id)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`${baseClass} ${activeClass} ${equippedClass}`}
+    >
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-black/40">
-        <CosmeticModelViewer modelPath={item.modelPath} variant="card" autoRotate={active} />
+        <CosmeticModelViewer modelPath={item.modelPath} variant="card" autoRotate={active} isHovered={isHovered} />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/40 opacity-0 transition group-hover:opacity-100" />
         {isEquipped && (
           <div className="pointer-events-none absolute right-3 top-3 rounded-full border border-gold/80 bg-black/70 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wider text-gold shadow-[0_0_12px_rgba(250,204,21,0.45)]">

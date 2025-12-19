@@ -2,10 +2,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { Navigator } from "@/three/managers/navigator";
-import { WeatherManager } from "@/three/managers/weather-manager";
+import { WeatherManager, WeatherType } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
+import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GUIManager } from "@/three/utils/";
-import { AmbientLight, HemisphereLight, OrthographicCamera, Scene } from "three";
+import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 export default class HUDScene {
@@ -20,6 +21,7 @@ export default class HUDScene {
   private rainEffect!: RainEffect;
   private weatherManager!: WeatherManager;
   private ambienceManager!: AmbienceManager;
+  private ambientParticles!: AmbientParticleSystem;
   private navigationTargetUnsubscribe: (() => void) | null = null;
   private cycleProgress: number = 0;
 
@@ -54,6 +56,9 @@ export default class HUDScene {
 
     this.ambienceManager = new AmbienceManager();
     this.ambienceManager.addGUIControls(this.GUIFolder);
+
+    // Initialize ambient particle system (dust motes, fireflies)
+    this.ambientParticles = new AmbientParticleSystem(this.scene);
 
     // Store subscription reference for cleanup
     this.navigationTargetUnsubscribe = useUIStore.subscribe(
@@ -119,9 +124,48 @@ export default class HUDScene {
     return this.camera;
   }
 
+  getWeatherManager(): WeatherManager {
+    return this.weatherManager;
+  }
+
   update(deltaTime: number, cycleProgress?: number) {
     this.navigator.update();
-    this.rainEffect.update(deltaTime, this.camera.position);
+
+    // Update weather system (handles rain, wind, transitions)
+    this.weatherManager.update(deltaTime, this.camera.position);
+
+    // Track cycle progress for ambience
+    if (cycleProgress !== undefined) {
+      this.cycleProgress = cycleProgress;
+    }
+
+    // Get current weather state
+    const weatherState = this.weatherManager.getState();
+    const currentWeatherType = this.weatherManager.getCurrentWeather();
+
+    // CRITICAL: Call ambienceManager.update() to drive time-of-day sounds and scheduling.
+    // Previously only updateFromWeather() was called, which doesn't start/stop sounds
+    // based on time of day - it only modulates volumes for weather intensity.
+    this.ambienceManager.update(this.cycleProgress, currentWeatherType, deltaTime);
+
+    // Additionally modulate ambience volumes based on weather intensity
+    this.ambienceManager.updateFromWeather(weatherState.intensity, weatherState.stormIntensity);
+
+    // Update ambient particles (dust motes, fireflies)
+    if (cycleProgress !== undefined) {
+      this.ambientParticles.setTimeProgress(cycleProgress);
+    }
+
+    // Pass wind to ambient particles
+    const windState = this.weatherManager.getWindState();
+    this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
+
+    // Fade out ambient particles during weather
+    this.ambientParticles.setWeatherIntensity(weatherState.intensity);
+
+    // Update particle positions (follow camera)
+    const spawnCenter = new Vector3(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
+    this.ambientParticles.update(deltaTime, spawnCenter);
   }
 
   onWindowResize(width: number, height: number) {
@@ -164,6 +208,11 @@ export default class HUDScene {
     // Clean up ambience manager
     if (this.ambienceManager) {
       this.ambienceManager.dispose();
+    }
+
+    // Clean up ambient particles
+    if (this.ambientParticles) {
+      this.ambientParticles.dispose();
     }
 
     // Clean up lights

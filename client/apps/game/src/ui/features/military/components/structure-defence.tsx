@@ -9,7 +9,6 @@ import { useCallback, useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { ArmyCreate } from "./army-management-card";
 import { TroopChip } from "./troop-chip";
-import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 export interface DefenseTroop {
   slot: ID;
@@ -76,7 +75,7 @@ export const StructureDefence = ({
   const [isReordering, setIsReordering] = useState(false);
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
 
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
 
   const dojo = useDojo();
   const armyManager = new ArmyManager(dojo.setup.systemCalls, structureId as ID);
@@ -220,13 +219,11 @@ export const StructureDefence = ({
                                 onClick={() =>
                                   defense
                                     ? toggleDefenseExpansion(index)
-                                    : toggleModal(
-                                        <UnifiedArmyCreationModal
-                                          structureId={structureId}
-                                          isExplorer={false}
-                                          maxDefenseSlots={maxDefenses}
-                                        />,
-                                      )
+                                    : openArmyCreationPopup({
+                                        structureId,
+                                        isExplorer: false,
+                                        maxDefenseSlots: maxDefenses,
+                                      })
                                 }
                               >
                                 <span>Empty Defense Slot</span>

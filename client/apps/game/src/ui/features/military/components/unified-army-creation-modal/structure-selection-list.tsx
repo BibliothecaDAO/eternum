@@ -2,6 +2,7 @@ import { sqlApi } from "@/services/api";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useExplorersByStructure } from "@bibliothecadao/react";
+import { Guard } from "@bibliothecadao/torii";
 import { RealmInfo, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
@@ -21,31 +22,30 @@ const StructureSelectionItem = ({
   realm,
   isSelected,
   inventoryOptions,
+  guardsData,
   onSelect,
 }: {
   realm: RealmInfo;
   isSelected: boolean;
   inventoryOptions: TroopSelectionOption[] | undefined;
+  /** Guards data passed from parent (batched fetch) */
+  guardsData: Guard[] | undefined;
   onSelect: () => void;
 }) => {
   const isBlitz = getIsBlitz();
   const explorers = useExplorersByStructure({ structureEntityId: realm.entityId });
-  const { data: guardsData } = useQuery({
-    queryKey: ["guards", String(realm.entityId)],
-    queryFn: async () => {
-      if (!realm.entityId) return [];
-      const guards = await sqlApi.fetchGuardsByStructure(realm.entityId);
-      return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
-    },
-    staleTime: 10000,
-    enabled: realm.entityId > 0,
-  });
+
+  // Filter to non-empty guards for display
+  const nonEmptyGuards = useMemo(
+    () => (guardsData ?? []).filter((guard) => guard.troops?.count && guard.troops.count > 0n),
+    [guardsData],
+  );
 
   const name = getStructureName(realm.structure, isBlitz).name;
   const maxExplorers = realm.structure.base.troop_max_explorer_count || 0;
   const maxGuards = realm.structure.base.troop_max_guard_count || 0;
   const attackCount = explorers.length;
-  const defenseCount = guardsData?.length ?? 0;
+  const defenseCount = nonEmptyGuards.length;
   const attackAvailable = maxExplorers > 0 && attackCount < maxExplorers;
   const defenseAvailable = maxGuards > 0 && defenseCount < maxGuards;
   const needsAttention = attackAvailable || defenseAvailable;
@@ -168,14 +168,35 @@ export const StructureSelectionList = ({
   inventories,
   onSelect,
 }: StructureSelectionListProps) => {
-  if (structures.length === 0) {
-    return (
-      <div className="panel-wood rounded-xl p-6 text-center text-gold/70">
-        You do not own any structures capable of creating armies.
-      </div>
-    );
-  }
   const isBlitz = getIsBlitz();
+
+  // Batch fetch guards for ALL structures in a single query
+  // This replaces N individual queries with 1 parallel batch
+  const structureIds = useMemo(() => structures.map((s) => s.entityId).filter((id) => id > 0), [structures]);
+
+  const { data: allGuardsMap } = useQuery({
+    queryKey: ["guards-batch", structureIds.join(",")],
+    queryFn: async () => {
+      if (structureIds.length === 0) return new Map<number, Guard[]>();
+
+      // Fetch all guards in parallel
+      const results = await Promise.all(
+        structureIds.map(async (entityId) => {
+          const guards = await sqlApi.fetchGuardsByStructure(entityId);
+          return { entityId, guards };
+        }),
+      );
+
+      // Build a map for O(1) lookup by each item
+      const guardsMap = new Map<number, Guard[]>();
+      for (const { entityId, guards } of results) {
+        guardsMap.set(entityId, guards);
+      }
+      return guardsMap;
+    },
+    staleTime: 10000,
+    enabled: structureIds.length > 0,
+  });
 
   const sortedStructures = useMemo(() => {
     return [...structures].sort((a, b) => {
@@ -188,7 +209,15 @@ export const StructureSelectionList = ({
       const nameB = getStructureName(b.structure, isBlitz).name;
       return nameA.localeCompare(nameB);
     });
-  }, [structures]);
+  }, [structures, isBlitz]);
+
+  if (structures.length === 0) {
+    return (
+      <div className="panel-wood rounded-xl p-6 text-center text-gold/70">
+        You do not own any structures capable of creating armies.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -198,6 +227,7 @@ export const StructureSelectionList = ({
           realm={realm}
           isSelected={realm.entityId === selectedStructureId}
           inventoryOptions={inventories.get(realm.entityId)}
+          guardsData={allGuardsMap?.get(realm.entityId)}
           onSelect={() => onSelect(realm.entityId)}
         />
       ))}
