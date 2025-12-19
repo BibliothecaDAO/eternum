@@ -274,93 +274,81 @@ export const EndgameModal = () => {
   const championLine = championPlayer?.name ?? playerName;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center px-4 pt-[54px]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-4 py-8 pt-[72px]">
       <div
-        className={`absolute inset-0 z-0 cursor-pointer bg-[rgba(3,8,11,0.75)] backdrop-blur-sm transition-opacity duration-500 ${
+        className={`fixed inset-0 z-0 cursor-pointer bg-[rgba(3,8,11,0.80)] backdrop-blur-sm transition-opacity duration-500 ${
           isAnimating ? "pointer-events-none opacity-0" : "pointer-events-auto opacity-100"
         }`}
         onClick={() => setIsVisible(false)}
       />
 
       <div
-        className={`relative z-10 w-full max-w-[980px] transform transition-all duration-500 ${
+        className={`relative z-10 flex w-full max-w-[980px] flex-col items-center gap-6 transition-all duration-500 ${
           isAnimating ? "pointer-events-none -translate-y-4 opacity-0" : "pointer-events-auto translate-y-0 opacity-100"
         }`}
       >
-        <div className="relative overflow-hidden rounded-[60px] border border-[#123947]/70 bg-[#030d14] text-cyan-50 shadow-[0_34px_80px_rgba(2,12,20,0.72)]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_-12%,rgba(64,200,233,0.35),transparent_65%)]" />
-
-          <div className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[3px] md:px-8 md:py-7">
-            <p className="text-center text-[11px] uppercase tracking-[0.28em] text-white/60 md:text-xs">
-              Copy the Blitz highlight card or take the share link straight to X.
-            </p>
-            <div className="flex justify-center">
-              {isRanked && highlight ? (
-                <div ref={cardRef} className="w-full max-w-[940px]">
-                  <BlitzHighlightCardWithSelector
-                    title={cardTitle}
-                    subtitle={cardSubtitle}
-                    winnerLine={championLine}
-                    highlight={highlight}
-                  />
-                </div>
-              ) : isLoadingLeaderboard ? (
-                <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
-                  Your Blitz standings are syncing…
-                </div>
-              ) : (
-                <div className="flex h-[180px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-base text-white/70">
-                  Sorry, you are not ranked in the final leaderboard.
-                </div>
-              )}
-            </div>
-            {isRanked && highlight ? (
-              <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:gap-4">
-                <Button
-                  onClick={handleCopyImage}
-                  disabled={isCopying}
-                  className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
-                  variant="gold"
-                  aria-busy={isCopying}
-                  forceUppercase={false}
-                >
-                  <Copy className="h-4 w-4" />
-                  <span className="text-sm font-semibold leading-tight text-center">
-                    {isCopying ? "Preparing image…" : "Copy image"}
-                  </span>
-                </Button>
-                <Button
-                  onClick={handleShareOnX}
-                  disabled={!highlight}
-                  className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
-                  variant="outline"
-                  forceUppercase={false}
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span className="text-sm font-semibold leading-tight text-center">Share on X</span>
-                </Button>
-                <Button
-                  onClick={handleViewLeaderboard}
-                  className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
-                  variant="outline"
-                  forceUppercase={false}
-                >
-                  <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleViewLeaderboard}
-                  className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
-                  variant="outline"
-                  forceUppercase={false}
-                >
-                  <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
-                </Button>
-              </div>
-            )}
+        {isRanked && highlight ? (
+          <div ref={cardRef} className="w-full max-w-[940px]">
+            <BlitzHighlightCardWithSelector
+              title={cardTitle}
+              subtitle={cardSubtitle}
+              winnerLine={championLine}
+              highlight={highlight}
+            />
           </div>
+        ) : isLoadingLeaderboard ? (
+          <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
+            Your Blitz standings are syncing…
+          </div>
+        ) : (
+          <div className="flex h-[180px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-base text-white/70">
+            Sorry, you are not ranked in the final leaderboard.
+          </div>
+        )}
+
+        <div className="flex w-full max-w-[720px] flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+          {isRanked && highlight ? (
+            <>
+              <Button
+                onClick={handleCopyImage}
+                disabled={isCopying}
+                className="flex-1 justify-center gap-2 !px-5 !py-3"
+                variant="gold"
+                aria-busy={isCopying}
+                forceUppercase={false}
+              >
+                <Copy className="h-4 w-4" />
+                <span className="text-sm font-semibold">{isCopying ? "Preparing image…" : "Copy image"}</span>
+              </Button>
+              <Button
+                onClick={handleShareOnX}
+                disabled={!highlight}
+                className="flex-1 justify-center gap-2 !px-5 !py-3"
+                variant="outline"
+                forceUppercase={false}
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="text-sm font-semibold">Share on X</span>
+              </Button>
+              <Button
+                onClick={handleViewLeaderboard}
+                className="flex-1 justify-center !px-5 !py-3"
+                variant="outline"
+                forceUppercase={false}
+              >
+                <span className="text-sm font-semibold">View leaderboard</span>
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={handleViewLeaderboard}
+              className="flex-1 justify-center !px-5 !py-3 sm:max-w-[240px]"
+              variant="outline"
+              forceUppercase={false}
+            >
+              <span className="text-sm font-semibold">View leaderboard</span>
+            </Button>
+          )}
         </div>
       </div>
     </div>
