@@ -128,6 +128,45 @@ export class WorldUpdateListener {
     // console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
   }
 
+  private buildGuardArmies(troopGuards: any): GuardArmy[] {
+    if (!troopGuards) {
+      return [];
+    }
+
+    const guardArmies: GuardArmy[] = [];
+
+    const pushGuard = (slot: number, guard?: any) => {
+      if (!guard) return;
+      guardArmies.push({
+        slot,
+        category: guard.category,
+        tier: TROOP_TIERS[guard.tier],
+        count: divideByPrecision(Number(guard.count ?? 0)),
+        stamina: Number(guard.stamina?.amount ?? 0),
+      });
+    };
+
+    pushGuard(GuardSlot.Delta, troopGuards.delta);
+    pushGuard(GuardSlot.Charlie, troopGuards.charlie);
+    pushGuard(GuardSlot.Bravo, troopGuards.bravo);
+    pushGuard(GuardSlot.Alpha, troopGuards.alpha);
+
+    return guardArmies;
+  }
+
+  private getBattleCooldownEnd(troopGuards: any): number {
+    if (!troopGuards) {
+      return 0;
+    }
+
+    return Math.max(
+      troopGuards.alpha?.battle_cooldown_end ?? 0,
+      troopGuards.bravo?.battle_cooldown_end ?? 0,
+      troopGuards.charlie?.battle_cooldown_end ?? 0,
+      troopGuards.delta?.battle_cooldown_end ?? 0,
+    );
+  }
+
   private setupSystem<T>(
     component: Component,
     callback: (value: T) => void,
@@ -456,6 +495,15 @@ export class WorldUpdateListener {
                   this.setup.components.Structure,
                   getEntityIdFromKeys([BigInt(rawOccupierId)]),
                 );
+                const troopGuards = structureComponent?.troop_guards ?? null;
+                const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
+                const battleCooldownEnd = troopGuards
+                  ? this.getBattleCooldownEnd(troopGuards)
+                  : enhancedData.battleData?.battleCooldownEnd;
+
+                if (troopGuards) {
+                  this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
+                }
 
                 let ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
                 let ownerName = enhancedData.owner.ownerName;
@@ -481,6 +529,13 @@ export class WorldUpdateListener {
 
                 const structureName = structureComponent ? getStructureName(structureComponent, true).name : "";
 
+                const battleData = enhancedData.battleData
+                  ? {
+                      ...enhancedData.battleData,
+                      battleCooldownEnd: battleCooldownEnd ?? enhancedData.battleData.battleCooldownEnd,
+                    }
+                  : undefined;
+
                 return {
                   entityId: rawOccupierId,
                   structureName,
@@ -500,10 +555,10 @@ export class WorldUpdateListener {
                   hasWonder: structureInfo.hasWonder,
                   isAlly: false,
                   // Enhanced data from DataEnhancer
-                  guardArmies: enhancedData.guardArmies,
+                  guardArmies,
                   activeProductions: enhancedData.activeProductions,
                   hyperstructureRealmCount,
-                  battleData: enhancedData.battleData,
+                  battleData,
                 };
               });
 
@@ -527,24 +582,8 @@ export class WorldUpdateListener {
               if (!currentState) return;
 
               // Extract guard armies data from the structure (guard object may be undefined on fresh structures)
-              const troopGuards = currentState.troop_guards ?? {};
-              const guardArmies: GuardArmy[] = [];
-
-              const pushGuard = (slot: number, guard?: any) => {
-                if (!guard) return;
-                guardArmies.push({
-                  slot,
-                  category: guard.category,
-                  tier: TROOP_TIERS[guard.tier],
-                  count: divideByPrecision(Number(guard.count ?? 0)),
-                  stamina: Number(guard.stamina?.amount ?? 0),
-                });
-              };
-
-              pushGuard(GuardSlot.Delta, troopGuards?.delta);
-              pushGuard(GuardSlot.Charlie, troopGuards?.charlie);
-              pushGuard(GuardSlot.Bravo, troopGuards?.bravo);
-              pushGuard(GuardSlot.Alpha, troopGuards?.alpha);
+              const troopGuards = currentState.troop_guards ?? null;
+              const guardArmies = this.buildGuardArmies(troopGuards);
 
               // Use DataEnhancer to fetch player name
               const ownerValue = currentState.owner ?? 0n;
@@ -571,6 +610,10 @@ export class WorldUpdateListener {
 
               const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
 
+              const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
+
+              this.mapDataStore.updateStructureGuards(entityId, guardArmies, battleCooldownEnd);
+
               const structureSystemUpdate: StructureSystemUpdate = {
                 entityId,
                 guardArmies,
@@ -580,12 +623,7 @@ export class WorldUpdateListener {
                   guildName: "",
                 },
                 hexCoords: { col: baseCoords.coord_x ?? 0, row: baseCoords.coord_y ?? 0 },
-                battleCooldownEnd: Math.max(
-                  troopGuards?.alpha?.battle_cooldown_end ?? 0,
-                  troopGuards?.bravo?.battle_cooldown_end ?? 0,
-                  troopGuards?.charlie?.battle_cooldown_end ?? 0,
-                  troopGuards?.delta?.battle_cooldown_end ?? 0,
-                ),
+                battleCooldownEnd,
               };
 
               // console.log("[onStructureUpdate] StructureSystemUpdate:", structureSystemUpdate);

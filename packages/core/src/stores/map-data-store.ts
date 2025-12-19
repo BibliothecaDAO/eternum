@@ -624,6 +624,34 @@ export class MapDataStore {
     }
   }
 
+  public updateStructureGuards(entityId: number, guardArmies: GuardArmy[], battleCooldownEnd?: number): void {
+    const structure = this.structuresMap.get(entityId);
+
+    if (!structure) {
+      return;
+    }
+
+    structure.guardArmies = guardArmies;
+
+    if (battleCooldownEnd !== undefined) {
+      const existingBattleData = structure.battleData ?? {
+        battleCooldownEnd,
+        latestAttackerId: null,
+        latestAttackTimestamp: null,
+        latestDefenderId: null,
+        latestDefenseTimestamp: null,
+        latestAttackerCoordX: null,
+        latestAttackerCoordY: null,
+        latestDefenderCoordX: null,
+        latestDefenderCoordY: null,
+      };
+
+      structure.battleData = { ...existingBattleData, battleCooldownEnd };
+    }
+
+    this.structuresMap.set(entityId, structure);
+  }
+
   public clear(): void {
     this.structuresMap.clear();
     this.armiesMap.clear();

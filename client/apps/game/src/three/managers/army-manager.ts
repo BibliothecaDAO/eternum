@@ -1993,6 +1993,8 @@ export class ArmyManager {
     label.position.copy(position);
     label.position.y += 2.1;
     label.userData.entityId = army.entityId;
+    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
+    label.userData.lastDataKey = null;
 
     this.configureArmyLabelInteractions(label);
 
