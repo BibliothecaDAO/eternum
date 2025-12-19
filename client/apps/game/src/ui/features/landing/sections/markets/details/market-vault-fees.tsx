@@ -7,8 +7,8 @@ import { formatUnits } from "@/pm/utils";
 import { Button } from "@/ui/design-system/atoms";
 import { getContractByName } from "@dojoengine/core";
 import { useAccount } from "@starknet-react/core";
-import { ArrowDown } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowDown, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
 import { TokenIcon } from "../token-icon";
@@ -58,15 +58,18 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
     };
   }, [balances, market, market.vaultFeesDenominator?.value, vaultFees]);
 
-  const decimals = Number(market.collateralToken.decimals);
-  const balanceDisplay = useMemo(() => {
-    if (!relatedBalance) return "0.0000";
-    return formatUnits(relatedBalance.balance, decimals, 4);
-  }, [relatedBalance, decimals]);
+  // Change: The vault balance is a number of shares, not a token amount.
+  // No decimals handling/formatUnits, just show the raw shares amount.
+  const sharesDisplay = useMemo(() => {
+    if (!relatedBalance) return "0";
+    return BigInt(relatedBalance.balance).toLocaleString();
+  }, [relatedBalance]);
 
+  const decimals = Number(market.collateralToken.decimals);
   const redeemableDisplay = useMemo(() => formatUnits(value, decimals, 6), [value, decimals]);
 
   const canClaim = market.isResolved();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // TODO: multicall with redeem tokens
   const claim = async () => {
@@ -93,50 +96,76 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
       calldata: [marketId_u256.low, marketId_u256.high],
     };
 
-    await account?.execute([approveCall, claimCall]).then(() => toast("Vault Fees claimed!"));
+    try {
+      setIsSubmitting(true);
+      const resultTx = await account.execute([approveCall, claimCall]);
+
+      if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
+        await account.waitForTransaction(resultTx.transaction_hash);
+      }
+
+      toast.success("Vault Fees claimed!");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to claim vault fees.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (!relatedBalance) return null;
-  return (
-    <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
-      <HStack className="items-start justify-between gap-3">
-        <VStack className="gap-1">
-          <div className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault fees</div>
-          <div className="text-lg font-semibold text-white">Claim your market share</div>
-        </VStack>
-        <Button variant="secondary" size="md" className="gap-2" onClick={claim} disabled={!canClaim}>
-          <ArrowDown className="h-4 w-4" />
-          Claim
-        </Button>
-      </HStack>
-      {!canClaim && <div className="text-xs text-gold/60">Claims unlock once the market is resolved.</div>}
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <VStack className="gap-1 rounded-lg border border-white/10 bg-white/5 p-3">
-          <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Your share</span>
-          {/* <span className="text-2xl font-semibold text-gold/90">{Number(share) > 0 ? `${shareDisplay}%` : "0%"}</span> */}
-          <span className="text-2xl font-semibold text-white">{"TBD"}</span>
-          <span className="text-xs text-gold/70">of accumulated fees</span>
-        </VStack>
-
-        <VStack className="gap-1 rounded-lg border border-white/10 bg-white/5 p-3">
-          <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault balance</span>
-          <HStack className="items-baseline gap-1">
-            <span className="text-xl font-semibold text-white">{balanceDisplay}</span>
-            <TokenIcon token={market.collateralToken} size={16} />
-          </HStack>
-          <span className="text-xs text-gold/70">held in this vault</span>
-        </VStack>
-
-        <VStack className="gap-1 rounded-lg border border-white/10 bg-white/5 p-3">
-          <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Redeemable</span>
-          <HStack className="items-baseline gap-1">
-            <span className="text-xl font-semibold text-white">{Number(value) > 0 ? redeemableDisplay : "0"}</span>
-            <TokenIcon token={market.collateralToken} size={16} />
-          </HStack>
-          <span className="text-xs text-gold/70">claimable right now</span>
-        </VStack>
+  if (!relatedBalance) {
+    return (
+      <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/80">
+        <p className="text-white">Vault fees</p>
+        <p className="mt-1 text-xs text-gold/60">You don't have any vault fee shares for this market.</p>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
+          Vault fees
+        </div>
+        <Button variant="secondary" size="xs" className="gap-2" onClick={claim} disabled={!canClaim || isSubmitting}>
+          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDown className="h-4 w-4" />}
+          {isSubmitting ? "Claiming..." : "Claim"}
+        </Button>
+      </div>
+
+      {!canClaim && <div className="mb-4 text-xs text-gold/60">Claims unlock once the market is resolved.</div>}
+
+      <div className="space-y-3">
+        <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+          <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-3">
+            <VStack className="gap-1">
+              <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Your share</span>
+              <span className="text-lg font-semibold text-white">
+                {Number(share) > 0 ? `${formatUnits(share, 2, 2)}%` : "0%"}
+              </span>
+              <span className="text-xs text-gold/60">of accumulated fees</span>
+            </VStack>
+
+            <VStack className="gap-1">
+              <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault shares</span>
+              <HStack className="items-baseline gap-1">
+                <span className="text-lg font-semibold text-white">{sharesDisplay}</span>
+              </HStack>
+              <span className="text-xs text-gold/60">vault shares held</span>
+            </VStack>
+
+            <VStack className="gap-1">
+              <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Redeemable</span>
+              <HStack className="items-baseline gap-1">
+                <span className="text-lg font-semibold text-white">{Number(value) > 0 ? redeemableDisplay : "0"}</span>
+                <TokenIcon token={market.collateralToken} size={16} />
+              </HStack>
+              <span className="text-xs text-gold/60">claimable right now</span>
+            </VStack>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

@@ -17,6 +17,7 @@ import { MarketPositions } from "./markets/details/market-positions";
 import { MarketResolution } from "./markets/details/market-resolution";
 import { MarketResolved } from "./markets/details/market-resolved";
 import { MarketTrade } from "./markets/details/market-trade";
+import { MarketVaultFees } from "./markets/details/market-vault-fees";
 import { UserMessages } from "./markets/details/user-messages";
 import { MarketOdds } from "./markets/market-odds";
 import { MarketStatusBadge } from "./markets/market-status-badge";
@@ -75,7 +76,7 @@ const MarketDetailsTabs = ({ market }: { market: MarketClass }) => {
         {activeTab === "comments" ? <UserMessages marketId={market.market_id} /> : null}
         {activeTab === "activity" ? <MarketActivity market={market} /> : null}
         {activeTab === "positions" ? <MarketPositions market={market} /> : null}
-        {/* {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null} */}
+        {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null}
         {activeTab === "resolution" ? (
           market.isResolved() ? (
             <MarketResolved market={market} />
