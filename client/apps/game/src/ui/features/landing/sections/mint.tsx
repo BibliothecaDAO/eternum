@@ -56,7 +56,9 @@ const MintContent = () => {
     setMinting(lordsToken.contract_address);
     try {
       await account.execute([call]);
-      toast.success(`Minted 100 ${lordsToken.symbol} to ${target === account.address ? "your wallet" : "the recipient"}.`);
+      toast.success(
+        `Minted 100 ${lordsToken.symbol} to ${target === account.address ? "your wallet" : "the recipient"}.`,
+      );
       refetchLordsBalance?.();
     } catch (error) {
       console.error("Mint failed", error);

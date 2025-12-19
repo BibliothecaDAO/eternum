@@ -438,9 +438,8 @@ export function MarketTrade({
             <div className="mt-4 rounded-md border border-gold/30 bg-gold/5 px-3 py-2 text-left text-xs text-gold/80">
               <p className="mb-2 font-semibold uppercase tracking-wide text-gold">Alpha Release Notice</p>
               <p className="leading-relaxed">
-                This prediction market feature is currently in alpha. Smart contracts have not been formally audited.
-                By proceeding, you acknowledge that loss of funds is possible and you are participating at your own
-                risk.
+                This prediction market feature is currently in alpha. Smart contracts have not been formally audited. By
+                proceeding, you acknowledge that loss of funds is possible and you are participating at your own risk.
               </p>
             </div>
 
