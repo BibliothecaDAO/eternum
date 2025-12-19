@@ -29,7 +29,7 @@ import { env } from "../../../../env";
 export const Route = createLazyFileRoute("/trade/$collection/")({
   component: CollectionPage,
   pendingComponent: FullPageLoader,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function CollectionPage() {

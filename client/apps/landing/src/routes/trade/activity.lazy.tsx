@@ -15,7 +15,7 @@ import { formatUnits } from "viem";
 export const Route = createLazyFileRoute("/trade/activity")({
   component: ActivityPage,
   pendingComponent: FullPageLoader,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function ActivityPage() {

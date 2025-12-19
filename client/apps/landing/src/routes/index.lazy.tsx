@@ -25,7 +25,7 @@ import { useMemo } from "react";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function Index() {

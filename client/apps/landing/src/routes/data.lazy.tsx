@@ -8,7 +8,7 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/data")({
   component: Index,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function Index() {

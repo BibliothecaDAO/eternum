@@ -33,7 +33,7 @@ import { fetchSeasonPassRealmsByAddress, SeasonPassRealm } from "@/hooks/service
 
 export const Route = createLazyFileRoute("/mint")({
   component: MintSeasonPasses,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 // Define the structure of the augmented realm used internally

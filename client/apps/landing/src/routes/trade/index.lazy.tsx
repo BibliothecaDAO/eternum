@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 export const Route = createLazyFileRoute("/trade/")({
   component: CollectionsPage,
   pendingComponent: FullPageLoader,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function CollectionsPage() {

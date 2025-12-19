@@ -11,7 +11,7 @@ import { env } from "../../../../env";
 
 export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function TradeLayout() {

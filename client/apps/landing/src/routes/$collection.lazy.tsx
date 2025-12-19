@@ -32,7 +32,7 @@ import { formatUnits } from "viem";
 
 export const Route = createLazyFileRoute("/$collection")({
   component: ManageCollectionRoute,
-  meta: () => OG_IMAGE_META,
+  head: () => ({ meta: OG_IMAGE_META }),
 });
 
 function ManageCollectionRoute() {
