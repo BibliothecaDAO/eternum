@@ -42,7 +42,12 @@ export const DefenseSlotSelection = ({
   );
 
   const activeSlotCount = useMemo(() => {
-    return sortedSlots.filter((slot) => guardsBySlot.has(slot)).length;
+    // Only count slots with actual troops (count > 0), matching modal's canCreateDefenseArmy logic
+    return sortedSlots.filter((slot) => {
+      const guard = guardsBySlot.get(slot);
+      const count = guard?.troops?.count;
+      return count != null && count > 0;
+    }).length;
   }, [sortedSlots, guardsBySlot]);
 
   const unlockedCapacity = Math.min(sortedSlots.length, maxDefenseSlots);

@@ -6,6 +6,7 @@ import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { sqlApi } from "@/services/api";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
@@ -40,6 +41,8 @@ import {
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   isRelicActive,
+  MAP_DATA_REFRESH_INTERVAL,
+  MapDataStore,
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
   SelectableArmy,
@@ -324,6 +327,8 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = 16;
   private pinnedChunkKeys: Set<string> = new Set();
+  private syncedStructureIds: Set<ID> = new Set();
+  private syncingStructureIds: Set<ID> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
   private currentHexGridTask: symbol | null = null;
@@ -3034,11 +3039,81 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateUnsubscribes = [];
   }
 
-  // NOTE: Structure refresh via Torii is currently disabled for performance.
-  // This method is kept as a no-op to maintain call-site compatibility.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private async refreshStructuresForChunks(_chunkKeys: string[]): Promise<void> {
-    // No-op: structure syncing disabled
+  private async refreshStructuresForChunks(chunkKeys: string[]): Promise<void> {
+    if (chunkKeys.length === 0 || this.currentChunk === "null") {
+      return;
+    }
+
+    if (!chunkKeys.includes(this.currentChunk)) {
+      return;
+    }
+
+    const { toriiClient, contractComponents } = this.dojo.network ?? {};
+    if (!toriiClient || !contractComponents) {
+      return;
+    }
+
+    const mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
+    await mapDataStore.waitForData();
+
+    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBounds(this.currentChunk);
+    const minX = minCol + FELT_CENTER();
+    const maxX = maxCol + FELT_CENTER();
+    const minY = minRow + FELT_CENTER();
+    const maxY = maxRow + FELT_CENTER();
+
+    const components = this.dojo.components as SetupResult["components"];
+    const structuresToSync: { entityId: number; position: { col: number; row: number } }[] = [];
+
+    for (const structure of mapDataStore.getAllStructures()) {
+      if (
+        structure.coordX < minX ||
+        structure.coordX > maxX ||
+        structure.coordY < minY ||
+        structure.coordY > maxY
+      ) {
+        continue;
+      }
+
+      const entityId = structure.entityId;
+      if (this.syncedStructureIds.has(entityId) || this.syncingStructureIds.has(entityId)) {
+        continue;
+      }
+
+      if (components?.Structure) {
+        try {
+          const entityKey = getEntityIdFromKeys([BigInt(entityId)]) as string;
+          const existing = getComponentValue(components.Structure, entityKey as any);
+          if (existing) {
+            this.syncedStructureIds.add(entityId);
+            continue;
+          }
+        } catch (error) {
+          console.warn("[WorldmapScene] Unable to build entity key for structure", entityId, error);
+        }
+      }
+
+      structuresToSync.push({
+        entityId,
+        position: { col: structure.coordX, row: structure.coordY },
+      });
+      this.syncingStructureIds.add(entityId);
+    }
+
+    if (structuresToSync.length === 0) {
+      return;
+    }
+
+    this.beginToriiFetch();
+    try {
+      await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
+      structuresToSync.forEach((structure) => this.syncedStructureIds.add(structure.entityId));
+    } catch (error) {
+      console.error("[WorldmapScene] Failed to fetch structures for chunk", this.currentChunk, error);
+    } finally {
+      structuresToSync.forEach((structure) => this.syncingStructureIds.delete(structure.entityId));
+      this.endToriiFetch();
+    }
   }
 
   private beginToriiFetch() {

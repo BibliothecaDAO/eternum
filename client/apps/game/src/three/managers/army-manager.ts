@@ -38,6 +38,7 @@ import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { FXManager } from "./fx-manager";
+import { PathRenderer } from "./path-renderer";
 import { PointsLabelRenderer } from "./points-label-renderer";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -144,6 +145,10 @@ export class ArmyManager {
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, string> = new Map();
 
+  // Path visualization
+  private pathRenderer: PathRenderer;
+  private selectedArmyForPath: ID | null = null;
+
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
@@ -207,6 +212,10 @@ export class ArmyManager {
 
     // Initialize points-based icon renderers
     this.initializePointsRenderers();
+
+    // Initialize path renderer for movement visualization
+    this.pathRenderer = PathRenderer.getInstance();
+    this.pathRenderer.initialize(scene);
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -521,6 +530,7 @@ export class ArmyManager {
   async onTileUpdate(update: ExplorerTroopsTileSystemUpdate) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
+    console.log("[ArmyManager] onTileUpdate for", entityId, "at", hexCoords);
 
     const {
       battleCooldownEnd,
@@ -1431,6 +1441,7 @@ export class ArmyManager {
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position) {
+    console.log("[ArmyManager] moveArmy called for", entityId, "to", hexCoords);
     // Monitor memory usage before army movement
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
@@ -1499,6 +1510,8 @@ export class ArmyManager {
       this.armyPaths.delete(entityId);
       // Remove from source bucket now that movement is complete
       this.cleanupMovementSourceBucket(entityId);
+      // Remove path visualization
+      this.pathRenderer.removePath(numericEntityId);
     });
 
     // Don't remove relic effects during movement - they will follow the army
@@ -1506,6 +1519,11 @@ export class ArmyManager {
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
+
+    // Create path visualization with player-specific color
+    const colorProfile = this.getArmyColorProfile(armyData);
+    const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
+    this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
@@ -1585,6 +1603,12 @@ export class ArmyManager {
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
     this.lastKnownVisibleHexes.delete(entityId);
+
+    // Remove path visualization
+    this.pathRenderer.removePath(numericEntityId);
+    if (this.selectedArmyForPath === entityId) {
+      this.selectedArmyForPath = null;
+    }
 
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
@@ -1679,6 +1703,39 @@ export class ArmyManager {
     return this.visibleArmyOrder.length;
   }
 
+  /**
+   * Set the selected army for path visualization
+   * Shows the full path for the selected army, hides others or shows them as "moving"
+   */
+  public setSelectedArmyPath(entityId: ID | null): void {
+    const previousSelected = this.selectedArmyForPath;
+    this.selectedArmyForPath = entityId;
+
+    // Update display states for paths
+    if (previousSelected !== null && previousSelected !== entityId) {
+      const numericId = this.toNumericId(previousSelected);
+      if (this.pathRenderer.hasPath(numericId)) {
+        this.pathRenderer.setPathDisplayState(numericId, "moving");
+      }
+    }
+
+    if (entityId !== null) {
+      const numericId = this.toNumericId(entityId);
+      if (this.pathRenderer.hasPath(numericId)) {
+        this.pathRenderer.setSelectedPath(numericId);
+      }
+    } else {
+      this.pathRenderer.setSelectedPath(null);
+    }
+  }
+
+  /**
+   * Get the selected army for path visualization
+   */
+  public getSelectedArmyForPath(): ID | null {
+    return this.selectedArmyForPath;
+  }
+
   update(deltaTime: number) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
@@ -1686,6 +1743,18 @@ export class ArmyManager {
 
     // Update FX
     this.fxManager.update(deltaTime);
+
+    // Update path visualization animation
+    this.pathRenderer.update(deltaTime);
+
+    // Update path progress for selected army
+    if (this.selectedArmyForPath !== null) {
+      const numericId = this.toNumericId(this.selectedArmyForPath);
+      const progress = this.armyModel.getMovementProgress(numericId);
+      if (progress !== undefined) {
+        this.pathRenderer.updateProgress(numericId, progress);
+      }
+    }
 
     // Batch update: single pass over visible armies for all per-frame operations
     // This consolidates point icons, attachment transforms, and relic effects
@@ -1924,6 +1993,8 @@ export class ArmyManager {
     label.position.copy(position);
     label.position.y += 2.1;
     label.userData.entityId = army.entityId;
+    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
+    label.userData.lastDataKey = null;
 
     this.configureArmyLabelInteractions(label);
 
@@ -2312,19 +2383,24 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    // Optimization: Don't update DOM if label is culled/invisible
-    if (existingLabel.parent !== this.labelsGroup) {
+    // Build data key from fields that affect label appearance
+    const dataKey = `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
+
+    // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
+    // Only skip if label is currently visible - culled labels need update when shown
+    const isVisible = existingLabel.parent === this.labelsGroup;
+    if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
 
-    // Optimization: Skip DOM update if data hasn't changed (dirty-flag pattern)
-    const dataKey = `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}`;
-    if (existingLabel.userData.lastDataKey === dataKey) {
+    // If label is culled, mark it dirty so it updates when becoming visible
+    if (!isVisible) {
+      existingLabel.userData.lastDataKey = null; // Force update on next show
       return;
     }
-    existingLabel.userData.lastDataKey = dataKey;
 
     // Update the existing label content in-place with correct camera view
+    existingLabel.userData.lastDataKey = dataKey;
     updateArmyLabel(existingLabel.element, army, this.currentCameraView);
   }
 
@@ -2560,6 +2636,10 @@ ${
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.chunkToArmies.clear();
+
+    // Clear path visualization
+    this.pathRenderer.clearAll();
+    this.selectedArmyForPath = null;
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();

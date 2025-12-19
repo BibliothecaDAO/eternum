@@ -63,8 +63,6 @@ export const TopHeader = memo(() => {
     return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
   }, [selectedStructure]);
 
-  console.log("[TopHeader] selectedStructure:", lastControlledStructureEntityId);
-
   const goToStructure = useGoToStructure(setup);
 
   const normalizeAddress = useCallback((value: string) => value.trim().toLowerCase(), []);

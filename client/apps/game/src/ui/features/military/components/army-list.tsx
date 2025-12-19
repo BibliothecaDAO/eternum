@@ -22,7 +22,7 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
   });
 
   const { data: guardsData } = useQuery({
-    queryKey: ["guards", "with-empty", String(structureId)],
+    queryKey: ["guards", String(structureId)],
     queryFn: async () => {
       if (!structureId) return [];
       return await sqlApi.fetchGuardsByStructure(structureId);

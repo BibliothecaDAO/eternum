@@ -173,6 +173,9 @@ export class StructureManager {
     // Remove from battle timer tracking
     this.structuresWithActiveBattleTimer.delete(structure.entityId);
 
+    // Remove associated label to prevent stale content
+    this.removeEntityIdLabel(structure.entityId);
+
     // Remove from spatial index
     const { col, row } = structure.hexCoords;
     const key = this.getSpatialKey(col, row);
@@ -1673,6 +1676,8 @@ export class StructureManager {
     label.position.copy(position);
     label.position.y += 2;
     label.userData.entityId = structure.entityId;
+    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
+    label.userData.lastDataKey = null;
 
     this.configureStructureLabelInteractions(label);
 
@@ -2208,11 +2213,37 @@ export class StructureManager {
    * Update a structure label with fresh data
    */
   private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
-    // Optimization: Don't update DOM if label is culled/invisible
-    if (existingLabel.parent !== this.labelsGroup) {
+    // Build a data key from fields that affect label appearance
+    const guardKey =
+      structure.guardArmies?.map((g) => `${g.slot}:${g.category ?? ""}:${g.tier}:${g.count}`).join(",") ?? "";
+    const productionKey = structure.activeProductions?.map((p) => `${p.buildingType}:${p.buildingCount}`).join(",") ?? "";
+    const dataKey = [
+      structure.isMine,
+      structure.owner?.ownerName ?? "",
+      guardKey,
+      structure.battleTimerLeft ?? 0,
+      structure.attackedFromDegrees ?? "",
+      structure.attackedTowardDegrees ?? "",
+      productionKey,
+      structure.level,
+      structure.stage,
+    ].join("|");
+
+    // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
+    // Only skip if label is currently visible - culled labels need update when shown
+    const isVisible = existingLabel.parent === this.labelsGroup;
+    if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
+
+    // If label is culled, mark it dirty so it updates when becoming visible
+    if (!isVisible) {
+      existingLabel.userData.lastDataKey = null; // Force update on next show
+      return;
+    }
+
     // Update the existing label content in-place with correct camera view
+    existingLabel.userData.lastDataKey = dataKey;
     updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
 }

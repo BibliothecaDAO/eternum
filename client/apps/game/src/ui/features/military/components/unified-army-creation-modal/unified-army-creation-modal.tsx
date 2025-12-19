@@ -184,8 +184,7 @@ export const UnifiedArmyCreationModal = ({
     queryKey: ["guards", String(activeStructureId)],
     queryFn: async () => {
       if (!activeStructureId) return [];
-      const guards = await sqlApi.fetchGuardsByStructure(activeStructureId);
-      return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
+      return await sqlApi.fetchGuardsByStructure(activeStructureId);
     },
     staleTime: 10000,
     enabled: activeStructureId > 0,
@@ -239,9 +238,12 @@ export const UnifiedArmyCreationModal = ({
 
   const selectedGuardCategory = selectedGuard?.troops?.category as TroopType | undefined;
   const selectedGuardTier = selectedGuard?.troops?.tier as TroopTier | undefined;
-  const isSelectedSlotOccupied = Boolean(selectedGuard);
+  // A slot is only truly "occupied" if it has troops with count > 0
+  const isSelectedSlotOccupied = selectedGuardCount > 0;
+  // Slot is compatible if empty (no guard or count = 0) OR same troop type/tier
   const isDefenseSlotCompatible =
     !selectedGuard ||
+    selectedGuardCount === 0 ||
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
   const structureCoordX = structureBase?.coord_x;
@@ -472,7 +474,9 @@ export const UnifiedArmyCreationModal = ({
         if (isDefenseSlotCreationBlocked) {
           throw new Error("No available defense slot for new troops");
         }
-        if (!availableGuardSlotSet.has(guardSlot)) {
+        // Use effectiveGuardSlot which falls back to first available if current selection is invalid
+        const slotToUse = availableGuardSlotSet.has(guardSlot) ? guardSlot : (availableGuardSlots[0] ?? guardSlot);
+        if (!availableGuardSlotSet.has(slotToUse)) {
           throw new Error("Selected defense slot is locked for this structure level");
         }
         await armyManager.addTroopsToGuard(
@@ -480,7 +484,7 @@ export const UnifiedArmyCreationModal = ({
           selectedTroopCombo.type,
           selectedTroopCombo.tier,
           troopCount,
-          guardSlot,
+          slotToUse,
         );
         if (activeStructureId > 0) {
           queryClient
