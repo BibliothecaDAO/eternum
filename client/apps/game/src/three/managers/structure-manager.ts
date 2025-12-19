@@ -2198,7 +2198,8 @@ export class StructureManager {
     // Build a data key from fields that affect label appearance
     const guardKey =
       structure.guardArmies?.map((g) => `${g.slot}:${g.category ?? ""}:${g.tier}:${g.count}`).join(",") ?? "";
-    const productionKey = structure.activeProductions?.map((p) => `${p.buildingType}:${p.buildingCount}`).join(",") ?? "";
+    const productionKey =
+      structure.activeProductions?.map((p) => `${p.buildingType}:${p.buildingCount}`).join(",") ?? "";
     const dataKey = [
       structure.isMine,
       structure.owner?.ownerName ?? "",

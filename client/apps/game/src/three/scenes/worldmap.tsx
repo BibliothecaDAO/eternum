@@ -27,7 +27,6 @@ import { gameWorkerManager } from "../../managers/game-worker-manager";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
-import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { QuestModal } from "@/ui/features/progression";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -62,6 +61,7 @@ import {
   ID,
   RelicEffect,
   Structure,
+  StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -819,13 +819,28 @@ export default class WorldmapScene extends HexagonScene {
 
     // Only register shortcuts if they haven't been registered already
     if (!this.shortcutManager.hasShortcuts()) {
+      const shouldCycleStructuresForTab = () => Boolean(useUIStore.getState().armyCreationPopup);
+      const getRealmStructuresForTab = () =>
+        this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+
       this.shortcutManager.registerShortcut({
         id: "cycle-armies",
         key: "Tab",
-        description: "Cycle through armies",
+        description: "Cycle through armies (or structures when army creation is open)",
         sceneRestriction: SceneName.WorldMap,
-        condition: () => this.selectableArmies.length > 0,
-        action: () => void this.selectNextArmy(),
+        condition: () => {
+          if (shouldCycleStructuresForTab()) {
+            return getRealmStructuresForTab().length > 0;
+          }
+          return this.selectableArmies.length > 0;
+        },
+        action: () => {
+          if (shouldCycleStructuresForTab()) {
+            this.selectNextRealmStructure();
+            return;
+          }
+          void this.selectNextArmy();
+        },
       });
 
       this.shortcutManager.registerShortcut({
@@ -1458,9 +1473,11 @@ export default class WorldmapScene extends HexagonScene {
 
     if (direction === undefined || direction === null) return;
 
-    this.state.toggleModal(
-      <UnifiedArmyCreationModal structureId={selectedEntityId} direction={direction} isExplorer={true} />,
-    );
+    this.state.openArmyCreationPopup({
+      structureId: selectedEntityId,
+      isExplorer: true,
+      direction,
+    });
   }
 
   // actionPath is not normalized
@@ -3057,12 +3074,7 @@ export default class WorldmapScene extends HexagonScene {
     const structuresToSync: { entityId: number; position: { col: number; row: number } }[] = [];
 
     for (const structure of mapDataStore.getAllStructures()) {
-      if (
-        structure.coordX < minX ||
-        structure.coordX > maxX ||
-        structure.coordY < minY ||
-        structure.coordY > maxY
-      ) {
+      if (structure.coordX < minX || structure.coordX > maxX || structure.coordY < minY || structure.coordY > maxY) {
         continue;
       }
 
@@ -4189,6 +4201,36 @@ export default class WorldmapScene extends HexagonScene {
     if (this.structureIndex >= structures.length) {
       this.structureIndex = 0;
     }
+  }
+
+  private selectNextRealmStructure() {
+    const realmStructures = this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+    if (realmStructures.length === 0) {
+      return;
+    }
+
+    const currentId = this.state.structureEntityId;
+    const currentIndex = realmStructures.findIndex((structure) => structure.entityId === currentId);
+    const nextIndex = (currentIndex + 1) % realmStructures.length;
+    const structure = realmStructures[nextIndex];
+
+    const fullIndex = this.playerStructures.findIndex((candidate) => candidate.entityId === structure.entityId);
+    if (fullIndex >= 0) {
+      this.structureIndex = fullIndex;
+    }
+
+    navigateToStructure(structure.position.x, structure.position.y, "map");
+    this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
+    this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
+
+    const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+    this.state.setStructureEntityId(structure.entityId, {
+      worldMapPosition,
+      spectator: this.state.isSpectating,
+    });
+
+    const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
+    this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
   }
 
   private selectNextStructure() {

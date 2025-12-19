@@ -16,7 +16,6 @@ import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
-import { OG_IMAGE_META } from "@/lib/seo";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
 import { useSuspenseQueries } from "@tanstack/react-query";
@@ -29,7 +28,6 @@ import { env } from "../../../../env";
 export const Route = createLazyFileRoute("/trade/$collection/")({
   component: CollectionPage,
   pendingComponent: FullPageLoader,
-  meta: () => OG_IMAGE_META,
 });
 
 function CollectionPage() {
