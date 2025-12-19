@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useUser } from "@/pm/hooks/dojo/user";
+import { formatUnits } from "@/pm/utils";
 import { Button, Panel, TextInput } from "@/ui/design-system/atoms";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/ui/design-system/atoms/table";
 import { HStack, VStack } from "@pm/ui";
@@ -9,36 +10,29 @@ import { useAccount } from "@starknet-react/core";
 import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
 
+import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { MarketsProviders, MarketsSection } from "./markets";
 import { TokenIcon } from "./markets/token-icon";
 
 const MintContent = () => {
   const { account } = useAccount();
-  const {
-    tokens: { tokens, getBalance, toDecimal, refetchBalances },
-  } = useUser();
+  const { lordsBalance, refetchLordsBalance } = useUser();
   const [recipient, setRecipient] = useState<string>(account?.address || "");
   const [minting, setMinting] = useState<string | null>(null);
 
-  const lordsTokens = useMemo(() => {
-    const target = "0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5";
-    const found = tokens.filter((token) => BigInt(token.contract_address) === BigInt(target));
-    if (found.length > 0) return found;
+  const lordsToken = useMemo(() => {
+    const config = getPredictionMarketConfig();
+    return {
+      contract_address: config.collateralToken,
+      token_id: "0x0",
+      name: "Mock LORDS",
+      symbol: "LORDS",
+      decimals: 18,
+      metadata: "",
+    };
+  }, []);
 
-    // Fallback token so minting stays available even without an existing balance entry
-    return [
-      {
-        contract_address: target,
-        token_id: "0x0",
-        name: "Mock LORDS",
-        symbol: "LORDS",
-        decimals: 18,
-        metadata: "",
-      } as any,
-    ];
-  }, [tokens]);
-
-  const onMint = async (contractAddress: string, decimals: number, symbol: string) => {
+  const onMint = async () => {
     if (!account) {
       toast.error("Connect a wallet to mint tokens.");
       return;
@@ -50,20 +44,20 @@ const MintContent = () => {
       return;
     }
 
-    const amount = 100n * 10n ** BigInt(decimals || 0);
+    const amount = 100n * 10n ** BigInt(lordsToken.decimals);
     const { low, high } = uint256.bnToUint256(amount);
 
     const call: Call = {
-      contractAddress,
+      contractAddress: lordsToken.contract_address,
       entrypoint: "mint",
       calldata: [target, low, high],
     };
 
-    setMinting(contractAddress);
+    setMinting(lordsToken.contract_address);
     try {
       await account.execute([call]);
-      toast.success(`Minted 100 ${symbol} to ${target === account.address ? "your wallet" : "the recipient"}.`);
-      await refetchBalances?.();
+      toast.success(`Minted 100 ${lordsToken.symbol} to ${target === account.address ? "your wallet" : "the recipient"}.`);
+      refetchLordsBalance?.();
     } catch (error) {
       console.error("Mint failed", error);
       toast.error("Mint failed. Check console for details.");
@@ -112,42 +106,29 @@ const MintContent = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {lordsTokens.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-sm text-gold/70">
-                  Loading token data... Using fallback Mock LORDS.
-                </TableCell>
-              </TableRow>
-            ) : null}
-            {lordsTokens.map((token) => {
-              const balance = getBalance(token);
-              const formattedBalance = balance ? toDecimal(token, balance) : 0;
-              const isMinting = minting === token.contract_address;
-
-              return (
-                <TableRow key={`${token.contract_address}-${token.token_id || 0}`}>
-                  <TableCell>
-                    <HStack className="items-center gap-2">
-                      <TokenIcon token={token} size={20} />
-                      <span className="font-semibold text-white">{token.symbol}</span>
-                      <span className="text-xs text-white/60">({token.decimals} dec)</span>
-                    </HStack>
-                  </TableCell>
-                  <TableCell className="text-right text-white/80">{formattedBalance.toFixed(4)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="secondary"
-                      size="xs"
-                      onClick={() => onMint(token.contract_address, token.decimals || 18, token.symbol)}
-                      disabled={isMinting}
-                      isLoading={isMinting}
-                    >
-                      {isMinting ? "Minting..." : "Mint 100"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            <TableRow>
+              <TableCell>
+                <HStack className="items-center gap-2">
+                  <TokenIcon token={lordsToken} size={20} />
+                  <span className="font-semibold text-white">{lordsToken.symbol}</span>
+                  <span className="text-xs text-white/60">({lordsToken.decimals} dec)</span>
+                </HStack>
+              </TableCell>
+              <TableCell className="text-right text-white/80">
+                {formatUnits(lordsBalance, lordsToken.decimals, 4)}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={onMint}
+                  disabled={minting === lordsToken.contract_address}
+                  isLoading={minting === lordsToken.contract_address}
+                >
+                  {minting === lordsToken.contract_address ? "Minting..." : "Mint 100"}
+                </Button>
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </Panel>
