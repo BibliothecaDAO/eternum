@@ -8,4 +8,5 @@ export const POLLING_INTERVALS = {
   resourceArrivalsMs: toNumber(import.meta.env.VITE_POLL_RESOURCE_ARRIVALS_MS, 40_000),
   storyEventsMs: toNumber(import.meta.env.VITE_POLL_STORY_EVENTS_MS, 6_000),
   storyEventsStaleMs: toNumber(import.meta.env.VITE_POLL_STORY_EVENTS_STALE_MS, 60_000),
+  autoRegisterPointsMs: toNumber(import.meta.env.VITE_POLL_AUTO_REGISTER_POINTS_MS, 300_000),
 };

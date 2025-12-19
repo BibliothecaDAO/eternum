@@ -5,6 +5,7 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   formatArmies,
   getAddressName,
@@ -13,6 +14,7 @@ import {
   getEntityInfo,
   getGuildFromPlayerAddress,
   getIsBlitz,
+  LeaderboardManager,
   ResourceArrivalManager,
   SelectableArmy,
 } from "@bibliothecadao/eternum";
@@ -308,6 +310,102 @@ const RelicsStoreManager = () => {
   return null;
 };
 
+const AUTO_REGISTER_POINTS_DEBUG = true;
+
+const AutoRegisterPointsStoreManager = () => {
+  const {
+    account: { account },
+    setup: {
+      components,
+      systemCalls: { claim_share_points },
+    },
+  } = useDojo();
+
+  const isProcessingRef = useRef(false);
+  const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
+
+  useEffect(() => {
+    const log = (...args: unknown[]) => {
+      if (AUTO_REGISTER_POINTS_DEBUG) {
+        console.log("[AutoRegisterPoints]", ...args);
+      }
+    };
+
+    const checkAndRegisterPoints = async () => {
+      log("Checking points...");
+
+      // Guard: skip if already processing or no account
+      if (isProcessingRef.current) {
+        log("Skipped: already processing");
+        return;
+      }
+      if (!account?.address || account.address === "0x0") {
+        log("Skipped: no account");
+        return;
+      }
+
+      // Get current points
+      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
+      const unregisteredPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+        ContractAddress(account.address),
+      );
+
+      log(`Registered: ${registeredPoints}, Unregistered: ${unregisteredPoints}`);
+
+      // Check condition: unregistered > registered
+      if (unregisteredPoints <= registeredPoints) {
+        log("Skipped: unregistered <= registered");
+        return;
+      }
+
+      // Get completed hyperstructure IDs
+      const hyperstructureIds = hyperstructure_entities
+        .map((entity) => getComponentValue(components.Hyperstructure, entity))
+        .filter((hs) => hs?.completed)
+        .map((hs) => hs?.hyperstructure_id)
+        .filter((id) => id !== undefined);
+
+      if (hyperstructureIds.length === 0) {
+        log("Skipped: no completed hyperstructures");
+        return;
+      }
+
+      log(`Registering points for ${hyperstructureIds.length} hyperstructures...`);
+
+      // Execute registration
+      isProcessingRef.current = true;
+      try {
+        await claim_share_points({
+          signer: account,
+          hyperstructure_ids: hyperstructureIds,
+        });
+
+        log("Points registered successfully");
+
+        // Refresh leaderboard
+        leaderboardManager.initialize();
+        log("Leaderboard refreshed");
+      } catch (error) {
+        console.error("[AutoRegisterPoints] Failed:", error);
+      } finally {
+        isProcessingRef.current = false;
+      }
+    };
+
+    // Run immediately on mount
+    checkAndRegisterPoints();
+
+    // Set up interval
+    log(`Interval set: ${POLLING_INTERVALS.autoRegisterPointsMs}ms`);
+    const intervalId = setInterval(checkAndRegisterPoints, POLLING_INTERVALS.autoRegisterPointsMs);
+
+    return () => clearInterval(intervalId);
+  }, [account, components, claim_share_points, hyperstructure_entities]);
+
+  return null;
+};
+
 const PlayerStructuresStoreManager = () => {
   const playerStructures = usePlayerStructures();
   const setPlayerStructures = useUIStore((state) => state.setPlayerStructures);
@@ -484,6 +582,7 @@ export const StoreManagers = () => {
       <MinigameStoreManager />
       <ResourceArrivalsStoreManager />
       <RelicsStoreManager />
+      <AutoRegisterPointsStoreManager />
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
