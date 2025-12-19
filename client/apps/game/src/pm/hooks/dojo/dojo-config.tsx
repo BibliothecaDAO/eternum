@@ -1,9 +1,11 @@
 import { createDojoConfig, DojoConfig, getContractByName } from "@dojoengine/core";
 import { createContext, useCallback, useContext, useMemo, type PropsWithChildren } from "react";
-import manifestMainnet from "../../manifests/manifest_mainnet.json";
+import manifestMainnet from "../../manifests/manifest_mainnet_1-7.json";
 import manifestSlot from "../../manifests/manifest_slot.json";
-// todo: use mainnet or slot depending on the network
-console.log({ manifestMainnet });
+import { getPredictionMarketChain } from "../../prediction-market-config";
+
+// const manifest = getPredictionMarketChain() === "mainnet" ? manifestMainnet : manifestSlot;
+const manifest = getPredictionMarketChain() === "mainnet" ? manifestMainnet : manifestSlot;
 
 type DojoConfigProviderProps = PropsWithChildren<{
   toriiUrl: string;
@@ -22,9 +24,9 @@ export function DojoConfigProvider({ children, toriiUrl, worldAddress }: DojoCon
     return createDojoConfig({
       toriiUrl,
       manifest: {
-        ...manifestSlot,
+        ...manifest,
         world: {
-          ...manifestSlot.world,
+          ...manifest.world,
           address: worldAddress,
         },
       },
