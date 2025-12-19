@@ -177,6 +177,7 @@ export function MarketTrade({
   const [amount, setAmount] = useState("0");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState(false);
   const account = useAccountStore((state) => state.account);
 
   const marketContractAddress = getContractByName(manifest, "pm", "Markets")?.address;
@@ -408,16 +409,22 @@ export function MarketTrade({
           </HStack>
         </VStack>
 
-        <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
+        <Dialog
+          open={isDialogOpen}
+          onClose={() => {
+            setIsDialogOpen(false);
+            setHasAcknowledgedRisk(false);
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Confirmation</DialogTitle>
           </DialogHeader>
 
           <DialogDescription>
-            <div className="my-6 flex items-center justify-center text-xl">
+            <div className="my-4 flex items-center justify-center text-xl">
               <VStack>
                 <Leo width="64px" height="64px" color="#f0b100" />
-                <VStack className="mt-6 items-center">
+                <VStack className="mt-4 items-center">
                   <span>I want to buy</span>
                   <HStack className="items-center justify-center">
                     {Number(amount) > 0 ? `${amount} ${market.collateralToken?.symbol ?? ""}`.trim() : "0"}
@@ -427,12 +434,31 @@ export function MarketTrade({
                 </VStack>
               </VStack>
             </div>
+
+            <div className="mt-4 rounded-md border border-gold/30 bg-gold/5 px-3 py-2 text-left text-xs text-gold/80">
+              <p className="mb-2 font-semibold uppercase tracking-wide text-gold">Alpha Release Notice</p>
+              <p className="leading-relaxed">
+                This prediction market feature is currently in alpha. Smart contracts have not been formally audited.
+                By proceeding, you acknowledge that loss of funds is possible and you are participating at your own
+                risk.
+              </p>
+            </div>
+
+            <label className="mt-4 flex cursor-pointer items-start gap-2 text-left text-xs text-white/80">
+              <input
+                type="checkbox"
+                checked={hasAcknowledgedRisk}
+                onChange={(e) => setHasAcknowledgedRisk(e.target.checked)}
+                className="mt-0.5 h-4 w-4 cursor-pointer accent-gold"
+              />
+              <span>I understand the risks and wish to proceed</span>
+            </label>
           </DialogDescription>
           <DialogFooter>
             <Button
               className="w-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center gap-2"
               onClick={() => onBuy(selectedOutcome?.index ?? 0)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !hasAcknowledgedRisk}
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {isSubmitting ? "Submitting..." : "BUY"}

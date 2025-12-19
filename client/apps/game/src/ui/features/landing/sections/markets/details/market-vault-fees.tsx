@@ -58,14 +58,13 @@ export function MarketVaultFees({ market }: { market: MarketClass }) {
     };
   }, [balances, market, market.vaultFeesDenominator?.value, vaultFees]);
 
+  const decimals = Number(market.collateralToken.decimals);
   // Change: The vault balance is a number of shares, not a token amount.
   // No decimals handling/formatUnits, just show the raw shares amount.
   const sharesDisplay = useMemo(() => {
     if (!relatedBalance) return "0";
-    return BigInt(relatedBalance.balance).toLocaleString();
-  }, [relatedBalance]);
-
-  const decimals = Number(market.collateralToken.decimals);
+    return formatUnits(relatedBalance.balance, decimals, 4);
+  }, [relatedBalance, decimals]);
   const redeemableDisplay = useMemo(() => formatUnits(value, decimals, 6), [value, decimals]);
 
   const canClaim = market.isResolved();
