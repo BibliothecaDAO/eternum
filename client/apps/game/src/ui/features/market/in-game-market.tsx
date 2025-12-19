@@ -21,7 +21,6 @@ import { MarketResolved } from "@/ui/features/landing/sections/markets/details/m
 import { MarketTrade } from "@/ui/features/landing/sections/markets/details/market-trade";
 import { MarketOdds } from "@/ui/features/landing/sections/markets/market-odds";
 import { MarketStatusBadge } from "@/ui/features/landing/sections/markets/market-status-badge";
-import { MarketTimeline } from "@/ui/features/landing/sections/markets/market-timeline";
 import { MarketTvl } from "@/ui/features/landing/sections/markets/market-tvl";
 
 type TabKey = "odds" | "activity" | "positions" | "resolution";
@@ -111,29 +110,26 @@ const InGameMarketContent = () => {
       {/* Header */}
       <div className="border-b border-gold/20 p-3">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="truncate text-sm font-semibold text-white">
-            {market.title?.replace(/<br\s*\/?>/gi, " ") || "Prediction Market"}
-          </h3>
-          <Button
-            size="xs"
-            variant="outline"
-            forceUppercase={false}
-            onClick={() => void handleRefresh()}
-            disabled={isLiveMarketLoading}
-            title="Refresh market data"
-          >
-            <RefreshCw className={`h-3 w-3 ${isLiveMarketLoading ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex min-w-0 items-center gap-2">
+            <MarketStatusBadge market={market} />
+            <h3 className="truncate text-sm font-semibold text-white">
+              {market.title?.replace(/<br\s*\/?>/gi, " ") || "Prediction Market"}
+            </h3>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <MarketTvl market={market} />
+            <Button
+              size="xs"
+              variant="outline"
+              forceUppercase={false}
+              onClick={() => void handleRefresh()}
+              disabled={isLiveMarketLoading}
+              title="Refresh market data"
+            >
+              <RefreshCw className={`h-3 w-3 ${isLiveMarketLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
-        <div className="mt-2 flex items-center justify-between">
-          <MarketStatusBadge market={market} />
-          <MarketTvl market={market} />
-        </div>
-      </div>
-
-      {/* Timeline */}
-      <div className="border-b border-gold/20 p-3">
-        <MarketTimeline market={market} />
       </div>
 
       {/* Tabs */}

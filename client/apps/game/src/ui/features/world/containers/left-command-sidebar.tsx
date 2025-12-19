@@ -1,16 +1,9 @@
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { Tabs } from "@/ui/design-system/atoms";
-import {
-  configManager,
-  getEntityInfo,
-  getIsBlitz,
-  getStructureName,
-  Position,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
@@ -19,57 +12,64 @@ import {
   RealtimeChatShell,
   useRealtimeChatActions,
   useRealtimeChatInitializer,
-  useRealtimeConnection,
   useRealtimeChatSelector,
+  useRealtimeConnection,
   useRealtimeTotals,
   type InitializeRealtimeClientParams,
 } from "@/ui/features/social";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
+import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   STRUCTURE_GROUP_CONFIG,
   StructureGroupColor,
   StructureGroupsMap,
   useStructureGroups,
 } from "@/ui/features/world/containers/top-header/structure-groups";
-import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
+import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { useComponentValue } from "@dojoengine/react";
+import {
+  configManager,
+  getEntityInfo,
+  getIsBlitz,
+  getStructureName,
+  Position,
+  setEntityNameLocalStorage,
+} from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   ClientComponents,
   ContractAddress,
+  getLevelName,
   ID,
   RealmLevels,
+  ResourcesIds,
   Structure,
   StructureType,
-  ResourcesIds,
-  getLevelName,
 } from "@bibliothecadao/types";
-import type { ComponentProps, ReactNode, MouseEvent, KeyboardEvent } from "react";
+import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import clsx from "clsx";
+import type { LucideIcon } from "lucide-react";
 import {
   Castle,
+  ChevronsUp,
+  ChevronUp,
   Crown,
+  Info,
   Loader2,
+  MessageCircle,
   Pencil,
   Pickaxe,
+  ShieldCheck,
   Sparkles,
   Star,
   Tent,
-  ChevronsUp,
-  ChevronUp,
-  MessageCircle,
-  Info,
-  ShieldCheck,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import clsx from "clsx";
-import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -189,6 +189,16 @@ const useRealtimeChatConfig = () => {
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
+
+const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] => {
+  // Panel width is 420px, padding is 24px (px-3 on each side), available ~396px
+  // lg buttons: 48px + 8px gap = fits ~7 buttons
+  // md buttons: 40px + 8px gap = fits ~8 buttons
+  // sm buttons: 32px + 8px gap = fits ~10 buttons
+  if (itemCount <= 7) return "lg";
+  if (itemCount <= 8) return "md";
+  return "sm";
+};
 
 const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
@@ -1200,6 +1210,12 @@ export const LeftCommandSidebar = memo(() => {
       (item): item is NavigationItem => Boolean(item),
     );
   }, [realmNavigationItems, chatNavigationItem, economyNavigationItems]);
+
+  const responsiveButtonSize = useMemo(
+    () => getResponsiveButtonSize(combinedNavigationItems.length),
+    [combinedNavigationItems.length],
+  );
+
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
@@ -1304,10 +1320,10 @@ export const LeftCommandSidebar = memo(() => {
                 </div>
               </div>
               {ConnectedAccount && combinedNavigationItems.length > 0 && (
-                <div className="border-t border-gold/20 bg-black/40 px-3 py-3">
-                  <div className="flex flex-wrap gap-2">
+                <div className="border-t border-gold/20 bg-black/40 px-3 py-3 overflow-x-auto">
+                  <div className="flex gap-2">
                     {combinedNavigationItems.map((item) => (
-                      <CircleButton key={item.id} {...item} />
+                      <CircleButton key={item.id} {...item} size={responsiveButtonSize} />
                     ))}
                   </div>
                 </div>
