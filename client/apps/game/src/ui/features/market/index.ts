@@ -24,7 +24,8 @@ export { useMarketRedeem } from "@/ui/features/landing/sections/markets/use-mark
 export * from "@/ui/features/landing/sections/markets/market-utils";
 
 // Landing providers and config (needed for wrapping in-game market)
-export { MARKET_FILTERS_ALL, MarketsProviders, PREDICTION_MARKET_CONFIG } from "@/ui/features/landing/sections/markets";
+export { MARKET_FILTERS_ALL, MarketsProviders } from "@/ui/features/landing/sections/markets";
+export { getPredictionMarketConfig } from "@/pm/prediction-market-config";
 
 // In-game specific
 export { InGameMarket } from "./in-game-market";

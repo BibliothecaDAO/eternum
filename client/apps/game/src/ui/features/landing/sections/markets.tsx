@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
+import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { useConfig } from "@/pm/providers";
 import {
   DojoSdkProviderInitialized,
@@ -19,28 +20,22 @@ import { MarketsList } from "./markets/markets-list";
 import { PlayerMarketsView } from "./markets/player-markets-view";
 import { buildPlayerSummary, useMarketEventsSnapshot } from "./markets/use-market-stats";
 
-export const PREDICTION_MARKET_CONFIG = {
-  // toriiUrl: "https://localhost:8080",
-  toriiUrl: "https://api.cartridge.gg/x/blitz-slot-pm-1/torii",
-  worldAddress: "0x0172e470e28b6ad5f4c397019a3aca0c9b451a5e06f5255fbb8c4eefcd6f2b58",
-};
-
 export const MARKET_FILTERS_ALL: MarketFiltersParams = {
   status: MarketStatusFilter.All,
   type: MarketTypeFilter.All,
   oracle: "All",
 };
 
-export const MarketsProviders = ({ children }: { children: ReactNode }) => (
-  <DojoSdkProviderInitialized
-    toriiUrl={PREDICTION_MARKET_CONFIG.toriiUrl}
-    worldAddress={PREDICTION_MARKET_CONFIG.worldAddress}
-  >
-    <UserProvider>
-      <ControllersProvider>{children}</ControllersProvider>
-    </UserProvider>
-  </DojoSdkProviderInitialized>
-);
+export const MarketsProviders = ({ children }: { children: ReactNode }) => {
+  const config = getPredictionMarketConfig();
+  return (
+    <DojoSdkProviderInitialized toriiUrl={config.toriiUrl} worldAddress={config.worldAddress}>
+      <UserProvider>
+        <ControllersProvider>{children}</ControllersProvider>
+      </UserProvider>
+    </DojoSdkProviderInitialized>
+  );
+};
 
 export const MarketsSection = ({ children, description }: { children: ReactNode; description?: string }) => (
   <section

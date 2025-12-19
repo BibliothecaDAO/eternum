@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CairoCustomEnum, Call, CallData, uint256, type RawArgsObject, type Uint256 } from "starknet";
 
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
+import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import { ChainType } from "@/ui/features/admin/utils/manifest-loader";
 import { Chain, getGameManifest } from "@contracts";
@@ -32,9 +33,6 @@ const tryBetterErrorMsg = (error: unknown) => {
   return "Something went wrong while creating the market.";
 };
 
-// TODO: need to change all these addresses depending on if i'm on slot or mainnet
-const DEFAULT_COLLATERAL_TOKEN = "0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5";
-const DEFAULT_ORACLE_ADDRESS = "0x0693278fb06d7041f884c50cb9d0e2d4620ed16f282cf8c76fddb712ef1060d2";
 const CREATOR_FEE = "10";
 const DEFAULT_FUNDING_LORDS = "1000";
 const DEFAULT_FEE_CURVE_RANGE = {
@@ -230,8 +228,8 @@ const buildMarketParams = (
   const questionData = stringToHexData("Who will be the winner?");
 
   const params = normalizeVariants({
-    oracle: DEFAULT_ORACLE_ADDRESS,
-    collateral_token: DEFAULT_COLLATERAL_TOKEN,
+    oracle: getPredictionMarketConfig().oracleAddress,
+    collateral_token: getPredictionMarketConfig().collateralToken,
     model: buildVaultModelEnum([...weights, noneWeight], fundingAmount),
     oracle_params: getOracleParams(blitzOracleAddress),
     oracle_extra_params: DEFAULT_ORACLE_EXTRA_PARAMS,
@@ -480,7 +478,7 @@ export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarke
 
       const { params, fundingBase } = result;
       const approveCall: Call = {
-        contractAddress: DEFAULT_COLLATERAL_TOKEN,
+        contractAddress: getPredictionMarketConfig().collateralToken,
         entrypoint: "approve",
         calldata: [targetMarketAddress, uint256.bnToUint256(fundingBase)],
       };
