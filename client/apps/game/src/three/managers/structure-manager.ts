@@ -2196,7 +2196,8 @@ export class StructureManager {
    */
   private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
     // Build a data key from fields that affect label appearance
-    const guardKey = structure.guardArmies?.map((g) => `${g.slot}:${g.count}`).join(",") ?? "";
+    const guardKey =
+      structure.guardArmies?.map((g) => `${g.slot}:${g.category ?? ""}:${g.tier}:${g.count}`).join(",") ?? "";
     const productionKey = structure.activeProductions?.map((p) => `${p.buildingType}:${p.buildingCount}`).join(",") ?? "";
     const dataKey = [
       structure.isMine,
