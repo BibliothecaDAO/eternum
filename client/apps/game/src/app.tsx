@@ -6,7 +6,18 @@ import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
 import { IS_MOBILE } from "./ui/config";
-import { LandingAccount, LandingLeaderboard, LandingPlayer, LandingWelcome } from "./ui/features/landing";
+import {
+  LandingAccount,
+  LandingCreateMarket,
+  LandingCreateMarketTest,
+  LandingLeaderboard,
+  LandingMarketDetails,
+  LandingMarkets,
+  LandingMint,
+  LandingPlayer,
+  LandingWelcome,
+} from "./ui/features/landing";
+import { MarketsProviders } from "./ui/features/landing/sections/markets";
 import { LandingLayout } from "./ui/layouts/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
@@ -76,6 +87,32 @@ function App() {
               />
               <Route path="account" element={<LandingAccount />} />
               <Route path="player" element={<LandingPlayer />} />
+              <Route
+                path="create-market"
+                element={
+                  <MarketsProviders>
+                    <LandingCreateMarket />
+                  </MarketsProviders>
+                }
+              />
+              <Route
+                path="create-market-test"
+                element={
+                  <MarketsProviders>
+                    <LandingCreateMarketTest />
+                  </MarketsProviders>
+                }
+              />
+              <Route path="mint" element={<LandingMint />} />
+              <Route
+                path="markets"
+                element={
+                  <MarketsProviders>
+                    <LandingMarkets />
+                  </MarketsProviders>
+                }
+              />
+              <Route path="markets/:marketId" element={<LandingMarketDetails />} />
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>
             <Route

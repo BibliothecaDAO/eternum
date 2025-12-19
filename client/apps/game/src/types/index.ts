@@ -12,6 +12,7 @@ export enum LeftView {
   StoryEvents,
   ResourceTable,
   RelicsView,
+  PredictionMarket,
 }
 
 export type BattleViewInfo = {
