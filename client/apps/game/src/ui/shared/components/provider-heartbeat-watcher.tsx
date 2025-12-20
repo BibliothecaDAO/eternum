@@ -2,7 +2,8 @@ import { PROVIDER_HEARTBEAT_EVENT, type ProviderHeartbeat } from "@bibliothecada
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 
-import { useNetworkStatusStore } from "@/hooks/store/use-network-status-store";
+import { useNetworkStatusStore, type NetworkType } from "@/hooks/store/use-network-status-store";
+import { env } from "../../../../env";
 
 export const ProviderHeartbeatWatcher = () => {
   const {
@@ -12,6 +13,15 @@ export const ProviderHeartbeatWatcher = () => {
   } = useDojo();
 
   const setHeartbeat = useNetworkStatusStore((state) => state.setHeartbeat);
+  const setNetworkType = useNetworkStatusStore((state) => state.setNetworkType);
+
+  // Initialize network type from environment
+  useEffect(() => {
+    const chain = env.VITE_PUBLIC_CHAIN;
+    if (chain && ["mainnet", "sepolia", "slot", "slottest", "local"].includes(chain)) {
+      setNetworkType(chain as NetworkType);
+    }
+  }, [setNetworkType]);
 
   useEffect(() => {
     const syncState = provider.getSyncState?.();
