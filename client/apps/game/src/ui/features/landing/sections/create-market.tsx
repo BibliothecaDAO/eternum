@@ -141,6 +141,7 @@ const ensureForm = (
     endAt: normalizeTimeInputValue(form?.endAt, defaults?.endAt ?? ""),
     resolveAt: normalizeTimeInputValue(form?.resolveAt, defaults?.resolveAt ?? ""),
     title: form?.title ?? defaults?.title ?? "",
+    removedPlayers: form?.removedPlayers ?? new Set<string>(),
   };
 };
 
@@ -180,7 +181,14 @@ const buildMarketParams = (
     return { error: "Load registered players first." };
   }
 
-  const weights = server.players.map((player) => Math.max(0, form.weights[player.address] ?? 1));
+  const removedPlayers = form.removedPlayers ?? new Set<string>();
+  const activePlayers = server.players.filter((p) => !removedPlayers.has(p.address));
+
+  if (activePlayers.length === 0) {
+    return { error: "At least one player must be included in the market." };
+  }
+
+  const weights = activePlayers.map((player) => Math.max(0, form.weights[player.address] ?? 1));
   const noneWeight = Math.max(0, form.noneWeight ?? 1);
   const totalWeight = weights.reduce((acc, value) => acc + value, 0) + noneWeight;
 
@@ -234,7 +242,7 @@ const buildMarketParams = (
     oracle_params: getOracleParams(blitzOracleAddress),
     oracle_extra_params: DEFAULT_ORACLE_EXTRA_PARAMS,
     oracle_value_type: buildOracleValueTypeEnum(),
-    typ: buildCategoricalMarketTypeEnum(server.players.map((player) => addressToUint256(player.address))),
+    typ: buildCategoricalMarketTypeEnum(activePlayers.map((player) => addressToUint256(player.address))),
     start_at: String(startAt ?? 0),
     end_at: String(endAt ?? startAt ?? 0),
     resolve_at: String(resolveAt ?? endAt ?? startAt ?? 0),
@@ -441,6 +449,36 @@ export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarke
     }));
   }, []);
 
+  const handleRemovePlayer = useCallback((serverName: string, address: string) => {
+    setForms((prev) => {
+      const form = ensureForm(prev[serverName]);
+      const removedPlayers = new Set(form.removedPlayers);
+      removedPlayers.add(address);
+      return {
+        ...prev,
+        [serverName]: {
+          ...form,
+          removedPlayers,
+        },
+      };
+    });
+  }, []);
+
+  const handleRestorePlayer = useCallback((serverName: string, address: string) => {
+    setForms((prev) => {
+      const form = ensureForm(prev[serverName]);
+      const removedPlayers = new Set(form.removedPlayers);
+      removedPlayers.delete(address);
+      return {
+        ...prev,
+        [serverName]: {
+          ...form,
+          removedPlayers,
+        },
+      };
+    });
+  }, []);
+
   const handleDebug = useCallback(
     (server: MarketServer, blitzOracleAddress: string | null | undefined) => {
       const form = ensureForm(forms[server.name]);
@@ -555,13 +593,16 @@ export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarke
             const blitzOracleAddress = blitzOracleAddresses[server.name];
             const oracleReady = Boolean(blitzOracleAddress);
             const oracleLoading = blitzOracleAddress === undefined;
+            const removedPlayers = form.removedPlayers ?? new Set<string>();
+            const activePlayers = server.players.filter((p) => !removedPlayers.has(p.address));
             const totalWeight =
-              server.players.reduce((acc, player) => acc + (form.weights[player.address] ?? 1), 0) +
+              activePlayers.reduce((acc, player) => acc + (form.weights[player.address] ?? 1), 0) +
               (form.noneWeight ?? 0);
-            const canCreate = server.playersLoaded && server.players.length > 0 && totalWeight > 0 && oracleReady;
+            const canCreate = server.playersLoaded && activePlayers.length > 0 && totalWeight > 0 && oracleReady;
 
             const disableReason = (() => {
               if (!server.playersLoaded || server.players.length === 0) return "Load players to seed outcomes.";
+              if (activePlayers.length === 0) return "At least one player must be included.";
               if (totalWeight <= 0) return "Set non-zero chances.";
               if (oracleLoading) return "Resolving oracle address...";
               if (!oracleReady) return "Could not resolve oracle address for this world.";
@@ -585,6 +626,8 @@ export const LandingCreateMarket = ({ includeEnded = false }: LandingCreateMarke
                 onEndAtChange={(value) => handleEndAtChange(server.name, value)}
                 onResolveAtChange={(value) => handleResolveAtChange(server.name, value)}
                 onTitleChange={(value) => handleTitleChange(server.name, value)}
+                onRemovePlayer={(address) => handleRemovePlayer(server.name, address)}
+                onRestorePlayer={(address) => handleRestorePlayer(server.name, address)}
                 onDebug={() => handleDebug(server, blitzOracleAddress)}
                 onCreate={() => void handleCreate(server, blitzOracleAddress)}
               />

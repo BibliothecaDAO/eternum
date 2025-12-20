@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Clock3, Loader2, Percent, Users } from "lucide-react";
+import { Clock3, Loader2, Percent, Trash2, RotateCcw, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo } from "react";
 
 import { Button, NumberInput } from "@/ui/design-system/atoms";
@@ -16,6 +16,7 @@ export type MarketServerFormState = {
   endAt?: string;
   resolveAt?: string;
   title?: string;
+  removedPlayers?: Set<string>;
 };
 
 type MarketServerCardProps = {
@@ -32,6 +33,8 @@ type MarketServerCardProps = {
   onEndAtChange: (value: string) => void;
   onResolveAtChange: (value: string) => void;
   onTitleChange: (value: string) => void;
+  onRemovePlayer: (address: string) => void;
+  onRestorePlayer: (address: string) => void;
   onCreate: () => void;
   onDebug: () => void;
   onLoadPlayers: () => void;
@@ -57,16 +60,25 @@ export const MarketServerCard = ({
   onEndAtChange,
   onResolveAtChange,
   onTitleChange,
+  onRemovePlayer,
+  onRestorePlayer,
   onCreate,
   onDebug,
   onLoadPlayers,
 }: MarketServerCardProps) => {
   const playersCount = server.registrationCount ?? (server.playersLoaded ? server.players.length : 0);
 
+  const removedPlayers = form.removedPlayers ?? new Set<string>();
+
+  const activePlayers = useMemo(
+    () => server.players.filter((p) => !removedPlayers.has(p.address)),
+    [removedPlayers, server.players],
+  );
+
   const totalWeight = useMemo(() => {
-    const playerWeights = server.players.map((p) => form.weights[p.address] ?? 1);
+    const playerWeights = activePlayers.map((p) => form.weights[p.address] ?? 1);
     return playerWeights.reduce((acc, value) => acc + value, 0) + (form.noneWeight ?? 0);
-  }, [form.noneWeight, form.weights, server.players]);
+  }, [form.noneWeight, form.weights, activePlayers]);
 
   useEffect(() => {
     if (!server.playersLoaded && !server.loadingPlayers && !server.playerError) {
@@ -211,12 +223,12 @@ export const MarketServerCard = ({
         {server.playerError && <p className="text-sm text-danger">{server.playerError}</p>}
         {server.playersLoaded && server.players.length > 0 ? (
           <div className="space-y-2">
-            {server.players.map((player) => {
+            {activePlayers.map((player) => {
               const weight = form.weights[player.address] ?? 1;
               return (
                 <div
                   key={player.address}
-                  className="grid grid-cols-1 gap-2 rounded-lg border border-gold/15 bg-black/30 p-3 sm:grid-cols-3 sm:items-center"
+                  className="grid grid-cols-1 gap-2 rounded-lg border border-gold/15 bg-black/30 p-3 sm:grid-cols-4 sm:items-center"
                 >
                   <div className="min-w-0 sm:col-span-1 sm:pr-2">
                     <div className="truncate text-sm font-semibold text-gold">
@@ -234,13 +246,24 @@ export const MarketServerCard = ({
                       onChange={(value) => onWeightChange(player.address, value)}
                     />
                   </div>
-                  <div className="sm:col-span-1 sm:pl-2 text-sm font-semibold text-gold/80 sm:text-right">
+                  <div className="sm:col-span-1 sm:px-2 text-sm font-semibold text-gold/80 sm:text-center">
                     {renderPlayerProbability(weight)}
+                  </div>
+                  <div className="sm:col-span-1 sm:pl-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => onRemovePlayer(player.address)}
+                      className="flex items-center gap-1 rounded px-2 py-1 text-xs text-danger/70 hover:bg-danger/10 hover:text-danger transition"
+                      title="Remove player from market"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Remove
+                    </button>
                   </div>
                 </div>
               );
             })}
-            <div className="grid grid-cols-1 gap-2 rounded-lg border border-gold/15 bg-black/20 p-3 sm:grid-cols-3 sm:items-center">
+            <div className="grid grid-cols-1 gap-2 rounded-lg border border-gold/15 bg-black/20 p-3 sm:grid-cols-4 sm:items-center">
               <div className="min-w-0 sm:col-span-1 sm:pr-2">
                 <div className="truncate text-sm font-semibold text-gold">None of the listed players</div>
                 <div className="truncate text-[11px] text-gold/60">Fallback outcome</div>
@@ -255,10 +278,40 @@ export const MarketServerCard = ({
                   onChange={(value) => onNoneWeightChange(value)}
                 />
               </div>
-              <div className="sm:col-span-1 sm:pl-2 text-sm font-semibold text-gold/80 sm:text-right">
+              <div className="sm:col-span-1 sm:px-2 text-sm font-semibold text-gold/80 sm:text-center">
                 {renderPlayerProbability(form.noneWeight ?? 1)}
               </div>
+              <div className="sm:col-span-1" />
             </div>
+            {removedPlayers.size > 0 && (
+              <div className="mt-3 space-y-2 border-t border-gold/10 pt-3">
+                <div className="text-xs font-semibold text-gold/60">Removed players (click to restore)</div>
+                {server.players
+                  .filter((p) => removedPlayers.has(p.address))
+                  .map((player) => (
+                    <div
+                      key={player.address}
+                      className="flex items-center justify-between rounded-lg border border-gold/10 bg-black/20 p-2 opacity-60"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm text-gold/70">
+                          {player.name || displayAddress(player.address)}
+                        </div>
+                        <div className="truncate text-[11px] text-gold/50">{displayAddress(player.address)}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onRestorePlayer(player.address)}
+                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-brilliance/70 hover:bg-brilliance/10 hover:text-brilliance transition"
+                        title="Restore player to market"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Restore
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         ) : (
           !server.loadingPlayers && <p className="text-sm text-gold/70">Load players to set initial chances.</p>
