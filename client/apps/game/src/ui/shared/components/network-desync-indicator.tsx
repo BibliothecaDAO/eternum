@@ -158,11 +158,7 @@ export const NetworkDesyncIndicator = () => {
           <Icon className="h-3.5 w-3.5 animate-pulse" />
           <span>{config.headline}</span>
           {status.elapsedMs && <span className="text-amber-200/60">{formatElapsed(status.elapsedMs)}</span>}
-          <button
-            onClick={handleDismiss}
-            className="ml-1 rounded p-0.5 hover:bg-amber-500/10"
-            aria-label="Dismiss"
-          >
+          <button onClick={handleDismiss} className="ml-1 rounded p-0.5 hover:bg-amber-500/10" aria-label="Dismiss">
             <X className="h-3 w-3" />
           </button>
         </div>
@@ -177,7 +173,9 @@ export const NetworkDesyncIndicator = () => {
 
   return (
     <div className="pointer-events-auto fixed left-1/2 top-24 z-[1100] w-full max-w-md -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className={`relative rounded-xl border ${borderColor} bg-gradient-to-br from-[#2a2318] to-[#1f1a12] p-5 shadow-2xl backdrop-blur-sm`}>
+      <div
+        className={`relative rounded-xl border ${borderColor} bg-gradient-to-br from-[#2a2318] to-[#1f1a12] p-5 shadow-2xl backdrop-blur-sm`}
+      >
         <button
           onClick={handleDismiss}
           className="absolute right-3 top-3 rounded-md p-1 text-amber-200/60 transition-colors hover:bg-amber-500/10 hover:text-amber-200"
