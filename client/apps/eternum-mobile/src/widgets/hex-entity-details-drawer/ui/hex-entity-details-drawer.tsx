@@ -3,7 +3,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/dr
 import {
   Biome,
   getEntityIdFromKeys,
-  getFeltCenterOffset,
+  FELT_CENTER as getFeltCenterOffset,
   isTileOccupierQuest,
   isTileOccupierStructure,
   Position as PositionInterface,

@@ -1,4 +1,4 @@
-import { ActionPath, ActionPaths, getFeltCenterOffset } from "@bibliothecadao/eternum";
+import { ActionPath, ActionPaths, FELT_CENTER as getFeltCenterOffset } from "@bibliothecadao/eternum";
 import { HexPosition } from "@bibliothecadao/types";
 
 export interface SelectionSlice {

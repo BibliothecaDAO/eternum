@@ -1,6 +1,6 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader } from "@/shared/ui/drawer";
-import { getFeltCenterOffset } from "@bibliothecadao/eternum";
+import { FELT_CENTER as getFeltCenterOffset } from "@bibliothecadao/eternum";
 import { useComponentSystem, useDojo } from "@bibliothecadao/react";
 import { isComponentUpdate } from "@dojoengine/recs";
 import { useCallback, useState } from "react";

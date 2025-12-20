@@ -12,7 +12,7 @@ import {
   getArmy,
   getBlockTimestamp,
   getEntityIdFromKeys,
-  getFeltCenterOffset,
+  FELT_CENTER as getFeltCenterOffset,
   getGuardsByStructure,
   getRemainingCapacityInKg,
   StaminaManager,

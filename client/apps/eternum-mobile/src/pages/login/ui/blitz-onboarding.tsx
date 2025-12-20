@@ -552,7 +552,8 @@ export const BlitzOnboarding = () => {
     components,
     systemCalls: {
       blitz_realm_register,
-      blitz_realm_create,
+      blitz_realm_assign_and_settle_realms,
+      blitz_realm_settle_realms,
       blitz_realm_make_hyperstructures,
       blitz_realm_obtain_entry_token,
     },
@@ -578,12 +579,25 @@ export const BlitzOnboarding = () => {
   const accountOwner = account?.address ? BigInt(account.address) : 0n;
 
   const playerRegistered = useComponentValue(components.BlitzRealmPlayerRegister, getEntityIdFromKeys([accountOwner]));
+  const playerSettleFinish = useComponentValue(components.BlitzRealmSettleFinish, getEntityIdFromKeys([accountOwner]));
 
   const playerStructures = useEntityQuery([HasValue(components.Structure, { owner: accountOwner })]);
 
   const playerSettled = useMemo(() => {
     return playerStructures.length > 0;
   }, [playerStructures]);
+
+  const assignedRealmCount = useMemo(() => {
+    if (!playerSettleFinish) return 0;
+    const coordsCount = (playerSettleFinish as any).coords?.length ?? 0;
+    const settledCount = (playerSettleFinish as any).structure_ids?.length ?? 0;
+    return coordsCount + settledCount;
+  }, [playerSettleFinish]);
+
+  const settledRealmCount = useMemo(() => {
+    if (!playerSettleFinish) return 0;
+    return (playerSettleFinish as any).structure_ids?.length ?? 0;
+  }, [playerSettleFinish]);
 
   useSetAddressName(setup, playerSettled ? account : null, (connector as ControllerConnector) ?? null);
 
@@ -831,7 +845,39 @@ export const BlitzOnboarding = () => {
 
   const handleSettle = async () => {
     if (!account?.address) return;
-    await blitz_realm_create({ signer: account });
+    const isCurrentlyRegistered = !!playerRegistered?.registered;
+    const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
+
+    if (isCurrentlyRegistered) {
+      if (isMainnet) {
+        await blitz_realm_assign_and_settle_realms({ signer: account, settlement_count: 1 });
+        const extraCalls = 2;
+        for (let i = 0; i < extraCalls; i++) {
+          await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+        }
+      } else {
+        await blitz_realm_assign_and_settle_realms({ signer: account, settlement_count: 3 });
+      }
+      navigate({ to: ROUTES.HOME });
+      return;
+    }
+
+    const remainingToSettle = Math.max(0, assignedRealmCount - settledRealmCount);
+    if (remainingToSettle <= 0) {
+      navigate({ to: ROUTES.HOME });
+      return;
+    }
+
+    if (isMainnet) {
+      const maxCalls = Math.min(remainingToSettle, 3);
+      for (let i = 0; i < maxCalls; i++) {
+        await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+      }
+    } else {
+      const settlementCountPerCall = Math.min(3, remainingToSettle);
+      await blitz_realm_settle_realms({ signer: account, settlement_count: settlementCountPerCall });
+    }
+
     navigate({ to: ROUTES.HOME });
   };
 
