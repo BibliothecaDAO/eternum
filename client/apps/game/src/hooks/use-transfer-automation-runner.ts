@@ -12,6 +12,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 
 const toRaw = (amountHuman: number) => BigInt(Math.floor(amountHuman * RESOURCE_PRECISION));
@@ -62,12 +63,34 @@ export const useTransferAutomationRunner = () => {
   const update = useTransferAutomationStore((s) => s.update);
   const scheduleNext = useTransferAutomationStore((s) => s.scheduleNext);
   const pruneForGame = useTransferAutomationStore((s) => s.pruneForGame);
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const gameWinner = useUIStore((state) => state.gameWinner);
 
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
+
+  const stopTransferAutomation = useCallback(() => {
+    if (timeoutIdRef.current !== null) {
+      window.clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
+    }
+  }, []);
+
+  const isSeasonOver = useCallback(
+    (blockTimestampSeconds?: number) => {
+      if (gameWinner) return true;
+      if (typeof gameEndAt !== "number") {
+        return false;
+      }
+      const timestamp =
+        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
+      return timestamp >= gameEndAt;
+    },
+    [gameEndAt, gameWinner],
+  );
 
   useEffect(() => {
     if (!components) {
@@ -79,6 +102,10 @@ export const useTransferAutomationRunner = () => {
   }, [components, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
+    if (isSeasonOver()) {
+      stopTransferAutomation();
+      return;
+    }
     if (timeoutIdRef.current !== null) {
       window.clearTimeout(timeoutIdRef.current);
     }
@@ -90,10 +117,14 @@ export const useTransferAutomationRunner = () => {
     timeoutIdRef.current = window.setTimeout(() => {
       void processRef.current();
     }, delay);
-  }, []);
+  }, [isSeasonOver, stopTransferAutomation]);
 
   useEffect(() => {
     processRef.current = async () => {
+      if (isSeasonOver()) {
+        stopTransferAutomation();
+        return;
+      }
       if (processingRef.current) {
         scheduleNextCheck();
         return;
@@ -108,6 +139,10 @@ export const useTransferAutomationRunner = () => {
       }
 
       const { currentDefaultTick, currentBlockTimestamp } = getBlockTimestamp();
+      if (isSeasonOver(currentBlockTimestamp)) {
+        stopTransferAutomation();
+        return;
+      }
       const nowMs = currentBlockTimestamp * 1000;
       const due = activeEntries.filter((e) => typeof e.nextRunAt === "number" && (e.nextRunAt as number) <= nowMs);
       if (!due.length) {
@@ -228,5 +263,15 @@ export const useTransferAutomationRunner = () => {
         window.clearTimeout(timeoutIdRef.current);
       }
     };
-  }, [activeEntries, components, account, scheduleNext, update, systemCalls, scheduleNextCheck]);
+  }, [
+    activeEntries,
+    components,
+    account,
+    isSeasonOver,
+    scheduleNext,
+    stopTransferAutomation,
+    update,
+    systemCalls,
+    scheduleNextCheck,
+  ]);
 };
