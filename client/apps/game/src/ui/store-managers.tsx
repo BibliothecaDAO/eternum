@@ -34,6 +34,8 @@ const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
   const setPendingArrivalsNumber = useUIStore((state) => state.setPendingArrivalsNumber);
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const gameWinner = useUIStore((state) => state.gameWinner);
   const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
   const {
     account: { account },
@@ -44,6 +46,24 @@ const ResourceArrivalsStoreManager = () => {
   const isAutoClaimingRef = useRef(false);
   const autoClaimTimeoutIdRef = useRef<number | null>(null);
   const processAutoClaimRef = useRef<() => Promise<void>>(async () => {});
+
+  const stopAutoClaim = useCallback(() => {
+    if (autoClaimTimeoutIdRef.current !== null) {
+      window.clearTimeout(autoClaimTimeoutIdRef.current);
+      autoClaimTimeoutIdRef.current = null;
+    }
+    isAutoClaimingRef.current = false;
+  }, []);
+
+  const isSeasonOver = useCallback(
+    (nowSeconds?: number) => {
+      if (gameWinner) return true;
+      if (typeof gameEndAt !== "number") return false;
+      const timestamp = typeof nowSeconds === "number" ? nowSeconds : getChainNowSeconds();
+      return timestamp >= gameEndAt;
+    },
+    [gameEndAt, gameWinner, getChainNowSeconds],
+  );
 
   const updateArrivalIndicators = useCallback(
     (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
@@ -61,6 +81,10 @@ const ResourceArrivalsStoreManager = () => {
   );
 
   const scheduleNextAutoClaim = useCallback(() => {
+    if (isSeasonOver()) {
+      stopAutoClaim();
+      return;
+    }
     if (autoClaimTimeoutIdRef.current !== null) {
       window.clearTimeout(autoClaimTimeoutIdRef.current);
     }
@@ -72,7 +96,7 @@ const ResourceArrivalsStoreManager = () => {
     autoClaimTimeoutIdRef.current = window.setTimeout(() => {
       void processAutoClaimRef.current();
     }, delay);
-  }, []);
+  }, [isSeasonOver, stopAutoClaim]);
 
   useEffect(() => {
     const updateArrivals = () => {
@@ -95,6 +119,11 @@ const ResourceArrivalsStoreManager = () => {
 
   useEffect(() => {
     processAutoClaimRef.current = async () => {
+      const seasonNow = getChainNowSeconds();
+      if (isSeasonOver(seasonNow)) {
+        stopAutoClaim();
+        return;
+      }
       if (isAutoClaimingRef.current) {
         scheduleNextAutoClaim();
         return;
@@ -145,7 +174,7 @@ const ResourceArrivalsStoreManager = () => {
       staleFailureKeys.forEach((key) => lastFailureRef.current.delete(key));
 
       const retryDelaySeconds = RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS;
-      const now = getChainNowSeconds();
+      const now = seasonNow;
       updateArrivalIndicators(arrivals, now);
       const readyArrivals = arrivals
         .filter((arrival) => arrival.resources.length > 0)
@@ -202,8 +231,10 @@ const ResourceArrivalsStoreManager = () => {
     account,
     components,
     getChainNowSeconds,
+    isSeasonOver,
     playerStructures,
     scheduleNextAutoClaim,
+    stopAutoClaim,
     systemCalls,
     updateArrivalIndicators,
   ]);
