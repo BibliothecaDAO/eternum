@@ -18,7 +18,6 @@ import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics, fetchTokenBalancesWithMetadata } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
-import { OG_IMAGE_META } from "@/lib/seo";
 import { displayAddress } from "@/lib/utils";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 
@@ -32,7 +31,6 @@ import { formatUnits } from "viem";
 
 export const Route = createLazyFileRoute("/$collection")({
   component: ManageCollectionRoute,
-  meta: () => OG_IMAGE_META,
 });
 
 function ManageCollectionRoute() {

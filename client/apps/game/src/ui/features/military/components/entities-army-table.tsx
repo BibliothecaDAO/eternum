@@ -10,7 +10,6 @@ import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@biblio
 import { HasValue, runQuery } from "@dojoengine/recs";
 import { ShieldIcon, SwordIcon } from "lucide-react";
 import { ArmyChip, NavigateToPositionIcon } from "./army-chip";
-import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 const getArmiesCountByStructure = (structureEntityId: ID, components: ClientComponents) => {
   const armies = runQuery([HasValue(components.ExplorerTroops, { owner: structureEntityId })]);
@@ -23,7 +22,7 @@ export const EntitiesArmyTable = () => {
   } = useDojo();
 
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
 
   // Check if any structure has armies
   const hasAnyArmies = playerStructures.some((entity: any) => {
@@ -45,9 +44,10 @@ export const EntitiesArmyTable = () => {
                   variant="primary"
                   size="md"
                   onClick={() => {
-                    toggleModal(
-                      <UnifiedArmyCreationModal structureId={playerStructures[0]?.entityId || 0} isExplorer={true} />,
-                    );
+                    openArmyCreationPopup({
+                      structureId: playerStructures[0]?.entityId || 0,
+                      isExplorer: true,
+                    });
                   }}
                   className="rounded-full"
                   aria-label="Create attack army"
@@ -59,13 +59,11 @@ export const EntitiesArmyTable = () => {
                   variant="outline"
                   size="md"
                   onClick={() => {
-                    toggleModal(
-                      <UnifiedArmyCreationModal
-                        structureId={playerStructures[0]?.entityId || 0}
-                        isExplorer={false}
-                        maxDefenseSlots={playerStructures[0]?.structure.base.troop_max_guard_count}
-                      />,
-                    );
+                    openArmyCreationPopup({
+                      structureId: playerStructures[0]?.entityId || 0,
+                      isExplorer: false,
+                      maxDefenseSlots: playerStructures[0]?.structure.base.troop_max_guard_count,
+                    });
                   }}
                   className="rounded-full"
                   aria-label="Create defense army"

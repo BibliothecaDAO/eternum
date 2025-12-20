@@ -24,7 +24,6 @@ import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entiti
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
-import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];
@@ -45,7 +44,7 @@ export const CompactDefenseDisplay = ({
   canManageDefense = false,
   variant = "default",
 }: CompactDefenseDisplayProps) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
   const {
     setup: { components },
   } = useDojo();
@@ -119,14 +118,12 @@ export const CompactDefenseDisplay = ({
 
   const handleSlotOpen = (slot: GuardSlot) => {
     if (!canOpenModal || !structureId) return;
-    toggleModal(
-      <UnifiedArmyCreationModal
-        structureId={structureId}
-        isExplorer={false}
-        maxDefenseSlots={resolvedSlotLimit}
-        initialGuardSlot={Number(slot)}
-      />,
-    );
+    openArmyCreationPopup({
+      structureId,
+      isExplorer: false,
+      maxDefenseSlots: resolvedSlotLimit,
+      initialGuardSlot: Number(slot),
+    });
   };
 
   const renderSlot = (defense: DefenseTroop) => {

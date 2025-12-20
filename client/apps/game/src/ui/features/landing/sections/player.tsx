@@ -266,7 +266,7 @@ export const LandingPlayer = () => {
   }, [shareMessage]);
 
   return (
-    <section className="w-full mb-2 max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-3xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[74vh] xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-4xl 2xl:p-8">
+    <section className="w-full mb-2 max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-3xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[70vh] xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-4xl 2xl:p-8">
       {isPlayerLoading ? (
         <div className="space-y-4" aria-busy aria-live="polite">
           <div className="h-20 animate-pulse rounded-2xl border border-white/5 bg-white/5" />
@@ -320,31 +320,29 @@ export const LandingPlayer = () => {
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_25px_55px_-25px_rgba(12,10,35,0.7)] sm:p-5 xl:p-6">
+        <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex flex-col items-center gap-1.5 text-center sm:items-start sm:text-left">
-              <h3 className="text-sm font-semibold text-white sm:text-base">Share your victory</h3>
-              <p className="text-xs text-white/60 sm:text-sm">
-                Copy the Blitz highlight card or take the share link straight to X.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-2 sm:justify-end">
-              {isRefreshing ? (
-                <span className="text-xs text-white/70" aria-live="polite">
-                  Refreshing…
-                </span>
-              ) : isCooldownActive ? (
-                <span className="text-xs text-white/50" aria-live="polite">
-                  Wait {refreshSecondsLeft}s
-                </span>
-              ) : null}
-              <RefreshButton
-                onClick={handleRefresh}
-                isLoading={isRefreshing}
-                disabled={isCooldownActive || isRefreshing}
-                size="md"
-                aria-label="Refresh your Blitz standings"
-              />
+            {/* Filler span pushes refresh button to right in row layout */}
+            <div className="flex items-center justify-between w-full">
+              <div />
+              <div className="flex items-center gap-2">
+                {isRefreshing ? (
+                  <span className="text-xs text-white/70" aria-live="polite">
+                    Refreshing…
+                  </span>
+                ) : isCooldownActive ? (
+                  <span className="text-xs text-white/50" aria-live="polite">
+                    Wait {refreshSecondsLeft}s
+                  </span>
+                ) : null}
+                <RefreshButton
+                  onClick={handleRefresh}
+                  isLoading={isRefreshing}
+                  disabled={isCooldownActive || isRefreshing}
+                  size="md"
+                  aria-label="Refresh your Blitz standings"
+                />
+              </div>
             </div>
           </div>
 
@@ -397,7 +395,7 @@ export const LandingPlayer = () => {
               <span>Copy message</span>
             </Button>
           </div>
-        </div>
+        </>
       )}
     </section>
   );

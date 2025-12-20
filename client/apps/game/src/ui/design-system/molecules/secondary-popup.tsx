@@ -12,6 +12,7 @@ type FilterPopupProps = {
   containerClassName?: string;
   name?: string;
   width?: string;
+  onOutsideClick?: () => void;
 };
 
 export const SecondaryPopup = ({
@@ -20,8 +21,9 @@ export const SecondaryPopup = ({
   containerClassName,
   name,
   width = "400px",
+  onOutsideClick,
 }: FilterPopupProps) => {
-  const nodeRef = useRef<any>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
@@ -78,6 +80,30 @@ export const SecondaryPopup = ({
   useEffect(() => {
     moveToTopZIndex();
   }, [loaded]);
+
+  useEffect(() => {
+    if (!onOutsideClick || !loaded) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || !nodeRef.current) {
+        return;
+      }
+
+      if (nodeRef.current.contains(target)) {
+        return;
+      }
+
+      onOutsideClick();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [loaded, onOutsideClick]);
 
   return (
     <motion.div

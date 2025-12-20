@@ -143,6 +143,7 @@ export const BuildingThumbs = {
   relics: `${prefix}relics.png`,
   latestUpdates: `${prefix}latest-updates.png`,
   storyEvents: `${prefix}chronicles.png`,
+  predictionMarket: `${prefix}trade.png`,
 };
 
 export enum MenuEnum {
@@ -160,4 +161,5 @@ export enum MenuEnum {
   relics = "relics",
   chat = "chat",
   storyEvents = "storyEvents",
+  predictionMarket = "predictionMarket",
 }

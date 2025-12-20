@@ -225,6 +225,20 @@ export const LEADERBOARD_QUERIES = {
     WHERE totals.player_address = lower('{playerAddress}')
     LIMIT 1;
   `,
+  REGISTERED_PLAYER_POINTS: `
+    SELECT
+      lower(COALESCE("s1_eternum-PlayerRegisteredPoints"."address", '')) AS player_address,
+      COALESCE("s1_eternum-PlayerRegisteredPoints"."registered_points", '0x0') AS registered_points,
+      COALESCE("s1_eternum-PlayerRegisteredPoints"."prize_claimed", 0) AS prize_claimed,
+      COALESCE("s1_eternum-AddressName"."name", '') AS player_name
+    FROM "s1_eternum-PlayerRegisteredPoints"
+    LEFT JOIN "s1_eternum-AddressName"
+      ON lower(COALESCE("s1_eternum-AddressName"."address", '')) = lower(COALESCE("s1_eternum-PlayerRegisteredPoints"."address", ''))
+    WHERE "s1_eternum-PlayerRegisteredPoints"."address" IS NOT NULL AND trim(COALESCE("s1_eternum-PlayerRegisteredPoints"."address", '')) <> ''
+    ORDER BY registered_points DESC, player_address
+    LIMIT {limit}
+    OFFSET {offset};
+  `,
   HYPERSTRUCTURE_LEADERBOARD_CONFIG: `
     SELECT
       "victory_points_grant_config.hyp_points_per_second" AS points_per_second,
@@ -248,3 +262,4 @@ export const LEADERBOARD_QUERIES = {
 } as const;
 
 export const PLAYER_LEADERBOARD_QUERY = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD;
+export const REGISTERED_PLAYER_POINTS_QUERY = LEADERBOARD_QUERIES.REGISTERED_PLAYER_POINTS;

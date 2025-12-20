@@ -5,6 +5,7 @@ import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
 import { ensureActiveWorldProfileWithUI, getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
+import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
@@ -23,6 +24,16 @@ type BootstrapResult = SetupResult;
 let bootstrapPromise: Promise<BootstrapResult> | null = null;
 let bootstrappedWorldName: string | null = null;
 
+const deriveWorldFromPath = (): string | null => {
+  try {
+    const match = window.location.pathname.match(/^\/play\/([^/]+)(?:\/|$)/);
+    if (!match || !match[1]) return null;
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+};
+
 const handleNoAccount = (modalContent: ReactNode) => {
   const uiStore = useUIStore.getState();
   uiStore.setModal(null, false);
@@ -35,13 +46,21 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   console.log("[STARTING DOJO SETUP]");
 
-  // 0) World profile is expected to be selected before bootstrap begins (gated in play flow)
+  // 0) Resolve world profile: prefer URL, then active selection, then prompt
   const chain = env.VITE_PUBLIC_CHAIN! as Chain;
-  let profile = getActiveWorld();
-  if (!profile) {
-    // Prompt user to select a world via modal instead of throwing
-    profile = await ensureActiveWorldProfileWithUI(chain);
+  const pathWorld = deriveWorldFromPath();
+
+  let profile = null;
+  if (pathWorld) {
+    try {
+      profile = await buildWorldProfile(chain, pathWorld);
+    } catch (err) {
+      console.error("[bootstrap] Failed to apply world from URL", err);
+    }
   }
+
+  if (!profile) profile = getActiveWorld();
+  if (!profile) profile = await ensureActiveWorldProfileWithUI(chain);
 
   // 1) Patch manifest with factory-provided addresses and world address
   const baseManifest = getGameManifest(chain);

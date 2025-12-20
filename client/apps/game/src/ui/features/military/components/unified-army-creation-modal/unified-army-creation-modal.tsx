@@ -1,6 +1,7 @@
 import { sqlApi } from "@/services/api";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import {
   ArmyManager,
   configManager,
@@ -49,12 +50,13 @@ import { TroopSelectionGrid } from "./troop-selection-grid";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
 
 interface UnifiedArmyCreationModalProps {
-  structureId: number;
+  structureId?: number;
   maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
   onClose?: () => void;
+  followSelectedStructure?: boolean;
 }
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
@@ -73,6 +75,7 @@ export const UnifiedArmyCreationModal = ({
   direction,
   initialGuardSlot,
   onClose,
+  followSelectedStructure,
 }: UnifiedArmyCreationModalProps) => {
   const {
     setup: { components, systemCalls },
@@ -83,6 +86,7 @@ export const UnifiedArmyCreationModal = ({
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
   const isBlitz = getIsBlitz();
+  const selectedStructureId = useUIStore((state) => state.structureEntityId);
 
   const playerStructures = useMemo(() => {
     return [...playerRealms, ...playerVillages]
@@ -125,7 +129,58 @@ export const UnifiedArmyCreationModal = ({
     }
   }, [initialGuardSlot]);
 
-  const activeStructureId = structureId ?? playerStructures[0]?.entityId ?? 0;
+  const resolveNumericId = (value: unknown): number | null => {
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value === "bigint") {
+      return Number(value);
+    }
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  };
+
+  const resolvedSelectedStructureId = resolveNumericId(selectedStructureId);
+  const resolvedStructureIdProp = resolveNumericId(structureId);
+  const [shouldFollowSelection] = useState(() => {
+    if (followSelectedStructure !== undefined) {
+      return followSelectedStructure;
+    }
+
+    if (
+      resolvedStructureIdProp === null ||
+      resolvedSelectedStructureId === null ||
+      resolvedStructureIdProp <= UNDEFINED_STRUCTURE_ENTITY_ID ||
+      resolvedSelectedStructureId <= UNDEFINED_STRUCTURE_ENTITY_ID
+    ) {
+      return false;
+    }
+
+    return resolvedStructureIdProp === resolvedSelectedStructureId;
+  });
+
+  const activeStructureId = useMemo(() => {
+    if (
+      shouldFollowSelection &&
+      resolvedSelectedStructureId &&
+      resolvedSelectedStructureId > UNDEFINED_STRUCTURE_ENTITY_ID
+    ) {
+      return resolvedSelectedStructureId;
+    }
+
+    if (resolvedStructureIdProp && resolvedStructureIdProp > UNDEFINED_STRUCTURE_ENTITY_ID) {
+      return resolvedStructureIdProp;
+    }
+
+    if (resolvedSelectedStructureId && resolvedSelectedStructureId > UNDEFINED_STRUCTURE_ENTITY_ID) {
+      return resolvedSelectedStructureId;
+    }
+
+    return playerStructures[0]?.entityId ?? 0;
+  }, [shouldFollowSelection, resolvedSelectedStructureId, resolvedStructureIdProp, playerStructures]);
 
   const structureComponent = useMemo(() => {
     if (!activeStructureId) return null;
@@ -265,6 +320,10 @@ export const UnifiedArmyCreationModal = ({
       setGuardSlot(availableGuardSlots[availableGuardSlots.length - 1] ?? 0);
     }
   }, [armyType, availableGuardSlots, guardSlot]);
+
+  useEffect(() => {
+    setArmyType(isExplorer);
+  }, [isExplorer]);
 
   useEffect(() => {
     setLoadedDirectionsStructureId(null);
@@ -608,7 +667,12 @@ export const UnifiedArmyCreationModal = ({
   }, [onClose, toggleModal]);
 
   return (
-    <SecondaryPopup width="800" name="unified-army-creation-modal" containerClassName="absolute left-0 top-0">
+    <SecondaryPopup
+      width="800"
+      name="unified-army-creation-modal"
+      containerClassName="absolute left-0 top-0"
+      onOutsideClick={handleClose}
+    >
       <SecondaryPopup.Head onClose={handleClose}>{modalTitle}</SecondaryPopup.Head>
       <SecondaryPopup.Body width="100%" height="auto">
         <div className="p-3">

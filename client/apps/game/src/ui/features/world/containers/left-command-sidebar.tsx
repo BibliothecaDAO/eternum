@@ -1,16 +1,9 @@
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { Tabs } from "@/ui/design-system/atoms";
-import {
-  configManager,
-  getEntityInfo,
-  getIsBlitz,
-  getStructureName,
-  Position,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
@@ -19,57 +12,64 @@ import {
   RealtimeChatShell,
   useRealtimeChatActions,
   useRealtimeChatInitializer,
-  useRealtimeConnection,
   useRealtimeChatSelector,
+  useRealtimeConnection,
   useRealtimeTotals,
   type InitializeRealtimeClientParams,
 } from "@/ui/features/social";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
+import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   STRUCTURE_GROUP_CONFIG,
   StructureGroupColor,
   StructureGroupsMap,
   useStructureGroups,
 } from "@/ui/features/world/containers/top-header/structure-groups";
-import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
+import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { useComponentValue } from "@dojoengine/react";
+import {
+  configManager,
+  getEntityInfo,
+  getIsBlitz,
+  getStructureName,
+  Position,
+  setEntityNameLocalStorage,
+} from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   ClientComponents,
   ContractAddress,
+  getLevelName,
   ID,
   RealmLevels,
+  ResourcesIds,
   Structure,
   StructureType,
-  ResourcesIds,
-  getLevelName,
 } from "@bibliothecadao/types";
-import type { ComponentProps, ReactNode, MouseEvent, KeyboardEvent } from "react";
+import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import clsx from "clsx";
+import type { LucideIcon } from "lucide-react";
 import {
   Castle,
+  ChevronsUp,
+  ChevronUp,
   Crown,
+  Info,
   Loader2,
+  MessageCircle,
   Pencil,
   Pickaxe,
+  ShieldCheck,
   Sparkles,
   Star,
   Tent,
-  ChevronsUp,
-  ChevronUp,
-  MessageCircle,
-  Info,
-  ShieldCheck,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import clsx from "clsx";
-import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -189,6 +189,16 @@ const useRealtimeChatConfig = () => {
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
+
+const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] => {
+  // Panel width is 420px, padding is 24px (px-3 on each side), available ~396px
+  // lg buttons: 48px + 8px gap = fits ~7 buttons
+  // md buttons: 40px + 8px gap = fits ~8 buttons
+  // sm buttons: 32px + 8px gap = fits ~10 buttons
+  if (itemCount <= 7) return "lg";
+  if (itemCount <= 8) return "md";
+  return "sm";
+};
 
 const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
@@ -612,6 +622,7 @@ const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.bridge, // Bridge
   MenuEnum.chat, // Chat
   MenuEnum.storyEvents, // Chronicles
+  MenuEnum.predictionMarket, // Prediction Market
 ];
 
 type StructureLevelUpButtonProps = {
@@ -922,9 +933,27 @@ const buildEconomyNavigationItems = ({
         setLeftView(view === LeftView.StoryEvents ? LeftView.None : LeftView.StoryEvents);
       },
     },
+    {
+      id: MenuEnum.predictionMarket,
+      className: "prediction-market-selector",
+      image: BuildingThumbs.predictionMarket,
+      tooltipLocation: "top",
+      label: "Prediction Market",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: false,
+      active: view === LeftView.PredictionMarket,
+      onClick: () => {
+        setLeftView(view === LeftView.PredictionMarket ? LeftView.None : LeftView.PredictionMarket);
+      },
+    },
   ];
 
-  const allowedMenus: MenuEnum[] = [MenuEnum.transfer, ...(isBlitz ? [] : [MenuEnum.bridge]), MenuEnum.storyEvents];
+  const allowedMenus: MenuEnum[] = [
+    MenuEnum.transfer,
+    ...(isBlitz ? [] : [MenuEnum.bridge]),
+    MenuEnum.storyEvents,
+    MenuEnum.predictionMarket,
+  ];
 
   return items.filter((item) => allowedMenus.includes(item.id));
 };
@@ -981,6 +1010,11 @@ const BlitzHyperstructuresMenu = lazy(() =>
 const EternumHyperstructuresMenu = lazy(() =>
   import("@/ui/features/world").then((module) => ({
     default: module.EternumHyperstructuresMenu,
+  })),
+);
+const InGameMarket = lazy(() =>
+  import("@/ui/features/market").then((module) => ({
+    default: module.InGameMarket,
   })),
 );
 // const RelicsModule = lazy(() =>
@@ -1176,6 +1210,12 @@ export const LeftCommandSidebar = memo(() => {
       (item): item is NavigationItem => Boolean(item),
     );
   }, [realmNavigationItems, chatNavigationItem, economyNavigationItems]);
+
+  const responsiveButtonSize = useMemo(
+    () => getResponsiveButtonSize(combinedNavigationItems.length),
+    [combinedNavigationItems.length],
+  );
+
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
@@ -1231,6 +1271,11 @@ export const LeftCommandSidebar = memo(() => {
                         <StoryEventsChronicles />
                       </div>
                     )}
+                    {view === LeftView.PredictionMarket && (
+                      <div className="prediction-market-selector flex h-full flex-col flex-1 overflow-y-auto">
+                        <InGameMarket />
+                      </div>
+                    )}
                     {view === LeftView.ChatView && (
                       <div className="h-full">
                         <LeftPanelChat
@@ -1240,26 +1285,31 @@ export const LeftCommandSidebar = memo(() => {
                         />
                       </div>
                     )}
-                    {view !== LeftView.StoryEvents && (view === LeftView.EntityView || view === LeftView.None) && (
-                      <EntityDetails />
-                    )}
-                    {view !== LeftView.StoryEvents && view === LeftView.MilitaryView && (
-                      <Military entityId={structureEntityId} />
-                    )}
-                    {view !== LeftView.StoryEvents && view === LeftView.ConstructionView && (
-                      <SelectPreviewBuildingMenu entityId={structureEntityId} />
-                    )}
                     {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      (view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
                       view === LeftView.HyperstructuresView &&
                       (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
-                    {view !== LeftView.StoryEvents && view === LeftView.ResourceArrivals && (
-                      <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                    )}
-                    {view !== LeftView.StoryEvents && view === LeftView.BridgeView && (
-                      <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                        <Bridge structures={structures} />
-                      </div>
-                    )}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.ResourceArrivals && (
+                        <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+                      )}
+                    {view !== LeftView.StoryEvents &&
+                      view !== LeftView.PredictionMarket &&
+                      view === LeftView.BridgeView && (
+                        <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                          <Bridge structures={structures} />
+                        </div>
+                      )}
                     {showEmptyState && (
                       <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
                         Select a module to view details.
@@ -1270,10 +1320,10 @@ export const LeftCommandSidebar = memo(() => {
                 </div>
               </div>
               {ConnectedAccount && combinedNavigationItems.length > 0 && (
-                <div className="border-t border-gold/20 bg-black/40 px-3 py-3">
-                  <div className="flex flex-wrap gap-2">
+                <div className="border-t border-gold/20 bg-black/40 px-3 py-3 overflow-x-auto">
+                  <div className="flex gap-2">
                     {combinedNavigationItems.map((item) => (
-                      <CircleButton key={item.id} {...item} />
+                      <CircleButton key={item.id} {...item} size={responsiveButtonSize} />
                     ))}
                   </div>
                 </div>
