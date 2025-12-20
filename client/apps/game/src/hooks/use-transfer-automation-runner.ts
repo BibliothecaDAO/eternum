@@ -12,6 +12,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 
 const toRaw = (amountHuman: number) => BigInt(Math.floor(amountHuman * RESOURCE_PRECISION));
@@ -62,10 +63,30 @@ export const useTransferAutomationRunner = () => {
   const update = useTransferAutomationStore((s) => s.update);
   const scheduleNext = useTransferAutomationStore((s) => s.scheduleNext);
   const pruneForGame = useTransferAutomationStore((s) => s.pruneForGame);
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
 
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
+  const isGameOver = useCallback(
+    (blockTimestampSeconds?: number) => {
+      if (typeof gameEndAt !== "number" || gameEndAt === 0) {
+        return false;
+      }
+      const now =
+        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
+      return now >= gameEndAt;
+    },
+    [gameEndAt],
+  );
+
+  const stopRunner = useCallback(() => {
+    if (timeoutIdRef.current !== null) {
+      window.clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
+    }
+    processingRef.current = false;
+  }, []);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
 
@@ -93,7 +114,16 @@ export const useTransferAutomationRunner = () => {
   }, []);
 
   useEffect(() => {
+    if (isGameOver()) {
+      stopRunner();
+      return;
+    }
+
     processRef.current = async () => {
+      if (isGameOver()) {
+        stopRunner();
+        return;
+      }
       if (processingRef.current) {
         scheduleNextCheck();
         return;
@@ -108,6 +138,10 @@ export const useTransferAutomationRunner = () => {
       }
 
       const { currentDefaultTick, currentBlockTimestamp } = getBlockTimestamp();
+      if (isGameOver(currentBlockTimestamp)) {
+        stopRunner();
+        return;
+      }
       const nowMs = currentBlockTimestamp * 1000;
       const due = activeEntries.filter((e) => typeof e.nextRunAt === "number" && (e.nextRunAt as number) <= nowMs);
       if (!due.length) {
@@ -228,5 +262,15 @@ export const useTransferAutomationRunner = () => {
         window.clearTimeout(timeoutIdRef.current);
       }
     };
-  }, [activeEntries, components, account, scheduleNext, update, systemCalls, scheduleNextCheck]);
+  }, [
+    activeEntries,
+    components,
+    account,
+    scheduleNext,
+    update,
+    systemCalls,
+    scheduleNextCheck,
+    isGameOver,
+    stopRunner,
+  ]);
 };

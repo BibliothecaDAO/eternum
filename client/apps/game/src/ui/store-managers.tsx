@@ -35,6 +35,7 @@ const ResourceArrivalsStoreManager = () => {
   const setPendingArrivalsNumber = useUIStore((state) => state.setPendingArrivalsNumber);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
   const {
     account: { account },
     setup: { components, systemCalls },
@@ -44,6 +45,17 @@ const ResourceArrivalsStoreManager = () => {
   const isAutoClaimingRef = useRef(false);
   const autoClaimTimeoutIdRef = useRef<number | null>(null);
   const processAutoClaimRef = useRef<() => Promise<void>>(async () => {});
+
+  const isGameOver = useCallback(
+    (nowSeconds?: number) => {
+      if (typeof gameEndAt !== "number" || gameEndAt === 0) {
+        return false;
+      }
+      const now = typeof nowSeconds === "number" ? nowSeconds : getChainNowSeconds();
+      return now >= gameEndAt;
+    },
+    [gameEndAt, getChainNowSeconds],
+  );
 
   const updateArrivalIndicators = useCallback(
     (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
@@ -94,7 +106,24 @@ const ResourceArrivalsStoreManager = () => {
   }, [playerStructures, components, updateArrivalIndicators]);
 
   useEffect(() => {
+    if (isGameOver()) {
+      if (autoClaimTimeoutIdRef.current !== null) {
+        window.clearTimeout(autoClaimTimeoutIdRef.current);
+        autoClaimTimeoutIdRef.current = null;
+      }
+      isAutoClaimingRef.current = false;
+      return;
+    }
+
     processAutoClaimRef.current = async () => {
+      if (isGameOver()) {
+        if (autoClaimTimeoutIdRef.current !== null) {
+          window.clearTimeout(autoClaimTimeoutIdRef.current);
+          autoClaimTimeoutIdRef.current = null;
+        }
+        isAutoClaimingRef.current = false;
+        return;
+      }
       if (isAutoClaimingRef.current) {
         scheduleNextAutoClaim();
         return;
@@ -206,6 +235,7 @@ const ResourceArrivalsStoreManager = () => {
     scheduleNextAutoClaim,
     systemCalls,
     updateArrivalIndicators,
+    isGameOver,
   ]);
 
   return null;
