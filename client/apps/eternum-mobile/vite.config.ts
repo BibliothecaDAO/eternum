@@ -5,8 +5,17 @@ import mkcert from "vite-plugin-mkcert";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
+const normalizeBasePath = (value?: string) => {
+  if (!value || value === "/") return "/";
+  const trimmed = value.replace(/^\/|\/$/g, "");
+  return `/${trimmed}/`;
+};
+
+const basePath = normalizeBasePath(process.env.VITE_PUBLIC_BASE_PATH);
+
 // https://vite.dev/config/
 export default defineConfig({
+  base: basePath,
   plugins: [react(), wasm(), mkcert(), topLevelAwait()],
   resolve: {
     alias: {

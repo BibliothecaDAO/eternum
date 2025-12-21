@@ -143,8 +143,11 @@ const routeTree = rootRoute.addChildren([
   notFoundRoute,
 ]);
 
+const baseUrl = import.meta.env.BASE_URL ?? "/";
+const basepath = baseUrl === "/" ? undefined : baseUrl.replace(/\/$/, "");
+
 // Create the router
-export const router = createRouter({ routeTree });
+export const router = createRouter({ routeTree, basepath });
 
 // Register router types
 declare module "@tanstack/react-router" {

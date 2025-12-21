@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
+    "postbuild": "VITE_PUBLIC_BASE_PATH=/mobile/ pnpm --dir ../eternum-mobile build && node ./scripts/sync-mobile-dist.mjs",
     "coverage": "vitest run --coverage",
     "dev": "vite",
     "generate-pwa-assets": "pwa-assets-generator",
