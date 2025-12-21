@@ -3,7 +3,7 @@ import {
   ActionPaths,
   ActionType,
   ExplorerMoveSystemUpdate,
-  getFeltCenterOffset,
+  FELT_CENTER as getFeltCenterOffset,
   Position,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";

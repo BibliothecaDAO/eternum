@@ -552,9 +552,10 @@ export const BlitzOnboarding = () => {
     components,
     systemCalls: {
       blitz_realm_register,
-      blitz_realm_create,
       blitz_realm_make_hyperstructures,
       blitz_realm_obtain_entry_token,
+      blitz_realm_assign_and_settle_realms,
+      blitz_realm_settle_realms,
     },
   } = setup;
 
@@ -831,7 +832,20 @@ export const BlitzOnboarding = () => {
 
   const handleSettle = async () => {
     if (!account?.address) return;
-    await blitz_realm_create({ signer: account });
+    const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
+    const initialSettleCount = isMainnet ? 1 : 3;
+
+    await blitz_realm_assign_and_settle_realms({
+      signer: account,
+      settlement_count: initialSettleCount,
+    });
+
+    if (isMainnet) {
+      const extraCalls = 2;
+      for (let i = 0; i < extraCalls; i++) {
+        await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+      }
+    }
     navigate({ to: ROUTES.HOME });
   };
 

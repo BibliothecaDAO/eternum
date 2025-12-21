@@ -1,6 +1,13 @@
 import { SqlApi } from "@bibliothecadao/torii";
 import { env } from "../../../env";
 
-const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
+let currentBaseUrl = `${env.VITE_PUBLIC_TORII}/sql`;
 
-export const sqlApi = new SqlApi(API_BASE_URL);
+export let sqlApi = new SqlApi(currentBaseUrl);
+
+export const setSqlApiBaseUrl = (baseUrl: string) => {
+  currentBaseUrl = baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`;
+  sqlApi = new SqlApi(currentBaseUrl);
+};
+
+export const getSqlApiBaseUrl = () => currentBaseUrl;

@@ -12,6 +12,24 @@ interface AppIcon {
 
 const appIcons: AppIcon[] = [
   {
+    id: "blitz",
+    name: "Blitz Hub",
+    icon: "/images/icons/hyperstructures.png",
+    route: ROUTES.BLITZ,
+  },
+  {
+    id: "leaderboard",
+    name: "Leaderboard",
+    icon: "/images/icons/relics.png",
+    route: ROUTES.LEADERBOARD,
+  },
+  {
+    id: "markets",
+    name: "Markets",
+    icon: "/images/icons/amm.png",
+    route: ROUTES.MARKETS,
+  },
+  {
     id: "realms",
     name: "Realms",
     icon: "/images/icons/realms.png",

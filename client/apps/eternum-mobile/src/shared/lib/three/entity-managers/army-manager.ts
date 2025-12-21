@@ -7,7 +7,7 @@ import {
   ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
-  getFeltCenterOffset,
+  FELT_CENTER as getFeltCenterOffset,
   Position,
   StaminaManager,
 } from "@bibliothecadao/eternum";

@@ -871,7 +871,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                               );
                               const hasProductionBuilding = Boolean(
                                 actualBuildingCount > 0 &&
-                                (!isBlitz || !BLITZ_UNMANAGEABLE_RESOURCES.includes(resourceId)),
+                                  (!isBlitz || !BLITZ_UNMANAGEABLE_RESOURCES.includes(resourceId)),
                               );
 
                               return (

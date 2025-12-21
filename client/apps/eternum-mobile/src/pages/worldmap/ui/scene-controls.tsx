@@ -5,7 +5,7 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { getFeltCenterOffset, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { FELT_CENTER as getFeltCenterOffset, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { getLevelName } from "@bibliothecadao/types";
 import { ChevronDown, Copy, Eye, EyeOff, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";

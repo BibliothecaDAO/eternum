@@ -1,3 +1,4 @@
+import { ROUTES } from "@/shared/consts/routes";
 import { useWallet } from "@/shared/hooks/use-wallet";
 import { Alert, AlertDescription } from "@/shared/ui/alert";
 import { Button } from "@/shared/ui/button";
@@ -5,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Dialog, DialogContent } from "@/shared/ui/dialog";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 import { AlertCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BlitzOnboarding } from "./blitz-onboarding";
 import { TermsOfService } from "./terms-of-service";
 
 const TOS_ACCEPTED_KEY = "eternum_tos_accepted";
@@ -56,9 +57,11 @@ export function LoginPage() {
             <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
               {isConnecting ? "Connecting..." : hasAcceptedTS ? "Connect Wallet" : "Accept Terms of Service"}
             </Button>
-          ) : (
-            isBlitz && <BlitzOnboarding />
-          )}
+          ) : isBlitz ? (
+            <Button asChild className="w-full">
+              <Link to={ROUTES.BLITZ}>Open Blitz Hub</Link>
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
 

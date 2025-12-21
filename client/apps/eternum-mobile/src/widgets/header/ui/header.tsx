@@ -7,11 +7,14 @@ import { useEffect, useState } from "react";
 
 // Route to title mapping
 const routeTitles: Record<string, string> = {
+  [ROUTES.BLITZ]: "Blitz Hub",
   [ROUTES.REALM]: "Realm",
   [ROUTES.TRADE]: "Trade",
   [ROUTES.CHAT]: "Chat",
   [ROUTES.SETTINGS]: "Settings",
   [ROUTES.LORDPEDIA]: "Lordpedia",
+  [ROUTES.LEADERBOARD]: "Leaderboard",
+  [ROUTES.MARKETS]: "Prediction Markets",
 };
 
 export function Header() {
@@ -34,7 +37,8 @@ export function Header() {
     window.history.back();
   };
 
-  const currentTitle = routeTitles[currentPath || ""] || "Eternum";
+  const currentTitle =
+    routeTitles[currentPath || ""] || (currentPath?.startsWith(ROUTES.MARKETS) ? "Prediction Markets" : "Eternum");
 
   if (currentPath === ROUTES.HOME) {
     return null;

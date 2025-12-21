@@ -1,7 +1,10 @@
+import { BlitzPage } from "@/pages/blitz";
 import { ChatPage } from "@/pages/chat";
 import { HomePage } from "@/pages/home";
+import { LeaderboardPage } from "@/pages/leaderboard";
 import { LoginPage } from "@/pages/login";
 import { LordpediaPage } from "@/pages/lordpedia";
+import { MarketDetailsPage, MarketsPage } from "@/pages/markets";
 import { RealmPage } from "@/pages/realm";
 import { SettingsPage } from "@/pages/settings";
 import { TradePage } from "@/pages/trade";
@@ -48,6 +51,12 @@ const homeRoute = createRoute({
   component: HomePage,
 });
 
+const blitzRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.BLITZ,
+  component: BlitzPage,
+});
+
 const lordpediaRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.LORDPEDIA,
@@ -76,6 +85,24 @@ const tradeRoute = createRoute({
   }),
 });
 
+const leaderboardRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.LEADERBOARD,
+  component: LeaderboardPage,
+});
+
+const marketsRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.MARKETS,
+  component: MarketsPage,
+});
+
+const marketDetailsRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.MARKET_DETAILS,
+  component: MarketDetailsPage,
+});
+
 const chatRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.CHAT,
@@ -102,10 +129,14 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   protectedLayoutRoute.addChildren([
     homeRoute,
+    blitzRoute,
     lordpediaRoute,
     realmRoute,
     settingsRoute,
     tradeRoute,
+    leaderboardRoute,
+    marketsRoute,
+    marketDetailsRoute,
     chatRoute,
     worldmapRoute,
   ]),
