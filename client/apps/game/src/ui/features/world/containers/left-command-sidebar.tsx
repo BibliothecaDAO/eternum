@@ -363,8 +363,8 @@ const LeftPanelHeader = memo(
     const populationCapacityLabel = selectedStructureMetadata ? `${livePopulation}/${livePopulationCapacity}` : null;
     const showDetailedStats = Boolean(
       selectedStructureMetadata &&
-        (selectedStructureMetadata.category === StructureType.Realm ||
-          selectedStructureMetadata.category === StructureType.Village),
+      (selectedStructureMetadata.category === StructureType.Realm ||
+        selectedStructureMetadata.category === StructureType.Village),
     );
     const headerTitle =
       selectedStructureMetadata?.displayName ??

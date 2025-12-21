@@ -511,7 +511,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         const match = biomeRecommendation?.options.find((option) => option.armyType === armyType);
         const isRecommended = Boolean(
           biomeRecommendation?.hasDistinctBest &&
-            biomeRecommendation.best.some((option) => option.armyType === armyType),
+          biomeRecommendation.best.some((option) => option.armyType === armyType),
         );
 
         acc.push({ armyType, buildings, isRecommended, bonus: match?.bonus });

@@ -11,11 +11,7 @@ const envSchema = z.object({
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
   // API endpoints
-  VITE_PUBLIC_TORII: z
-    .string()
-    .url()
-    .optional()
-    .default("https://api.cartridge.gg/x/eternum-blitz-slot-test/torii"),
+  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-test/torii"),
   VITE_PUBLIC_NODE_URL: z
     .string()
     .url()
