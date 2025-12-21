@@ -44,13 +44,11 @@ function App() {
       return null;
     }
 
-    const configured = env.VITE_PUBLIC_MOBILE_VERSION_URL;
-    if (!configured) return null;
-
     try {
-      const target = new URL(configured, window.location.href);
       const current = new URL(window.location.href);
-      if (target.href === current.href) return null;
+      if (current.pathname.startsWith("/mobile")) return null;
+
+      const target = new URL("/mobile", current.origin);
       return target.toString();
     } catch {
       return null;
