@@ -1,6 +1,6 @@
 import { MusicRouterProvider } from "@/audio";
 import { cleanupTracing } from "@/tracing/cleanup";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
@@ -39,7 +39,23 @@ const LANDING_BACKGROUND_VIDEO = "/videos/menu.mp4";
 
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
-  const isMobileBlocked = !isConstructionMode && IS_MOBILE;
+  const mobileRedirectUrl = useMemo(() => {
+    if (isConstructionMode || !IS_MOBILE || typeof window === "undefined") {
+      return null;
+    }
+
+    const configured = env.VITE_PUBLIC_MOBILE_VERSION_URL;
+    if (!configured) return null;
+
+    try {
+      const target = new URL(configured, window.location.href);
+      const current = new URL(window.location.href);
+      if (target.href === current.href) return null;
+      return target.toString();
+    } catch {
+      return null;
+    }
+  }, [isConstructionMode]);
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
 
   useEffect(() => {
@@ -55,12 +71,17 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!mobileRedirectUrl) return;
+    window.location.replace(mobileRedirectUrl);
+  }, [mobileRedirectUrl]);
+
   if (isConstructionMode) {
     return <ConstructionGate />;
   }
 
-  if (isMobileBlocked) {
-    return <MobileBlocker mobileVersionUrl={env.VITE_PUBLIC_MOBILE_VERSION_URL} />;
+  if (mobileRedirectUrl) {
+    return <MobileBlocker mobileVersionUrl={mobileRedirectUrl} />;
   }
 
   return (
