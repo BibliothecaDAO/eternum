@@ -2005,6 +2005,24 @@ export class StructureManager {
       return;
     }
 
+    // Log guard troop count diff and play visual FX for battle damage/healing
+    if (structure.guardArmies) {
+      for (const newGuard of update.guardArmies) {
+        const oldGuard = structure.guardArmies.find((g) => g.slot === newGuard.slot);
+        if (oldGuard && oldGuard.count !== newGuard.count) {
+          const diff = newGuard.count - oldGuard.count;
+          const diffSign = diff > 0 ? "+" : "";
+          console.log(
+            `[TroopCountDiff] Structure #${entityId} Guard Slot ${newGuard.slot} | Previous: ${oldGuard.count} | Current: ${newGuard.count} | Diff: ${diffSign}${diff}`,
+          );
+
+          // Play floating damage/heal FX at the structure's position
+          const worldPos = getWorldPositionForHex(structure.hexCoords);
+          this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
+        }
+      }
+    }
+
     // Update cached guard armies data
     structure.guardArmies = update.guardArmies.map((guard) => ({
       slot: guard.slot,

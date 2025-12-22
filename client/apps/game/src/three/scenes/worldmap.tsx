@@ -455,6 +455,15 @@ export default class WorldmapScene extends HexagonScene {
     // Expose material sharing debug to global console
     (window as { testMaterialSharing?: () => void }).testMaterialSharing = () =>
       this.armyManager.logMaterialSharingStats();
+
+    // Expose troop diff FX test to global console
+    (window as { testTroopDiffFx?: (diff?: number) => void }).testTroopDiffFx = (diff?: number) => {
+      const targetHex = this.getCameraTargetHex();
+      const worldPos = getWorldPositionForHex(targetHex);
+      const testDiff = diff ?? (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 50 + 1);
+      console.log(`[TestTroopDiffFx] Spawning FX at camera target with diff: ${testDiff}`);
+      this.fxManager.playTroopDiffFx(testDiff, worldPos.x, worldPos.y + 3, worldPos.z);
+    };
     this.structureManager = new StructureManager(
       this.scene,
       this.renderChunkSize,
