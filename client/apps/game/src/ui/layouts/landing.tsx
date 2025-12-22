@@ -1,10 +1,10 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import clsx from "clsx";
 import type { TransitionEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { LANDING_BACKGROUNDS } from "./landing-backgrounds";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BlankOverlayContainer } from "../shared/containers/blank-overlay-container";
+import { LANDING_BACKGROUNDS } from "./landing-backgrounds";
 
 interface LandingLayoutProps {
   backgroundImage: string;
@@ -14,8 +14,9 @@ interface LandingLayoutProps {
 const SECTIONS = [
   { label: "Overview", path: "/" },
   { label: "Cosmetics", path: "/cosmetics" },
-  { label: "Account", path: "/account" },
+  // { label: "Account", path: "/account" },
   { label: "Player", path: "/player" },
+  { label: "Markets", path: "/markets" },
   { label: "Leaderboard", path: "/leaderboard" },
 ];
 

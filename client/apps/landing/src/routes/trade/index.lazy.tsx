@@ -2,7 +2,6 @@ import { CollectionCard } from "@/components/modules/collection-card";
 import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
-import { OG_IMAGE_META } from "@/lib/seo";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -10,7 +9,6 @@ import { motion } from "framer-motion";
 export const Route = createLazyFileRoute("/trade/")({
   component: CollectionsPage,
   pendingComponent: FullPageLoader,
-  meta: () => OG_IMAGE_META,
 });
 
 function CollectionsPage() {

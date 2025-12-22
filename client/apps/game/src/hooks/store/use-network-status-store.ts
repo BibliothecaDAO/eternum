@@ -1,18 +1,48 @@
 import type { ProviderHeartbeat } from "@bibliothecadao/provider";
 import { create } from "zustand";
 
+// Warning levels for progressive escalation
+export type WarningLevel = "normal" | "waiting" | "delayed" | "desync";
+
+// Network-specific threshold configurations (in milliseconds)
+export type NetworkType = "mainnet" | "sepolia" | "slot" | "slottest" | "local";
+
+interface NetworkThresholds {
+  waiting: number; // Show subtle indicator
+  delayed: number; // Show warning modal
+  desync: number; // Show urgent modal with resync
+}
+
+const NETWORK_THRESHOLDS: Record<NetworkType, NetworkThresholds> = {
+  mainnet: { waiting: 45_000, delayed: 90_000, desync: 180_000 },
+  sepolia: { waiting: 30_000, delayed: 60_000, desync: 120_000 },
+  slot: { waiting: 20_000, delayed: 45_000, desync: 90_000 },
+  slottest: { waiting: 20_000, delayed: 45_000, desync: 90_000 },
+  local: { waiting: 15_000, delayed: 30_000, desync: 60_000 },
+};
+
+const DEFAULT_NETWORK: NetworkType = "local";
+
 type NetworkStatusInputs = {
   lastHeartbeat: ProviderHeartbeat | null;
-  thresholdMs: number;
+  thresholds: NetworkThresholds;
   forcedDesyncUntil: number | null;
   now: number;
   lastTransactionSubmittedAt: number | null;
   lastTransactionConfirmedAt: number | null;
 };
 
+const computeWarningLevel = (elapsedMs: number | null, thresholds: NetworkThresholds): WarningLevel => {
+  if (elapsedMs === null) return "normal";
+  if (elapsedMs >= thresholds.desync) return "desync";
+  if (elapsedMs >= thresholds.delayed) return "delayed";
+  if (elapsedMs >= thresholds.waiting) return "waiting";
+  return "normal";
+};
+
 const computeNetworkStatus = ({
   lastHeartbeat,
-  thresholdMs,
+  thresholds,
   forcedDesyncUntil,
   now,
   lastTransactionSubmittedAt,
@@ -24,47 +54,44 @@ const computeNetworkStatus = ({
     (lastTransactionConfirmedAt === null || lastTransactionConfirmedAt < lastTransactionSubmittedAt);
   const pendingElapsed = hasPendingTx && lastTransactionSubmittedAt !== null ? now - lastTransactionSubmittedAt : null;
 
+  // Forced desync for testing
   if (forcedDesyncUntil !== null && now < forcedDesyncUntil) {
     return {
       isDesynced: true,
+      warningLevel: "desync",
       elapsedMs: pendingElapsed ?? baselineElapsed,
       heartbeat: lastHeartbeat,
       reason: "forced",
     };
   }
 
-  if (hasPendingTx && pendingElapsed !== null && pendingElapsed > thresholdMs) {
+  // Pending transaction - use progressive warnings
+  if (hasPendingTx && pendingElapsed !== null) {
+    const warningLevel = computeWarningLevel(pendingElapsed, thresholds);
     return {
-      isDesynced: true,
+      isDesynced: warningLevel === "desync",
+      warningLevel,
       elapsedMs: pendingElapsed,
       heartbeat: lastHeartbeat,
-      reason: "pending-tx",
+      reason: warningLevel !== "normal" ? "pending-tx" : null,
     };
   }
 
-  if (!lastHeartbeat) {
-    return {
-      isDesynced: false,
-      elapsedMs: null,
-      heartbeat: null,
-      reason: "no-heartbeat",
-    };
-  }
-
+  // No pending transaction - normal state
   return {
     isDesynced: false,
-    elapsedMs: pendingElapsed ?? baselineElapsed,
+    warningLevel: "normal",
+    elapsedMs: baselineElapsed,
     heartbeat: lastHeartbeat,
     reason: null,
   };
 };
 
-const DEFAULT_THRESHOLD_MS = 10_000;
-
-type DesyncReason = "forced" | "pending-tx" | "no-heartbeat" | null;
+type DesyncReason = "forced" | "pending-tx" | null;
 
 export interface NetworkStatus {
   isDesynced: boolean;
+  warningLevel: WarningLevel;
   elapsedMs: number | null;
   heartbeat: ProviderHeartbeat | null;
   reason: DesyncReason;
@@ -72,14 +99,15 @@ export interface NetworkStatus {
 
 interface NetworkStatusState {
   lastHeartbeat: ProviderHeartbeat | null;
-  thresholdMs: number;
+  networkType: NetworkType;
+  thresholds: NetworkThresholds;
   forcedDesyncUntil: number | null;
   now: number;
   lastTransactionSubmittedAt: number | null;
   lastTransactionConfirmedAt: number | null;
   status: NetworkStatus;
   setHeartbeat: (heartbeat: ProviderHeartbeat) => void;
-  setThreshold: (thresholdMs: number) => void;
+  setNetworkType: (networkType: NetworkType) => void;
   forceDesync: (durationMs?: number) => void;
   clearForcedDesync: () => void;
   tick: () => void;
@@ -87,17 +115,19 @@ interface NetworkStatusState {
 }
 
 const initialNow = Date.now();
+const initialThresholds = NETWORK_THRESHOLDS[DEFAULT_NETWORK];
 
 export const useNetworkStatusStore = create<NetworkStatusState>((set, get) => ({
   lastHeartbeat: null,
-  thresholdMs: DEFAULT_THRESHOLD_MS,
+  networkType: DEFAULT_NETWORK,
+  thresholds: initialThresholds,
   forcedDesyncUntil: null,
   now: initialNow,
   lastTransactionSubmittedAt: null,
   lastTransactionConfirmedAt: null,
   status: computeNetworkStatus({
     lastHeartbeat: null,
-    thresholdMs: DEFAULT_THRESHOLD_MS,
+    thresholds: initialThresholds,
     forcedDesyncUntil: null,
     now: initialNow,
     lastTransactionSubmittedAt: null,
@@ -123,7 +153,7 @@ export const useNetworkStatusStore = create<NetworkStatusState>((set, get) => ({
         ...updates,
         status: computeNetworkStatus({
           lastHeartbeat: updates.lastHeartbeat ?? state.lastHeartbeat,
-          thresholdMs: state.thresholdMs,
+          thresholds: state.thresholds,
           forcedDesyncUntil: state.forcedDesyncUntil,
           now: state.now,
           lastTransactionSubmittedAt: updates.lastTransactionSubmittedAt ?? state.lastTransactionSubmittedAt,
@@ -132,16 +162,18 @@ export const useNetworkStatusStore = create<NetworkStatusState>((set, get) => ({
       };
     });
   },
-  setThreshold: (thresholdMs) =>
+  setNetworkType: (networkType) =>
     set((state) => {
-      if (state.thresholdMs === thresholdMs) {
+      if (state.networkType === networkType) {
         return state;
       }
+      const thresholds = NETWORK_THRESHOLDS[networkType];
       return {
-        thresholdMs,
+        networkType,
+        thresholds,
         status: computeNetworkStatus({
           lastHeartbeat: state.lastHeartbeat,
-          thresholdMs,
+          thresholds,
           forcedDesyncUntil: state.forcedDesyncUntil,
           now: state.now,
           lastTransactionSubmittedAt: state.lastTransactionSubmittedAt,
@@ -150,7 +182,7 @@ export const useNetworkStatusStore = create<NetworkStatusState>((set, get) => ({
       };
     }),
   forceDesync: (durationMs) => {
-    const ttl = durationMs ?? get().thresholdMs * 2;
+    const ttl = durationMs ?? get().thresholds.desync;
     const now = Date.now();
     const forcedDesyncUntil = now + ttl;
     set((state) => ({
@@ -158,7 +190,7 @@ export const useNetworkStatusStore = create<NetworkStatusState>((set, get) => ({
       now,
       status: computeNetworkStatus({
         lastHeartbeat: state.lastHeartbeat,
-        thresholdMs: state.thresholdMs,
+        thresholds: state.thresholds,
         forcedDesyncUntil,
         now,
         lastTransactionSubmittedAt: state.lastTransactionSubmittedAt,
@@ -176,7 +208,7 @@ export const useNetworkStatusStore = create<NetworkStatusState>((set, get) => ({
         forcedDesyncUntil: null,
         status: computeNetworkStatus({
           lastHeartbeat: state.lastHeartbeat,
-          thresholdMs: state.thresholdMs,
+          thresholds: state.thresholds,
           forcedDesyncUntil: null,
           now: state.now,
           lastTransactionSubmittedAt: state.lastTransactionSubmittedAt,
@@ -195,7 +227,7 @@ export const useNetworkStatusStore = create<NetworkStatusState>((set, get) => ({
         now,
         status: computeNetworkStatus({
           lastHeartbeat: state.lastHeartbeat,
-          thresholdMs: state.thresholdMs,
+          thresholds: state.thresholds,
           forcedDesyncUntil: state.forcedDesyncUntil,
           now,
           lastTransactionSubmittedAt: state.lastTransactionSubmittedAt,
@@ -226,6 +258,8 @@ if (typeof window !== "undefined") {
       forceDesync: (durationMs?: number) => useNetworkStatusStore.getState().forceDesync(durationMs),
       clear: () => useNetworkStatusStore.getState().clearForcedDesync(),
       status: () => useNetworkStatusStore.getState().getStatus(),
+      setNetwork: (networkType: NetworkType) => useNetworkStatusStore.getState().setNetworkType(networkType),
+      thresholds: () => useNetworkStatusStore.getState().thresholds,
     };
   }
 }

@@ -28,7 +28,6 @@ import { ArrowLeftRight, Shield, Sword } from "lucide-react";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
 import { inferRealmPreset } from "@/utils/automation-presets";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
-import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 
 const ProductionStatusPill = ({ statusLabel }: { statusLabel: string }) => (
   <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
@@ -105,6 +104,7 @@ NextAutomationRunLabel.displayName = "NextAutomationRunLabel";
 export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
   const openPopup = useUIStore((state) => state.openPopup);
   const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
@@ -288,7 +288,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                 )}
                 onClick={() => {
                   if (!structureEntityId || !isOwned) return;
-                  toggleModal(<UnifiedArmyCreationModal structureId={Number(structureEntityId)} isExplorer />);
+                  openArmyCreationPopup({
+                    structureId: Number(structureEntityId),
+                    isExplorer: true,
+                  });
                 }}
                 disabled={!isOwned || !structureEntityId}
                 aria-label="Create attack army"
@@ -308,13 +311,11 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                 onClick={() => {
                   if (!structureEntityId || !isOwned) return;
                   const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
-                  toggleModal(
-                    <UnifiedArmyCreationModal
-                      structureId={Number(structureEntityId)}
-                      isExplorer={false}
-                      maxDefenseSlots={maxDefenseSlots}
-                    />,
-                  );
+                  openArmyCreationPopup({
+                    structureId: Number(structureEntityId),
+                    isExplorer: false,
+                    maxDefenseSlots,
+                  });
                 }}
                 disabled={!isOwned || !structureEntityId}
                 aria-label="Create defense army"

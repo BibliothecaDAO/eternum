@@ -37,3 +37,4 @@ catalog:
   "@dojoengine/torii-wasm": "1.7.0-preview.3"
   "@dojoengine/utils": "1.7.0-preview.3"
   "posthog-js": ^1.160.0
+  "bignumber.js": "^9.3.0"

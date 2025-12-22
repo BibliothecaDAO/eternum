@@ -1,7 +1,7 @@
 import { BattleViewInfo, LeftView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
-import { BiomeType, ContractAddress } from "@bibliothecadao/types";
+import { BiomeType, ContractAddress, Direction } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
@@ -88,6 +88,17 @@ type TooltipType = {
   };
 } | null;
 
+type ArmyCreationPopupConfig = {
+  structureId?: number;
+  maxDefenseSlots?: number;
+  isExplorer?: boolean;
+  direction?: Direction;
+  initialGuardSlot?: number;
+  followSelectedStructure?: boolean;
+};
+
+type ArmyCreationPopupState = (ArmyCreationPopupConfig & { openId: number }) | null;
+
 interface UIStore {
   disableButtons: boolean;
   setDisableButtons: (disable: boolean) => void;
@@ -150,6 +161,9 @@ interface UIStore {
   setModal: (content: React.ReactNode | null, show: boolean) => void;
   transferPanelSourceId: number | null;
   setTransferPanelSourceId: (entityId: number | null) => void;
+  armyCreationPopup: ArmyCreationPopupState;
+  openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
+  closeArmyCreationPopup: () => void;
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
@@ -276,6 +290,15 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: show, tooltip: null }),
     transferPanelSourceId: null,
     setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
+    armyCreationPopup: null,
+    openArmyCreationPopup: (config: ArmyCreationPopupConfig) =>
+      set((state: AppStore) => ({
+        armyCreationPopup: {
+          ...config,
+          openId: (state.armyCreationPopup?.openId ?? 0) + 1,
+        },
+      })),
+    closeArmyCreationPopup: () => set({ armyCreationPopup: null }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

@@ -20,6 +20,8 @@ import {
   getDirectionBetweenAdjacentHexes,
   GUARD_SLOT_NAMES,
   ID,
+  RELICS,
+  ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
@@ -47,6 +49,13 @@ const BALANCE_SLOT = "balance" as const;
 
 type GuardSelection = number | typeof BALANCE_SLOT | null;
 
+type RelicResourceTransfer = {
+  resourceId: number;
+  amount: number;
+};
+
+const RELIC_RESOURCE_IDS: number[] = RELICS.map((relic) => Number(relic.id));
+
 export const TransferTroopsContainer = ({
   selectedEntityId,
   targetEntityId,
@@ -61,10 +70,17 @@ export const TransferTroopsContainer = ({
     account: { account },
     network: { toriiClient },
     setup: {
-      systemCalls: { explorer_explorer_swap, explorer_guard_swap, guard_explorer_swap, explorer_add },
+      systemCalls: {
+        explorer_explorer_swap,
+        explorer_guard_swap,
+        guard_explorer_swap,
+        explorer_add,
+        troop_troop_adjacent_transfer,
+        troop_structure_adjacent_transfer,
+      },
     },
   } = useDojo();
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  const { currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
 
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
@@ -87,6 +103,7 @@ export const TransferTroopsContainer = ({
         structure: structureData.structure,
         structureResources: structureData.resources,
         explorer: explorerData.explorer,
+        explorerResources: explorerData.resources,
       };
     },
     staleTime: 10000, // 10 seconds
@@ -129,6 +146,7 @@ export const TransferTroopsContainer = ({
 
   const selectedStructure = selectedEntityData?.structure;
   const selectedExplorerTroops = selectedEntityData?.explorer;
+  const selectedExplorerResources = selectedEntityData?.explorerResources;
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
 
@@ -712,6 +730,57 @@ export const TransferTroopsContainer = ({
 
       // Apply precision to troop amount for the transaction
       const troopAmountWithPrecision = multiplyByPrecision(troopAmount);
+      if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot !== "number") {
+        return;
+      }
+
+      const sourceExplorerCount = selectedExplorerTroops?.troops.count ?? null;
+      const willEmptySourceExplorer =
+        (transferDirection === TransferDirection.ExplorerToExplorer ||
+          transferDirection === TransferDirection.ExplorerToStructure) &&
+        sourceExplorerCount !== null &&
+        BigInt(troopAmountWithPrecision) >= sourceExplorerCount;
+
+      if (willEmptySourceExplorer) {
+        const resolvedExplorerResources =
+          selectedExplorerResources ?? (await getExplorerFromToriiClient(toriiClient, selectedEntityId)).resources;
+
+        if (!resolvedExplorerResources) {
+          throw new Error("Unable to load explorer resources for auto relic transfer");
+        }
+
+        const relicResources: RelicResourceTransfer[] = RELIC_RESOURCE_IDS.map((resourceId) => {
+          const { balance } = ResourceManager.balanceWithProduction(
+            resolvedExplorerResources,
+            currentDefaultTick,
+            resourceId as ResourcesIds,
+          );
+          return {
+            resourceId,
+            amount: balance,
+          };
+        }).filter((entry) => entry.amount > 0);
+
+        if (relicResources.length > 0) {
+          if (transferDirection === TransferDirection.ExplorerToExplorer) {
+            await troop_troop_adjacent_transfer({
+              signer: account,
+              from_troop_id: selectedEntityId,
+              to_troop_id: targetEntityId,
+              resources: relicResources,
+            });
+          }
+
+          if (transferDirection === TransferDirection.ExplorerToStructure) {
+            await troop_structure_adjacent_transfer({
+              signer: account,
+              from_explorer_id: selectedEntityId,
+              to_structure_id: targetEntityId,
+              resources: relicResources,
+            });
+          }
+        }
+      }
 
       if (transferDirection === TransferDirection.StructureToExplorer) {
         if (guardSlot === BALANCE_SLOT && structureTroopBalance) {

@@ -74,6 +74,7 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
         "@config-deployer": path.resolve(__dirname, "../../../config/deployer"),
         "@contracts": path.resolve(__dirname, "../../../contracts/utils/utils"),
         "@manifests": path.resolve(__dirname, "../../../contracts/game"),
+        "@pm": path.resolve(__dirname, "./src/pm"),
       },
     },
     build: {
