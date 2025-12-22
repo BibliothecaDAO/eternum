@@ -1,10 +1,8 @@
 /**
- * useMarkets Hook - SQL-optimized implementation
+ * useMarketsQuery - React Query hook for fetching markets via SQL
  *
- * This hook now uses SQL queries via Torii for better performance:
- * - Server-side joins eliminate client-side map building
- * - Numerators fetched only for visible markets
- * - React Query provides caching and deduplication
+ * This hook fetches markets with pre-joined data from the PM Torii SQL endpoint,
+ * eliminating the need for client-side map building and lookups.
  */
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,30 +13,27 @@ import { MarketClass } from "@/pm/class";
 import { useConfig } from "@/pm/providers";
 import { replaceAndFormat } from "@/pm/utils";
 
-import {
-  getPmSqlApi,
-  pmQueryKeys,
-  type MarketWithDetailsRow,
-  type VaultNumeratorRow,
-} from "../queries";
+import { pmQueryKeys } from "./query-keys";
+import { getPmSqlApi, type MarketWithDetailsRow, type VaultNumeratorRow } from "./pm-sql-api";
+import type { MarketFiltersParams } from "../markets/use-markets";
+import { MarketStatusFilter, MarketTypeFilter } from "../markets/use-markets";
 
-export interface MarketFiltersParams {
-  status: MarketStatusFilter;
-  type: MarketTypeFilter;
-  oracle: string;
+// Re-export filter types for convenience
+export { MarketStatusFilter, MarketTypeFilter };
+
+interface UseMarketsQueryOptions {
+  marketFilters: MarketFiltersParams;
+  limit?: number;
+  offset?: number;
+  enabled?: boolean;
 }
 
-export enum MarketStatusFilter {
-  All = "All",
-  Open = "Open",
-  Resolvable = "Resolvable",
-  Resolved = "Resolved",
-}
-
-export enum MarketTypeFilter {
-  All = "All",
-  Binary = "Binary",
-  Categorical = "Categorical",
+interface UseMarketsQueryResult {
+  markets: MarketClass[];
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  refetch: () => void;
 }
 
 /**
@@ -139,46 +134,39 @@ function transformToMarketClass(
   });
 }
 
-interface UseMarketsOptions {
-  marketFilters: MarketFiltersParams;
-  limit?: number;
-  offset?: number;
-}
-
 /**
- * Hook to fetch markets using SQL queries for optimized performance
- *
- * Benefits over the old SDK-based implementation:
- * - Server-side joins (no client-side map building)
- * - Fetches numerators only for visible markets
- * - React Query caching (30s staleTime, 5min gcTime)
- * - Automatic request deduplication
+ * Hook to fetch markets using SQL queries
  */
-export const useMarkets = ({ marketFilters, limit = 200, offset = 0 }: UseMarketsOptions) => {
+export function useMarketsQuery({
+  marketFilters,
+  limit = 100,
+  offset = 0,
+  enabled = true,
+}: UseMarketsQueryOptions): UseMarketsQueryResult {
   const { registeredTokens, getRegisteredToken } = useConfig();
   const queryClient = useQueryClient();
 
   const now = BigInt(Math.ceil(Date.now() / 1000));
 
-  // Fetch markets with pre-joined details via SQL
+  // Fetch markets with details
   const marketsQuery = useQuery({
     queryKey: pmQueryKeys.marketsListWithPagination(marketFilters, offset / limit, limit),
     queryFn: async () => {
       const api = getPmSqlApi();
       return api.fetchMarketsWithDetails(Number(now), limit, offset);
     },
-    enabled: registeredTokens.length > 0,
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    enabled: enabled && registeredTokens.length > 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
-  // Extract market IDs from fetched results
+  // Extract market IDs from the results
   const marketIds = useMemo(() => {
     if (!marketsQuery.data) return [];
     return marketsQuery.data.map((m) => m.market_id);
   }, [marketsQuery.data]);
 
-  // Fetch vault numerators only for visible markets (not all 10,000+)
+  // Fetch vault numerators for the fetched markets
   const numeratorsQuery = useQuery({
     queryKey: pmQueryKeys.marketNumerators(marketIds),
     queryFn: async () => {
@@ -190,7 +178,7 @@ export const useMarkets = ({ marketFilters, limit = 200, offset = 0 }: UseMarket
     gcTime: 5 * 60 * 1000,
   });
 
-  // Build numerators lookup map (O(n) once, not per market)
+  // Build numerators lookup map
   const numeratorsByMarketId = useMemo(() => {
     const map = new Map<string, VaultNumeratorRow[]>();
     if (!numeratorsQuery.data) return map;
@@ -224,16 +212,15 @@ export const useMarkets = ({ marketFilters, limit = 200, offset = 0 }: UseMarket
       .filter((m): m is MarketClass => m !== null);
   }, [marketsQuery.data, numeratorsByMarketId, marketFilters, now, registeredTokens, getRegisteredToken]);
 
-  // Refresh function that invalidates the query cache
-  const refresh = () => {
+  const refetch = () => {
     queryClient.invalidateQueries({ queryKey: pmQueryKeys.markets() });
   };
 
   return {
     markets,
-    refresh,
-    // Additional properties for debugging/loading states
     isLoading: marketsQuery.isLoading || numeratorsQuery.isLoading,
     isError: marketsQuery.isError || numeratorsQuery.isError,
+    error: marketsQuery.error ?? numeratorsQuery.error ?? null,
+    refetch,
   };
-};
+}
