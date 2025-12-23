@@ -4,10 +4,8 @@ import { DEFAULT_CARTRIDGE_API_BASE, getFactorySqlBaseUrl } from "./factory-endp
 import { resolveWorldAddressFromFactory, resolveWorldContracts } from "./factory-resolver";
 import { saveWorldProfile } from "./store";
 
-export const toriiBaseUrlFromName = (
-  name: string,
-  cartridgeApiBase: string = DEFAULT_CARTRIDGE_API_BASE,
-) => `${cartridgeApiBase}/x/${name}/torii`;
+export const toriiBaseUrlFromName = (name: string, cartridgeApiBase: string = DEFAULT_CARTRIDGE_API_BASE) =>
+  `${cartridgeApiBase}/x/${name}/torii`;
 
 export interface BuildWorldProfileOptions {
   cartridgeApiBase?: string;

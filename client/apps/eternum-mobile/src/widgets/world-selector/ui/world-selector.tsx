@@ -20,9 +20,7 @@ export const WorldSelector = ({ onSelectWorld, error, warning, onRetry }: WorldS
         <Card className="space-y-2 border-border/60 bg-card/80 p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Game selection</div>
           <h1 className="text-lg font-semibold">Choose a world</h1>
-          <p className="text-xs text-muted-foreground">
-            Select an active Blitz game to connect your mobile client.
-          </p>
+          <p className="text-xs text-muted-foreground">Select an active Blitz game to connect your mobile client.</p>
         </Card>
 
         {message && (

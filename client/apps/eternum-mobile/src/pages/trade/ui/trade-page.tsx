@@ -54,11 +54,7 @@ export const TradePage = () => {
     }
 
     // If both are set to the same resource, adjust one of them
-    if (
-      buyResourceParam !== undefined &&
-      sellResourceParam !== undefined &&
-      buyResourceParam === sellResourceParam
-    ) {
+    if (buyResourceParam !== undefined && sellResourceParam !== undefined && buyResourceParam === sellResourceParam) {
       // If both are Lords, set sell to another resource
       if (buyResourceParam === ResourcesIds.Lords) {
         setSellResourceId(1); // First non-Lords resource

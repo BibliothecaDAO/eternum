@@ -28,7 +28,14 @@ const FactoryGameCardSkeleton = () => (
 );
 
 export const FactoryGamesList = ({ className = "", maxHeight = "420px", onEnterGame }: FactoryGamesListProps) => {
-  const { games, categories, loading, error: listError, refresh, nowSec } = useFactoryWorldsList({
+  const {
+    games,
+    categories,
+    loading,
+    error: listError,
+    refresh,
+    nowSec,
+  } = useFactoryWorldsList({
     chain: env.VITE_PUBLIC_CHAIN as Chain,
     cartridgeApiBase: env.VITE_PUBLIC_CARTRIDGE_API_BASE,
     limit: 200,

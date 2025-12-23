@@ -1,6 +1,12 @@
 import App from "@/app/app";
 import { DojoProvider } from "@/app/dojo/context/dojo-context";
-import { buildWorldProfile, clearActiveWorld, getActiveWorld, getActiveWorldName, setActiveWorldName } from "@/shared/lib/world";
+import {
+  buildWorldProfile,
+  clearActiveWorld,
+  getActiveWorld,
+  getActiveWorldName,
+  setActiveWorldName,
+} from "@/shared/lib/world";
 import { isToriiAvailable } from "@/shared/lib/world/factory-resolver";
 import { Loading } from "@/shared/ui/loading";
 import { WorldSelector } from "@/widgets/world-selector";
@@ -101,9 +107,7 @@ export const BootstrapApp = () => {
     return (
       <WorldSelector
         onSelectWorld={handleSelectWorld}
-        warning={
-          lastWorldName ? `The previous world (${lastWorldName}) is offline. Please choose another.` : undefined
-        }
+        warning={lastWorldName ? `The previous world (${lastWorldName}) is offline. Please choose another.` : undefined}
       />
     );
   }

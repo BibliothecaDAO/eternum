@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  fetchFactoryWorldNames,
-  getFactorySqlBaseUrl,
-  toriiBaseUrlFromName,
-  type Chain,
-} from "@bibliothecadao/world";
+import { fetchFactoryWorldNames, getFactorySqlBaseUrl, toriiBaseUrlFromName, type Chain } from "@bibliothecadao/world";
 
 import { getAvailabilityStatus, useWorldsAvailability } from "./use-world-availability";
 

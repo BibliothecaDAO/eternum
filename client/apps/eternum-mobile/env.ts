@@ -21,6 +21,8 @@ const envSchema = z.object({
     .string()
     .optional()
     .default("/dns4/api.cartridge.gg/tcp/443/x-parity-wss/%2Fx%2Feternum-blitz-slot-test%2Ftorii%2Fwss"),
+  // Optional external endpoints
+  VITE_PUBLIC_CARTRIDGE_API_BASE: z.string().url().optional().default("https://api.cartridge.gg"),
 
   VITE_PUBLIC_GRAPHICS_DEV: z
     .string()
