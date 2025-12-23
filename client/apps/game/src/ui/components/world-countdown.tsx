@@ -1,16 +1,5 @@
+import { formatCountdown } from "@bibliothecadao/react";
 import { memo, useEffect, useState } from "react";
-
-const formatCountdown = (secondsLeft: number): string => {
-  const total = Math.max(0, Math.floor(secondsLeft));
-  const d = Math.floor(total / 86400);
-  const h = Math.floor((total % 86400) / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const hh = h.toString().padStart(2, "0");
-  const mm = m.toString().padStart(2, "0");
-  const ss = s.toString().padStart(2, "0");
-  return d > 0 ? `${d}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
-};
 
 interface WorldCountdownProps {
   startMainAt: number | null;

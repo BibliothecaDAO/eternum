@@ -16,17 +16,7 @@ export const formatLocalDateTime = (timestamp: number): string => {
  * Format seconds remaining into a countdown string
  * e.g., "2d 05:30:15" or "05:30:15"
  */
-export const formatCountdown = (secondsLeft: number): string => {
-  const total = Math.max(0, Math.floor(secondsLeft));
-  const d = Math.floor(total / 86400);
-  const h = Math.floor((total % 86400) / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const hh = h.toString().padStart(2, "0");
-  const mm = m.toString().padStart(2, "0");
-  const ss = s.toString().padStart(2, "0");
-  return d > 0 ? `${d}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
-};
+export { formatCountdown } from "@bibliothecadao/react";
 
 /**
  * Format a token amount with decimals (default 18)

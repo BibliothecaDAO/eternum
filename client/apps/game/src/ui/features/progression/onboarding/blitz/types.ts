@@ -1,3 +1,5 @@
+import type { FactoryWorldCategories, FactoryWorldGame } from "@bibliothecadao/react";
+
 // Game state enum
 export enum GameState {
   NO_GAME = "NO_GAME",
@@ -14,17 +16,10 @@ export type EntryTokenStatus = "idle" | "minting" | "timeout" | "error";
 // Blitz step for progress indicator
 export type BlitzStep = "select-game" | "obtain-token" | "register" | "settle" | "play";
 
-// Factory game type
-export interface FactoryGame {
-  name: string;
-  status: "checking" | "ok" | "fail";
-  toriiBaseUrl: string;
-  startMainAt: number | null;
-  endAt: number | null;
-}
+export type { FactoryWorldCategories, FactoryWorldGame as FactoryGame };
 
 // Factory game category
-export type FactoryGameCategory = "ongoing" | "upcoming" | "ended" | "offline";
+export type FactoryGameCategory = keyof FactoryWorldCategories;
 
 // Blitz config from the contract
 export interface BlitzRegistrationConfig {
