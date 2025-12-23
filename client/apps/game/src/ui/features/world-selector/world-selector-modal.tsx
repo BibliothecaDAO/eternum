@@ -1,70 +1,20 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldsAvailability, getAvailabilityStatus } from "@/hooks/use-world-availability";
-import { getActiveWorldName, getFactorySqlBaseUrl, listWorldNames } from "@/runtime/world";
+import {
+  fetchFactoryWorldNames,
+  getActiveWorldName,
+  getFactorySqlBaseUrl,
+  listWorldNames,
+  parseMaybeBool,
+  toriiBaseUrlFromName,
+} from "@/runtime/world";
 import { deleteWorldProfile } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
+import { getAvailabilityStatus, useWorldsAvailability } from "@bibliothecadao/react";
 import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2, UserCheck, UserX, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { shortString } from "starknet";
 import { env } from "../../../../env";
-
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
-
-const decodePaddedFeltAscii = (hex: string): string => {
-  try {
-    if (!hex) return "";
-    const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
-    if (h === "0") return "";
-    try {
-      const asDec = BigInt("0x" + h).toString();
-      const decoded = shortString.decodeShortString(asDec);
-      if (decoded && decoded.trim().length > 0) return decoded;
-    } catch {
-      // ignore and fallback to manual decode
-    }
-    let i = 0;
-    while (i + 1 < h.length && h.slice(i, i + 2) === "00") i += 2;
-    let out = "";
-    for (; i + 1 < h.length; i += 2) {
-      const byte = parseInt(h.slice(i, i + 2), 16);
-      if (byte === 0) continue;
-      out += String.fromCharCode(byte);
-    }
-    return out;
-  } catch {
-    return "";
-  }
-};
-
-const parseMaybeHexToNumber = (v: unknown): number | null => {
-  if (v == null) return null;
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    try {
-      if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-};
-
-const parseMaybeBool = (v: unknown): boolean | null => {
-  if (v == null) return null;
-  if (typeof v === "boolean") return v;
-  if (typeof v === "string") {
-    const trimmed = v.trim().toLowerCase();
-    if (trimmed === "true") return true;
-    if (trimmed === "false") return false;
-  }
-  const numeric = parseMaybeHexToNumber(v);
-  if (numeric == null) return null;
-  return numeric !== 0;
-};
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
@@ -195,7 +145,7 @@ export const WorldSelectorModal = ({
         while (!cancelled && index < uniqueWorlds.length) {
           const i = index++;
           const name = uniqueWorlds[i];
-          const torii = buildToriiBaseUrl(name);
+          const torii = toriiBaseUrlFromName(name);
           const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral);
           if (!cancelled) {
             setPlayerRegistration((prev) => ({ ...prev, [name]: status }));
@@ -225,24 +175,7 @@ export const WorldSelectorModal = ({
         return;
       }
 
-      const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
-      const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
-      const rows = (await res.json()) as Record<string, unknown>[];
-
-      const names: string[] = [];
-      const seen = new Set<string>();
-      for (const row of rows) {
-        const feltHex: string | undefined =
-          (row && (row.name as string)) || (row && (row["data.name"] as string)) || undefined;
-        if (!feltHex || typeof feltHex !== "string") continue;
-        const decoded = decodePaddedFeltAscii(feltHex);
-        if (!decoded || seen.has(decoded)) continue;
-        seen.add(decoded);
-        names.push(decoded);
-      }
-
+      const names = await fetchFactoryWorldNames(factorySqlBaseUrl, 1000);
       setFactoryNames(names);
     } catch (e: unknown) {
       setFactoryError(e instanceof Error ? e.message : String(e));

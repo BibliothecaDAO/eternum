@@ -5,9 +5,9 @@ import { ROUTES } from "@/shared/consts/routes";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { formatTimestamp } from "@/features/prediction-markets/lib/market-utils";
-import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const parseMarketId = (raw?: string | null) => {
   if (!raw) return null;
@@ -53,7 +53,7 @@ const MarketDetailsContent = ({ marketId }: { marketId: bigint | null }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Button size="sm" variant="secondary" onClick={() => navigate({ to: ROUTES.MARKETS })}>
+        <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.MARKETS)}>
           <ArrowLeft className="mr-2 h-3 w-3" />
           Back
         </Button>
@@ -98,8 +98,8 @@ const MarketDetailsContent = ({ marketId }: { marketId: bigint | null }) => {
 };
 
 export const MarketDetailsPage = () => {
-  const params = useParams({ strict: false }) as { marketId?: string };
-  const marketId = parseMarketId(params.marketId);
+  const { marketId: marketIdParam } = useParams();
+  const marketId = parseMarketId(marketIdParam);
 
   return (
     <MarketsProviders>

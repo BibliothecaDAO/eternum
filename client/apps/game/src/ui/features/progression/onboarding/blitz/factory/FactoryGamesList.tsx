@@ -1,14 +1,19 @@
-import { buildWorldProfile, getFactorySqlBaseUrl, setActiveWorldName } from "@/runtime/world";
-import { isToriiAvailable } from "@/runtime/world/factory-resolver";
+import {
+  buildWorldProfile,
+  fetchFactoryWorldNames,
+  getFactorySqlBaseUrl,
+  setActiveWorldName,
+  toriiBaseUrlFromName,
+} from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
+import { getAvailabilityStatus, useWorldsAvailability } from "@bibliothecadao/react";
 import type { Chain } from "@contracts";
 import { motion } from "framer-motion";
 import { RefreshCw, ServerOff } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../../../env";
 import { staggerContainer } from "../animations";
 import { FactoryGame, FactoryGameCategory } from "../types";
-import { decodePaddedFeltAscii, parseMaybeHexToNumber } from "../utils";
 import { FactoryGameCard, FactoryGameCardSkeleton } from "./FactoryGameCard";
 
 interface FactoryGamesListProps {
@@ -17,7 +22,7 @@ interface FactoryGamesListProps {
 }
 
 export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: FactoryGamesListProps) => {
-  const [games, setGames] = useState<FactoryGame[]>([]);
+  const [factoryNames, setFactoryNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
@@ -28,6 +33,26 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
     return () => window.clearInterval(id);
   }, []);
 
+  const {
+    results: factoryAvailability,
+    isAnyLoading: factoryCheckingAvailability,
+    refetchAll: refetchFactory,
+  } = useWorldsAvailability(factoryNames, factoryNames.length > 0);
+
+  const games = useMemo(() => {
+    return factoryNames.map((name) => {
+      const availability = factoryAvailability.get(name);
+      const status = getAvailabilityStatus(availability);
+      return {
+        name,
+        status,
+        toriiBaseUrl: toriiBaseUrlFromName(name),
+        startMainAt: availability?.meta?.startMainAt ?? null,
+        endAt: availability?.meta?.endAt ?? null,
+      };
+    });
+  }, [factoryAvailability, factoryNames]);
+
   const load = useCallback(async () => {
     try {
       setLoading(true);
@@ -35,107 +60,20 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
 
       const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as Chain);
       if (!factorySqlBaseUrl) {
-        setGames([]);
+        setFactoryNames([]);
         return;
       }
 
-      const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 200;`;
-      const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
-
-      if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
-
-      const rows = (await res.json()) as Record<string, unknown>[];
-
-      // Extract unique game names
-      const names: string[] = [];
-      const seen = new Set<string>();
-
-      for (const row of rows) {
-        const feltHex: string | undefined =
-          (row?.name as string) ||
-          (row?.["data.name"] as string) ||
-          ((row?.data as Record<string, unknown>)?.name as string);
-
-        if (!feltHex || typeof feltHex !== "string") continue;
-
-        const decoded = decodePaddedFeltAscii(feltHex);
-        if (!decoded || seen.has(decoded)) continue;
-
-        seen.add(decoded);
-        names.push(decoded);
-      }
-
-      // Initialize games with "checking" status
-      const initial: FactoryGame[] = names.map((n) => ({
-        name: n,
-        status: "checking",
-        toriiBaseUrl: `https://api.cartridge.gg/x/${n}/torii`,
-        startMainAt: null,
-        endAt: null,
-      }));
-
-      setGames(initial);
-
-      // Check each game's availability in parallel with limited concurrency
-      const limit = 8;
-      let index = 0;
-
-      const work = async () => {
-        while (index < initial.length) {
-          const i = index++;
-          const item = initial[i];
-
-          try {
-            const online = await isToriiAvailable(item.toriiBaseUrl);
-            let startMainAt: number | null = null;
-            let endAt: number | null = null;
-
-            if (online) {
-              try {
-                const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-                const u = `${item.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
-                const r = await fetch(u);
-
-                if (r.ok) {
-                  const arr = (await r.json()) as Record<string, unknown>[];
-                  if (arr?.[0]) {
-                    if (arr[0].start_main_at != null) startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
-                    if (arr[0].end_at != null) endAt = parseMaybeHexToNumber(arr[0].end_at);
-                  }
-                }
-              } catch {
-                // Ignore per-world time errors
-              }
-            }
-
-            setGames((prev) => {
-              const copy = [...prev];
-              const idx = copy.findIndex((w) => w.name === item.name);
-              if (idx >= 0) copy[idx] = { ...copy[idx], status: online ? "ok" : "fail", startMainAt, endAt };
-              return copy;
-            });
-          } catch {
-            setGames((prev) => {
-              const copy = [...prev];
-              const idx = copy.findIndex((w) => w.name === item.name);
-              if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
-              return copy;
-            });
-          }
-        }
-      };
-
-      const workers: Promise<void>[] = [];
-      for (let k = 0; k < limit; k++) workers.push(work());
-      await Promise.all(workers);
+      const names = await fetchFactoryWorldNames(factorySqlBaseUrl, 200);
+      setFactoryNames(names);
+      await refetchFactory();
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refetchFactory]);
 
   // Load on mount
   useEffect(() => {
@@ -192,7 +130,6 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
 
   const { ongoing, upcoming, ended } = categorizeGames();
   const nothing = ongoing.length === 0 && upcoming.length === 0 && ended.length === 0;
-  const isChecking = games.some((g) => g.status === "checking");
 
   // Render category section
   const renderCategory = (title: string, items: FactoryGame[], category: FactoryGameCategory) => {
@@ -211,7 +148,10 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
     );
   };
 
-  if (loading && games.length === 0) {
+  const isChecking = factoryCheckingAvailability || games.some((g) => g.status === "checking");
+  const isLoading = loading || (factoryNames.length > 0 && factoryCheckingAvailability);
+
+  if (isLoading && games.length === 0) {
     return (
       <div className={`space-y-3 ${className}`}>
         <div className="flex items-center justify-between">
@@ -246,10 +186,10 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
         <span className="text-sm text-gold/70">
           {isChecking ? "Checking servers..." : `${games.filter((g) => g.status === "ok").length} games online`}
         </span>
-        <Button onClick={load} size="xs" variant="outline" forceUppercase={false} disabled={loading}>
+        <Button onClick={load} size="xs" variant="outline" forceUppercase={false} disabled={isLoading}>
           <div className="flex items-center gap-1.5">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            <span>{loading ? "Refreshing..." : "Refresh"}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
           </div>
         </Button>
       </div>

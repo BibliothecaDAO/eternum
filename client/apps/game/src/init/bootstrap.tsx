@@ -1,6 +1,6 @@
 import { captureSystemError } from "@/posthog";
-import { setup } from "@bibliothecadao/dojo";
-import { configManager } from "@bibliothecadao/eternum";
+import type { SetupResult as DojoSetupResult } from "@bibliothecadao/dojo";
+import { runDojoSetup } from "@bibliothecadao/react";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
@@ -17,7 +17,7 @@ import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { initializeGameRenderer } from "./game-renderer";
 
-export type SetupResult = Awaited<ReturnType<typeof setup>>;
+export type SetupResult = DojoSetupResult;
 
 type BootstrapResult = SetupResult;
 
@@ -85,13 +85,13 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   const toriiUrl = chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
   setSqlApiBaseUrl(`${toriiUrl}/sql`);
 
-  const setupResult = await setup(
-    { ...dojoConfig },
-    {
+  const setupResult = await runDojoSetup({
+    dojoConfig,
+    setupOptions: {
       vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
       useBurner: false,
     },
-    {
+    callbacks: {
       onNoAccount: () => {
         handleNoAccount(<NoAccountModal />);
       },
@@ -105,14 +105,12 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
         });
       },
     },
-  );
+    initialSync: (result) => initialSync(result, uiStore, syncingStore.setInitialSyncProgress),
+    eternumConfig: ETERNUM_CONFIG(),
+  });
   console.log("[DOJO SETUP COMPLETED]");
 
-  await initialSync(setupResult, uiStore, syncingStore.setInitialSyncProgress);
-
   console.log("[INITIAL SYNC COMPLETED]");
-
-  configManager.setDojo(setupResult.components, ETERNUM_CONFIG());
 
   console.log("[GAME RENDERER INITIALIZED]");
 

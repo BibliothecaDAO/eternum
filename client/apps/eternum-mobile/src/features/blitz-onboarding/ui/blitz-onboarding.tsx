@@ -16,11 +16,11 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount, useCall } from "@starknet-react/core";
-import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { AlertCircle, Eye, Hammer, ShieldCheck, Swords, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Abi, CallData, uint256 } from "starknet";
+import { useNavigate } from "react-router-dom";
 import { env } from "../../../../env";
 
 // Helper functions to format timestamps
@@ -393,7 +393,7 @@ const RegistrationState = ({
         </div>
       )}
 
-      <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
+      <SpectateButton onClick={() => navigate(ROUTES.WORLDMAP)} />
     </motion.div>
   );
 };
@@ -424,7 +424,7 @@ const GameActiveState = ({
   };
 
   const onPlay = () => {
-    navigate({ to: ROUTES.HOME });
+    navigate(ROUTES.HOME);
   };
 
   return (
@@ -447,7 +447,7 @@ const GameActiveState = ({
                 <span>⚡ Play Blitz </span>
               </div>
             </Button>
-            <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
+            <SpectateButton onClick={() => navigate(ROUTES.WORLDMAP)} />
           </div>
         ) : (
           <div className="space-y-3">
@@ -463,7 +463,7 @@ const GameActiveState = ({
                 </div>
               )}
             </Button>
-            <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
+            <SpectateButton onClick={() => navigate(ROUTES.WORLDMAP)} />
           </div>
         )
       ) : (
@@ -471,7 +471,7 @@ const GameActiveState = ({
           <div className="rounded-lg border border-gold/30 bg-brown/10 p-4 text-center">
             <p className="text-sm text-gold/70">⚠️ You missed the call to arms for this battle.</p>
           </div>
-          <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
+          <SpectateButton onClick={() => navigate(ROUTES.WORLDMAP)} />
         </div>
       )}
     </motion.div>
@@ -846,7 +846,7 @@ export const BlitzOnboarding = () => {
         await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
       }
     }
-    navigate({ to: ROUTES.HOME });
+    navigate(ROUTES.HOME);
   };
 
   if (!blitzConfig) {

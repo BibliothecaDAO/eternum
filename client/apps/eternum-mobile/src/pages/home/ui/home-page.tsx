@@ -1,6 +1,6 @@
 import { ROUTES } from "@/shared/consts/routes";
 import { Card } from "@/shared/ui/card";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useEntryTokenBalance } from "@bibliothecadao/react";
 
 interface AppIcon {

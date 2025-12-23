@@ -11,147 +11,35 @@ import { TradePage } from "@/pages/trade";
 import { WorldmapPage } from "@/pages/worldmap";
 import { ROUTES } from "@/shared/consts/routes";
 import { useAuth } from "@/shared/hooks/use-auth";
-import { Outlet, createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "../ui/layout";
 
-// Create a root route
-const rootRoute = createRootRoute({
-  component: () => <Outlet />,
-});
-
-// Create a layout route for protected routes
-const protectedLayoutRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  id: "protected",
-  beforeLoad: async () => {
-    const { isAuthenticated } = useAuth.getState();
-    if (!isAuthenticated) {
-      throw redirect({ to: ROUTES.LOGIN });
-    }
-  },
-  component: () => <Layout />,
-});
-
-// Create routes
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: ROUTES.LOGIN,
-  component: LoginPage,
-  beforeLoad: async () => {
-    // const { isAuthenticated } = useAuth.getState();
-    // if (isAuthenticated) {
-    //   throw redirect({ to: ROUTES.HOME });
-    // }
-  },
-});
-
-const homeRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.HOME,
-  component: HomePage,
-});
-
-const blitzRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.BLITZ,
-  component: BlitzPage,
-});
-
-const lordpediaRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.LORDPEDIA,
-  component: LordpediaPage,
-});
-
-const realmRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.REALM,
-  component: RealmPage,
-});
-
-const settingsRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.SETTINGS,
-  component: SettingsPage,
-});
-
-const tradeRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.TRADE,
-  component: TradePage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    buyResourceId: search.buyResourceId as number | undefined,
-    sellResourceId: search.sellResourceId as number | undefined,
-  }),
-});
-
-const leaderboardRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.LEADERBOARD,
-  component: LeaderboardPage,
-});
-
-const marketsRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.MARKETS,
-  component: MarketsPage,
-});
-
-const marketDetailsRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.MARKET_DETAILS,
-  component: MarketDetailsPage,
-});
-
-const chatRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.CHAT,
-  component: ChatPage,
-});
-
-const worldmapRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
-  path: ROUTES.WORLDMAP,
-  component: WorldmapPage,
-});
-
-// Add catch-all route for 404
-const notFoundRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "*",
-  beforeLoad: () => {
-    throw redirect({ to: ROUTES.LOGIN });
-  },
-});
-
-// Create the route tree
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  protectedLayoutRoute.addChildren([
-    homeRoute,
-    blitzRoute,
-    lordpediaRoute,
-    realmRoute,
-    settingsRoute,
-    tradeRoute,
-    leaderboardRoute,
-    marketsRoute,
-    marketDetailsRoute,
-    chatRoute,
-    worldmapRoute,
-  ]),
-  notFoundRoute,
-]);
-
-const baseUrl = import.meta.env.BASE_URL ?? "/";
-const basepath = baseUrl === "/" ? undefined : baseUrl.replace(/\/$/, "");
-
-// Create the router
-export const router = createRouter({ routeTree, basepath });
-
-// Register router types
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
+const ProtectedLayout = () => {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to={ROUTES.LOGIN} replace />;
   }
-}
+  return <Layout />;
+};
+
+export const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+      <Route element={<ProtectedLayout />}>
+        <Route path={ROUTES.HOME} element={<HomePage />} />
+        <Route path={ROUTES.BLITZ} element={<BlitzPage />} />
+        <Route path={ROUTES.LORDPEDIA} element={<LordpediaPage />} />
+        <Route path={ROUTES.REALM} element={<RealmPage />} />
+        <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+        <Route path={ROUTES.TRADE} element={<TradePage />} />
+        <Route path={ROUTES.LEADERBOARD} element={<LeaderboardPage />} />
+        <Route path={ROUTES.MARKETS} element={<MarketsPage />} />
+        <Route path={ROUTES.MARKET_DETAILS} element={<MarketDetailsPage />} />
+        <Route path={ROUTES.CHAT} element={<ChatPage />} />
+        <Route path={ROUTES.WORLDMAP} element={<WorldmapPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
+    </Routes>
+  );
+};

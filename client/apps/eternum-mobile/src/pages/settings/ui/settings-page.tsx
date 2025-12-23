@@ -6,9 +6,9 @@ import { Label } from "@/shared/ui/label";
 import { ModeToggle } from "@/shared/ui/mode-toggle";
 import { Separator } from "@/shared/ui/separator";
 import { useDisconnect } from "@starknet-react/core";
-import { useNavigate } from "@tanstack/react-router";
 import { LogOut, Moon, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export function SettingsPage() {
 
   const handleLogout = () => {
     disconnect();
-    navigate({ to: ROUTES.LOGIN });
+    navigate(ROUTES.LOGIN);
   };
 
   return (

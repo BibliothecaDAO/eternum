@@ -10,5 +10,5 @@ export const ROUTES = {
   WORLDMAP: "/worldmap",
   LEADERBOARD: "/leaderboard",
   MARKETS: "/markets",
-  MARKET_DETAILS: "/markets/$marketId",
+  MARKET_DETAILS: "/markets/:marketId",
 } as const;

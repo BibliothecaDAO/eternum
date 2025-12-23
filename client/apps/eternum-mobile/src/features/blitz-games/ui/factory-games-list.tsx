@@ -1,16 +1,24 @@
-import { getFactorySqlBaseUrl, isToriiAvailable, setActiveWorldName, buildWorldProfile } from "@/shared/lib/world";
+import {
+  buildWorldProfile,
+  fetchFactoryWorldNames,
+  fetchWorldConfigMeta,
+  getFactorySqlBaseUrl,
+  isToriiAvailable,
+  setActiveWorldName,
+  toriiBaseUrlFromName,
+} from "@/shared/lib/world";
 import { Button } from "@/shared/ui/button";
 import type { Chain } from "@contracts";
 import { RefreshCw, ServerOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { env } from "../../../../env";
 import type { FactoryGame, FactoryGameCategory } from "../model/types";
-import { decodePaddedFeltAscii, parseMaybeHexToNumber } from "../model/utils";
 import { FactoryGameCard } from "./factory-game-card";
 
 interface FactoryGamesListProps {
   className?: string;
   maxHeight?: string;
+  onEnterGame?: (worldName: string) => Promise<void> | void;
 }
 
 const FactoryGameCardSkeleton = () => (
@@ -26,7 +34,7 @@ const FactoryGameCardSkeleton = () => (
   </div>
 );
 
-export const FactoryGamesList = ({ className = "", maxHeight = "420px" }: FactoryGamesListProps) => {
+export const FactoryGamesList = ({ className = "", maxHeight = "420px", onEnterGame }: FactoryGamesListProps) => {
   const [games, setGames] = useState<FactoryGame[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,34 +56,11 @@ export const FactoryGamesList = ({ className = "", maxHeight = "420px" }: Factor
         return;
       }
 
-      const query = "SELECT name FROM [wf-WorldDeployed] LIMIT 200;";
-      const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Factory query failed: ${response.status} ${response.statusText}`);
-
-      const rows = (await response.json()) as Record<string, unknown>[];
-      const names: string[] = [];
-      const seen = new Set<string>();
-
-      for (const row of rows) {
-        const feltHex: string | undefined =
-          (row?.name as string) ||
-          (row?.["data.name"] as string) ||
-          ((row?.data as Record<string, unknown>)?.name as string);
-
-        if (!feltHex || typeof feltHex !== "string") continue;
-
-        const decoded = decodePaddedFeltAscii(feltHex);
-        if (!decoded || seen.has(decoded)) continue;
-
-        seen.add(decoded);
-        names.push(decoded);
-      }
-
+      const names = await fetchFactoryWorldNames(factorySqlBaseUrl, 200);
       const initial: FactoryGame[] = names.map((name) => ({
         name,
         status: "checking",
-        toriiBaseUrl: `https://api.cartridge.gg/x/${name}/torii`,
+        toriiBaseUrl: toriiBaseUrlFromName(name),
         startMainAt: null,
         endAt: null,
       }));
@@ -95,20 +80,9 @@ export const FactoryGamesList = ({ className = "", maxHeight = "420px" }: Factor
             let endAt: number | null = null;
 
             if (online) {
-              try {
-                const q =
-                  'SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;';
-                const worldUrl = `${current.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
-                const worldResponse = await fetch(worldUrl);
-                if (worldResponse.ok) {
-                  const data = (await worldResponse.json()) as Record<string, unknown>[];
-                  const row = data?.[0];
-                  if (row?.start_main_at != null) startMainAt = parseMaybeHexToNumber(row.start_main_at);
-                  if (row?.end_at != null) endAt = parseMaybeHexToNumber(row.end_at);
-                }
-              } catch {
-                // ignore per-world time errors
-              }
+              const meta = await fetchWorldConfigMeta(current.toriiBaseUrl);
+              startMainAt = meta.startMainAt;
+              endAt = meta.endAt;
             }
 
             setGames((prev) => {
@@ -145,6 +119,10 @@ export const FactoryGamesList = ({ className = "", maxHeight = "420px" }: Factor
 
   const enterGame = async (worldName: string) => {
     try {
+      if (onEnterGame) {
+        await onEnterGame(worldName);
+        return;
+      }
       const chain = env.VITE_PUBLIC_CHAIN as Chain;
       await buildWorldProfile(chain, worldName);
       setActiveWorldName(worldName);

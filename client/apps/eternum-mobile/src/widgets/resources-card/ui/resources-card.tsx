@@ -9,9 +9,9 @@ import { ScrollArea } from "@/shared/ui/scroll-area";
 import { divideByPrecision, getIsBlitz } from "@bibliothecadao/eternum";
 import { getResourceTiers, ID, resources, ResourcesIds } from "@bibliothecadao/types";
 
-import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { createSearchParams, useNavigate } from "react-router-dom";
 
 interface ResourcesCardProps {
   className?: string;
@@ -47,17 +47,13 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
 
   const handleTradeClick = (resourceId: number) => {
     const amount = resourceAmounts.find((r) => r.id === resourceId)?.amount || 0;
-    if (amount > 0) {
-      navigate({
-        to: ROUTES.TRADE,
-        search: { sellResourceId: resourceId, buyResourceId: ResourcesIds.Lords },
-      });
-    } else {
-      navigate({
-        to: ROUTES.TRADE,
-        search: { sellResourceId: ResourcesIds.Lords, buyResourceId: resourceId },
-      });
-    }
+    const sellResourceId = amount > 0 ? resourceId : ResourcesIds.Lords;
+    const buyResourceId = amount > 0 ? ResourcesIds.Lords : resourceId;
+    const searchParams = createSearchParams({
+      sellResourceId: String(sellResourceId),
+      buyResourceId: String(buyResourceId),
+    }).toString();
+    navigate({ pathname: ROUTES.TRADE, search: `?${searchParams}` });
   };
 
   const renderResourceItem = useCallback(

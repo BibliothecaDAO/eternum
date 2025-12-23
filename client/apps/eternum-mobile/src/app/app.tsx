@@ -1,12 +1,14 @@
 import { useAuthSync } from "@/shared/hooks/use-auth";
-import { RouterProvider } from "@tanstack/react-router";
-import { router } from "./config/router";
+import { BrowserRouter } from "react-router-dom";
+import { AppRoutes } from "./config/router";
 
 function App() {
   useAuthSync();
   const showBgImage = localStorage.getItem("showBackgroundImage") === "true";
   const randomCover = String(Math.floor(Math.random() * 7 + 1)).padStart(2, "0");
   const bgImage = `/images/covers/${randomCover}.png`;
+  const baseUrl = import.meta.env.BASE_URL ?? "/";
+  const basepath = baseUrl === "/" ? undefined : baseUrl.replace(/\/$/, "");
 
   return (
     <div className={`min-h-screen text-foreground relative ${!showBgImage ? "bg-background" : ""}`}>
@@ -16,7 +18,9 @@ function App() {
           style={{ backgroundImage: `url(${bgImage})` }}
         />
       )}
-      <RouterProvider router={router} />
+      <BrowserRouter basename={basepath}>
+        <AppRoutes />
+      </BrowserRouter>
     </div>
   );
 }

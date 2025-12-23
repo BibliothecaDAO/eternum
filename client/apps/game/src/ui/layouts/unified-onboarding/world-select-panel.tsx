@@ -1,39 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Users } from "lucide-react";
-import { shortString } from "starknet";
 
-import { useWorldsAvailability, getAvailabilityStatus } from "@/hooks/use-world-availability";
-import { getActiveWorldName, getFactorySqlBaseUrl, listWorldNames } from "@/runtime/world";
+import { getAvailabilityStatus, useWorldsAvailability } from "@bibliothecadao/react";
+import { fetchFactoryWorldNames, getActiveWorldName, getFactorySqlBaseUrl, listWorldNames } from "@/runtime/world";
 import { deleteWorldProfile } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
 import { WorldCountdown, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { env } from "../../../../env";
-
-const decodePaddedFeltAscii = (hex: string): string => {
-  try {
-    if (!hex) return "";
-    const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
-    if (h === "0") return "";
-    try {
-      const asDec = BigInt("0x" + h).toString();
-      const decoded = shortString.decodeShortString(asDec);
-      if (decoded && decoded.trim().length > 0) return decoded;
-    } catch {
-      // ignore and fallback to manual decode
-    }
-    let i = 0;
-    while (i + 1 < h.length && h.slice(i, i + 2) === "00") i += 2;
-    let out = "";
-    for (; i + 1 < h.length; i += 2) {
-      const byte = parseInt(h.slice(i, i + 2), 16);
-      if (byte === 0) continue;
-      out += String.fromCharCode(byte);
-    }
-    return out;
-  } catch {
-    return "";
-  }
-};
 
 interface WorldSelectPanelProps {
   onSelect: (worldName: string) => void;
@@ -90,24 +63,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
         return;
       }
 
-      const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
-      const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
-      const rows = (await res.json()) as Record<string, unknown>[];
-
-      const names: string[] = [];
-      const seen = new Set<string>();
-      for (const row of rows) {
-        const feltHex: string | undefined =
-          (row && (row.name as string)) || (row && (row["data.name"] as string)) || undefined;
-        if (!feltHex || typeof feltHex !== "string") continue;
-        const decoded = decodePaddedFeltAscii(feltHex);
-        if (!decoded || seen.has(decoded)) continue;
-        seen.add(decoded);
-        names.push(decoded);
-      }
-
+      const names = await fetchFactoryWorldNames(factorySqlBaseUrl, 1000);
       setFactoryNames(names);
     } catch (e: unknown) {
       setFactoryError(e instanceof Error ? e.message : String(e));

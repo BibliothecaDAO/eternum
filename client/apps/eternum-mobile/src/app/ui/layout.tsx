@@ -4,7 +4,7 @@ import { useStore } from "@/shared/store";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { usePlayerStructures } from "@bibliothecadao/react";
-import { Outlet, useMatches } from "@tanstack/react-router";
+import { Outlet, useLocation } from "react-router-dom";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ThreeCanvas, type ThreeCanvasRef } from "@/pages/worldmap/ui/three-canvas";
 
@@ -25,8 +25,8 @@ export const usePersistentCanvas = () => {
 
 export function Layout() {
   const playerStructures = usePlayerStructures();
-  const matches = useMatches();
-  const currentPath = matches.at(-1)?.pathname;
+  const location = useLocation();
+  const currentPath = location.pathname;
   const canvasRef = useRef<ThreeCanvasRef>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const { selectedRealm } = useStore();

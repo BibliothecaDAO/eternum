@@ -1,7 +1,7 @@
 import { ROUTES } from "@/shared/consts/routes";
 import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
-import { useMatches } from "@tanstack/react-router";
+import { useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -18,10 +18,10 @@ const routeTitles: Record<string, string> = {
 };
 
 export function Header() {
-  const matches = useMatches();
+  const location = useLocation();
   const connector = useStore((state) => state.connector);
   const [_, setUserName] = useState<string | undefined>(undefined);
-  const currentPath = matches.at(-1)?.pathname;
+  const currentPath = location.pathname;
 
   useEffect(() => {
     if (!connector || !connector!.controller) return;

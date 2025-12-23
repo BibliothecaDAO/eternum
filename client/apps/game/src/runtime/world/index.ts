@@ -7,3 +7,11 @@ export * from "./manifest-patcher";
 export * from "./profile-builder";
 export * from "./ensure";
 export { ensureActiveWorldProfileWithUI } from "./ensure-with-ui";
+export {
+  decodePaddedFeltAscii,
+  fetchFactoryWorldNames,
+  fetchWorldConfigMeta,
+  parseMaybeBool,
+  parseMaybeHexToNumber,
+  type WorldConfigMeta,
+} from "@bibliothecadao/world";

@@ -1,17 +1,19 @@
 import { MarketClass } from "@/pm/class";
 import { ROUTES } from "@/shared/consts/routes";
 import { Card } from "@/shared/ui/card";
-import { Link } from "@tanstack/react-router";
 import { formatTimestamp } from "../lib/market-utils";
 import { MarketStatusBadge } from "./market-status-badge";
+import { Link, generatePath } from "react-router-dom";
 
 interface MarketCardProps {
   market: MarketClass;
 }
 
 export const MarketCard = ({ market }: MarketCardProps) => {
+  const marketPath = generatePath(ROUTES.MARKET_DETAILS, { marketId: market.market_id.toString() });
+
   return (
-    <Link to={ROUTES.MARKET_DETAILS} params={{ marketId: market.market_id }}>
+    <Link to={marketPath}>
       <Card className="space-y-2 border-border/60 bg-card/80 p-4 transition hover:border-primary/50">
         <div className="flex items-center justify-between gap-2">
           <MarketStatusBadge market={market} />

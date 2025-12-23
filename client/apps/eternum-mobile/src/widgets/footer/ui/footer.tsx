@@ -1,10 +1,10 @@
 import { ROUTES } from "@/shared/consts/routes";
-import { Link, useMatches } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";
 import { Home, Map, MessageCircle, Settings } from "lucide-react";
 
 export const Footer = () => {
-  const matches = useMatches();
-  const currentPath = matches.at(-1)?.pathname;
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   return (
     <nav className="fixed bottom-2 left-2 right-2 bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-lg safe-area-pb">

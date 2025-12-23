@@ -17,13 +17,16 @@
 		"@bibliothecadao/eternum": "workspace:*",
 		"@bibliothecadao/types": "workspace:*",
 		"@bibliothecadao/dojo": "workspace:*",
+		"@bibliothecadao/world": "workspace:*",
 		"@dojoengine/react": "catalog:",
 		"@starknet-react/core": "catalog:",
+		"@tanstack/react-query": "^5.90.12",
 		"react": "catalog:",
 		"starknet": "catalog:",
 		"wouter": "^2.12.1"
 	},
 	"devDependencies": {
+		"@bibliothecadao/world": "workspace:*",
 		"@types/react": "^18",
 		"tsup": "^8",
 		"typescript": "^5",

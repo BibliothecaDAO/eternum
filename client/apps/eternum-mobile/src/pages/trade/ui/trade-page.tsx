@@ -13,13 +13,13 @@ import {
 } from "@bibliothecadao/eternum";
 import { ContractAddress, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
-import { useSearch } from "@tanstack/react-router";
 import { ArrowDownUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 
 export const TradePage = () => {
-  const search = useSearch({ from: "/protected/trade" });
+  const [searchParams] = useSearchParams();
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
   const [buyResourceId, setBuyResourceId] = useState(ResourcesIds.Lords); // Default to Lords
@@ -28,26 +28,39 @@ export const TradePage = () => {
   const { structureEntityId } = useStore();
 
   useEffect(() => {
+    const parseSearchInt = (value: string | null) => {
+      if (!value) return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    const buyResourceParam = parseSearchInt(searchParams.get("buyResourceId"));
+    const sellResourceParam = parseSearchInt(searchParams.get("sellResourceId"));
+
     // Handle buy resource ID from URL
-    if (search.buyResourceId) {
-      const buyId = search.buyResourceId;
+    if (buyResourceParam !== undefined) {
+      const buyId = buyResourceParam;
       if (!isNaN(buyId)) {
         setBuyResourceId(buyId);
       }
     }
 
     // Handle sell resource ID from URL
-    if (search.sellResourceId) {
-      const sellId = search.sellResourceId;
+    if (sellResourceParam !== undefined) {
+      const sellId = sellResourceParam;
       if (!isNaN(sellId)) {
         setSellResourceId(sellId);
       }
     }
 
     // If both are set to the same resource, adjust one of them
-    if (search.buyResourceId && search.sellResourceId && search.buyResourceId === search.sellResourceId) {
+    if (
+      buyResourceParam !== undefined &&
+      sellResourceParam !== undefined &&
+      buyResourceParam === sellResourceParam
+    ) {
       // If both are Lords, set sell to another resource
-      if (search.buyResourceId === ResourcesIds.Lords) {
+      if (buyResourceParam === ResourcesIds.Lords) {
         setSellResourceId(1); // First non-Lords resource
       } else {
         // Otherwise set buy to Lords
@@ -56,8 +69,8 @@ export const TradePage = () => {
     }
 
     // If only one is set, set the other to a complementary value
-    if (search.buyResourceId && !search.sellResourceId) {
-      const buyId = search.buyResourceId;
+    if (buyResourceParam !== undefined && sellResourceParam === undefined) {
+      const buyId = buyResourceParam;
       if (buyId === ResourcesIds.Lords) {
         setSellResourceId(1); // First non-Lords resource
       } else {
@@ -65,15 +78,15 @@ export const TradePage = () => {
       }
     }
 
-    if (!search.buyResourceId && search.sellResourceId) {
-      const sellId = search.sellResourceId;
+    if (buyResourceParam === undefined && sellResourceParam !== undefined) {
+      const sellId = sellResourceParam;
       if (sellId === ResourcesIds.Lords) {
         setBuyResourceId(1); // First non-Lords resource
       } else {
         setBuyResourceId(ResourcesIds.Lords);
       }
     }
-  }, [search.buyResourceId, search.sellResourceId]);
+  }, [searchParams]);
 
   const {
     account: { account },

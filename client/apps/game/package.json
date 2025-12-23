@@ -23,6 +23,7 @@
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "@bibliothecadao/world": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@dojoengine/predeployed-connector": "catalog:",
     "@dojoengine/sdk": "catalog:",

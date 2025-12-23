@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Dialog, DialogContent } from "@/shared/ui/dialog";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 import { AlertCircle } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { TermsOfService } from "./terms-of-service";
 
