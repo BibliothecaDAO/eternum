@@ -1,9 +1,5 @@
-export interface FactoryGame {
-  name: string;
-  status: "checking" | "ok" | "fail";
-  toriiBaseUrl: string;
-  startMainAt: number | null;
-  endAt: number | null;
-}
+import type { FactoryWorldCategories, FactoryWorldGame } from "@bibliothecadao/react";
 
-export type FactoryGameCategory = "ongoing" | "upcoming" | "ended" | "offline";
+export type { FactoryWorldCategories, FactoryWorldGame as FactoryGame };
+
+export type FactoryGameCategory = keyof FactoryWorldCategories;
