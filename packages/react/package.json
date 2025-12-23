@@ -19,14 +19,17 @@
 		"@bibliothecadao/dojo": "workspace:*",
 		"@bibliothecadao/world": "workspace:*",
 		"@dojoengine/react": "catalog:",
+		"@starknet-react/chains": "catalog:",
 		"@starknet-react/core": "catalog:",
-		"@tanstack/react-query": "^5.90.12",
+		"@tanstack/react-query": "^5.76.0",
 		"react": "catalog:",
 		"starknet": "catalog:",
 		"wouter": "^2.12.1"
 	},
 	"devDependencies": {
 		"@bibliothecadao/world": "workspace:*",
+		"@starknet-react/chains": "catalog:",
+		"@tanstack/react-query": "^5.76.0",
 		"@types/react": "^18",
 		"tsup": "^8",
 		"typescript": "^5",

@@ -1,16 +1,9 @@
-import {
-  buildWorldProfile,
-  fetchFactoryWorldNames,
-  getFactorySqlBaseUrl,
-  setActiveWorldName,
-  toriiBaseUrlFromName,
-} from "@/runtime/world";
+import { buildWorldProfile, setActiveWorldName } from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
-import { getAvailabilityStatus, useWorldsAvailability } from "@bibliothecadao/react";
+import { useFactoryWorldsList } from "@bibliothecadao/react";
 import type { Chain } from "@contracts";
 import { motion } from "framer-motion";
 import { RefreshCw, ServerOff } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../../../env";
 import { staggerContainer } from "../animations";
 import { FactoryGame, FactoryGameCategory } from "../types";
@@ -22,63 +15,11 @@ interface FactoryGamesListProps {
 }
 
 export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: FactoryGamesListProps) => {
-  const [factoryNames, setFactoryNames] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
-
-  // Update current time every second
-  useEffect(() => {
-    const id = window.setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const {
-    results: factoryAvailability,
-    isAnyLoading: factoryCheckingAvailability,
-    refetchAll: refetchFactory,
-  } = useWorldsAvailability(factoryNames, factoryNames.length > 0);
-
-  const games = useMemo(() => {
-    return factoryNames.map((name) => {
-      const availability = factoryAvailability.get(name);
-      const status = getAvailabilityStatus(availability);
-      return {
-        name,
-        status,
-        toriiBaseUrl: toriiBaseUrlFromName(name),
-        startMainAt: availability?.meta?.startMainAt ?? null,
-        endAt: availability?.meta?.endAt ?? null,
-      };
-    });
-  }, [factoryAvailability, factoryNames]);
-
-  const load = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as Chain);
-      if (!factorySqlBaseUrl) {
-        setFactoryNames([]);
-        return;
-      }
-
-      const names = await fetchFactoryWorldNames(factorySqlBaseUrl, 200);
-      setFactoryNames(names);
-      await refetchFactory();
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [refetchFactory]);
-
-  // Load on mount
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { games, categories, loading, error, refresh, nowSec } = useFactoryWorldsList({
+    chain: env.VITE_PUBLIC_CHAIN as Chain,
+    cartridgeApiBase: env.VITE_PUBLIC_CARTRIDGE_API_BASE,
+    limit: 200,
+  });
 
   const enterGame = async (worldName: string) => {
     try {
@@ -91,44 +32,7 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
     }
   };
 
-  // Categorize games
-  const categorizeGames = () => {
-    const ongoing: FactoryGame[] = [];
-    const upcoming: FactoryGame[] = [];
-    const ended: FactoryGame[] = [];
-    const offline: FactoryGame[] = [];
-
-    for (const g of games) {
-      if (g.status !== "ok") {
-        offline.push(g);
-        continue;
-      }
-
-      const start = g.startMainAt;
-      const end = g.endAt;
-      const isEnded = start != null && end != null && end !== 0 && nowSec >= end;
-      const isOngoing = start != null && nowSec >= start && (end == null || end === 0 || nowSec < end);
-      const isUpcoming = start != null && nowSec < start;
-
-      if (isOngoing) ongoing.push(g);
-      else if (isUpcoming) upcoming.push(g);
-      else if (isEnded) ended.push(g);
-      else offline.push(g);
-    }
-
-    // Sort each category
-    upcoming.sort((a, b) => (a.startMainAt ?? Infinity) - (b.startMainAt ?? Infinity));
-    ongoing.sort((a, b) => {
-      const aEnd = a.endAt && a.endAt > nowSec ? a.endAt : Infinity;
-      const bEnd = b.endAt && b.endAt > nowSec ? b.endAt : Infinity;
-      return aEnd - bEnd;
-    });
-    ended.sort((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0));
-
-    return { ongoing, upcoming, ended, offline };
-  };
-
-  const { ongoing, upcoming, ended } = categorizeGames();
+  const { ongoing, upcoming, ended } = categories;
   const nothing = ongoing.length === 0 && upcoming.length === 0 && ended.length === 0;
 
   // Render category section
@@ -148,10 +52,9 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
     );
   };
 
-  const isChecking = factoryCheckingAvailability || games.some((g) => g.status === "checking");
-  const isLoading = loading || (factoryNames.length > 0 && factoryCheckingAvailability);
+  const isChecking = games.some((g) => g.status === "checking");
 
-  if (isLoading && games.length === 0) {
+  if (loading && games.length === 0) {
     return (
       <div className={`space-y-3 ${className}`}>
         <div className="flex items-center justify-between">
@@ -169,7 +72,7 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
       <div className={`rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center ${className}`}>
         <ServerOff className="w-8 h-8 mx-auto text-red-400 mb-2" />
         <p className="text-sm text-red-300">{error}</p>
-        <Button onClick={load} size="xs" variant="outline" className="mt-3" forceUppercase={false}>
+        <Button onClick={refresh} size="xs" variant="outline" className="mt-3" forceUppercase={false}>
           <div className="flex items-center gap-1.5">
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Retry</span>
@@ -186,10 +89,10 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
         <span className="text-sm text-gold/70">
           {isChecking ? "Checking servers..." : `${games.filter((g) => g.status === "ok").length} games online`}
         </span>
-        <Button onClick={load} size="xs" variant="outline" forceUppercase={false} disabled={isLoading}>
+        <Button onClick={refresh} size="xs" variant="outline" forceUppercase={false} disabled={loading}>
           <div className="flex items-center gap-1.5">
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span>{loading ? "Refreshing..." : "Refresh"}</span>
           </div>
         </Button>
       </div>

@@ -4,7 +4,7 @@ import {
   toriiBaseUrlFromName,
   type WorldConfigMeta,
 } from "@bibliothecadao/world";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 export interface WorldAvailability {
   worldName: string;
@@ -57,6 +57,8 @@ export const useWorldsAvailability = (
   enabled: boolean = true,
   options?: { cartridgeApiBase?: string },
 ) => {
+  type AvailabilityResult = { isAvailable: boolean; meta: WorldConfigMeta | null };
+
   const queries = useQueries({
     queries: worldNames.map((worldName) => ({
       queryKey: ["worldAvailability", worldName, options?.cartridgeApiBase],
@@ -66,7 +68,7 @@ export const useWorldsAvailability = (
       gcTime: 10 * 60 * 1000,
       retry: 1,
     })),
-  });
+  }) as UseQueryResult<AvailabilityResult, Error>[];
 
   const results: Map<string, WorldAvailability> = new Map();
 

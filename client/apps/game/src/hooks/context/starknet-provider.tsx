@@ -1,11 +1,10 @@
+import { buildStarknetConfig, type StarknetChainKey } from "@bibliothecadao/react";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
-import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
-import { constants, shortString } from "starknet";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { bootstrapGame } from "../../init/bootstrap";
@@ -16,92 +15,17 @@ import { useControllerAccount } from "./use-controller-account";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
 
-// ==============================================
-
-const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
-const KATANA_CHAIN_NETWORK = "Katana Local";
-const KATANA_CHAIN_NAME = "katana";
-const KATANA_RPC_URL = "http://localhost:5050";
-const isLocal = env.VITE_PUBLIC_CHAIN === "local";
-
-// ==============================================
-
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
-const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana";
-
-const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
-const SLOT_RPC_URL_TEST = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana";
-
-const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
-const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
-
-// ==============================================
-
-const chain_id = isLocal
-  ? KATANA_CHAIN_ID
-  : isSlot
-    ? SLOT_CHAIN_ID
-    : isSlottest
-      ? SLOT_CHAIN_ID_TEST
-      : env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? constants.StarknetChainId.SN_SEPOLIA
-        : constants.StarknetChainId.SN_MAIN;
-
-const controller = new ControllerConnector({
-  chains: [
-    {
-      rpcUrl: isLocal
-        ? KATANA_RPC_URL
-        : isSlot
-          ? SLOT_RPC_URL
-          : isSlottest
-            ? SLOT_RPC_URL_TEST
-            : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
-              ? env.VITE_PUBLIC_NODE_URL
-              : env.VITE_PUBLIC_NODE_URL,
-    },
-  ],
-  defaultChainId: isLocal
-    ? KATANA_CHAIN_ID
-    : isSlot
-      ? SLOT_CHAIN_ID
-      : isSlottest
-        ? SLOT_CHAIN_ID_TEST
-        : env.VITE_PUBLIC_CHAIN === "mainnet"
-          ? constants.StarknetChainId.SN_MAIN
-          : constants.StarknetChainId.SN_SEPOLIA,
-  policies: buildPolicies(dojoConfig.manifest),
+const { isLocal, chains, controllerOptions } = buildStarknetConfig({
+  chain: env.VITE_PUBLIC_CHAIN as StarknetChainKey,
+  nodeUrl: env.VITE_PUBLIC_NODE_URL,
   slot,
   namespace,
+  policies: buildPolicies(dojoConfig.manifest),
+  applyPoliciesOnMainnet: true,
+  includeAllPublicChains: false,
 });
 
-const katanaLocalChain = {
-  id: BigInt(KATANA_CHAIN_ID),
-  network: KATANA_CHAIN_NETWORK,
-  name: KATANA_CHAIN_NAME,
-  nativeCurrency: {
-    address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [KATANA_RPC_URL],
-    },
-    public: {
-      http: [KATANA_RPC_URL],
-    },
-  },
-  paymasterRpcUrls: {
-    default: {
-      http: [],
-    },
-    public: {
-      http: [],
-    },
-  },
-} as const satisfies Chain;
+const controller = new ControllerConnector(controllerOptions);
 
 // Custom QueryClient with game-appropriate defaults
 // - Disable refetchOnWindowFocus to prevent surprise refetch storms when alt-tabbing
@@ -134,17 +58,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StarknetConfig
-      chains={
-        isLocal
-          ? [katanaLocalChain]
-          : isSlot
-            ? [getSlotChain(SLOT_CHAIN_ID)]
-            : isSlottest
-              ? [getSlotChain(SLOT_CHAIN_ID_TEST)]
-              : env.VITE_PUBLIC_CHAIN === "mainnet"
-                ? [mainnet]
-                : [sepolia]
-      }
+      chains={chains}
       provider={jsonRpcProvider({ rpc })}
       paymasterProvider={isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
       connectors={isLocal ? predeployedConnectors : [controller as unknown as Connector]}

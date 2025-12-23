@@ -14,6 +14,7 @@
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
+    "@bibliothecadao/react": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@bibliothecadao/world": "workspace:*",
