@@ -9,6 +9,7 @@ import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import type { TokenBalance } from "@dojoengine/torii-wasm";
 
+import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { MarketImage } from "./market-image";
 import { MarketOdds } from "./market-odds";
 import { MarketQuickStats } from "./market-quick-stats";
@@ -86,7 +87,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
   const [currentPage, setCurrentPage] = useState(1);
   const offset = (currentPage - 1) * PAGE_SIZE;
 
-  const { markets, isFetching, totalCount } = useMarkets({
+  const { markets, isFetching, isLoading, totalCount, refresh } = useMarkets({
     marketFilters,
     limit: PAGE_SIZE,
     offset,
@@ -136,11 +137,19 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
   return (
     <div className="flex flex-col gap-4">
       {/* Results summary */}
-      <div className="flex items-center justify-between text-sm text-gold/70">
-        <span>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gold/70">
+        <span className="leading-tight">
           {totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount} markets` : "No markets found"}
         </span>
-        {isFetching && <span className="text-gold/50">Loading...</span>}
+        <div className="flex items-center gap-3">
+          {isFetching ? <span className="text-gold/50">Loading...</span> : null}
+          <RefreshButton
+            aria-label="Refresh markets"
+            isLoading={isFetching || isLoading}
+            onClick={refresh}
+            disabled={isFetching || isLoading}
+          />
+        </div>
       </div>
 
       {/* Markets grid */}

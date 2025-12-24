@@ -1,5 +1,6 @@
 import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { addAddressPadding } from "starknet";
 
 import type { MarketBuy, PayoutRedemption } from "@/pm/bindings";
@@ -69,11 +70,13 @@ export type PlayerSummary = {
   markets: PlayerMarketBreakdown[];
 };
 
+/**
+ * React Query-based hook for fetching market events with caching
+ * Uses keepPreviousData to prevent loading flicker when switching tabs
+ */
 export const useMarketEventsSnapshot = () => {
   const { sdk } = useDojoSdk();
-  const [isLoading, setIsLoading] = useState(false);
-  const [buys, setBuys] = useState<EnrichedMarketBuy[]>([]);
-  const [payouts, setPayouts] = useState<EnrichedPayoutRedemption[]>([]);
+  const queryClient = useQueryClient();
 
   const buyQuery = useMemo(
     () =>
@@ -92,21 +95,17 @@ export const useMarketEventsSnapshot = () => {
         .addEntityModel("pm-PayoutRedemption")
         .withClause(new ClauseBuilder().keys(["pm-PayoutRedemption"], [undefined], "VariableLen").build())
         .withLimit(2_000)
-        // .addOrderBy("timestamp", "Desc")
         .includeHashedKeys(),
     [],
   );
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [buysRes, payoutsRes] = await Promise.all([
-        sdk.getEventMessages({ query: buyQuery }),
-        sdk.getEventMessages({ query: payoutQuery }),
-      ]);
-
+  // Fetch buys with React Query caching
+  const buysQuery = useQuery({
+    queryKey: ["pm", "marketBuys"],
+    queryFn: async (): Promise<EnrichedMarketBuy[]> => {
+      const buysRes = await sdk.getEventMessages({ query: buyQuery });
       const buyItems: StandardizedQueryResult<SchemaType> = buysRes.getItems();
-      const nextBuys = buyItems
+      return buyItems
         .flatMap((item) => {
           const event = item.models.pm.MarketBuy as MarketBuy | undefined;
           if (!event) return [];
@@ -119,9 +118,19 @@ export const useMarketEventsSnapshot = () => {
           ];
         })
         .sort((a, b) => b.timestampMs - a.timestampMs);
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: keepPreviousData,
+  });
 
+  // Fetch payouts with React Query caching
+  const payoutsQuery = useQuery({
+    queryKey: ["pm", "marketPayouts"],
+    queryFn: async (): Promise<EnrichedPayoutRedemption[]> => {
+      const payoutsRes = await sdk.getEventMessages({ query: payoutQuery });
       const payoutItems: StandardizedQueryResult<SchemaType> = payoutsRes.getItems();
-      const nextPayouts = payoutItems
+      return payoutItems
         .flatMap((item) => {
           const event = item.models.pm.PayoutRedemption as PayoutRedemption | undefined;
           if (!event) return [];
@@ -134,24 +143,22 @@ export const useMarketEventsSnapshot = () => {
           ];
         })
         .sort((a, b) => b.timestampMs - a.timestampMs);
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: keepPreviousData,
+  });
 
-      setBuys(nextBuys);
-      setPayouts(nextPayouts);
-    } catch (error) {
-      console.error("[pm] Failed to fetch market stats", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [buyQuery, payoutQuery, sdk]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["pm", "marketBuys"] });
+    queryClient.invalidateQueries({ queryKey: ["pm", "marketPayouts"] });
+  };
 
   return {
-    buys,
-    payouts,
-    isLoading,
+    buys: buysQuery.data ?? [],
+    payouts: payoutsQuery.data ?? [],
+    isLoading: buysQuery.isLoading || payoutsQuery.isLoading,
+    isFetching: buysQuery.isFetching || payoutsQuery.isFetching,
     refresh,
   };
 };
