@@ -1,9 +1,9 @@
+import { getPredictionMarketConfig } from "../../prediction-market-config";
+
 /**
  * PM SQL API Client
  * Handles SQL queries against the PM Torii instance
  */
-
-import { PREDICTION_MARKET_CONFIG } from "@/ui/features/landing/sections/markets";
 
 // Filter types for server-side filtering
 export enum MarketStatusFilter {
@@ -324,7 +324,7 @@ export class PmSqlApi {
   private readonly baseUrl: string;
 
   constructor(toriiUrl?: string) {
-    this.baseUrl = `${toriiUrl ?? PREDICTION_MARKET_CONFIG.toriiUrl}/sql`;
+    this.baseUrl = `${toriiUrl ?? getPredictionMarketConfig().toriiUrl}/sql`;
   }
 
   /**
