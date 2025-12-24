@@ -2,22 +2,24 @@
  * PM SQL Queries - Public API
  */
 
-export { pmQueryKeys, type PmQueryKeys } from "./query-keys";
 export {
   getPmSqlApi,
-  PmSqlApi,
+  MarketStatusFilter,
+  MarketTypeFilter,
   PM_SQL_QUERIES,
-  type MarketRow,
+  PmSqlApi,
+  type ConditionResolutionRow,
+  type MarketCountRow,
   type MarketCreatedRow,
+  type MarketFiltersParams,
+  type MarketRow,
   type MarketWithDetailsRow,
-  type VaultDenominatorRow,
-  type VaultNumeratorRow,
-  type VaultDenominatorEventRow,
-  type VaultNumeratorEventRow,
   type TokenBalanceRow,
   type TokenRow,
-  type ConditionResolutionRow,
+  type VaultDenominatorEventRow,
+  type VaultDenominatorRow,
+  type VaultEventRow,
+  type VaultNumeratorEventRow,
+  type VaultNumeratorRow,
 } from "./pm-sql-api";
-
-export { useMarketsQuery, MarketStatusFilter, MarketTypeFilter } from "./use-markets-query";
-export { useMarketHistoryQuery } from "./use-market-history-query";
+export { pmQueryKeys, type PmQueryKeys } from "./query-keys";

@@ -4,6 +4,7 @@ import { useAccount } from "@starknet-react/core";
 import { useMemo } from "react";
 
 import type { MarketClass } from "@/pm/class";
+import { PMErrorState, PMHoldersSkeleton } from "@/pm/components/loading";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import { computeRedeemableValue } from "@/pm/hooks/markets/calc-redeemable";
@@ -53,7 +54,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
 
   const positionTokenIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id)), [market.position_ids]);
 
-  const { tokens, balances } = useTokens(
+  const { tokens, balances, isLoading, isError } = useTokens(
     {
       contractAddresses: [vaultPositionsAddress],
       // contractAddresses: [vaultPositionsAddress, vaultFeesAddress],
@@ -121,6 +122,17 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
   const symbol = market.collateralToken.symbol || "";
   const tokenForIcon = market.collateralToken;
 
+  // Loading state
+  if (isLoading) {
+    return <PMHoldersSkeleton count={3} />;
+  }
+
+  // Error state
+  if (isError) {
+    return <PMErrorState message="Failed to load positions" />;
+  }
+
+  // Empty state
   if (holders.length === 0) {
     return (
       <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/80">

@@ -1,14 +1,17 @@
 /**
- * useMarkets Hook - SQL-optimized implementation
+ * useMarkets Hook - SQL-optimized implementation with server-side pagination
  *
  * This hook now uses SQL queries via Torii for better performance:
  * - Server-side joins eliminate client-side map building
+ * - Server-side filtering for accurate pagination counts
  * - Numerators fetched only for visible markets
  * - React Query provides caching and deduplication
+ * - keepPreviousData prevents UI flicker during page transitions
  */
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { CairoCustomEnum } from "starknet";
 
 import type { RegisteredToken } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
@@ -18,65 +21,47 @@ import { replaceAndFormat } from "@/pm/utils";
 import {
   getPmSqlApi,
   pmQueryKeys,
+  type MarketFiltersParams,
   type MarketWithDetailsRow,
   type VaultNumeratorRow,
 } from "../queries";
 
-export interface MarketFiltersParams {
-  status: MarketStatusFilter;
-  type: MarketTypeFilter;
-  oracle: string;
-}
-
-export enum MarketStatusFilter {
-  All = "All",
-  Open = "Open",
-  Resolvable = "Resolvable",
-  Resolved = "Resolved",
-}
-
-export enum MarketTypeFilter {
-  All = "All",
-  Binary = "Binary",
-  Categorical = "Categorical",
-}
+// Re-export filter types for backwards compatibility
+export { MarketStatusFilter, MarketTypeFilter } from "../queries";
+export type { MarketFiltersParams } from "../queries";
 
 /**
- * Filter markets based on status
+ * Build proper CairoCustomEnum for the market type field
+ * Converts ValueEq/Ranges values to BigInt for proper hex conversion
  */
-function filterByStatus(market: MarketWithDetailsRow, status: MarketStatusFilter, now: bigint): boolean {
-  const startAt = BigInt(market.start_at);
-  const resolveAt = BigInt(market.resolve_at);
-  const resolvedAt = BigInt(market.resolved_at);
-
-  switch (status) {
-    case MarketStatusFilter.All:
-      return startAt < now;
-    case MarketStatusFilter.Open:
-      return startAt < now && resolveAt > now;
-    case MarketStatusFilter.Resolvable:
-      return resolveAt < now && resolvedAt === 0n;
-    case MarketStatusFilter.Resolved:
-      return resolvedAt > 0n;
-    default:
-      return false;
+function buildMarketTypeEnum(row: MarketWithDetailsRow): CairoCustomEnum {
+  if (row["typ.Binary"] !== null && row["typ.Binary"] !== undefined) {
+    return new CairoCustomEnum({ Binary: {} });
   }
-}
 
-/**
- * Filter markets based on type (Binary/Categorical)
- */
-function filterByType(market: MarketWithDetailsRow, typeFilter: MarketTypeFilter): boolean {
-  switch (typeFilter) {
-    case MarketTypeFilter.All:
-      return true;
-    case MarketTypeFilter.Binary:
-      return market.typ === "Binary" || market["typ.Binary"] !== null;
-    case MarketTypeFilter.Categorical:
-      return market.typ === "Categorical" || market["typ.Categorical"] !== null;
-    default:
-      return false;
+  // Categorical market - need to check for nested type
+  if (row["typ.Categorical.ValueEq"]) {
+    const rawValueEq = JSON.parse(row["typ.Categorical.ValueEq"]);
+    // Convert values to BigInt for proper hex conversion in getMarketTextOutcomes
+    const valueEq = rawValueEq.map((v: string | number) => BigInt(v));
+    return new CairoCustomEnum({
+      Categorical: new CairoCustomEnum({ ValueEq: valueEq }),
+    });
   }
+
+  if (row["typ.Categorical.Ranges"]) {
+    const rawRanges = JSON.parse(row["typ.Categorical.Ranges"]);
+    // Convert values to BigInt for proper formatting
+    const ranges = rawRanges.map((v: string | number) => BigInt(v));
+    return new CairoCustomEnum({
+      Categorical: new CairoCustomEnum({ Ranges: ranges }),
+    });
+  }
+
+  // Fallback for categorical without nested data
+  return new CairoCustomEnum({
+    Categorical: new CairoCustomEnum({ ValueEq: [] }),
+  });
 }
 
 /**
@@ -103,8 +88,9 @@ function transformToMarketClass(
     oracle: row.oracle,
     outcome_slot_count: row.outcome_slot_count,
     collateral_token: row.collateral_token,
-    model: { variant: { Vault: {} } },
-    typ: row["typ.Binary"] ? { variant: { Binary: {} } } : { variant: { Categorical: {} } },
+    model: new CairoCustomEnum({ Vault: {} }),
+    typ: buildMarketTypeEnum(row),
+    oracle_value_type: row.oracle_value_type,
     start_at: BigInt(row.start_at),
     end_at: BigInt(row.end_at),
     resolve_at: BigInt(row.resolve_at),
@@ -150,26 +136,41 @@ interface UseMarketsOptions {
  *
  * Benefits over the old SDK-based implementation:
  * - Server-side joins (no client-side map building)
+ * - Server-side filtering for accurate pagination counts
  * - Fetches numerators only for visible markets
  * - React Query caching (30s staleTime, 5min gcTime)
  * - Automatic request deduplication
+ * - keepPreviousData prevents UI flicker during page transitions
  */
-export const useMarkets = ({ marketFilters, limit = 200, offset = 0 }: UseMarketsOptions) => {
+export const useMarkets = ({ marketFilters, limit = 25, offset = 0 }: UseMarketsOptions) => {
   const { registeredTokens, getRegisteredToken } = useConfig();
   const queryClient = useQueryClient();
 
   const now = BigInt(Math.ceil(Date.now() / 1000));
 
-  // Fetch markets with pre-joined details via SQL
+  // Fetch markets with pre-joined details via SQL (with server-side filtering)
   const marketsQuery = useQuery({
-    queryKey: pmQueryKeys.marketsListWithPagination(marketFilters, offset / limit, limit),
+    queryKey: pmQueryKeys.marketsListWithPagination(marketFilters, Math.floor(offset / limit), limit),
     queryFn: async () => {
       const api = getPmSqlApi();
-      return api.fetchMarketsWithDetails(Number(now), limit, offset);
+      return api.fetchMarketsWithDetails(marketFilters, Number(now), limit, offset);
     },
     enabled: registeredTokens.length > 0,
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: keepPreviousData, // Prevents UI flicker during page transitions
+  });
+
+  // Fetch total count for pagination (with same filters)
+  const countQuery = useQuery({
+    queryKey: pmQueryKeys.marketsCount(marketFilters),
+    queryFn: async () => {
+      const api = getPmSqlApi();
+      return api.fetchMarketsCount(marketFilters, Number(now));
+    },
+    enabled: registeredTokens.length > 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   // Extract market IDs from fetched results
@@ -206,23 +207,14 @@ export const useMarkets = ({ marketFilters, limit = 200, offset = 0 }: UseMarket
     return map;
   }, [numeratorsQuery.data]);
 
-  // Transform and filter markets
+  // Transform markets (filtering now done server-side)
   const markets = useMemo(() => {
     if (!marketsQuery.data || !registeredTokens.length) return [];
 
     return marketsQuery.data
-      .filter((row) => {
-        // Apply status filter
-        if (!filterByStatus(row, marketFilters.status, now)) return false;
-        // Apply type filter
-        if (!filterByType(row, marketFilters.type)) return false;
-        // Apply oracle filter
-        if (marketFilters.oracle !== "All" && row.oracle !== marketFilters.oracle) return false;
-        return true;
-      })
       .map((row) => transformToMarketClass(row, numeratorsByMarketId, getRegisteredToken))
       .filter((m): m is MarketClass => m !== null);
-  }, [marketsQuery.data, numeratorsByMarketId, marketFilters, now, registeredTokens, getRegisteredToken]);
+  }, [marketsQuery.data, numeratorsByMarketId, registeredTokens, getRegisteredToken]);
 
   // Refresh function that invalidates the query cache
   const refresh = () => {
@@ -232,8 +224,11 @@ export const useMarkets = ({ marketFilters, limit = 200, offset = 0 }: UseMarket
   return {
     markets,
     refresh,
-    // Additional properties for debugging/loading states
+    // Loading and error states
     isLoading: marketsQuery.isLoading || numeratorsQuery.isLoading,
     isError: marketsQuery.isError || numeratorsQuery.isError,
+    // Pagination metadata
+    isFetching: marketsQuery.isFetching, // True during page transitions (different from isLoading)
+    totalCount: countQuery.data ?? 0,
   };
 };

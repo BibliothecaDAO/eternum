@@ -5,6 +5,65 @@
 
 import { PREDICTION_MARKET_CONFIG } from "@/ui/features/landing/sections/markets";
 
+// Filter types for server-side filtering
+export enum MarketStatusFilter {
+  All = "All",
+  Open = "Open",
+  Resolvable = "Resolvable",
+  Resolved = "Resolved",
+}
+
+export enum MarketTypeFilter {
+  All = "All",
+  Binary = "Binary",
+  Categorical = "Categorical",
+}
+
+export interface MarketFiltersParams {
+  status: MarketStatusFilter;
+  type: MarketTypeFilter;
+  oracle: string;
+}
+
+/**
+ * Build SQL WHERE clause for market filters
+ * Returns conditions to be used in SQL queries
+ */
+function buildFilterWhereClause(filters: MarketFiltersParams, now: number): string {
+  const conditions: string[] = [`CAST(m.start_at AS INTEGER) < ${now}`];
+
+  // Status filter
+  switch (filters.status) {
+    case MarketStatusFilter.Open:
+      conditions.push(`CAST(m.resolve_at AS INTEGER) > ${now}`);
+      break;
+    case MarketStatusFilter.Resolvable:
+      conditions.push(`CAST(m.resolve_at AS INTEGER) < ${now}`);
+      conditions.push(`CAST(m.resolved_at AS INTEGER) = 0`);
+      break;
+    case MarketStatusFilter.Resolved:
+      conditions.push(`CAST(m.resolved_at AS INTEGER) > 0`);
+      break;
+    // MarketStatusFilter.All - no extra conditions needed
+  }
+
+  // Type filter
+  if (filters.type === MarketTypeFilter.Binary) {
+    conditions.push(`m."typ.Binary" IS NOT NULL`);
+  } else if (filters.type === MarketTypeFilter.Categorical) {
+    conditions.push(`m."typ.Categorical" IS NOT NULL`);
+  }
+
+  // Oracle filter
+  if (filters.oracle !== "All") {
+    // Escape single quotes in oracle address to prevent SQL injection
+    const safeOracle = filters.oracle.replace(/'/g, "''");
+    conditions.push(`m.oracle = '${safeOracle}'`);
+  }
+
+  return conditions.join(" AND ");
+}
+
 // SQL query utilities (matching patterns from @bibliothecadao/torii)
 function buildApiUrl(baseUrl: string, query: string): string {
   return `${baseUrl}?query=${encodeURIComponent(query)}`;
@@ -42,6 +101,7 @@ export interface MarketRow {
   collateral_token: string;
   model: string;
   typ: string;
+  oracle_value_type: string;
   start_at: string;
   end_at: string;
   resolve_at: string;
@@ -90,6 +150,14 @@ export interface VaultNumeratorEventRow {
   internal_entity_id: string;
 }
 
+export interface VaultEventRow {
+  event_type: "denominator" | "numerator";
+  market_id: string;
+  index: number | null;
+  value: string;
+  timestamp: string;
+}
+
 export interface MarketWithDetailsRow extends MarketRow {
   title?: string;
   terms?: string;
@@ -123,9 +191,13 @@ export interface ConditionResolutionRow {
   payout_numerators: string;
 }
 
+export interface MarketCountRow {
+  total: string; // SQL returns string
+}
+
 // SQL Query definitions
 export const PM_SQL_QUERIES = {
-  // Markets list with joined data
+  // Markets list with joined data (uses dynamic WHERE clause)
   MARKETS_WITH_DETAILS: `
     SELECT
       m.market_id,
@@ -138,6 +210,7 @@ export const PM_SQL_QUERIES = {
       m.collateral_token,
       m.model,
       m.typ,
+      m.oracle_value_type,
       m."typ.Binary",
       m."typ.Categorical",
       m."typ.Categorical.Ranges",
@@ -155,9 +228,17 @@ export const PM_SQL_QUERIES = {
     FROM "pm-Market" m
     LEFT JOIN "pm-MarketCreated" mc ON m.market_id = mc.market_id
     LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
-    WHERE CAST(m.start_at AS INTEGER) < {now}
+    WHERE {whereClause}
     ORDER BY m.start_at DESC
     LIMIT {limit} OFFSET {offset}
+  `,
+
+  // Markets count for pagination (uses same WHERE clause as MARKETS_WITH_DETAILS)
+  MARKETS_COUNT: `
+    SELECT COUNT(*) as total
+    FROM "pm-Market" m
+    LEFT JOIN "pm-MarketCreated" mc ON m.market_id = mc.market_id
+    WHERE {whereClause}
   `,
 
   // Vault numerators for specific markets
@@ -182,6 +263,18 @@ export const PM_SQL_QUERIES = {
     FROM "pm-VaultNumeratorEvent"
     WHERE market_id = '{marketId}'
     ORDER BY "index" ASC, timestamp ASC
+  `,
+
+  // Combined vault events for a market (optimized single query for chart data)
+  VAULT_EVENTS_COMBINED: `
+    SELECT 'denominator' as event_type, market_id, NULL as "index", value, timestamp
+    FROM "pm-VaultDenominatorEvent"
+    WHERE market_id = '{marketId}'
+    UNION ALL
+    SELECT 'numerator' as event_type, market_id, "index", value, timestamp
+    FROM "pm-VaultNumeratorEvent"
+    WHERE market_id = '{marketId}'
+    ORDER BY timestamp ASC
   `,
 
   // User token balances with token metadata
@@ -236,18 +329,33 @@ export class PmSqlApi {
 
   /**
    * Fetch markets with details (joined with MarketCreated and VaultDenominator)
+   * Now supports server-side filtering for accurate pagination
    */
   async fetchMarketsWithDetails(
+    filters: MarketFiltersParams,
     now: number,
     limit: number = 50,
     offset: number = 0,
   ): Promise<MarketWithDetailsRow[]> {
-    const query = PM_SQL_QUERIES.MARKETS_WITH_DETAILS.replace("{now}", now.toString())
+    const whereClause = buildFilterWhereClause(filters, now);
+    const query = PM_SQL_QUERIES.MARKETS_WITH_DETAILS.replace("{whereClause}", whereClause)
       .replace("{limit}", limit.toString())
       .replace("{offset}", offset.toString());
 
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<MarketWithDetailsRow>(url, "Failed to fetch markets");
+  }
+
+  /**
+   * Fetch total count of markets matching filters (for pagination)
+   */
+  async fetchMarketsCount(filters: MarketFiltersParams, now: number): Promise<number> {
+    const whereClause = buildFilterWhereClause(filters, now);
+    const query = PM_SQL_QUERIES.MARKETS_COUNT.replace("{whereClause}", whereClause);
+
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<MarketCountRow>(url, "Failed to fetch markets count");
+    return results[0] ? parseInt(results[0].total, 10) : 0;
   }
 
   /**
@@ -279,6 +387,16 @@ export class PmSqlApi {
     const query = PM_SQL_QUERIES.VAULT_NUMERATOR_EVENTS.replace("{marketId}", marketId);
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<VaultNumeratorEventRow>(url, "Failed to fetch numerator events");
+  }
+
+  /**
+   * Fetch combined vault events (denominator + numerator) in a single query
+   * This is more efficient than making two separate requests
+   */
+  async fetchVaultEventsCombined(marketId: string): Promise<VaultEventRow[]> {
+    const query = PM_SQL_QUERIES.VAULT_EVENTS_COMBINED.replace("{marketId}", marketId);
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<VaultEventRow>(url, "Failed to fetch vault events");
   }
 
   /**

@@ -3,7 +3,7 @@
  * Stable query keys for @tanstack/react-query caching and invalidation
  */
 
-import type { MarketFiltersParams } from "../markets/use-markets";
+import type { MarketFiltersParams } from "./pm-sql-api";
 
 export const pmQueryKeys = {
   all: ["pm"] as const,
@@ -13,11 +13,13 @@ export const pmQueryKeys = {
   marketsList: (filters: MarketFiltersParams) => [...pmQueryKeys.markets(), "list", filters] as const,
   marketsListWithPagination: (filters: MarketFiltersParams, page: number, limit: number) =>
     [...pmQueryKeys.markets(), "list", filters, { page, limit }] as const,
+  marketsCount: (filters: MarketFiltersParams) => [...pmQueryKeys.markets(), "count", filters] as const,
   marketDetail: (marketId: string) => [...pmQueryKeys.markets(), "detail", marketId] as const,
   marketHistory: (marketId: string) => [...pmQueryKeys.markets(), "history", marketId] as const,
   marketNumerators: (marketIds: string[]) => [...pmQueryKeys.markets(), "numerators", marketIds] as const,
   marketDenominatorEvents: (marketId: string) => [...pmQueryKeys.markets(), "denominatorEvents", marketId] as const,
   marketNumeratorEvents: (marketId: string) => [...pmQueryKeys.markets(), "numeratorEvents", marketId] as const,
+  marketVaultEvents: (marketId: string) => [...pmQueryKeys.markets(), "vaultEvents", marketId] as const,
 
   // Positions
   positions: () => [...pmQueryKeys.all, "positions"] as const,
