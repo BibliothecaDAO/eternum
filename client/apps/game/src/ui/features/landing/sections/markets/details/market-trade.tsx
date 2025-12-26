@@ -203,10 +203,13 @@ export function MarketTrade({
   market,
   selectedOutcome,
   setSelectedOutcome,
+  compact = false,
 }: {
   market: MarketClass;
   selectedOutcome?: MarketOutcome;
   setSelectedOutcome?: (e: MarketOutcome) => void;
+  /** When true, reduces padding and gaps for constrained layouts (e.g., sticky panels) */
+  compact?: boolean;
 }) {
   const {
     config: { manifest },
@@ -377,8 +380,8 @@ export function MarketTrade({
 
   return (
     <>
-      <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
-        <VStack className="items-end gap-6">
+      <div className={`w-full rounded-lg border border-white/10 bg-black/40 shadow-inner text-white ${compact ? "p-2" : "p-4"}`}>
+        <VStack className={`items-end ${compact ? "gap-2" : "gap-6"}`}>
           <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
           <div className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-gold/70">
             <div className="flex items-center justify-between">
@@ -427,9 +430,9 @@ export function MarketTrade({
             )}
 
             {market.typCategorical() && (
-              <VStack className="w-full gap-3">
-                <div className="w-full overflow-hidden rounded-md border border-white/10 bg-white/5 p-3">
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.08em] text-gold/60">Selected Outcome</div>
+              <VStack className={`w-full ${compact ? "gap-2" : "gap-3"}`}>
+                <div className={`w-full overflow-hidden rounded-md border border-white/10 bg-white/5 ${compact ? "p-2" : "p-3"}`}>
+                  <div className={`${compact ? "mb-1" : "mb-2"} text-[11px] uppercase tracking-[0.08em] text-gold/60`}>Selected Outcome</div>
                   {selectedOutcome ? (
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">

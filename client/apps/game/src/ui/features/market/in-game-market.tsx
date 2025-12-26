@@ -12,8 +12,6 @@ import { useMarketPlayerNavigation } from "./hooks/use-market-player-navigation"
 import { MarketsProviders } from "./index";
 
 import { MarketActivity } from "@/ui/features/landing/sections/markets/details/market-activity";
-import { MarketCreatedBy } from "@/ui/features/landing/sections/markets/details/market-created-by";
-import { MarketFees } from "@/ui/features/landing/sections/markets/details/market-fees";
 import { MarketHistory } from "@/ui/features/landing/sections/markets/details/market-history";
 import { MarketPositions } from "@/ui/features/landing/sections/markets/details/market-positions";
 import { MarketResolution } from "@/ui/features/landing/sections/markets/details/market-resolution";
@@ -29,7 +27,6 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "odds", label: "Odds" },
   { key: "activity", label: "Activity" },
   { key: "positions", label: "Positions" },
-  // { key: "resolution", label: "Resolution" },
 ];
 
 const InGameMarketContent = () => {
@@ -150,12 +147,12 @@ const InGameMarketContent = () => {
         ))}
       </div>
 
-      {/* Tab Content */}
-      <ScrollArea className="flex-1">
-        <div className="p-3">
-          {activeTab === "odds" && (
-            <div className="space-y-4">
-              {/* Odds with clickable players */}
+      {/* Tab Content - Special layout for odds tab with sticky trade panel */}
+      {activeTab === "odds" ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* Scrollable odds section - guaranteed minimum height */}
+          <ScrollArea className="min-h-[180px] flex-1">
+            <div className="space-y-3 p-3">
               <div className="rounded-lg border border-white/10 bg-white/5 p-3">
                 <MarketOdds
                   market={market}
@@ -164,44 +161,43 @@ const InGameMarketContent = () => {
                   onSelect={(outcome) => setSelectedOutcome(outcome)}
                 />
               </div>
-
-              {/* Trade section */}
-              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                <MarketTrade
-                  market={market}
-                  selectedOutcome={selectedOutcome}
-                  setSelectedOutcome={setSelectedOutcome}
-                />
-              </div>
-
-              {/* Fees */}
-              <MarketFees market={market} defaultOpen={false} />
-
-              {/* Creator info */}
-              <MarketCreatedBy creator={market.creator} market={market} />
             </div>
-          )}
+          </ScrollArea>
 
-          {activeTab === "activity" && (
-            <div className="space-y-4">
-              <MarketHistory market={market} refreshKey={refreshKey} />
-              <MarketActivity market={market} />
-            </div>
-          )}
-
-          {activeTab === "positions" && (
-            <div className="space-y-4">
-              <MarketPositions market={market} />
-            </div>
-          )}
-
-          {activeTab === "resolution" && (
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-              {market.isResolved() ? <MarketResolved market={market} /> : <MarketResolution market={market} />}
-            </div>
-          )}
+          {/* Sticky trade panel - constrained max height, compact mode */}
+          <div className="max-h-[45vh] flex-shrink-0 overflow-y-auto border-t border-gold/20 bg-black/90 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+            <MarketTrade
+              market={market}
+              selectedOutcome={selectedOutcome}
+              setSelectedOutcome={setSelectedOutcome}
+              compact
+            />
+          </div>
         </div>
-      </ScrollArea>
+      ) : (
+        <ScrollArea className="flex-1">
+          <div className="p-3">
+            {activeTab === "activity" && (
+              <div className="space-y-4">
+                <MarketHistory market={market} refreshKey={refreshKey} />
+                <MarketActivity market={market} />
+              </div>
+            )}
+
+            {activeTab === "positions" && (
+              <div className="space-y-4">
+                <MarketPositions market={market} />
+              </div>
+            )}
+
+            {activeTab === "resolution" && (
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                {market.isResolved() ? <MarketResolved market={market} /> : <MarketResolution market={market} />}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 };
