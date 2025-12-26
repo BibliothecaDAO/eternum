@@ -29,7 +29,7 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "odds", label: "Odds" },
   { key: "activity", label: "Activity" },
   { key: "positions", label: "Positions" },
-  { key: "resolution", label: "Resolution" },
+  // { key: "resolution", label: "Resolution" },
 ];
 
 const InGameMarketContent = () => {

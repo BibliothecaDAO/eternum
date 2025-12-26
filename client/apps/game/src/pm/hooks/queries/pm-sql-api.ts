@@ -304,6 +304,23 @@ export const PM_SQL_QUERIES = {
     LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
     WHERE m.market_id = '{marketId}'
   `,
+
+  // Find market by prize distribution address in oracle_params
+  // oracle_params is a JSON array where index 1 contains the prize address
+  MARKET_BY_PRIZE_ADDRESS: `
+    SELECT
+      m.*,
+      mc.title,
+      mc.terms,
+      mc.position_ids,
+      vd.value as denominator
+    FROM "pm-Market" m
+    LEFT JOIN "pm-MarketCreated" mc ON m.market_id = mc.market_id
+    LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
+    WHERE m.oracle_params LIKE '%{prizeAddress}%'
+    ORDER BY m.start_at DESC
+    LIMIT 1
+  `,
 } as const;
 
 /**
@@ -427,6 +444,19 @@ export class PmSqlApi {
     const query = PM_SQL_QUERIES.MARKET_DETAIL.replace("{marketId}", marketId);
     const url = buildApiUrl(this.baseUrl, query);
     const results = await fetchWithErrorHandling<MarketWithDetailsRow>(url, "Failed to fetch market detail");
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch market by prize distribution address (found in oracle_params)
+   * This is optimized for finding the game's prediction market without fetching all markets
+   */
+  async fetchMarketByPrizeAddress(prizeAddress: string): Promise<MarketWithDetailsRow | null> {
+    // Escape single quotes in address to prevent SQL injection
+    const safeAddress = prizeAddress.replace(/'/g, "''");
+    const query = PM_SQL_QUERIES.MARKET_BY_PRIZE_ADDRESS.replace("{prizeAddress}", safeAddress);
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<MarketWithDetailsRow>(url, "Failed to fetch market by prize address");
     return extractFirstOrNull(results);
   }
 }
