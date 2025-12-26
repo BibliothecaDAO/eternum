@@ -108,11 +108,19 @@ export interface MarketRow {
   resolved_at: string;
   oracle_fee: number;
   creator_fee: number;
+  oracle_params?: string; // JSON array of oracle parameters
   // Nested fields for typ enum
   "typ.Binary"?: string;
   "typ.Categorical"?: string;
   "typ.Categorical.Ranges"?: string;
   "typ.Categorical.ValueEq"?: string;
+  // Nested fields for model enum (Vault)
+  "model.Vault.fee_curve.Range.start"?: string;
+  "model.Vault.fee_curve.Range.end"?: string;
+  "model.Vault.fee_share_curve.Range.start"?: string;
+  "model.Vault.fee_share_curve.Range.end"?: string;
+  "model.Vault.funding_amount"?: string;
+  "model.Vault.initial_repartition"?: string;
 }
 
 export interface MarketCreatedRow {
@@ -198,29 +206,10 @@ export interface MarketCountRow {
 // SQL Query definitions
 export const PM_SQL_QUERIES = {
   // Markets list with joined data (uses dynamic WHERE clause)
+  // Note: Uses m.* to get all market columns including nested model fields
   MARKETS_WITH_DETAILS: `
     SELECT
-      m.market_id,
-      m.creator,
-      m.created_at,
-      m.question_id,
-      m.condition_id,
-      m.oracle,
-      m.outcome_slot_count,
-      m.collateral_token,
-      m.model,
-      m.typ,
-      m.oracle_value_type,
-      m."typ.Binary",
-      m."typ.Categorical",
-      m."typ.Categorical.Ranges",
-      m."typ.Categorical.ValueEq",
-      m.start_at,
-      m.end_at,
-      m.resolve_at,
-      m.resolved_at,
-      m.oracle_fee,
-      m.creator_fee,
+      m.*,
       mc.title,
       mc.terms,
       mc.position_ids,

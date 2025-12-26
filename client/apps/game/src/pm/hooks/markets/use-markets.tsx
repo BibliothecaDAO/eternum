@@ -78,6 +78,34 @@ function transformToMarketClass(
 
   const numerators = numeratorsByMarketId.get(row.market_id) ?? [];
 
+  // Parse oracle_params from JSON string if present
+  const oracleParams = row.oracle_params ? JSON.parse(row.oracle_params) : [];
+
+  // Helper to safely get nested row values (column names use dot notation in SQL results)
+  const rowAny = row as unknown as Record<string, string | undefined>;
+  const getRowValue = (key: string): string | undefined => rowAny[key];
+
+  // Build the MarketModelVault structure with fee curves
+  // Column names in Torii SQL follow the pattern: "model.Vault.fee_curve.Range.start"
+  const vaultModel = {
+    initial_repartition: getRowValue("model.Vault.initial_repartition")
+      ? JSON.parse(getRowValue("model.Vault.initial_repartition")!)
+      : [],
+    funding_amount: BigInt(getRowValue("model.Vault.funding_amount") ?? 0),
+    fee_curve: new CairoCustomEnum({
+      Range: {
+        start: BigInt(getRowValue("model.Vault.fee_curve.Range.start") ?? 0),
+        end: BigInt(getRowValue("model.Vault.fee_curve.Range.end") ?? 0),
+      },
+    }),
+    fee_share_curve: new CairoCustomEnum({
+      Range: {
+        start: BigInt(getRowValue("model.Vault.fee_share_curve.Range.start") ?? 0),
+        end: BigInt(getRowValue("model.Vault.fee_share_curve.Range.end") ?? 0),
+      },
+    }),
+  };
+
   // Build the market object matching the expected structure
   const market = {
     market_id: BigInt(row.market_id),
@@ -88,8 +116,10 @@ function transformToMarketClass(
     oracle: row.oracle,
     outcome_slot_count: row.outcome_slot_count,
     collateral_token: row.collateral_token,
-    model: new CairoCustomEnum({ Vault: {} }),
+    model: new CairoCustomEnum({ Vault: vaultModel }),
     typ: buildMarketTypeEnum(row),
+    oracle_params: oracleParams,
+    oracle_extra_params: [],
     oracle_value_type: row.oracle_value_type,
     start_at: BigInt(row.start_at),
     end_at: BigInt(row.end_at),

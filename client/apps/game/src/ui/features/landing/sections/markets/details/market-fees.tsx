@@ -19,8 +19,9 @@ export const MarketFees = ({ market }: { market: MarketClass }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [timer, setTimer] = useState(0);
 
-  const marketModelVault = market.model.unwrap() as MarketModelVault;
-  const curveLinear = marketModelVault.fee_curve.unwrap() as CurveRange;
+  // Safely unwrap model - may be undefined if data not available from SQL query
+  const marketModelVault = market.model?.unwrap?.() as MarketModelVault | undefined;
+  const curveLinear = marketModelVault?.fee_curve?.unwrap?.() as CurveRange | undefined;
 
   useEffect(() => {
     const id = setInterval(() => setTimer(Date.now()), 10_000);

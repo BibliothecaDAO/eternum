@@ -33,7 +33,7 @@ const getPrizeDistributionAddress = (market: any): string | null => {
  */
 export const useCurrentGameMarket = () => {
   const { manifest } = dojoConfig;
-  const { markets, refresh } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
+  const { markets, refresh, isLoading: isMarketsLoading } = useMarkets({ marketFilters: MARKET_FILTERS_ALL });
 
   // Get current game's prize distribution contract address from manifest
   const currentPrizeAddress = useMemo(() => {
@@ -56,7 +56,7 @@ export const useCurrentGameMarket = () => {
 
   return {
     gameMarket,
-    isLoading: !markets.length,
+    isLoading: isMarketsLoading,
     refresh,
     currentPrizeAddress,
     hasMarket: !!gameMarket,
