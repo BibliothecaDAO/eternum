@@ -137,9 +137,10 @@ const TokenAmountInput = ({
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
-      <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-gold/60">
-        <span className="flex-shrink-0">Balance: {balanceFormatted}</span>
-        <div className="flex items-center gap-1">
+      {/* Fix flex overflow for button row in small containers */}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gold/60">
+        <span className="flex-shrink-0 truncate">Balance: {balanceFormatted}</span>
+        <div className="flex flex-wrap items-center gap-1 min-w-0">
           <button
             type="button"
             className={quickAddButtonClass}

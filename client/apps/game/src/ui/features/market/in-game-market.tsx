@@ -175,7 +175,7 @@ const InGameMarketContent = () => {
               </div>
 
               {/* Fees */}
-              <MarketFees market={market} />
+              <MarketFees market={market} defaultOpen={false} />
 
               {/* Creator info */}
               <MarketCreatedBy creator={market.creator} market={market} />

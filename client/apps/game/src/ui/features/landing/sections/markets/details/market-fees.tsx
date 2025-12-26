@@ -13,10 +13,16 @@ const settingsQuery = new ToriiQueryBuilder()
   .withClause(new ClauseBuilder().keys(["pm-CoreSettings"], ["0"]).build())
   .includeHashedKeys();
 
-export const MarketFees = ({ market }: { market: MarketClass }) => {
+// Added 'defaultOpen' prop. If not provided, defaults to true (open by default).
+interface MarketFeesProps {
+  market: MarketClass;
+  defaultOpen?: boolean;
+}
+
+export const MarketFees = ({ market, defaultOpen = true }: MarketFeesProps) => {
   const { sdk } = useDojoSdk();
   const [settings, setSettings] = useState<CoreSettings>();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [timer, setTimer] = useState(0);
 
   // Safely unwrap model - may be undefined if data not available from SQL query

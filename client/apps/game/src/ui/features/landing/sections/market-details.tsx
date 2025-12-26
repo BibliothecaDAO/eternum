@@ -171,13 +171,6 @@ const MarketDetailsContent = ({
             <MarketTimeline market={market} />
             <MarketHistory market={market} refreshKey={refreshKey} />
           </div>
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
-          <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4 text-xs text-gold/80">
-            <MarketStatusBadge market={market} />
-            <MarketTvl market={market} />
-          </div>
 
           <div className="rounded-lg border border-white/10 bg-white/5 p-4">
             <ScrollArea className="max-h-[260px] pr-2">
@@ -189,14 +182,21 @@ const MarketDetailsContent = ({
               />
             </ScrollArea>
           </div>
+        </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-            <MarketTrade market={market} selectedOutcome={selectedOutcome} />
+        <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
+          <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4 text-xs text-gold/80">
+            <MarketStatusBadge market={market} />
+            <MarketTvl market={market} />
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-            <MarketFees market={market} />
-          </div>
+          {/* <div className="rounded-lg border border-white/10 bg-white/5 p-4"> */}
+          <MarketTrade market={market} selectedOutcome={selectedOutcome} />
+          {/* </div> */}
+
+          {/* <div className="rounded-lg border border-white/10 bg-white/5 p-4"> */}
+          <MarketFees market={market} />
+          {/* </div> */}
         </div>
       </div>
 
