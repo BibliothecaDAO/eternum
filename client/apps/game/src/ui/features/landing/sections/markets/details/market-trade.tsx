@@ -104,15 +104,17 @@ const TokenAmountInput = ({
 }) => {
   const { lordsBalance } = useUser();
 
+  const decimals = useMemo(() => Number(token?.decimals ?? 0), [token]);
   const balanceFormatted = useMemo(() => {
     if (!token) return "0";
-    const decimals = Number(token.decimals ?? 0);
     return formatUnits(lordsBalance, decimals, 4);
-  }, [lordsBalance, token]);
+  }, [lordsBalance, token, decimals]);
+  const balanceNum = useMemo(() => parseFloat(balanceFormatted.replace(/,/g, "")) || 0, [balanceFormatted]);
 
   const addToAmount = (toAdd: number) => {
     const current = parseFloat(amount) || 0;
-    setAmount((current + toAdd).toString());
+    const total = Math.min(current + toAdd, balanceNum);
+    setAmount(total.toString());
   };
 
   const quickAddButtonClass =
@@ -138,19 +140,35 @@ const TokenAmountInput = ({
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-gold/60">
         <span className="flex-shrink-0">Balance: {balanceFormatted}</span>
         <div className="flex items-center gap-1">
-          <button type="button" className={quickAddButtonClass} onClick={() => addToAmount(100)}>
+          <button
+            type="button"
+            className={quickAddButtonClass}
+            onClick={() => addToAmount(100)}
+            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+          >
             +100
           </button>
-          <button type="button" className={quickAddButtonClass} onClick={() => addToAmount(1000)}>
+          <button
+            type="button"
+            className={quickAddButtonClass}
+            onClick={() => addToAmount(1000)}
+            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+          >
             +1k
           </button>
-          <button type="button" className={quickAddButtonClass} onClick={() => addToAmount(10000)}>
+          <button
+            type="button"
+            className={quickAddButtonClass}
+            onClick={() => addToAmount(10000)}
+            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+          >
             +10k
           </button>
           <button
             type="button"
             className="rounded-sm border border-gold/40 bg-gold/10 px-2 py-[2px] text-[11px] font-semibold text-gold transition hover:border-gold/60 hover:bg-gold/20"
             onClick={() => setAmount(balanceFormatted)}
+            disabled={balanceNum <= 0}
           >
             MAX
           </button>
@@ -409,15 +427,15 @@ export function MarketTrade({
 
             {market.typCategorical() && (
               <VStack className="w-full gap-3">
-                <div className="w-full rounded-md border border-white/10 bg-white/5 p-3">
+                <div className="w-full overflow-hidden rounded-md border border-white/10 bg-white/5 p-3">
                   <div className="mb-2 text-[11px] uppercase tracking-[0.08em] text-gold/60">Selected Outcome</div>
                   {selectedOutcome ? (
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                         <div className="h-2 w-2 flex-shrink-0 rounded-full bg-gold" />
-                        <span className="truncate text-sm font-medium text-white">
+                        <div className="min-w-0 flex-1 truncate text-sm font-medium text-white">
                           <MaybeController address={selectedOutcome.name} />
-                        </span>
+                        </div>
                       </div>
                       <div className="flex flex-shrink-0 items-center gap-2">
                         <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-gold">
