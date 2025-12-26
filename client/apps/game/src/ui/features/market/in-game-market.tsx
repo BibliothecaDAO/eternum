@@ -157,20 +157,11 @@ const InGameMarketContent = () => {
             <div className="space-y-4">
               {/* Odds with clickable players */}
               <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                <div className="mb-2 text-xs uppercase tracking-wide text-gold/60">
-                  Outcomes (click player to view on map)
-                </div>
                 <MarketOdds
                   market={market}
                   selectable={!market.isEnded() && !market.isResolved()}
                   selectedOutcomeIndex={selectedOutcome?.index}
-                  onSelect={(outcome) => {
-                    setSelectedOutcome(outcome);
-                    // If outcome name looks like an address, navigate to player
-                    if (outcome.name && /^0x[0-9a-fA-F]+$/.test(outcome.name)) {
-                      navigateToPlayer(outcome.name);
-                    }
-                  }}
+                  onSelect={(outcome) => setSelectedOutcome(outcome)}
                 />
               </div>
 
