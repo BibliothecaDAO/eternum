@@ -48,16 +48,6 @@ export const PMActivitySkeleton = ({ count = 3 }: { count?: number }) => (
 );
 
 /**
- * Generic section loading indicator with spinner
- */
-export const PMSectionLoading = ({ message = "Loading..." }: { message?: string }) => (
-  <div className="flex items-center justify-center gap-2 py-8 text-gold/60">
-    <Loader2 className="h-4 w-4 animate-spin" />
-    <span className="text-sm">{message}</span>
-  </div>
-);
-
-/**
  * Error state component with optional retry button
  */
 export const PMErrorState = ({ message = "Something went wrong", onRetry }: { message?: string; onRetry?: () => void }) => (
@@ -80,13 +70,4 @@ export const PMErrorState = ({ message = "Something went wrong", onRetry }: { me
  */
 export const PMButtonSpinner = ({ className = "" }: { className?: string }) => (
   <Loader2 className={`h-4 w-4 animate-spin ${className}`} />
-);
-
-/**
- * Background refetch indicator (subtle overlay for when data is being refreshed)
- */
-export const PMRefetchIndicator = () => (
-  <div className="absolute right-2 top-2">
-    <Loader2 className="h-4 w-4 animate-spin text-gold/50" />
-  </div>
 );

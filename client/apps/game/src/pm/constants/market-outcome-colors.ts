@@ -1,4 +1,4 @@
-export const MARKET_OUTCOME_COLORS = [
+const MARKET_OUTCOME_COLORS = [
   "#5AC8FA",
   "#FF5E57",
   "#FFB800",

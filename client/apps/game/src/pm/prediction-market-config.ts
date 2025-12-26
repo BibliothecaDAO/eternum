@@ -2,9 +2,9 @@ import { env } from "../../env";
 import manifestMainnet from "./manifests/manifest_mainnet_1-7.json";
 import manifestSlot from "./manifests/manifest_slot.json";
 
-export type PredictionMarketChain = "slot" | "mainnet";
+type PredictionMarketChain = "slot" | "mainnet";
 
-export type PredictionMarketConfig = {
+type PredictionMarketConfig = {
   toriiUrl: string;
   worldAddress: string;
   collateralToken: string;

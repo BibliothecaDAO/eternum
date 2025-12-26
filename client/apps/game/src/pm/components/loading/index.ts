@@ -4,6 +4,4 @@ export {
   PMChartSkeleton,
   PMErrorState,
   PMHoldersSkeleton,
-  PMRefetchIndicator,
-  PMSectionLoading,
 } from "./pm-loading";

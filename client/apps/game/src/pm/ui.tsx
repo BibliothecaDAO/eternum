@@ -1,9 +1,7 @@
 import type { HTMLAttributes } from "react";
-import React, { createContext, useContext, useId, useMemo } from "react";
+import React, { createContext, useContext, useId } from "react";
 import * as RechartsPrimitive from "recharts";
 import type { LegendPayload, VerticalAlignmentType } from "recharts/types/component/DefaultLegendContent";
-import type { NameType, Payload as TooltipPayload, ValueType } from "recharts/types/component/DefaultTooltipContent";
-import type { TooltipContentProps } from "recharts/types/component/Tooltip";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
@@ -113,117 +111,6 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 };
 
 export const ChartTooltip = RechartsPrimitive.Tooltip;
-
-export const ChartTooltipContent = ({
-  active,
-  payload,
-  className,
-  indicator = "dot",
-  hideLabel = false,
-  hideIndicator = false,
-  label,
-  labelFormatter,
-  labelClassName,
-  formatter,
-  color,
-  nameKey,
-  labelKey,
-  ...divProps
-}: Omit<TooltipContentProps<ValueType, NameType>, "payload"> &
-  React.ComponentProps<"div"> & {
-    payload?: ReadonlyArray<TooltipPayload<ValueType, NameType>>;
-    hideLabel?: boolean;
-    hideIndicator?: boolean;
-    indicator?: "line" | "dot" | "dashed";
-    nameKey?: string;
-    labelKey?: string;
-    color?: string;
-  }) => {
-  const { config } = useChart();
-
-  const tooltipLabel = useMemo(() => {
-    if (hideLabel || !payload?.length) return null;
-    const [item] = payload;
-    const key = `${labelKey || item?.dataKey || item?.name || "value"}`;
-    const itemConfig = getPayloadConfigFromPayload(config, item, key);
-    const value =
-      !labelKey && typeof label === "string" ? config[label as keyof typeof config]?.label || label : itemConfig?.label;
-
-    if (labelFormatter) {
-      return <div className={cx("font-medium", labelClassName)}>{labelFormatter(value, payload as any)}</div>;
-    }
-
-    if (!value) return null;
-    return <div className={cx("font-medium", labelClassName)}>{value}</div>;
-  }, [hideLabel, payload, labelKey, label, config, labelClassName, labelFormatter]);
-
-  if (!active || !payload?.length) return null;
-
-  const nestLabel = payload.length === 1 && indicator !== "dot";
-
-  return (
-    <div
-      {...divProps}
-      className={cx(
-        "border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
-        className,
-      )}
-    >
-      {!nestLabel ? tooltipLabel : null}
-      <div className="grid gap-1.5">
-        {payload.map((item, index) => {
-          const key = `${nameKey || item.name || item.dataKey || "value"}`;
-          const itemConfig = getPayloadConfigFromPayload(config, item, key);
-          const indicatorColor = color || item.payload.fill || (item as any).color;
-          const value = item.value;
-          const itemKey =
-            typeof item.dataKey === "function" || item.dataKey === undefined || item.dataKey === null
-              ? index
-              : item.dataKey;
-
-          return (
-            <div
-              key={itemKey as React.Key}
-              className={cx(
-                "[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5",
-                indicator === "dot" ? "items-center" : undefined,
-              )}
-            >
-              {!hideIndicator ? (
-                <div
-                  className={cx(
-                    "shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
-                    indicator === "dot" && "h-2.5 w-2.5",
-                    indicator === "line" && "w-1",
-                    indicator === "dashed" && "w-0 border-[1.5px] border-dashed bg-transparent",
-                    nestLabel && indicator === "dashed" ? "my-0.5" : undefined,
-                  )}
-                  style={
-                    {
-                      "--color-bg": indicatorColor,
-                      "--color-border": indicatorColor,
-                    } as React.CSSProperties
-                  }
-                />
-              ) : null}
-              <div className={cx("flex flex-1 justify-between leading-none", nestLabel ? "items-end" : "items-center")}>
-                <div className="grid gap-1.5">
-                  {nestLabel ? tooltipLabel : null}
-                  <span className="text-muted-foreground">{itemConfig?.label || item.name}</span>
-                </div>
-                {value != null ? (
-                  <span className="text-foreground font-mono font-medium tabular-nums">
-                    {typeof value === "number" ? value.toLocaleString() : value}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 export const ChartLegend = RechartsPrimitive.Legend;
 
