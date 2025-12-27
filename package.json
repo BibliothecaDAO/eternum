@@ -208,7 +208,7 @@
       "contracts/season_resources/scripts/deployment"
     ],
     "catalog": {
-      "starknet": "^8.5.2",
+      "starknet": "^9.0.0",
       "starknetkit": "^2.10.4",
       "@cartridge/controller": "^0.11.3",
       "@cartridge/connector": "^0.11.3",
@@ -230,7 +230,8 @@
       "@dojoengine/torii-client": "1.7.0-preview.3",
       "@dojoengine/torii-wasm": "1.7.0-preview.3",
       "@dojoengine/utils": "1.7.0-preview.3",
-      "posthog-js": "^1.160.0"
+      "posthog-js": "^1.160.0",
+      "bignumber.js": "^9.3.0"
     }
   }
 }
