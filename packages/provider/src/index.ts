@@ -89,7 +89,7 @@ class PromiseQueue {
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
   private readonly BATCH_DELAY = 1000; // ms to wait for batching
-  private readonly MAX_BATCH_SIZE = 1; // Maximum number of calls to batch together
+  private readonly MAX_BATCH_SIZE = 2; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
 
@@ -676,9 +676,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return { status: "confirmed", receipt: result };
   }
 
-  private async waitForTransactionWithCheckInternal(
-    transactionHash: string,
-  ): Promise<GetTransactionReceiptResponse> {
+  private async waitForTransactionWithCheckInternal(transactionHash: string): Promise<GetTransactionReceiptResponse> {
     let receipt;
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
