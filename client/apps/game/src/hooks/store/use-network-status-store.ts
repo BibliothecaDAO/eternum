@@ -14,9 +14,9 @@ interface NetworkThresholds {
 }
 
 const NETWORK_THRESHOLDS: Record<NetworkType, NetworkThresholds> = {
-  mainnet: { waiting: 45_000, delayed: 90_000, desync: 180_000 },
+  mainnet: { waiting: 15_000, delayed: 30_000, desync: 45_000 },
   sepolia: { waiting: 30_000, delayed: 60_000, desync: 120_000 },
-  slot: { waiting: 20_000, delayed: 45_000, desync: 90_000 },
+  slot: { waiting: 15_000, delayed: 30_000, desync: 45_000 },
   slottest: { waiting: 20_000, delayed: 45_000, desync: 90_000 },
   local: { waiting: 15_000, delayed: 30_000, desync: 60_000 },
 };
