@@ -116,6 +116,13 @@ export function TransactionNotification() {
   } = useDojo();
 
   useEffect(() => {
+    const handleTransactionPending = (receipt: any) => {
+      console.log("Transaction pending:", receipt);
+      const description = getTxMessage(receipt.type);
+      const txCount = receipt.transactionCount ? ` (${receipt.transactionCount} transactions)` : "";
+      toast("⏳ Transaction pending", { description: description + txCount });
+    };
+
     const handleTransactionComplete = (receipt: any) => {
       console.log("Transaction completed:", receipt);
       const description = getTxMessage(receipt.type);
@@ -128,10 +135,12 @@ export function TransactionNotification() {
       toast("❌ Transaction failed", { description: error });
     };
 
+    provider.on("transactionPending", handleTransactionPending);
     provider.on("transactionComplete", handleTransactionComplete);
     provider.on("transactionFailed", handleTransactionFailed);
 
     return () => {
+      provider.off("transactionPending", handleTransactionPending);
       provider.off("transactionComplete", handleTransactionComplete);
       provider.off("transactionFailed", handleTransactionFailed);
     };

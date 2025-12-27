@@ -235,6 +235,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
   ) => Promise<GetTransactionReceiptResponse>;
   private heartbeatManager: ProviderHeartbeatManager;
+  private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   /**
    * Create a new EternumProvider instance
    *
@@ -381,7 +382,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       console.log({ signer, transactionDetails });
     }
     const tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
-    const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -400,13 +400,41 @@ export class EternumProvider extends EnhancedDojoProvider {
       txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
 
-    this.emit("transactionComplete", {
-      details: transactionResult,
+    const waitPromise = this.waitForTransactionWithCheckInternal(tx.transaction_hash);
+    const waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
+    const transactionMeta = {
       type: txType,
       ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
+    };
+
+    if (waitResult.status === "pending") {
+      this.emit("transactionPending", {
+        transactionHash: tx.transaction_hash,
+        ...transactionMeta,
+      });
+      void waitPromise
+        .then((receipt) => {
+          this.emit("transactionComplete", {
+            details: receipt,
+            ...transactionMeta,
+          });
+        })
+        .catch((error) => {
+          console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
+        });
+
+      return {
+        statusReceipt: "PENDING",
+        transaction_hash: tx.transaction_hash,
+      } as any;
+    }
+
+    this.emit("transactionComplete", {
+      details: waitResult.receipt,
+      ...transactionMeta,
     });
 
-    return transactionResult;
+    return waitResult.receipt;
   }
 
   async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
@@ -619,6 +647,38 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @throws Error if transaction fails or is reverted
    */
   async waitForTransactionWithCheck(transactionHash: string): Promise<GetTransactionReceiptResponse> {
+    return await this.waitForTransactionWithCheckInternal(transactionHash);
+  }
+
+  private async waitForTransactionWithTimeout(
+    waitPromise: Promise<GetTransactionReceiptResponse>,
+    timeoutMs: number,
+  ): Promise<{ status: "confirmed"; receipt: GetTransactionReceiptResponse } | { status: "pending" }> {
+    if (timeoutMs <= 0) {
+      return { status: "confirmed", receipt: await waitPromise };
+    }
+
+    let timeoutId: NodeJS.Timeout | null = null;
+    const timeoutPromise = new Promise<"timeout">((resolve) => {
+      timeoutId = setTimeout(() => resolve("timeout"), timeoutMs);
+    });
+
+    const result = await Promise.race([waitPromise, timeoutPromise]);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    if (result === "timeout") {
+      return { status: "pending" };
+    }
+
+    return { status: "confirmed", receipt: result };
+  }
+
+  private async waitForTransactionWithCheckInternal(
+    transactionHash: string,
+  ): Promise<GetTransactionReceiptResponse> {
     let receipt;
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
