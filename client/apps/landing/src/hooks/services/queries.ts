@@ -427,9 +427,10 @@ WITH limited_active_orders AS (
   `,
   ALL_COLLECTION_TOKENS_FULL_COUNT: `
     /* Optimized: tokens table already contains all minted tokens.
-       Avoids expensive UNION of owned_tokens + active_orders and
-       removes unnecessary GROUP BY. Uses idx_tokens_contract_address_token_id index. */
-    SELECT COUNT(*) AS total_count
+       Avoids expensive UNION of owned_tokens + active_orders.
+       Uses COUNT(DISTINCT) to handle potential duplicate token_id rows from metadata updates.
+       Uses idx_tokens_contract_address_token_id index. */
+    SELECT COUNT(DISTINCT t.token_id) AS total_count
     FROM tokens t
     WHERE t.contract_address = '{contractAddress}'
       AND t.token_id IS NOT NULL
