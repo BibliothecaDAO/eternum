@@ -50,7 +50,13 @@ export const PMActivitySkeleton = ({ count = 3 }: { count?: number }) => (
 /**
  * Error state component with optional retry button
  */
-export const PMErrorState = ({ message = "Something went wrong", onRetry }: { message?: string; onRetry?: () => void }) => (
+export const PMErrorState = ({
+  message = "Something went wrong",
+  onRetry,
+}: {
+  message?: string;
+  onRetry?: () => void;
+}) => (
   <div className="w-full rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-5">
     <p className="text-sm text-red-400">{message}</p>
     {onRetry && (
