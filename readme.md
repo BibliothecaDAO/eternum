@@ -8,7 +8,7 @@
 [![discord](https://img.shields.io/badge/join-bibliothecadao-black?logo=discord&logoColor=white)](https://discord.gg/realmsworld)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-# Realms: Eternum
+# Realms: Eternum & Blitz
 
 Eternum is the foundational game for Realms World - a living digital ecosystem that evolves through player interaction.
 It serves as both a game and an open platform.
