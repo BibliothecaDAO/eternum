@@ -313,6 +313,8 @@ WITH limited_active_orders AS (
     {listedOrderByFinal}
   `,
   ALL_COLLECTION_TOKENS_LISTED_COUNT: `
+    /* Optimized: removed unnecessary GROUP BY on tokens_latest.
+       Uses direct JOIN with tokens table for trait filtering. */
     WITH active_orders AS (
       SELECT printf('0x%064x', mo."order.token_id") AS token_id_hex
       FROM "marketplace-MarketOrderModel" AS mo
@@ -320,16 +322,11 @@ WITH limited_active_orders AS (
         AND mo."order.collection_id" = {collectionId}
         AND mo."order.expiration" > strftime('%s','now')
         AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
-    ),
-    tokens_latest AS (
-      SELECT token_id, MAX(metadata) AS metadata
-      FROM tokens
-      WHERE contract_address = '{contractAddress}'
-      GROUP BY token_id
     )
     SELECT COUNT(*) AS total_count
     FROM active_orders a
-    LEFT JOIN tokens_latest t ON t.token_id = a.token_id_hex
+    JOIN tokens t ON t.token_id = a.token_id_hex
+      AND t.contract_address = '{contractAddress}'
     WHERE 1=1
       {traitFilters}
   `,
@@ -429,35 +426,14 @@ WITH limited_active_orders AS (
     ORDER BY p.is_listed DESC, (p.price_hex IS NULL), p.price_hex, p.token_id_hex
   `,
   ALL_COLLECTION_TOKENS_FULL_COUNT: `
-    WITH active_orders AS (
-      SELECT printf('0x%064x', mo."order.token_id") AS token_id_hex
-      FROM "marketplace-MarketOrderModel" AS mo
-      WHERE mo."order.active" = 1
-        AND mo."order.collection_id" = {collectionId}
-        AND mo."order.expiration" > strftime('%s','now')
-        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
-    ),
-    owned_tokens AS (
-      SELECT DISTINCT substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex
-      FROM token_balances tb
-      WHERE tb.contract_address = '{contractAddress}'
-        AND tb.balance != '0x0000000000000000000000000000000000000000000000000000000000000000'
-    ),
-    all_tokens AS (
-      SELECT token_id_hex FROM owned_tokens
-      UNION
-      SELECT token_id_hex FROM active_orders
-    ),
-    tokens_latest AS (
-      SELECT token_id, MAX(metadata) AS metadata
-      FROM tokens
-      WHERE contract_address = '{contractAddress}'
-      GROUP BY token_id
-    )
-    SELECT COUNT(*) AS total_count
-    FROM all_tokens at
-    LEFT JOIN tokens_latest t ON t.token_id = at.token_id_hex
-    WHERE 1=1
+    /* Optimized: tokens table already contains all minted tokens.
+       Avoids expensive UNION of owned_tokens + active_orders.
+       Uses COUNT(DISTINCT) to handle potential duplicate token_id rows from metadata updates.
+       Uses idx_tokens_contract_address_token_id index. */
+    SELECT COUNT(DISTINCT t.token_id) AS total_count
+    FROM tokens t
+    WHERE t.contract_address = '{contractAddress}'
+      AND t.token_id IS NOT NULL
       {traitFilters}
   `,
   ALL_COLLECTION_TOKENS_COUNT: `
