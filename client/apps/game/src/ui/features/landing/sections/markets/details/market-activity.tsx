@@ -1,6 +1,5 @@
 import type { MarketClass } from "@/pm/class";
-import { useState } from "react";
-
+import { PMActivitySkeleton, PMErrorState } from "@/pm/components/loading";
 import { useMarketActivity } from "@/pm/hooks/social/use-market-activity";
 import { formatUnits } from "@/pm/utils";
 import { useAccount } from "@starknet-react/core";
@@ -37,9 +36,19 @@ const TimeAgo = ({ date, className }: { date: Date; className?: string }) => {
 
 export const MarketActivity = ({ market }: { market: MarketClass }) => {
   const { account } = useAccount();
-  const { marketBuys, refresh } = useMarketActivity(market.market_id);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { marketBuys, refresh, isLoading, isError } = useMarketActivity(market.market_id);
 
+  // Loading state (only show skeleton on initial load with no data)
+  if (isLoading && marketBuys.length === 0) {
+    return <PMActivitySkeleton count={3} />;
+  }
+
+  // Error state
+  if (isError) {
+    return <PMErrorState message="Failed to load activity" onRetry={refresh} />;
+  }
+
+  // Empty state
   if (marketBuys.length === 0) {
     return (
       <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/70">
@@ -51,25 +60,16 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
 
   const outcomes = market.getMarketOutcomes();
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refresh();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   return (
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
         <button
           type="button"
-          onClick={handleRefresh}
+          onClick={refresh}
           className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80 transition-colors hover:border-gold/50 hover:text-gold"
-          disabled={isRefreshing}
+          disabled={isLoading}
         >
-          {isRefreshing ? "Refreshing..." : "Refresh"}
+          {isLoading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 

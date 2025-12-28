@@ -75,19 +75,3 @@ export function formatUint256(value: Uint256, decimals = 18, precision = 0) {
     .toFixed(precision)
     .replace(/^(\d+)(?:\.0+|(\.\d*?)0+)$/, "$1$2");
 }
-
-export function parseUint256(value: string, decimals = 18) {
-  return uint256.bnToUint256(
-    BigInt(
-      BigNumber(value)
-        .multipliedBy(10 ** decimals)
-        .toFixed(),
-    ),
-  );
-}
-
-export function parseUnits(value: string, decimals = 18) {
-  return BigNumber(value)
-    .multipliedBy(10 ** decimals)
-    .toFixed(0);
-}

@@ -1,7 +1,8 @@
+import { PMActivitySkeleton, PMButtonSpinner, PMErrorState } from "@/pm/components/loading";
+import { useMarketUserMessages } from "@/pm/hooks/social/use-market-user-messages";
 import { useAccount } from "@starknet-react/core";
 import { useState } from "react";
 
-import { useMarketUserMessages } from "@/pm/hooks/social/use-market-user-messages";
 import { HStack, VStack } from "@pm/ui";
 
 import { MaybeController } from "../maybe-controller";
@@ -65,10 +66,10 @@ const TimeAgo = ({ date, className }: { date: Date; className?: string }) => {
 export const UserMessages = ({ marketId }: { marketId: string }) => {
   const [message, setMessage] = useState("");
   const { account } = useAccount();
-  const { messages, sendMessage } = useMarketUserMessages(marketId);
+  const { messages, sendMessage, refresh, isLoading, isSending, isError } = useMarketUserMessages(marketId);
 
   const onSend = async () => {
-    if (!account || !message.trim()) return;
+    if (!account || !message.trim() || isSending) return;
     await sendMessage(account, message.trim());
     setMessage("");
   };
@@ -76,6 +77,16 @@ export const UserMessages = ({ marketId }: { marketId: string }) => {
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.code === "Enter") onSend();
   };
+
+  // Loading state (only show skeleton on initial load with no data)
+  if (isLoading && messages.length === 0) {
+    return <PMActivitySkeleton count={2} />;
+  }
+
+  // Error state
+  if (isError) {
+    return <PMErrorState message="Failed to load messages" onRetry={refresh} />;
+  }
 
   return (
     <VStack className="w-full items-start gap-6">
@@ -88,8 +99,8 @@ export const UserMessages = ({ marketId }: { marketId: string }) => {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={onKeyDown}
           />
-          <Button onClick={onSend} disabled={!account}>
-            Send
+          <Button onClick={onSend} disabled={!account || isSending}>
+            {isSending ? <PMButtonSpinner /> : "Send"}
           </Button>
         </div>
       </HStack>

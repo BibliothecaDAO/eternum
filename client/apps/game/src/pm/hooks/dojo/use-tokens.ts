@@ -10,6 +10,9 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
   const requestRef = useRef<(GetTokenRequest & GetTokenBalanceRequest) | null>(null);
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const subscriptionRef = useRef<Subscription | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -29,25 +32,35 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
 
   const fetchTokenBalances = useCallback(async () => {
     if (!requestRef.current) return;
-    const [tokenBalances, subscription] = await sdk.subscribeTokenBalance({
-      contractAddresses: requestRef.current.contractAddresses ?? [],
-      accountAddresses: requestRef.current.accountAddresses,
-      tokenIds: request.tokenIds ?? [],
-      callback: ({ data, error }: SubscriptionCallbackArgs<TokenBalance>) => {
-        if (error) {
-          console.error(error);
-          return;
-        }
-        setTokenBalances((prev) => updateTokenBalancesList(prev, data));
-      },
-    });
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [tokenBalances, subscription] = await sdk.subscribeTokenBalance({
+        contractAddresses: requestRef.current.contractAddresses ?? [],
+        accountAddresses: requestRef.current.accountAddresses,
+        tokenIds: request.tokenIds ?? [],
+        callback: ({ data, error: subError }: SubscriptionCallbackArgs<TokenBalance>) => {
+          if (subError) {
+            console.error(subError);
+            setError(subError instanceof Error ? subError : new Error("Subscription error"));
+            return;
+          }
+          setTokenBalances((prev) => updateTokenBalancesList(prev, data));
+        },
+      });
 
-    if (subscriptionRef.current) {
-      subscriptionRef.current.cancel();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.cancel();
+      }
+
+      subscriptionRef.current = subscription;
+      setTokenBalances(tokenBalances.items);
+      hasInitialized.current = true;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Failed to load token balances"));
+    } finally {
+      setIsLoading(false);
     }
-
-    subscriptionRef.current = subscription;
-    setTokenBalances(tokenBalances.items);
   }, [sdk]);
 
   useEffect(() => {
@@ -56,6 +69,8 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
       fetchTokens();
 
       if (accountRequired && (!request.accountAddresses || request.accountAddresses.length === 0)) {
+        // No account provided but required - set loading to false
+        setIsLoading(false);
       } else {
         fetchTokenBalances();
       }
@@ -85,6 +100,9 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
     getBalance,
     toDecimal,
     refetchBalances,
+    isLoading,
+    isError: !!error,
+    error,
   };
 }
 

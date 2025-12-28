@@ -2,7 +2,6 @@ import { useMemo } from "react";
 
 import { MarketClass, MarketOutcome } from "@/pm/class";
 import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
-import { HStack } from "@pm/ui";
 import { MaybeController } from "./maybe-controller";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
@@ -114,11 +113,13 @@ export const MarketOdds = ({
                 : undefined
             }
           >
-            <HStack className="gap-2 text-lightest">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-              <MaybeController address={outcome.name} className="max-w-[220px] truncate" />
-            </HStack>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-lightest">
+              <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              <span className="min-w-0 flex-1 truncate">
+                <MaybeController address={outcome.name} />
+              </span>
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-2 pl-2">
               <span className={isWinner ? "text-progress-bar-good" : "text-gold"}>{odds ?? "--"}</span>
             </div>
           </button>

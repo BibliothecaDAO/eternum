@@ -5,7 +5,7 @@ import type { StarknetDomain } from "starknet";
 import { setupWorld, type SchemaType } from "../../bindings";
 import { DojoConfigProvider, useDojoConfig } from "./dojo-config";
 
-export const appDomain: StarknetDomain = {
+const appDomain: StarknetDomain = {
   name: "WORLD_NAME",
   version: "1.0",
   chainId: "KATANA",
