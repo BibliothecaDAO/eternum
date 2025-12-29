@@ -126,7 +126,6 @@ export class SelectionPulseManager {
       const mesh = this.ownershipPulseMeshes[i];
       mesh.visible = false;
     }
-
   }
 
   /**
