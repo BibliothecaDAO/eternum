@@ -2,7 +2,7 @@
  * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
  * into the landing page bundle.
  */
-import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
+import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import type { Account, AccountInterface } from "starknet";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { MetagameProvider } from "./hooks/context/metagame-provider";
@@ -29,6 +29,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
             <TransactionNotification />
             <World backgroundImage={backgroundImage} />
             <WorldLoading />
+            <Toaster />
           </StoryEventToastProvider>
         </ErrorBoundary>
       </MetagameProvider>
