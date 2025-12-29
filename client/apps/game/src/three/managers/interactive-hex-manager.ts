@@ -418,8 +418,9 @@ export class InteractiveHexManager {
     PerformanceMonitor.end("renderHexes");
   }
 
-  update() {
+  update(deltaTime: number = 0) {
     this.hoverAura.rotate();
+    this.hoverHexManager.update(deltaTime);
   }
 
   private pickHexFromRaycaster(

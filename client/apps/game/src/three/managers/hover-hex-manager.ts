@@ -12,8 +12,6 @@ export class HoverHexManager {
   private hoverHex: THREE.Mesh | null = null;
   private outlineModel: THREE.Object3D | null = null;
   private isVisible = false;
-  private animationId: number | null = null;
-  private lastTime = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -63,38 +61,16 @@ export class HoverHexManager {
     }
   }
 
-  private startAnimation(): void {
-    // Only start animation loop if not already running and visible
-    if (this.animationId !== null || !this.isVisible) {
+  public update(deltaTime: number): void {
+    if (!this.isVisible) {
       return;
     }
 
-    const animate = (currentTime: number) => {
-      // Exit if no longer visible
-      if (!this.isVisible) {
-        this.stopAnimation();
-        return;
-      }
-
-      const deltaTime = (currentTime - this.lastTime) * 0.001; // Convert to seconds
-      this.lastTime = currentTime;
-
-      if (deltaTime > 0) {
-        updateHoverHexMaterial(deltaTime);
-      }
-
-      this.animationId = requestAnimationFrame(animate);
-    };
-
-    this.lastTime = performance.now();
-    this.animationId = requestAnimationFrame(animate);
-  }
-
-  private stopAnimation(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    if (deltaTime <= 0) {
+      return;
     }
+
+    updateHoverHexMaterial(deltaTime);
   }
 
   /**
@@ -119,8 +95,6 @@ export class HoverHexManager {
       }
 
       this.isVisible = true;
-      // Start animation when hover becomes visible
-      this.startAnimation();
     }
   }
 
@@ -139,8 +113,6 @@ export class HoverHexManager {
     }
 
     this.isVisible = false;
-    // Stop animation when hover is hidden
-    this.stopAnimation();
   }
 
   /**
@@ -170,8 +142,6 @@ export class HoverHexManager {
    * Clean up resources
    */
   public dispose(): void {
-    this.stopAnimation();
-
     if (this.hoverHex) {
       this.scene.remove(this.hoverHex);
       this.hoverHex.geometry.dispose();

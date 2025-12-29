@@ -906,7 +906,7 @@ export abstract class HexagonScene {
     this.visibilityManager?.beginFrame();
 
     PerformanceMonitor.begin("interactiveHexManager.update");
-    this.interactiveHexManager.update();
+    this.interactiveHexManager.update(deltaTime);
     PerformanceMonitor.end("interactiveHexManager.update");
 
     this.updateLights();

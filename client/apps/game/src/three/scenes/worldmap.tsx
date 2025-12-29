@@ -3674,6 +3674,8 @@ export default class WorldmapScene extends HexagonScene {
     super.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
     this.fxManager.update(deltaTime);
+    this.resourceFXManager.update(deltaTime);
+    this.selectionPulseManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);

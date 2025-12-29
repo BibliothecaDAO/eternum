@@ -386,7 +386,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
-    const tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
+    let tx;
+    try {
+      tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.emit("transactionFailed", `Transaction failed to submit: ${message}`);
+      throw error;
+    }
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -688,6 +695,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         retryInterval: 500,
       });
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.emit("transactionFailed", `Transaction failed while waiting for confirmation: ${message}`);
       console.error(`Error waiting for transaction ${transactionHash}`);
       throw error;
     }
@@ -707,10 +716,15 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {
-      this.emit("transactionFailed", `Transaction failed with reason: HARDCODED_SEARCH_ME_IN_THE_CODE`);
-      throw new Error(`Transaction failed with reason: HARDCODED_SEARCH_ME_IN_THE_CODE`);
-      // this.emit("transactionFailed", `Transaction failed with reason: ${receipt.revert_reason}`);
-      // throw new Error(`Transaction failed with reason: ${receipt.revert_reason}`);
+      const revertReason =
+        typeof receiptAny?.revert_reason === "string"
+          ? receiptAny.revert_reason
+          : typeof receiptAny?.revertReason === "string"
+            ? receiptAny.revertReason
+            : "Unknown revert reason";
+      const message = `Transaction failed with reason: ${revertReason}`;
+      this.emit("transactionFailed", message);
+      throw new Error(message);
     }
 
     return receipt;

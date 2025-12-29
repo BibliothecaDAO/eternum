@@ -48,6 +48,7 @@ const chain_id = isLocal
         : constants.StarknetChainId.SN_MAIN;
 
 const controller = new ControllerConnector({
+  propagateSessionErrors: true,
   chains: [
     {
       rpcUrl: isLocal
