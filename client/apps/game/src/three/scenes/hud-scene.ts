@@ -128,6 +128,10 @@ export default class HUDScene {
     return this.weatherManager;
   }
 
+  public hasActiveLabelAnimations(): boolean {
+    return this.navigator?.hasActiveLabel() ?? false;
+  }
+
   update(deltaTime: number, cycleProgress?: number) {
     this.navigator.update();
 

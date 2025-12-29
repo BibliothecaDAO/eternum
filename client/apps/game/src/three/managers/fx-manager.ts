@@ -484,6 +484,10 @@ export class FXManager {
     // for now. Phase 2 would fully migrate animation logic to the BatchedFXSystem.
   }
 
+  public hasActiveLabelFx(): boolean {
+    return this.activeTroopDiffFX.size > 0;
+  }
+
   private registerBuiltInFX() {
     this.registerFX("skull", {
       textureUrl: "textures/skull.png",

@@ -71,6 +71,10 @@ export class Navigator {
     return this.target;
   }
 
+  public hasActiveLabel(): boolean {
+    return this.target !== null;
+  }
+
   private updateArrowRotation() {
     if (!this.arrowModel || !this.target) return;
 

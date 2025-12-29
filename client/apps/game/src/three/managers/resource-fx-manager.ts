@@ -214,6 +214,10 @@ export class ResourceFXManager {
     this.baseFXManager = new FXManager(scene, defaultSize);
   }
 
+  public hasActiveFx(): boolean {
+    return this.activeResourceFX.size > 0;
+  }
+
   private getOrLoadTexture(resourceId: number): Promise<THREE.Texture> {
     const cached = this.resourceTextures.get(resourceId);
     if (cached) {

@@ -2,6 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
+import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
 import { GUIManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
@@ -1738,10 +1739,14 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
-  update(deltaTime: number) {
+  public hasMovingArmies(): boolean {
+    return this.armyModel.hasMovingInstances();
+  }
+
+  update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
-    this.armyModel.updateAnimations(deltaTime);
+    this.armyModel.updateAnimations(deltaTime, animationContext);
 
     // Update FX
     this.fxManager.update(deltaTime);

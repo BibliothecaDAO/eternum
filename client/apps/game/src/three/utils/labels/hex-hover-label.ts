@@ -54,6 +54,10 @@ export class HexHoverLabel {
     this.element = null;
   }
 
+  public hasActiveLabel(): boolean {
+    return this.label !== null;
+  }
+
   private createElement(content: HexHoverLabelContent): HTMLElement {
     const container = document.createElement("div");
     container.classList.add(

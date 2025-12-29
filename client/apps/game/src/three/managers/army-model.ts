@@ -30,6 +30,7 @@ import {
   TROOP_TO_MODEL,
 } from "../constants";
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
+import type { AnimationVisibilityContext } from "../types/animation";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
@@ -78,6 +79,13 @@ export class ArmyModel {
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
   private readonly ANIMATION_BUCKETS = 10;
+  private animationFrameOffset = 0;
+  private lastBucketStride = 1;
+  private idleWeightsBuffer: Float32Array | null = null;
+  private movingWeightsBuffer: Float32Array | null = null;
+  private bucketToIndices: Map<number, Uint16Array> = new Map();
+  private bucketIndicesBuilt = false;
+  private bucketIndicesMaxCount = 0;
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
   private nextInstanceIndex = 0;
@@ -818,7 +826,7 @@ export class ArmyModel {
   }
 
   // Animation Methods
-  public updateAnimations(_deltaTime: number): void {
+  public updateAnimations(_deltaTime: number, _visibility?: AnimationVisibilityContext): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 
     const now = performance.now();
@@ -849,13 +857,7 @@ export class ArmyModel {
     // Throttling: Calculate update frequency based on instance count
     // More instances = more aggressive throttling to maintain FPS
     const totalInstances = primaryMesh.count;
-    let updateFrequency = 1;
-
-    // OPTIMIZATION: Lower thresholds for earlier throttling with many armies
-    if (totalInstances > 15) updateFrequency = 2; // Start throttling earlier
-    if (totalInstances > 40) updateFrequency = 3;
-    if (totalInstances > 80) updateFrequency = 4;
-    if (totalInstances > 150) updateFrequency = 5;
+    const updateFrequency = this.getAnimationUpdateFrequency(totalInstances);
 
     // Skip update if throttled
     // Use a deterministic frame counter simulation based on time
@@ -864,9 +866,20 @@ export class ArmyModel {
       return;
     }
 
-    if (now - modelData.lastAnimationUpdate < modelData.animationUpdateInterval) {
+    const updateInterval = this.getAnimationUpdateIntervalMs(modelData.animationUpdateInterval);
+    if (now - modelData.lastAnimationUpdate < updateInterval) {
       return;
     }
+
+    const bucketStride = this.getAnimationBucketStride(totalInstances);
+    if (bucketStride !== this.lastBucketStride) {
+      this.animationFrameOffset = 0;
+      this.lastBucketStride = bucketStride;
+    }
+    const bucketOffset = this.animationFrameOffset;
+    this.animationFrameOffset = (this.animationFrameOffset + 1) % bucketStride;
+
+    this.buildBucketIndices(totalInstances);
 
     let performedUpdate = false;
     let hasAnimatedInstances = false;
@@ -876,10 +889,12 @@ export class ArmyModel {
       if (mesh.count === 0) return;
       hasAnimatedInstances = true;
 
+      const instanceCount = mesh.count;
+
       // Determine which animation states are actually needed by scanning instances
       let needsIdleWeights = false;
       let needsMovingWeights = false;
-      for (let i = 0; i < mesh.count; i++) {
+      for (let i = 0; i < instanceCount; i++) {
         const state = this.animationStates[i];
         if (this.shouldSkipAnimation(state)) continue;
         if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
@@ -890,39 +905,99 @@ export class ArmyModel {
       // Early exit if no animations needed
       if (!needsIdleWeights && !needsMovingWeights) return;
 
-      // Pre-calculate weights only for needed states
-      // This significantly reduces CPU load by batching mixer updates
-      const idleWeights: number[][] = [];
-      const movingWeights: number[][] = [];
       const actions = this.getOrCreateAnimationActions(modelData, 0); // Shared actions
 
-      // 1. Sample Idle Weights (only if needed)
+      const baseMesh = modelData.baseMeshes[meshIndex];
+      const morphInfluences = baseMesh.morphTargetInfluences;
+      if (!morphInfluences || morphInfluences.length === 0) {
+        return;
+      }
+
+      const morphCount = morphInfluences.length;
+      const requiredSize = this.ANIMATION_BUCKETS * morphCount;
+
       if (needsIdleWeights) {
+        if (!this.idleWeightsBuffer || this.idleWeightsBuffer.length < requiredSize) {
+          this.idleWeightsBuffer = new Float32Array(requiredSize);
+        }
+
         this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
-        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
           const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
           modelData.mixer.setTime(t);
-          idleWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.idleWeightsBuffer[offset + m] = morphInfluences[m];
+          }
         }
       }
 
-      // 2. Sample Moving Weights (only if needed)
       if (needsMovingWeights) {
+        if (!this.movingWeightsBuffer || this.movingWeightsBuffer.length < requiredSize) {
+          this.movingWeightsBuffer = new Float32Array(requiredSize);
+        }
+
         this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
-        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
           const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
           modelData.mixer.setTime(t);
-          movingWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.movingWeightsBuffer[offset + m] = morphInfluences[m];
+          }
         }
       }
 
-      // 3. Apply to instances
-      for (let i = 0; i < mesh.count; i++) {
-        this.updateInstanceAnimationOptimized(mesh, i, idleWeights, movingWeights);
-      }
+      const morphTexture = mesh.morphTexture;
+      if (morphTexture && morphTexture.image && morphTexture.image.data) {
+        const textureData = morphTexture.image.data as unknown as Float32Array;
+        const textureWidth = morphTexture.image.width;
 
-      if (mesh.morphTexture) {
-        mesh.morphTexture.needsUpdate = true;
+        for (let bucket = bucketOffset; bucket < this.ANIMATION_BUCKETS; bucket += bucketStride) {
+          const indices = this.bucketToIndices.get(bucket);
+          if (!indices || indices.length === 0) continue;
+
+          const idleOffset = bucket * morphCount;
+          const movingOffset = bucket * morphCount;
+          const idleWeights =
+            needsIdleWeights && this.idleWeightsBuffer
+              ? this.idleWeightsBuffer.subarray(idleOffset, idleOffset + morphCount)
+              : null;
+          const movingWeights =
+            needsMovingWeights && this.movingWeightsBuffer
+              ? this.movingWeightsBuffer.subarray(movingOffset, movingOffset + morphCount)
+              : null;
+
+          for (let idx = 0; idx < indices.length; idx++) {
+            const i = indices[idx];
+            if (i >= instanceCount) continue;
+            const state = this.animationStates[i];
+            if (this.shouldSkipAnimation(state)) continue;
+
+            const dstOffset = i * textureWidth;
+            if (state === ANIMATION_STATE_MOVING) {
+              if (!movingWeights) continue;
+              if (morphCount <= 8) {
+                textureData.set(movingWeights, dstOffset);
+              } else {
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = this.movingWeightsBuffer![movingOffset + m];
+                }
+              }
+            } else {
+              if (!idleWeights) continue;
+              if (morphCount <= 8) {
+                textureData.set(idleWeights, dstOffset);
+              } else {
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = this.idleWeightsBuffer![idleOffset + m];
+                }
+              }
+            }
+          }
+        }
+
+        morphTexture.needsUpdate = true;
         performedUpdate = true;
       }
     });
@@ -932,27 +1007,82 @@ export class ArmyModel {
     }
   }
 
-  private updateInstanceAnimationOptimized(
-    mesh: AnimatedInstancedMesh,
-    instanceIndex: number,
-    idleWeights: number[][],
-    movingWeights: number[][],
-  ): void {
-    const animationState = this.animationStates[instanceIndex];
-
-    if (this.shouldSkipAnimation(animationState)) return;
-
-    const bucket = this.animationBuckets[instanceIndex];
-    const weights = animationState === ANIMATION_STATE_MOVING ? movingWeights[bucket] : idleWeights[bucket];
-
-    mesh.setMorphAt(instanceIndex, { morphTargetInfluences: weights } as any);
-  }
-
   private shouldSkipAnimation(animationState: number): boolean {
     return (
       (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-      GRAPHICS_SETTING === GraphicsSettings.LOW
+      GRAPHICS_SETTING === GraphicsSettings.LOW ||
+      (this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE)
     );
+  }
+
+  private getAnimationUpdateFrequency(instanceCount: number): number {
+    let updateFrequency = 1;
+
+    if (instanceCount > 15) updateFrequency = 2;
+    if (instanceCount > 40) updateFrequency = 3;
+    if (instanceCount > 80) updateFrequency = 4;
+    if (instanceCount > 150) updateFrequency = 5;
+
+    if (this.currentCameraView === CameraView.Medium) {
+      updateFrequency = Math.min(updateFrequency + 1, 10);
+    } else if (this.currentCameraView === CameraView.Far) {
+      updateFrequency = Math.min(updateFrequency + 2, 10);
+    }
+
+    return updateFrequency;
+  }
+
+  private getAnimationUpdateIntervalMs(baseInterval: number): number {
+    if (this.currentCameraView === CameraView.Medium) {
+      return baseInterval * 1.25;
+    }
+    if (this.currentCameraView === CameraView.Far) {
+      return baseInterval * 1.6;
+    }
+    return baseInterval;
+  }
+
+  private getAnimationBucketStride(instanceCount: number): number {
+    let stride = 1;
+    if (instanceCount > 150) stride = 2;
+    if (instanceCount > 300) stride = 4;
+
+    if (this.currentCameraView === CameraView.Far) {
+      stride = Math.min(stride * 2, this.ANIMATION_BUCKETS);
+    }
+
+    return stride;
+  }
+
+  private buildBucketIndices(instanceCount: number): void {
+    if (this.bucketIndicesBuilt && instanceCount <= this.bucketIndicesMaxCount) {
+      return;
+    }
+
+    const bucketCounts = new Uint16Array(this.ANIMATION_BUCKETS);
+    for (let i = 0; i < instanceCount; i++) {
+      bucketCounts[this.animationBuckets[i]]++;
+    }
+
+    this.bucketToIndices.clear();
+    const bucketCurrentIndex = new Uint16Array(this.ANIMATION_BUCKETS);
+
+    for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+      if (bucketCounts[b] > 0) {
+        this.bucketToIndices.set(b, new Uint16Array(bucketCounts[b]));
+      }
+    }
+
+    for (let i = 0; i < instanceCount; i++) {
+      const bucket = this.animationBuckets[i];
+      const indices = this.bucketToIndices.get(bucket);
+      if (indices) {
+        indices[bucketCurrentIndex[bucket]++] = i;
+      }
+    }
+
+    this.bucketIndicesBuilt = true;
+    this.bucketIndicesMaxCount = instanceCount;
   }
 
   private getOrCreateAnimationActions(modelData: ModelData, instanceIndex: number) {
@@ -1354,6 +1484,10 @@ export class ArmyModel {
    */
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
+  }
+
+  public hasMovingInstances(): boolean {
+    return this.movingInstances.size > 0;
   }
 
   public setShadowsEnabled(enabled: boolean): void {
@@ -1766,6 +1900,11 @@ export class ArmyModel {
     this.matrixIndexOwners.clear();
     this.labels.clear();
     this.movementCompleteCallbacks.clear();
+    this.idleWeightsBuffer = null;
+    this.movingWeightsBuffer = null;
+    this.bucketToIndices.clear();
+    this.bucketIndicesBuilt = false;
+    this.bucketIndicesMaxCount = 0;
 
     console.log("ArmyModel: Disposed all resources");
   }

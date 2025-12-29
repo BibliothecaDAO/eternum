@@ -97,6 +97,10 @@ export class HoverLabelManager {
     this.lastCameraView = newCameraView;
   }
 
+  public hasActiveLabels(): boolean {
+    return this.currentHoveredHex !== null;
+  }
+
   private toggleLabel(type: HoverLabelType, entityId?: ID): void {
     const controller = this.controllers[type];
     if (!controller) {

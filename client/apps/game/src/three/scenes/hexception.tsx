@@ -1312,6 +1312,10 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
+  public hasActiveLabelAnimations(): boolean {
+    return this.hoverLabelManager.hasActiveLabel();
+  }
+
   /**
    * Override to set world bounds for Hexception biome models.
    * This enables visibility-based animation culling (Phase 1 optimization).
