@@ -125,6 +125,8 @@ export class ArmyManager {
   };
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
+  private lastLabelVisibilityUpdate = 0;
+  private labelVisibilityIntervalMs = 66;
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
@@ -1761,8 +1763,12 @@ export class ArmyManager {
     this.updateVisibleArmiesBatched();
 
     if (this.frustumVisibilityDirty) {
-      this.applyFrustumVisibilityToLabels();
-      this.frustumVisibilityDirty = false;
+      const now = performance.now();
+      if (now - this.lastLabelVisibilityUpdate >= this.labelVisibilityIntervalMs) {
+        this.applyFrustumVisibilityToLabels();
+        this.frustumVisibilityDirty = false;
+        this.lastLabelVisibilityUpdate = now;
+      }
     }
 
     // Flush batched label pool operations to minimize layout thrashing

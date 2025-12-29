@@ -903,6 +903,7 @@ export abstract class HexagonScene {
   update(deltaTime: number): void {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
+    this.visibilityManager?.beginFrame();
 
     PerformanceMonitor.begin("interactiveHexManager.update");
     this.interactiveHexManager.update();
@@ -955,9 +956,6 @@ export abstract class HexagonScene {
 
   protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
     this.animationCameraTarget.copy(this.controls.target);
-
-    // Begin frame for centralized visibility manager (computes all visibility once)
-    this.visibilityManager?.beginFrame();
 
     if (!this.animationVisibilityContext) {
       this.animationVisibilityContext = {
