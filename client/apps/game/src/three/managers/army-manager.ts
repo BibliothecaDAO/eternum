@@ -30,7 +30,7 @@ import {
   resolveArmyMountTransforms,
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
-import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
@@ -1879,8 +1879,7 @@ export class ArmyManager {
         if (instanceData?.position) {
           this.tempCosmeticPosition.copy(instanceData.position);
         } else {
-          const worldPosition = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-          this.tempCosmeticPosition.copy(worldPosition);
+          this.getArmyWorldPositionInto(this.tempCosmeticPosition, army.hexCoords);
         }
 
         const baseTransform = {
@@ -1934,32 +1933,38 @@ export class ArmyManager {
       const isVisible = this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
         : (this.frustumManager?.isPointVisible(label.position) ?? true);
+      const wasVisible = label.userData.isVisible === true;
+      if (isVisible === wasVisible) {
+        return;
+      }
+
+      label.userData.isVisible = isVisible;
+      label.visible = isVisible;
+      label.element.style.display = isVisible ? "" : "none";
+
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);
-          label.element.style.display = "";
-
-          // Force update data when showing again to ensure it's fresh
-          const entityId = label.userData.entityId;
-          const army = this.armies.get(entityId);
-          if (army) {
-            // Use the internal update function directly to avoid the visibility check in the wrapper
-            updateArmyLabel(label.element, army, this.currentCameraView);
-          }
         }
-      } else {
-        if (label.parent === this.labelsGroup) {
-          this.labelsGroup.remove(label);
-          label.element.style.display = "none";
+
+        // Force update data when showing again to ensure it's fresh
+        const entityId = label.userData.entityId;
+        const army = this.armies.get(entityId);
+        if (army) {
+          // Use the internal update function directly to avoid the visibility check in the wrapper
+          updateArmyLabel(label.element, army, this.currentCameraView);
         }
       }
     });
   }
 
-  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {
+  private getArmyWorldPositionInto(out: Vector3, hexCoords: Position): Vector3 {
     const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
-    const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
-    return basePosition;
+    return getWorldPositionForHexCoordsInto(hexCoordsX, hexCoordsY, out);
+  }
+
+  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {
+    return this.getArmyWorldPositionInto(new Vector3(), hexCoords);
   };
 
   private toNumericId(entityId: ID): number {
@@ -2463,7 +2468,7 @@ ${
 
     // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
     // Only skip if label is currently visible - culled labels need update when shown
-    const isVisible = existingLabel.parent === this.labelsGroup;
+    const isVisible = this.labelsGroup.parent !== null && existingLabel.visible === true;
     if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }

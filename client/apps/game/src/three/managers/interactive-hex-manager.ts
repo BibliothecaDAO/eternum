@@ -270,7 +270,17 @@ export class InteractiveHexManager {
         if (!bucket) continue;
 
         bucket.forEach((hexString) => {
-          const [col, row] = hexString.split(",").map(Number);
+          let col: number;
+          let row: number;
+          const cachedIndex = this.hexKeyToIndex.get(hexString);
+          if (cachedIndex !== undefined) {
+            col = this.hexCoordsCache[cachedIndex * 2];
+            row = this.hexCoordsCache[cachedIndex * 2 + 1];
+          } else {
+            const parsed = hexString.split(",").map(Number);
+            col = parsed[0];
+            row = parsed[1];
+          }
           if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
             if (!this.visibleHexes.has(hexString)) {
               this.visibleHexes.add(hexString);

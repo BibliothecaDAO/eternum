@@ -1647,22 +1647,25 @@ export class StructureManager {
       const isVisible = this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
         : (this.frustumManager?.isPointVisible(label.position) ?? true);
+      const wasVisible = label.userData.isVisible === true;
+      if (isVisible === wasVisible) {
+        return;
+      }
+
+      label.userData.isVisible = isVisible;
+      label.visible = isVisible;
+      label.element.style.display = isVisible ? "" : "none";
+
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);
-          label.element.style.display = "";
-
-          // Force update data when showing again
-          const entityId = label.userData.entityId;
-          const structure = this.structures.getStructureByEntityId(entityId);
-          if (structure) {
-            updateStructureLabel(label.element, structure, this.currentCameraView);
-          }
         }
-      } else {
-        if (label.parent === this.labelsGroup) {
-          this.labelsGroup.remove(label);
-          label.element.style.display = "none";
+
+        // Force update data when showing again
+        const entityId = label.userData.entityId;
+        const structure = this.structures.getStructureByEntityId(entityId);
+        if (structure) {
+          updateStructureLabel(label.element, structure, this.currentCameraView);
         }
       }
     });
@@ -2238,7 +2241,7 @@ export class StructureManager {
 
     // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
     // Only skip if label is currently visible - culled labels need update when shown
-    const isVisible = existingLabel.parent === this.labelsGroup;
+    const isVisible = this.labelsGroup.parent !== null && existingLabel.visible === true;
     if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
