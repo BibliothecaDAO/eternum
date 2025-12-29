@@ -25,6 +25,12 @@ const BUILDING_NAME = "building";
 export const LAND_NAME = "land";
 export const SMALL_DETAILS_NAME = "small_details";
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
+const ANIMATION_INSTANCE_THRESHOLD_MEDIUM = 500;
+const ANIMATION_INSTANCE_THRESHOLD_LARGE = 1000;
+const ANIMATION_BUCKET_STRIDE_MEDIUM = 2;
+const ANIMATION_BUCKET_STRIDE_LARGE = 4;
+const ANIMATION_INTERVAL_MULTIPLIER_MEDIUM = 2;
+const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
 
 // Reusable matrices for instance transformations
 const instanceMatrix = new Matrix4();
@@ -61,6 +67,8 @@ export default class InstancedModel {
   private animationUpdateInterval = 1000 / 20; // 20 FPS for animations
   private lastWonderUpdate = 0;
   private wonderUpdateInterval = 1000 / 30; // 30 FPS for wonder rotation
+  private animationFrameOffset = 0;
+  private lastBucketStride = 1;
 
   // Batched animation optimization: group instances by time offset bucket
   private animationBuckets: Uint8Array | null = null;
@@ -357,6 +365,36 @@ export default class InstancedModel {
     return ((bucket + 0.5) / ANIMATION_BUCKETS) * 3;
   }
 
+  private getMaxInstanceCount(): number {
+    let maxCount = 0;
+    this.instancedMeshes.forEach((mesh) => {
+      if (mesh.count > maxCount) {
+        maxCount = mesh.count;
+      }
+    });
+    return maxCount;
+  }
+
+  private getAnimationUpdateIntervalMs(instanceCount: number): number {
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_LARGE) {
+      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_LARGE;
+    }
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_MEDIUM) {
+      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_MEDIUM;
+    }
+    return this.animationUpdateInterval;
+  }
+
+  private getBucketStride(instanceCount: number): number {
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_LARGE) {
+      return ANIMATION_BUCKET_STRIDE_LARGE;
+    }
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_MEDIUM) {
+      return ANIMATION_BUCKET_STRIDE_MEDIUM;
+    }
+    return 1;
+  }
+
   updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
     if (!this.shouldAnimate(visibility)) {
       return;
@@ -366,11 +404,21 @@ export default class InstancedModel {
     }
 
     const now = performance.now();
+    const maxInstanceCount = this.getMaxInstanceCount();
+    const interval = this.getAnimationUpdateIntervalMs(maxInstanceCount);
+    const bucketStride = this.getBucketStride(maxInstanceCount);
 
     // Frame limit animation updates to reduce GPU load
-    if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
+    if (now - this.lastAnimationUpdate < interval) {
       return;
     }
+
+    if (bucketStride !== this.lastBucketStride) {
+      this.animationFrameOffset = 0;
+      this.lastBucketStride = bucketStride;
+    }
+    const bucketOffset = this.animationFrameOffset;
+    this.animationFrameOffset = (this.animationFrameOffset + 1) % bucketStride;
 
     if (this.mixer && this.animation) {
       const time = now * 0.001;
@@ -408,7 +456,7 @@ export default class InstancedModel {
         }
 
         // Calculate weights for each bucket once, store in pre-allocated buffer
-        for (let b = 0; b < ANIMATION_BUCKETS; b++) {
+        for (let b = bucketOffset; b < ANIMATION_BUCKETS; b += bucketStride) {
           const bucketTime = time + this.getBucketTimeOffset(b);
           this.mixer!.setTime(bucketTime);
           const offset = b * morphCount;
@@ -424,7 +472,7 @@ export default class InstancedModel {
           const textureWidth = morphTexture.image.width;
 
           // OPTIMIZED: Batch by bucket for cache locality
-          for (let bucket = 0; bucket < ANIMATION_BUCKETS; bucket++) {
+          for (let bucket = bucketOffset; bucket < ANIMATION_BUCKETS; bucket += bucketStride) {
             const indices = this.bucketToIndices.get(bucket);
             if (!indices || indices.length === 0) continue;
 

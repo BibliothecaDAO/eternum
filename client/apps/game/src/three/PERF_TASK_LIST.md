@@ -32,26 +32,24 @@ Scope: Three.js client in `client/apps/game/src/three`
    - Files: `scenes/worldmap.tsx`, `scenes/hexagon-scene.ts`, `utils/centralized-visibility-manager.ts`
    - Plan: beginFrame is now called once at the start of scene update
 
-4. Biome animation scalability (morph texture updates)
+4. Biome animation scalability (morph texture updates) - Complete
    - Impact: High CPU/GPU reduction at scale
    - Complexity: High
    - Files: `managers/instanced-biome.tsx`, `managers/instanced-model.tsx`
-   - Plan: shader-driven animation with time uniform + per-instance phase, LOD by distance
+   - Plan: adaptive update interval + bucket time-slicing for large instance counts
 
-5. Visibility cache key allocations
+5. Visibility cache key allocations - Complete
    - Impact: Medium GC reduction in label-heavy scenes
    - Complexity: Medium
    - Files: `utils/centralized-visibility-manager.ts`
-   - Plan: use WeakMap keyed by Box3/Sphere/Vector3 or stable numeric ids
+   - Plan: switched to WeakMap caches keyed by Box3/Sphere/Vector3 with per-frame validation
 
-6. FX system consolidation
+6. FX system consolidation - Complete
    - Impact: Medium CPU reduction during combat spikes
    - Complexity: Medium
    - Files: `managers/fx-manager.ts`
-   - Plan:
-     - Move TroopDiffFXInstance off per-instance rAF into FXManager.update
-     - Throttle label text updates to 2-4 Hz or CSS animation
-     - Consider migrating common FX to BatchedFXSystem to reduce draw calls
+   - Plan: moved TroopDiffFXInstance onto FXManager.update; label text updates only when dot suffix changes
+   - Follow-up: consider migrating common FX to BatchedFXSystem to reduce draw calls
 
 7. Micro allocations in hot loops
    - Impact: Low but steady GC reduction
