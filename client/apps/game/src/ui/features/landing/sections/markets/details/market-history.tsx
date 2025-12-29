@@ -4,6 +4,7 @@ import type { Payload as TooltipPayload } from "recharts/types/component/Default
 import type { TooltipContentProps } from "recharts/types/component/Tooltip";
 
 import type { MarketClass } from "@/pm/class";
+import { PMChartSkeleton, PMErrorState } from "@/pm/components/loading";
 import { useMarketHistory } from "@/pm/hooks/markets/use-market-history";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@pm/ui";
 
@@ -117,7 +118,7 @@ const HeaderStats = ({
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {
-  const { chartData, chartConfig } = useMarketHistory(market, refreshKey);
+  const { chartData, chartConfig, isLoading, isError } = useMarketHistory(market, refreshKey);
 
   const [timeRange, setTimeRange] = useState<TimeRange>("ALL");
   const [focusedOutcome, setFocusedOutcome] = useState<string>("p0");
@@ -152,6 +153,16 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
   const focusedConfig = chartConfig[effectiveFocus as keyof typeof chartConfig];
   const focusedLabel = (focusedConfig?.label as string) || effectiveFocus;
   const focusedColor = focusedConfig?.color || "#888";
+
+  // Loading state
+  if (isLoading) {
+    return <PMChartSkeleton />;
+  }
+
+  // Error state
+  if (isError) {
+    return <PMErrorState message="Failed to load market history" />;
+  }
 
   // Empty state
   if (chartData.length === 0) {

@@ -1,25 +1,106 @@
 import { getContractByName } from "@dojoengine/core";
 import { type MarketFiltersParams, useMarkets } from "@pm/sdk";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, HStack, ScrollArea, VStack } from "@pm/ui";
-import { useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
+import type { TokenBalance } from "@dojoengine/torii-wasm";
 
+import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { MarketImage } from "./market-image";
 import { MarketOdds } from "./market-odds";
+import { MarketQuickStats } from "./market-quick-stats";
 import { MarketStatusBadge } from "./market-status-badge";
 import { MarketTimeline } from "./market-timeline";
-import { MarketQuickStats } from "./market-quick-stats";
-import { useMarketWatch } from "./use-market-watch";
+
+const PAGE_SIZE = 6;
+
+/**
+ * Memoized MarketCard component to prevent unnecessary rerenders
+ */
+const MarketCard = memo(function MarketCard({
+  market,
+  allBalances,
+}: {
+  market: MarketClass;
+  allBalances: TokenBalance[];
+}) {
+  const href = useMemo(() => {
+    try {
+      if (market?.market_id == null) return "#";
+      return `/markets/0x${BigInt(market.market_id).toString(16)}`;
+    } catch {
+      return "#";
+    }
+  }, [market.market_id]);
+
+  const isLinkable = href !== "#";
+
+  const titleContent = (
+    <HStack className="gap-3">
+      <MarketImage market={market} className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-sm" />
+      <div>{market.title || "Untitled market"}</div>
+    </HStack>
+  );
+
+  return (
+    <Card className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/60 p-3 transition hover:border-gold/60">
+      <CardHeader className="flex items-start justify-between gap-3 px-0">
+        <CardTitle className="flex-1">
+          {isLinkable ? (
+            <Link className="leading-normal hover:underline" to={href}>
+              {titleContent}
+            </Link>
+          ) : (
+            titleContent
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 px-0">
+        <VStack className="w-full">
+          <VStack className="w-auto items-end" />
+          <MarketQuickStats market={market} balances={allBalances} />
+        </VStack>
+
+        <ScrollArea className="h-[120px] w-full pr-2">
+          <MarketOdds market={market} selectable={false} />
+        </ScrollArea>
+
+        <CardDescription>
+          <VStack className="gap-3">
+            <HStack className="justify-center">
+              <MarketStatusBadge market={market} />
+            </HStack>
+            <MarketTimeline market={market} />
+          </VStack>
+        </CardDescription>
+      </CardContent>
+    </Card>
+  );
+});
 
 export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersParams }) {
-  const { markets } = useMarkets({ marketFilters });
-  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const offset = (currentPage - 1) * PAGE_SIZE;
+
+  const { markets, isFetching, isLoading, totalCount, refresh } = useMarkets({
+    marketFilters,
+    limit: PAGE_SIZE,
+    offset,
+  });
+
   const {
     config: { manifest },
   } = useDojoSdk();
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [marketFilters.status, marketFilters.type, marketFilters.oracle]);
 
   // Single subscription for all vault position balances - hoisted from MarketQuickStats
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
@@ -31,6 +112,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
     false,
   );
 
+  // Sort markets by created_at (newest first) - SQL already does this, but keeping for safety
   const sortedMarkets = useMemo(() => {
     const getCreatedAt = (value: unknown) => {
       const num = Number(value ?? 0);
@@ -43,97 +125,62 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
       .sort((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
   }, [markets]);
 
-  if (sortedMarkets.length === 0) {
+  // Calculate pagination info
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const startIndex = totalCount > 0 ? offset + 1 : 0;
+  const endIndex = Math.min(offset + sortedMarkets.length, totalCount);
+
+  if (sortedMarkets.length === 0 && !isFetching) {
     return <p className="text-sm text-gold/70">No markets are available yet.</p>;
   }
 
-  const nowSec = Math.floor(Date.now() / 1_000);
-
   return (
-    <VStack className="4xl:grid-cols-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {sortedMarkets.map((market, idx) => {
-        const href = (() => {
-          try {
-            if (market?.market_id == null) return "#";
-            return `/markets/0x${BigInt(market.market_id).toString(16)}`;
-          } catch {
-            return "#";
-          }
-        })();
-        const isLinkable = href !== "#";
+    <div className="flex flex-col gap-4">
+      {/* Results summary */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gold/70">
+        <span className="leading-tight">
+          {totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount} markets` : "No markets found"}
+        </span>
+        <div className="flex items-center gap-3">
+          {isFetching ? <span className="text-gold/50">Loading...</span> : null}
+          <RefreshButton
+            aria-label="Refresh markets"
+            isLoading={isFetching || isLoading}
+            onClick={refresh}
+            disabled={isFetching || isLoading}
+          />
+        </div>
+      </div>
 
-        const titleContent = (
-          <HStack className="gap-3">
-            <MarketImage market={market} className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-sm" />
+      {/* Markets grid */}
+      <VStack className="4xl:grid-cols-4 relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {sortedMarkets.map((market) => (
+          <MarketCard key={market.market_id?.toString() ?? Math.random()} market={market} allBalances={allBalances} />
+        ))}
+      </VStack>
 
-            <div>{market.title || "Untitled market"}</div>
-          </HStack>
-        );
-
-        return (
-          <Card
-            className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/60 p-3 transition hover:border-gold/60"
-            key={href !== "#" ? href : idx}
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center space-x-4 py-4">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1 || isFetching}
+            className="rounded bg-white/5 px-3 py-1 text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <CardHeader className="flex items-start justify-between gap-3 px-0">
-              <CardTitle className="flex-1">
-                {isLinkable ? (
-                  <Link className="leading-normal hover:underline" to={href}>
-                    {titleContent}
-                  </Link>
-                ) : (
-                  titleContent
-                )}
-              </CardTitle>
-              {/* {(() => {
-                const state = getWatchState(market);
-                const disabled = state.status === "offline";
-                const loading = state.status === "checking" || watchingMarketId === String(market.market_id);
-                return (
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    forceUppercase={false}
-                    className="gap-2"
-                    onClick={() => void watchMarket(market)}
-                    isLoading={loading}
-                    disabled={disabled}
-                    title={disabled ? "Game is offline" : undefined}
-                  >
-                    <Play className="h-4 w-4" />
-                    <span>Watch</span>
-                  </Button>
-                );
-              })()} */}
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 px-0">
-              <VStack className="w-full">
-                <VStack className="w-auto items-end">{/* <MarketTvl market={market} /> */}</VStack>
-                <MarketQuickStats market={market} balances={allBalances} />
-              </VStack>
-
-              <ScrollArea className="h-[120px] w-full pr-2">
-                <MarketOdds market={market} selectable={false} />
-              </ScrollArea>
-
-              <CardDescription>
-                <VStack className="gap-3">
-                  <HStack className="justify-center">
-                    <MarketStatusBadge market={market} />
-                  </HStack>
-                  {/* {!(nowSec >= market.start_at && nowSec < market.end_at) ? (
-                    <div className="rounded-sm border border-white/10 bg-white/5 px-3 py-2 text-center text-xs text-gold/80">
-                      Market closed to trades
-                    </div>
-                  ) : null} */}
-
-                  <MarketTimeline market={market} />
-                </VStack>
-              </CardDescription>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </VStack>
+            ←
+          </button>
+          <span className="text-sm text-gold">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages || isFetching}
+            className="rounded bg-white/5 px-3 py-1 text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            →
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

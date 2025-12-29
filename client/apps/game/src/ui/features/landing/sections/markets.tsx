@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
@@ -12,13 +13,24 @@ import {
   type MarketFiltersParams,
 } from "@pm/sdk";
 import { useAccount } from "@starknet-react/core";
-
 import { MarketFilters } from "./markets/market-filters";
 import { MARKET_TABS, TabButton, type MarketTab } from "./markets/market-tabs";
 import { MarketsLeaderboardView } from "./markets/markets-leaderboard-view";
 import { MarketsList } from "./markets/markets-list";
 import { PlayerMarketsView } from "./markets/player-markets-view";
 import { buildPlayerSummary, useMarketEventsSnapshot } from "./markets/use-market-stats";
+
+// QueryClient instance for PM - created outside component to avoid recreation
+const pmQueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000, // 30 seconds
+      gcTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: true,
+      retry: 2,
+    },
+  },
+});
 
 export const MARKET_FILTERS_ALL: MarketFiltersParams = {
   status: MarketStatusFilter.All,
@@ -29,11 +41,13 @@ export const MARKET_FILTERS_ALL: MarketFiltersParams = {
 export const MarketsProviders = ({ children }: { children: ReactNode }) => {
   const config = getPredictionMarketConfig();
   return (
-    <DojoSdkProviderInitialized toriiUrl={config.toriiUrl} worldAddress={config.worldAddress}>
-      <UserProvider>
-        <ControllersProvider>{children}</ControllersProvider>
-      </UserProvider>
-    </DojoSdkProviderInitialized>
+    <QueryClientProvider client={pmQueryClient}>
+      <DojoSdkProviderInitialized toriiUrl={config.toriiUrl} worldAddress={config.worldAddress}>
+        <UserProvider>
+          <ControllersProvider>{children}</ControllersProvider>
+        </UserProvider>
+      </DojoSdkProviderInitialized>
+    </QueryClientProvider>
   );
 };
 

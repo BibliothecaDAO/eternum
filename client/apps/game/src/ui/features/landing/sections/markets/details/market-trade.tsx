@@ -104,11 +104,21 @@ const TokenAmountInput = ({
 }) => {
   const { lordsBalance } = useUser();
 
+  const decimals = useMemo(() => Number(token?.decimals ?? 0), [token]);
   const balanceFormatted = useMemo(() => {
     if (!token) return "0";
-    const decimals = Number(token.decimals ?? 0);
     return formatUnits(lordsBalance, decimals, 4);
-  }, [lordsBalance, token]);
+  }, [lordsBalance, token, decimals]);
+  const balanceNum = useMemo(() => parseFloat(balanceFormatted.replace(/,/g, "")) || 0, [balanceFormatted]);
+
+  const addToAmount = (toAdd: number) => {
+    const current = parseFloat(amount) || 0;
+    const total = Math.min(current + toAdd, balanceNum);
+    setAmount(total.toString());
+  };
+
+  const quickAddButtonClass =
+    "rounded-sm border border-white/20 bg-white/5 px-1.5 py-[2px] text-[10px] font-semibold text-gold/80 transition hover:border-gold/60 hover:bg-gold/10 hover:text-gold";
 
   return (
     <div className="w-full rounded-md border border-white/10 bg-black/60 px-3 py-3 text-xs text-gold/70">
@@ -127,15 +137,43 @@ const TokenAmountInput = ({
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
-      <div className="mt-2 flex items-center justify-between text-[11px] text-gold/60">
-        <span>Balance: {balanceFormatted}</span>
-        <button
-          type="button"
-          className="rounded-sm border border-white/20 bg-white/5 px-2 py-[2px] text-[11px] font-semibold text-white transition hover:border-gold/60 hover:text-gold"
-          onClick={() => setAmount(balanceFormatted)}
-        >
-          MAX
-        </button>
+      {/* Fix flex overflow for button row in small containers */}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gold/60">
+        <span className="flex-shrink-0 truncate">Balance: {balanceFormatted}</span>
+        <div className="flex flex-wrap items-center gap-1 min-w-0">
+          <button
+            type="button"
+            className={quickAddButtonClass}
+            onClick={() => addToAmount(100)}
+            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+          >
+            +100
+          </button>
+          <button
+            type="button"
+            className={quickAddButtonClass}
+            onClick={() => addToAmount(1000)}
+            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+          >
+            +1k
+          </button>
+          <button
+            type="button"
+            className={quickAddButtonClass}
+            onClick={() => addToAmount(10000)}
+            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+          >
+            +10k
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-gold/40 bg-gold/10 px-2 py-[2px] text-[11px] font-semibold text-gold transition hover:border-gold/60 hover:bg-gold/20"
+            onClick={() => setAmount(balanceFormatted)}
+            disabled={balanceNum <= 0}
+          >
+            MAX
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -165,10 +203,13 @@ export function MarketTrade({
   market,
   selectedOutcome,
   setSelectedOutcome,
+  compact = false,
 }: {
   market: MarketClass;
   selectedOutcome?: MarketOutcome;
   setSelectedOutcome?: (e: MarketOutcome) => void;
+  /** When true, reduces padding and gaps for constrained layouts (e.g., sticky panels) */
+  compact?: boolean;
 }) {
   const {
     config: { manifest },
@@ -339,8 +380,10 @@ export function MarketTrade({
 
   return (
     <>
-      <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner text-white">
-        <VStack className="items-end gap-6">
+      <div
+        className={`w-full rounded-lg border border-white/10 bg-black/40 shadow-inner text-white ${compact ? "p-2" : "p-4"}`}
+      >
+        <VStack className={`items-end ${compact ? "gap-2" : "gap-6"}`}>
           <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
           <div className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-gold/70">
             <div className="flex items-center justify-between">
@@ -360,7 +403,7 @@ export function MarketTrade({
               </span>
             </div>
           </div>
-          <HStack className="justify-center">
+          <HStack className="justify-center w-full">
             {market.typBinary() && (
               <HStack className="w-full">
                 <Button
@@ -389,20 +432,41 @@ export function MarketTrade({
             )}
 
             {market.typCategorical() && (
-              <VStack className="w-full gap-2">
-                <div className="flex items-center justify-between rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-gold/70">
-                  <span>Selected outcome</span>
-                  <span className="text-white/90">
-                    {selectedOutcome?.name ? <MaybeController address={selectedOutcome.name} /> : "None"}
-                  </span>
+              <VStack className={`w-full ${compact ? "gap-2" : "gap-3"}`}>
+                <div
+                  className={`w-full overflow-hidden rounded-md border border-white/10 bg-white/5 ${compact ? "p-2" : "p-3"}`}
+                >
+                  <div className={`${compact ? "mb-1" : "mb-2"} text-[11px] uppercase tracking-[0.08em] text-gold/60`}>
+                    Selected Outcome
+                  </div>
+                  {selectedOutcome ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+                        <div className="h-2 w-2 flex-shrink-0 rounded-full bg-gold" />
+                        <div className="min-w-0 flex-1 truncate text-sm font-medium text-white">
+                          <MaybeController address={selectedOutcome.name} />
+                        </div>
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-2">
+                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-gold">
+                          {selectedOutcome.odds}%
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-gold/50">
+                      <div className="h-2 w-2 rounded-full border border-dashed border-gold/30" />
+                      <span>Click an outcome above to select</span>
+                    </div>
+                  )}
                 </div>
                 <Button
-                  className="w-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center gap-2"
+                  className="w-full bg-gold/90 text-black hover:bg-gold flex items-center justify-center gap-2 font-bold"
                   onClick={() => setIsDialogOpen(true)}
                   disabled={!selectedOutcome || isSubmitting}
                 >
                   {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {!selectedOutcome ? "Select an outcome" : isSubmitting ? "Submitting..." : "BUY"}
+                  {!selectedOutcome ? "Select an outcome to buy" : isSubmitting ? "Submitting..." : "BUY"}
                 </Button>
               </VStack>
             )}

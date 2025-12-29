@@ -57,6 +57,8 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
 
   const [vaultNumerators, setVaultNumerators] = useState<Array<VaultNumeratorEvent & { entityId: bigint }>>([]);
   const [vaultDenominators, setVaultDenominators] = useState<VaultDenominatorEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const query = useMemo(() => {
     return new HistoricalToriiQueryBuilder()
@@ -77,33 +79,41 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
 
   useEffect(() => {
     const initAsync = async () => {
-      const res = await sdk.getEventMessages({ query });
-      const items: StandardizedQueryResult<SchemaType> = res.getItems();
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await sdk.getEventMessages({ query });
+        const items: StandardizedQueryResult<SchemaType> = res.getItems();
 
-      const denominators = items
-        .flatMap((i) => {
-          if (i.models.pm.VaultDenominatorEvent) {
-            return [i.models.pm.VaultDenominatorEvent as VaultDenominatorEvent];
+        const denominators = items
+          .flatMap((i) => {
+            if (i.models.pm.VaultDenominatorEvent) {
+              return [i.models.pm.VaultDenominatorEvent as VaultDenominatorEvent];
+            }
+            return [];
+          })
+          .filter((event, idx, arr) => arr.findLastIndex((item) => item.timestamp === event.timestamp) === idx)
+          .sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+
+        const numerators = items.flatMap((i) => {
+          if (i.models.pm.VaultNumeratorEvent) {
+            return [
+              {
+                ...(i.models.pm.VaultNumeratorEvent as VaultNumeratorEvent),
+                entityId: BigInt(i.entityId),
+              },
+            ];
           }
           return [];
-        })
-        .filter((event, idx, arr) => arr.findLastIndex((item) => item.timestamp === event.timestamp) === idx)
-        .sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+        });
 
-      const numerators = items.flatMap((i) => {
-        if (i.models.pm.VaultNumeratorEvent) {
-          return [
-            {
-              ...(i.models.pm.VaultNumeratorEvent as VaultNumeratorEvent),
-              entityId: BigInt(i.entityId),
-            },
-          ];
-        }
-        return [];
-      });
-
-      setVaultDenominators(denominators);
-      setVaultNumerators(numerators);
+        setVaultDenominators(denominators);
+        setVaultNumerators(numerators);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Failed to load market history"));
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     void initAsync();
@@ -208,5 +218,8 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
   return {
     chartData,
     chartConfig,
+    isLoading,
+    isError: !!error,
+    error,
   };
 };

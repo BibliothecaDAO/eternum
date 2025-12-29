@@ -1,346 +1,264 @@
-import { ClauseBuilder, ToriiQueryBuilder, type SchemaType, type StandardizedQueryResult } from "@dojoengine/sdk";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { uint256 } from "starknet";
+/**
+ * useMarkets Hook - SQL-optimized implementation with server-side pagination
+ *
+ * This hook now uses SQL queries via Torii for better performance:
+ * - Server-side joins eliminate client-side map building
+ * - Server-side filtering for accurate pagination counts
+ * - Numerators fetched only for visible markets
+ * - React Query provides caching and deduplication
+ * - keepPreviousData prevents UI flicker during page transitions
+ */
 
-import { ConditionResolution, Market, MarketCreated, VaultDenominator, VaultNumerator } from "@/pm/bindings";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { CairoCustomEnum } from "starknet";
+
+import type { RegisteredToken } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
-import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useConfig } from "@/pm/providers";
-import { deepEqual, replaceAndFormat } from "@/pm/utils";
+import { replaceAndFormat } from "@/pm/utils";
 
-export interface MarketFiltersParams {
-  status: MarketStatusFilter;
-  type: MarketTypeFilter;
-  oracle: string;
-}
+import {
+  getPmSqlApi,
+  pmQueryKeys,
+  type MarketFiltersParams,
+  type MarketWithDetailsRow,
+  type VaultNumeratorRow,
+} from "../queries";
 
-export enum MarketStatusFilter {
-  All = "All",
-  Open = "Open",
-  Resolvable = "Resolvable",
-  Resolved = "Resolved",
-}
+// Re-export filter types for backwards compatibility
+export { MarketStatusFilter, MarketTypeFilter } from "../queries";
+export type { MarketFiltersParams } from "../queries";
 
-export enum MarketTypeFilter {
-  All = "All",
-  Binary = "Binary",
-  Categorical = "Categorical",
-}
+/**
+ * Build proper CairoCustomEnum for the market type field
+ * Converts ValueEq/Ranges values to BigInt for proper hex conversion
+ */
+function buildMarketTypeEnum(row: MarketWithDetailsRow): CairoCustomEnum {
+  if (row["typ.Binary"] !== null && row["typ.Binary"] !== undefined) {
+    return new CairoCustomEnum({ Binary: {} });
+  }
 
-export const useMarkets = ({ marketFilters }: { marketFilters: MarketFiltersParams }) => {
-  const { sdk } = useDojoSdk();
-  const { registeredOracles, registeredTokens, getRegisteredToken } = useConfig();
-  const [refreshNonce, setRefreshNonce] = useState(0);
-
-  const [rawMarkets, setRawMarkets] = useState<Market[]>([]);
-  const [vaultDenominators, setVaultDenominators] = useState<VaultDenominator[]>([]);
-  const [allVaultNumerators, setAllVaultNumerators] = useState<VaultNumerator[]>([]);
-  const [marketEvents, setMarketEvents] = useState<MarketCreated[]>([]);
-  const [conditionResolutions, setConditionResolutions] = useState<ConditionResolution[]>([]);
-  const [markets, setMarkets] = useState<MarketClass[]>([]);
-
-  const now = BigInt(Math.ceil(Date.now() / 1_000));
-
-  const statusClause = useMemo(() => {
-    switch (marketFilters.status) {
-      case MarketStatusFilter.All:
-        return new ClauseBuilder().where("pm-Market", "start_at", "Lt", {
-          type: "U64",
-          value: now,
-        });
-
-      case MarketStatusFilter.Open:
-        return new ClauseBuilder().compose().and([
-          new ClauseBuilder().where("pm-Market", "start_at", "Lt", {
-            type: "U64",
-            value: now,
-          }),
-          new ClauseBuilder().where("pm-Market", "resolve_at", "Gt", {
-            type: "U64",
-            value: now,
-          }),
-        ]);
-
-      case MarketStatusFilter.Resolvable:
-        return new ClauseBuilder().compose().and([
-          new ClauseBuilder().where("pm-Market", "resolve_at", "Lt", {
-            type: "U64",
-            value: now,
-          }),
-          new ClauseBuilder().where("pm-Market", "resolved_at", "Eq", {
-            type: "U64",
-            value: 0,
-          }),
-        ]);
-
-      case MarketStatusFilter.Resolved:
-        return new ClauseBuilder().where("pm-Market", "resolved_at", "Gt", {
-          type: "U64",
-          value: 0,
-        });
-    }
-  }, [marketFilters.status]);
-
-  const oracleClause = useMemo(() => {
-    if (marketFilters.oracle === "All") {
-      return undefined;
-    } else {
-      return new ClauseBuilder().where("pm-Market", "oracle", "Eq", marketFilters.oracle);
-    }
-  }, [marketFilters.oracle]);
-
-  const marketsQuery = useMemo(() => {
-    const clauses = [];
-
-    if (statusClause) {
-      clauses.push(statusClause);
-    }
-    if (oracleClause) {
-      clauses.push(oracleClause);
-    }
-
-    const query = new ToriiQueryBuilder()
-      .withEntityModels(["pm-Market", "pm-VaultDenominator"])
-      .withClause(new ClauseBuilder().compose().and(clauses).build())
-      .includeHashedKeys();
-
-    return query;
-  }, [statusClause, oracleClause]);
-
-  const allVaultNumeratorsQuery = useMemo(() => {
-    return new ToriiQueryBuilder()
-      .withEntityModels(["pm-VaultNumerator"])
-      .withClause(new ClauseBuilder().keys(["pm-VaultNumerator"], [undefined], "VariableLen").build())
-      .includeHashedKeys();
-  }, []);
-
-  const marketEventsQuery = useMemo(() => {
-    return new ToriiQueryBuilder()
-      .withEntityModels(["pm-MarketCreated"])
-      .withClause(new ClauseBuilder().keys(["pm-MarketCreated"], [undefined], "VariableLen").build())
-      .includeHashedKeys();
-  }, []);
-
-  const conditionResolutionsQuery = useMemo(() => {
-    if (!rawMarkets.length) {
-      return undefined;
-    }
-
-    const clauses = rawMarkets.map((market) => {
-      const conditionId_u256 = uint256.bnToUint256(market.condition_id);
-      const questionId_u256 = uint256.bnToUint256(market.question_id);
-
-      return new ClauseBuilder().keys(
-        ["pm-ConditionResolution"],
-        [
-          conditionId_u256.low.toString(),
-          conditionId_u256.high.toString(),
-          market.oracle.toString(),
-          questionId_u256.low.toString(),
-          questionId_u256.high.toString(),
-        ],
-        "FixedLen",
-      );
+  // Categorical market - need to check for nested type
+  if (row["typ.Categorical.ValueEq"]) {
+    const rawValueEq = JSON.parse(row["typ.Categorical.ValueEq"]);
+    // Convert values to BigInt for proper hex conversion in getMarketTextOutcomes
+    const valueEq = rawValueEq.map((v: string | number) => BigInt(v));
+    return new CairoCustomEnum({
+      Categorical: new CairoCustomEnum({ ValueEq: valueEq }),
     });
+  }
 
-    return new ToriiQueryBuilder()
-      .withEntityModels(["pm-ConditionResolution"])
-      .withClause(new ClauseBuilder().compose().or(clauses).build())
-      .withLimit(10_000)
-      .includeHashedKeys();
-  }, [rawMarkets]);
+  if (row["typ.Categorical.Ranges"]) {
+    const rawRanges = JSON.parse(row["typ.Categorical.Ranges"]);
+    // Convert values to BigInt for proper formatting
+    const ranges = rawRanges.map((v: string | number) => BigInt(v));
+    return new CairoCustomEnum({
+      Categorical: new CairoCustomEnum({ Ranges: ranges }),
+    });
+  }
 
-  const refresh = useCallback(() => setRefreshNonce((prev) => prev + 1), []);
+  // Fallback for categorical without nested data
+  return new CairoCustomEnum({
+    Categorical: new CairoCustomEnum({ ValueEq: [] }),
+  });
+}
 
-  useEffect(() => {
-    const initAsync = async () => {
-      const entitiesResponse = await sdk.getEntities({ query: marketsQuery });
-      const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
+/**
+ * Transform SQL row data into MarketClass instances
+ */
+function transformToMarketClass(
+  row: MarketWithDetailsRow,
+  numeratorsByMarketId: Map<string, VaultNumeratorRow[]>,
+  getRegisteredToken: (address: string | undefined) => RegisteredToken,
+): MarketClass | null {
+  if (!row.title) return null;
 
-      const markets = entities.flatMap((i) => {
-        const item = i.models.pm.Market as Market;
-        return item ? [item] : [];
-      });
+  const collateralToken = getRegisteredToken(row.collateral_token);
 
-      const vaultDenominators = entities.flatMap((i) => {
-        const item = i.models.pm.VaultDenominator as VaultDenominator;
-        return item ? [item] : [];
-      });
+  const numerators = numeratorsByMarketId.get(row.market_id) ?? [];
 
-      setRawMarkets(markets);
-      setVaultDenominators(vaultDenominators);
-    };
+  // Parse oracle_params from JSON string if present
+  const oracleParams = row.oracle_params ? JSON.parse(row.oracle_params) : [];
 
-    initAsync();
-  }, [marketsQuery, refreshNonce, sdk]);
+  // Helper to safely get nested row values (column names use dot notation in SQL results)
+  const rowAny = row as unknown as Record<string, string | undefined>;
+  const getRowValue = (key: string): string | undefined => rowAny[key];
 
-  useEffect(() => {
-    const initAsync = async () => {
-      const entitiesResponse = await sdk.getEntities({ query: allVaultNumeratorsQuery });
-      const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
+  // Build the MarketModelVault structure with fee curves
+  // Column names in Torii SQL follow the pattern: "model.Vault.fee_curve.Range.start"
+  const vaultModel = {
+    initial_repartition: getRowValue("model.Vault.initial_repartition")
+      ? JSON.parse(getRowValue("model.Vault.initial_repartition")!)
+      : [],
+    funding_amount: BigInt(getRowValue("model.Vault.funding_amount") ?? 0),
+    fee_curve: new CairoCustomEnum({
+      Range: {
+        start: BigInt(getRowValue("model.Vault.fee_curve.Range.start") ?? 0),
+        end: BigInt(getRowValue("model.Vault.fee_curve.Range.end") ?? 0),
+      },
+    }),
+    fee_share_curve: new CairoCustomEnum({
+      Range: {
+        start: BigInt(getRowValue("model.Vault.fee_share_curve.Range.start") ?? 0),
+        end: BigInt(getRowValue("model.Vault.fee_share_curve.Range.end") ?? 0),
+      },
+    }),
+  };
 
-      const vaultNumerators = entities.flatMap((i) => {
-        const item = i.models.pm.VaultNumerator as VaultNumerator;
-        return item ? [item] : [];
-      });
+  // Build the market object matching the expected structure
+  const market = {
+    market_id: BigInt(row.market_id),
+    creator: row.creator,
+    created_at: BigInt(row.created_at),
+    question_id: BigInt(row.question_id),
+    condition_id: BigInt(row.condition_id),
+    oracle: row.oracle,
+    outcome_slot_count: row.outcome_slot_count,
+    collateral_token: row.collateral_token,
+    model: new CairoCustomEnum({ Vault: vaultModel }),
+    typ: buildMarketTypeEnum(row),
+    oracle_params: oracleParams,
+    oracle_extra_params: [],
+    oracle_value_type: row.oracle_value_type,
+    start_at: BigInt(row.start_at),
+    end_at: BigInt(row.end_at),
+    resolve_at: BigInt(row.resolve_at),
+    resolved_at: BigInt(row.resolved_at),
+    oracle_fee: row.oracle_fee,
+    creator_fee: row.creator_fee,
+  };
 
-      setAllVaultNumerators(vaultNumerators);
-    };
+  const marketCreated = {
+    market_id: BigInt(row.market_id),
+    title: replaceAndFormat(row.title),
+    terms: replaceAndFormat(row.terms ?? ""),
+    position_ids: row.position_ids ? JSON.parse(row.position_ids) : [],
+  };
 
-    initAsync();
-  }, [allVaultNumeratorsQuery, refreshNonce, sdk]);
+  const vaultDenominator = row.denominator
+    ? { market_id: BigInt(row.market_id), value: BigInt(row.denominator) }
+    : undefined;
 
-  useEffect(() => {
-    const fetchMarketEvents = async () => {
-      try {
-        const entitiesResponse = await sdk.getEventMessages({ query: marketEventsQuery });
-        const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
+  const vaultNumerators = numerators.map((n) => ({
+    market_id: BigInt(n.market_id),
+    index: n.index,
+    value: BigInt(n.value),
+  }));
 
-        const events = entities.flatMap((i) => {
-          const item = i.models.pm.MarketCreated as MarketCreated;
-          return item ? [item] : [];
-        });
+  return new MarketClass({
+    market: market as never,
+    marketCreated: marketCreated as never,
+    collateralToken,
+    vaultDenominator: vaultDenominator as never,
+    vaultNumerators: vaultNumerators as never[],
+  });
+}
 
-        setMarketEvents(events);
-      } catch (error) {
-        console.error("[pm-sdk] Failed to fetch market events", error);
-      }
-    };
+interface UseMarketsOptions {
+  marketFilters: MarketFiltersParams;
+  limit?: number;
+  offset?: number;
+}
 
-    void fetchMarketEvents();
-  }, [sdk, marketEventsQuery, refreshNonce]);
+/**
+ * Hook to fetch markets using SQL queries for optimized performance
+ *
+ * Benefits over the old SDK-based implementation:
+ * - Server-side joins (no client-side map building)
+ * - Server-side filtering for accurate pagination counts
+ * - Fetches numerators only for visible markets
+ * - React Query caching (30s staleTime, 5min gcTime)
+ * - Automatic request deduplication
+ * - keepPreviousData prevents UI flicker during page transitions
+ */
+export const useMarkets = ({ marketFilters, limit = 25, offset = 0 }: UseMarketsOptions) => {
+  const { registeredTokens, getRegisteredToken } = useConfig();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!conditionResolutionsQuery) {
-      setConditionResolutions([]);
-      return;
-    }
+  const now = BigInt(Math.ceil(Date.now() / 1000));
 
-    const fetchConditionResolutions = async () => {
-      try {
-        const entitiesResponse = await sdk.getEventMessages({ query: conditionResolutionsQuery });
-        const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
+  // Fetch markets with pre-joined details via SQL (with server-side filtering)
+  const marketsQuery = useQuery({
+    queryKey: pmQueryKeys.marketsListWithPagination(marketFilters, Math.floor(offset / limit), limit),
+    queryFn: async () => {
+      const api = getPmSqlApi();
+      return api.fetchMarketsWithDetails(marketFilters, Number(now), limit, offset);
+    },
+    enabled: registeredTokens.length > 0,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: keepPreviousData, // Prevents UI flicker during page transitions
+  });
 
-        const resolutions = entities.flatMap((i) => {
-          const item = i.models.pm.ConditionResolution as ConditionResolution;
-          return item ? [item] : [];
-        });
+  // Fetch total count for pagination (with same filters)
+  const countQuery = useQuery({
+    queryKey: pmQueryKeys.marketsCount(marketFilters),
+    queryFn: async () => {
+      const api = getPmSqlApi();
+      return api.fetchMarketsCount(marketFilters, Number(now));
+    },
+    enabled: registeredTokens.length > 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
 
-        setConditionResolutions(resolutions);
-      } catch (error) {
-        console.error("[pm-sdk] Failed to fetch condition resolutions", error);
-      }
-    };
+  // Extract market IDs from fetched results
+  const marketIds = useMemo(() => {
+    if (!marketsQuery.data) return [];
+    return marketsQuery.data.map((m) => m.market_id);
+  }, [marketsQuery.data]);
 
-    void fetchConditionResolutions();
-  }, [conditionResolutionsQuery, sdk, refreshNonce]);
+  // Fetch vault numerators only for visible markets (not all 10,000+)
+  const numeratorsQuery = useQuery({
+    queryKey: pmQueryKeys.marketNumerators(marketIds),
+    queryFn: async () => {
+      const api = getPmSqlApi();
+      return api.fetchVaultNumeratorsByMarkets(marketIds);
+    },
+    enabled: marketIds.length > 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
 
-  // Build lookup maps for O(1) access instead of O(n) finds
-  // Use string keys since market_id is BigNumberish
-  const marketEventsByIdMap = useMemo(() => {
-    const map = new Map<string, (typeof marketEvents)[number]>();
-    for (const event of marketEvents) {
-      map.set(String(event.market_id), {
-        ...event,
-        title: replaceAndFormat(event.title),
-        terms: replaceAndFormat(event.terms),
-      });
-    }
-    return map;
-  }, [marketEvents]);
+  // Build numerators lookup map (O(n) once, not per market)
+  const numeratorsByMarketId = useMemo(() => {
+    const map = new Map<string, VaultNumeratorRow[]>();
+    if (!numeratorsQuery.data) return map;
 
-  const vaultDenominatorByMarketIdMap = useMemo(
-    () => new Map(vaultDenominators.map((d) => [String(d.market_id), d])),
-    [vaultDenominators],
-  );
-
-  const vaultNumeratorsByMarketIdMap = useMemo(() => {
-    const map = new Map<string, VaultNumerator[]>();
-    for (const n of allVaultNumerators) {
-      const key = String(n.market_id);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(n);
+    for (const n of numeratorsQuery.data) {
+      if (!map.has(n.market_id)) map.set(n.market_id, []);
+      map.get(n.market_id)!.push(n);
     }
     // Sort each group by index
     for (const arr of map.values()) {
-      arr.sort((a, b) => Number(a.index) - Number(b.index));
+      arr.sort((a, b) => a.index - b.index);
     }
     return map;
-  }, [allVaultNumerators]);
+  }, [numeratorsQuery.data]);
 
-  const conditionResolutionByKeyMap = useMemo(() => {
-    const map = new Map<string, (typeof conditionResolutions)[number]>();
-    for (const r of conditionResolutions) {
-      // Create a composite key for condition resolution lookup
-      const key = `${r.condition_id}-${r.question_id}-${r.oracle}`;
-      map.set(key, r);
-    }
-    return map;
-  }, [conditionResolutions]);
+  // Transform markets (filtering now done server-side)
+  const markets = useMemo(() => {
+    if (!marketsQuery.data || !registeredTokens.length) return [];
 
-  useEffect(() => {
-    if (!registeredOracles || registeredOracles.length === 0) return;
-    if (!registeredTokens || registeredTokens.length === 0) return;
+    return marketsQuery.data
+      .map((row) => transformToMarketClass(row, numeratorsByMarketId, getRegisteredToken))
+      .filter((m): m is MarketClass => m !== null);
+  }, [marketsQuery.data, numeratorsByMarketId, registeredTokens, getRegisteredToken]);
 
-    if (!rawMarkets) return;
-
-    const parsedMarkets = rawMarkets
-      .filter((market: Market) => {
-        switch (marketFilters.type) {
-          case MarketTypeFilter.All:
-            return true;
-          case MarketTypeFilter.Binary:
-            return market.typ?.variant?.["Binary"];
-          case MarketTypeFilter.Categorical:
-            return market.typ?.variant?.["Categorical"];
-          default:
-            return false;
-        }
-      })
-      .flatMap((market: Market) => {
-        // O(1) lookups instead of O(n) finds - use String keys
-        const marketIdKey = String(market.market_id);
-        const marketCreated = marketEventsByIdMap.get(marketIdKey);
-        const vaultDenominator = vaultDenominatorByMarketIdMap.get(marketIdKey);
-        const vaultNumerators = vaultNumeratorsByMarketIdMap.get(marketIdKey) ?? [];
-
-        // Composite key lookup for condition resolution
-        const conditionKey = `${market.condition_id}-${market.question_id}-${market.oracle}`;
-        const conditionResolution = conditionResolutionByKeyMap.get(conditionKey);
-
-        if (!market || !marketCreated) return [];
-        const collateralToken = getRegisteredToken(market.collateral_token);
-
-        const value = new MarketClass({
-          market,
-          marketCreated,
-          collateralToken,
-          vaultDenominator,
-          vaultNumerators,
-          conditionResolution,
-        });
-
-        return [value];
-      });
-
-    if (!deepEqual(markets, parsedMarkets)) {
-      setMarkets(parsedMarkets);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    rawMarkets,
-    registeredOracles,
-    registeredTokens,
-    marketEventsByIdMap,
-    vaultDenominatorByMarketIdMap,
-    vaultNumeratorsByMarketIdMap,
-    conditionResolutionByKeyMap,
-    marketFilters.type,
-    getRegisteredToken,
-  ]);
+  // Refresh function that invalidates the query cache
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: pmQueryKeys.markets() });
+  };
 
   return {
     markets,
     refresh,
+    // Loading and error states
+    isLoading: marketsQuery.isLoading || numeratorsQuery.isLoading,
+    isError: marketsQuery.isError || numeratorsQuery.isError,
+    // Pagination metadata
+    isFetching: marketsQuery.isFetching, // True during page transitions (different from isLoading)
+    totalCount: countQuery.data ?? 0,
   };
 };
