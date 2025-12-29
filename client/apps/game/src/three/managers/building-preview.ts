@@ -114,10 +114,14 @@ export class BuildingPreview {
 
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
-      if (!this.currentHexHovered || !this.currentHexHovered.equals(position)) {
+      if (!this.currentHexHovered) {
+        this.currentHexHovered = new THREE.Vector3().copy(position);
         // AudioManager handles muted state internally
         this.hoverSound.play();
-        this.currentHexHovered = position;
+      } else if (!this.currentHexHovered.equals(position)) {
+        // AudioManager handles muted state internally
+        this.hoverSound.play();
+        this.currentHexHovered.copy(position);
       }
       const { buildingGroup, buildingType } = this.getBuildingType();
       const model = this.getBuildingModel(buildingGroup, buildingType as BuildingType | ResourceMiningTypes);

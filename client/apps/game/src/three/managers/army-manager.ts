@@ -1790,6 +1790,18 @@ export class ArmyManager {
       return;
     }
 
+    let pointsBatchStarted = false;
+    const startPointsBatch = () => {
+      if (!hasPointsRenderers || pointsBatchStarted || !this.pointsRenderers) {
+        return;
+      }
+      pointsBatchStarted = true;
+      this.pointsRenderers.player.beginBatch();
+      this.pointsRenderers.enemy.beginBatch();
+      this.pointsRenderers.ally.beginBatch();
+      this.pointsRenderers.agent.beginBatch();
+    };
+
     // Single pass over visible armies
     for (let i = 0; i < this.visibleArmies.length; i++) {
       const army = this.visibleArmies[i];
@@ -1798,6 +1810,7 @@ export class ArmyManager {
 
       // 1. Update point icon positions for moving armies
       if (hasPointsRenderers && instanceData?.isMoving) {
+        startPointsBatch();
         const iconPosition = this.tempIconPosition.copy(instanceData.position);
         iconPosition.y += 2.1; // Match CSS2D label height
 
@@ -1857,6 +1870,13 @@ export class ArmyManager {
           }
         }
       }
+    }
+
+    if (pointsBatchStarted && this.pointsRenderers) {
+      this.pointsRenderers.player.endBatch();
+      this.pointsRenderers.enemy.endBatch();
+      this.pointsRenderers.ally.endBatch();
+      this.pointsRenderers.agent.endBatch();
     }
   }
 

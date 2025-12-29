@@ -41,6 +41,11 @@ export class InteractiveHexManager {
   // Map from hex string key to index in the coords cache
   private hexKeyToIndex: Map<string, number> = new Map();
 
+  // Visible hex cache to avoid per-frame string parsing in renderHexes
+  private visibleHexCoordsCache: Int32Array = new Int32Array(0);
+  private visibleHexCoordsCount: number = 0;
+  private visibleHexCoordsCapacity: number = 0;
+
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.hoverAura = new Aura();
@@ -124,7 +129,7 @@ export class InteractiveHexManager {
           this.hoverHexManager.hideHover();
         }
       }
-      return { hexCoords: hoveredHex.hexCoords, position: hoveredHex.position.clone() };
+      return hoveredHex;
     }
 
     // Hide both hover effects when not hovering
@@ -220,9 +225,30 @@ export class InteractiveHexManager {
     this.hexCoordsCount++;
   }
 
+  /**
+   * Cache visible hex coordinates for fast render iteration.
+   */
+  private addToVisibleHexCoordsCache(col: number, row: number): void {
+    if (this.visibleHexCoordsCount >= this.visibleHexCoordsCapacity) {
+      const newCapacity = Math.max(1024, this.visibleHexCoordsCapacity * 2);
+      const newCache = new Int32Array(newCapacity * 2);
+      if (this.visibleHexCoordsCache.length > 0) {
+        newCache.set(this.visibleHexCoordsCache);
+      }
+      this.visibleHexCoordsCache = newCache;
+      this.visibleHexCoordsCapacity = newCapacity;
+    }
+
+    const idx = this.visibleHexCoordsCount;
+    this.visibleHexCoordsCache[idx * 2] = col;
+    this.visibleHexCoordsCache[idx * 2 + 1] = row;
+    this.visibleHexCoordsCount++;
+  }
+
   // Filter visible hexes for the current chunk
   updateVisibleHexes(startRow: number, startCol: number, width: number, height: number) {
     this.visibleHexes.clear();
+    this.visibleHexCoordsCount = 0;
 
     // Calculate chunk boundaries
     const halfWidth = Math.max(0, width) / 2;
@@ -246,14 +272,17 @@ export class InteractiveHexManager {
         bucket.forEach((hexString) => {
           const [col, row] = hexString.split(",").map(Number);
           if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
-            this.visibleHexes.add(hexString);
+            if (!this.visibleHexes.has(hexString)) {
+              this.visibleHexes.add(hexString);
+              this.addToVisibleHexCoordsCache(col, row);
+            }
           }
         });
       }
     }
 
     const capacityHint = Math.max(1, Math.ceil(width) * Math.ceil(height));
-    this.ensureInstanceMeshCapacity(Math.max(capacityHint, this.visibleHexes.size));
+    this.ensureInstanceMeshCapacity(Math.max(capacityHint, this.visibleHexCoordsCount));
 
     // Render only the visible hexes
     this.renderHexes();
@@ -263,6 +292,7 @@ export class InteractiveHexManager {
   clearHexes() {
     this.allHexes.clear();
     this.visibleHexes.clear();
+    this.visibleHexCoordsCount = 0;
     this.hexBuckets.clear();
     this.isRenderingAllHexes = false;
 
@@ -351,7 +381,7 @@ export class InteractiveHexManager {
       return;
     }
 
-    const instanceCount = this.visibleHexes.size;
+    const instanceCount = this.visibleHexCoordsCount;
     const mesh = this.instanceMesh;
     const previousCount = mesh.count;
     mesh.count = instanceCount;
@@ -365,16 +395,15 @@ export class InteractiveHexManager {
     }
 
     PerformanceMonitor.begin("renderHexes.setMatrices");
-    let index = 0;
-    this.visibleHexes.forEach((hexString) => {
-      const [col, row] = hexString.split(",").map(Number);
-      const position = getWorldPositionForHex({ col, row });
-      this.dummy.position.set(position.x, INTERACTIVE_HEX_Y, position.z);
+    for (let i = 0; i < instanceCount; i++) {
+      const col = this.visibleHexCoordsCache[i * 2];
+      const row = this.visibleHexCoordsCache[i * 2 + 1];
+      getWorldPositionForHexCoordsInto(col, row, this.position);
+      this.dummy.position.set(this.position.x, INTERACTIVE_HEX_Y, this.position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
-      mesh.setMatrixAt(index, this.dummy.matrix);
-      index++;
-    });
+      mesh.setMatrixAt(i, this.dummy.matrix);
+    }
     PerformanceMonitor.end("renderHexes.setMatrices");
 
     mesh.instanceMatrix.needsUpdate = true;
@@ -473,6 +502,9 @@ export class InteractiveHexManager {
     this.hexCoordsCount = 0;
     this.hexCoordsCapacity = 0;
     this.hexKeyToIndex.clear();
+    this.visibleHexCoordsCache = new Int32Array(0);
+    this.visibleHexCoordsCount = 0;
+    this.visibleHexCoordsCapacity = 0;
 
     console.log("InteractiveHexManager: Destroyed and cleaned up");
   }
