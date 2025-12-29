@@ -118,6 +118,7 @@ export class ArmyManager {
   private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: RelicFxHandle }>> = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
+  private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
     enemy: PointsLabelRenderer;
@@ -1468,6 +1469,7 @@ export class ArmyManager {
     if (!path || path.length === 0) {
       // If no path is found, just teleport the army to the target position
       this.armies.set(entityId, { ...armyData, hexCoords });
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1475,6 +1477,7 @@ export class ArmyManager {
       this.armies.set(entityId, { ...armyData, hexCoords });
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1504,6 +1507,7 @@ export class ArmyManager {
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
       // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1515,6 +1519,7 @@ export class ArmyManager {
       this.cleanupMovementSourceBucket(entityId);
       // Remove path visualization
       this.pathRenderer.removePath(numericEntityId);
+      this.runMovementCompleteListeners(numericEntityId);
     });
 
     // Don't remove relic effects during movement - they will follow the army
@@ -1605,6 +1610,7 @@ export class ArmyManager {
 
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+    this.runMovementCompleteListeners(numericEntityId);
     this.lastKnownVisibleHexes.delete(entityId);
 
     // Remove path visualization
@@ -1739,8 +1745,46 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
+  public onMovementComplete(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementCompleteListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementCompleteListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementCompleteListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementCompleteListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public hasMovingArmies(): boolean {
     return this.armyModel.hasMovingInstances();
+  }
+
+  private runMovementCompleteListeners(entityId: number): void {
+    const listeners = this.movementCompleteListeners.get(entityId);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    this.movementCompleteListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement complete listener failed", error);
+      }
+    });
   }
 
   update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
@@ -2667,6 +2711,7 @@ ${
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.chunkToArmies.clear();
+    this.movementCompleteListeners.clear();
 
     // Clear path visualization
     this.pathRenderer.clearAll();

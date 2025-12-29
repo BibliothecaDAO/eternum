@@ -336,6 +336,7 @@ export default class WorldmapScene extends HexagonScene {
   private readonly hexGridMinBatch = 120;
   private readonly hexGridMaxBatch = 900;
   private travelEffects: Map<string, () => void> = new Map();
+  private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void }> = new Map();
   private hasInitialized = false;
   private initialSetupPromise: Promise<void> | null = null;
   private cancelHexGridComputation?: () => void;
@@ -1400,7 +1401,11 @@ export default class WorldmapScene extends HexagonScene {
       const existingEffect = this.travelEffects.get(key);
       if (existingEffect) {
         existingEffect();
-        this.travelEffects.delete(key);
+      }
+
+      const existingByEntity = this.travelEffectsByEntity.get(selectedEntityId);
+      if (existingByEntity) {
+        existingByEntity.cleanup();
       }
 
       const { end } = this.fxManager.playFxAtCoords(
@@ -1413,16 +1418,30 @@ export default class WorldmapScene extends HexagonScene {
         true,
       );
 
-      // Store the end function with the hex coordinates as key
-      this.travelEffects.set(key, end);
-
+      let cleaned = false;
+      let unsubscribe: (() => void) | undefined;
       const cleanup = () => {
-        const endEffect = this.travelEffects.get(key);
-        if (endEffect) {
-          endEffect();
-          this.travelEffects.delete(key);
+        if (cleaned) return;
+        cleaned = true;
+        end();
+        this.travelEffects.delete(key);
+        unsubscribe?.();
+        unsubscribe = undefined;
+
+        const tracked = this.travelEffectsByEntity.get(selectedEntityId);
+        if (tracked?.key === key) {
+          this.travelEffectsByEntity.delete(selectedEntityId);
         }
       };
+
+      // Store the cleanup function with the hex coordinates as key
+      this.travelEffects.set(key, cleanup);
+
+      if (isExplored) {
+        unsubscribe = this.armyManager.onMovementComplete(selectedEntityId, cleanup);
+      }
+
+      this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup });
 
       // Mark army as having pending movement transaction
       this.pendingArmyMovements.add(selectedEntityId);
@@ -1434,7 +1453,9 @@ export default class WorldmapScene extends HexagonScene {
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
           // Transaction submitted successfully, cleanup visual effects
-          cleanup();
+          if (!isExplored) {
+            cleanup();
+          }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
@@ -2272,7 +2293,6 @@ export default class WorldmapScene extends HexagonScene {
     const endCompass = this.travelEffects.get(key);
     if (endCompass) {
       endCompass();
-      this.travelEffects.delete(key);
     }
 
     if (removeExplored) {
