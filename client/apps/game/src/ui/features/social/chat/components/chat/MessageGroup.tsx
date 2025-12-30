@@ -10,6 +10,21 @@ type MessagePart = {
   content: string | { x: number; y: number };
 };
 
+const formatSenderLabel = (senderId: string, senderUsername?: string) => {
+  if (senderUsername) {
+    return { label: senderUsername, title: undefined };
+  }
+  const trimmed = senderId?.trim() ?? "";
+  if (!trimmed) {
+    return { label: "Unknown", title: undefined };
+  }
+  if (trimmed.length <= 12) {
+    return { label: trimmed, title: undefined };
+  }
+  const label = `${trimmed.slice(0, 6)}...${trimmed.slice(-4)}`;
+  return { label, title: trimmed };
+};
+
 // Helper function to detect coordinates in message and split message into parts
 const processMessage = (message: string): MessagePart[] => {
   const parts: MessagePart[] = [];
@@ -94,6 +109,10 @@ const MessageGroupComponent = React.memo(
     userId: string;
     selectRecipient: (userId: string) => void;
   }) => {
+    const firstMessage = group.messages[0];
+    const isSelf = group.senderId === userId;
+    const { label: senderLabel, title: senderTitle } = formatSenderLabel(group.senderId, group.senderUsername);
+    const displayName = isSelf ? "You" : senderLabel;
     return (
       <div className="message-group space-y-0.5">
         {group.messages.map((msg, index) => {
@@ -103,37 +122,38 @@ const MessageGroupComponent = React.memo(
               key={msg.id}
               className={`text-sm group hover:bg-gold/5 transition-colors duration-200 ${index === 0 ? "mt-2" : ""}`}
             >
-              <div className="flex items-start gap-1">
-                <span className="text-white/20 text-xs inline-block w-[34px] text-right shrink-0">
-                  {new Date(msg.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  })}
-                </span>
-                <div className="flex-1 min-w-0">
+              {index === 0 && firstMessage && (
+                <div className="flex items-center gap-2">
+                  <span className="text-white/20 text-xs inline-block w-[34px] text-right shrink-0">
+                    {new Date(firstMessage.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    })}
+                  </span>
                   <span
+                    title={!isSelf ? senderTitle : undefined}
                     className={`font-bold px-1.5 py-0.5 rounded ${
-                      msg.senderId === userId
+                      isSelf
                         ? "text-orange-400 bg-orange-400/10"
                         : "text-orange-300 hover:text-orange-200 hover:bg-orange-300/10 cursor-pointer"
                     } transition-colors duration-200`}
-                    onClick={() => msg.senderId !== userId && selectRecipient(msg.senderId)}
+                    onClick={() => !isSelf && selectRecipient(group.senderId)}
                   >
-                    {msg.senderId === userId ? "You" : group.senderUsername || msg.senderId}
-                  </span>
-                  <span className="break-words text-white/90 ml-1">
-                    {messageParts.map((part, i) => (
-                      <React.Fragment key={i}>
-                        {part.type === "text" ? (
-                          <>{part.content}</>
-                        ) : (
-                          <CoordinateNavButton coordinates={part.content as { x: number; y: number }} />
-                        )}
-                      </React.Fragment>
-                    ))}
+                    {displayName}
                   </span>
                 </div>
+              )}
+              <div className="pl-[42px] break-words text-white/90">
+                {messageParts.map((part, i) => (
+                  <React.Fragment key={i}>
+                    {part.type === "text" ? (
+                      <>{part.content}</>
+                    ) : (
+                      <CoordinateNavButton coordinates={part.content as { x: number; y: number }} />
+                    )}
+                  </React.Fragment>
+                ))}
               </div>
             </div>
           );
