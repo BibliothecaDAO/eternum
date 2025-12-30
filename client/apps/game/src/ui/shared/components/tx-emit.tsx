@@ -108,6 +108,13 @@ const getTxMessage = (type: TransactionType) => {
   }
 };
 
+type TransactionFailurePayload = {
+  message?: string;
+  type?: TransactionType;
+  transactionCount?: number;
+  transactionHash?: string;
+};
+
 export function TransactionNotification() {
   const {
     setup: {
@@ -130,9 +137,26 @@ export function TransactionNotification() {
       toast("Completed Action", { description: description + txCount });
     };
 
-    const handleTransactionFailed = (error: string) => {
-      console.error("Transaction failed:", error);
-      toast("❌ Transaction failed", { description: error });
+    const handleTransactionFailed = (error: string | TransactionFailurePayload, meta?: TransactionFailurePayload) => {
+      const message =
+        typeof error === "string"
+          ? error
+          : typeof error?.message === "string"
+            ? error.message
+            : "Transaction failed.";
+      const type =
+        typeof error === "object" && error?.type ? error.type : typeof meta?.type !== "undefined" ? meta.type : null;
+      const transactionCount =
+        typeof error === "object" && error?.transactionCount
+          ? error.transactionCount
+          : typeof meta?.transactionCount === "number"
+            ? meta.transactionCount
+            : null;
+      const action = type ? getTxMessage(type) : "Action failed";
+      const txCount = transactionCount ? ` (${transactionCount} transactions)` : "";
+      const description = `${action}${txCount} - ${message}`;
+      console.error("Transaction failed:", message);
+      toast("❌ Transaction failed", { description });
     };
 
     provider.on("transactionPending", handleTransactionPending);

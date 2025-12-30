@@ -23,6 +23,11 @@ export const NAMESPACE = "s1_eternum";
 export { TransactionType };
 export type { ProviderDesyncStatus, ProviderHeartbeat, ProviderHeartbeatSource, ProviderSyncState };
 export const PROVIDER_HEARTBEAT_EVENT = "providerHeartbeat";
+type TransactionFailureMeta = {
+  type?: TransactionType;
+  transactionCount?: number;
+  transactionHash?: string;
+};
 
 /**
  * Gets a contract address from the manifest by name
@@ -386,18 +391,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
-    let tx;
-    try {
-      tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.emit("transactionFailed", `Transaction failed to submit: ${message}`);
-      throw error;
-    }
+    const isMultipleTransactions = Array.isArray(transactionDetails);
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
-    const isMultipleTransactions = Array.isArray(transactionDetails);
 
     if (isMultipleTransactions) {
       // For multiple calls, use the first call's entrypoint
@@ -412,12 +409,25 @@ export class EternumProvider extends EnhancedDojoProvider {
       txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
 
-    const waitPromise = this.waitForTransactionWithCheckInternal(tx.transaction_hash);
-    const waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
     const transactionMeta = {
       type: txType,
       ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
     };
+
+    let tx;
+    try {
+      tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.emit("transactionFailed", `Transaction failed to submit: ${message}`, transactionMeta);
+      throw error;
+    }
+
+    const waitPromise = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
+      ...transactionMeta,
+      transactionHash: tx.transaction_hash,
+    });
+    const waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
 
     if (waitResult.status === "pending") {
       this.emit("transactionPending", {
@@ -688,7 +698,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     return { status: "confirmed", receipt: result };
   }
 
-  private async waitForTransactionWithCheckInternal(transactionHash: string): Promise<GetTransactionReceiptResponse> {
+  private async waitForTransactionWithCheckInternal(
+    transactionHash: string,
+    transactionMeta?: TransactionFailureMeta,
+  ): Promise<GetTransactionReceiptResponse> {
     let receipt;
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
@@ -696,7 +709,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.emit("transactionFailed", `Transaction failed while waiting for confirmation: ${message}`);
+      this.emit("transactionFailed", `Transaction failed while waiting for confirmation: ${message}`, {
+        ...transactionMeta,
+        transactionHash,
+      });
       console.error(`Error waiting for transaction ${transactionHash}`);
       throw error;
     }
@@ -723,7 +739,10 @@ export class EternumProvider extends EnhancedDojoProvider {
             ? receiptAny.revertReason
             : "Unknown revert reason";
       const message = `Transaction failed with reason: ${revertReason}`;
-      this.emit("transactionFailed", message);
+      this.emit("transactionFailed", message, {
+        ...transactionMeta,
+        transactionHash,
+      });
       throw new Error(message);
     }
 
