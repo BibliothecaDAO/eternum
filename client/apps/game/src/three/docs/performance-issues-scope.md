@@ -66,6 +66,27 @@
   - Performance panel: fewer long tasks during camera pans.
   - Reduced DOM node churn in the Elements timeline.
 
+### 4a) Label LOD tied to quality settings (scoped)
+- Goal: Use `labelRenderDistance` and `maxVisibleLabels` from `utils/quality-controller.ts` to cull or downgrade labels when zoomed out.
+- Current state:
+  - `labelRenderDistance` and `maxVisibleLabels` exist in quality presets but are unused.
+  - Label visibility is based on frustum only; no distance cap or count limit.
+- Proposed implementation:
+  - Add label LOD parameters to `HexagonScene.applyQualityFeatures` and store them for managers.
+  - Expose setters on `ArmyManager` and `StructureManager` (e.g., `setLabelLOD({ maxDistance, maxCount })`).
+  - During `applyFrustumVisibilityToLabels`, add a distance check against the camera and early-cull if beyond `labelRenderDistance`.
+  - If label count exceeds `maxVisibleLabels`, keep the nearest N labels (distance-sorted or bucketed by chunk) and hide the rest.
+  - Downgrade far labels to `PointsLabelRenderer` icons instead of CSS2D (optional staged rollout).
+- Complexity impact:
+  - Adds O(n) distance checks in label sweeps, but reduces DOM updates and CSS2D work at scale.
+  - Optional nearest-N selection adds O(n log n) if sorting; can be optimized with bucketed thresholds.
+- Risks:
+  - UI expectations for always-visible labels (e.g., selected entities) need exceptions.
+  - Sorting can add CPU overhead if not throttled.
+- Validation:
+  - Verify label counts respect `maxVisibleLabels` on low/mid quality.
+  - Confirm no missing labels for selected/hovered entities.
+
 ### 5) Interactive hex visibility scan uses string parsing
 - Location: `managers/interactive-hex-manager.ts` (`updateVisibleHexes`).
 - Problem: `hexString.split(",").map(Number)` inside nested loops allocates and parses per-hex.
@@ -112,6 +133,43 @@
   - Add adaptive scaling based on measured GPU time.
 - Validation:
   - Mobile device testing: FPS stays near target in storms.
+
+## Additional LOD Opportunities (Scoped)
+
+### A) Entity count caps from quality settings
+- Use `maxVisibleArmies` / `maxVisibleStructures` to hard-cap rendered instances when zoomed out.
+- Candidate hooks:
+  - `WorldmapScene.updateVisibleChunks` to limit which entities enter manager visibility.
+  - `ArmyManager.syncVisibleSlots` / `StructureManager` visibility assembly.
+- Strategy:
+  - Prioritize by distance to camera or by interaction priority (selected, hovered, moving).
+
+### B) Animation LOD beyond current FPS throttling
+- Use `animationCullDistance` from quality settings to gate:
+  - biome morph animations (`managers/instanced-biome.tsx`)
+  - army/structure idle animations
+- Add view-based tiers: far view uses “static pose” or extremely low animation FPS.
+
+### C) Path/FX LOD
+- Path rendering:
+  - Hide non-selected paths beyond a distance threshold.
+  - Reduce segment density based on camera distance (e.g., decimate far paths).
+- FX:
+  - Reduce thunderbolt count/radius on low quality.
+  - Reduce or disable non-critical FX labels when zoomed out.
+
+### D) Particle LOD
+- Scale `rainCount`, ambient dust/firefly counts by quality or GPU time.
+- Reduce update frequency for particles when not in camera focus or in far view.
+
+### E) Shadow and lighting LOD
+- Already toggles by camera view, but can add:
+  - shadow map size scaling by view/quality
+  - disable per-instance contact shadows on far views
+
+### F) Texture/anisotropy LOD (optional)
+- Lower anisotropy for terrain and reduce mip bias on low quality.
+- Consider lower-resolution textures for distant tiles or mini-map-only surfaces.
 
 ## Fix Order and Deliverables
 1. Low-risk GC fixes (issues 1-3, 6).
