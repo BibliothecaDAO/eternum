@@ -35,7 +35,7 @@ pub mod marketplace_systems {
     pub struct MarketOrder {
         active: bool,
         expiration: u32, // Timestamp
-        token_id: u16,
+        token_id: u64,
         collection_id: u16,
         price: u128,
         owner: starknet::ContractAddress,
@@ -66,7 +66,7 @@ pub mod marketplace_systems {
 
     #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
-    pub struct MarketOrderModel {
+    pub struct MarketOrderModel2 {
         #[key]
         order_id: u64,
         order: MarketOrder,
@@ -74,9 +74,9 @@ pub mod marketplace_systems {
 
     #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
-    pub struct MarketTokenOrderModel {
+    pub struct MarketTokenOrderModel2 {
         #[key]
-        token_id: u16,
+        token_id: u64,
         #[key]
         collection_address: starknet::ContractAddress,
         order_id: u64,
@@ -138,7 +138,7 @@ pub mod marketplace_systems {
             assert!(!market_global.paused, "Market: Paused");
 
             let caller = get_caller_address();
-            let market_order = MarketOrder { owner: caller, token_id, collection_id, price, expiration, active: true };
+            let market_order = MarketOrder { owner: caller, token_id: token_id.into(), collection_id, price, expiration, active: true };
 
             // ensure the collection is whitelisted
             let collection_whitelisted: MarketWhitelistModel = world.read_model(collection_id);
@@ -146,7 +146,7 @@ pub mod marketplace_systems {
             assert!(collection_address.is_non_zero(), "Market: Collection not whitelisted");
 
             // ensure the token cant be listed more than once
-            let token_order: MarketTokenOrderModel = world.read_model((token_id, collection_address));
+            let token_order: MarketTokenOrderModel2 = world.read_model((token_id, collection_address));
             assert!(token_order.order_id.is_zero(), "Market: Token already listed");
 
             // ensure the market is approved to spend the nft
@@ -168,12 +168,12 @@ pub mod marketplace_systems {
             world.write_model(@market_global);
 
             // write the market order
-            world.write_model(@MarketOrderModel { order_id: market_global.order_count, order: market_order });
+            world.write_model(@MarketOrderModel2 { order_id: market_global.order_count, order: market_order });
 
             // write the token order
             world
                 .write_model(
-                    @MarketTokenOrderModel { token_id, collection_address, order_id: market_global.order_count },
+                    @MarketTokenOrderModel2 { token_id: token_id.into(), collection_address, order_id: market_global.order_count },
                 );
 
             // emit event
@@ -203,7 +203,7 @@ pub mod marketplace_systems {
             assert!(!market_global.paused, "Market: Paused");
 
             // ensure order has not expired
-            let mut market_order_model: MarketOrderModel = world.read_model(order_id);
+            let mut market_order_model: MarketOrderModel2 = world.read_model(order_id);
             assert!(
                 market_order_model.order.expiration > get_block_timestamp().try_into().unwrap(),
                 "Market: Order expired",
@@ -245,7 +245,7 @@ pub mod marketplace_systems {
             // make token order inactive
             world
                 .write_model(
-                    @MarketTokenOrderModel {
+                    @MarketTokenOrderModel2 {
                         token_id: market_order_model.order.token_id, collection_address, order_id: 0,
                     },
                 );
@@ -269,7 +269,7 @@ pub mod marketplace_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure order is active
-            let mut market_order_model: MarketOrderModel = world.read_model(order_id);
+            let mut market_order_model: MarketOrderModel2 = world.read_model(order_id);
             assert!(market_order_model.order.active, "Market: Order not active");
 
             // ensure the collection is whitelisted
@@ -292,7 +292,7 @@ pub mod marketplace_systems {
             // make token order inactive
             world
                 .write_model(
-                    @MarketTokenOrderModel {
+                    @MarketTokenOrderModel2 {
                         token_id: market_order_model.order.token_id, collection_address, order_id: 0,
                     },
                 );
@@ -315,7 +315,7 @@ pub mod marketplace_systems {
         fn edit(ref self: ContractState, order_id: u64, new_price: u128) {
             // ensure order is active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut market_order_model: MarketOrderModel = world.read_model(order_id);
+            let mut market_order_model: MarketOrderModel2 = world.read_model(order_id);
             assert!(market_order_model.order.active, "Market: Order not active");
 
             // ensure the collection is whitelisted
