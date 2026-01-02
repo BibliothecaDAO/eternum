@@ -712,13 +712,13 @@ export const FactoryPage = () => {
         });
         setTx({ status: "success", hash: result.transaction_hash });
 
-        const waitResult = await Promise.race([
+        const waitResult = (await Promise.race([
           account
             .waitForTransaction(result.transaction_hash)
             .then(() => ({ status: "confirmed" as const }))
             .catch((error) => ({ status: "error" as const, error })),
           new Promise((resolve) => setTimeout(() => resolve({ status: "timeout" as const }), 2000)),
-        ]) as any;
+        ])) as any;
 
         if (waitResult.status === "error") {
           throw waitResult.error;
@@ -948,26 +948,30 @@ export const FactoryPage = () => {
                                   )}
 
                                   {/* Deploy Button - Only show if not deployed and not verifying */}
-                                  {!worldDeployedStatus[name] && !verifyingDeployment[name] && !autoDeployState[name] && (
-                                    <button
-                                      onClick={() => handleQueueDeploy(name)}
-                                      disabled={!account || !factoryAddress || tx.status === "running"}
-                                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
-                                    >
-                                      {tx.status === "running" && getTxStatusIcon()}
-                                      {factoryDeployRepeats > 1 ? `Deploy x${factoryDeployRepeats}` : "Deploy"}
-                                    </button>
-                                  )}
+                                  {!worldDeployedStatus[name] &&
+                                    !verifyingDeployment[name] &&
+                                    !autoDeployState[name] && (
+                                      <button
+                                        onClick={() => handleQueueDeploy(name)}
+                                        disabled={!account || !factoryAddress || tx.status === "running"}
+                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
+                                      >
+                                        {tx.status === "running" && getTxStatusIcon()}
+                                        {factoryDeployRepeats > 1 ? `Deploy x${factoryDeployRepeats}` : "Deploy"}
+                                      </button>
+                                    )}
 
-                                  {!worldDeployedStatus[name] && autoDeployState[name] && !verifyingDeployment[name] && (
-                                    <button
-                                      onClick={() => handleStopAutoDeploy(name)}
-                                      disabled={autoDeployState[name].status === "stopping"}
-                                      className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
-                                    >
-                                      {autoDeployState[name].status === "stopping" ? "Stopping..." : "Stop"}
-                                    </button>
-                                  )}
+                                  {!worldDeployedStatus[name] &&
+                                    autoDeployState[name] &&
+                                    !verifyingDeployment[name] && (
+                                      <button
+                                        onClick={() => handleStopAutoDeploy(name)}
+                                        disabled={autoDeployState[name].status === "stopping"}
+                                        className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
+                                      >
+                                        {autoDeployState[name].status === "stopping" ? "Stopping..." : "Stop"}
+                                      </button>
+                                    )}
 
                                   {/* Indexer Status/Actions - Only show if deployed */}
                                   {worldDeployedStatus[name] && (

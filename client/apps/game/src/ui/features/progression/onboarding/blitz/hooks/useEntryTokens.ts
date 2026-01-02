@@ -2,7 +2,7 @@ import { getLordsAddress } from "@/utils/addresses";
 import { configManager, LordsAbi, toHexString } from "@bibliothecadao/eternum";
 import { useDojo, useEntryTokenBalance } from "@bibliothecadao/react";
 import { useCall } from "@starknet-react/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Abi, AccountInterface, CallData, uint256 } from "starknet";
 import { env } from "../../../../../../../env";
 import { EntryTokenStatus } from "../types";
@@ -52,6 +52,10 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
     refetch: refetchEntryTokenBalance,
     getEntryTokenIdByIndex,
   } = useEntryTokenBalance();
+
+  // Use ref for getEntryTokenIdByIndex to prevent infinite loops from unstable callback references
+  const getEntryTokenIdByIndexRef = useRef(getEntryTokenIdByIndex);
+  getEntryTokenIdByIndexRef.current = getEntryTokenIdByIndex;
 
   const [availableEntryTokenIds, setAvailableEntryTokenIds] = useState<bigint[]>([]);
   const [selectedEntryTokenId, setSelectedEntryTokenId] = useState<bigint | null>(null);
@@ -119,7 +123,7 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
 
       const maxToShow = Math.min(maxTokens, 16);
       for (let i = 0; i < maxToShow; i++) {
-        const tokenId = await getEntryTokenIdByIndex(
+        const tokenId = await getEntryTokenIdByIndexRef.current(
           accountAddress,
           {
             entryTokenAddress: entryTokenAddressHex,
@@ -144,7 +148,7 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
     } finally {
       setIsLoadingEntryTokens(false);
     }
-  }, [accountAddress, entryTokenAddress, entryTokenBalance, requiresEntryToken, getEntryTokenIdByIndex]);
+  }, [accountAddress, entryTokenAddress, entryTokenBalance, requiresEntryToken]);
 
   const obtainEntryToken = useCallback(async () => {
     if (
