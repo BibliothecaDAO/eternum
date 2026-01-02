@@ -232,10 +232,6 @@ export class AmbienceManager {
    * Update sound layers based on current conditions
    */
   private updateSoundLayers(): void {
-    console.log(
-      `AmbienceManager: Updating sound layers (time: ${this.currentTimeOfDay}, weather: ${this.currentWeather})`,
-    );
-
     // Check each sound layer
     this.soundLayers.forEach((layer, index) => {
       const layerId = this.getLayerId(layer, index);
@@ -243,15 +239,11 @@ export class AmbienceManager {
       const isPlaying = this.activeSounds.has(layerId);
 
       if (shouldPlay && !isPlaying) {
-        console.log(`AmbienceManager: Starting sound layer ${layerId}`);
         this.startSound(layer, layerId);
       } else if (!shouldPlay && isPlaying) {
-        console.log(`AmbienceManager: Stopping sound layer ${layerId}`);
         this.stopSound(layerId);
       }
     });
-
-    console.log(`AmbienceManager: Active sounds count: ${this.activeSounds.size}`);
   }
 
   /**
@@ -281,7 +273,6 @@ export class AmbienceManager {
   private async startSound(layer: AmbienceSoundConfig, layerId: string): Promise<void> {
     // Skip if audio not ready
     if (!this.isAudioReady()) {
-      console.warn(`AmbienceManager: Audio not ready, skipping ${layerId}`);
       return;
     }
 
@@ -289,8 +280,6 @@ export class AmbienceManager {
       // Pick a random variation if multiple are provided
       const assetIds = Array.isArray(layer.assetId) ? layer.assetId : [layer.assetId];
       const selectedAssetId = assetIds[Math.floor(Math.random() * assetIds.length)];
-
-      console.log(`AmbienceManager: Attempting to play ${selectedAssetId} for layer ${layerId}`);
 
       const playbackMode = layer.playbackMode || "loop";
       const shouldLoop = playbackMode === "loop";

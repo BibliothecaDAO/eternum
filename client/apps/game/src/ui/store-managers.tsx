@@ -280,7 +280,7 @@ const RelicsStoreManager = () => {
 
       try {
         const relicsData = await sqlApi.fetchAllPlayerRelics(account.address);
-        console.log("relicsData", relicsData, account.address, isMountedRef.current);
+
         if (!isMountedRef.current) {
           return;
         }

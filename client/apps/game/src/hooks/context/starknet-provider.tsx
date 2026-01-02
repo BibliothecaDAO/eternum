@@ -1,3 +1,4 @@
+import { normalizeRpcUrl } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
@@ -27,15 +28,18 @@ const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 // ==============================================
 
 const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
-const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana";
 
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
-const SLOT_RPC_URL_TEST = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana";
 
 const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
 const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
 
 // ==============================================
+
+const baseRpcUrl = isLocal ? KATANA_RPC_URL : dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
+const rpcUrl = normalizeRpcUrl(baseRpcUrl);
+
+console.log("baseRpcUrl", baseRpcUrl);
 
 const chain_id = isLocal
   ? KATANA_CHAIN_ID
@@ -49,17 +53,10 @@ const chain_id = isLocal
 
 const controller = new ControllerConnector({
   propagateSessionErrors: true,
+  // chain_id,
   chains: [
     {
-      rpcUrl: isLocal
-        ? KATANA_RPC_URL
-        : isSlot
-          ? SLOT_RPC_URL
-          : isSlottest
-            ? SLOT_RPC_URL_TEST
-            : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
-              ? env.VITE_PUBLIC_NODE_URL
-              : env.VITE_PUBLIC_NODE_URL,
+      rpcUrl,
     },
   ],
   defaultChainId: isLocal
@@ -120,17 +117,17 @@ const queryClient = new QueryClient({
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
-    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
+    return { nodeUrl: rpcUrl };
   }, []);
 
   const { connectors: predeployedConnectors } = usePredeployedAccounts({
-    rpc: env.VITE_PUBLIC_NODE_URL as string,
+    rpc: rpcUrl,
     id: "katana",
     name: "Katana",
   });
 
   const paymasterRpc = useCallback(() => {
-    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
+    return { nodeUrl: rpcUrl };
   }, []);
 
   return (

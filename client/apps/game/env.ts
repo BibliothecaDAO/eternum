@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const rawEnv = import.meta.env as Record<string, string | undefined>;
+
 const envSchema = z.object({
   // Master account
   VITE_PUBLIC_MASTER_ADDRESS: z.string().startsWith("0x"),
@@ -21,7 +23,7 @@ const envSchema = z.object({
     .string()
     .url()
     .optional()
-    .default("https://api.cartridge.gg/x/eternum-blitz-slot-test/katana"),
+    .default("https://api.cartridge.gg/x/eternum-blitz-slot-test/katana/rpc/v0_9"),
   VITE_PUBLIC_TORII_RELAY: z
     .string()
     .optional()
@@ -133,6 +135,7 @@ try {
 }
 
 export { env };
+export const hasPublicNodeUrl = Boolean(rawEnv.VITE_PUBLIC_NODE_URL);
 
 // Type for your validated env
 export type Env = z.infer<typeof envSchema>;

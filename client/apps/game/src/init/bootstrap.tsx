@@ -4,12 +4,17 @@ import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
-import { ensureActiveWorldProfileWithUI, getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
+import {
+  ensureActiveWorldProfileWithUI,
+  getActiveWorld,
+  isRpcUrlCompatibleForChain,
+  patchManifestWithFactory,
+} from "@/runtime/world";
 import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
-import { env } from "../../env";
+import { env, hasPublicNodeUrl } from "../../env";
 import { initialSync } from "../dojo/sync";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
@@ -60,6 +65,42 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   }
 
   if (!profile) profile = getActiveWorld();
+  let shouldReloadAfterProfileRefresh = false;
+  if (profile) {
+    const previousRpcUrl = profile.rpcUrl;
+    const previousChain = profile.chain;
+    const shouldRefreshProfile = () => {
+      if (profile.chain && profile.chain !== chain) return true;
+      if (!profile.rpcUrl) return true;
+      const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
+      if (canUseEnvRpc) return false;
+      if (chain === "slot" || chain === "slottest") {
+        return !profile.rpcUrl.includes(`/x/${profile.name}/katana`);
+      }
+      if (chain === "mainnet" || chain === "sepolia") {
+        return profile.rpcUrl.includes("/katana") || !profile.rpcUrl.includes(`/x/starknet/${chain}`);
+      }
+      return false;
+    };
+
+    if (shouldRefreshProfile()) {
+      try {
+        profile = await buildWorldProfile(chain, profile.name);
+        shouldReloadAfterProfileRefresh =
+          !profile ||
+          !previousRpcUrl ||
+          profile.rpcUrl !== previousRpcUrl ||
+          (previousChain && profile.chain !== previousChain);
+      } catch (err) {
+        console.error("[bootstrap] Failed to refresh world profile rpcUrl", err);
+      }
+    }
+  }
+  if (shouldReloadAfterProfileRefresh) {
+    console.log("[bootstrap] World profile refreshed, reloading to apply RPC changes");
+    window.location.reload();
+    return new Promise(() => {});
+  }
   if (!profile) profile = await ensureActiveWorldProfileWithUI(chain);
 
   // 1) Patch manifest with factory-provided addresses and world address
@@ -78,6 +119,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
     (dojoConfig as any).rpcUrl = env.VITE_PUBLIC_NODE_URL;
   } else {
     (dojoConfig as any).toriiUrl = profile.toriiBaseUrl;
+    (dojoConfig as any).rpcUrl = profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
   }
   (dojoConfig as any).manifest = patchedManifest;
 

@@ -9,7 +9,7 @@ import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { AlertCircle, Globe, Home } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { env } from "../../../../../../env";
 import { DevOptions, GameActiveState, HyperstructureForge, NoGameState, RegistrationState } from "../blitz/components";
@@ -33,6 +33,7 @@ export const BlitzOnboarding = () => {
 
   const { connector } = useAccount();
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
+  const addressNameKeyRef = useRef<string | null>(null);
 
   // Custom hooks for state management
   const {
@@ -54,21 +55,39 @@ export const BlitzOnboarding = () => {
 
   // Get username from controller
   useEffect(() => {
+    if (!connector) return;
+
+    const currentAddress = account?.address ?? null;
+    if (addressNameFelt && addressNameKeyRef.current === currentAddress) {
+      return;
+    }
+
+    const setAddressName = (nextValue: string) => {
+      setAddressNameFelt((previous) => (previous === nextValue ? previous : nextValue));
+      addressNameKeyRef.current = currentAddress;
+    };
+
     const getUsername = async () => {
       try {
         const username = await (connector as unknown as ControllerConnector)?.username();
         if (username) {
-          setAddressNameFelt(cairoShortStringToFelt(username.slice(0, 31)));
+          setAddressName(cairoShortStringToFelt(username.slice(0, 31)));
+          return;
         }
       } catch {
         console.log("No username found in controller account");
+      }
+
+      try {
         if ((await connector?.chainId()) === 82743958523457n) {
-          setAddressNameFelt("labubu");
+          setAddressName("labubu");
         }
+      } catch {
+        console.log("Unable to read controller chainId");
       }
     };
-    getUsername();
-  }, [connector]);
+    void getUsername();
+  }, [account?.address, addressNameFelt, connector]);
 
   // Registration handler
   const handleRegister = async () => {

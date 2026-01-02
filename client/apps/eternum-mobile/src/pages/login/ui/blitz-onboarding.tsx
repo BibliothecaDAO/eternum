@@ -19,7 +19,7 @@ import { useAccount, useCall } from "@starknet-react/core";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { AlertCircle, Eye, Hammer, ShieldCheck, Swords, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Abi, CallData, uint256 } from "starknet";
 import { env } from "../../../../env";
 
@@ -545,6 +545,7 @@ export const BlitzOnboarding = () => {
   useSyncPlayerStructures();
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
+  const addressNameKeyRef = useRef<string | null>(null);
 
   const { setup, network, masterAccount } = useDojo();
   const {
@@ -703,12 +704,24 @@ export const BlitzOnboarding = () => {
   }, [blitzConfig]);
 
   useEffect(() => {
+    if (!connector) return;
+
+    const currentAddress = account?.address ?? null;
+    if (addressNameFelt && addressNameKeyRef.current === currentAddress) {
+      return;
+    }
+
+    const setAddressName = (nextValue: string) => {
+      setAddressNameFelt((previous) => (previous === nextValue ? previous : nextValue));
+      addressNameKeyRef.current = currentAddress;
+    };
+
     const getUsername = async () => {
       let username: string | undefined;
       try {
         username = await (connector as unknown as ControllerConnector | undefined)?.username();
         if (username) {
-          setAddressNameFelt(cairoShortStringToFelt(username.slice(0, 31)));
+          setAddressName(cairoShortStringToFelt(username.slice(0, 31)));
           return;
         }
       } catch (error) {
@@ -718,7 +731,7 @@ export const BlitzOnboarding = () => {
       try {
         const chainId = await (connector as ControllerConnector | undefined)?.chainId?.();
         if (chainId === 82743958523457n) {
-          setAddressNameFelt("labubu");
+          setAddressName("labubu");
         }
       } catch (error) {
         console.log("Unable to read controller chainId", error);
@@ -726,7 +739,7 @@ export const BlitzOnboarding = () => {
     };
 
     void getUsername();
-  }, [connector]);
+  }, [account?.address, addressNameFelt, connector]);
 
   const handleObtainEntryToken = async () => {
     if (!account?.address || !requiresEntryToken || !blitzConfig) return;

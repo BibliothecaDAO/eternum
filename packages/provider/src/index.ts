@@ -703,6 +703,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionMeta?: TransactionFailureMeta,
   ): Promise<GetTransactionReceiptResponse> {
     let receipt;
+    const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
+    const manifestRpcUrl = (this.manifest as any)?.world?.metadata?.rpc_url;
+    console.info("[provider] waitForTransaction start", {
+      transactionHash,
+      retryInterval: 500,
+      nodeUrl,
+      manifestRpcUrl,
+      worldAddress: this.manifest?.world?.address,
+      transactionType: transactionMeta?.type,
+    });
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
         retryInterval: 500,
@@ -713,7 +723,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         ...transactionMeta,
         transactionHash,
       });
-      console.error(`Error waiting for transaction ${transactionHash}`);
+      console.error(`Error waiting for transaction ${transactionHash}`, {
+        nodeUrl,
+        manifestRpcUrl,
+        worldAddress: this.manifest?.world?.address,
+      });
       throw error;
     }
 

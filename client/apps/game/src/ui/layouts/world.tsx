@@ -16,6 +16,7 @@ import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
 import { CombatSimulation } from "../modules/simulation/combat-simulation";
 import { NetworkDesyncDebugControls } from "../shared/components/network-desync-debug-controls";
+import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { NetworkDesyncIndicator } from "../shared/components/network-desync-indicator";
 import { ProviderHeartbeatWatcher } from "../shared/components/provider-heartbeat-watcher";
 import { StoreManagers } from "../store-managers";
@@ -64,6 +65,7 @@ const BackgroundSystems = () => (
   <>
     <StoreManagers />
     <StructureSynchronizer />
+    <ChainTimePoller />
     <ProviderHeartbeatWatcher />
     <NotLoggedInMessage />
     <EndgameModal />

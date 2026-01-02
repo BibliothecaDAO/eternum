@@ -17,8 +17,18 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
   const setAddressName = useAddressStore((state) => state.setAddressName);
   const [isAddressNameSet, setIsAddressNameSet] = useState(false);
   const hasSetUsername = useRef(false);
+  const lastAddressRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const currentAddress = controllerAccount?.address ?? null;
+    if (currentAddress !== lastAddressRef.current) {
+      hasSetUsername.current = false;
+      setIsAddressNameSet(false);
+      lastAddressRef.current = currentAddress;
+    }
+
+    if (!controllerAccount || hasSetUsername.current || isAddressNameSet) return;
+
     // set usser name for the controller account
     const setUserName = async () => {
       if (hasSetUsername.current) return;
@@ -62,7 +72,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
     };
 
     handleAddressName();
-  }, [controllerAccount, connector, value, setAddressName]);
+  }, [controllerAccount, connector, isAddressNameSet, setAddressName, value]);
 
   return isAddressNameSet;
 };

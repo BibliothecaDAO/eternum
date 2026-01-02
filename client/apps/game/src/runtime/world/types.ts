@@ -8,6 +8,7 @@ export interface WorldProfile {
   name: string; // human-readable world name (e.g., credenceox-82389)
   chain: "sepolia" | "mainnet" | "slot" | "slottest" | "local";
   toriiBaseUrl: string; // e.g., https://api.cartridge.gg/x/<name>/torii
+  rpcUrl?: string; // rpc url resolved from factory (if available)
   worldAddress: string; // resolved from torii /sql
   contractsBySelector: Record<string, string>; // normalized selector -> address
   fetchedAt: number; // epoch ms

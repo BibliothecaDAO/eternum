@@ -6,6 +6,7 @@ import { DojoContext } from "@bibliothecadao/react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 
 import { env } from "../../../env";
+import { dojoConfig } from "../../../dojo-config";
 
 interface DojoProviderProps {
   children: ReactNode;
@@ -27,7 +28,7 @@ requiredEnvs.forEach((key) => {
 
 const createRpcProvider = () =>
   new RpcProvider({
-    nodeUrl: env.VITE_PUBLIC_NODE_URL,
+    nodeUrl: dojoConfig.rpcUrl,
   });
 
 const createMasterAccount = (rpcProvider: RpcProvider) =>
