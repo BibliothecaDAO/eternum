@@ -258,15 +258,19 @@ const EffectRenderer = ({ effect, rect, showTribeDetails }: EffectRendererProps)
   return (
     <>
       {/* Rank change effect */}
-      {rankChange !== 0 && (
-        <RankChangeEffect change={rankChange} intensity={rankIntensity} position={positions.rank} />
-      )}
+      {rankChange !== 0 && <RankChangeEffect change={rankChange} intensity={rankIntensity} position={positions.rank} />}
 
       {/* Point delta effects per category */}
       {categoryEffects.map(
         ({ key, value, color }) =>
           value > 0 && (
-            <PointDeltaEffect key={key} value={value} color={color} intensity={pointIntensity} position={positions[key]} />
+            <PointDeltaEffect
+              key={key}
+              value={value}
+              color={color}
+              intensity={pointIntensity}
+              position={positions[key]}
+            />
           ),
       )}
     </>
