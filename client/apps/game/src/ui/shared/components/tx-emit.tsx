@@ -139,11 +139,7 @@ export function TransactionNotification() {
 
     const handleTransactionFailed = (error: string | TransactionFailurePayload, meta?: TransactionFailurePayload) => {
       const message =
-        typeof error === "string"
-          ? error
-          : typeof error?.message === "string"
-            ? error.message
-            : "Transaction failed.";
+        typeof error === "string" ? error : typeof error?.message === "string" ? error.message : "Transaction failed.";
       const type =
         typeof error === "object" && error?.type ? error.type : typeof meta?.type !== "undefined" ? meta.type : null;
       const transactionCount =

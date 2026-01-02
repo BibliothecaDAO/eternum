@@ -30,7 +30,12 @@ import {
   resolveArmyMountTransforms,
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
-import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
+import {
+  getHexForWorldPosition,
+  getWorldPositionForHex,
+  getWorldPositionForHexCoordsInto,
+  hashCoordinates,
+} from "../utils";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";

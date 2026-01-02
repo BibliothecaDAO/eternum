@@ -1,30 +1,36 @@
 # Army Animation Juice Pass Plan
 
-This plan targets the army animation system in `managers/army-model.ts` with minimal new assets, scalable to hundreds or thousands of units, and aligned with current instanced morph-target animation.
+This plan targets the army animation system in `managers/army-model.ts` with minimal new assets, scalable to hundreds or
+thousands of units, and aligned with current instanced morph-target animation.
 
 ## Scope
+
 - In-place animation playback (idle/moving) driven by instanced morph targets.
 - Movement update loop and per-instance transforms.
 - Lightweight VFX and camera hooks for impact.
 - LOD gating based on camera view and distance.
 
 ## Assumptions / Inputs Needed
+
 - Target unit counts (n) per scene and expected FPS per device tier.
 - Whether attack/hit/death events exist (or how to hook them from combat logic).
 - Desired march/run cadence (BPM target) and typical movement speed.
 - Confirmation that all unit clips are in-place and share a comparable stride cycle length.
 
 ## Plan Overview (Ordered)
-1) De-sync layer (primary fix for army sync)
-2) Timing/impact layer (anticipation -> contact -> follow-through)
-3) Secondary motion (micro-variation + weight)
-4) VFX hooks + pooling (impact layer)
-5) LOD gates (keep performance stable as n grows)
+
+1. De-sync layer (primary fix for army sync)
+2. Timing/impact layer (anticipation -> contact -> follow-through)
+3. Secondary motion (micro-variation + weight)
+4. VFX hooks + pooling (impact layer)
+5. LOD gates (keep performance stable as n grows)
 
 ## Step 1: De-sync Layer
+
 Goal: Break chorus-line sync and restore organic rhythm.
 
 Changes
+
 - Add per-instance arrays in `managers/army-model.ts` keyed by matrix index:
   - `phaseOffset: Float32Array`
   - `tempoScale: Float32Array`
@@ -38,16 +44,20 @@ Changes
 - Add a group wave offset using either entityId-derived squads or a cheap position hash.
 
 Scaling
-- CPU: O(n_visible * morphCount) remains the same; phase computation adds O(n_visible) arithmetic.
+
+- CPU: O(n_visible \* morphCount) remains the same; phase computation adds O(n_visible) arithmetic.
 - Memory: + ~16KB to 64KB for arrays at `MAX_INSTANCES = 1000`.
 
 Expected payoff
+
 - Immediate desync and more legible formation movement at all scales.
 
 ## Step 2: Timing and Impact Layer
+
 Goal: Add anticipation and contact readability without new clips.
 
 Changes
+
 - Add a phase warp function to hold near contact frames:
   - Example: clamp or ease phase in a small window around 0.5 (contact).
   - Use fast-in for anticipation and longer out for follow-through.
@@ -57,16 +67,20 @@ Changes
   - `tempoScale = base * 1.2` for 1-2 frames into contact, then ease out.
 
 Scaling
+
 - CPU: O(n_visible) for per-instance phase warp; blend ramps only on state changes.
 - Memory: +1 Float32Array for per-instance blend weights if needed.
 
 Expected payoff
+
 - Stronger motion beats and clearer intent (march vs charge).
 
 ## Step 3: Weight and Secondary Motion
+
 Goal: Remove floatiness and add subtle life with minimal cost.
 
 Changes
+
 - Replace or reduce `FLOAT_HEIGHT` (currently 0.5) with stride-phase bob:
   - Use a sharp downbeat curve: `bob = -abs(sin(phase * TAU)) * bobAmp`.
   - Add small lift on the upswing if needed.
@@ -76,16 +90,20 @@ Changes
 - Add idle breathing: scale or y-offset modulation when `ANIMATION_STATE_IDLE`.
 
 Scaling
+
 - CPU: O(n_moving) for bob/lean, O(n_visible_idle) for breathing.
 - Memory: reuses phase offsets; no extra buffers required.
 
 Expected payoff
+
 - More grounded steps and a more alive idle state without new bones or IK.
 
 ## Step 4: Impact VFX and Camera Hooks
+
 Goal: Add punch on footfalls, hits, and deaths with pooled effects.
 
 Changes
+
 - Add a small batched particle system in `managers/fx-manager.ts`:
   - Dust puff on strong downbeats (1 in 8 accents).
   - Hit spark on attack contact (when available).
@@ -96,16 +114,20 @@ Changes
 - Optional: small emissive pulse on impact if material supports it.
 
 Scaling
-- CPU: O(events), not O(n). 
+
+- CPU: O(events), not O(n).
 - GPU: O(particles); pooled and capped (e.g., 200-400 total).
 
 Expected payoff
+
 - Big game-feel boost with tight scaling.
 
 ## Step 5: LOD Gates
+
 Goal: Keep juice without FPS loss at high n.
 
 Changes
+
 - Use `AnimationVisibilityContext` and `CameraView` for LOD in `updateAnimations`:
   - Near: full buckets, phase warp, secondary motion, VFX enabled.
   - Mid: half buckets, no phase warp, limited secondary motion.
@@ -114,13 +136,16 @@ Changes
 - Stop updating idle states beyond max distance.
 
 Scaling
+
 - CPU: reduces to O(n_near + n_mid + n_far / k) where k is throttling factor.
 - GPU: fewer morph texture updates and lower particle load.
 
 Expected payoff
+
 - Stable FPS with consistent close-up quality.
 
 ## Implementation Notes (Where)
+
 - `constants/army-constants.ts`
   - `ANIMATION_BUCKETS` increase (16-24).
 - `types/army.ts`
@@ -139,6 +164,7 @@ Expected payoff
   - Add `cameraKick` helper (optional, gated by `CameraView.Close`).
 
 ## LOD Tiers (Concrete)
+
 - Near (<= 25m): bucketStride = 1, phaseWarp = on, secondary = on, VFX = on.
 - Mid (25-60m): bucketStride = 2, phaseWarp = off, secondary = minimal, VFX = on (reduced).
 - Far (> 60m): bucketStride >= 4, freeze idle, update moving at 5-10Hz, VFX = off.
@@ -146,12 +172,14 @@ Expected payoff
 Scaling: O(n_near + n_mid + n_far / 4) per frame for animation updates.
 
 ## Validation Checklist
+
 - Visual: no synchronized rows, readable march cadence, stronger contact beats.
 - Motion: reduced foot sliding; downbeats align with movement speed.
 - Performance: FPS stable with 500-1000 units; morph updates lower in far view.
 - VFX: dust/sparks never exceed pool; no frame spikes on mass movement.
 
 ## Risks / Mitigations
+
 - Risk: phase warp causes jitter if clips have inconsistent timing.
   - Mitigation: only warp moving clip, test per model type.
 - Risk: added per-instance noise causes instability in far view.

@@ -79,10 +79,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
         if (!profile.rpcUrl) return true;
         const normalizedProfileRpc = normalizeRpcUrl(profile.rpcUrl);
         const normalizedEnvRpc = normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL);
-        if (
-          normalizedProfileRpc !== normalizedEnvRpc &&
-          normalizedProfileRpc.includes(`/x/${profile.name}/katana`)
-        ) {
+        if (normalizedProfileRpc !== normalizedEnvRpc && normalizedProfileRpc.includes(`/x/${profile.name}/katana`)) {
           return true;
         }
         return false;

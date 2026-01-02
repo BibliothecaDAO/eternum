@@ -193,9 +193,6 @@ export class AmbienceManager {
 
     // On first update, always trigger sound layer update
     if (this.isFirstUpdate) {
-      console.log(
-        `AmbienceManager: First update - starting ambience (time: ${newTimeOfDay}, weather: ${currentWeather})`,
-      );
       this.isFirstUpdate = false;
       this.currentTimeOfDay = newTimeOfDay;
       this.currentWeather = currentWeather;
@@ -207,7 +204,6 @@ export class AmbienceManager {
 
       // Check if we need to start/stop sounds
       if (timeChanged || weatherChanged) {
-        console.log(`AmbienceManager: Conditions changed (time: ${newTimeOfDay}, weather: ${currentWeather})`);
         this.updateSoundLayers();
       }
     }

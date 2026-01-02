@@ -3,13 +3,7 @@ import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Users } from "luci
 
 import { useFactoryWorlds, type FactoryWorld } from "@/hooks/use-factory-worlds";
 import { useWorldsAvailability, getAvailabilityStatus, getWorldKey } from "@/hooks/use-world-availability";
-import {
-  clearActiveWorld,
-  getActiveWorldName,
-  listWorldNames,
-  resolveChain,
-  setSelectedChain,
-} from "@/runtime/world";
+import { clearActiveWorld, getActiveWorldName, listWorldNames, resolveChain, setSelectedChain } from "@/runtime/world";
 import { deleteWorldProfile } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
 import { WorldCountdown, useGameTimeStatus } from "@/ui/components/world-countdown";
@@ -69,8 +63,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
   useEffect(() => {
     if (selectedWorld || !activeWorldName) return;
     const match = factoryWorlds.find(
-      (world) =>
-        world.name === activeWorldName && normalizeFactoryChain(world.chain) === activeFactoryChain,
+      (world) => world.name === activeWorldName && normalizeFactoryChain(world.chain) === activeFactoryChain,
     );
     if (match) setSelectedWorld(match);
   }, [selectedWorld, activeWorldName, factoryWorlds, activeFactoryChain]);
@@ -167,9 +160,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
               type="button"
               onClick={() => handleSwitchChain("slot")}
               className={`px-2.5 py-1 text-[10px] font-semibold uppercase rounded-full transition ${
-                activeFactoryChain === "slot"
-                  ? "bg-gold/20 text-gold"
-                  : "text-gold/60 hover:text-gold hover:bg-gold/10"
+                activeFactoryChain === "slot" ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold hover:bg-gold/10"
               }`}
             >
               Slot

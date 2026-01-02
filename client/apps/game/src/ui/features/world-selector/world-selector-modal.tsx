@@ -227,14 +227,7 @@ export const WorldSelectorModal = ({
     return () => {
       cancelled = true;
     };
-  }, [
-    playerFeltLiteral,
-    factoryWorlds,
-    factoryAvailability,
-    savedWorldRefs,
-    savedAvailability,
-    playerRegistration,
-  ]);
+  }, [playerFeltLiteral, factoryWorlds, factoryAvailability, savedWorldRefs, savedAvailability, playerRegistration]);
 
   // Build factory games list from cached availability results
   const factoryGames = useMemo(() => {
