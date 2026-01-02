@@ -14,9 +14,9 @@ import { useNavigate } from "react-router-dom";
 import { env } from "../../../../../../env";
 import { DevOptions, GameActiveState, HyperstructureForge, NoGameState, RegistrationState } from "../blitz/components";
 import { FactoryGamesList } from "../blitz/factory";
-import { useBlitzGameState, useEntryTokens, useSettlement } from "../blitz/hooks";
 import { GameState } from "../blitz/types";
 import { SpectateButton } from "../spectate-button";
+import { useBlitzGameState, useEntryTokens, useSettlement } from "./hooks";
 
 const getBlitzHyperstructureCountForChain = (chain: string): number => {
   return chain === "mainnet" ? 1 : 4;
