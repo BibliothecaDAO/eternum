@@ -131,11 +131,57 @@ export default {
       },
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",
+        "float-up-fade": "floatUpFade 3s ease-out forwards",
+        "bounce-fade": "bounceFade 3s ease-out forwards",
       },
       keyframes: {
         slowPulse: {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.8" },
+        },
+        floatUpFade: {
+          "0%": {
+            opacity: "1",
+            transform: "translateY(0px) translateX(100%) scale(0.8)",
+          },
+          "20%": {
+            opacity: "1", 
+            transform: "translateY(-10px) translateX(100%) scale(1)",
+          },
+          "80%": {
+            opacity: "1",
+            transform: "translateY(-25px) translateX(100%) scale(1)",
+          },
+          "100%": {
+            opacity: "0",
+            transform: "translateY(-40px) translateX(100%) scale(0.8)",
+          },
+        },
+        bounceFade: {
+          "0%": {
+            opacity: "1",
+            transform: "translateY(0px) translateX(-100%) scale(0.8)",
+          },
+          "20%": {
+            opacity: "1",
+            transform: "translateY(-5px) translateX(-100%) scale(1.1)",
+          },
+          "40%": {
+            opacity: "1", 
+            transform: "translateY(0px) translateX(-100%) scale(1)",
+          },
+          "60%": {
+            opacity: "1",
+            transform: "translateY(-2px) translateX(-100%) scale(1.05)",
+          },
+          "80%": {
+            opacity: "1",
+            transform: "translateY(0px) translateX(-100%) scale(1)",
+          },
+          "100%": {
+            opacity: "0",
+            transform: "translateY(0px) translateX(-100%) scale(0.9)",
+          },
         },
       },
     },

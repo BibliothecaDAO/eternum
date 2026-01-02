@@ -6,3 +6,6 @@ export const STRK_PRIZE_POOL = 50000;
 
 // Leaderboard update intervals (in milliseconds) - for unregistered shareholder points
 export const LEADERBOARD_UPDATE_INTERVAL = 3 * 60 * 1000; // 3 minute
+
+// Leaderboard Effects Configuration
+export const ENABLE_LEADERBOARD_EFFECTS_MOCKUP = true; // Set to false to disable mockup mode

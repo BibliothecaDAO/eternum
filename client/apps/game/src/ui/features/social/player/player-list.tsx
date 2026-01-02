@@ -9,6 +9,8 @@ import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { User } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLeaderboardEffects, PlayerData } from "../hooks/use-leaderboard-effects";
+import { LeaderboardEffectsContainer, MockupModeIndicator } from "../components/leaderboard-effects";
 
 export interface PlayerCustom extends PlayerInfo {
   structures: string[];
@@ -94,9 +96,31 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     return sortItems(playersForSorting, activeSort, { sortKey: "rank", sort: "asc" });
   }, [playersWithRealTimeRanks, activeSort, searchQuery]);
 
+  // Transform data for effects system
+  const playerDataForEffects: PlayerData[] = useMemo(() => {
+    return sortedPlayers.map((player) => ({
+      id: player.address.toString(),
+      name: player.name,
+      registeredPoints: player.registeredPoints,
+      totalPoints: player.totalPoints,
+      unregisteredShareholderPoints: player.unregisteredShareholderPoints,
+      rank: player.realTimeRank,
+    }));
+  }, [sortedPlayers]);
+
+  // Initialize effects system
+  const { 
+    getPointDeltasForPlayer, 
+    getRankChangesForPlayer, 
+    isMockupMode 
+  } = useLeaderboardEffects(playerDataForEffects);
+
   return (
     <div className="flex flex-col h-full">
       <PlayerListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
+      
+      {/* Mockup mode indicator */}
+      <MockupModeIndicator isMockupMode={isMockupMode} />
 
       <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent flex-1">
         {sortedPlayers.length > 0 ? (
@@ -107,6 +131,8 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
               onClick={() => viewPlayerInfo(ContractAddress(player.address))}
               whitelistPlayer={whitelistPlayer}
               isLoading={isLoading}
+              pointDeltas={getPointDeltasForPlayer(player.address.toString())}
+              rankChanges={getRankChangesForPlayer(player.address.toString())}
             />
           ))
         ) : (
@@ -167,6 +193,8 @@ const PlayerRow = ({
   onClick,
   whitelistPlayer,
   isLoading,
+  pointDeltas = [],
+  rankChanges = [],
 }: {
   player: PlayerCustom & {
     registeredPoints: number;
@@ -178,6 +206,18 @@ const PlayerRow = ({
   onClick: () => void;
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
+  pointDeltas?: Array<{
+    playerId: string;
+    category: string;
+    delta: number;
+    timestamp: number;
+  }>;
+  rankChanges?: Array<{
+    playerId: string;
+    oldRank: number;
+    newRank: number;
+    timestamp: number;
+  }>;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -186,7 +226,7 @@ const PlayerRow = ({
 
   return (
     <div
-      className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group", {
+      className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-visible group relative", {
         "bg-gold/30 hover:bg-blueish/40  border border-gold/40": player.isUser,
         "hover:bg-gold/10 border border-transparent hover:border-gold/20": !player.isUser,
       })}
@@ -263,6 +303,13 @@ const PlayerRow = ({
           />
         )}
       </div>
+
+      {/* Leaderboard Effects */}
+      <LeaderboardEffectsContainer
+        playerId={player.address.toString()}
+        pointDeltas={pointDeltas}
+        rankChanges={rankChanges}
+      />
     </div>
   );
 };

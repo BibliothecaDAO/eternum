@@ -24,3 +24,12 @@ export { EndSeasonButton } from "./components/end-season-button";
 export { RegisterPointsButton } from "./components/register-points-button";
 export { Social } from "./components/social";
 export { useSocialStore } from "./components/use-social-store";
+
+// Leaderboard Effects - Exports used externally
+export { useLeaderboardEffects } from "./hooks/use-leaderboard-effects";
+export { 
+  LeaderboardEffectsContainer, 
+  FloatingPointDelta, 
+  RankChangeIndicator, 
+  MockupModeIndicator 
+} from "./components/leaderboard-effects";
