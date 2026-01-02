@@ -169,6 +169,12 @@ export default {
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",
         "gradient-bg": "gradientBg 30s ease-in-out infinite",
+        "float-up": "floatUp 2s ease-out forwards",
+        "rank-up": "rankUp 3s ease-out forwards",
+        "rank-down": "rankDown 3s ease-out forwards",
+        "row-glow-up": "rowGlowUp 2s ease-out forwards",
+        "row-glow-down": "rowGlowDown 1.5s ease-out forwards",
+        "burst-ring": "burstRing 0.6s ease-out forwards",
       },
       keyframes: {
         slowPulse: {
@@ -179,6 +185,34 @@ export default {
           "0%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
           "100%": { backgroundPosition: "0% 50%" },
+        },
+        floatUp: {
+          "0%": { opacity: "1", transform: "translateY(0)" },
+          "100%": { opacity: "0", transform: "translateY(-24px)" },
+        },
+        rankUp: {
+          "0%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.9", transform: "scale(1.15)" },
+          "100%": { opacity: "0", transform: "scale(1)" },
+        },
+        rankDown: {
+          "0%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.9", transform: "scale(1.15)" },
+          "100%": { opacity: "0", transform: "scale(1)" },
+        },
+        rowGlowUp: {
+          "0%": { boxShadow: "0 0 0 0 rgba(74, 222, 128, 0)" },
+          "15%": { boxShadow: "0 0 20px 2px rgba(74, 222, 128, 0.5)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(74, 222, 128, 0)" },
+        },
+        rowGlowDown: {
+          "0%": { boxShadow: "0 0 0 0 rgba(248, 113, 113, 0)" },
+          "15%": { boxShadow: "0 0 12px 1px rgba(248, 113, 113, 0.4)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(248, 113, 113, 0)" },
+        },
+        burstRing: {
+          "0%": { boxShadow: "0 0 0 0 currentColor", opacity: "0.6" },
+          "100%": { boxShadow: "0 0 0 12px currentColor", opacity: "0" },
         },
       },
     },
