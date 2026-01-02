@@ -30,12 +30,10 @@ class HexGeometryDebugger {
 
   public trackMaterialClone(source: string): void {
     this.materialCloneCount++;
-    console.log(`🔸 Material Cloned #${this.materialCloneCount} from ${source}`);
   }
 
   public trackSharedGeometryUsage(type: string, source: string): void {
     this.sharedGeometryUsageCount++;
-    console.log(`♻️  Shared Geometry Used #${this.sharedGeometryUsageCount}: ${type} from ${source}`);
 
     // Log sharing summary every 10 usages
     if (this.sharedGeometryUsageCount % 10 === 0) {

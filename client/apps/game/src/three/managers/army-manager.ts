@@ -36,13 +36,13 @@ import {
   getWorldPositionForHexCoordsInto,
   hashCoordinates,
 } from "../utils";
+import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
-import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PointsLabelRenderer } from "./points-label-renderer";
@@ -539,7 +539,6 @@ export class ArmyManager {
   async onTileUpdate(update: ExplorerTroopsTileSystemUpdate) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
-    console.log("[ArmyManager] onTileUpdate for", entityId, "at", hexCoords);
 
     const {
       battleCooldownEnd,
@@ -1450,7 +1449,6 @@ export class ArmyManager {
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position) {
-    console.log("[ArmyManager] moveArmy called for", entityId, "to", hexCoords);
     // Monitor memory usage before army movement
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 

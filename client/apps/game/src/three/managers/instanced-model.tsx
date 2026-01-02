@@ -128,7 +128,6 @@ export default class InstancedModel {
             name !== StructureType[StructureType.FragmentMine] &&
             name !== "wonder"
           ) {
-            console.log("animated", gltf.animations[0]);
             tmp.animated = true;
             for (let i = 0; i < this.capacity; i++) {
               tmp.setMorphAt(i, biomeMesh as any);

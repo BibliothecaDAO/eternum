@@ -25,10 +25,10 @@ import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
+import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { FrustumManager } from "../utils/frustum-manager";
-import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
@@ -793,14 +793,8 @@ export class StructureManager {
       const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
 
       if (isPendingStale) {
-        console.warn(
-          `[PENDING LABEL UPDATE] Discarding stale pending update for structure ${entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
-        );
         this.pendingLabelUpdates.delete(entityId);
       } else {
-        console.log(
-          `[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType}, pendingUpdate: ${pendingUpdate})`,
-        );
         finalOwner = pendingUpdate.owner;
         if (pendingUpdate.guardArmies) {
           finalGuardArmies = pendingUpdate.guardArmies;
@@ -1973,7 +1967,6 @@ export class StructureManager {
     }
 
     const structure = this.structures.getStructureByEntityId(entityId);
-    console.log("[UPDATING STRUCTURE LABEL]", { ...update, entityId });
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
