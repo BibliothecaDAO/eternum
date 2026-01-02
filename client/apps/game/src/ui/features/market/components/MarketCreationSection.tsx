@@ -33,6 +33,8 @@ interface MarketCreationSectionProps {
   oracleAddress: string | null;
   gameEndTime: number | null;
   onRefresh: () => void;
+  /** Called when a market is discovered (either via polling or pre-creation check) */
+  onMarketFound?: () => void;
 }
 
 /**
@@ -176,7 +178,11 @@ export const MarketCreationSection = ({
   oracleAddress,
   gameEndTime,
   onRefresh,
+  onMarketFound,
 }: MarketCreationSectionProps) => {
+  // Use onRefresh as the default handler for onMarketFound (will refresh and show existing market)
+  const handleMarketFound = onMarketFound ?? onRefresh;
+
   const {
     createMarket,
     isCreating,
@@ -197,7 +203,7 @@ export const MarketCreationSection = ({
     isBalanceLoading,
     getPlayerOddsWeight,
     preconditions,
-  } = useQuickMarketCreate(worldName, oracleAddress, gameEndTime);
+  } = useQuickMarketCreate(worldName, oracleAddress, gameEndTime, handleMarketFound);
 
   // Determine status message for market creation
   const statusMessage = useMemo(() => {
@@ -206,7 +212,7 @@ export const MarketCreationSection = ({
     if (!preconditions.hasOracleAddress) return "Resolving game oracle...";
     if (!preconditions.hasPlayers) return "No players registered yet";
     if (!preconditions.hasWallet) return "Connect wallet to create";
-    if (!preconditions.hasGameEndTime) return "Game end time not available";
+    if (!preconditions.hasGameEndTime) return "Game end time not available or game has ended";
     if (!preconditions.hasValidSelection) {
       if (requiresManualSelection) {
         return `Select exactly 5 players (${selectedPlayers.length}/5)`;

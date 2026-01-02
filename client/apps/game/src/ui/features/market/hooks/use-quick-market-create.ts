@@ -1,22 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { CairoCustomEnum, Call, CallData, uint256, type Abi, type RawArgsObject, type Uint256 } from "starknet";
-import { toast } from "sonner";
 import { useCall } from "@starknet-react/core";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { CairoCustomEnum, Call, CallData, uint256, type Abi, type RawArgsObject, type Uint256 } from "starknet";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { getPmSqlApi } from "@/pm/hooks/queries";
 import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
+import { normalizeHex } from "@/runtime/world/normalize";
 import { LordsAbi } from "@bibliothecadao/eternum";
 
 import {
-  fetchRegisteredPlayers,
+  addressToUint256,
+  parseLordsToBaseUnits,
+  stringToHexData,
+} from "@/ui/features/landing/sections/markets/market-utils";
+import {
   buildToriiBaseUrl,
+  fetchRegisteredPlayers,
   type MarketPlayer,
 } from "@/ui/features/landing/sections/markets/use-market-servers";
-import {
-  addressToUint256,
-  stringToHexData,
-  parseLordsToBaseUnits,
-} from "@/ui/features/landing/sections/markets/market-utils";
 
 // Import player odds configuration
 import playerOddsConfig from "../config/player-odds.json";
@@ -28,6 +30,24 @@ const DEFAULT_CREATOR_FEE = "10";
 const DEFAULT_FEE_CURVE_RANGE = { start: 0, end: 2000 };
 const DEFAULT_FEE_SHARE_CURVE_RANGE = { start: 10000, end: 0 };
 const DEFAULT_ORACLE_EXTRA_PARAMS = ["0"];
+const MARKET_CHECK_POLL_INTERVAL = 10_000; // 10 seconds
+
+/**
+ * Check if a market already exists for the given oracle address.
+ * Returns true if market exists, false otherwise.
+ */
+const checkMarketExists = async (oracleAddress: string): Promise<boolean> => {
+  try {
+    const normalizedAddress = normalizeHex(oracleAddress);
+    const api = getPmSqlApi();
+    const market = await api.fetchMarketByPrizeAddress(normalizedAddress);
+    return market !== null;
+  } catch (e) {
+    console.warn("[checkMarketExists] Error checking market:", e);
+    // On error, return false to allow creation attempt (contract will reject if duplicate)
+    return false;
+  }
+};
 
 export interface UseQuickMarketCreateResult {
   // Market creation
@@ -251,13 +271,18 @@ const buildQuickMarketParams = (
  * - Odds from JSON: Player weights looked up by name
  * - User-selectable LORDS amount (min 1000)
  * - Timestamps: start=now, end=gameEndTime, resolve=gameEndTime+1min
+ * - Pre-creation check: Verifies no market exists before attempting to create
+ * - Periodic polling: Checks if a market was created by someone else
  */
 export const useQuickMarketCreate = (
   worldName: string | null,
   oracleAddress: string | null,
   gameEndTime: number | null = null,
+  onMarketFound?: () => void,
 ): UseQuickMarketCreateResult => {
   const account = useAccountStore((state) => state.account);
+  const onMarketFoundRef = useRef(onMarketFound);
+  onMarketFoundRef.current = onMarketFound;
 
   // State
   const [isCreating, setIsCreating] = useState(false);
@@ -360,6 +385,30 @@ export const useQuickMarketCreate = (
     loadPlayers();
   }, [worldName]);
 
+  // Periodic polling to detect if market was created by someone else
+  useEffect(() => {
+    if (!oracleAddress || isCreating) return;
+
+    const checkForExistingMarket = async () => {
+      const exists = await checkMarketExists(oracleAddress);
+      if (exists) {
+        toast.info("A market was just created for this game!");
+        onMarketFoundRef.current?.();
+      }
+    };
+
+    // Initial check after a short delay (give time for initial load)
+    const initialTimeout = setTimeout(checkForExistingMarket, 2000);
+
+    // Periodic polling
+    const interval = setInterval(checkForExistingMarket, MARKET_CHECK_POLL_INTERVAL);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [oracleAddress, isCreating]);
+
   // Toggle player selection
   const togglePlayerSelection = useCallback(
     (player: MarketPlayer) => {
@@ -424,6 +473,25 @@ export const useQuickMarketCreate = (
 
     // Clear previous error
     setCreateError(null);
+    setIsCreating(true);
+
+    // PRE-CREATION CHECK: Verify no market exists before attempting to create
+    // This prevents race conditions where two users click create at the same time
+    try {
+      const marketAlreadyExists = await checkMarketExists(oracleAddress);
+      if (marketAlreadyExists) {
+        const errorMsg = "A market already exists for this game. Refreshing...";
+        setCreateError(errorMsg);
+        toast.error(errorMsg);
+        setIsCreating(false);
+        // Notify parent to refresh and show existing market
+        onMarketFoundRef.current?.();
+        return;
+      }
+    } catch (e) {
+      // If check fails, proceed anyway - the contract will reject duplicates
+      console.warn("[createMarket] Pre-creation check failed, proceeding:", e);
+    }
 
     // Calculate timestamps based on requirements:
     // - Start: now
@@ -474,8 +542,6 @@ export const useQuickMarketCreate = (
     };
 
     try {
-      setIsCreating(true);
-
       // Estimate fee first to catch errors early
       await account.estimateInvokeFee([approveCall, createMarketCall], {
         blockIdentifier: "pre_confirmed",
@@ -553,5 +619,4 @@ export const useQuickMarketCreate = (
   );
 };
 
-export type { UseQuickMarketCreateResult as UseQuickMarketCreateReturn };
-export type { MarketPlayer };
+export type { MarketPlayer, UseQuickMarketCreateResult as UseQuickMarketCreateReturn };
