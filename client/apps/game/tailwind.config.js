@@ -131,11 +131,45 @@ export default {
       },
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",
+        pointGain: "pointGain 3s ease-out forwards",
+        rankChange: "rankChange 3s ease-out forwards",
       },
       keyframes: {
         slowPulse: {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.8" },
+        },
+        pointGain: {
+          "0%": { 
+            opacity: "0",
+            transform: "translateY(0) scale(0.8)"
+          },
+          "20%": {
+            opacity: "1",
+            transform: "translateY(-10px) scale(1)"
+          },
+          "100%": {
+            opacity: "0",
+            transform: "translateY(-30px) scale(0.9)"
+          }
+        },
+        rankChange: {
+          "0%": {
+            opacity: "0",
+            transform: "translateX(-10px) scale(0.8)"
+          },
+          "20%": {
+            opacity: "1",
+            transform: "translateX(0) scale(1)"
+          },
+          "80%": {
+            opacity: "1",
+            transform: "translateX(0) scale(1)"
+          },
+          "100%": {
+            opacity: "0",
+            transform: "translateX(10px) scale(0.9)"
+          }
         },
       },
     },

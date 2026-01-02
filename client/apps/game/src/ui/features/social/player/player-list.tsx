@@ -1,5 +1,6 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useLeaderboardEffects, PlayerEffectData } from "@/hooks/helpers/use-leaderboard-effects";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
@@ -9,6 +10,7 @@ import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { User } from "lucide-react";
 import { useMemo, useState } from "react";
+import { LeaderboardRowEffects } from "@/ui/features/social/components/leaderboard-effects";
 
 export interface PlayerCustom extends PlayerInfo {
   structures: string[];
@@ -94,6 +96,21 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     return sortItems(playersForSorting, activeSort, { sortKey: "rank", sort: "asc" });
   }, [playersWithRealTimeRanks, activeSort, searchQuery]);
 
+  // Prepare data for effects tracking
+  const effectsData: PlayerEffectData[] = useMemo(() => {
+    return sortedPlayers.map((player) => ({
+      address: player.address,
+      name: player.name,
+      totalPoints: player.totalPoints,
+      registeredPoints: player.registeredPoints,
+      unregisteredShareholderPoints: player.unregisteredShareholderPoints,
+      realTimeRank: player.realTimeRank,
+    }));
+  }, [sortedPlayers]);
+
+  // Use the leaderboard effects hook
+  const { getPlayerEffects } = useLeaderboardEffects(effectsData, 60000);
+
   return (
     <div className="flex flex-col h-full">
       <PlayerListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
@@ -107,6 +124,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
               onClick={() => viewPlayerInfo(ContractAddress(player.address))}
               whitelistPlayer={whitelistPlayer}
               isLoading={isLoading}
+              effects={getPlayerEffects(player.address)}
             />
           ))
         ) : (
@@ -167,6 +185,7 @@ const PlayerRow = ({
   onClick,
   whitelistPlayer,
   isLoading,
+  effects,
 }: {
   player: PlayerCustom & {
     registeredPoints: number;
@@ -178,6 +197,10 @@ const PlayerRow = ({
   onClick: () => void;
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
+  effects?: {
+    pointDeltas: any[];
+    rankChanges: any[];
+  };
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -186,11 +209,19 @@ const PlayerRow = ({
 
   return (
     <div
-      className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group", {
+      className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group relative", {
         "bg-gold/30 hover:bg-blueish/40  border border-gold/40": player.isUser,
         "hover:bg-gold/10 border border-transparent hover:border-gold/20": !player.isUser,
       })}
     >
+      {/* Effects overlay */}
+      {effects && (effects.pointDeltas.length > 0 || effects.rankChanges.length > 0) && (
+        <LeaderboardRowEffects
+          address={player.address}
+          pointDeltas={effects.pointDeltas}
+          rankChanges={effects.rankChanges}
+        />
+      )}
       <div className="grid grid-cols-12 w-full py-2 cursor-pointer items-center" onClick={onClick}>
         <p
           className={clsx("col-span-1 text-center font-medium", {
