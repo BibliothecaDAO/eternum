@@ -8,7 +8,9 @@ import {
   ensureActiveWorldProfileWithUI,
   getActiveWorld,
   isRpcUrlCompatibleForChain,
+  normalizeRpcUrl,
   patchManifestWithFactory,
+  resolveChain,
 } from "@/runtime/world";
 import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { setSqlApiBaseUrl } from "@/services/api";
@@ -52,7 +54,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   console.log("[STARTING DOJO SETUP]");
 
   // 0) Resolve world profile: prefer URL, then active selection, then prompt
-  const chain = env.VITE_PUBLIC_CHAIN! as Chain;
+  const chain = resolveChain(env.VITE_PUBLIC_CHAIN! as Chain);
   const pathWorld = deriveWorldFromPath();
 
   let profile = null;
@@ -73,7 +75,18 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
       if (profile.chain && profile.chain !== chain) return true;
       if (!profile.rpcUrl) return true;
       const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
-      if (canUseEnvRpc) return false;
+      if (canUseEnvRpc) {
+        if (!profile.rpcUrl) return true;
+        const normalizedProfileRpc = normalizeRpcUrl(profile.rpcUrl);
+        const normalizedEnvRpc = normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL);
+        if (
+          normalizedProfileRpc !== normalizedEnvRpc &&
+          normalizedProfileRpc.includes(`/x/${profile.name}/katana`)
+        ) {
+          return true;
+        }
+        return false;
+      }
       if (chain === "slot" || chain === "slottest") {
         return !profile.rpcUrl.includes(`/x/${profile.name}/katana`);
       }

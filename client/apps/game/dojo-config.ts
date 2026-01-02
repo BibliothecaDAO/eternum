@@ -1,5 +1,5 @@
 import { TORII_SETTING } from "@/utils/config";
-import { getActiveWorld, patchManifestWithFactory, normalizeRpcUrl } from "@/runtime/world";
+import { getActiveWorld, patchManifestWithFactory, normalizeRpcUrl, resolveChain } from "@/runtime/world";
 import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
 import { env } from "./env";
@@ -13,7 +13,8 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-let manifest = getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
+const resolvedChain = resolveChain(VITE_PUBLIC_CHAIN! as Chain);
+let manifest = getGameManifest(resolvedChain as Chain);
 
 // If a previously saved world profile exists, patch manifest and prefer its Torii.
 const activeWorld = getActiveWorld();

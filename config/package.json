@@ -1,5 +1,5 @@
 {
-  "name": "eternum-config",
+  "name": "eternum-config-deploy",
   "module": "index.ts",
   "scripts": {
     "local": "bun --env-file=../client/apps/game/.env.local run ./deployer/index.ts",

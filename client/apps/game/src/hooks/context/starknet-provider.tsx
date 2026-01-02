@@ -1,4 +1,4 @@
-import { normalizeRpcUrl } from "@/runtime/world";
+import { getActiveWorld, normalizeRpcUrl } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
@@ -36,38 +36,65 @@ const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
 
 // ==============================================
 
+type DerivedChain = {
+  kind: "slot" | "mainnet" | "sepolia";
+  chainId: string;
+};
+
+const deriveChainFromRpcUrl = (value: string): DerivedChain | null => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const path = url.pathname;
+    const lowerPath = path.toLowerCase();
+
+    if (lowerPath.includes("/starknet/mainnet")) {
+      return { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN };
+    }
+
+    if (lowerPath.includes("/starknet/sepolia")) {
+      return { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+    }
+
+    const match = path.match(/\/x\/([^/]+)\/katana/i);
+    if (!match) return null;
+
+    const slug = match[1];
+    const label = `WP_${slug.replace(/-/g, "_").toUpperCase()}`;
+    if (label.length > 31) return null;
+
+    return { kind: "slot", chainId: shortString.encodeShortString(label) };
+  } catch {
+    return null;
+  }
+};
+
 const baseRpcUrl = isLocal ? KATANA_RPC_URL : dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
 const rpcUrl = normalizeRpcUrl(baseRpcUrl);
 
 console.log("baseRpcUrl", baseRpcUrl);
 
-const chain_id = isLocal
-  ? KATANA_CHAIN_ID
-  : isSlot
-    ? SLOT_CHAIN_ID
-    : isSlottest
-      ? SLOT_CHAIN_ID_TEST
-      : env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? constants.StarknetChainId.SN_SEPOLIA
-        : constants.StarknetChainId.SN_MAIN;
+const derivedChain = isLocal ? null : deriveChainFromRpcUrl(rpcUrl);
+const fallbackChain: DerivedChain = isSlot
+  ? { kind: "slot", chainId: SLOT_CHAIN_ID }
+  : isSlottest
+    ? { kind: "slot", chainId: SLOT_CHAIN_ID_TEST }
+    : env.VITE_PUBLIC_CHAIN === "mainnet"
+      ? { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN }
+      : { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+const resolvedChain = derivedChain ?? fallbackChain;
+const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
+const chain_id = resolvedChainId;
 
 const controller = new ControllerConnector({
   propagateSessionErrors: true,
-  // chain_id,
+  chain_id,
   chains: [
     {
       rpcUrl,
     },
   ],
-  defaultChainId: isLocal
-    ? KATANA_CHAIN_ID
-    : isSlot
-      ? SLOT_CHAIN_ID
-      : isSlottest
-        ? SLOT_CHAIN_ID_TEST
-        : env.VITE_PUBLIC_CHAIN === "mainnet"
-          ? constants.StarknetChainId.SN_MAIN
-          : constants.StarknetChainId.SN_SEPOLIA,
+  defaultChainId: resolvedChainId,
   policies: buildPolicies(dojoConfig.manifest),
   slot,
   namespace,
@@ -135,13 +162,11 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       chains={
         isLocal
           ? [katanaLocalChain]
-          : isSlot
-            ? [getSlotChain(SLOT_CHAIN_ID)]
-            : isSlottest
-              ? [getSlotChain(SLOT_CHAIN_ID_TEST)]
-              : env.VITE_PUBLIC_CHAIN === "mainnet"
-                ? [mainnet]
-                : [sepolia]
+          : resolvedChain.kind === "slot"
+            ? [getSlotChain(resolvedChain.chainId)]
+            : resolvedChain.kind === "mainnet"
+              ? [mainnet]
+              : [sepolia]
       }
       provider={jsonRpcProvider({ rpc })}
       paymasterProvider={isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
@@ -173,6 +198,22 @@ const useBootstrapPrefetch = () => {
     }
 
     if (!account || hasPrefetchedRef.current) {
+      return;
+    }
+
+    const pathWorld = (() => {
+      if (typeof window === "undefined") return null;
+      const match = window.location.pathname.match(/^\/play\/([^/]+)(?:\/|$)/);
+      if (!match || !match[1]) return null;
+      try {
+        return decodeURIComponent(match[1]);
+      } catch {
+        return null;
+      }
+    })();
+
+    const activeWorld = getActiveWorld();
+    if (!activeWorld && !pathWorld) {
       return;
     }
 

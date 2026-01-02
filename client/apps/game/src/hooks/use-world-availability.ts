@@ -31,8 +31,17 @@ export interface WorldConfigMeta {
   registrationCount: number | null;
 }
 
+export interface WorldRef {
+  name: string;
+  chain?: string;
+}
+
+export const getWorldKey = (world: WorldRef): string => (world.chain ? `${world.chain}:${world.name}` : world.name);
+
 export interface WorldAvailability {
+  worldKey: string;
   worldName: string;
+  chain?: string;
   isAvailable: boolean;
   meta: WorldConfigMeta | null;
   isLoading: boolean;
@@ -88,9 +97,11 @@ const checkWorldAvailability = async (
  * Hook to check a single world's availability with caching.
  * Results are cached for 5 minutes.
  */
-export const useWorldAvailability = (worldName: string | null, enabled = true) => {
+export const useWorldAvailability = (world: WorldRef | null, enabled = true) => {
+  const worldName = world?.name ?? null;
+  const worldKey = world ? getWorldKey(world) : null;
   const query = useQuery({
-    queryKey: ["worldAvailability", worldName],
+    queryKey: ["worldAvailability", worldKey],
     queryFn: () => checkWorldAvailability(worldName!),
     enabled: enabled && !!worldName,
     staleTime: 5 * 60 * 1000, // 5 minutes - worlds don't go online/offline frequently
@@ -99,6 +110,9 @@ export const useWorldAvailability = (worldName: string | null, enabled = true) =
   });
 
   return {
+    worldKey: worldKey ?? "",
+    worldName: worldName ?? "",
+    chain: world?.chain,
     isAvailable: query.data?.isAvailable ?? false,
     meta: query.data?.meta ?? null,
     isLoading: query.isLoading,
@@ -112,12 +126,12 @@ export const useWorldAvailability = (worldName: string | null, enabled = true) =
  * Uses React Query's useQueries for parallel execution with caching.
  * Results are cached for 5 minutes.
  */
-export const useWorldsAvailability = (worldNames: string[], enabled = true) => {
+export const useWorldsAvailability = (worlds: WorldRef[], enabled = true) => {
   const queries = useQueries({
-    queries: worldNames.map((worldName) => ({
-      queryKey: ["worldAvailability", worldName],
-      queryFn: () => checkWorldAvailability(worldName),
-      enabled: enabled && !!worldName,
+    queries: worlds.map((world) => ({
+      queryKey: ["worldAvailability", getWorldKey(world)],
+      queryFn: () => checkWorldAvailability(world.name),
+      enabled: enabled && !!world.name,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       retry: 1,
@@ -127,9 +141,12 @@ export const useWorldsAvailability = (worldNames: string[], enabled = true) => {
   const results: Map<string, WorldAvailability> = new Map();
 
   queries.forEach((query, index) => {
-    const worldName = worldNames[index];
-    results.set(worldName, {
-      worldName,
+    const world = worlds[index];
+    const worldKey = getWorldKey(world);
+    results.set(worldKey, {
+      worldKey,
+      worldName: world.name,
+      chain: world.chain,
       isAvailable: query.data?.isAvailable ?? false,
       meta: query.data?.meta ?? null,
       isLoading: query.isLoading,

@@ -1,41 +1,27 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldsAvailability, getAvailabilityStatus } from "@/hooks/use-world-availability";
-import { getActiveWorldName, getFactorySqlBaseUrl, listWorldNames } from "@/runtime/world";
-import { deleteWorldProfile } from "@/runtime/world/store";
+import { useFactoryWorlds, type FactoryWorld } from "@/hooks/use-factory-worlds";
+import { useWorldsAvailability, getAvailabilityStatus, getWorldKey } from "@/hooks/use-world-availability";
+import {
+  clearActiveWorld,
+  deleteWorldProfile,
+  getActiveWorldName,
+  listWorldNames,
+  resolveChain,
+  setSelectedChain,
+} from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2, UserCheck, UserX, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { shortString } from "starknet";
+import type { Chain } from "@contracts";
 import { env } from "../../../../env";
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
-const decodePaddedFeltAscii = (hex: string): string => {
-  try {
-    if (!hex) return "";
-    const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
-    if (h === "0") return "";
-    try {
-      const asDec = BigInt("0x" + h).toString();
-      const decoded = shortString.decodeShortString(asDec);
-      if (decoded && decoded.trim().length > 0) return decoded;
-    } catch {
-      // ignore and fallback to manual decode
-    }
-    let i = 0;
-    while (i + 1 < h.length && h.slice(i, i + 2) === "00") i += 2;
-    let out = "";
-    for (; i + 1 < h.length; i += 2) {
-      const byte = parseInt(h.slice(i, i + 2), 16);
-      if (byte === 0) continue;
-      out += String.fromCharCode(byte);
-    }
-    return out;
-  } catch {
-    return "";
-  }
+const normalizeFactoryChain = (chain: Chain): Chain => {
+  if (chain === "slottest" || chain === "local") return "slot";
+  return chain;
 };
 
 const parseMaybeHexToNumber = (v: unknown): number | null => {
@@ -98,6 +84,8 @@ type WorldMeta = {
 
 type FactoryGameDisplay = {
   name: string;
+  chain: Chain;
+  worldKey: string;
   status: "checking" | "ok" | "fail";
   startMainAt: number | null;
   endAt: number | null;
@@ -115,11 +103,8 @@ export const WorldSelectorModal = ({
   const close = useUIStore((s) => s.setModal);
   const [saved, setSaved] = useState<string[]>(() => listWorldNames());
   const [selected, setSelected] = useState<string | null>(getActiveWorldName());
-  const [nameInput, setNameInput] = useState("");
+  const [selectedFactory, setSelectedFactory] = useState<FactoryWorld | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [factoryNames, setFactoryNames] = useState<string[]>([]);
-  const [factoryNamesLoading, setFactoryNamesLoading] = useState(false);
-  const [factoryError, setFactoryError] = useState<string | null>(null);
   const [playerRegistration, setPlayerRegistration] = useState<Record<string, boolean | null>>({});
   const [showEnded, setShowEnded] = useState(false);
   const [showAwaiting, setShowAwaiting] = useState(false);
@@ -130,34 +115,58 @@ export const WorldSelectorModal = ({
   // Use hook for game status filtering (updates every 10s, not every 1s)
   const { nowSec, isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
+  const resolvedChain = resolveChain(env.VITE_PUBLIC_CHAIN as Chain);
+  const activeFactoryChain = normalizeFactoryChain(resolvedChain);
+  const factoryChains = useMemo<Chain[]>(() => {
+    const chains: Chain[] = ["mainnet", "slot"];
+    if (activeFactoryChain && !chains.includes(activeFactoryChain)) {
+      chains.push(activeFactoryChain);
+    }
+    return chains;
+  }, [activeFactoryChain]);
+
+  const {
+    worlds: factoryWorlds,
+    isLoading: factoryWorldsLoading,
+    error: factoryError,
+    refetchAll: refetchFactoryWorlds,
+  } = useFactoryWorlds(factoryChains);
+
   // Use cached availability hook for factory worlds
   const {
     results: factoryAvailability,
     isAnyLoading: factoryCheckingAvailability,
     refetchAll: refetchFactory,
-  } = useWorldsAvailability(factoryNames, factoryNames.length > 0);
+  } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
+
+  const savedWorldRefs = useMemo(() => saved.map((name) => ({ name })), [saved]);
 
   // Use cached availability hook for saved worlds
-  const { results: savedAvailability, allSettled: savedChecksDone } = useWorldsAvailability(saved, saved.length > 0);
+  const { results: savedAvailability, allSettled: savedChecksDone } = useWorldsAvailability(
+    savedWorldRefs,
+    savedWorldRefs.length > 0,
+  );
 
   // Derive statusMap from savedAvailability for backwards compatibility
   const statusMap = useMemo(() => {
     const map: Record<string, "checking" | "ok" | "fail"> = {};
-    saved.forEach((name) => {
-      const availability = savedAvailability.get(name);
-      map[name] = getAvailabilityStatus(availability);
+    savedWorldRefs.forEach((world) => {
+      const availability = savedAvailability.get(getWorldKey(world));
+      map[world.name] = getAvailabilityStatus(availability);
     });
     return map;
-  }, [saved, savedAvailability]);
+  }, [savedWorldRefs, savedAvailability]);
 
   // Auto-delete offline saved games when checks complete
   useEffect(() => {
     if (!savedChecksDone || saved.length === 0) return;
 
-    const offlineGames = saved.filter((name) => {
-      const availability = savedAvailability.get(name);
-      return availability && !availability.isLoading && !availability.isAvailable;
-    });
+    const offlineGames = savedWorldRefs
+      .filter((world) => {
+        const availability = savedAvailability.get(getWorldKey(world));
+        return availability && !availability.isLoading && !availability.isAvailable;
+      })
+      .map((world) => world.name);
 
     if (offlineGames.length > 0) {
       offlineGames.forEach((n) => deleteWorldProfile(n));
@@ -167,7 +176,7 @@ export const WorldSelectorModal = ({
         setSelected(null);
       }
     }
-  }, [savedChecksDone, saved, savedAvailability, selected]);
+  }, [savedChecksDone, saved, savedAvailability, selected, savedWorldRefs]);
 
   // Fetch player registration status for online worlds (factory + saved)
   useEffect(() => {
@@ -175,17 +184,23 @@ export const WorldSelectorModal = ({
     let cancelled = false;
 
     const allOnlineWorlds = [
-      ...factoryNames.filter((n) => {
-        const availability = factoryAvailability.get(n);
+      ...factoryWorlds.filter((world) => {
+        const availability = factoryAvailability.get(getWorldKey(world));
         return availability?.isAvailable && !availability.isLoading;
       }),
-      ...saved.filter((n) => {
-        const availability = savedAvailability.get(n);
+      ...savedWorldRefs.filter((world) => {
+        const availability = savedAvailability.get(getWorldKey(world));
         return availability?.isAvailable && !availability.isLoading;
       }),
     ];
 
-    const uniqueWorlds = [...new Set(allOnlineWorlds)].filter((n) => playerRegistration[n] === undefined);
+    const seen = new Set<string>();
+    const uniqueWorlds = allOnlineWorlds.filter((world) => {
+      const key = getWorldKey(world);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return playerRegistration[key] === undefined;
+    });
     if (uniqueWorlds.length === 0) return;
 
     const run = async () => {
@@ -194,11 +209,12 @@ export const WorldSelectorModal = ({
       const work = async () => {
         while (!cancelled && index < uniqueWorlds.length) {
           const i = index++;
-          const name = uniqueWorlds[i];
-          const torii = buildToriiBaseUrl(name);
+          const world = uniqueWorlds[i];
+          const key = getWorldKey(world);
+          const torii = buildToriiBaseUrl(world.name);
           const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral);
           if (!cancelled) {
-            setPlayerRegistration((prev) => ({ ...prev, [name]: status }));
+            setPlayerRegistration((prev) => ({ ...prev, [key]: status }));
           }
         }
       };
@@ -211,77 +227,46 @@ export const WorldSelectorModal = ({
     return () => {
       cancelled = true;
     };
-  }, [playerFeltLiteral, factoryNames, factoryAvailability, saved, savedAvailability, playerRegistration]);
-
-  // Fetch factory world names (just the list, not availability)
-  const loadFactoryNames = useCallback(async () => {
-    try {
-      setFactoryNamesLoading(true);
-      setFactoryError(null);
-
-      const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as "mainnet" | "sepolia" | "slot" | "local");
-      if (!factorySqlBaseUrl) {
-        setFactoryNames([]);
-        return;
-      }
-
-      const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
-      const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
-      const rows = (await res.json()) as Record<string, unknown>[];
-
-      const names: string[] = [];
-      const seen = new Set<string>();
-      for (const row of rows) {
-        const feltHex: string | undefined =
-          (row && (row.name as string)) || (row && (row["data.name"] as string)) || undefined;
-        if (!feltHex || typeof feltHex !== "string") continue;
-        const decoded = decodePaddedFeltAscii(feltHex);
-        if (!decoded || seen.has(decoded)) continue;
-        seen.add(decoded);
-        names.push(decoded);
-      }
-
-      setFactoryNames(names);
-    } catch (e: unknown) {
-      setFactoryError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setFactoryNamesLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadFactoryNames();
-  }, [loadFactoryNames]);
+  }, [
+    playerFeltLiteral,
+    factoryWorlds,
+    factoryAvailability,
+    savedWorldRefs,
+    savedAvailability,
+    playerRegistration,
+  ]);
 
   // Build factory games list from cached availability results
   const factoryGames = useMemo(() => {
-    return factoryNames.map((name) => {
-      const availability = factoryAvailability.get(name);
+    return factoryWorlds.map((world) => {
+      const worldKey = getWorldKey(world);
+      const availability = factoryAvailability.get(worldKey);
       const status = getAvailabilityStatus(availability);
       return {
-        name,
+        name: world.name,
+        chain: world.chain,
+        worldKey,
         status,
         startMainAt: availability?.meta?.startMainAt ?? null,
         endAt: availability?.meta?.endAt ?? null,
         registrationCount: availability?.meta?.registrationCount ?? null,
-        isRegistered: playerRegistration[name] ?? null,
+        isRegistered: playerRegistration[worldKey] ?? null,
       };
     });
-  }, [factoryNames, factoryAvailability, playerRegistration]);
+  }, [factoryWorlds, factoryAvailability, playerRegistration]);
 
   // Build savedWorldMeta from cached availability for backwards compatibility
   const savedWorldMeta = useMemo(() => {
     const meta: Record<string, WorldMeta> = {};
     saved.forEach((name) => {
-      const availability = savedAvailability.get(name);
+      const worldKey = getWorldKey({ name });
+      const availability = savedAvailability.get(worldKey);
       if (availability?.isAvailable && availability.meta) {
         meta[name] = {
           startMainAt: availability.meta.startMainAt,
           endAt: availability.meta.endAt,
           registrationCount: availability.meta.registrationCount,
-          isRegistered: playerRegistration[name] ?? null,
+          isRegistered: playerRegistration[worldKey] ?? null,
           registrationCheckedFor: playerAddress?.toLowerCase() ?? null,
         };
       }
@@ -289,13 +274,24 @@ export const WorldSelectorModal = ({
     return meta;
   }, [saved, savedAvailability, playerRegistration, playerAddress]);
 
-  const factoryLoading = factoryNamesLoading || (factoryNames.length > 0 && factoryCheckingAvailability);
+  const factoryLoading = factoryWorldsLoading || (factoryWorlds.length > 0 && factoryCheckingAvailability);
+  const factoryErrorMessage = factoryError ? factoryError.message : null;
 
   const handleRefresh = useCallback(async () => {
     setPlayerRegistration({});
-    await loadFactoryNames();
+    await refetchFactoryWorlds();
     await refetchFactory();
-  }, [loadFactoryNames, refetchFactory]);
+  }, [refetchFactoryWorlds, refetchFactory]);
+
+  const handleSwitchChain = useCallback(
+    (nextChain: Chain) => {
+      if (normalizeFactoryChain(nextChain) === activeFactoryChain) return;
+      setSelectedChain(nextChain);
+      clearActiveWorld();
+      window.location.reload();
+    },
+    [activeFactoryChain],
+  );
 
   // Handle escape key
   useEffect(() => {
@@ -309,7 +305,7 @@ export const WorldSelectorModal = ({
   }, []);
 
   const confirm = () => {
-    const toUse = nameInput || selected;
+    const toUse = selectedFactory?.name || selected;
     if (!toUse) return;
     close(null, false);
     onConfirm(toUse);
@@ -338,10 +334,10 @@ export const WorldSelectorModal = ({
     handleEnterGame(worldName);
   };
 
-  const handleEnterFactoryGame = (worldName: string) => {
-    // For factory entries we already gate by their own online status in UI
+  const handleEnterFactoryGame = (game: FactoryGameDisplay) => {
+    if (normalizeFactoryChain(game.chain) !== activeFactoryChain) return;
     close(null, false);
-    onConfirm(worldName);
+    onConfirm(game.name);
   };
 
   const isGameOnline = (worldName: string) => {
@@ -407,14 +403,17 @@ export const WorldSelectorModal = ({
     const isOnline = fg.status === "ok";
     const isUnconfigured = fg.startMainAt == null && isOnline;
     const gameIsEnded = isEnded(fg.startMainAt, fg.endAt);
+    const isChainMatch = normalizeFactoryChain(fg.chain) === activeFactoryChain;
+    const isInteractive = isOnline && isChainMatch;
+    const isSelected = selectedFactory ? getWorldKey(selectedFactory) === fg.worldKey : false;
 
     return (
       <div
-        key={fg.name}
+        key={fg.worldKey}
         className={`group relative rounded-lg border-2 p-4 transition-all duration-200 ${
-          isOnline ? "cursor-pointer" : "cursor-default"
+          isInteractive ? "cursor-pointer" : "cursor-default"
         } ${
-          nameInput === fg.name
+          isSelected
             ? gameIsEnded
               ? "border-gold/40 bg-brown/20 shadow-lg shadow-gold/10 opacity-70"
               : isUnconfigured
@@ -426,8 +425,11 @@ export const WorldSelectorModal = ({
                 ? "border-gold/30 bg-gold/5 hover:bg-gold/10 hover:border-gold/40 opacity-80"
                 : "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
         }`}
-        onClick={() => setNameInput(fg.name)}
-        onDoubleClick={() => isOnline && handleEnterFactoryGame(fg.name)}
+        onClick={() => {
+          if (!isChainMatch) return;
+          setSelectedFactory(fg);
+        }}
+        onDoubleClick={() => isInteractive && handleEnterFactoryGame(fg)}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -439,7 +441,16 @@ export const WorldSelectorModal = ({
               >
                 {fg.name}
               </div>
-              {nameInput === fg.name && (
+              <span
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+                  fg.chain === "mainnet"
+                    ? "border-brilliance/30 bg-brilliance/10 text-brilliance"
+                    : "border-gold/30 bg-gold/10 text-gold/70"
+                } ${isChainMatch ? "" : "opacity-60"}`}
+              >
+                {fg.chain}
+              </span>
+              {isSelected && (
                 <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
                   <Check className="w-3 h-3 text-gold" />
                 </div>
@@ -493,11 +504,11 @@ export const WorldSelectorModal = ({
             {/* Action Buttons */}
             <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               {/* Enter Game Button */}
-              {isOnline && (
+              {isInteractive && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleEnterFactoryGame(fg.name);
+                    handleEnterFactoryGame(fg);
                   }}
                   className="p-1.5 rounded-md bg-brilliance/10 text-brilliance border border-brilliance/30 hover:bg-brilliance/20 transition-all"
                   title="Enter game"
@@ -530,9 +541,38 @@ export const WorldSelectorModal = ({
                 <p className="text-sm text-gold/60 mt-1">Choose your game </p>
               </div>
             </div>
-            <Button onClick={cancel} variant="outline" size="md">
-              Cancel
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-gold/60">Chain</span>
+                <div className="flex items-center gap-1 rounded-full border border-gold/20 bg-brown/80 p-1">
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchChain("mainnet")}
+                    className={`px-2.5 py-1 text-[10px] font-semibold uppercase rounded-full transition ${
+                      activeFactoryChain === "mainnet"
+                        ? "bg-gold/20 text-gold"
+                        : "text-gold/60 hover:text-gold hover:bg-gold/10"
+                    }`}
+                  >
+                    Mainnet
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchChain("slot")}
+                    className={`px-2.5 py-1 text-[10px] font-semibold uppercase rounded-full transition ${
+                      activeFactoryChain === "slot"
+                        ? "bg-gold/20 text-gold"
+                        : "text-gold/60 hover:text-gold hover:bg-gold/10"
+                    }`}
+                  >
+                    Slot
+                  </button>
+                </div>
+              </div>
+              <Button onClick={cancel} variant="outline" size="md">
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -612,11 +652,11 @@ export const WorldSelectorModal = ({
                       <p className="text-sm text-gold/60 font-semibold">Loading factory games...</p>
                       <p className="text-xs text-gold/40 mt-1">Fetching available worlds from the factory</p>
                     </div>
-                  ) : factoryError ? (
+                  ) : factoryErrorMessage ? (
                     <div className="rounded-lg border-2 border-danger/30 bg-danger/5 p-6 text-center">
                       <AlertCircle className="w-12 h-12 text-danger/60 mx-auto mb-2" />
                       <p className="text-sm text-danger font-semibold">Failed to load factory games</p>
-                      <p className="text-xs text-danger/70 mt-1">{factoryError}</p>
+                      <p className="text-xs text-danger/70 mt-1">{factoryErrorMessage}</p>
                       <button
                         onClick={() => void handleRefresh()}
                         className="mt-3 px-3 py-1.5 text-xs rounded-md bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition-all"

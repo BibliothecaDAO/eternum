@@ -1,6 +1,8 @@
+import type { Chain } from "@contracts";
 import { WorldProfile, WorldProfilesMap } from "./types";
 
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
+const CHAIN_KEY = "ACTIVE_WORLD_CHAIN";
 const PROFILES_KEY = "WORLD_PROFILES";
 
 const safeParse = <T>(raw: string | null, fallback: T): T => {
@@ -11,6 +13,50 @@ const safeParse = <T>(raw: string | null, fallback: T): T => {
     return fallback;
   }
 };
+
+const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "slot", "slottest", "local"];
+
+const isValidChain = (value: string | null): value is Chain => {
+  if (!value) return false;
+  return CHAIN_VALUES.includes(value as Chain);
+};
+
+const readStorageValue = (key: string): string | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const writeStorageValue = (key: string, value: string | null) => {
+  if (typeof window === "undefined") return;
+  try {
+    if (value === null) {
+      window.localStorage.removeItem(key);
+    } else {
+      window.localStorage.setItem(key, value);
+    }
+  } catch {
+    // ignore storage failures
+  }
+};
+
+export const getSelectedChain = (): Chain | null => {
+  const stored = readStorageValue(CHAIN_KEY);
+  return isValidChain(stored) ? stored : null;
+};
+
+export const setSelectedChain = (chain: Chain) => {
+  writeStorageValue(CHAIN_KEY, chain);
+};
+
+export const clearSelectedChain = () => {
+  writeStorageValue(CHAIN_KEY, null);
+};
+
+export const resolveChain = (fallback: Chain): Chain => getSelectedChain() ?? fallback;
 
 export const listWorldNames = (): string[] => {
   const profiles = safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});

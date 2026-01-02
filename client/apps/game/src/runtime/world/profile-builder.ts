@@ -47,9 +47,10 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
   // As a last resort, default to 0x0 so configuration can still proceed with patched contracts
   if (!worldAddress) worldAddress = "0x0";
 
+  const slotDefaultRpcUrl = `${cartridgeApiBase}/x/eternum-blitz-slot-3/katana`;
   const chainDefaultRpcUrl =
     chain === "slot" || chain === "slottest"
-      ? `${cartridgeApiBase}/x/${name}/katana`
+      ? slotDefaultRpcUrl
       : chain === "mainnet" || chain === "sepolia"
         ? `${cartridgeApiBase}/x/starknet/${chain}`
         : env.VITE_PUBLIC_NODE_URL;
