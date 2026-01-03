@@ -1,5 +1,5 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
@@ -24,7 +24,6 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import {
   ContractAddress,
-  getResourceTiers,
   ID,
   Resources,
   resources,
@@ -35,6 +34,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
+  const mode = useGameModeConfig();
   const {
     account: { account },
     setup: { components, systemCalls },
@@ -168,7 +168,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   };
 
   const orderedResources = useMemo(() => {
-    return Object.values(getResourceTiers(getIsBlitz()))
+    return Object.values(mode.resources.getTiers())
       .flat()
       .map((id) => resources.find((r) => r.id === id))
       .filter((r): r is Resources => !!r)

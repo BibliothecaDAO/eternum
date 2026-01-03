@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { sqlApi } from "@/services/api";
 import { displayAddress } from "@/ui/utils/utils";
@@ -10,11 +11,8 @@ import {
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  getIsBlitz,
   getStructureArmyRelicEffects,
-  getStructureName,
   getStructureRelicEffects,
-  getStructureTypeName,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
@@ -38,6 +36,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     account,
     setup: { components },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   const goToStructure = useGoToStructure(setup);
 
@@ -46,7 +45,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const structureEntityIdNumber = Number(structureEntityId ?? 0);
-  const isBlitz = getIsBlitz();
 
   const {
     data: structureDetails,
@@ -142,8 +140,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const typeLabel = useMemo(() => {
     if (!structure?.base?.category) return undefined;
-    return getStructureTypeName(structure.base.category as StructureType, isBlitz);
-  }, [structure?.base?.category, isBlitz]);
+    return mode.structure.getTypeName(structure.base.category as StructureType);
+  }, [mode, structure?.base?.category]);
 
   const backgroundImage = useMemo(() => {
     if (!structure?.base?.category) return undefined;
@@ -218,8 +216,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   }, [isHyperstructure, structure?.entity_id, components]);
 
   const structureName = useMemo(() => {
-    return structure ? getStructureName(structure, isBlitz).name : undefined;
-  }, [structure, isBlitz]);
+    return structure ? mode.structure.getName(structure).name : undefined;
+  }, [mode, structure]);
 
   const handleViewStructure = useCallback(() => {
     if (!structure) return;
@@ -243,7 +241,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     isAlly,
     hyperstructureRealmCount,
     isHyperstructure,
-    isBlitz,
     typeLabel,
     backgroundImage,
     alignmentBadge,

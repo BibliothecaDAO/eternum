@@ -1,6 +1,7 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getBlockTimestamp, getEntityInfo, getIsBlitz, Position } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -43,6 +44,7 @@ export const TopHeader = memo(() => {
   const isSpectating = useUIStore((state) => state.isSpectating);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const accountName = useAccountStore((state) => state.accountName);
+  const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
@@ -51,8 +53,8 @@ export const TopHeader = memo(() => {
   // force a refresh of getEntityInfo when the structure data arrives
   const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components, getIsBlitz()),
-    [structureEntityId, currentDefaultTick, account.address, structure],
+    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
+    [structureEntityId, currentDefaultTick, account.address, structure, mode],
   );
 
   const selectedStructure = useMemo(() => {

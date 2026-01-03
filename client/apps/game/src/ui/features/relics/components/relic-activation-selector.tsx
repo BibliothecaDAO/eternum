@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getEntityInfo, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
 
@@ -176,7 +176,7 @@ export const RelicActivationSelector = ({
     setup: { components, systemCalls },
     account: { account },
   } = useDojo();
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
 
   const removeRelicFromStore = useUIStore((state) => state.removeRelicFromEntity);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
@@ -198,7 +198,7 @@ export const RelicActivationSelector = ({
       }
 
       try {
-        const name = getStructureName(structure.structure, isBlitz).name;
+        const name = mode.structure.getName(structure.structure).name;
         map.set(String(id), name);
       } catch {
         map.set(String(id), `Realm #${id}`);
@@ -206,7 +206,7 @@ export const RelicActivationSelector = ({
     });
 
     return map;
-  }, [playerStructures, isBlitz]);
+  }, [mode, playerStructures]);
 
   const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(resourceId);
 
@@ -234,7 +234,7 @@ export const RelicActivationSelector = ({
       }
 
       try {
-        const parentInfo = getEntityInfo(structureId, ZERO_CONTRACT_ADDRESS, components, isBlitz);
+        const parentInfo = mode.structure.getEntityInfo(structureId, ZERO_CONTRACT_ADDRESS, components);
         return parentInfo?.name?.name ?? null;
       } catch {
         return null;
@@ -242,7 +242,7 @@ export const RelicActivationSelector = ({
     };
 
     return holders.map((holder) => {
-      const entityInfo = getEntityInfo(holder.entityId, ZERO_CONTRACT_ADDRESS, components, isBlitz);
+      const entityInfo = mode.structure.getEntityInfo(holder.entityId, ZERO_CONTRACT_ADDRESS, components);
       const entityName = entityInfo?.name?.name ?? `Entity ${holder.entityId}`;
       const selfId = toEntityId(holder.entityId, holder.entityId);
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
@@ -262,7 +262,7 @@ export const RelicActivationSelector = ({
         troops,
       };
     });
-  }, [components, holders, structureNameMap, isBlitz]);
+  }, [components, holders, mode, structureNameMap]);
 
   const visibleHolders = useMemo(() => {
     return enrichedHolders.filter((holder) => !removedHolderIds.includes(String(holder.entityId)));

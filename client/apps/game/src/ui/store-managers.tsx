@@ -5,15 +5,14 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   formatArmies,
   getAddressName,
   getAllArrivals,
   getEntityIdFromKeys,
-  getEntityInfo,
   getGuildFromPlayerAddress,
-  getIsBlitz,
   LeaderboardManager,
   ResourceArrivalManager,
   SelectableArmy,
@@ -453,13 +452,14 @@ const ButtonStateStoreManager = () => {
     account: { account },
     setup: { components },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   const setDisableButtons = useUIStore((state) => state.setDisableButtons);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, getIsBlitz()),
-    [structureEntityId, account.address, components],
+    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components),
+    [structureEntityId, account.address, components, mode],
   );
 
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);

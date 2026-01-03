@@ -11,6 +11,7 @@ import { ActiveRelicEffects } from "./active-relic-effects";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
 import { StructureProductionPanel } from "./structure-production-panel";
 
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -33,6 +34,7 @@ export const StructureEntityDetail = memo(
     showButtons = false,
   }: StructureEntityDetailProps) => {
     const { setup } = useDojo();
+    const mode = useGameModeConfig();
     const {
       structure,
       structureDetails,
@@ -46,7 +48,6 @@ export const StructureEntityDetail = memo(
       isMine,
       hyperstructureRealmCount,
       isHyperstructure,
-      isBlitz,
       typeLabel,
       backgroundImage,
       alignmentBadge,
@@ -168,7 +169,7 @@ export const StructureEntityDetail = memo(
             </div>
           )}
 
-          {isHyperstructure && !isBlitz && (
+          {isHyperstructure && mode.ui.showHyperstructureProgress && (
             <div className={panelClasses()}>
               <div className="flex items-center justify-between gap-2">
                 <div className={sectionTitleClass}>Construction Progress</div>

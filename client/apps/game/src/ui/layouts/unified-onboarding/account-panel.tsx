@@ -2,7 +2,7 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Loader2 } from "lucide-react";
 
 const mintUrl = "https://empire.realms.world";
@@ -22,7 +22,7 @@ export const AccountPanel = ({
   isBootstrapRunning,
   bootstrapProgress,
 }: AccountPanelProps) => {
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
 
   return (
     <div className="flex flex-col h-full">
@@ -53,7 +53,7 @@ export const AccountPanel = ({
 
           <SpectateButton className="w-full rounded-md shadow-md !h-14" onClick={onSpectate} />
 
-          {!isBlitz && (
+          {mode.ui.showMintCta && (
             <a className="w-full cursor-pointer block" href={mintUrl} target="_blank" rel="noopener noreferrer">
               <Button className="w-full rounded-md shadow-md !h-14" size="lg" forceUppercase={false}>
                 <div className="flex items-center justify-center w-full">

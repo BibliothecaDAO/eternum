@@ -34,9 +34,6 @@ export const HIDE_TIME_REMAINING_FOR = [ResourcesIds.Labor];
 // Food resources (unlimited production - no output_amount_left constraint)
 export const FOOD_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish];
 
-// Resources that cannot be managed in Blitz mode
-export const BLITZ_UNMANAGEABLE_RESOURCES = [ResourcesIds.Labor, ResourcesIds.Wheat];
-
 // ==================== FORMATTERS ====================
 
 export const formatProductionPerHour = (perSecond: number): string =>

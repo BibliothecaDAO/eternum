@@ -13,7 +13,7 @@ import {
   buildBlitzShareMessage,
 } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { toPng } from "html-to-image";
 import { Copy, Share2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -122,7 +122,7 @@ export const EndgameModal = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
 
   const hasPlayerActivity = useMemo(() => {
     if (!currentPlayerData) {
@@ -175,7 +175,7 @@ export const EndgameModal = () => {
     const shareText = buildBlitzShareMessage({
       rank: highlight.rank,
       points: highlight.points,
-      eventLabel: isBlitz ? "Realms Blitz" : "the Realms leaderboard",
+      eventLabel: mode.labels.shareEventLabel,
       origin: typeof window !== "undefined" ? window.location.origin : undefined,
     });
 
@@ -185,7 +185,7 @@ export const EndgameModal = () => {
     if (typeof window !== "undefined") {
       window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
     }
-  }, [highlight, isBlitz]);
+  }, [highlight, mode.labels.shareEventLabel]);
 
   const handleViewLeaderboard = useCallback(() => {
     if (typeof window === "undefined") {
@@ -268,8 +268,8 @@ export const EndgameModal = () => {
     return null;
   }
 
-  const cardTitle = isBlitz ? "Realms Blitz" : "Realms";
-  const cardSubtitle = isBlitz ? "Blitz Leaderboard" : "Final Leaderboard";
+  const cardTitle = mode.labels.endgameCardTitle;
+  const cardSubtitle = mode.labels.endgameCardSubtitle;
   const playerName = highlight?.name ?? null;
   const championLine = championPlayer?.name ?? playerName;
 

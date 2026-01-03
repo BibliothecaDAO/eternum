@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -10,7 +11,7 @@ import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
-import { getIsBlitz, getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
+import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Shapes, Users } from "lucide-react";
@@ -56,10 +57,9 @@ export const Social = () => {
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
+  const mode = useGameModeConfig();
 
   const players = usePlayers();
-
-  const isBlitz = getIsBlitz();
 
   const refreshPlayerData = usePlayerStore((state) => state.refreshPlayerData);
   const lastPlayerDataRefreshTime = usePlayerStore((state) => state.lastRefreshTime);
@@ -174,7 +174,7 @@ export const Social = () => {
       },
     ];
 
-    if (!isBlitz) {
+    if (mode.ui.showGuildsTab) {
       baseTabs.push({
         key: "Tribes",
         label: (
@@ -204,7 +204,7 @@ export const Social = () => {
     });
 
     return baseTabs;
-  }, [isBlitz, isExpanded, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded]);
+  }, [mode, isExpanded, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded]);
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
@@ -258,7 +258,7 @@ export const Social = () => {
       onClick={() => togglePopup(leaderboard)}
       show={isOpen}
       title={leaderboard}
-      hintSection={isBlitz ? HintSection.Points : HintSection.Tribes}
+      hintSection={mode.ui.showGuildsTab ? HintSection.Tribes : HintSection.Points}
       childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
       isExpanded={isExpanded}
     >

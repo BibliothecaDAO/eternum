@@ -1,8 +1,9 @@
 import { useUISound } from "@/audio";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { configManager, formatTime, getIsBlitz } from "@bibliothecadao/eternum";
+import { configManager, formatTime } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
@@ -20,11 +21,12 @@ export const TickProgress = memo(() => {
   const setCycleProgress = useUIStore((state) => state.setCycleProgress);
   const setCycleTime = useUIStore((state) => state.setCycleTime);
   const { currentBlockTimestamp } = useBlockTimestamp();
+  const mode = useGameModeConfig();
 
   const cycleTime = configManager.getTick(TickIds.Armies);
   const hasValidCycle = cycleTime > 0;
   const dayDuration = hasValidCycle ? cycleTime * PHASES.length : 1;
-  const playGong = useUISound(getIsBlitz() ? "event.blitz_gong" : "event.gong");
+  const playGong = useUISound(mode.audio.tickGongSound);
 
   const lastProgressRef = useRef(0);
 

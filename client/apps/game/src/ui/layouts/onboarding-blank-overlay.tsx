@@ -1,5 +1,5 @@
 import { OnboardingActions, OnboardingContainer, OnboardingStage } from "@/ui/layouts/onboarding/index";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 interface OnboardingBlankOverlayProps {
   backgroundImage: string;
@@ -8,12 +8,12 @@ interface OnboardingBlankOverlayProps {
 }
 
 export const OnboardingBlankOverlay = ({ backgroundImage, onConnect, onSpectate }: OnboardingBlankOverlayProps) => {
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
 
   return (
     <OnboardingContainer backgroundImage={backgroundImage}>
       <OnboardingStage>
-        <OnboardingActions onConnect={onConnect} onSpectate={onSpectate} showMintCta={!isBlitz} />
+        <OnboardingActions onConnect={onConnect} onSpectate={onSpectate} showMintCta={mode.ui.showMintCta} />
       </OnboardingStage>
     </OnboardingContainer>
   );

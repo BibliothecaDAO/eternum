@@ -1,11 +1,11 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { isRelic } from "@bibliothecadao/eternum";
-import { ResourcesIds, getResourceTiers } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import React, { useMemo, useRef, useState } from "react";
 
@@ -27,6 +27,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
   const [searchInput, setSearchInput] = useState("");
   const [selectedResource, setSelectedResource] = useState<string>(defaultValue?.toString() || "");
   const [open, setOpen] = useState(false);
+  const mode = useGameModeConfig();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -50,7 +51,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
   ];
 
   const orderedResources = useMemo(() => {
-    return Object.values(getResourceTiers(getIsBlitz()))
+    return Object.values(mode.resources.getTiers())
       .flat()
       .filter((resourceId) => {
         if (resourceId === ResourcesIds.Lords) return false;
@@ -58,7 +59,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
         if (excludeResourceIds.includes(resourceId)) return false;
         return true;
       });
-  }, [realmProduction, excludeResourceIds]);
+  }, [realmProduction, excludeResourceIds, mode]);
 
   const filteredResourceIds = orderedResources.filter((resourceId) =>
     ResourcesIds[resourceId].toLowerCase().startsWith(searchInput.toLowerCase()),

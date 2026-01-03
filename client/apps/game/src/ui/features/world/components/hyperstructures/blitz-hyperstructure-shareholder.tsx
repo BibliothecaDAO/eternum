@@ -1,5 +1,4 @@
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useOwnedHyperstructuresEntityIds } from "@bibliothecadao/react";
@@ -16,6 +15,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
       systemCalls: { allocate_shares },
     },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   // listen to all the hyperstructures where you are owner with useEntityQuery
   const ownedHyperstructures = useOwnedHyperstructuresEntityIds();
@@ -24,8 +24,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
   const allocateSharesTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const isBlitz = getIsBlitz();
-    if (!isBlitz) return;
+    if (!mode.rules.autoAllocateHyperstructureShares) return;
 
     const previousOwnedHyperstructuresSet = new Set(previousOwnedHyperstructures.current);
     const hasNewOwnedHyperstructure = ownedHyperstructures.some(
@@ -87,7 +86,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
         allocateSharesTimeoutId.current = null;
       }
     };
-  }, [ownedHyperstructures, account, components, allocate_shares]);
+  }, [ownedHyperstructures, account, components, allocate_shares, mode]);
 
   return null;
 });

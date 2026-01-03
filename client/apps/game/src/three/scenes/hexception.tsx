@@ -1,12 +1,13 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getGameModeConfig } from "@/config/game-modes";
+import type { GameModeConfig } from "@/config/game-modes";
 import {
   BUILDINGS_CATEGORIES_TYPES,
   BUILDINGS_GROUPS,
   HEX_SIZE,
   MinesMaterialsParams,
   WONDER_REALM,
-  buildingModelPaths,
   castleLevelToRealmCastle,
   getBiomeVariant,
   hyperstructureStageToModel,
@@ -32,7 +33,6 @@ import { LeftView } from "@/types";
 import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { IS_FLAT_MODE } from "@/ui/config";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { ProductionModal } from "@/ui/features/settlement";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -154,7 +154,7 @@ export default class HexceptionScene extends HexagonScene {
   private minesMaterials: Map<number, MeshStandardMaterial> = new Map();
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
-  private isBlitz: boolean;
+  private mode: GameModeConfig;
   private structureUpdateSubscription: any | null = null;
   private isInitialized = false;
   private lastRealmKey?: string;
@@ -168,7 +168,7 @@ export default class HexceptionScene extends HexagonScene {
   ) {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
-    this.isBlitz = getIsBlitz();
+    this.mode = getGameModeConfig();
     this.buildingPreview = new BuildingPreview(this.scene);
     this.hoverLabelManager = new HexHoverLabel(this.scene);
 
@@ -330,7 +330,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private loadBuildingModels() {
     for (const category of Object.values(BUILDINGS_GROUPS)) {
-      const categoryPaths = buildingModelPaths(this.isBlitz)[category];
+      const categoryPaths = this.mode.assets.buildingModelPaths[category];
       if (!this.buildingModels.has(category)) {
         this.buildingModels.set(category, new Map());
       }
@@ -698,7 +698,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (buildingType === BuildingType.ResourceAncientFragment) {
-      return this.isBlitz ? "Essence Rift" : "Fragment Mine";
+      return this.mode.labels.fragmentMine;
     }
 
     if (buildingType === BuildingType.ResourceLabor) {
@@ -713,7 +713,7 @@ export default class HexceptionScene extends HexagonScene {
         case StructureType.Hyperstructure:
           return "Hyperstructure";
         case StructureType.Village:
-          return this.isBlitz ? "Camp" : "Village";
+          return this.mode.labels.village;
         default:
           return "Castle";
       }

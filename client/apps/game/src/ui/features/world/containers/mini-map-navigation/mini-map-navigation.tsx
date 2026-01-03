@@ -1,6 +1,6 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { INITIAL_VISIBILITY_STATE, buildToggleConfig, type MiniMapToggleKey, type VisibilityState } from "./config";
@@ -47,8 +47,8 @@ export const MiniMapNavigation = ({ variant = "floating", className }: MiniMapNa
   const [isMinimized, setIsMinimized] = useState(false);
   const [visibilityStates, setVisibilityStates] = useState<VisibilityState>({ ...INITIAL_VISIBILITY_STATE });
 
-  const isBlitz = getIsBlitz();
-  const toggleConfigs = useMemo(() => buildToggleConfig(isBlitz), [isBlitz]);
+  const mode = useGameModeConfig();
+  const toggleConfigs = useMemo(() => buildToggleConfig(mode), [mode]);
 
   const showTooltip = useCallback(
     (content: string) => {

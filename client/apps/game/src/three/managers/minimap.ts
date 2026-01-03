@@ -1,11 +1,11 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getGameModeConfig } from "@/config/game-modes";
+import type { GameModeConfig } from "@/config/game-modes";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { playerColorManager } from "@/three/systems/player-colors";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, Position } from "@bibliothecadao/eternum";
-
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
 import type { Clause, Entity as ToriiEntity, ToriiClient } from "@dojoengine/torii-wasm/types";
@@ -14,7 +14,7 @@ import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
 import { HEX_SIZE } from "../constants/scene-constants";
 
-const LABELS = (isBlitz: boolean) => ({
+const LABELS = (fragmentMineIcon: string) => ({
   ARMY: "/images/labels/enemy_army.png",
   MY_ARMY: "/images/labels/army.png",
   MY_REALM: "/images/labels/realm.png",
@@ -25,7 +25,7 @@ const LABELS = (isBlitz: boolean) => ({
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+    [StructureType.FragmentMine]: fragmentMineIcon,
   },
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
@@ -89,7 +89,7 @@ interface EntityCluster {
 interface ArmyCluster extends EntityCluster {}
 
 class Minimap {
-  private isBlitz: boolean;
+  private mode: GameModeConfig;
   private worldmapScene: WorldmapScene;
   private canvas!: HTMLCanvasElement;
   private context!: CanvasRenderingContext2D;
@@ -154,7 +154,7 @@ class Minimap {
   constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera, toriiClient: ToriiClient) {
     this.worldmapScene = worldmapScene;
     this.toriiClient = toriiClient;
-    this.isBlitz = getIsBlitz();
+    this.mode = getGameModeConfig();
     this.syncCameraToMinimapCenter = throttle(() => {
       this.isSyncingCamera = true;
       this.worldmapScene.moveCameraToColRow(this.mapCenter.col, this.mapCenter.row, 0.12);
@@ -936,15 +936,16 @@ class Minimap {
   };
 
   private loadLabelImages() {
+    const labels = LABELS(this.mode.assets.labels.fragmentMine);
     // Load army labels
-    this.loadImage("ARMY", LABELS(this.isBlitz).ARMY);
-    this.loadImage("MY_ARMY", LABELS(this.isBlitz).MY_ARMY);
-    this.loadImage("MY_REALM", LABELS(this.isBlitz).MY_REALM);
-    this.loadImage("MY_REALM_WONDER", LABELS(this.isBlitz).MY_REALM_WONDER);
-    this.loadImage("REALM_WONDER", LABELS(this.isBlitz).REALM_WONDER);
-    this.loadImage("QUEST", LABELS(this.isBlitz).QUEST);
+    this.loadImage("ARMY", labels.ARMY);
+    this.loadImage("MY_ARMY", labels.MY_ARMY);
+    this.loadImage("MY_REALM", labels.MY_REALM);
+    this.loadImage("MY_REALM_WONDER", labels.MY_REALM_WONDER);
+    this.loadImage("REALM_WONDER", labels.REALM_WONDER);
+    this.loadImage("QUEST", labels.QUEST);
     // Load structure labels
-    Object.entries(LABELS(this.isBlitz).STRUCTURES).forEach(([type, path]) => {
+    Object.entries(labels.STRUCTURES).forEach(([type, path]) => {
       this.loadImage(`STRUCTURE_${type}`, path);
     });
   }

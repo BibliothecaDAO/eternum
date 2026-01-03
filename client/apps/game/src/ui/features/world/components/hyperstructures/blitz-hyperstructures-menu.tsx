@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
@@ -11,7 +12,6 @@ import {
   getAddressName,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
-  getStructureName,
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
   Position,
@@ -31,6 +31,7 @@ export const BlitzHyperstructuresMenu = () => {
   } = useDojo();
 
   const { isSyncing } = useSyncHyperstructure();
+  const mode = useGameModeConfig();
 
   const { hexPosition } = useQuery();
   const [activeTab, setActiveTab] = useState<"all" | "bandits">("all");
@@ -72,7 +73,7 @@ export const BlitzHyperstructuresMenu = () => {
           })()
         : 0;
 
-      const structureName = getStructureName(structure, false).name;
+      const structureName = mode.structure.getName(structure).name;
 
       // Get hyperstructure realm count
       const hyperstructureRealmCount = MapDataStore.getInstance(
@@ -94,7 +95,7 @@ export const BlitzHyperstructuresMenu = () => {
         hyperstructureRealmCount,
       };
     });
-  }, [hyperstructures, userAddress, userPosition, components]);
+  }, [hyperstructures, userAddress, userPosition, components, mode]);
 
   const filteredHyperstructures = useMemo(() => {
     const filtered =

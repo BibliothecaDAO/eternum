@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
@@ -10,7 +11,7 @@ import {
 import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { getGuildFromPlayerAddress, getIsBlitz, getStructureName, toHexString } from "@bibliothecadao/eternum";
+import { getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
@@ -56,6 +57,7 @@ export const PlayersPanel = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
   const seasonWinner = useUIStore((state) => state.gameWinner);
+  const mode = useGameModeConfig();
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -103,7 +105,7 @@ export const PlayersPanel = ({
             const structure = getComponentValue(Structure, entityId);
             if (!structure) return undefined;
 
-            return getStructureName(structure, getIsBlitz()).name;
+            return mode.structure.getName(structure).name;
           })
           .filter((structure): structure is string => structure !== undefined);
 
@@ -126,7 +128,7 @@ export const PlayersPanel = ({
         };
       });
     return playersWithStructures;
-  }, [isLoading, players, components, account.address]);
+  }, [isLoading, players, components, account.address, mode]);
 
   const leaderboardEntryMap = useMemo(() => {
     const map = new Map<string, LandingLeaderboardEntry>();
@@ -292,7 +294,7 @@ export const PlayersPanel = ({
           )}
           <div className="flex gap-2 justify-center">
             <RegisterPointsButton className="flex-1" />
-            {!getIsBlitz() && <EndSeasonButton className="flex-1" />}
+            {mode.ui.showEndSeasonButton && <EndSeasonButton className="flex-1" />}
           </div>
         </>
       </div>

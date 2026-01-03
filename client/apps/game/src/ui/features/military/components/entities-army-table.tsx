@@ -1,10 +1,11 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { Position, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { HasValue, runQuery } from "@dojoengine/recs";
@@ -93,6 +94,7 @@ export const EntitiesArmyTable = () => {
 };
 
 const StructureWithArmy = ({ entity }: { entity: any }) => {
+  const mode = useGameModeConfig();
   const explorers = useExplorersByStructure({ structureEntityId: entity.entityId });
 
   if (explorers.length === 0) {
@@ -100,8 +102,7 @@ const StructureWithArmy = ({ entity }: { entity: any }) => {
   }
 
   const structureComponent = entity.structure;
-  const isBlitz = getIsBlitz();
-  const structureName = structureComponent ? getStructureName(structureComponent, isBlitz).name : undefined;
+  const structureName = structureComponent ? mode.structure.getName(structureComponent).name : undefined;
   const displayName = structureName || entity.name || `Structure ${entity.entityId}`;
   const structurePosition = structureComponent?.base
     ? new Position({

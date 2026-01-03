@@ -1,6 +1,6 @@
 import { ReactNode, useCallback, useMemo, useState } from "react";
 
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import { LocalStepOne } from "@/ui/features/progression";
 
@@ -10,7 +10,6 @@ import { SeasonPassButton } from "./components/season-pass-button";
 type OnboardingStage = "intro" | "settle";
 
 export interface BottomContentContext {
-  isBlitz: boolean;
   isLocalChain: boolean;
   handleEnterSettleRealm: () => void;
 }
@@ -21,8 +20,8 @@ export interface UseOnboardingStateOptions {
 
 interface UseOnboardingStateReturn {
   isSettlingRealm: boolean;
-  isBlitz: boolean;
   bottomContent?: ReactNode;
+  showBottomContent: boolean;
   handleEnterSettleRealm: () => void;
   handleExitSettleRealm: () => void;
 }
@@ -31,7 +30,7 @@ export const useOnboardingState = ({
   resolveBottomContent,
 }: UseOnboardingStateOptions = {}): UseOnboardingStateReturn => {
   const [stage, setStage] = useState<OnboardingStage>("intro");
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
   const isLocalChain = env.VITE_PUBLIC_CHAIN === "local";
 
   const handleEnterSettleRealm = useCallback(() => {
@@ -45,13 +44,12 @@ export const useOnboardingState = ({
   const bottomContent = useMemo(() => {
     if (resolveBottomContent) {
       return resolveBottomContent({
-        isBlitz,
         isLocalChain,
         handleEnterSettleRealm,
       });
     }
 
-    if (isBlitz) {
+    if (!mode.ui.showMintCta) {
       return undefined;
     }
 
@@ -60,12 +58,12 @@ export const useOnboardingState = ({
     }
 
     return <SeasonPassButton onSettleRealm={handleEnterSettleRealm} />;
-  }, [handleEnterSettleRealm, isBlitz, isLocalChain, resolveBottomContent]);
+  }, [handleEnterSettleRealm, isLocalChain, mode.ui.showMintCta, resolveBottomContent]);
 
   return {
     isSettlingRealm: stage === "settle",
-    isBlitz,
     bottomContent,
+    showBottomContent: mode.ui.showMintCta,
     handleEnterSettleRealm,
     handleExitSettleRealm,
   };

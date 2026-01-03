@@ -7,12 +7,12 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
-  getIsBlitz,
   getTotalResourceWeightKg,
   isRelic as isResourceRelic,
   relicsArmiesTicksLeft,
   ResourceManager,
 } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ID, RelicEffectWithEndTick, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Factory, Sparkles } from "lucide-react";
 import type { MouseEvent } from "react";
@@ -206,13 +206,13 @@ export const ResourceChip = ({
   }, [setTooltip, actualBalance, setShowPerHour, setIsHovered, setDisplayBalance]);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
+  const mode = useGameModeConfig();
 
   const canShowProductionShortcut = useMemo(() => {
     if (!canOpenProduction) return false;
     if (!resourceId && resourceId !== 0) return false;
-    if (!getIsBlitz()) return true;
-    return resourceId !== ResourcesIds.Labor && resourceId !== ResourcesIds.Wheat;
-  }, [canOpenProduction, resourceId]);
+    return mode.resources.canShowProductionShortcut(resourceId as ResourcesIds);
+  }, [canOpenProduction, mode.resources, resourceId]);
 
   const handleOpenProduction = useCallback(() => {
     if (!canShowProductionShortcut) return;

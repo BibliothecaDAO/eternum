@@ -1,11 +1,12 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { getStructureModelPaths } from "@/three/constants";
+import { getGameModeConfig } from "@/config/game-modes";
+import type { GameModeConfig } from "@/config/game-modes";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import { StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -121,7 +122,7 @@ export class StructureManager {
   > = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
-  private isBlitz: boolean;
+  private mode: GameModeConfig;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
   private structureUpdateTimestamps: Map<ID, number> = new Map(); // Track when structures were last updated
   private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
@@ -263,8 +264,8 @@ export class StructureManager {
         this.frustumVisibilityDirty = true;
       });
     }
-    this.isBlitz = getIsBlitz();
-    this.structureModelPaths = getStructureModelPaths(this.isBlitz);
+    this.mode = getGameModeConfig();
+    this.structureModelPaths = this.mode.assets.structureModelPaths;
     // Keep chunk stride aligned with the world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.needsSpatialReindex = true;
@@ -298,7 +299,7 @@ export class StructureManager {
       allyRealm: "/images/labels/allies_realm.png",
       hyperstructure: "/images/labels/hyperstructure.png",
       bank: "/images/labels/chest.png", // Using chest as placeholder for bank
-      fragmentMine: this.isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+      fragmentMine: this.mode.assets.labels.fragmentMine,
     };
 
     const loadedTextures: Partial<Record<keyof typeof texturePaths, THREE.Texture>> = {};

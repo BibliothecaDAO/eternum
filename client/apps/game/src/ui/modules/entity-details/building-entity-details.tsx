@@ -1,7 +1,7 @@
 import { useUISound } from "@/audio";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { BuildingInfo, ProductionModal, ResourceInfo } from "@/ui/features/settlement";
@@ -11,7 +11,7 @@ import {
 } from "@/ui/features/world/components/entities/action-button-classes";
 import { RealmUpgradeCompact, RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
+import { ResourceIdToMiningType, TileManager, configManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
+  const mode = useGameModeConfig();
 
   const [isLoading, setIsLoading] = useState(false);
   const [buildingState, setBuildingState] = useState<{
@@ -55,11 +56,10 @@ export const BuildingEntityDetails = () => {
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
-  const selectedStructureInfo = getEntityInfo(
+  const selectedStructureInfo = mode.structure.getEntityInfo(
     structureEntityId,
     ContractAddress(dojo.account.account.address),
     dojo.setup.components,
-    getIsBlitz(),
   );
 
   const isCastleSelected = useMemo(

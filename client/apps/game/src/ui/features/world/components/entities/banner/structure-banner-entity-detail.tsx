@@ -6,9 +6,9 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { getStructureName } from "@bibliothecadao/eternum";
 import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
@@ -51,9 +51,9 @@ const StructureBannerEntityDetailContent = memo(
       isMine,
       hyperstructureRealmCount,
       isHyperstructure,
-      isBlitz,
       isLoadingStructure,
     } = useStructureEntityDetail({ structureEntityId });
+    const mode = useGameModeConfig();
     const openPopup = useUIStore((state) => state.openPopup);
     const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
@@ -81,7 +81,7 @@ const StructureBannerEntityDetailContent = memo(
 
     if (!structure || !structureDetails) return null;
     const defenseDisplayVariant: EntityDetailLayoutVariant = variant === "banner" || compact ? "banner" : "default";
-    const structureName = getStructureName(structure, isBlitz).name;
+    const structureName = mode.structure.getName(structure).name;
     const structureCategory = rawCategory === undefined ? undefined : (rawCategory as StructureType);
     const isFragmentMine = Number(rawCategory) === StructureType.FragmentMine;
     const isCamp = Number(rawCategory) === StructureType.Village;

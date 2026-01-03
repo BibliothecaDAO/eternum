@@ -1,11 +1,12 @@
 import { memo, useCallback, useMemo } from "react";
 
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { divideByPrecision, getBlockTimestamp, ResourceManager, getIsBlitz } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   EntityType,
@@ -15,7 +16,6 @@ import {
   RelicRecipientType,
   resources as resourceDefs,
   ResourcesIds,
-  getResourceTiers,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
@@ -58,6 +58,7 @@ const buildDisplayItems = (
   resourceComponent?: ComponentValue<ClientComponents["Resource"]["schema"]> | null,
   activeRelicIds: number[] = [],
   recipientType?: RelicRecipientType,
+  resourceTiers?: Record<string, ResourcesIds[]>,
 ) => {
   if (!resourceComponent) return [] as DisplayItem[];
 
@@ -67,7 +68,7 @@ const buildDisplayItems = (
   );
 
   const activeRelicSet = new Set(activeRelicIds);
-  const resourceTiers = getResourceTiers(getIsBlitz());
+  const tiers = resourceTiers ?? {};
   const tierOrder = [
     "lords",
     "relics",
@@ -85,7 +86,7 @@ const buildDisplayItems = (
 
   const priorityMap = new Map<number, { group: number; position: number }>();
   tierOrder.forEach((key, groupIndex) => {
-    const ids = (resourceTiers as Record<string, ResourcesIds[]>)[key] ?? [];
+    const ids = tiers[key] ?? [];
     ids.forEach((id, index) => {
       // Use resource id as position for materials to ensure stable asc sorting across buckets.
       const isMaterialGroup = groupIndex >= tierOrder.indexOf("common");
@@ -143,9 +144,11 @@ export const CompactEntityInventory = memo(
     maxItems,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
+    const mode = useGameModeConfig();
+    const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
     const items = useMemo(
-      () => buildDisplayItems(resources, activeRelicIds, recipientType),
-      [resources, activeRelicIds, recipientType],
+      () => buildDisplayItems(resources, activeRelicIds, recipientType, resourceTiers),
+      [resources, activeRelicIds, recipientType, resourceTiers],
     );
 
     const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);

@@ -1,11 +1,12 @@
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { getGameModeId } from "@/config/game-modes";
+import type { GameModeId } from "@/config/game-modes";
 
 /**
  * Lightweight description of the current routing context used to map pages to curated music pools.
  */
 export interface RouteMatchContext {
   pathname: string;
-  isBlitz: boolean;
+  modeId: GameModeId;
 }
 
 export type PlaylistMode = "sequence" | "shuffle";
@@ -77,7 +78,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     priority: 90,
     mode: "shuffle",
     tracks: ["music.blitz", "music.order_of_anger", "music.order_of_rage", "music.light_through_darkness"],
-    match: (context) => context.isBlitz && createStartsWithMatcher("/play")(context),
+    match: (context) => context.modeId === "blitz" && createStartsWithMatcher("/play")(context),
   },
   {
     key: "play:main",
@@ -101,7 +102,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
 export const matchRoutePlaylist = (pathname: string, override?: Partial<RouteMatchContext>): MatchedRoutePlaylist => {
   const baseContext: RouteMatchContext = {
     pathname,
-    isBlitz: getIsBlitz(),
+    modeId: getGameModeId(),
     ...override,
   };
 

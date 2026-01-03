@@ -10,22 +10,20 @@ import {
   divideByPrecision,
   getBuildingQuantity,
   getEntityIdFromKeys,
-  getIsBlitz,
   getRealmNameById,
-  getStructureTypeName,
   getTotalResourceWeightKg,
   isMilitaryResource,
   multiplyByPrecision,
   Position,
   ResourceManager,
 } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   ClientComponents,
   findResourceById,
   getBuildingFromResource,
-  getResourceTiers,
   ID,
   ResourcesIds,
   StructureType,
@@ -37,7 +35,6 @@ import { ArrowDown, ArrowLeftRight, ArrowUp, Factory, ShoppingCart, Target, Tras
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ALWAYS_SHOW_RESOURCES,
-  BLITZ_UNMANAGEABLE_RESOURCES,
   formatProductionPerHour,
   formatResourceAmount,
   formatTimeRemaining,
@@ -158,21 +155,20 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     account: { account },
   } = useDojo();
 
+  const mode = useGameModeConfig();
   const goToStructure = useGoToStructure(setup);
   const { currentDefaultTick } = useBlockTimestamp();
 
   const selectedStructureId = entityId && entityId !== 0 ? Number(entityId) : null;
 
   const structureColumns = useMemo<StructureColumn[]>(() => {
-    const isBlitz = getIsBlitz();
-
     const columns = playerStructures
       .filter((structure) => structure.isMine)
       .map((structure) => {
         const realmId = Number(structure.structure.metadata.realm_id || 0);
         const label = realmId
           ? getRealmNameById(realmId) || `Realm #${realmId}`
-          : getStructureTypeName(structure.structure.base.category as StructureType, isBlitz) || "Structure";
+          : mode.structure.getTypeName(structure.structure.base.category as StructureType) || "Structure";
 
         return {
           entityId: Number(structure.entityId),
@@ -193,7 +189,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     }
 
     return columns;
-  }, [playerStructures, selectedStructureId, pinSelectedColumn]);
+  }, [mode.structure, pinSelectedColumn, playerStructures, selectedStructureId]);
 
   const structureIdSet = useMemo(() => new Set(structureColumns.map((column) => column.entityId)), [structureColumns]);
 
@@ -271,14 +267,13 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     return summaries;
   }, [resourcesByStructure, currentDefaultTick]);
 
-  const tiers = useMemo(() => Object.entries(getResourceTiers(getIsBlitz())), []);
+  const tiers = useMemo(() => Object.entries(mode.resources.getTiers()), [mode.resources]);
 
   if (structureColumns.length === 0) {
     return <div className="p-3 text-xs text-gold/70">Own a structure to begin tracking your resources.</div>;
   }
 
   const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
-  const isBlitz = getIsBlitz();
 
   const handleToggleTierVisibility = useCallback((tierKey: string) => {
     setCollapsedTiers((prev) => {
@@ -870,8 +865,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                 components,
                               );
                               const hasProductionBuilding = Boolean(
-                                actualBuildingCount > 0 &&
-                                (!isBlitz || !BLITZ_UNMANAGEABLE_RESOURCES.includes(resourceId)),
+                                actualBuildingCount > 0 && mode.resources.canManageResource(resourceId),
                               );
 
                               return (

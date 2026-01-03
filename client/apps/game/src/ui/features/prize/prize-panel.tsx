@@ -1,7 +1,8 @@
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
-import { getIsBlitz, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
@@ -138,8 +139,8 @@ export const PrizePanel = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const isBlitz = getIsBlitz();
-  const timelineSubject = isBlitz ? "Game" : "Season";
+  const mode = useGameModeConfig();
+  const timelineSubject = mode.labels.timelineSubject;
   const timelineSubjectLower = timelineSubject.toLowerCase();
 
   // All players with > 0 points are included automatically
