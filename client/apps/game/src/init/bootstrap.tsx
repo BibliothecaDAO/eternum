@@ -57,7 +57,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   const chain = resolveChain(env.VITE_PUBLIC_CHAIN! as Chain);
   const pathWorld = deriveWorldFromPath();
 
-  let profile = null;
+  let profile: any = null;
   if (pathWorld) {
     try {
       profile = await buildWorldProfile(chain, pathWorld);

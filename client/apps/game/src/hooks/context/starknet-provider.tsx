@@ -88,7 +88,7 @@ const chain_id = resolvedChainId;
 
 const controller = new ControllerConnector({
   propagateSessionErrors: true,
-  chain_id,
+  // chain_id,
   chains: [
     {
       rpcUrl,
