@@ -1,4 +1,4 @@
-import { getStructureTypeName } from "@bibliothecadao/eternum";
+import type { GameModeConfig } from "@/config/game-modes";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 export const MINI_MAP_TOGGLE_KEYS = [
@@ -29,11 +29,11 @@ export const INITIAL_VISIBILITY_STATE: VisibilityState = {
   quests: true,
 };
 
-export const buildToggleConfig = (isBlitz: boolean): MiniMapToggleConfig[] => {
+export const buildToggleConfig = (mode: GameModeConfig): MiniMapToggleConfig[] => {
   const toggles: MiniMapToggleConfig[] = [
     {
       id: "realms",
-      label: getStructureTypeName(StructureType.Realm, isBlitz),
+      label: mode.structure.getTypeName(StructureType.Realm) ?? "Realm",
       imagePath: "/images/labels/realm.png",
     },
     {
@@ -43,29 +43,30 @@ export const buildToggleConfig = (isBlitz: boolean): MiniMapToggleConfig[] => {
     },
     {
       id: "hyperstructures",
-      label: getStructureTypeName(StructureType.Hyperstructure, isBlitz),
+      label: mode.structure.getTypeName(StructureType.Hyperstructure) ?? "Hyperstructure",
       imagePath: "/images/labels/hyperstructure.png",
     },
     {
       id: "fragmentMines",
-      label: getStructureTypeName(StructureType.FragmentMine, isBlitz),
-      imagePath: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+      label: mode.structure.getTypeName(StructureType.FragmentMine) ?? "Fragment Mine",
+      imagePath: mode.assets.labels.fragmentMine,
     },
   ];
 
-  if (!isBlitz) {
-    toggles.push(
-      {
-        id: "banks",
-        label: getStructureTypeName(StructureType.Bank, isBlitz),
-        imagePath: `images/resources/${ResourcesIds.Lords}.png`,
-      },
-      {
-        id: "quests",
-        label: "Quests",
-        imagePath: "/images/labels/quest.png",
-      },
-    );
+  if (mode.ui.showBankToggle) {
+    toggles.push({
+      id: "banks",
+      label: mode.structure.getTypeName(StructureType.Bank) ?? "Bank",
+      imagePath: `images/resources/${ResourcesIds.Lords}.png`,
+    });
+  }
+
+  if (mode.ui.showQuestToggle) {
+    toggles.push({
+      id: "quests",
+      label: "Quests",
+      imagePath: "/images/labels/quest.png",
+    });
   }
 
   return toggles;

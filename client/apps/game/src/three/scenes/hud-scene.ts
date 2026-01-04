@@ -24,6 +24,7 @@ export default class HUDScene {
   private ambientParticles!: AmbientParticleSystem;
   private navigationTargetUnsubscribe: (() => void) | null = null;
   private cycleProgress: number = 0;
+  private particleSpawnCenter: Vector3 = new Vector3();
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new Scene();
@@ -128,6 +129,10 @@ export default class HUDScene {
     return this.weatherManager;
   }
 
+  public hasActiveLabelAnimations(): boolean {
+    return this.navigator?.hasActiveLabel() ?? false;
+  }
+
   update(deltaTime: number, cycleProgress?: number) {
     this.navigator.update();
 
@@ -164,8 +169,8 @@ export default class HUDScene {
     this.ambientParticles.setWeatherIntensity(weatherState.intensity);
 
     // Update particle positions (follow camera)
-    const spawnCenter = new Vector3(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
-    this.ambientParticles.update(deltaTime, spawnCenter);
+    this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
+    this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
   }
 
   onWindowResize(width: number, height: number) {

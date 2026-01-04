@@ -1,11 +1,10 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getCharacterName } from "@/utils/agent";
 import {
   getAddressName,
   getArmyRelicEffects,
   getBlockTimestamp,
   getGuildFromPlayerAddress,
-  getIsBlitz,
-  getStructureName,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -41,6 +40,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       systemCalls: { explorer_delete },
     },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
@@ -119,7 +119,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       ? getAddressName(structure?.owner, components)
       : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
-    const structureOwnerName = structure ? getStructureName(structure, getIsBlitz()).name : undefined;
+    const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
 
     return {
       stamina,
@@ -129,7 +129,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [explorer, structure, components, userAddress, armyEntityId]);
+  }, [explorer, structure, components, userAddress, armyEntityId, mode]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;

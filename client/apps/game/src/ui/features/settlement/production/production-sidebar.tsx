@@ -1,8 +1,8 @@
-import { getBlockTimestamp, getIsBlitz } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   configManager,
   getEntityIdFromKeys,
-  getStructureName,
   getStructureRelicEffects,
   ResourceManager,
 } from "@bibliothecadao/eternum";
@@ -48,6 +48,7 @@ const SidebarRealm = ({
   onSelect: () => void;
   onSelectResource: (realmId: ID, resource: ResourcesIds) => void;
 }) => {
+  const mode = useGameModeConfig();
   const {
     setup: {
       components: { Building, Resource, ProductionBoostBonus },
@@ -192,7 +193,7 @@ const SidebarRealm = ({
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-lg font-bold text-gold">{getStructureName(realm.structure, getIsBlitz()).name}</h3>
+            <h3 className="text-lg font-bold text-gold">{mode.structure.getName(realm.structure).name}</h3>
             <p className="text-xs text-gold/60">
               {hasProduction
                 ? `${buildings.size} buildings • ${activeProductionBuildings}/${totalProductionBuildings} producing`
@@ -294,7 +295,7 @@ export const ProductionSidebar = memo(
   ({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
     const upsertRealm = useAutomationStore((state) => state.upsertRealm);
     const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
-    const isBlitz = getIsBlitz();
+    const mode = useGameModeConfig();
 
     const structuresByType = useMemo(() => {
       const realmStructures: RealmInfo[] = [];
@@ -389,10 +390,10 @@ export const ProductionSidebar = memo(
     }, [activeTab, autoSelectionKey, selectedEntityType, villageCount, realmCount]);
 
     const activeStructures = activeTab === "realm" ? realmStructures : villageStructures;
-    const activeLabel = activeTab === "realm" ? "Realms" : isBlitz ? "Camps" : "Villages";
+    const activeLabel = activeTab === "realm" ? mode.labels.realms : mode.labels.villages;
     const tabButtons: { key: AutomationTab; label: string; count: number }[] = [
-      { key: "realm", label: "Realms", count: realmCount },
-      { key: "village", label: isBlitz ? "Camps" : "Villages", count: villageCount },
+      { key: "realm", label: mode.labels.realms, count: realmCount },
+      { key: "village", label: mode.labels.villages, count: villageCount },
     ];
 
     const handleChangeTab = (tab: AutomationTab) => {
@@ -418,7 +419,7 @@ export const ProductionSidebar = memo(
         if (!realmInfo) return;
 
         const entityType = realmInfo.structure?.category === StructureType.Village ? "village" : "realm";
-        const realmName = getStructureName(realmInfo.structure, isBlitz).name;
+        const realmName = mode.structure.getName(realmInfo.structure).name;
         upsertRealm(realmId, { realmName, entityType });
         setRealmPreset(realmId, pendingPreset.presetId);
       });
@@ -510,10 +511,8 @@ export const ProductionSidebar = memo(
         {activeStructures.length === 0 ? (
           <div className="rounded-lg border border-gold/20 bg-black/15 p-4 text-sm text-gold/70">
             {activeTab === "realm"
-              ? "You do not control any realms yet."
-              : isBlitz
-                ? "You do not control any camps yet."
-                : "You do not control any villages yet."}
+              ? `You do not control any ${mode.labels.realms.toLowerCase()} yet.`
+              : `You do not control any ${mode.labels.villages.toLowerCase()} yet.`}
           </div>
         ) : (
           activeStructures.map((realm) => (

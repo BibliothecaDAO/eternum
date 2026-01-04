@@ -2,7 +2,8 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-import { divideByPrecision, formatTime, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
 import { Loader2, Clock3 } from "lucide-react";
@@ -13,10 +14,10 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
   const arrivals = useArrivalsByStructure(structure.entityId);
 
   const now = nowOverride ?? Math.floor(chainNowMs / 1000);
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
   const structureName = useMemo(() => {
-    return getStructureName(structure.structure, isBlitz).name;
-  }, [structure, isBlitz]);
+    return mode.structure.getName(structure.structure).name;
+  }, [mode.structure, structure]);
 
   const arrivalsWithResources = useMemo(
     () =>

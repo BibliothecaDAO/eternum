@@ -903,9 +903,10 @@ export abstract class HexagonScene {
   update(deltaTime: number): void {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
+    this.visibilityManager?.beginFrame();
 
     PerformanceMonitor.begin("interactiveHexManager.update");
-    this.interactiveHexManager.update();
+    this.interactiveHexManager.update(deltaTime);
     PerformanceMonitor.end("interactiveHexManager.update");
 
     this.updateLights();
@@ -953,23 +954,33 @@ export abstract class HexagonScene {
     });
   }
 
+  protected getAnimationDistanceForView(): number {
+    switch (this.currentCameraView) {
+      case CameraView.Close:
+        return this.animationDistanceThreshold;
+      case CameraView.Medium:
+        return this.animationDistanceThreshold * 0.85;
+      case CameraView.Far:
+        return this.animationDistanceThreshold * 0.6;
+      default:
+        return this.animationDistanceThreshold;
+    }
+  }
+
   protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
     this.animationCameraTarget.copy(this.controls.target);
-
-    // Begin frame for centralized visibility manager (computes all visibility once)
-    this.visibilityManager?.beginFrame();
 
     if (!this.animationVisibilityContext) {
       this.animationVisibilityContext = {
         visibilityManager: this.visibilityManager,
         frustumManager: this.frustumManager, // Keep for backward compatibility
         cameraPosition: this.animationCameraTarget,
-        maxDistance: this.animationDistanceThreshold, // Use configurable threshold
+        maxDistance: this.getAnimationDistanceForView(), // View-scaled threshold
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
       this.animationVisibilityContext.frustumManager = this.frustumManager;
-      this.animationVisibilityContext.maxDistance = this.animationDistanceThreshold;
+      this.animationVisibilityContext.maxDistance = this.getAnimationDistanceForView();
     }
 
     return this.animationVisibilityContext;

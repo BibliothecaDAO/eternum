@@ -113,6 +113,18 @@ export function initTracing(config: TracingConfig = {}): void {
     spanProcessors,
   });
 
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const traceHeaderUrls = (() => {
+    if (!finalConfig.endpoint) return [];
+    try {
+      const url = new URL(finalConfig.endpoint);
+      const base = `${url.origin}${url.pathname}`;
+      return [new RegExp(`^${escapeRegExp(base)}`)];
+    } catch {
+      return [finalConfig.endpoint];
+    }
+  })();
+
   // Set global tracer provider
   tracerProvider.register({
     contextManager: new ZoneContextManager(),
@@ -122,9 +134,7 @@ export function initTracing(config: TracingConfig = {}): void {
   registerInstrumentations({
     instrumentations: [
       new FetchInstrumentation({
-        propagateTraceHeaderCorsUrls: [
-          /.*/, // Propagate to all URLs (configure as needed)
-        ],
+        propagateTraceHeaderCorsUrls: traceHeaderUrls,
         clearTimingResources: true,
         applyCustomAttributesOnSpan: (span, request, response) => {
           // Get request size from headers if available
@@ -159,7 +169,7 @@ export function initTracing(config: TracingConfig = {}): void {
         },
       }),
       new XMLHttpRequestInstrumentation({
-        propagateTraceHeaderCorsUrls: [/.*/],
+        propagateTraceHeaderCorsUrls: traceHeaderUrls,
       }),
     ],
   });

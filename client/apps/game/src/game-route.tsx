@@ -2,8 +2,9 @@
  * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
  * into the landing page bundle.
  */
-import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
+import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import type { Account, AccountInterface } from "starknet";
+import { useEffect } from "react";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
@@ -12,6 +13,7 @@ import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/st
 import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
 import { World } from "./ui/layouts/world";
 import { LoadingScreen } from "./ui/modules/loading-screen";
+import { env } from "../env";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -29,6 +31,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
             <TransactionNotification />
             <World backgroundImage={backgroundImage} />
             <WorldLoading />
+            <Toaster />
           </StoryEventToastProvider>
         </ErrorBoundary>
       </MetagameProvider>
@@ -37,6 +40,33 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
 };
 
 export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+  useEffect(() => {
+    if (!env.VITE_TRACING_ENABLED) {
+      return;
+    }
+
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+
+    const setupTracing = async () => {
+      const { initializeTracing, cleanupTracing } = await import("./tracing");
+      if (cancelled) return;
+      initializeTracing({ enableMetricsCollection: false });
+      cleanup = () => {
+        void cleanupTracing();
+      };
+    };
+
+    void setupTracing();
+
+    return () => {
+      cancelled = true;
+      if (cleanup) {
+        cleanup();
+      }
+    };
+  }, []);
+
   const state = useUnifiedOnboarding(backgroundImage);
   const { phase, setupResult, account } = state;
 

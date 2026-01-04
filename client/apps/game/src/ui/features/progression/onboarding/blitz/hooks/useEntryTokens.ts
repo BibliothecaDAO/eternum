@@ -36,6 +36,11 @@ export interface UseEntryTokensReturn {
   refetchFeeTokenBalance: (() => void) | undefined;
 }
 
+const areTokenListsEqual = (left: bigint[], right: bigint[]): boolean => {
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+};
+
 export function useEntryTokens(account: AccountInterface | undefined): UseEntryTokensReturn {
   const {
     setup: { systemCalls },
@@ -107,10 +112,16 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
   const hasSufficientFeeBalance = !requiresEntryToken || feeAmount === 0n || feeTokenBalance >= feeAmount;
   const tokenReady = !requiresEntryToken || availableEntryTokenIds.length > 0;
 
+  useEffect(() => {
+    getEntryTokenIdByIndexRef.current = getEntryTokenIdByIndex;
+  }, [getEntryTokenIdByIndex]);
+
   const loadAvailableEntryTokens = useCallback(async () => {
+    const getEntryTokenId = getEntryTokenIdByIndexRef.current;
+
     if (!requiresEntryToken || entryTokenAddress === undefined || !accountAddress || entryTokenBalance === 0n) {
-      setAvailableEntryTokenIds([]);
-      setSelectedEntryTokenId(null);
+      setAvailableEntryTokenIds((previous) => (previous.length ? [] : previous));
+      setSelectedEntryTokenId((previous) => (previous === null ? previous : null));
       return;
     }
 
@@ -136,7 +147,7 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
         }
       }
 
-      setAvailableEntryTokenIds(ids);
+      setAvailableEntryTokenIds((previous) => (areTokenListsEqual(previous, ids) ? previous : ids));
       if (!ids.length) {
         setEntryTokenStatus("timeout");
       } else {

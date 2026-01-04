@@ -10,8 +10,7 @@ import { resubscribeEntityStream } from "@/dojo/sync";
 import { useNetworkStatusStore } from "@/hooks/store/use-network-status-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { setActiveWorldName } from "@/runtime/world";
-import { buildWorldProfile } from "@/runtime/world/profile-builder";
+import { applyWorldSelection } from "@/runtime/world";
 import { ToriiSetting } from "@/types";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
@@ -225,11 +224,9 @@ export const SettingsWindow = () => {
                 size="xs"
                 onClick={async () => {
                   try {
-                    const name = await openWorldSelectorModal();
-                    const chain = gameEnv.VITE_PUBLIC_CHAIN as Chain;
-                    await buildWorldProfile(chain, name);
-                    setActiveWorldName(name);
-                    toast(`World set to ${name}. Reloading…`);
+                    const selection = await openWorldSelectorModal();
+                    await applyWorldSelection(selection, gameEnv.VITE_PUBLIC_CHAIN as Chain);
+                    toast(`World set to ${selection.name}. Reloading…`);
                     setTimeout(() => {
                       window.location.href = "/play";
                     }, 600);

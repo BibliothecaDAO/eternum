@@ -16,8 +16,6 @@ class ResourceFXInstance {
   public group: THREE.Group;
   public sprite: THREE.Sprite;
   public material: THREE.SpriteMaterial;
-  public clock: THREE.Clock;
-  public animationFrameId?: number;
   public isDestroyed = false;
   public initialY: number;
   public baseSize: number;
@@ -31,6 +29,7 @@ class ResourceFXInstance {
   private endDuration: number = 0.5; // Duration of fade out in seconds
   private floatHeight: number;
   private duration: number;
+  private elapsedTime: number = 0;
 
   constructor(
     scene: THREE.Scene,
@@ -46,7 +45,6 @@ class ResourceFXInstance {
     duration: number = 3.0,
     fadeOutDuration: number = 0.5,
   ) {
-    this.clock = new THREE.Clock();
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
@@ -100,7 +98,6 @@ class ResourceFXInstance {
     }
 
     scene.add(this.group);
-    this.animate();
   }
 
   public onComplete(resolve: () => void) {
@@ -110,14 +107,15 @@ class ResourceFXInstance {
   public startEnding() {
     if (!this.isEnding) {
       this.isEnding = true;
-      this.endStartTime = this.clock.getElapsedTime();
+      this.endStartTime = this.elapsedTime;
     }
   }
 
-  private animate = () => {
+  public update(deltaTime: number): void {
     if (this.isDestroyed) return;
 
-    const elapsed = this.clock.getElapsedTime();
+    this.elapsedTime += deltaTime;
+    const elapsed = this.elapsedTime;
 
     // Handle ending animation
     if (this.isEnding) {
@@ -130,16 +128,13 @@ class ResourceFXInstance {
         // Move up during fade out
         const moveUp = fadeProgress * 0.5;
         this.group.position.y = this.initialY + this.floatHeight + moveUp;
-
-        // Continue animation
-        this.animationFrameId = requestAnimationFrame(this.animate);
-        return;
-      } else {
-        // End animation complete, destroy the instance
-        this.resolvePromise?.();
-        this.destroy();
         return;
       }
+
+      // End animation complete, destroy the instance
+      this.resolvePromise?.();
+      this.destroy();
+      return;
     }
 
     // Determine if animation should continue based on time elapsed
@@ -161,22 +156,16 @@ class ResourceFXInstance {
       // Slight sway for visual interest
       const sway = Math.sin(elapsed * 2) * 0.05;
       this.group.position.x += sway * 0.01;
-
-      this.animationFrameId = requestAnimationFrame(this.animate);
-    } else {
-      // Start ending automatically when duration is reached
-      this.startEnding();
-      this.animationFrameId = requestAnimationFrame(this.animate);
+      return;
     }
-  };
+
+    // Start ending automatically when duration is reached
+    this.startEnding();
+  }
 
   public destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
-
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
 
     // Clean up labels
     if (this.label && this.label.element) {
@@ -212,6 +201,20 @@ export class ResourceFXManager {
     this.defaultSize = defaultSize;
     this.textureLoader = new THREE.TextureLoader();
     this.baseFXManager = new FXManager(scene, defaultSize);
+  }
+
+  public hasActiveFx(): boolean {
+    return this.activeResourceFX.size > 0;
+  }
+
+  public update(deltaTime: number): void {
+    if (this.activeResourceFX.size === 0) {
+      return;
+    }
+
+    this.activeResourceFX.forEach((fx) => {
+      fx.update(deltaTime);
+    });
   }
 
   private getOrLoadTexture(resourceId: number): Promise<THREE.Texture> {

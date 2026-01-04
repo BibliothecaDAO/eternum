@@ -1,8 +1,9 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
-import { getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
@@ -102,16 +103,18 @@ const ProductionContainer = ({
 export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?: ResourcesIds }) => {
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
+  const mode = useGameModeConfig();
 
   const managedStructures = useMemo(() => {
-    const isBlitz = getIsBlitz();
     const combined = [...playerRealms, ...playerVillages]
       .slice()
       .sort((a, b) =>
-        getStructureName(a.structure, isBlitz).name.localeCompare(getStructureName(b.structure, isBlitz).name),
+        mode.structure
+          .getName(a.structure)
+          .name.localeCompare(mode.structure.getName(b.structure).name),
       );
     return combined;
-  }, [playerRealms, playerVillages]);
+  }, [mode, playerRealms, playerVillages]);
 
   return (
     <ModalContainer size="full">

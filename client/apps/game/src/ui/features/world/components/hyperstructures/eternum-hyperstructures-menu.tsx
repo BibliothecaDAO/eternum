@@ -1,5 +1,6 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
-import { getIsBlitz, Position } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -14,7 +15,6 @@ import {
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  getStructureName,
   LeaderboardManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures } from "@bibliothecadao/react";
@@ -34,6 +34,7 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
     setup: { components },
     account: { account },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   const { isSyncing } = useSyncHyperstructure();
 
@@ -72,11 +73,11 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
     return hyperstructures
       .map((hyperstructure) => ({
         ...hyperstructure,
-        name: getStructureName(hyperstructure.structure, getIsBlitz()).name,
+        name: mode.structure.getName(hyperstructure.structure).name,
         isFavorite: favorites.includes(Number(hyperstructure.entity_id)),
       }))
       .sort((a, b) => Number(a.entity_id) - Number(b.entity_id));
-  }, [hyperstructures, favorites]);
+  }, [hyperstructures, favorites, mode]);
 
   const myGuild = useComponentValue(components.GuildMember, getEntityIdFromKeys([ContractAddress(account.address)]));
 

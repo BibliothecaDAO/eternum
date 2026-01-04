@@ -312,8 +312,6 @@ export class MapDataStore {
   }
 
   public async refresh(): Promise<void> {
-    console.log("Refreshing map data store");
-
     // If already loading, wait for the existing promise
     if (this.isLoading) {
       if (this.loadingPromise) {

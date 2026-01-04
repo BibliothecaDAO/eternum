@@ -1,6 +1,7 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { sqlApi } from "@/services/api";
-import { getIsBlitz, Position as PositionType } from "@bibliothecadao/eternum";
+import { Position as PositionType } from "@bibliothecadao/eternum";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
@@ -10,7 +11,6 @@ import {
   configManager,
   getAddressName,
   getRealmNameById,
-  getStructureTypeName,
   LeaderboardManager,
   toHexString,
   unpackValue,
@@ -38,6 +38,7 @@ export const PlayerId = ({
   const [playerStructures, setPlayerStructures] = useState<PlayerStructure[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mode = useGameModeConfig();
 
   const playerName = useMemo(() => {
     if (!selectedPlayer) return;
@@ -115,17 +116,15 @@ export const PlayerId = ({
     ).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
   }, [selectedPlayer, components]);
 
-  const isBlitz = getIsBlitz();
-
   // Helper function to get structure name
-  const getStructureName = (structure: PlayerStructure, isBlitz: boolean): string => {
+  const getStructureName = (structure: PlayerStructure): string => {
     if (structure.category === StructureType.Realm && structure.realm_id) {
       const baseName = getRealmNameById(structure.realm_id);
       return structure.has_wonder ? `WONDER - ${baseName}` : baseName;
     }
 
     // For other structure types, use the type name with entity ID
-    return `${getStructureTypeName(structure.category as StructureType, isBlitz)} ${structure.entity_id}`;
+    return `${mode.structure.getTypeName(structure.category as StructureType) ?? "Structure"} ${structure.entity_id}`;
   };
 
   // Helper function to get resources for a specific structure
@@ -163,11 +162,11 @@ export const PlayerId = ({
           <div className="grid grid-cols-2 gap-2 my-2">
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.realms}</span>
-              <span className="text-xs text-gold/80 h6">Realms</span>
+              <span className="text-xs text-gold/80 h6">{mode.labels.realms}</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.villages}</span>
-              <span className="text-xs text-gold/80 h6">Camps</span>
+              <span className="text-xs text-gold/80 h6">{mode.labels.villages}</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.hyperstructures}</span>
@@ -175,7 +174,7 @@ export const PlayerId = ({
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-xs text-gold/80 h6">Essence Rifts</span>
+              <span className="text-xs text-gold/80 h6">{mode.labels.fragmentMines}</span>
             </div>
             {structureCounts.banks > 0 && (
               <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
@@ -246,7 +245,7 @@ export const PlayerId = ({
               {playerStructures &&
                 playerStructures.map((structure) => {
                   const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
-                  const structureName = getStructureName(structure, isBlitz);
+                  const structureName = getStructureName(structure);
 
                   return (
                     <div

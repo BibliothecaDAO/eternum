@@ -3,10 +3,9 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import {
   configManager,
   getEntityIdFromKeys,
-  getIsBlitz,
-  getStructureName,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -22,6 +21,7 @@ export const ProductionBody = ({
   selectedResource: ResourcesIds | null;
   onSelectResource: (resource: ResourcesIds | null) => void;
 }) => {
+  const mode = useGameModeConfig();
   const {
     setup: {
       components: { ProductionBoostBonus },
@@ -80,8 +80,8 @@ export const ProductionBody = ({
   );
 
   const realmDisplayName = useMemo(() => {
-    return getStructureName(realm.structure, getIsBlitz()).name;
-  }, [realm.structure]);
+    return mode.structure.getName(realm.structure).name;
+  }, [mode.structure, realm.structure]);
 
   return (
     <ProductionWorkflows

@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
+import { CameraView } from "@/three/scenes/hexagon-scene";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
@@ -83,6 +84,9 @@ export default class GameRenderer {
   private brightnessContrastEffect?: BrightnessContrastEffect;
   private vignetteEffect?: VignetteEffect;
   private postProcessingGUIInitialized = false;
+  private labelsDirty = true;
+  private lastLabelRenderTime = 0;
+  private lastLabelsActive = false;
 
   // Weather-based post-processing modulation
   private basePostProcessingValues = {
@@ -451,6 +455,7 @@ export default class GameRenderer {
     this.controls.dampingFactor = CONTROL_CONFIG.dampingFactor;
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener("change", () => {
+      this.labelsDirty = true;
       if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
         this.worldmapScene.requestChunkRefresh();
       }
@@ -508,6 +513,8 @@ export default class GameRenderer {
     } else {
       this.sceneManager.switchScene(targetScene);
     }
+
+    this.labelsDirty = true;
   };
 
   async prepareScenes() {
@@ -766,6 +773,7 @@ export default class GameRenderer {
   }
 
   onWindowResize() {
+    this.labelsDirty = true;
     const container = document.getElementById("three-container");
     if (container) {
       const width = container.clientWidth;
@@ -844,6 +852,52 @@ export default class GameRenderer {
     }
   }
 
+  private getLabelRenderIntervalMs(view?: CameraView): number {
+    switch (view) {
+      case CameraView.Close:
+        return 0;
+      case CameraView.Medium:
+        return 33;
+      case CameraView.Far:
+        return 100;
+      default:
+        return 33;
+    }
+  }
+
+  private shouldRenderLabels(now: number): boolean {
+    const currentScene = this.sceneManager?.getCurrentScene();
+    let view: CameraView | undefined;
+    let labelsActive = false;
+
+    if (currentScene === SceneName.WorldMap) {
+      view = this.worldmapScene.getCurrentCameraView();
+      labelsActive = this.worldmapScene.hasActiveLabelAnimations();
+    } else if (currentScene === SceneName.Hexception) {
+      view = this.hexceptionScene.getCurrentCameraView();
+      labelsActive = this.hexceptionScene.hasActiveLabelAnimations();
+    }
+
+    if (this.hudScene?.hasActiveLabelAnimations()) {
+      labelsActive = true;
+    }
+
+    if (labelsActive !== this.lastLabelsActive) {
+      this.labelsDirty = true;
+      this.lastLabelsActive = labelsActive;
+    }
+
+    const interval = this.getLabelRenderIntervalMs(view);
+    const shouldRenderOnInterval = labelsActive && now - this.lastLabelRenderTime >= interval;
+    if (this.labelsDirty || shouldRenderOnInterval) {
+      this.labelsDirty = false;
+      this.lastLabelRenderTime = now;
+      return true;
+    }
+
+    return false;
+  }
+
   animate() {
     // Stop animation if renderer has been destroyed
     if (this.isDestroyed) {
@@ -883,14 +937,18 @@ export default class GameRenderer {
     this.renderer.clear();
 
     // Render the current game scene
-    if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
+    const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
+    if (isWorldMap) {
       this.worldmapScene.update(deltaTime);
-      (this.renderPass as unknown as { scene: unknown }).scene = this.worldmapScene.getScene();
-      this.labelRenderer.render(this.worldmapScene.getScene(), this.camera);
     } else {
       this.hexceptionScene.update(deltaTime);
-      (this.renderPass as unknown as { scene: unknown }).scene = this.hexceptionScene.getScene();
-      this.labelRenderer.render(this.hexceptionScene.getScene(), this.camera);
+    }
+    const activeScene = isWorldMap ? this.worldmapScene.getScene() : this.hexceptionScene.getScene();
+    (this.renderPass as unknown as { scene: unknown }).scene = activeScene;
+
+    const shouldRenderLabels = this.shouldRenderLabels(currentTime);
+    if (shouldRenderLabels) {
+      this.labelRenderer.render(activeScene, this.camera);
     }
     this.composer.render();
     // Render the HUD scene without clearing the buffer
@@ -902,7 +960,9 @@ export default class GameRenderer {
 
     this.renderer.clearDepth(); // Clear only the depth buffer
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
-    this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
+    if (shouldRenderLabels) {
+      this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
+    }
 
     requestAnimationFrame(() => {
       this.animate();

@@ -1,14 +1,14 @@
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import { Button, cn, MaxButton, NumberInput, Select } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { divideByPrecision, getEntityIdFromKeys, getStructureName } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useBridgeAsset, useDojo, useResourceManager } from "@bibliothecadao/react";
 import {
   ID,
@@ -301,6 +301,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
   };
 
   const { bridgeDepositIntoRealm, bridgeWithdrawFromRealm } = useBridgeAsset();
+  const mode = useGameModeConfig();
   const [isBridgePending, setIsBridgePending] = useState(false);
   const [bridgeError, setBridgeError] = useState<Error | null>(null);
 
@@ -322,14 +323,14 @@ export const Bridge = ({ structures }: BridgeProps) => {
       .map((structure) => ({
         ...structure,
         isFavorite: structure.entityId ? favorites.includes(structure.entityId) : false,
-        name: getStructureName(structure.structure, getIsBlitz()).name,
+        name: mode.structure.getName(structure.structure).name,
       }))
       .sort((a, b) => {
         const aFav = a.entityId ? Number(a.isFavorite) : 0;
         const bFav = b.entityId ? Number(b.isFavorite) : 0;
         return bFav - aFav;
       });
-  }, [favorites, structures]);
+  }, [favorites, structures, mode]);
 
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {

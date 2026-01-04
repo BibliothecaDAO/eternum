@@ -1,6 +1,5 @@
+import { getGameModeConfig } from "@/config/game-modes";
 import { Position } from "@bibliothecadao/eternum";
-
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { getCharacterName } from "@/utils/agent";
 import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -23,13 +22,13 @@ import { resolveCameraView } from "./label-view";
 /**
  * Structure icon paths
  */
-const STRUCTURE_ICONS = (isBlitz: boolean) => ({
+const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
   STRUCTURES: {
     [StructureType.Village]: "/images/labels/enemy_village.png",
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`, // Lords resource ID
-    [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+    [StructureType.FragmentMine]: fragmentMineIcon,
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
@@ -479,7 +478,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
   createElement: (data: StructureLabelData, inputView: CameraView): HTMLElement => {
     const cameraView = resolveCameraView(inputView);
-    const isBlitz = getIsBlitz();
+    const mode = getGameModeConfig();
+    const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
 
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView);
@@ -496,11 +496,11 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     iconContainer.setAttribute("data-component", "structure-icon-container");
 
     // Select appropriate icon
-    let iconPath = STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+    let iconPath = structureIcons.STRUCTURES[data.structureType];
     if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
       iconPath = data.isMine
-        ? STRUCTURE_ICONS(isBlitz).MY_STRUCTURES[data.structureType]
-        : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+        ? structureIcons.MY_STRUCTURES[data.structureType]
+        : structureIcons.STRUCTURES[data.structureType];
     }
 
     // Create and set icon image
@@ -653,7 +653,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
   // add here
   updateElement: (element: HTMLElement, data: StructureLabelData, inputView: CameraView): void => {
     const cameraView = resolveCameraView(inputView);
-    const isBlitz = getIsBlitz();
+    const mode = getGameModeConfig();
+    const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
 
     // Check if we have direction indicators and if view is expanded
     const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
@@ -686,11 +687,11 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     // Update structure icon based on ownership
     const structureIcon = element.querySelector('[data-component="structure-icon"]') as HTMLImageElement;
     if (structureIcon) {
-      let iconPath = STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+      let iconPath = structureIcons.STRUCTURES[data.structureType];
       if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
         iconPath = data.isMine
-          ? STRUCTURE_ICONS(isBlitz).MY_STRUCTURES[data.structureType]
-          : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+          ? structureIcons.MY_STRUCTURES[data.structureType]
+          : structureIcons.STRUCTURES[data.structureType];
       }
       structureIcon.src = iconPath;
     }

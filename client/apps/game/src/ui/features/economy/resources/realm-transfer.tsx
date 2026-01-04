@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -11,7 +11,6 @@ import {
   calculateDistance,
   calculateDonkeysNeeded,
   getEntityIdFromKeys,
-  getStructureName,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
@@ -39,6 +38,7 @@ type transferCall = {
 };
 
 export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => {
+  const mode = useGameModeConfig();
   const {
     setup: {
       components,
@@ -66,7 +66,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const playerStructuresFiltered = useMemo(() => {
     const playerStructuresWithName = playerStructures.map((structure) => ({
       ...structure,
-      name: getStructureName(structure.structure, getIsBlitz()).name,
+      name: mode.structure.getName(structure.structure).name,
     }));
 
     // TRANSFER RULES:
@@ -89,7 +89,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
     // Non-military resources can be transferred between ALL structures
     return playerStructuresWithName;
-  }, [playerStructures, resource, selectedStructure]);
+  }, [mode.structure, playerStructures, resource, selectedStructure]);
 
   const structureDistances = useMemo(() => {
     const distances: Record<number, number> = {};
@@ -410,7 +410,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 <div className="py-8 text-center text-sm text-gold/60">
                   <div className="mb-2 text-lg">No valid destinations</div>
                   <p>
-                    {getStructureName(selectedStructure, getIsBlitz()).name} cannot transfer troops. Only Realms can
+                    {mode.structure.getName(selectedStructure).name} cannot transfer troops. Only Realms can
                     transfer military units.
                   </p>
                 </div>
@@ -545,6 +545,7 @@ const RealmTransferBalance = memo(
     type: "send" | "receive";
   }) => {
     const [input, setInput] = useState(0);
+    const mode = useGameModeConfig();
     const {
       setup: { components },
     } = useDojo();
@@ -613,7 +614,7 @@ const RealmTransferBalance = memo(
           sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
           recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
           resources: [resource, maxAmount],
-          realmName: getStructureName(structure.structure, getIsBlitz()).name,
+          realmName: mode.structure.getName(structure.structure).name,
         };
         return existingIndex === -1
           ? [...prev, newCall]
@@ -630,7 +631,7 @@ const RealmTransferBalance = memo(
         <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
             <div className="uppercase font-bold h4 truncate">
-              {getStructureName(structure.structure, getIsBlitz()).name}
+              {mode.structure.getName(structure.structure).name}
             </div>
           </div>
         </div>
@@ -647,7 +648,7 @@ const RealmTransferBalance = memo(
             >
               {type === "send"
                 ? "Your Donkeys:"
-                : `${getStructureName(structure.structure, getIsBlitz()).name}'s Donkeys:`}{" "}
+                : `${mode.structure.getName(structure.structure).name}'s Donkeys:`}{" "}
               {currencyFormat(relevantDonkeyBalance, 0).toLocaleString()} / <br /> Needs:{" "}
               {neededDonkeysForThisTransfer.toLocaleString()} 🐴
             </div>
@@ -679,7 +680,7 @@ const RealmTransferBalance = memo(
                       sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
                       recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
                       resources: [resource, clampedValue],
-                      realmName: getStructureName(structure.structure, getIsBlitz()).name,
+                      realmName: mode.structure.getName(structure.structure).name,
                     };
 
                     return existingIndex === -1

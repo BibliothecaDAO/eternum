@@ -8,12 +8,12 @@ import { useFavoriteStructures } from "@/ui/features/world/containers/top-header
 import {
   calculateDonkeysNeeded,
   configManager,
-  getIsBlitz,
-  getStructureName,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
+import type { VillageIconKey } from "@/config/game-modes";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
@@ -22,7 +22,6 @@ import {
   ResourcesIds,
   Structure,
   StructureType,
-  getResourceTiers,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -39,17 +38,22 @@ const SOURCE_ALLOWED_CATEGORIES = new Set<StructureType>([
 ]);
 const DEST_ALLOWED_CATEGORIES = SOURCE_ALLOWED_CATEGORIES;
 
+const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
+  castle: Castle,
+  tent: Tent,
+};
+
 const isFragmentMine = (structure: Structure | undefined) => structure?.category === StructureType.FragmentMine;
 const isRealm = (structure: Structure | undefined) => structure?.category === StructureType.Realm;
 const isAllowedSource = (structure: Structure) => SOURCE_ALLOWED_CATEGORIES.has(structure.category);
 const isAllowedDestination = (structure: Structure) => DEST_ALLOWED_CATEGORIES.has(structure.category);
 
-const getStructureIcon = (category: StructureType, isBlitz: boolean) => {
+const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKey) => {
   switch (category) {
     case StructureType.Realm:
       return Crown;
     case StructureType.Village:
-      return isBlitz ? Tent : Castle;
+      return VILLAGE_ICON_BY_KEY[villageIconKey];
     case StructureType.FragmentMine:
       return Pickaxe;
     case StructureType.Hyperstructure:
@@ -66,7 +70,7 @@ interface TransferAutomationPanelProps {
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useUIStore((s) => s.playerStructures);
   const { currentDefaultTick } = useBlockTimestamp();
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
   const { favorites } = useFavoriteStructures();
   const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);
 
@@ -106,7 +110,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   );
 
   const resourcePriorityMap = useMemo(() => {
-    const resourceTiers = getResourceTiers(getIsBlitz());
+    const resourceTiers = mode.resources.getTiers();
     const tierOrder = [
       "lords",
       "relics",
@@ -131,7 +135,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       });
     });
     return map;
-  }, []);
+  }, [mode.resources]);
 
   const getResourcePriority = useCallback(
     (resourceId: ResourcesIds) => {
@@ -304,7 +308,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     const searched = !q
       ? filtered
       : filtered.filter((ps) => {
-          const name = getStructureName(ps.structure, isBlitz).name;
+          const name = mode.structure.getName(ps.structure).name;
           if (isNumeric) {
             return String(ps.entityId).includes(q);
           }
@@ -321,10 +325,10 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     ownedDestOnly,
     filteredOwnedDestinations,
     destSearch,
-    isBlitz,
     selectedSourceId,
     allowEssenceDestinationPayload,
     favoriteDestinationIds,
+    mode.structure,
   ]);
 
   // Force single destination selection when multiple resources are selected
@@ -695,9 +699,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       const dst = destinationLookup.get(id);
       addScheduled({
         sourceEntityId: String(selectedSourceId),
-        sourceName: src ? getStructureName(src.structure, isBlitz).name : undefined,
+        sourceName: src ? mode.structure.getName(src.structure).name : undefined,
         destinationEntityId: String(id),
-        destinationName: dst ? getStructureName(dst.structure, isBlitz).name : undefined,
+        destinationName: dst ? mode.structure.getName(dst.structure).name : undefined,
         resourceIds: configsForEntry.map((cfg) => cfg.resourceId),
         resourceConfigs: configsForEntry,
         intervalMinutes: interval,
@@ -718,12 +722,12 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     ownedSources,
     addScheduled,
     transferPreview,
-    isBlitz,
     resourceConfigs,
     systemCalls,
     destinationLookup,
     allowMultiDestination,
     allowEssenceDestinationPayload,
+    mode.structure,
   ]);
 
   const resetPanel = useCallback(() => {
@@ -814,7 +818,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const q = sourceSearch.trim();
               if (!q) return true;
               const isNumeric = /^\d+$/.test(q);
-              const name = getStructureName(ps.structure, isBlitz).name;
+              const name = mode.structure.getName(ps.structure).name;
               if (isNumeric) return String(ps.entityId).includes(q);
               const norm = (s: string) =>
                 s
@@ -824,10 +828,10 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               return norm(name).includes(norm(q));
             })
             .map((ps) => {
-              const name = getStructureName(ps.structure, isBlitz).name;
+              const name = mode.structure.getName(ps.structure).name;
               const entityId = Number(ps.entityId);
               const isSel = selectedSourceId === entityId;
-              const Icon = getStructureIcon(ps.category, isBlitz);
+              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
               return (
                 <button
                   key={ps.entityId}
@@ -867,10 +871,10 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {destinations.map((ps) => {
-              const name = getStructureName(ps.structure, isBlitz).name;
+              const name = mode.structure.getName(ps.structure).name;
               const entityId = Number(ps.entityId);
               const isSel = destinationIds.includes(entityId);
-              const Icon = getStructureIcon(ps.category, isBlitz);
+              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
               const isFavorite = favoriteDestinationIds.has(entityId);
               return (
                 <button

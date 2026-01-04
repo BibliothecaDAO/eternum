@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { EntityResourceTable } from "@/ui/features/economy/resources";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { TransferAutomationPanel } from "./transfer-automation-panel";
@@ -67,7 +67,7 @@ export const TransferAutomationPopup = () => {
 };
 
 const AllRealmsBalanceTab = ({ structures }: { structures: Array<{ entityId: number; structure?: any }> }) => {
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
   const [selectedId, setSelectedId] = useState<number | null>(structures[0]?.entityId ?? null);
 
   useEffect(() => {
@@ -79,9 +79,9 @@ const AllRealmsBalanceTab = ({ structures }: { structures: Array<{ entityId: num
     () =>
       structures.map((structure) => ({
         id: structure.entityId,
-        name: getStructureName(structure.structure ?? (structure as any), isBlitz).name,
+        name: mode.structure.getName(structure.structure ?? (structure as any)).name,
       })),
-    [isBlitz, structures],
+    [mode.structure, structures],
   );
 
   const selected = options.find((option) => option.id === selectedId) ?? options[0];

@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { getSelectedChain } from "./src/runtime/world/store";
+
+const rawEnv = import.meta.env as Record<string, string | undefined>;
 
 const envSchema = z.object({
   // Master account
@@ -16,12 +19,12 @@ const envSchema = z.object({
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
   // API endpoints
-  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-test/torii"),
+  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-3/torii"),
   VITE_PUBLIC_NODE_URL: z
     .string()
     .url()
     .optional()
-    .default("https://api.cartridge.gg/x/eternum-blitz-slot-test/katana"),
+    .default("https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9"),
   VITE_PUBLIC_TORII_RELAY: z
     .string()
     .optional()
@@ -133,7 +136,13 @@ try {
   throw new Error("Invalid environment variables");
 }
 
+const storedChain = getSelectedChain();
+if (storedChain) {
+  env = { ...env, VITE_PUBLIC_CHAIN: storedChain };
+}
+
 export { env };
+export const hasPublicNodeUrl = Boolean(env.VITE_PUBLIC_NODE_URL);
 
 // Type for your validated env
 export type Env = z.infer<typeof envSchema>;

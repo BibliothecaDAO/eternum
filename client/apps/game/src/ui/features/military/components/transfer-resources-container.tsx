@@ -2,7 +2,8 @@ import { MaxButton } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getBlockTimestamp, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
   configManager,
@@ -58,6 +59,7 @@ export const TransferResourcesContainer = ({
       },
     },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   const [loading, setLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<ResourceTransfer[]>([]);
@@ -111,7 +113,7 @@ export const TransferResourcesContainer = ({
     queryKey: ["explorerCapacity", String(targetEntityId), String(actorTypes?.target)],
     queryFn: async () => {
       if (!targetEntityId || actorTypes?.target !== ActorType.Explorer) return null;
-      if (getIsBlitz()) return null;
+      if (!mode.ui.showExplorerCapacity) return null;
       const { resources: resourcesData } = await getExplorerFromToriiClient(toriiClient, targetEntityId);
       if (!resourcesData) return null;
       const maxCapacity = getArmyTotalCapacityInKg(resourcesData);
@@ -579,13 +581,13 @@ export const TransferResourcesContainer = ({
 
   const selectedStructureName = useMemo(() => {
     if (!selectedStructureInfo) return null;
-    return getStructureName(selectedStructureInfo, getIsBlitz()).name;
-  }, [selectedStructureInfo]);
+    return mode.structure.getName(selectedStructureInfo).name;
+  }, [selectedStructureInfo, mode]);
 
   const targetStructureName = useMemo(() => {
     if (!targetStructureInfo) return null;
-    return getStructureName(targetStructureInfo, getIsBlitz()).name;
-  }, [targetStructureInfo]);
+    return mode.structure.getName(targetStructureInfo).name;
+  }, [targetStructureInfo, mode]);
 
   const fromLabel = formatActorLabel(actorTypes?.selected, selectedEntityId, selectedStructureName ?? undefined);
   const toLabel = formatActorLabel(actorTypes?.target, targetEntityId, targetStructureName ?? undefined);

@@ -2,6 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
+import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
 import { GUIManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
@@ -29,14 +30,19 @@ import {
   resolveArmyMountTransforms,
 } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
-import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
+import {
+  getHexForWorldPosition,
+  getWorldPositionForHex,
+  getWorldPositionForHexCoordsInto,
+  hashCoordinates,
+} from "../utils";
+import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
-import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PointsLabelRenderer } from "./points-label-renderer";
@@ -117,6 +123,7 @@ export class ArmyManager {
   private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: RelicFxHandle }>> = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
+  private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
     enemy: PointsLabelRenderer;
@@ -125,6 +132,8 @@ export class ArmyManager {
   };
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
+  private lastLabelVisibilityUpdate = 0;
+  private labelVisibilityIntervalMs = 66;
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
@@ -530,7 +539,6 @@ export class ArmyManager {
   async onTileUpdate(update: ExplorerTroopsTileSystemUpdate) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
-    console.log("[ArmyManager] onTileUpdate for", entityId, "at", hexCoords);
 
     const {
       battleCooldownEnd,
@@ -1441,7 +1449,6 @@ export class ArmyManager {
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position) {
-    console.log("[ArmyManager] moveArmy called for", entityId, "to", hexCoords);
     // Monitor memory usage before army movement
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
@@ -1465,6 +1472,7 @@ export class ArmyManager {
     if (!path || path.length === 0) {
       // If no path is found, just teleport the army to the target position
       this.armies.set(entityId, { ...armyData, hexCoords });
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1472,6 +1480,7 @@ export class ArmyManager {
       this.armies.set(entityId, { ...armyData, hexCoords });
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1501,6 +1510,7 @@ export class ArmyManager {
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
       // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1512,6 +1522,7 @@ export class ArmyManager {
       this.cleanupMovementSourceBucket(entityId);
       // Remove path visualization
       this.pathRenderer.removePath(numericEntityId);
+      this.runMovementCompleteListeners(numericEntityId);
     });
 
     // Don't remove relic effects during movement - they will follow the army
@@ -1602,6 +1613,7 @@ export class ArmyManager {
 
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+    this.runMovementCompleteListeners(numericEntityId);
     this.lastKnownVisibleHexes.delete(entityId);
 
     // Remove path visualization
@@ -1736,10 +1748,52 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
-  update(deltaTime: number) {
+  public onMovementComplete(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementCompleteListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementCompleteListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementCompleteListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementCompleteListeners.delete(numericEntityId);
+      }
+    };
+  }
+
+  public hasMovingArmies(): boolean {
+    return this.armyModel.hasMovingInstances();
+  }
+
+  private runMovementCompleteListeners(entityId: number): void {
+    const listeners = this.movementCompleteListeners.get(entityId);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    this.movementCompleteListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement complete listener failed", error);
+      }
+    });
+  }
+
+  update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
-    this.armyModel.updateAnimations(deltaTime);
+    this.armyModel.updateAnimations(deltaTime, animationContext);
 
     // Update FX
     this.fxManager.update(deltaTime);
@@ -1761,8 +1815,12 @@ export class ArmyManager {
     this.updateVisibleArmiesBatched();
 
     if (this.frustumVisibilityDirty) {
-      this.applyFrustumVisibilityToLabels();
-      this.frustumVisibilityDirty = false;
+      const now = performance.now();
+      if (now - this.lastLabelVisibilityUpdate >= this.labelVisibilityIntervalMs) {
+        this.applyFrustumVisibilityToLabels();
+        this.frustumVisibilityDirty = false;
+        this.lastLabelVisibilityUpdate = now;
+      }
     }
 
     // Flush batched label pool operations to minimize layout thrashing
@@ -1784,6 +1842,18 @@ export class ArmyManager {
       return;
     }
 
+    let pointsBatchStarted = false;
+    const startPointsBatch = () => {
+      if (!hasPointsRenderers || pointsBatchStarted || !this.pointsRenderers) {
+        return;
+      }
+      pointsBatchStarted = true;
+      this.pointsRenderers.player.beginBatch();
+      this.pointsRenderers.enemy.beginBatch();
+      this.pointsRenderers.ally.beginBatch();
+      this.pointsRenderers.agent.beginBatch();
+    };
+
     // Single pass over visible armies
     for (let i = 0; i < this.visibleArmies.length; i++) {
       const army = this.visibleArmies[i];
@@ -1792,6 +1862,7 @@ export class ArmyManager {
 
       // 1. Update point icon positions for moving armies
       if (hasPointsRenderers && instanceData?.isMoving) {
+        startPointsBatch();
         const iconPosition = this.tempIconPosition.copy(instanceData.position);
         iconPosition.y += 2.1; // Match CSS2D label height
 
@@ -1811,8 +1882,7 @@ export class ArmyManager {
         if (instanceData?.position) {
           this.tempCosmeticPosition.copy(instanceData.position);
         } else {
-          const worldPosition = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-          this.tempCosmeticPosition.copy(worldPosition);
+          this.getArmyWorldPositionInto(this.tempCosmeticPosition, army.hexCoords);
         }
 
         const baseTransform = {
@@ -1852,6 +1922,13 @@ export class ArmyManager {
         }
       }
     }
+
+    if (pointsBatchStarted && this.pointsRenderers) {
+      this.pointsRenderers.player.endBatch();
+      this.pointsRenderers.enemy.endBatch();
+      this.pointsRenderers.ally.endBatch();
+      this.pointsRenderers.agent.endBatch();
+    }
   }
 
   private applyFrustumVisibilityToLabels() {
@@ -1859,32 +1936,38 @@ export class ArmyManager {
       const isVisible = this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
         : (this.frustumManager?.isPointVisible(label.position) ?? true);
+      const wasVisible = label.userData.isVisible === true;
+      if (isVisible === wasVisible) {
+        return;
+      }
+
+      label.userData.isVisible = isVisible;
+      label.visible = isVisible;
+      label.element.style.display = isVisible ? "" : "none";
+
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);
-          label.element.style.display = "";
-
-          // Force update data when showing again to ensure it's fresh
-          const entityId = label.userData.entityId;
-          const army = this.armies.get(entityId);
-          if (army) {
-            // Use the internal update function directly to avoid the visibility check in the wrapper
-            updateArmyLabel(label.element, army, this.currentCameraView);
-          }
         }
-      } else {
-        if (label.parent === this.labelsGroup) {
-          this.labelsGroup.remove(label);
-          label.element.style.display = "none";
+
+        // Force update data when showing again to ensure it's fresh
+        const entityId = label.userData.entityId;
+        const army = this.armies.get(entityId);
+        if (army) {
+          // Use the internal update function directly to avoid the visibility check in the wrapper
+          updateArmyLabel(label.element, army, this.currentCameraView);
         }
       }
     });
   }
 
-  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {
+  private getArmyWorldPositionInto(out: Vector3, hexCoords: Position): Vector3 {
     const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
-    const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
-    return basePosition;
+    return getWorldPositionForHexCoordsInto(hexCoordsX, hexCoordsY, out);
+  }
+
+  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {
+    return this.getArmyWorldPositionInto(new Vector3(), hexCoords);
   };
 
   private toNumericId(entityId: ID): number {
@@ -2388,7 +2471,7 @@ ${
 
     // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
     // Only skip if label is currently visible - culled labels need update when shown
-    const isVisible = existingLabel.parent === this.labelsGroup;
+    const isVisible = this.labelsGroup.parent !== null && existingLabel.visible === true;
     if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
@@ -2636,6 +2719,7 @@ ${
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.chunkToArmies.clear();
+    this.movementCompleteListeners.clear();
 
     // Clear path visualization
     this.pathRenderer.clearAll();

@@ -1,5 +1,5 @@
-import { getIsBlitz } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useRef } from "react";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useEffect, useRef } from "react";
 import { useBackgroundMusic } from "../providers/music-router-provider";
 
 export const useMusicPlayer = () => {
@@ -15,7 +15,7 @@ export const useMusicPlayer = () => {
 
 export const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
   const trackNameRef = useRef<HTMLDivElement>(null);
-  const isBlitz = useMemo(() => getIsBlitz(), []);
+  const mode = useGameModeConfig();
 
   useEffect(() => {
     const trackNameElement = trackNameRef.current;
@@ -40,7 +40,7 @@ export const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
   return (
     <div className="w-full p-1 overflow-hidden text-xs border border-gold">
       <div className="track-name" ref={trackNameRef}>
-        {trackName} - {isBlitz ? "The Minstrels" : "Casey Wescott"}
+        {trackName} - {mode.audio.trackArtist}
       </div>
     </div>
   );

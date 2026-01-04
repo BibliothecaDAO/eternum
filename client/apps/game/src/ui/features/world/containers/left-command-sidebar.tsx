@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -29,14 +30,9 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import {
-  configManager,
-  getEntityInfo,
-  getIsBlitz,
-  getStructureName,
-  Position,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
+import type { VillageIconKey } from "@/config/game-modes";
+import type { getEntityInfo } from "@bibliothecadao/eternum";
+import { configManager, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   ClientComponents,
@@ -111,14 +107,14 @@ type RealmNavigationContext = {
   pendingArrivalsNumber: number;
   toggleModal: (content: ReactNode | null) => void;
   isTradeOpen: boolean;
-  isBlitz: boolean;
+  showTradeMenu: boolean;
 };
 
 type EconomyNavigationContext = {
   view: LeftView;
   setLeftView: (view: LeftView) => void;
   disableButtons: boolean;
-  isBlitz: boolean;
+  showBridgeMenu: boolean;
   onOpenTransfer: () => void;
   isTransferOpen: boolean;
 };
@@ -128,7 +124,6 @@ type LeftPanelHeaderProps = {
   structures: Structure[];
   structureInfo: ReturnType<typeof getEntityInfo> | null;
   onSelectStructure: (entityId: ID) => void;
-  isBlitz: boolean;
   components: ClientComponents;
   structureGroups: StructureGroupsMap;
   onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
@@ -142,6 +137,11 @@ const connectionTone = {
   error: "bg-red-400",
   default: "bg-neutral-500",
 } as const;
+
+const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, LucideIcon> = {
+  castle: Castle,
+  tent: Tent,
+};
 
 const getConnectionToneClass = (status: string | undefined) => {
   if (status === "connected") {
@@ -210,7 +210,6 @@ const LeftPanelHeader = memo(
     structures,
     structureInfo,
     onSelectStructure,
-    isBlitz,
     components,
     structureGroups,
     onRequestNameChange,
@@ -219,6 +218,7 @@ const LeftPanelHeader = memo(
     onToggleFavorite,
   }: LeftPanelHeaderProps) => {
     const [activeTab, setActiveTab] = useState(0);
+    const mode = useGameModeConfig();
 
     const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
@@ -235,16 +235,16 @@ const LeftPanelHeader = memo(
 
     const structureTabs = useMemo<Array<{ key: string; label: string; categories: StructureType[]; icon: LucideIcon }>>(
       () => [
-        { key: "realms", label: "Realms", categories: [StructureType.Realm], icon: Crown },
+        { key: "realms", label: mode.labels.realms, categories: [StructureType.Realm], icon: Crown },
         {
           key: "villages",
-          label: isBlitz ? "Camps" : "Villages",
+          label: mode.labels.villages,
           categories: [StructureType.Village],
-          icon: isBlitz ? Tent : Castle,
+          icon: VILLAGE_ICON_BY_KEY[mode.ui.villageIconKey],
         },
         {
           key: "rifts",
-          label: isBlitz ? "Rifts" : "Essence Rifts",
+          label: mode.labels.fragmentMines,
           categories: [StructureType.FragmentMine],
           icon: Pickaxe,
         },
@@ -255,7 +255,7 @@ const LeftPanelHeader = memo(
           icon: Sparkles,
         },
       ],
-      [isBlitz],
+      [mode],
     );
 
     const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
@@ -264,7 +264,7 @@ const LeftPanelHeader = memo(
       const basePopulationCapacityValue = configManager.getBasePopulationCapacity();
       const maxRealmLevel = configManager.getMaxLevel(StructureType.Realm);
       return structures.map((structure) => {
-        const { name, originalName } = getStructureName(structure.structure, isBlitz);
+        const { name, originalName } = mode.structure.getName(structure.structure);
         const baseLevel = structure.structure.base?.level;
         const normalizedLevel =
           typeof baseLevel === "number" ? baseLevel : typeof baseLevel === "bigint" ? Number(baseLevel) : 0;
@@ -302,7 +302,7 @@ const LeftPanelHeader = memo(
           canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
         };
       });
-    }, [structures, isBlitz, components.StructureBuildings, structureGroups, nameUpdateVersion, favoritesSet]);
+    }, [structures, components.StructureBuildings, structureGroups, nameUpdateVersion, favoritesSet, mode]);
 
     const orderedStructures = useMemo(() => {
       const currentTab = structureTabs[activeTab] ?? structureTabs[0];
@@ -772,7 +772,7 @@ const buildRealmNavigationItems = ({
   pendingArrivalsNumber,
   toggleModal,
   isTradeOpen,
-  isBlitz,
+  showTradeMenu,
 }: RealmNavigationContext): NavigationItem[] => {
   const toggleView = (targetView: LeftView) => () => {
     setView(view === targetView ? LeftView.None : targetView);
@@ -875,7 +875,7 @@ const buildRealmNavigationItems = ({
     MenuEnum.hyperstructures,
     MenuEnum.resourceArrivals,
     MenuEnum.relics,
-    ...(isBlitz ? [] : [MenuEnum.trade]),
+    ...(showTradeMenu ? [MenuEnum.trade] : []),
   ];
 
   return items.filter((item) => allowedMenus.includes(item.id));
@@ -885,7 +885,7 @@ const buildEconomyNavigationItems = ({
   view,
   setLeftView,
   disableButtons,
-  isBlitz,
+  showBridgeMenu,
   onOpenTransfer,
   isTransferOpen,
 }: EconomyNavigationContext): NavigationItem[] => {
@@ -903,7 +903,7 @@ const buildEconomyNavigationItems = ({
         onOpenTransfer();
       },
     },
-    ...(!isBlitz
+    ...(showBridgeMenu
       ? ([
           {
             id: MenuEnum.bridge,
@@ -950,7 +950,7 @@ const buildEconomyNavigationItems = ({
 
   const allowedMenus: MenuEnum[] = [
     MenuEnum.transfer,
-    ...(isBlitz ? [] : [MenuEnum.bridge]),
+    ...(showBridgeMenu ? [MenuEnum.bridge] : []),
     MenuEnum.storyEvents,
     MenuEnum.predictionMarket,
   ];
@@ -1017,6 +1017,10 @@ const InGameMarket = lazy(() =>
     default: module.InGameMarket,
   })),
 );
+const HYPERSTRUCTURES_MENU_BY_VARIANT = {
+  blitz: BlitzHyperstructuresMenu,
+  standard: EternumHyperstructuresMenu,
+} as const;
 // const RelicsModule = lazy(() =>
 //   import("@/ui/features/relics").then((module) => ({
 //     default: module.RelicsModule,
@@ -1048,6 +1052,7 @@ export const LeftCommandSidebar = memo(() => {
   const { structureGroups, updateStructureGroup } = useStructureGroups();
   const { favorites, toggleFavorite } = useFavoriteStructures();
   const goToStructure = useGoToStructure(setup);
+  const mode = useGameModeConfig();
 
   const [structureNameChange, setStructureNameChange] = useState<ComponentValue<
     ClientComponents["Structure"]["schema"]
@@ -1088,8 +1093,6 @@ export const LeftCommandSidebar = memo(() => {
   const unreadChatTotal = unreadDirectTotal + unreadWorldTotal;
   const isChatOpen = useRealtimeChatSelector((state) => state.isShellOpen);
 
-  const isBlitz = getIsBlitz();
-
   const navHeight = `calc(100vh - ${HEADER_HEIGHT}px)`;
 
   useEffect(() => {
@@ -1111,8 +1114,8 @@ export const LeftCommandSidebar = memo(() => {
   const structureInfo = useMemo(() => {
     // Include structureNameVersion to refresh cached info when renames happen locally.
     void structureNameVersion;
-    return getEntityInfo(structureEntityId, ContractAddress(account.address), components, isBlitz);
-  }, [structureEntityId, account.address, components, isBlitz, structureNameVersion]);
+    return mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components);
+  }, [structureEntityId, account.address, components, structureNameVersion, mode]);
 
   const isRealmOrVillage = useMemo(
     () =>
@@ -1133,7 +1136,7 @@ export const LeftCommandSidebar = memo(() => {
         pendingArrivalsNumber,
         toggleModal,
         isTradeOpen,
-        isBlitz,
+        showTradeMenu: mode.ui.showTradeMenu,
       }),
     [
       view,
@@ -1144,7 +1147,7 @@ export const LeftCommandSidebar = memo(() => {
       pendingArrivalsNumber,
       toggleModal,
       isTradeOpen,
-      isBlitz,
+      mode,
     ],
   );
 
@@ -1154,11 +1157,11 @@ export const LeftCommandSidebar = memo(() => {
         view,
         setLeftView: setView,
         disableButtons,
-        isBlitz,
+        showBridgeMenu: mode.ui.showBridgeMenu,
         onOpenTransfer: handleOpenTransferPopup,
         isTransferOpen: isTransferPopupOpen,
       }),
-    [view, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
+    [view, setView, disableButtons, handleOpenTransferPopup, isTransferPopupOpen, mode],
   );
 
   const chatNavigationItem = useMemo<NavigationItem>(() => {
@@ -1216,7 +1219,7 @@ export const LeftCommandSidebar = memo(() => {
     [combinedNavigationItems.length],
   );
 
-  const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
+  const structureNameMetadata = structureNameChange ? mode.structure.getName(structureNameChange) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
   const handleSelectStructure = useCallback(
@@ -1255,7 +1258,6 @@ export const LeftCommandSidebar = memo(() => {
                 structures={structures}
                 structureInfo={structureInfo}
                 onSelectStructure={handleSelectStructure}
-                isBlitz={isBlitz}
                 components={components}
                 structureGroups={structureGroups}
                 onRequestNameChange={handleRequestNameChange}
@@ -1297,7 +1299,10 @@ export const LeftCommandSidebar = memo(() => {
                     {view !== LeftView.StoryEvents &&
                       view !== LeftView.PredictionMarket &&
                       view === LeftView.HyperstructuresView &&
-                      (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
+                      (() => {
+                        const HyperstructuresMenu = HYPERSTRUCTURES_MENU_BY_VARIANT[mode.ui.hyperstructuresMenuVariant];
+                        return <HyperstructuresMenu />;
+                      })()}
                     {view !== LeftView.StoryEvents &&
                       view !== LeftView.PredictionMarket &&
                       view === LeftView.ResourceArrivals && (

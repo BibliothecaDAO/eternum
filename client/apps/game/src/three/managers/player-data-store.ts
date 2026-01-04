@@ -1,7 +1,6 @@
 import { sqlApi } from "@/services/api";
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
-import { getStructureTypeName } from "@bibliothecadao/eternum";
+import { getGameModeConfig } from "@/config/game-modes";
+import { StructureType } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";
 
@@ -62,7 +61,7 @@ export class PlayerDataStore {
   }
 
   private async fetchAndStoreData(): Promise<void> {
-    const isBlitz = getIsBlitz();
+    const mode = getGameModeConfig();
     const result = await sqlApi.fetchGlobalStructureExplorerAndGuildDetails();
     let realmsData = realms as Record<string, { name: string }>;
     await Promise.all(
@@ -99,7 +98,7 @@ export class PlayerDataStore {
           this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
           const realmName =
             actualRealmId === "0"
-              ? getStructureTypeName(Number(actualCategory), isBlitz)
+              ? mode.structure.getTypeName(Number(actualCategory) as StructureType) ?? "Structure"
               : realmsData[actualRealmId].name;
           this.structureToNameMap.set(actualStructureId, realmName);
         });

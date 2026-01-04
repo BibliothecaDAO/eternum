@@ -93,6 +93,8 @@ export class AmbientParticleSystem {
     heightRange: 4, // Lower to ground
     heightOffset: 1, // Minimum height above spawn center
   };
+  private fireflyBaseColor: Color = new Color(this.fireflyParams.color);
+  private lastFireflyColor: number = this.fireflyParams.color;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -137,7 +139,8 @@ export class AmbientParticleSystem {
     this.fireflyColors = new Float32Array(this.fireflyCount * 3);
     this.fireflyStates = [];
 
-    const baseColor = new Color(this.fireflyParams.color);
+    this.fireflyBaseColor.set(this.fireflyParams.color);
+    const baseColor = this.fireflyBaseColor;
 
     for (let i = 0; i < this.fireflyCount; i++) {
       const state = this.createFireflyParticle(true);
@@ -305,7 +308,11 @@ export class AmbientParticleSystem {
   private updateFireflies(deltaTime: number): void {
     if (this.fireflyOpacity <= 0) return;
 
-    const baseColor = new Color(this.fireflyParams.color);
+    if (this.fireflyParams.color !== this.lastFireflyColor) {
+      this.fireflyBaseColor.set(this.fireflyParams.color);
+      this.lastFireflyColor = this.fireflyParams.color;
+    }
+    const baseColor = this.fireflyBaseColor;
 
     for (let i = 0; i < this.fireflyCount; i++) {
       const state = this.fireflyStates[i];

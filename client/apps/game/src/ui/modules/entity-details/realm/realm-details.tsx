@@ -1,6 +1,6 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
@@ -10,7 +10,6 @@ import {
   formatTime,
   getStructure,
   getStructureImmunityTimer,
-  getStructureName,
   isStructureImmune,
   toHexString,
 } from "@bibliothecadao/eternum";
@@ -28,6 +27,7 @@ export const RealmVillageDetails = () => {
   const { currentBlockTimestamp } = useBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const mode = useGameModeConfig();
 
   const structure = useMemo(
     () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
@@ -78,7 +78,7 @@ export const RealmVillageDetails = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h3 className="text-2xl font-bold">{getStructureName(structure.structure, getIsBlitz()).name}</h3>
+              <h3 className="text-2xl font-bold">{mode.structure.getName(structure.structure).name}</h3>
             </div>
             <HintModalButton section={HintSection.Realm} />
           </div>

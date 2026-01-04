@@ -224,8 +224,6 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
   const displayName = cleanText(owner.ownerName);
   const nameSpan = document.createElement("span");
 
-  console.debug("structureName", structureName);
-
   let fullText = displayName;
   if (structureName) {
     fullText = `${displayName} - ${structureName}`;

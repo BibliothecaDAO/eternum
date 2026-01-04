@@ -22,9 +22,19 @@ import {
 } from "./hooks/use-socket-events";
 import { Message, Room } from "./types";
 import { useChatStore } from "./use-chat-store";
-import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesByTime } from "./utils/filter-utils";
+import { filterMessages, filterRoomsBySearch, filterUsersBySearch } from "./utils/filter-utils";
 import { groupMessagesBySender } from "./utils/message-utils";
 import { generateUserCredentials, initialToken, initialUserId } from "./utils/user-credentials";
+
+const ensureMessagesSorted = (messages: Message[]) => {
+  for (let i = 1; i < messages.length; i += 1) {
+    if (messages[i - 1].timestamp > messages[i].timestamp) {
+      return [...messages].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    }
+  }
+
+  return messages;
+};
 
 export function ChatModule() {
   // User state
@@ -243,7 +253,7 @@ export function ChatModule() {
 
   // Sort messages based on active tab
   const sortedMessages = useMemo(() => {
-    return sortMessagesByTime(filteredMessages);
+    return ensureMessagesSorted(filteredMessages);
   }, [filteredMessages]);
 
   // Group messages by sender
@@ -497,6 +507,26 @@ export function ChatModule() {
     });
   }, []);
 
+  const { allUserIds, onlineUserIds } = useMemo(() => {
+    const allUserIds = new Set<string>();
+    const onlineUserIds = new Set<string>();
+
+    onlineUsers.forEach((user) => {
+      if (!user?.id) return;
+      allUserIds.add(user.id);
+      onlineUserIds.add(user.id);
+    });
+
+    offlineUsers.forEach((user) => {
+      if (!user?.id) return;
+      allUserIds.add(user.id);
+    });
+
+    return { allUserIds, onlineUserIds };
+  }, [onlineUsers, offlineUsers]);
+
+  const pinnedUserIds = useMemo(() => new Set(pinnedUsers), [pinnedUsers]);
+
   // Add memoized calculation for total unread messages
   const totalUnreadMessages = useMemo(() => {
     // console.log(
@@ -507,21 +537,20 @@ export function ChatModule() {
     //     status: onlineUsers.some((u) => u?.id === user?.id) ? "online" : "offline",
     //   })),
     // );
+    if (!allUserIds.size) {
+      return 0;
+    }
     return Object.entries(unreadMessages).reduce((sum, [userId, count]) => {
-      // Only count unread messages from users (not rooms or global)
-      const isUser = [...onlineUsers, ...offlineUsers].some((user) => user?.id === userId);
-      return sum + (isUser ? count : 0);
+      return sum + (allUserIds.has(userId) ? count : 0);
     }, 0);
-  }, [unreadMessages, onlineUsers, offlineUsers]);
+  }, [allUserIds, unreadMessages]);
 
   // Add save chat function
   const saveChatToText = useCallback(() => {
     if (!filteredMessages.length) return;
 
     // Sort messages by timestamp to ensure correct order
-    const sortedMessages = [...filteredMessages].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    );
+    const sortedMessages = ensureMessagesSorted(filteredMessages);
 
     const formatMessage = (message: Message) => {
       const timestamp = new Date(message.timestamp).toLocaleString();
@@ -554,12 +583,19 @@ export function ChatModule() {
     URL.revokeObjectURL(url);
   }, [filteredMessages, activeTab, onlineUsers, offlineUsers, availableRooms]);
 
-  // Modify the filtered users to include pinned users at the top
-  const filteredUsers = useMemo(() => {
-    const users = filterUsersBySearch(onlineUsers, userSearch);
-    return users.sort((a, b) => {
-      const isPinnedA = pinnedUsers.includes(a.id);
-      const isPinnedB = pinnedUsers.includes(b.id);
+  const allUsers = useMemo(() => {
+    return [...onlineUsers, ...offlineUsers];
+  }, [onlineUsers, offlineUsers]);
+
+  const filteredAllUsers = useMemo(() => {
+    return filterUsersBySearch(allUsers, userSearch);
+  }, [allUsers, userSearch]);
+
+  const rankedUsers = useMemo(() => {
+    const sortable = [...filteredAllUsers];
+    sortable.sort((a, b) => {
+      const isPinnedA = pinnedUserIds.has(a.id);
+      const isPinnedB = pinnedUserIds.has(b.id);
 
       if (isPinnedA && !isPinnedB) return -1;
       if (!isPinnedA && isPinnedB) return 1;
@@ -572,76 +608,39 @@ export function ChatModule() {
 
       return (a.username || a.id).localeCompare(b.username || b.id);
     });
-  }, [onlineUsers, userSearch, unreadMessages, pinnedUsers]);
 
-  // Modify the filtered offline users to include pinned users at the top
-  const filteredOfflineUsers = useMemo(() => {
-    const users = filterUsersBySearch(offlineUsers, userSearch);
-    return users.sort((a, b) => {
-      const isPinnedA = pinnedUsers.includes(a.id);
-      const isPinnedB = pinnedUsers.includes(b.id);
+    return sortable;
+  }, [filteredAllUsers, pinnedUserIds, unreadMessages]);
 
-      if (isPinnedA && !isPinnedB) return -1;
-      if (!isPinnedA && isPinnedB) return 1;
-
-      const unreadA = (unreadMessages[a.id] || 0) > 0;
-      const unreadB = (unreadMessages[b.id] || 0) > 0;
-
-      if (unreadA && !unreadB) return -1;
-      if (!unreadA && unreadB) return 1;
-
-      return (a.username || a.id).localeCompare(b.username || b.id);
-    });
-  }, [offlineUsers, userSearch, unreadMessages, pinnedUsers]);
-
-  // Update the usersWithUnreadMessages to include pinned users at the top
   const usersWithUnreadMessages = useMemo(() => {
-    return [...filteredUsers, ...filteredOfflineUsers]
-      .filter((user) => user && user?.id !== userId && (unreadMessages[user?.id] || 0) > 0)
-      .sort((a, b) => {
-        const isPinnedA = pinnedUsers.includes(a?.id || "");
-        const isPinnedB = pinnedUsers.includes(b?.id || "");
+    return rankedUsers.filter((user) => {
+      if (!user?.id || user.id === userId) return false;
+      return (unreadMessages[user.id] || 0) > 0;
+    });
+  }, [rankedUsers, unreadMessages, userId]);
 
-        if (isPinnedA && !isPinnedB) return -1;
-        if (!isPinnedA && isPinnedB) return 1;
-
-        return (a?.username || a?.id).localeCompare(b?.username || b?.id);
-      });
-  }, [filteredUsers, filteredOfflineUsers, userId, unreadMessages, pinnedUsers]);
-
-  // Update the onlineUsersWithoutUnread to include pinned users at the top
   const onlineUsersWithoutUnread = useMemo(() => {
-    return filteredUsers
-      .filter((user) => user && user?.id !== userId && !(unreadMessages[user?.id] || 0))
-      .sort((a, b) => {
-        const isPinnedA = pinnedUsers.includes(a?.id || "");
-        const isPinnedB = pinnedUsers.includes(b?.id || "");
+    return rankedUsers.filter((user) => {
+      if (!user?.id || user.id === userId) return false;
+      if (!onlineUserIds.has(user.id)) return false;
+      return !(unreadMessages[user.id] || 0);
+    });
+  }, [rankedUsers, onlineUserIds, unreadMessages, userId]);
 
-        if (isPinnedA && !isPinnedB) return -1;
-        if (!isPinnedA && isPinnedB) return 1;
-
-        return (a?.username || a?.id).localeCompare(b?.username || b?.id);
-      });
-  }, [filteredUsers, userId, unreadMessages, pinnedUsers]);
-
-  // Update the offlineUsersWithoutUnread to include pinned users at the top
   const offlineUsersWithoutUnread = useMemo(() => {
-    return filteredOfflineUsers
-      .filter((user) => !(unreadMessages[user?.id] || 0))
-      .sort((a, b) => {
-        const isPinnedA = pinnedUsers.includes(a?.id || "");
-        const isPinnedB = pinnedUsers.includes(b?.id || "");
-
-        if (isPinnedA && !isPinnedB) return -1;
-        if (!isPinnedA && isPinnedB) return 1;
-
-        return (a?.username || a?.id).localeCompare(b?.username || b?.id);
-      });
-  }, [filteredOfflineUsers, unreadMessages, pinnedUsers]);
+    return rankedUsers.filter((user) => {
+      if (!user?.id) return false;
+      if (onlineUserIds.has(user.id)) return false;
+      return !(unreadMessages[user.id] || 0);
+    });
+  }, [rankedUsers, onlineUserIds, unreadMessages]);
 
   const onlineUsersCount = useMemo(() => {
-    return filteredUsers.filter((user) => !(unreadMessages[user?.id] || 0)).length;
-  }, [filteredUsers, unreadMessages]);
+    return rankedUsers.filter((user) => {
+      if (!user?.id) return false;
+      return onlineUserIds.has(user.id) && !(unreadMessages[user.id] || 0);
+    }).length;
+  }, [rankedUsers, onlineUserIds, unreadMessages]);
 
   // Add effect to handle room message loading
   useEffect(() => {
@@ -968,7 +967,7 @@ export function ChatModule() {
                         <UserItem
                           key={user?.id}
                           user={user}
-                          isOffline={offlineUsers.some((u) => u?.id === user?.id)}
+                          isOffline={!onlineUserIds.has(user?.id ?? "")}
                           unreadCount={unreadMessages[user?.id] || 0}
                           isSelected={false}
                           isPinned={pinnedUsers.includes(user?.id)}

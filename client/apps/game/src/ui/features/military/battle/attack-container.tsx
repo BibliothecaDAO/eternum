@@ -1,4 +1,4 @@
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useState } from "react";
 
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -22,6 +22,7 @@ export const AttackContainer = ({
   targetHex: { x: number; y: number };
 }) => {
   const [attackType, setAttackType] = useState<AttackType>(AttackType.Combat);
+  const mode = useGameModeConfig();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
     attackerEntityId,
@@ -35,7 +36,7 @@ export const AttackContainer = ({
       ) : (
         <>
           <div className="flex justify-center mb-6 mx-auto mt-4">
-            {!getIsBlitz() && (
+            {mode.ui.showAttackTypeSelector && (
               <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
                 <button
                   className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${

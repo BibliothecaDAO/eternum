@@ -58,6 +58,11 @@ export class DayNightCycleManager {
   // Current sun position state (for smooth camera tracking)
   private currentSunPosition: Vector3 = new Vector3(0, 12, 0);
   private currentSunTarget: Vector3 = new Vector3(0, 0, 5.2);
+  private readonly targetSunPosition: Vector3 = new Vector3();
+  private readonly targetSunTarget: Vector3 = new Vector3();
+  private readonly tempColor1: Color = new Color();
+  private readonly tempColor2: Color = new Color();
+  private readonly stormTint: Color = new Color(0x606880);
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
@@ -284,10 +289,10 @@ export class DayNightCycleManager {
    * Interpolate between two hex colors
    */
   private lerpColor(color1: number, color2: number, t: number): number {
-    const c1 = new Color(color1);
-    const c2 = new Color(color2);
-    c1.lerp(c2, t);
-    return c1.getHex();
+    this.tempColor1.setHex(color1);
+    this.tempColor2.setHex(color2);
+    this.tempColor1.lerp(this.tempColor2, t);
+    return this.tempColor1.getHex();
   }
 
   /**
@@ -360,20 +365,20 @@ export class DayNightCycleManager {
     const offsetZ = -Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
 
     // Calculate target sun position and target
-    let targetSunPosition: Vector3;
-    let targetSunTarget: Vector3;
+    const targetSunPosition = this.targetSunPosition;
+    const targetSunTarget = this.targetSunTarget;
 
     if (cameraTarget) {
-      targetSunPosition = new Vector3(
+      targetSunPosition.set(
         cameraTarget.x + offsetX,
         cameraTarget.y + Math.max(offsetY, 0.5),
         cameraTarget.z + offsetZ,
       );
-      targetSunTarget = new Vector3(cameraTarget.x, cameraTarget.y, cameraTarget.z + 5.2);
+      targetSunTarget.set(cameraTarget.x, cameraTarget.y, cameraTarget.z + 5.2);
     } else {
       // Default behavior - sun at world origin
-      targetSunPosition = new Vector3(offsetX, Math.max(offsetY, 0.5), offsetZ);
-      targetSunTarget = new Vector3(0, 0, 5.2);
+      targetSunPosition.set(offsetX, Math.max(offsetY, 0.5), offsetZ);
+      targetSunTarget.set(0, 0, 5.2);
     }
 
     // Smoothly lerp current sun position toward target
@@ -419,8 +424,7 @@ export class DayNightCycleManager {
       this.fog.far *= 1 - fogIncrease * 0.5;
 
       // Tint fog slightly gray-blue during storms
-      const stormTint = new Color(0x606880);
-      this.fog.color.lerp(stormTint, fogDensity * 0.3);
+      this.fog.color.lerp(this.stormTint, fogDensity * 0.3);
     }
   }
 

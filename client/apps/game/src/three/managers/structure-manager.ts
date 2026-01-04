@@ -1,11 +1,12 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { getStructureModelPaths } from "@/three/constants";
+import { getGameModeConfig } from "@/config/game-modes";
+import type { GameModeConfig } from "@/config/game-modes";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import { StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -25,10 +26,10 @@ import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
+import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { FrustumManager } from "../utils/frustum-manager";
-import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
@@ -121,7 +122,7 @@ export class StructureManager {
   > = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
-  private isBlitz: boolean;
+  private mode: GameModeConfig;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
   private structureUpdateTimestamps: Map<ID, number> = new Map(); // Track when structures were last updated
   private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
@@ -156,6 +157,8 @@ export class StructureManager {
   };
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
+  private lastLabelVisibilityUpdate = 0;
+  private labelVisibilityIntervalMs = 66;
   private visibilityManager?: CentralizedVisibilityManager;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private unsubscribeFrustum?: () => void;
@@ -261,8 +264,8 @@ export class StructureManager {
         this.frustumVisibilityDirty = true;
       });
     }
-    this.isBlitz = getIsBlitz();
-    this.structureModelPaths = getStructureModelPaths(this.isBlitz);
+    this.mode = getGameModeConfig();
+    this.structureModelPaths = this.mode.assets.structureModelPaths;
     // Keep chunk stride aligned with the world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.needsSpatialReindex = true;
@@ -296,7 +299,7 @@ export class StructureManager {
       allyRealm: "/images/labels/allies_realm.png",
       hyperstructure: "/images/labels/hyperstructure.png",
       bank: "/images/labels/chest.png", // Using chest as placeholder for bank
-      fragmentMine: this.isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+      fragmentMine: this.mode.assets.labels.fragmentMine,
     };
 
     const loadedTextures: Partial<Record<keyof typeof texturePaths, THREE.Texture>> = {};
@@ -791,14 +794,8 @@ export class StructureManager {
       const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
 
       if (isPendingStale) {
-        console.warn(
-          `[PENDING LABEL UPDATE] Discarding stale pending update for structure ${entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
-        );
         this.pendingLabelUpdates.delete(entityId);
       } else {
-        console.log(
-          `[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType}, pendingUpdate: ${pendingUpdate})`,
-        );
         finalOwner = pendingUpdate.owner;
         if (pendingUpdate.guardArmies) {
           finalGuardArmies = pendingUpdate.guardArmies;
@@ -1593,8 +1590,12 @@ export class StructureManager {
     });
 
     if (this.frustumVisibilityDirty) {
-      this.applyFrustumVisibilityToLabels();
-      this.frustumVisibilityDirty = false;
+      const now = performance.now();
+      if (now - this.lastLabelVisibilityUpdate >= this.labelVisibilityIntervalMs) {
+        this.applyFrustumVisibilityToLabels();
+        this.frustumVisibilityDirty = false;
+        this.lastLabelVisibilityUpdate = now;
+      }
     }
 
     // Flush batched label pool operations to minimize layout thrashing
@@ -1641,22 +1642,25 @@ export class StructureManager {
       const isVisible = this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
         : (this.frustumManager?.isPointVisible(label.position) ?? true);
+      const wasVisible = label.userData.isVisible === true;
+      if (isVisible === wasVisible) {
+        return;
+      }
+
+      label.userData.isVisible = isVisible;
+      label.visible = isVisible;
+      label.element.style.display = isVisible ? "" : "none";
+
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);
-          label.element.style.display = "";
-
-          // Force update data when showing again
-          const entityId = label.userData.entityId;
-          const structure = this.structures.getStructureByEntityId(entityId);
-          if (structure) {
-            updateStructureLabel(label.element, structure, this.currentCameraView);
-          }
         }
-      } else {
-        if (label.parent === this.labelsGroup) {
-          this.labelsGroup.remove(label);
-          label.element.style.display = "none";
+
+        // Force update data when showing again
+        const entityId = label.userData.entityId;
+        const structure = this.structures.getStructureByEntityId(entityId);
+        if (structure) {
+          updateStructureLabel(label.element, structure, this.currentCameraView);
         }
       }
     });
@@ -1964,7 +1968,6 @@ export class StructureManager {
     }
 
     const structure = this.structures.getStructureByEntityId(entityId);
-    console.log("[UPDATING STRUCTURE LABEL]", { ...update, entityId });
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
@@ -2232,7 +2235,7 @@ export class StructureManager {
 
     // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
     // Only skip if label is currently visible - culled labels need update when shown
-    const isVisible = existingLabel.parent === this.labelsGroup;
+    const isVisible = this.labelsGroup.parent !== null && existingLabel.visible === true;
     if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }

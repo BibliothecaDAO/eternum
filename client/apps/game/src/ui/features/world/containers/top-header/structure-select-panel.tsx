@@ -1,17 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Tabs } from "@/ui/design-system/atoms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import type { ClientComponents, ID, Structure } from "@bibliothecadao/types";
-import {
-  BlitzStructureTypeToNameMapping,
-  EternumStructureTypeToNameMapping,
-  RealmLevels,
-  StructureType,
-  ID as toEntityId,
-} from "@bibliothecadao/types";
+import { RealmLevels, StructureType, ID as toEntityId } from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -153,34 +147,30 @@ export const StructureSelectPanel = memo(
 
     const playHover = useUISound("ui.hover");
     const playClick = useUISound("ui.click");
+    const mode = useGameModeConfig();
     const {
       setup: { components },
     } = useDojo();
 
-    const isBlitz = useMemo(() => getIsBlitz(), []);
-    const structureTypeNameMapping = useMemo(
-      () => (isBlitz ? BlitzStructureTypeToNameMapping : EternumStructureTypeToNameMapping),
-      [isBlitz],
-    );
     const structureTabs = useMemo<StructureTab[]>(
       () => [
         {
           key: "realms",
-          label: "Realms",
+          label: mode.labels.realms,
           categories: [StructureType.Realm],
-          emptyMessage: "No realms available",
+          emptyMessage: `No ${mode.labels.realms.toLowerCase()} available`,
         },
         {
-          key: "camps",
-          label: isBlitz ? "Camps" : "Villages",
+          key: "villages",
+          label: mode.labels.villages,
           categories: [StructureType.Village],
-          emptyMessage: isBlitz ? "No camps available" : "No villages available",
+          emptyMessage: `No ${mode.labels.villages.toLowerCase()} available`,
         },
         {
           key: "rifts",
-          label: isBlitz ? "Rifts" : "Fragment Mines",
+          label: mode.labels.fragmentMines,
           categories: [StructureType.FragmentMine],
-          emptyMessage: isBlitz ? "No rifts available" : "No fragment mines available",
+          emptyMessage: `No ${mode.labels.fragmentMines.toLowerCase()} available`,
         },
         {
           key: "hyperstructures",
@@ -189,12 +179,12 @@ export const StructureSelectPanel = memo(
           emptyMessage: "No hyperstructures available",
         },
       ],
-      [isBlitz],
+      [mode],
     );
 
     const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
       return structures.map((structure) => {
-        const { name, originalName } = getStructureName(structure.structure, isBlitz);
+        const { name, originalName } = mode.structure.getName(structure.structure);
         const rawLevel = structure.structure.base?.level;
         const realmLevel = Number(rawLevel ?? 0);
         const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
@@ -211,19 +201,18 @@ export const StructureSelectPanel = memo(
           realmLevelLabel: getRealmLevelLabel(realmLevel),
           population,
           populationCapacity,
-          categoryName: structureTypeNameMapping[structure.category] ?? "Unknown",
+          categoryName: mode.structure.getTypeName(structure.category as StructureType) ?? "Unknown",
           groupColor: structureGroups[structure.entityId] ?? null,
         };
       });
     }, [
       favorites,
       structures,
-      isBlitz,
-      structureTypeNameMapping,
       structureGroups,
       nameUpdateVersion,
       metadataRefreshCounter,
       components.StructureBuildings,
+      mode,
     ]);
     const selectedGroupColor = structureGroups[Number(structureEntityId)] ?? null;
     const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
@@ -344,9 +333,7 @@ export const StructureSelectPanel = memo(
     }, [selectOpen]);
 
     if (!selectedStructure.isMine) {
-      const spectatorName = selectedStructure.structure
-        ? getStructureName(selectedStructure.structure, isBlitz).name
-        : "";
+      const spectatorName = selectedStructure.structure ? mode.structure.getName(selectedStructure.structure).name : "";
 
       return (
         <div className="structure-name-selector self-center flex justify-between w-full">
@@ -394,7 +381,7 @@ export const StructureSelectPanel = memo(
                 {selectedGroupConfig && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />}
                 <span className={`truncate ${selectedGroupConfig ? selectedGroupConfig.textClass : ""}`}>
                   {selectedStructureMetadata?.name ??
-                    (selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : "")}
+                    (selectedStructure.structure ? mode.structure.getName(selectedStructure.structure).name : "")}
                 </span>
               </div>
             </div>

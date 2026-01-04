@@ -1,9 +1,8 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/constants";
+import { getGameModeConfig } from "@/config/game-modes";
+import type { GameModeConfig } from "@/config/game-modes";
+import { BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/constants";
 import { HoverSound } from "@/three/sound/hover-sound";
 import { gltfLoader } from "@/three/utils/utils";
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
 import { ResourceIdToMiningType } from "@bibliothecadao/eternum";
 import { BuildingType, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -14,18 +13,18 @@ export class BuildingPreview {
   private buildingModels: Map<BUILDINGS_GROUPS, Map<string, THREE.Group>> = new Map();
   private currentHexHovered: THREE.Vector3 | null = null;
   private hoverSound: HoverSound;
-  private isBlitz: boolean;
+  private mode: GameModeConfig;
 
   constructor(private scene: THREE.Scene) {
+    this.mode = getGameModeConfig();
     this.loadBuildingModels();
     this.hoverSound = new HoverSound();
-    this.isBlitz = getIsBlitz();
   }
 
   private loadBuildingModels() {
     const loader = gltfLoader;
     for (const group of Object.values(BUILDINGS_GROUPS)) {
-      const groupPaths = buildingModelPaths(this.isBlitz)[group];
+      const groupPaths = this.mode.assets.buildingModelPaths[group];
       if (!this.buildingModels.has(group)) {
         this.buildingModels.set(group, new Map());
       }
@@ -114,10 +113,14 @@ export class BuildingPreview {
 
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
-      if (!this.currentHexHovered || !this.currentHexHovered.equals(position)) {
+      if (!this.currentHexHovered) {
+        this.currentHexHovered = new THREE.Vector3().copy(position);
         // AudioManager handles muted state internally
         this.hoverSound.play();
-        this.currentHexHovered = position;
+      } else if (!this.currentHexHovered.equals(position)) {
+        // AudioManager handles muted state internally
+        this.hoverSound.play();
+        this.currentHexHovered.copy(position);
       }
       const { buildingGroup, buildingType } = this.getBuildingType();
       const model = this.getBuildingModel(buildingGroup, buildingType as BuildingType | ResourceMiningTypes);

@@ -39,8 +39,7 @@ export const useChainTimeStore = create<ChainTimeState>((set, get) => ({
         return state;
       }
 
-      const currentNowMs = computeNowMs(state.anchorTimestampMs, state.anchorPerfMs);
-      const anchorTimestampMs = Math.max(heartbeat.timestamp, currentNowMs);
+      const anchorTimestampMs = heartbeat.timestamp;
       const anchorPerfMs = getPerfNowMs();
 
       return {

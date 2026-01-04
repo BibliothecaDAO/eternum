@@ -25,12 +25,6 @@ export interface FrameVisibilityState {
   timestamp: number;
   /** Set of visible chunk keys */
   visibleChunks: Set<string>;
-  /** Map of box visibility results (keyed by unique identifier) */
-  boxVisibility: Map<string, boolean>;
-  /** Map of sphere visibility results */
-  sphereVisibility: Map<string, boolean>;
-  /** Map of point visibility results */
-  pointVisibility: Map<string, boolean>;
 }
 
 /**
@@ -54,27 +48,6 @@ export interface ChunkBoundsData {
 }
 
 /**
- * Creates a unique key for a Box3
- */
-function boxToKey(box: Box3): string {
-  return `box_${box.min.x.toFixed(1)}_${box.min.y.toFixed(1)}_${box.min.z.toFixed(1)}_${box.max.x.toFixed(1)}_${box.max.y.toFixed(1)}_${box.max.z.toFixed(1)}`;
-}
-
-/**
- * Creates a unique key for a Sphere
- */
-function sphereToKey(sphere: Sphere): string {
-  return `sphere_${sphere.center.x.toFixed(1)}_${sphere.center.y.toFixed(1)}_${sphere.center.z.toFixed(1)}_${sphere.radius.toFixed(1)}`;
-}
-
-/**
- * Creates a unique key for a Vector3 point
- */
-function pointToKey(point: Vector3): string {
-  return `point_${point.x.toFixed(1)}_${point.y.toFixed(1)}_${point.z.toFixed(1)}`;
-}
-
-/**
  * CentralizedVisibilityManager
  *
  * Provides a single source of truth for visibility computations per frame.
@@ -87,6 +60,43 @@ export class CentralizedVisibilityManager {
   private camera: PerspectiveCamera | null = null;
   private controls: MapControls | null = null;
   private cameraPosition = new Vector3();
+  private boxVisibilityCache = new WeakMap<
+    Box3,
+    {
+      frameId: number;
+      visible: boolean;
+      minX: number;
+      minY: number;
+      minZ: number;
+      maxX: number;
+      maxY: number;
+      maxZ: number;
+    }
+  >();
+  private sphereVisibilityCache = new WeakMap<
+    Sphere,
+    {
+      frameId: number;
+      visible: boolean;
+      centerX: number;
+      centerY: number;
+      centerZ: number;
+      radius: number;
+    }
+  >();
+  private pointVisibilityCache = new WeakMap<
+    Vector3,
+    {
+      frameId: number;
+      visible: boolean;
+      x: number;
+      y: number;
+      z: number;
+    }
+  >();
+  private cachedBoxChecks = 0;
+  private cachedSphereChecks = 0;
+  private cachedPointChecks = 0;
 
   // Frame state
   private currentFrameId = 0;
@@ -167,11 +177,9 @@ export class CentralizedVisibilityManager {
       this.computeChunkVisibility();
       this.frameState.frameId = this.currentFrameId;
       this.frameState.timestamp = performance.now();
-
-      // Clear per-frame caches (boxes, spheres, points)
-      this.frameState.boxVisibility.clear();
-      this.frameState.sphereVisibility.clear();
-      this.frameState.pointVisibility.clear();
+      this.cachedBoxChecks = 0;
+      this.cachedSphereChecks = 0;
+      this.cachedPointChecks = 0;
 
       this.isDirty = false;
 
@@ -276,15 +284,32 @@ export class CentralizedVisibilityManager {
    */
   isBoxVisible(box: Box3 | null | undefined): boolean {
     if (!box) return true;
-
-    const key = boxToKey(box);
-    const cached = this.frameState.boxVisibility.get(key);
-    if (cached !== undefined) {
-      return cached;
+    const cached = this.boxVisibilityCache.get(box);
+    if (
+      cached &&
+      cached.frameId === this.currentFrameId &&
+      cached.minX === box.min.x &&
+      cached.minY === box.min.y &&
+      cached.minZ === box.min.z &&
+      cached.maxX === box.max.x &&
+      cached.maxY === box.max.y &&
+      cached.maxZ === box.max.z
+    ) {
+      return cached.visible;
     }
 
     const visible = this.frustum.intersectsBox(box);
-    this.frameState.boxVisibility.set(key, visible);
+    this.boxVisibilityCache.set(box, {
+      frameId: this.currentFrameId,
+      visible,
+      minX: box.min.x,
+      minY: box.min.y,
+      minZ: box.min.z,
+      maxX: box.max.x,
+      maxY: box.max.y,
+      maxZ: box.max.z,
+    });
+    this.cachedBoxChecks++;
     return visible;
   }
 
@@ -293,15 +318,28 @@ export class CentralizedVisibilityManager {
    */
   isSphereVisible(sphere: Sphere | null | undefined): boolean {
     if (!sphere) return true;
-
-    const key = sphereToKey(sphere);
-    const cached = this.frameState.sphereVisibility.get(key);
-    if (cached !== undefined) {
-      return cached;
+    const cached = this.sphereVisibilityCache.get(sphere);
+    if (
+      cached &&
+      cached.frameId === this.currentFrameId &&
+      cached.centerX === sphere.center.x &&
+      cached.centerY === sphere.center.y &&
+      cached.centerZ === sphere.center.z &&
+      cached.radius === sphere.radius
+    ) {
+      return cached.visible;
     }
 
     const visible = this.frustum.intersectsSphere(sphere);
-    this.frameState.sphereVisibility.set(key, visible);
+    this.sphereVisibilityCache.set(sphere, {
+      frameId: this.currentFrameId,
+      visible,
+      centerX: sphere.center.x,
+      centerY: sphere.center.y,
+      centerZ: sphere.center.z,
+      radius: sphere.radius,
+    });
+    this.cachedSphereChecks++;
     return visible;
   }
 
@@ -309,14 +347,26 @@ export class CentralizedVisibilityManager {
    * Check if a point is visible. Caches result for the frame.
    */
   isPointVisible(point: Vector3): boolean {
-    const key = pointToKey(point);
-    const cached = this.frameState.pointVisibility.get(key);
-    if (cached !== undefined) {
-      return cached;
+    const cached = this.pointVisibilityCache.get(point);
+    if (
+      cached &&
+      cached.frameId === this.currentFrameId &&
+      cached.x === point.x &&
+      cached.y === point.y &&
+      cached.z === point.z
+    ) {
+      return cached.visible;
     }
 
     const visible = this.frustum.containsPoint(point);
-    this.frameState.pointVisibility.set(key, visible);
+    this.pointVisibilityCache.set(point, {
+      frameId: this.currentFrameId,
+      visible,
+      x: point.x,
+      y: point.y,
+      z: point.z,
+    });
+    this.cachedPointChecks++;
     return visible;
   }
 
@@ -410,9 +460,9 @@ export class CentralizedVisibilityManager {
       frameId: this.currentFrameId,
       registeredChunks: this.chunkBounds.size,
       visibleChunks: this.frameState.visibleChunks.size,
-      cachedBoxChecks: this.frameState.boxVisibility.size,
-      cachedSphereChecks: this.frameState.sphereVisibility.size,
-      cachedPointChecks: this.frameState.pointVisibility.size,
+      cachedBoxChecks: this.cachedBoxChecks,
+      cachedSphereChecks: this.cachedSphereChecks,
+      cachedPointChecks: this.cachedPointChecks,
       chunkCapacity: this.config.maxRegisteredChunks ?? null,
     };
   }
@@ -450,9 +500,6 @@ export class CentralizedVisibilityManager {
       frameId: 0,
       timestamp: 0,
       visibleChunks: new Set(),
-      boxVisibility: new Map(),
-      sphereVisibility: new Map(),
-      pointVisibility: new Map(),
     };
   }
 

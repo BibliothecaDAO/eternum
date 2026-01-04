@@ -16,8 +16,9 @@ import {
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
-import { getStructureName, getIsBlitz, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -101,6 +102,7 @@ export const useAutomation = () => {
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
   const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const mode = useGameModeConfig();
   const realmResourcesSignatureRef = useRef<string>("");
   const initialBlockTimestampMsRef = useRef<number | null>(null);
   if (initialBlockTimestampMsRef.current === null) {
@@ -154,7 +156,6 @@ export const useAutomation = () => {
       syncedRealmIdsRef.current.clear();
       return;
     }
-    const blitzMode = getIsBlitz();
     const managedStructures = [...playerRealms, ...playerVillages];
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
 
@@ -164,7 +165,7 @@ export const useAutomation = () => {
 
     managedStructures.forEach((structure) => {
       const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
-      const name = getStructureName(structure.structure, blitzMode).name;
+      const name = mode.structure.getName(structure.structure).name;
       const realmId = String(structure.entityId);
       syncedRealmIdsRef.current.add(realmId);
 
@@ -184,7 +185,7 @@ export const useAutomation = () => {
         removeRealm(realmId);
       }
     });
-  }, [hydrated, playerRealms, playerVillages, removeRealm, upsertRealm]);
+  }, [hydrated, playerRealms, playerVillages, removeRealm, upsertRealm, mode]);
 
   const processRealms = useCallback(async (): Promise<boolean> => {
     if (processingRef.current) return false;

@@ -1,6 +1,6 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { sqlApi } from "@/services/api";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useExplorersByStructure } from "@bibliothecadao/react";
 import { Guard } from "@bibliothecadao/torii";
 import { RealmInfo, StructureType } from "@bibliothecadao/types";
@@ -32,7 +32,7 @@ const StructureSelectionItem = ({
   guardsData: Guard[] | undefined;
   onSelect: () => void;
 }) => {
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
   const explorers = useExplorersByStructure({ structureEntityId: realm.entityId });
 
   // Filter to non-empty guards for display
@@ -41,7 +41,7 @@ const StructureSelectionItem = ({
     [guardsData],
   );
 
-  const name = getStructureName(realm.structure, isBlitz).name;
+  const name = mode.structure.getName(realm.structure).name;
   const maxExplorers = realm.structure.base.troop_max_explorer_count || 0;
   const maxGuards = realm.structure.base.troop_max_guard_count || 0;
   const attackCount = explorers.length;
@@ -168,7 +168,7 @@ export const StructureSelectionList = ({
   inventories,
   onSelect,
 }: StructureSelectionListProps) => {
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
 
   // Batch fetch guards for ALL structures in a single query
   // This replaces N individual queries with 1 parallel batch
@@ -205,11 +205,11 @@ export const StructureSelectionList = ({
       if (aRealm !== bRealm) {
         return bRealm - aRealm;
       }
-      const nameA = getStructureName(a.structure, isBlitz).name;
-      const nameB = getStructureName(b.structure, isBlitz).name;
+      const nameA = mode.structure.getName(a.structure).name;
+      const nameB = mode.structure.getName(b.structure).name;
       return nameA.localeCompare(nameB);
     });
-  }, [structures, isBlitz]);
+  }, [structures, mode]);
 
   if (structures.length === 0) {
     return (

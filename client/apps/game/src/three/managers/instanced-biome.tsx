@@ -13,6 +13,12 @@ const NO_SHADOW_BIOMES = new Set(["ocean", "deepocean"]);
 
 // Biomes that don't have meaningful animations (static or flat)
 const STATIC_BIOMES = new Set(["ocean", "deepocean", "outline"]);
+const ANIMATION_INSTANCE_THRESHOLD_MEDIUM = 1000;
+const ANIMATION_INSTANCE_THRESHOLD_LARGE = 2000;
+const ANIMATION_BUCKET_STRIDE_MEDIUM = 2;
+const ANIMATION_BUCKET_STRIDE_LARGE = 4;
+const ANIMATION_INTERVAL_MULTIPLIER_MEDIUM = 2;
+const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
@@ -27,6 +33,8 @@ export default class InstancedModel {
   private lastAnimationUpdate = 0;
   private animationUpdateInterval = 1000 / 20; // 20 FPS
   private readonly ANIMATION_BUCKETS = 20;
+  private animationFrameOffset = 0;
+  private lastBucketStride = 1;
 
   // Pre-allocated buffer for morph animation optimization
   // Reused every frame to avoid allocations in the hot path
@@ -133,6 +141,36 @@ export default class InstancedModel {
   public setAnimationFPS(fps: number): void {
     const resolved = Math.max(1, fps);
     this.animationUpdateInterval = 1000 / resolved;
+  }
+
+  private getMaxInstanceCount(): number {
+    let maxCount = 0;
+    this.instancedMeshes.forEach((mesh) => {
+      if (mesh.count > maxCount) {
+        maxCount = mesh.count;
+      }
+    });
+    return maxCount;
+  }
+
+  private getAnimationUpdateIntervalMs(instanceCount: number): number {
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_LARGE) {
+      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_LARGE;
+    }
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_MEDIUM) {
+      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_MEDIUM;
+    }
+    return this.animationUpdateInterval;
+  }
+
+  private getBucketStride(instanceCount: number): number {
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_LARGE) {
+      return ANIMATION_BUCKET_STRIDE_LARGE;
+    }
+    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_MEDIUM) {
+      return ANIMATION_BUCKET_STRIDE_MEDIUM;
+    }
+    return 1;
   }
 
   /**
@@ -360,10 +398,20 @@ export default class InstancedModel {
 
     if (this.mixer && this.animation) {
       const now = performance.now();
+      const maxInstanceCount = this.getMaxInstanceCount();
+      const interval = this.getAnimationUpdateIntervalMs(maxInstanceCount);
+      const bucketStride = this.getBucketStride(maxInstanceCount);
 
-      if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
+      if (now - this.lastAnimationUpdate < interval) {
         return;
       }
+
+      if (bucketStride !== this.lastBucketStride) {
+        this.animationFrameOffset = 0;
+        this.lastBucketStride = bucketStride;
+      }
+      const bucketOffset = this.animationFrameOffset;
+      this.animationFrameOffset = (this.animationFrameOffset + 1) % bucketStride;
 
       const time = now * 0.001;
       let needsUpdate = false;
@@ -402,7 +450,7 @@ export default class InstancedModel {
         }
 
         // Calculate weights for each bucket once, store in pre-allocated buffer
-        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
           const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
           this.mixer!.setTime(t);
           const offset = b * morphCount;
@@ -420,7 +468,7 @@ export default class InstancedModel {
           // OPTIMIZED: Batch by bucket for cache locality
           // Process all instances in the same bucket together, using TypedArray.set()
           // for bulk copies when morphCount is small enough
-          for (let bucket = 0; bucket < this.ANIMATION_BUCKETS; bucket++) {
+          for (let bucket = bucketOffset; bucket < this.ANIMATION_BUCKETS; bucket += bucketStride) {
             const indices = this.bucketToIndices.get(bucket);
             if (!indices || indices.length === 0) continue;
 

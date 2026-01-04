@@ -3,14 +3,14 @@ import {
   getBlockTimestamp,
   getBuildingCount,
   getEntityIdFromKeys,
-  getIsBlitz,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { BuildingType, getBuildingFromResource, getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { ArrowDown, ArrowUp } from "lucide-react";
@@ -40,7 +40,8 @@ export const EntityResourceTableOld = React.memo(
       }
     });
 
-    const { setup } = useDojo();
+  const { setup } = useDojo();
+  const mode = useGameModeConfig();
 
     if (!entityId || entityId === 0) {
       return <div>No Entity Selected</div>;
@@ -145,7 +146,7 @@ export const EntityResourceTableOld = React.memo(
         </div>
 
         <div className="space-y-4 pt-2">
-          {Object.entries(getResourceTiers(getIsBlitz())).map(([tier, resourceIds]) => {
+          {Object.entries(mode.resources.getTiers()).map(([tier, resourceIds]) => {
             const resourcesForTier = (resourceIds as ResourcesIds[]).filter((resourceId: ResourcesIds) => {
               const alwaysShow = ALWAYS_SHOW_RESOURCES.includes(resourceId);
               const { balance } = resourceManager.balanceWithProduction(currentTick, resourceId);

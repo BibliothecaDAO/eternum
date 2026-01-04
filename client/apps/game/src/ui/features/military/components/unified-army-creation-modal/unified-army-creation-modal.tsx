@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { sqlApi } from "@/services/api";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -9,8 +10,6 @@ import {
   getBalance,
   getBlockTimestamp,
   getEntityIdFromKeys,
-  getIsBlitz,
-  getStructureName,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
 import {
@@ -82,10 +81,10 @@ export const UnifiedArmyCreationModal = ({
     account: { account },
   } = useDojo();
   const queryClient = useQueryClient();
+  const mode = useGameModeConfig();
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
-  const isBlitz = getIsBlitz();
   const selectedStructureId = useUIStore((state) => state.structureEntityId);
 
   const playerStructures = useMemo(() => {
@@ -96,11 +95,11 @@ export const UnifiedArmyCreationModal = ({
         return maxAttack > 0 || maxDefense > 0;
       })
       .sort((a, b) => {
-        const nameA = getStructureName(a.structure, isBlitz).name;
-        const nameB = getStructureName(b.structure, isBlitz).name;
+        const nameA = mode.structure.getName(a.structure).name;
+        const nameB = mode.structure.getName(b.structure).name;
         return nameA.localeCompare(nameB);
       });
-  }, [playerRealms, playerVillages, isBlitz]);
+  }, [playerRealms, playerVillages, mode]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
@@ -194,9 +193,9 @@ export const UnifiedArmyCreationModal = ({
 
   const structureBase = activeStructureInfo?.structure.base ?? structureComponent?.base;
   const structureName = activeStructureInfo
-    ? getStructureName(activeStructureInfo.structure, isBlitz).name
+    ? mode.structure.getName(activeStructureInfo.structure).name
     : structureComponent
-      ? getStructureName(structureComponent, isBlitz).name
+      ? mode.structure.getName(structureComponent).name
       : undefined;
 
   const structureCategory = structureBase?.category as StructureType | undefined;

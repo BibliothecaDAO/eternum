@@ -1,11 +1,11 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { type LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
@@ -73,10 +73,10 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     sort: "asc",
   });
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState<string | null>(null);
+  const mode = useGameModeConfig();
+  const showTribeDetails = mode.ui.showGuildsTab;
   const [prevPositions, setPrevPositions] = useState<Map<string, number>>(new Map());
 
-  const isBlitz = getIsBlitz();
-  const showTribeDetails = !isBlitz;
   const leaderboardGridTemplate = useMemo(
     () =>
       showTribeDetails

@@ -1,4 +1,5 @@
 import { usePlayResourceSound } from "@/audio";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
@@ -22,7 +23,6 @@ import {
   getBuildingCosts,
   getBuildingCount,
   getConsumedBy,
-  getIsBlitz,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
   ResourceManager,
@@ -423,25 +423,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   }, [realmBiome]);
 
   const { playResourceSound } = usePlayResourceSound();
-
-  const isBlitz = getIsBlitz();
+  const mode = useGameModeConfig();
 
   const buildingTypes = useMemo(
     () =>
-      Object.keys(BuildingType).filter(
-        (key) =>
-          isNaN(Number(key)) &&
-          key !== "Resource" &&
-          key !== "Castle" &&
-          key !== "Bank" &&
-          key !== "FragmentMine" &&
-          key !== "None" &&
-          key !== "Settlement" &&
-          key !== "Hyperstructure" &&
-          key !== "Storehouse" &&
-          (isBlitz ? key !== "ResourceFish" : true),
-      ),
-    [isBlitz],
+      Object.keys(BuildingType).filter((key) => mode.rules.isBuildingTypeAllowed(key)),
+    [mode],
   );
 
   const producedResourceIds = useMemo<ResourcesIds[]>(() => {

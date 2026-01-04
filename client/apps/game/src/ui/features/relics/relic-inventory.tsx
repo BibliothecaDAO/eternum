@@ -1,8 +1,5 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Position } from "@bibliothecadao/eternum";
-
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
-import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
 import { ContractAddress, RelicRecipientType, StructureType } from "@bibliothecadao/types";
@@ -47,6 +44,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
       setup: { components },
     } = useDojo();
     const location = useLocation();
+    const mode = useGameModeConfig();
     const isOnMap = useMemo(() => location.pathname.includes("/play"), [location.pathname]);
     const totalRelics = entities.reduce((sum, entity) => sum + entity.relics.length, 0);
     const entitiesWithInfo = useMemo(() => {
@@ -56,10 +54,10 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
           return {
             ...entity,
             position: new Position({ x: entity.position.x, y: entity.position.y }).getNormalized(),
-            info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()) as any,
+            info: mode.structure.getEntityInfo(entity.entityId, ContractAddress("0x0"), components) as any,
           };
         });
-    }, [entities]);
+    }, [components, entities, mode]);
 
     return (
       <div className="space-y-3">

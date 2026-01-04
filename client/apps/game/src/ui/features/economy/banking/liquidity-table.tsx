@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import { LiquidityResourceRow } from "@/ui/features/economy/banking";
-import { ID, ResourcesIds, getResourceTiers, resources } from "@bibliothecadao/types";
+import { ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type LiquidityTableProps = {
@@ -22,8 +22,9 @@ export const LiquidityTableHeader = () => (
 
 export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const mode = useGameModeConfig();
 
-  const filteredResources = Object.entries(getResourceTiers(getIsBlitz())).flatMap(([tier, resourceIds]) => {
+  const filteredResources = Object.entries(mode.resources.getTiers()).flatMap(([tier, resourceIds]) => {
     return resourceIds.filter(
       (resourceId) =>
         resourceId !== ResourcesIds.Lords &&

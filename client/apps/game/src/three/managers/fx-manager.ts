@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
+const DOT_SUFFIXES = ["", ".", "..", "..."];
+
 type FXType = "skull" | "compass" | "troopDiff" | string;
 
 interface FXConfig {
@@ -188,6 +190,7 @@ class FXInstance {
   private isEnding: boolean = false;
   private endStartTime: number = 0;
   private endDuration: number = 0.5; // Duration of fade out in seconds
+  private lastDotCount: number = -1;
 
   constructor(
     scene: THREE.Scene,
@@ -260,8 +263,11 @@ class FXInstance {
     const elapsed = this.age;
 
     if (this.label && this.label.element && this.labelBaseText) {
-      const dotCount = Math.floor((elapsed * 2) % 4);
-      this.label.element.textContent = this.labelBaseText + ".".repeat(dotCount);
+      const dotCount = Math.floor((elapsed * 2) % DOT_SUFFIXES.length);
+      if (dotCount !== this.lastDotCount) {
+        this.lastDotCount = dotCount;
+        this.label.element.textContent = this.labelBaseText + DOT_SUFFIXES[dotCount];
+      }
     }
 
     // Handle ending animation
@@ -322,12 +328,11 @@ class FXInstance {
 class TroopDiffFXInstance {
   public group: THREE.Group;
   public label: CSS2DObject;
-  public clock: THREE.Clock;
-  public animationFrameId?: number;
   public isDestroyed = false;
   public initialX: number;
   public initialY: number;
   public resolvePromise?: () => void;
+  public age: number = 0;
   private floatHeight: number;
   private floatRight: number;
   private duration: number;
@@ -345,7 +350,6 @@ class TroopDiffFXInstance {
     duration: number = 1.5,
     fadeOutDuration: number = 0.5,
   ) {
-    this.clock = new THREE.Clock();
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
@@ -374,7 +378,6 @@ class TroopDiffFXInstance {
     this.group.add(this.label);
 
     scene.add(this.group);
-    this.animate();
   }
 
   public onComplete(resolve: () => void) {
@@ -384,14 +387,19 @@ class TroopDiffFXInstance {
   public startEnding() {
     if (!this.isEnding) {
       this.isEnding = true;
-      this.endStartTime = this.clock.getElapsedTime();
+      this.endStartTime = this.age;
     }
   }
 
-  private animate = () => {
-    if (this.isDestroyed) return;
+  public update(deltaTime: number): boolean {
+    if (this.isDestroyed) return false;
 
-    const elapsed = this.clock.getElapsedTime();
+    this.age += deltaTime;
+    const elapsed = this.age;
+
+    if (!this.isEnding && elapsed > this.duration) {
+      this.startEnding();
+    }
 
     // Handle ending animation
     if (this.isEnding) {
@@ -403,42 +411,32 @@ class TroopDiffFXInstance {
         const extraMove = fadeProgress * 0.5;
         this.group.position.x = this.initialX + this.floatRight + extraMove * 0.6;
         this.group.position.y = this.initialY + this.floatHeight + extraMove;
-        this.animationFrameId = requestAnimationFrame(this.animate);
-        return;
-      } else {
-        this.resolvePromise?.();
-        this.destroy();
-        return;
+        return true;
       }
+
+      this.resolvePromise?.();
+      this.destroy();
+      return false;
     }
 
-    if (elapsed <= this.duration) {
-      // Fade in (first 0.15 seconds)
-      if (elapsed < 0.15) {
-        this.label.element.style.opacity = `${elapsed / 0.15}`;
-      } else {
-        this.label.element.style.opacity = "1";
-      }
-
-      // Float to top-right
-      const progress = Math.min(elapsed / this.duration, 1);
-      this.group.position.x = this.initialX + this.floatRight * progress;
-      this.group.position.y = this.initialY + this.floatHeight * progress;
-
-      this.animationFrameId = requestAnimationFrame(this.animate);
+    // Fade in (first 0.15 seconds)
+    if (elapsed < 0.15) {
+      this.label.element.style.opacity = `${elapsed / 0.15}`;
     } else {
-      this.startEnding();
-      this.animationFrameId = requestAnimationFrame(this.animate);
+      this.label.element.style.opacity = "1";
     }
-  };
+
+    // Float to top-right
+    const progress = Math.min(elapsed / this.duration, 1);
+    this.group.position.x = this.initialX + this.floatRight * progress;
+    this.group.position.y = this.initialY + this.floatHeight * progress;
+
+    return true;
+  }
 
   public destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
-
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
 
     if (this.label && this.label.element) {
       this.label.element.remove();
@@ -476,10 +474,18 @@ export class FXManager {
       fx.update(deltaTime);
     });
 
+    this.activeTroopDiffFX.forEach((fx) => {
+      fx.update(deltaTime);
+    });
+
     // Update batched systems
     // Note: We don't currently have a unified update loop for batched systems
     // because the animation logic is still tied to the legacy FXInstance interface
     // for now. Phase 2 would fully migrate animation logic to the BatchedFXSystem.
+  }
+
+  public hasActiveLabelFx(): boolean {
+    return this.activeTroopDiffFX.size > 0;
   }
 
   private registerBuiltInFX() {

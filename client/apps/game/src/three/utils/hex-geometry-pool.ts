@@ -81,8 +81,6 @@ export class HexGeometryPool {
     this.geometries.set(type, geometry);
     this.incrementReference(type);
 
-    console.log(`🔷 Created shared hex geometry: ${type} (${geometry.attributes.position.count} vertices)`);
-
     return geometry;
   }
 
