@@ -45,7 +45,7 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
 import { env } from "../../../../../env";
@@ -56,8 +56,10 @@ import {
   DEFAULT_TORII_NAMESPACE,
   DEFAULT_VERSION,
   FACTORY_ADDRESSES,
+  getDefaultBlitzRegistrationConfig,
   getDefaultMaxActionsForChain,
   getExplorerTxUrl,
+  getFactoryDeployRepeatsForChain,
   getRpcUrlForChain,
 } from "../constants";
 import { useFactoryAdmin } from "../hooks/use-factory-admin";
@@ -84,9 +86,26 @@ import {
 } from "../utils/storage";
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
+type AutoDeployState = { current: number; total: number; status: "running" | "stopping" };
 
 // Maximum hours in the future that a game start time can be set
 const MAX_START_TIME_HOURS = 50_000;
+
+const parseDecimalToBigInt = (value: string, precision: number): bigint => {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error("Fee amount is required");
+  const normalized = trimmed.startsWith(".") ? `0${trimmed}` : trimmed;
+  if (!/^\d+(\.\d+)?$/.test(normalized)) {
+    throw new Error("Fee amount must be a number");
+  }
+  const [whole, fraction = ""] = normalized.split(".");
+  if (fraction.length > precision) {
+    throw new Error(`Fee amount has more than ${precision} decimals`);
+  }
+  const paddedFraction = fraction.padEnd(precision, "0");
+  const combined = `${whole}${precision > 0 ? paddedFraction : ""}`.replace(/^0+(?=\d)/, "");
+  return BigInt(combined || "0");
+};
 
 // Storage keys and cooldowns moved to ../constants and ../utils/storage
 
@@ -269,6 +288,8 @@ export const FactoryPage = () => {
 
   const currentChain = env.VITE_PUBLIC_CHAIN as ChainType;
   const { refreshStatuses } = useFactoryAdmin(currentChain);
+  const factoryDeployRepeats = getFactoryDeployRepeatsForChain(currentChain);
+  const defaultBlitzRegistration = useMemo(() => getDefaultBlitzRegistrationConfig(currentChain), [currentChain]);
 
   const [factoryAddress, setFactoryAddress] = useState<string>("");
   const [version, setVersion] = useState<string>(DEFAULT_VERSION);
@@ -306,6 +327,8 @@ export const FactoryPage = () => {
   const [indexerCreationCountdown, setIndexerCreationCountdown] = useState<Record<string, number>>({});
   const [worldDeployedStatus, setWorldDeployedStatus] = useState<Record<string, boolean>>({});
   const [verifyingDeployment, setVerifyingDeployment] = useState<Record<string, boolean>>({});
+  const [autoDeployState, setAutoDeployState] = useState<Record<string, AutoDeployState>>({});
+  const autoDeployCancelRef = useRef<Record<string, boolean>>({});
   // Per-world config execution state
   const [worldConfigOpen, setWorldConfigOpen] = useState<Record<string, boolean>>({});
   const [worldConfigTx, setWorldConfigTx] = useState<Record<string, TxState>>({});
@@ -315,6 +338,9 @@ export const FactoryPage = () => {
   // Per-world overrides
   const [devModeOverrides, setDevModeOverrides] = useState<Record<string, boolean>>({});
   const [durationHoursOverrides, setDurationHoursOverrides] = useState<Record<string, number>>({});
+  const [blitzFeeAmountOverrides, setBlitzFeeAmountOverrides] = useState<Record<string, string>>({});
+  const [blitzFeePrecisionOverrides, setBlitzFeePrecisionOverrides] = useState<Record<string, string>>({});
+  const [blitzFeeTokenOverrides, setBlitzFeeTokenOverrides] = useState<Record<string, string>>({});
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
@@ -646,6 +672,101 @@ export const FactoryPage = () => {
     }
   };
 
+  const handleStopAutoDeploy = (name: string) => {
+    autoDeployCancelRef.current[name] = true;
+    setAutoDeployState((prev) => {
+      const entry = prev[name];
+      if (!entry) return prev;
+      return { ...prev, [name]: { ...entry, status: "stopping" } };
+    });
+  };
+
+  const handleQueueDeploy = async (name: string) => {
+    if (!account || !factoryAddress || !name) return;
+
+    const totalRepeats = Math.max(1, factoryDeployRepeats);
+    autoDeployCancelRef.current[name] = false;
+    setAutoDeployState((prev) => ({
+      ...prev,
+      [name]: { current: 0, total: totalRepeats, status: "running" },
+    }));
+
+    try {
+      const worldNameFelt = shortString.encodeShortString(name);
+      let deployedAddress: string | null = null;
+
+      for (let i = 0; i < totalRepeats; i++) {
+        if (autoDeployCancelRef.current[name]) break;
+
+        setAutoDeployState((prev) => {
+          const entry = prev[name];
+          if (!entry) return prev;
+          return { ...prev, [name]: { ...entry, current: i + 1 } };
+        });
+
+        setTx({ status: "running" });
+        const result = await account.execute({
+          contractAddress: factoryAddress,
+          entrypoint: "deploy",
+          calldata: [worldNameFelt, version],
+        });
+        setTx({ status: "success", hash: result.transaction_hash });
+
+        const waitResult = (await Promise.race([
+          account
+            .waitForTransaction(result.transaction_hash)
+            .then(() => ({ status: "confirmed" as const }))
+            .catch((error) => ({ status: "error" as const, error })),
+          new Promise((resolve) => setTimeout(() => resolve({ status: "timeout" as const }), 2000)),
+        ])) as any;
+
+        if (waitResult.status === "error") {
+          throw waitResult.error;
+        }
+
+        deployedAddress = await getWorldDeployedAddressLocal(name);
+        if (deployedAddress) {
+          setWorldDeployedStatus((prev) => ({ ...prev, [name]: true }));
+          cacheDeployedAddress(name, deployedAddress);
+          break;
+        }
+      }
+
+      const shouldVerify = !autoDeployCancelRef.current[name] && !deployedAddress;
+      if (shouldVerify) {
+        setVerifyingDeployment((prev) => ({ ...prev, [name]: true }));
+
+        let addr: string | null = null;
+        let attempts = 0;
+        const maxAttempts = 10;
+        const delayMs = 2000;
+
+        while (attempts < maxAttempts && !addr) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          addr = await getWorldDeployedAddressLocal(name);
+          attempts++;
+        }
+
+        const isDeployed = !!addr;
+        setWorldDeployedStatus((prev) => ({ ...prev, [name]: isDeployed }));
+        if (addr) cacheDeployedAddress(name, addr);
+
+        setVerifyingDeployment((prev) => ({ ...prev, [name]: false }));
+      }
+    } catch (err: any) {
+      setTx({ status: "error", error: err.message });
+      setVerifyingDeployment((prev) => ({ ...prev, [name]: false }));
+    } finally {
+      setAutoDeployState((prev) => {
+        if (!prev[name]) return prev;
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+      autoDeployCancelRef.current[name] = false;
+    }
+  };
+
   const getTxStatusIcon = () => {
     switch (tx.status) {
       case "running":
@@ -810,6 +931,14 @@ export const FactoryPage = () => {
                                     </span>
                                   )}
 
+                                  {autoDeployState[name] && !verifyingDeployment[name] && (
+                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      {autoDeployState[name].status === "stopping" ? "Stopping" : "Deploying"}{" "}
+                                      {autoDeployState[name].current}/{autoDeployState[name].total}
+                                    </span>
+                                  )}
+
                                   {/* Deployment Status Badge - Only show if deployed and not verifying */}
                                   {worldDeployedStatus[name] && !verifyingDeployment[name] && (
                                     <span className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded border border-emerald-200">
@@ -819,55 +948,30 @@ export const FactoryPage = () => {
                                   )}
 
                                   {/* Deploy Button - Only show if not deployed and not verifying */}
-                                  {!worldDeployedStatus[name] && !verifyingDeployment[name] && (
-                                    <button
-                                      onClick={async () => {
-                                        if (!account || !factoryAddress || !name) return;
-                                        setTx({ status: "running" });
-                                        try {
-                                          const worldNameFelt = shortString.encodeShortString(name);
-                                          const result = await account.execute({
-                                            contractAddress: factoryAddress,
-                                            entrypoint: "deploy",
-                                            calldata: [worldNameFelt, version],
-                                          });
-                                          setTx({ status: "success", hash: result.transaction_hash });
+                                  {!worldDeployedStatus[name] &&
+                                    !verifyingDeployment[name] &&
+                                    !autoDeployState[name] && (
+                                      <button
+                                        onClick={() => handleQueueDeploy(name)}
+                                        disabled={!account || !factoryAddress || tx.status === "running"}
+                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
+                                      >
+                                        {tx.status === "running" && getTxStatusIcon()}
+                                        {factoryDeployRepeats > 1 ? `Deploy x${factoryDeployRepeats}` : "Deploy"}
+                                      </button>
+                                    )}
 
-                                          // Show verifying status immediately (before waiting for tx)
-                                          setVerifyingDeployment((prev) => ({ ...prev, [name]: true }));
-
-                                          await account.waitForTransaction(result.transaction_hash);
-
-                                          // Poll for deployment status from indexer (with retries)
-                                          let addr: string | null = null;
-                                          let attempts = 0;
-                                          const maxAttempts = 10;
-                                          const delayMs = 2000; // 2 seconds between attempts
-
-                                          while (attempts < maxAttempts && !addr) {
-                                            await new Promise((resolve) => setTimeout(resolve, delayMs));
-                                            addr = await getWorldDeployedAddressLocal(name);
-                                            attempts++;
-                                          }
-
-                                          const isDeployed = !!addr;
-                                          setWorldDeployedStatus((prev) => ({ ...prev, [name]: isDeployed }));
-                                          if (addr) cacheDeployedAddress(name, addr);
-
-                                          // Hide verifying status
-                                          setVerifyingDeployment((prev) => ({ ...prev, [name]: false }));
-                                        } catch (err: any) {
-                                          setTx({ status: "error", error: err.message });
-                                          setVerifyingDeployment((prev) => ({ ...prev, [name]: false }));
-                                        }
-                                      }}
-                                      disabled={!account || !factoryAddress || tx.status === "running"}
-                                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
-                                    >
-                                      {tx.status === "running" && getTxStatusIcon()}
-                                      Deploy
-                                    </button>
-                                  )}
+                                  {!worldDeployedStatus[name] &&
+                                    autoDeployState[name] &&
+                                    !verifyingDeployment[name] && (
+                                      <button
+                                        onClick={() => handleStopAutoDeploy(name)}
+                                        disabled={autoDeployState[name].status === "stopping"}
+                                        className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
+                                      >
+                                        {autoDeployState[name].status === "stopping" ? "Stopping..." : "Stop"}
+                                      </button>
+                                    )}
 
                                   {/* Indexer Status/Actions - Only show if deployed */}
                                   {worldDeployedStatus[name] && (
@@ -1092,6 +1196,64 @@ export const FactoryPage = () => {
                                         </div>
                                       </div>
 
+                                      {/* Blitz Registration Fee Configuration */}
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Blitz Registration Fee Amount
+                                          </label>
+                                          <input
+                                            type="text"
+                                            placeholder={defaultBlitzRegistration.amount}
+                                            value={blitzFeeAmountOverrides[name] || ""}
+                                            onChange={(e) =>
+                                              setBlitzFeeAmountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Default: {defaultBlitzRegistration.amount} with precision{" "}
+                                            {defaultBlitzRegistration.precision}.
+                                          </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Fee Precision (decimals)
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            placeholder={String(defaultBlitzRegistration.precision)}
+                                            value={blitzFeePrecisionOverrides[name] || ""}
+                                            onChange={(e) =>
+                                              setBlitzFeePrecisionOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Default: {defaultBlitzRegistration.precision} decimals.
+                                          </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Blitz Registration Fee Token
+                                          </label>
+                                          <input
+                                            type="text"
+                                            placeholder={defaultBlitzRegistration.token || "0x..."}
+                                            value={blitzFeeTokenOverrides[name] || ""}
+                                            onChange={(e) =>
+                                              setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Default: {defaultBlitzRegistration.token}. Leave empty for default.
+                                          </p>
+                                        </div>
+                                      </div>
+
                                       <div className="flex items-center gap-2">
                                         <button
                                           onClick={async () => {
@@ -1141,6 +1303,29 @@ export const FactoryPage = () => {
                                                 ? Number(durationHoursOverrides[name] || 0)
                                                 : Number(durationHours || 0);
 
+                                              // Apply blitz registration fee overrides if provided
+                                              const rawFeeAmount = blitzFeeAmountOverrides[name]?.trim();
+                                              const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
+                                              const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
+                                              const precision = rawFeePrecision
+                                                ? Number(rawFeePrecision)
+                                                : defaultBlitzRegistration.precision;
+                                              if (
+                                                !Number.isFinite(precision) ||
+                                                precision < 0 ||
+                                                !Number.isInteger(precision)
+                                              ) {
+                                                throw new Error("Fee precision must be a non-negative integer");
+                                              }
+                                              const amountToParse = rawFeeAmount || defaultBlitzRegistration.amount;
+                                              const blitzFeeAmount = amountToParse
+                                                ? parseDecimalToBigInt(amountToParse, precision)
+                                                : eternumConfig.blitz?.registration?.fee_amount;
+                                              const blitzFeeToken =
+                                                rawFeeToken ||
+                                                defaultBlitzRegistration.token ||
+                                                eternumConfig.blitz?.registration?.fee_token;
+
                                               const configForWorld = {
                                                 ...eternumConfig,
                                                 dev: {
@@ -1154,6 +1339,14 @@ export const FactoryPage = () => {
                                                   ...eternumConfig.season,
                                                   startMainAt: selectedStart,
                                                   durationSeconds: Math.max(1, selectedDurationHours) * 3600,
+                                                },
+                                                blitz: {
+                                                  ...eternumConfig.blitz,
+                                                  registration: {
+                                                    ...eternumConfig.blitz?.registration,
+                                                    fee_amount: blitzFeeAmount,
+                                                    fee_token: blitzFeeToken,
+                                                  },
                                                 },
                                               } as any;
 

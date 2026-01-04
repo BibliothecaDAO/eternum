@@ -9,25 +9,28 @@ type PredictionMarketConfig = {
   worldAddress: string;
   collateralToken: string;
   oracleAddress: string;
+  marketsAddress: string;
 };
 
-const getOracleAddress = (manifest: typeof manifestSlot): string => {
-  const oracle = manifest.contracts.find((c) => c.tag === "pm-StarknetOracle");
-  return oracle?.address ?? "";
+const getContractAddress = (manifest: typeof manifestSlot, tag: string): string => {
+  const contract = manifest.contracts.find((c) => c.tag === tag);
+  return contract?.address ?? "";
 };
 
 const SLOT_CONFIG: PredictionMarketConfig = {
   toriiUrl: "https://api.cartridge.gg/x/blitz-slot-pm-1/torii",
   worldAddress: manifestSlot.world.address,
   collateralToken: "0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5",
-  oracleAddress: getOracleAddress(manifestSlot),
+  oracleAddress: getContractAddress(manifestSlot, "pm-StarknetOracle"),
+  marketsAddress: getContractAddress(manifestSlot, "pm-Markets"),
 };
 
 const MAINNET_CONFIG: PredictionMarketConfig = {
   toriiUrl: "https://api.cartridge.gg/x/blitz-mainnet-pm-1/torii",
   worldAddress: manifestMainnet.world.address,
   collateralToken: "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
-  oracleAddress: getOracleAddress(manifestMainnet as typeof manifestSlot),
+  oracleAddress: getContractAddress(manifestMainnet as typeof manifestSlot, "pm-StarknetOracle"),
+  marketsAddress: getContractAddress(manifestMainnet as typeof manifestSlot, "pm-Markets"),
 };
 
 const CONFIG_BY_CHAIN: Record<PredictionMarketChain, PredictionMarketConfig> = {

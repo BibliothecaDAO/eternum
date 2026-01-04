@@ -1,16 +1,21 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { type LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
+import gsap from "gsap";
 import { User } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
+import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
 
 const COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const ROW_HEIGHT = 44; // Approximate row height in pixels
 
 export interface PlayerCustom extends PlayerInfo {
   structures: string[];
@@ -146,9 +151,38 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     return sortItems(playersForSorting, activeSort, { sortKey: "leaderboardRank", sort: "asc" });
   }, [filteredPlayers, activeSort]);
 
-  useEffect(() => {
-    console.log({ players });
-  }, [players]);
+  // Leaderboard effects for animations
+  const { effects, rowRefs } = useLeaderboardEffects(filteredPlayers, ENABLE_LEADERBOARD_EFFECTS_MOCKUP);
+
+  // FLIP animation for row reordering
+  useLayoutEffect(() => {
+    if (prevPositions.size === 0) {
+      // First render - just store positions
+      const newPositions = new Map<string, number>();
+      sortedPlayers.forEach((p, i) => newPositions.set(String(p.address), i));
+      setPrevPositions(newPositions);
+      return;
+    }
+
+    // Animate rows from old position to new
+    sortedPlayers.forEach((player, index) => {
+      const address = String(player.address);
+      const prevIndex = prevPositions.get(address);
+
+      if (prevIndex !== undefined && prevIndex !== index) {
+        const rowEl = rowRefs.current.get(address.toLowerCase());
+        if (rowEl) {
+          const deltaY = (prevIndex - index) * ROW_HEIGHT;
+          gsap.fromTo(rowEl, { y: deltaY }, { y: 0, duration: 0.4, ease: "power2.out" });
+        }
+      }
+    });
+
+    // Store current positions for next comparison
+    const newPositions = new Map<string, number>();
+    sortedPlayers.forEach((p, i) => newPositions.set(String(p.address), i));
+    setPrevPositions(newPositions);
+  }, [sortedPlayers, rowRefs]);
 
   const handleSelectPlayer = (address: PlayerCustom["address"]) => {
     const normalized = String(address);
@@ -156,6 +190,19 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     setSelectedPlayerAddress(normalized);
     viewPlayerInfo(ContractAddress(normalized));
   };
+
+  // Register row ref callback
+  const registerRowRef = useCallback(
+    (address: string, el: HTMLDivElement | null) => {
+      const normalizedAddress = address.toLowerCase();
+      if (el) {
+        rowRefs.current.set(normalizedAddress, el);
+      } else {
+        rowRefs.current.delete(normalizedAddress);
+      }
+    },
+    [rowRefs],
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -170,6 +217,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map((player) => {
             const normalizedAddress = String(player.address);
+            const playerEffect = effects.get(normalizedAddress.toLowerCase());
 
             return (
               <PlayerRow
@@ -181,6 +229,8 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
                 showTribeDetails={showTribeDetails}
                 gridTemplateClass={leaderboardGridTemplate}
                 isSelected={selectedPlayerAddress === normalizedAddress}
+                effect={playerEffect}
+                registerRef={(el) => registerRowRef(normalizedAddress, el)}
               />
             );
           })
@@ -191,6 +241,9 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
           </div>
         )}
       </div>
+
+      {/* Effects overlay - rendered via portal */}
+      <LeaderboardEffectsOverlay effects={effects} rowRefs={rowRefs} showTribeDetails={showTribeDetails} />
     </div>
   );
 };
@@ -268,6 +321,8 @@ const PlayerRow = ({
   showTribeDetails,
   gridTemplateClass,
   isSelected,
+  effect,
+  registerRef,
 }: {
   player: PlayerWithStats;
   onSelect: () => void;
@@ -276,6 +331,8 @@ const PlayerRow = ({
   showTribeDetails: boolean;
   gridTemplateClass: string;
   isSelected: boolean;
+  effect?: PlayerEffect;
+  registerRef: (el: HTMLDivElement | null) => void;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -288,13 +345,20 @@ const PlayerRow = ({
   const hyperstructuresHeldLabel = formatActivityValue(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
   const hasShareholderPoints = (leaderboardEntry?.unregisteredPoints ?? 0) > 0;
 
+  // Determine row glow based on effect
+  const hasRankUp = effect && effect.rankChange < 0;
+  const hasRankDown = effect && effect.rankChange > 0;
+
   return (
     <div
+      ref={registerRef}
       className={clsx(
-        "relative flex w-full mb-1 overflow-hidden rounded-lg border border-transparent bg-dark/40 backdrop-blur-sm transition-colors duration-200",
+        "relative flex w-full mb-1 overflow-visible rounded-lg border border-transparent bg-dark/40 backdrop-blur-sm transition-all duration-200",
         player.isUser && !isSelected && "border-gold/50 bg-gold/20",
-        !isSelected && "hover:border-gold/20 hover:bg-brown/40",
+        !isSelected && !hasRankUp && !hasRankDown && "hover:border-gold/20 hover:bg-brown/40",
         isSelected && "border-amber-300/80 bg-amber-400/20 shadow-[0_0_14px_rgba(223,170,84,0.45)]",
+        hasRankUp && "animate-row-glow-up",
+        hasRankDown && "animate-row-glow-down",
       )}
     >
       {(player.isUser || isSelected) && (

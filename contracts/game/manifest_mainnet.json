@@ -6668,7 +6668,7 @@
     },
     {
       "address": "0x7b741a4044e1c2529ebd3506660293f82426cdbcebfb72e2bd930b1f96cc0ae",
-      "class_hash": "0x14f6371119a3e8c0bd65f9ebce7eebff6bf37a3d46c0ecce333a9b9924db06",
+      "class_hash": "0x6963325a06f93d6a92d19e4acdcf3fad7970960f78548c5fe8241737212f07f",
       "init_calldata": [],
       "tag": "s1_eternum-prize_distribution_systems",
       "selector": "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179",
@@ -11303,7 +11303,7 @@
     },
     {
       "address": "0x10e086da367b04242b9b23f6f2138a8cc596a3586394d92c70b4e982730eacd",
-      "class_hash": "0x23dc4d8a8264c55cf757712b1b394d3ef58b1336ea8cfa295f655bb58fa4bcb",
+      "class_hash": "0x57f74585540f64df397bbd1c986d0cd109df49e2dba088dd2055ad2af06b248",
       "init_calldata": [],
       "tag": "s1_eternum-troop_management_systems",
       "selector": "0x49b9809fc3839b4eb765c5d1db1d1a835678574e42bf24bf70235cecf2f8437",

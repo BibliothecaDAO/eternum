@@ -58,11 +58,14 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
     getEntryTokenIdByIndex,
   } = useEntryTokenBalance();
 
+  // Use ref for getEntryTokenIdByIndex to prevent infinite loops from unstable callback references
+  const getEntryTokenIdByIndexRef = useRef(getEntryTokenIdByIndex);
+  getEntryTokenIdByIndexRef.current = getEntryTokenIdByIndex;
+
   const [availableEntryTokenIds, setAvailableEntryTokenIds] = useState<bigint[]>([]);
   const [selectedEntryTokenId, setSelectedEntryTokenId] = useState<bigint | null>(null);
   const [isLoadingEntryTokens, setIsLoadingEntryTokens] = useState(false);
   const [entryTokenStatus, setEntryTokenStatus] = useState<EntryTokenStatus>("idle");
-  const getEntryTokenIdByIndexRef = useRef(getEntryTokenIdByIndex);
 
   // Extract primitive values to use as stable dependencies
   const entryTokenAddress = blitzConfig?.entry_token_address;
@@ -131,7 +134,7 @@ export function useEntryTokens(account: AccountInterface | undefined): UseEntryT
 
       const maxToShow = Math.min(maxTokens, 16);
       for (let i = 0; i < maxToShow; i++) {
-        const tokenId = await getEntryTokenId(
+        const tokenId = await getEntryTokenIdByIndexRef.current(
           accountAddress,
           {
             entryTokenAddress: entryTokenAddressHex,

@@ -1,5 +1,5 @@
 import { getFactorySqlBaseUrl as getFactorySqlBaseUrlRuntime } from "@/runtime/world";
-import type { Chain } from "@contracts";
+import { getSeasonAddresses, type Chain } from "@contracts";
 import { env } from "../../../../env";
 import type { ChainType } from "./utils/manifest-loader";
 
@@ -40,7 +40,7 @@ export const FACTORY_ADDRESSES: Record<ChainType, string> = {
 
 // Default max actions per chain (mirrors FACTORY_ADDRESSES pattern)
 export const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
-  mainnet: 20,
+  mainnet: 5,
   sepolia: 20,
   slot: 300,
   slottest: 300,
@@ -48,6 +48,41 @@ export const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
 };
 
 export const getDefaultMaxActionsForChain = (chain: ChainType): number => DEFAULT_MAX_ACTIONS_BY_CHAIN[chain];
+
+const parsePositiveInt = (value?: string): number | null => {
+  if (!value) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.floor(parsed);
+};
+
+export const DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN: Record<ChainType, number> = {
+  mainnet: 39,
+  sepolia: 1,
+  slot: 1,
+  slottest: 1,
+  local: 1,
+};
+
+export const getFactoryDeployRepeatsForChain = (chain: ChainType): number => {
+  const override = parsePositiveInt(env.VITE_PUBLIC_FACTORY_DEPLOY_REPEATS);
+  return override ?? DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN[chain];
+};
+
+export interface BlitzRegistrationDefaults {
+  amount: string;
+  precision: number;
+  token: string;
+}
+
+export const getDefaultBlitzRegistrationConfig = (chain: ChainType): BlitzRegistrationDefaults => {
+  const addresses = getSeasonAddresses(chain as Chain);
+  return {
+    amount: chain === "mainnet" ? "250" : "0.000000000000001",
+    precision: 18,
+    token: chain === "mainnet" ? addresses.lords : addresses.strk,
+  };
+};
 
 // Public API: reuse runtime helper for SQL base URL
 export const getFactorySqlBaseUrl = (chain: Chain) => getFactorySqlBaseUrlRuntime(chain);
