@@ -75,6 +75,8 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState<string | null>(null);
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
+  const [prevPositions, setPrevPositions] = useState<Map<string, number>>(new Map());
+
   const leaderboardGridTemplate = useMemo(
     () =>
       showTribeDetails
