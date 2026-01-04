@@ -1,5 +1,4 @@
-import { getActiveWorldName, setActiveWorldName } from "@/runtime/world";
-import { buildWorldProfile } from "@/runtime/world/profile-builder";
+import { applyWorldSelection, getActiveWorldName } from "@/runtime/world";
 import { openWorldSelectorModal } from "@/ui/features/world-selector";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -30,15 +29,13 @@ export const useGameSelector = () => {
       const currentWorld = getActiveWorldName();
       const firstSelection = !currentWorld;
 
-      const name = await openWorldSelectorModal();
-      const chain = gameEnv.VITE_PUBLIC_CHAIN as Chain;
-      await buildWorldProfile(chain, name);
-      setActiveWorldName(name);
-      setActiveWorld(name);
+      const selection = await openWorldSelectorModal();
+      const { chainChanged } = await applyWorldSelection(selection, gameEnv.VITE_PUBLIC_CHAIN as Chain);
+      setActiveWorld(selection.name);
 
       // If this is the first ever selection (after clearing storage), prefer a smooth client-side
       // navigation to the play route so users land in the game automatically.
-      if (firstSelection) {
+      if (firstSelection && !chainChanged) {
         if (navigateAfter && targetingPlayRoute && !hasAccount) {
           setModal(createElement(SignInPromptModal), true);
           return;
@@ -50,12 +47,13 @@ export const useGameSelector = () => {
         return;
       }
 
-      const worldChanged = name !== currentWorld;
+      const worldChanged = selection.name !== currentWorld;
+      const shouldReload = chainChanged || worldChanged;
 
       // Subsequent selections: if the world changed, force reload to reinitialize indexers/providers.
-      if (worldChanged) {
+      if (shouldReload) {
         if (navigateAfter) {
-          if (targetingPlayRoute && !hasAccount) {
+          if (targetingPlayRoute && !hasAccount && !chainChanged) {
             setModal(createElement(SignInPromptModal), true);
             return;
           }

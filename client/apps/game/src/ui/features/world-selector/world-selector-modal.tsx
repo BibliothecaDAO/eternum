@@ -6,10 +6,12 @@ import {
   clearActiveWorld,
   deleteWorldProfile,
   getActiveWorldName,
+  getWorldProfiles,
   listWorldNames,
   resolveChain,
   setSelectedChain,
 } from "@/runtime/world";
+import type { WorldSelectionInput } from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2, UserCheck, UserX, Users } from "lucide-react";
@@ -82,6 +84,8 @@ type WorldMeta = {
   registrationCheckedFor: string | null;
 };
 
+export type WorldSelection = WorldSelectionInput;
+
 type FactoryGameDisplay = {
   name: string;
   chain: Chain;
@@ -93,11 +97,26 @@ type FactoryGameDisplay = {
   isRegistered: boolean | null;
 };
 
+type SavedWorldDisplay = {
+  name: string;
+  chain?: Chain;
+  worldKey: string;
+};
+
+const resolveSavedChain = (storedChain: Chain | undefined, factoryChains?: Chain[]): Chain | undefined => {
+  if (factoryChains && factoryChains.length > 0) {
+    if (factoryChains.length === 1) return factoryChains[0];
+    if (storedChain && factoryChains.includes(storedChain)) return storedChain;
+    return factoryChains[0];
+  }
+  return storedChain;
+};
+
 export const WorldSelectorModal = ({
   onConfirm,
   onCancel,
 }: {
-  onConfirm: (name: string) => void;
+  onConfirm: (selection: WorldSelection) => void;
   onCancel: () => void;
 }) => {
   const close = useUIStore((s) => s.setModal);
@@ -139,7 +158,36 @@ export const WorldSelectorModal = ({
     refetchAll: refetchFactory,
   } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
 
-  const savedWorldRefs = useMemo(() => saved.map((name) => ({ name })), [saved]);
+  const factoryChainsByName = useMemo(() => {
+    const map = new Map<string, Chain[]>();
+    factoryWorlds.forEach((world) => {
+      const existing = map.get(world.name) ?? [];
+      if (!existing.includes(world.chain)) existing.push(world.chain);
+      map.set(world.name, existing);
+    });
+    return map;
+  }, [factoryWorlds]);
+
+  const savedWorlds = useMemo<SavedWorldDisplay[]>(() => {
+    const profiles = getWorldProfiles();
+    return saved.map((name) => {
+      const storedChain = profiles[name]?.chain as Chain | undefined;
+      const factoryChains = factoryChainsByName.get(name);
+      const chain = resolveSavedChain(storedChain, factoryChains);
+      return { name, chain, worldKey: getWorldKey({ name, chain }) };
+    });
+  }, [saved, factoryChainsByName]);
+
+  const savedWorldRefs = useMemo(
+    () => savedWorlds.map((world) => ({ name: world.name, chain: world.chain })),
+    [savedWorlds],
+  );
+
+  const savedWorldsByName = useMemo(() => {
+    const map = new Map<string, SavedWorldDisplay>();
+    savedWorlds.forEach((world) => map.set(world.name, world));
+    return map;
+  }, [savedWorlds]);
 
   // Use cached availability hook for saved worlds
   const { results: savedAvailability, allSettled: savedChecksDone } = useWorldsAvailability(
@@ -251,21 +299,20 @@ export const WorldSelectorModal = ({
   // Build savedWorldMeta from cached availability for backwards compatibility
   const savedWorldMeta = useMemo(() => {
     const meta: Record<string, WorldMeta> = {};
-    saved.forEach((name) => {
-      const worldKey = getWorldKey({ name });
-      const availability = savedAvailability.get(worldKey);
+    savedWorlds.forEach((world) => {
+      const availability = savedAvailability.get(world.worldKey);
       if (availability?.isAvailable && availability.meta) {
-        meta[name] = {
+        meta[world.name] = {
           startMainAt: availability.meta.startMainAt,
           endAt: availability.meta.endAt,
           registrationCount: availability.meta.registrationCount,
-          isRegistered: playerRegistration[worldKey] ?? null,
+          isRegistered: playerRegistration[world.worldKey] ?? null,
           registrationCheckedFor: playerAddress?.toLowerCase() ?? null,
         };
       }
     });
     return meta;
-  }, [saved, savedAvailability, playerRegistration, playerAddress]);
+  }, [savedWorlds, savedAvailability, playerRegistration, playerAddress]);
 
   const factoryLoading = factoryWorldsLoading || (factoryWorlds.length > 0 && factoryCheckingAvailability);
   const factoryErrorMessage = factoryError ? factoryError.message : null;
@@ -298,10 +345,14 @@ export const WorldSelectorModal = ({
   }, []);
 
   const confirm = () => {
-    const toUse = selectedFactory?.name || selected;
-    if (!toUse) return;
+    const selection: WorldSelection | null = selectedFactory
+      ? { name: selectedFactory.name, chain: selectedFactory.chain }
+      : selected
+        ? { name: selected, chain: savedWorldsByName.get(selected)?.chain }
+        : null;
+    if (!selection) return;
     close(null, false);
-    onConfirm(toUse);
+    onConfirm(selection);
   };
 
   const cancel = () => {
@@ -315,26 +366,26 @@ export const WorldSelectorModal = ({
     if (selected === worldName) setSelected(null);
   };
 
-  const handleEnterGame = (worldName: string) => {
-    const status = statusMap[worldName];
+  const handleEnterGame = (world: SavedWorldDisplay) => {
+    const status = statusMap[world.name];
     if (status !== "ok") return; // Don't allow entering offline games
 
     close(null, false);
-    onConfirm(worldName);
+    onConfirm({ name: world.name, chain: world.chain });
   };
 
-  const handleDoubleClick = (worldName: string) => {
-    handleEnterGame(worldName);
+  const handleDoubleClick = (world: SavedWorldDisplay) => {
+    handleEnterGame(world);
   };
 
   const handleEnterFactoryGame = (game: FactoryGameDisplay) => {
     if (normalizeFactoryChain(game.chain) !== activeFactoryChain) return;
     close(null, false);
-    onConfirm(game.name);
+    onConfirm({ name: game.name, chain: game.chain });
   };
 
-  const isGameOnline = (worldName: string) => {
-    return statusMap[worldName] === "ok";
+  const isGameOnline = (world: SavedWorldDisplay) => {
+    return statusMap[world.name] === "ok";
   };
 
   const renderRegistrationSummary = ({
@@ -787,9 +838,9 @@ export const WorldSelectorModal = ({
                 )}
                 {(() => {
                   // Categorize saved games
-                  const categorized = saved.map((s) => {
-                    const gameIsOnline = isGameOnline(s);
-                    const meta = savedWorldMeta[s];
+                  const categorized = savedWorlds.map((world) => {
+                    const gameIsOnline = isGameOnline(world);
+                    const meta = savedWorldMeta[world.name];
                     const startMainAt = meta?.startMainAt ?? null;
                     const endAt = meta?.endAt ?? null;
                     const gameIsEnded = gameIsOnline && isEnded(startMainAt, endAt);
@@ -797,7 +848,8 @@ export const WorldSelectorModal = ({
                     const gameIsUpcoming = gameIsOnline && isUpcoming(startMainAt);
 
                     return {
-                      name: s,
+                      name: world.name,
+                      chain: world.chain,
                       isOnline: gameIsOnline,
                       meta,
                       isEnded: gameIsEnded,
@@ -814,7 +866,9 @@ export const WorldSelectorModal = ({
 
                   const sorted = [...live, ...upcoming, ...ended, ...others];
 
-                  return sorted.map(({ name: s, isOnline, isEnded: gameIsEnded, meta }) => (
+                  return sorted.map(({ name: s, chain, isOnline, isEnded: gameIsEnded, meta }) => {
+                    const isChainMatch = chain ? normalizeFactoryChain(chain) === activeFactoryChain : true;
+                    return (
                     <div
                       key={s}
                       className={`group relative rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${
@@ -831,7 +885,11 @@ export const WorldSelectorModal = ({
                             : "border-danger/40 bg-danger/5 hover:bg-danger/10"
                       }`}
                       onClick={() => setSelected(s)}
-                      onDoubleClick={() => handleDoubleClick(s)}
+                      onDoubleClick={() =>
+                        handleDoubleClick(
+                          savedWorldsByName.get(s) ?? { name: s, chain: undefined, worldKey: s },
+                        )
+                      }
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -841,6 +899,17 @@ export const WorldSelectorModal = ({
                             >
                               {s}
                             </div>
+                            {chain && (
+                              <span
+                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+                                  chain === "mainnet"
+                                    ? "border-brilliance/30 bg-brilliance/10 text-brilliance"
+                                    : "border-gold/30 bg-gold/10 text-gold/70"
+                                } ${isChainMatch ? "" : "opacity-60"}`}
+                              >
+                                {chain}
+                              </span>
+                            )}
                             {selected === s && (
                               <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
                                 <Check className="w-3 h-3 text-gold" />
@@ -902,7 +971,9 @@ export const WorldSelectorModal = ({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleEnterGame(s);
+                                  handleEnterGame(
+                                    savedWorldsByName.get(s) ?? { name: s, chain: undefined, worldKey: s },
+                                  );
                                 }}
                                 className="p-1.5 rounded-md bg-brilliance/10 text-brilliance border border-brilliance/30 hover:bg-brilliance/20 transition-all"
                                 title="Enter game"
@@ -925,7 +996,8 @@ export const WorldSelectorModal = ({
                         </div>
                       </div>
                     </div>
-                  ));
+                    );
+                  });
                 })()}
               </div>
             </div>
