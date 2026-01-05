@@ -532,6 +532,7 @@ export interface Config {
     center: number;
     base_distance: number;
     subsequent_distance: number;
+    single_realm_mode: boolean;
   };
   season: {
     // we expect one or the other. The

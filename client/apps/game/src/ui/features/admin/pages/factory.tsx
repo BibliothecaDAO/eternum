@@ -341,6 +341,7 @@ export const FactoryPage = () => {
   const [blitzFeeAmountOverrides, setBlitzFeeAmountOverrides] = useState<Record<string, string>>({});
   const [blitzFeePrecisionOverrides, setBlitzFeePrecisionOverrides] = useState<Record<string, string>>({});
   const [blitzFeeTokenOverrides, setBlitzFeeTokenOverrides] = useState<Record<string, string>>({});
+  const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
@@ -1194,6 +1195,28 @@ export const FactoryPage = () => {
                                             Applies to season.durationSeconds (hours × 3600).
                                           </p>
                                         </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">Single Realm Mode</label>
+                                          <div className="flex items-center gap-2">
+                                            <input
+                                              id={`single-realm-mode-${name}`}
+                                              type="checkbox"
+                                              checked={
+                                                Object.prototype.hasOwnProperty.call(singleRealmModeOverrides, name)
+                                                  ? !!singleRealmModeOverrides[name]
+                                                  : !!eternumConfig.settlement?.single_realm_mode
+                                              }
+                                              onChange={(e) =>
+                                                setSingleRealmModeOverrides((p) => ({ ...p, [name]: e.target.checked }))
+                                              }
+                                              className="h-4 w-4 accent-blue-600"
+                                            />
+                                            <label htmlFor={`single-realm-mode-${name}`} className="text-xs text-slate-700">
+                                              Enable single realm mode for this world
+                                            </label>
+                                          </div>
+                                          <p className="text-[10px] text-slate-500">Controls settlement spawning behavior.</p>
+                                        </div>
                                       </div>
 
                                       {/* Blitz Registration Fee Configuration */}
@@ -1326,6 +1349,14 @@ export const FactoryPage = () => {
                                                 defaultBlitzRegistration.token ||
                                                 eternumConfig.blitz?.registration?.fee_token;
 
+                                              // Apply single realm mode override if provided
+                                              const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
+                                                singleRealmModeOverrides,
+                                                name,
+                                              )
+                                                ? !!singleRealmModeOverrides[name]
+                                                : !!eternumConfig.settlement?.single_realm_mode;
+
                                               const configForWorld = {
                                                 ...eternumConfig,
                                                 dev: {
@@ -1347,6 +1378,10 @@ export const FactoryPage = () => {
                                                     fee_amount: blitzFeeAmount,
                                                     fee_token: blitzFeeToken,
                                                   },
+                                                },
+                                                settlement: {
+                                                  ...eternumConfig.settlement,
+                                                  single_realm_mode: selectedSingleRealmMode,
                                                 },
                                               } as any;
 

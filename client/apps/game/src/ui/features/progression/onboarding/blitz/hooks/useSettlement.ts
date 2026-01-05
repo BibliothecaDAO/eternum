@@ -1,4 +1,4 @@
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { configManager, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
@@ -6,6 +6,28 @@ import { useCallback, useMemo, useState } from "react";
 import { AccountInterface } from "starknet";
 import { env } from "../../../../../../../env";
 import { SettleStage } from "../types";
+
+// Settlement configuration constants
+const SETTLEMENT_CONFIG = {
+  MAINNET: {
+    MULTI_REALM: {
+      INITIAL_SETTLE_COUNT: 1,
+      EXTRA_CALLS: 2,
+    },
+    SINGLE_REALM: {
+      INITIAL_SETTLE_COUNT: 1,
+      EXTRA_CALLS: 0,
+    },
+  },
+  NON_MAINNET: {
+    MULTI_REALM: {
+      INITIAL_SETTLE_COUNT: 3,
+    },
+    SINGLE_REALM: {
+      INITIAL_SETTLE_COUNT: 1,
+    },
+  },
+} as const;
 
 export interface UseSettlementReturn {
   // Player state
@@ -79,32 +101,46 @@ export function useSettlement(account: AccountInterface | undefined): UseSettlem
       const isCurrentlyRegistered = !!playerRegistered?.registered;
       const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
 
+      // Get single_realm_mode from config
+      const blitzConfig = configManager.getBlitzConfig();
+      const singleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
+
       if (isCurrentlyRegistered) {
         setSettleStage("assigning");
         if (isMainnet) {
-          const initialSettleCount = 1;
+          const config = singleRealmMode
+            ? SETTLEMENT_CONFIG.MAINNET.SINGLE_REALM
+            : SETTLEMENT_CONFIG.MAINNET.MULTI_REALM;
+
+          const initialSettleCount = config.INITIAL_SETTLE_COUNT;
           console.log(
-            `[Blitz] Settling realms (mainnet): starting assign_and_settle_realms with settlement_count=${initialSettleCount}`,
+            `[Blitz] Settling realms (mainnet, single_realm_mode=${singleRealmMode}): starting assign_and_settle_realms with settlement_count=${initialSettleCount}`,
           );
           await blitz_realm_assign_and_settle_realms({
             signer: account,
             settlement_count: initialSettleCount,
           });
 
-          // Automatically settle remaining realms
-          setSettleStage("settling");
-          const extraCalls = 2;
-          for (let i = 0; i < extraCalls; i++) {
-            console.log(`[Blitz] Settling realms (mainnet): extra settle_realms call ${i + 1}/${extraCalls}`);
-            await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+          // Automatically settle remaining realms (only if not in single realm mode)
+          const extraCalls = config.EXTRA_CALLS;
+          if (extraCalls > 0) {
+            setSettleStage("settling");
+            for (let i = 0; i < extraCalls; i++) {
+              console.log(`[Blitz] Settling realms (mainnet): extra settle_realms call ${i + 1}/${extraCalls}`);
+              await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+            }
           }
 
           setSettleStage("done");
           return;
         } else {
-          const initialSettleCount = 3;
+          const config = singleRealmMode
+            ? SETTLEMENT_CONFIG.NON_MAINNET.SINGLE_REALM
+            : SETTLEMENT_CONFIG.NON_MAINNET.MULTI_REALM;
+
+          const initialSettleCount = config.INITIAL_SETTLE_COUNT;
           console.log(
-            `[Blitz] Settling realms: starting assign_and_settle_realms with settlement_count=${initialSettleCount}`,
+            `[Blitz] Settling realms (single_realm_mode=${singleRealmMode}): starting assign_and_settle_realms with settlement_count=${initialSettleCount}`,
           );
           await blitz_realm_assign_and_settle_realms({
             signer: account,

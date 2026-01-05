@@ -6,8 +6,8 @@
  */
 import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
-import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
 import type { Span } from "@opentelemetry/api";
+import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
 import EventEmitter from "eventemitter3";
 import {
   Account,
@@ -3220,11 +3220,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
-    const { center, base_distance, subsequent_distance, signer } = props;
+    const { center, base_distance, subsequent_distance, signer, single_realm_mode } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
-      calldata: [center, base_distance, subsequent_distance],
+      calldata: [center, base_distance, subsequent_distance, single_realm_mode],
     });
   }
 
