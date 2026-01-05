@@ -360,6 +360,7 @@ export const EternumGlobalConfig: Config = {
     center: SETTLEMENT_CENTER,
     base_distance: SETTLEMENT_BASE_DISTANCE,
     subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
+    single_realm_mode: false,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,

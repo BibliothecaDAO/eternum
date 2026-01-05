@@ -419,11 +419,7 @@ pub mod blitz_realm_systems {
             let mut player_settle_finish: BlitzRealmSettleFinish = world.read_model(caller);
             assert!(
                 player_settle_finish.coords.len() > 0,
-                "Eternum: Player has no assigned realm positions",
-            );
-            assert!(
-                player_settle_finish.structure_ids.len() != player_settle_finish.coords.len(),
-                "Eternum: Player has already created realms",
+                "Eternum: Player has no assigned realm positions or has finished settlement",
             );
 
 

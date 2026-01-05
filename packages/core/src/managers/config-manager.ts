@@ -832,6 +832,7 @@ export class ClientConfigManager {
             side: Number(blitzSettlementConfig.side),
             step: Number(blitzSettlementConfig.step),
             point: Number(blitzSettlementConfig.point),
+            single_realm_mode: Boolean(blitzSettlementConfig.single_realm_mode),
           },
           blitz_registration_config: {
             fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
@@ -861,6 +862,7 @@ export class ClientConfigManager {
           side: 0,
           step: 0,
           point: 0,
+          single_realm_mode: false,
         },
         blitz_registration_config: {
           fee_amount: BigInt(0),

@@ -701,6 +701,7 @@ export interface SetSettlementConfigProps extends SystemSigner {
   center: BigNumberish;
   base_distance: BigNumberish;
   subsequent_distance: BigNumberish;
+  single_realm_mode: boolean;
 }
 export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   fee_token: BigNumberish;

@@ -1364,13 +1364,14 @@ export const setSettlementConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-  const { center, base_distance, subsequent_distance } = config.config.settlement;
+  const { center, base_distance, subsequent_distance, single_realm_mode } = config.config.settlement;
 
   const calldata = {
     signer: config.account,
     center,
     base_distance,
     subsequent_distance,
+    single_realm_mode,
   };
 
   console.log(
@@ -1379,6 +1380,7 @@ export const setSettlementConfig = async (config: Config) => {
     │  ${chalk.gray("Center:")}            ${chalk.white(`(${calldata.center}, ${calldata.center})`)}
     │  ${chalk.gray("Base Distance:")}     ${chalk.white(calldata.base_distance)}
     │  ${chalk.gray("Subsequent Distance:")}   ${chalk.white(calldata.subsequent_distance)}
+    │  ${chalk.gray("Single Realm Mode:")}   ${chalk.white(calldata.single_realm_mode)}
     │
     └────────────────────────────────`),
   );

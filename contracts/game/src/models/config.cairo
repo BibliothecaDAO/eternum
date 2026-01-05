@@ -415,12 +415,13 @@ pub struct BlitzSettlementConfig {
     pub side: u32,
     pub step: u32,
     pub point: u32,
+    pub single_realm_mode: bool,
 }
 
 #[generate_trait]
 pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
-    fn new(base_distance: u32) -> BlitzSettlementConfig {
-        BlitzSettlementConfig { base_distance: base_distance, side: 0, step: 1, point: 1 }
+    fn new(base_distance: u32, single_realm_mode: bool) -> BlitzSettlementConfig {
+        BlitzSettlementConfig { base_distance, single_realm_mode, side: 0, step: 1, point: 1 }
     }
 
     fn next(ref self: BlitzSettlementConfig) {
@@ -447,6 +448,10 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
 
     fn realm_tile_radius() -> u32 {
         3
+    }
+
+    fn center_tile_radius() -> u32 {
+        2 // must be divisible by 2
     }
 
     fn mirror_first_step_tile_distance() -> u32 {
@@ -482,21 +487,42 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
         if !is_mirrored {
             let destination_start_coord: Coord = side_first_structure__step_x
                 .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (self.point - 1));
+
+            // coords a, b and c form a triangle
             let a = destination_start_coord;
             let b = destination_start_coord.neighbor_after_distance(start_direction, Self::realm_tile_radius());
             let c = b.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
-            return array![a, b, c];
+
+            // coord middle is the middle of the triangle
+            let middle = a.neighbor_after_distance(start_direction, Self::center_tile_radius())
+                .neighbor_after_distance(triangle_direction, Self::center_tile_radius() / 2);
+
+            if self.single_realm_mode {
+                return array![middle];
+            } else {
+                return array![a, b, c];
+            }
         } else {
             let start_point = self.max_points() - self.point + 1;
             let destination_start_coord: Coord = side_first_structure__step_x
                 .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (start_point - 1));
 
+            // coords a, b and c form a triangle
             let a = destination_start_coord
                 .neighbor_after_distance(start_direction, Self::mirror_first_step_tile_distance())
                 .neighbor_after_distance(triangle_direction, Self::mirror_second_step_tile_distance());
             let b = a.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
             let c = b.neighbor_after_distance(start_direction, Self::realm_tile_radius());
-            return array![a, b, c];
+
+            // coord middle is the middle of the triangle
+            let middle = a.neighbor_after_distance(triangle_direction, Self::center_tile_radius())
+                .neighbor_after_distance(start_direction, Self::center_tile_radius() / 2);
+
+            if self.single_realm_mode {
+                return array![middle];
+            } else { 
+                return array![a, b, c];
+            }
         }
     }
 }
