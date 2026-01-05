@@ -13,6 +13,7 @@
   "dependencies": {
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/game-selection": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",

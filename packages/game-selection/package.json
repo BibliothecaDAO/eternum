@@ -1,0 +1,36 @@
+{
+  "name": "@bibliothecadao/game-selection",
+  "version": "0.1.0",
+  "description": "Shared game/world selection hooks and utilities for Eternum",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@bibliothecadao/torii": "workspace:*",
+    "@tanstack/react-query": "^5.60.5",
+    "starknet": "catalog:",
+    "zustand": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.10",
+    "@types/react": "catalog:",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.4",
+    "vitest": "^2.0.5"
+  }
+}
