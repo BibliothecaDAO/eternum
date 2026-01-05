@@ -37,24 +37,20 @@ trait IProductionContract<TContractState> {
         production_cycles: Span<u128>,
     );
 
-    fn claim_wonder_production_bonus(ref self: TContractState, structure_id: ID, wonder_structure_id: ID);
 }
 
 #[dojo::contract]
 mod production_systems {
-    use core::num::traits::zero::Zero;
-    use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
-    use crate::models::config::{SeasonConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl};
-    use crate::models::map::{Tile, TileOccupier};
+    use crate::models::config::{SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, CoordTrait, TravelImpl};
     use crate::models::resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl};
-    use crate::models::resource::production::production::{ProductionBoostBonus, ProductionStrategyImpl};
+    use crate::models::resource::production::production::{ ProductionStrategyImpl};
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
     };
     use crate::systems::utils::map::IMapImpl;
@@ -307,72 +303,6 @@ mod production_systems {
                     ref world, from_structure_id, *produced_resource_types.at(i), *production_cycles.at(i),
                 );
             }
-        }
-
-
-        // Note: this can be called by anyone
-        fn claim_wonder_production_bonus(ref self: ContractState, structure_id: ID, wonder_structure_id: ID) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
-
-            // ensure structure is a realm or village
-
-            //todo: check other system to be sure we dont assume structure category is non zero
-            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
-            assert!(
-                structure_base.category == StructureCategory::Realm.into()
-                    || structure_base.category == StructureCategory::Village.into(),
-                "structure is not a realm or village",
-            );
-
-            // ensure wonder structure is a wonder
-            let wonder_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                ref world, wonder_structure_id,
-            );
-            assert!(wonder_structure_metadata.has_wonder, "wonder structure is not a wonder");
-
-            // ensure wonder structure is within tile distance
-            let wonder_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, wonder_structure_id);
-            let wonder_structure_coord: Coord = wonder_structure_base.coord();
-            let structure_coord: Coord = structure_base.coord();
-            let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("wonder_production_bonus_config"),
-            );
-            assert!(
-                wonder_structure_coord
-                    .tile_distance(structure_coord) <= wonder_production_bonus_config
-                    .within_tile_distance
-                    .into(),
-                "wonder structure is not within tile distance",
-            );
-
-            // set wonder production bonus
-            let mut structure_production_boost_bonus: ProductionBoostBonus = world.read_model(structure_id);
-            assert!(
-                structure_production_boost_bonus.wonder_incr_percent_num.is_zero(),
-                "wonder production bonus is already set",
-            );
-            structure_production_boost_bonus
-                .wonder_incr_percent_num = wonder_production_bonus_config
-                .bonus_percent_num
-                .try_into()
-                .unwrap();
-            world.write_model(@structure_production_boost_bonus);
-
-            // update tile model
-            let mut structure_tile: Tile = world.read_model((structure_coord.x, structure_coord.y));
-            if structure_base.category == StructureCategory::Village.into() {
-                structure_tile.occupier_type = TileOccupier::VillageWonderBonus.into();
-            } else {
-                let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                    ref world, structure_id,
-                );
-                if !structure_metadata.has_wonder {
-                    let tile_occupier = IMapImpl::get_realm_occupier(false, true, structure_base.level);
-                    structure_tile.occupier_type = tile_occupier.into();
-                }
-            }
-            world.write_model(@structure_tile);
         }
     }
 }

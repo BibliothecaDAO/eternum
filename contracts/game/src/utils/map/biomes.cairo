@@ -21,6 +21,7 @@ pub enum Biome {
     SubtropicalDesert,
     TropicalSeasonalForest,
     TropicalRainForest,
+    Underground,
 }
 
 impl BiomeIntoFelt252 of Into<Biome, felt252> {
@@ -43,6 +44,7 @@ impl BiomeIntoFelt252 of Into<Biome, felt252> {
             Biome::SubtropicalDesert => 'Subtropical Desert',
             Biome::TropicalSeasonalForest => 'Tropical Seasonal Forest',
             Biome::TropicalRainForest => 'Tropical Rain Forest',
+            Biome::Underground => 'Underground',
         }
     }
 }
@@ -68,6 +70,7 @@ impl BiomeIntoU8 of Into<Biome, u8> {
             Biome::SubtropicalDesert => 14,
             Biome::TropicalSeasonalForest => 15,
             Biome::TropicalRainForest => 16,
+            Biome::Underground => 17,
         }
     }
 }
@@ -93,6 +96,7 @@ impl U8IntoBiome of Into<u8, Biome> {
             14 => Biome::SubtropicalDesert,
             15 => Biome::TropicalSeasonalForest,
             16 => Biome::TropicalRainForest,
+            17 => Biome::Underground,
             _ => panic!("invalid biome"),
         }
     }
@@ -118,6 +122,7 @@ fn bdepth(biome: Biome) -> Fixed {
         Biome::SubtropicalDesert => fc::_0_3(),
         Biome::TropicalSeasonalForest => fc::_0_5(),
         Biome::TropicalRainForest => fc::_0_6(),
+        Biome::Underground => FixedTrait::ZERO(),
     }
 }
 
@@ -182,7 +187,10 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
 }
 
 
-pub fn get_biome(col: u128, row: u128) -> Biome {
+pub fn get_biome(alt: bool, col: u128, row: u128) -> Biome {
+    if alt {
+        return Biome::Underground;
+    }
     let col_fixed = FixedTrait::new_unscaled(col, false);
     let row_fixed = FixedTrait::new_unscaled(row, false);
     let elevation = _elevation(col_fixed, row_fixed);
@@ -309,6 +317,6 @@ mod tests {
 
     #[test]
     fn test_noisy() {
-        get_biome(1128, 389);
+        get_biome(false, 1128, 389);
     }
 }

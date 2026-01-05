@@ -4,6 +4,7 @@ pub mod events;
 pub mod guild;
 pub mod hyperstructure;
 pub mod map;
+pub mod map2;
 pub mod message;
 pub mod name;
 pub mod owner;

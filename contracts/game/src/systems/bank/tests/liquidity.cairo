@@ -71,7 +71,7 @@
 //     let bank_systems_address = deploy_system(ref world, "bank_systems");
 //     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 //     let bank_entity_id = InternalBankSystemsImpl::create_bank(
-//         ref world, BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0,
+//         ref world, BANK_ID, Coord { alt: false, x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0,
 //     );
 
 //     let liquidity_systems_address = deploy_system(ref world, "liquidity_systems");

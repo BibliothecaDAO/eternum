@@ -129,7 +129,7 @@ pub mod troop_raid_systems {
             let mut explorer_aggressor_troops = explorer_aggressor.troops;
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
+                .get_biome(guarded_structure.coord().alt, guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let current_tick = tick.current();

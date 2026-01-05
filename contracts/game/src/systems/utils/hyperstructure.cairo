@@ -8,6 +8,7 @@ use crate::models::config::{
 };
 use crate::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use crate::models::map::{Tile, TileOccupier};
+use crate::models::map2::{TileOpt};
 use crate::models::position::{Coord, CoordImpl, Direction, TravelImpl};
 use crate::models::structure::{Structure, StructureCategory, StructureImpl};
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
@@ -176,7 +177,8 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
                 .neighbor_after_distance(start_direction, Self::realm_tile_distance())
                 .neighbor_after_distance(triangle_direction, Self::realm_tile_distance() / 2);
 
-            let potential_realm_tile: Tile = world.read_model((potential_realm_coord.x, potential_realm_coord.y));
+            let potential_realm_tile_opt: TileOpt = world.read_model((potential_realm_coord.alt, potential_realm_coord.x, potential_realm_coord.y));
+            let potential_realm_tile: Tile = potential_realm_tile_opt.into();
             if potential_realm_tile.occupier_is_structure {
                 let structure_category: u8 = world
                     .read_member(

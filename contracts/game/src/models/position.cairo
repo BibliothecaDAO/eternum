@@ -179,6 +179,7 @@ pub impl DirectionDisplay of Display<Direction> {
 
 #[derive(Copy, Drop, PartialEq, Serde, IntrospectPacked, Debug, Default, DojoStore)]
 pub struct Coord {
+    pub alt: bool,
     pub x: u32,
     pub y: u32,
 }
@@ -197,7 +198,7 @@ pub impl CoordDisplay of Display<Coord> {
 pub impl CoordImpl of CoordTrait {
     fn center(ref world: WorldStorage) -> Coord {
         let map_center_offset = WorldConfigUtilImpl::get_member(world, selector!("map_center_offset"));
-        Coord { x: CENTER_COL - map_center_offset, y: CENTER_ROW - map_center_offset }
+        Coord { alt: false, x: CENTER_COL - map_center_offset, y: CENTER_ROW - map_center_offset }
     }
     fn neighbor(self: Coord, direction: Direction) -> Coord {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
@@ -206,22 +207,22 @@ pub impl CoordImpl of CoordTrait {
         if self.y & 1 == 0 {
             // where self.y (row) is even
             match direction {
-                Direction::East(()) => Coord { x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord { x: self.x + 1, y: self.y + 1 },
-                Direction::NorthWest(()) => Coord { x: self.x, y: self.y + 1 },
-                Direction::West(()) => Coord { x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord { x: self.x, y: self.y - 1 },
-                Direction::SouthEast(()) => Coord { x: self.x + 1, y: self.y - 1 },
+                Direction::East(()) => Coord { alt: false, x: self.x + 1, y: self.y },
+                Direction::NorthEast(()) => Coord { alt: false, x: self.x + 1, y: self.y + 1 },
+                Direction::NorthWest(()) => Coord { alt: false, x: self.x, y: self.y + 1 },
+                Direction::West(()) => Coord { alt: false, x: self.x - 1, y: self.y },
+                Direction::SouthWest(()) => Coord { alt: false, x: self.x, y: self.y - 1 },
+                Direction::SouthEast(()) => Coord { alt: false, x: self.x + 1, y: self.y - 1 },
             }
         } else {
             // where self.y (row) is odd
             match direction {
-                Direction::East(()) => Coord { x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord { x: self.x, y: self.y + 1 },
-                Direction::NorthWest(()) => Coord { x: self.x - 1, y: self.y + 1 },
-                Direction::West(()) => Coord { x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord { x: self.x - 1, y: self.y - 1 },
-                Direction::SouthEast(()) => Coord { x: self.x, y: self.y - 1 },
+                Direction::East(()) => Coord { alt: false, x: self.x + 1, y: self.y },
+                Direction::NorthEast(()) => Coord { alt: false, x: self.x, y: self.y + 1 },
+                Direction::NorthWest(()) => Coord { alt: false, x: self.x - 1, y: self.y + 1 },
+                Direction::West(()) => Coord { alt: false, x: self.x - 1, y: self.y },
+                Direction::SouthWest(()) => Coord { alt: false, x: self.x - 1, y: self.y - 1 },
+                Direction::SouthEast(()) => Coord { alt: false, x: self.x, y: self.y - 1 },
             }
         }
     }
@@ -246,7 +247,7 @@ pub impl CoordImpl of CoordTrait {
 
 pub impl CoordZeroable of Zero<Coord> {
     fn zero() -> Coord {
-        Coord { x: 0, y: 0 }
+        Coord { alt: false, x: 0, y: 0 }
     }
 
     fn is_zero(self: @Coord) -> bool {
@@ -269,7 +270,7 @@ pub impl CubeIntoCoord of Into<Cube, Coord> {
         // convert cube to even-r coordinates
         let col: i128 = self.q + ((self.r + (self.r % 2)) / 2);
         let row: i128 = self.r;
-        Coord { x: col.try_into().unwrap(), y: row.try_into().unwrap() }
+        Coord { alt: false, x: col.try_into().unwrap(), y: row.try_into().unwrap() }
     }
 }
 
@@ -412,11 +413,11 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 //         use super::super::{Coord, CoordTrait, Direction};
 
 //         fn odd_row_coord() -> Coord {
-//             Coord { x: 7, y: 7 }
+//             Coord { alt: false, x: 7, y: 7 }
 //         }
 
 //         fn even_row_coord() -> Coord {
-//             Coord { x: 7, y: 6 }
+//             Coord { alt: false, x: 7, y: 6 }
 //         }
 
 //         //- Even row
@@ -425,42 +426,42 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 //         fn position_test_neighbor_even_row_east() {
 //             let start = even_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
+//             assert_eq!(start.neighbor(Direction::East), Coord { alt: false, x: start.x + 1, y: start.y });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_even_row_north_east() {
 //             let start = even_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 });
+//             assert_eq!(start.neighbor(Direction::NorthEast), Coord { alt: false, x: start.x + 1, y: start.y + 1 });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_even_row_north_west() {
 //             let start = even_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x, y: start.y + 1 });
+//             assert_eq!(start.neighbor(Direction::NorthWest), Coord { alt: false, x: start.x, y: start.y + 1 });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_even_row_west() {
 //             let start = even_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
+//             assert_eq!(start.neighbor(Direction::West), Coord { alt: false, x: start.x - 1, y: start.y });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_even_row_south_west() {
 //             let start = even_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x, y: start.y - 1 });
+//             assert_eq!(start.neighbor(Direction::SouthWest), Coord { alt: false, x: start.x, y: start.y - 1 });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_even_row_south_east() {
 //             let start = even_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
+//             assert_eq!(start.neighbor(Direction::SouthEast), Coord { alt: false, x: start.x + 1, y: start.y - 1 });
 //         }
 
 //         //- Odd row
@@ -469,42 +470,42 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 //         fn position_test_neighbor_odd_row_east() {
 //             let start = odd_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
+//             assert_eq!(start.neighbor(Direction::East), Coord { alt: false, x: start.x + 1, y: start.y });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_odd_row_north_east() {
 //             let start = odd_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x, y: start.y + 1 });
+//             assert_eq!(start.neighbor(Direction::NorthEast), Coord { alt: false, x: start.x, y: start.y + 1 });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_odd_row_north_west() {
 //             let start = odd_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 });
+//             assert_eq!(start.neighbor(Direction::NorthWest), Coord { alt: false, x: start.x - 1, y: start.y + 1 });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_odd_row_west() {
 //             let start = odd_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
+//             assert_eq!(start.neighbor(Direction::West), Coord { alt: false, x: start.x - 1, y: start.y });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_odd_row_south_west() {
 //             let start = odd_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
+//             assert_eq!(start.neighbor(Direction::SouthWest), Coord { alt: false, x: start.x - 1, y: start.y - 1 });
 //         }
 
 //         #[test]
 //         fn position_test_neighbor_odd_row_south_east() {
 //             let start = odd_row_coord();
 
-//             assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x, y: start.y - 1 });
+//             assert_eq!(start.neighbor(Direction::SouthEast), Coord { alt: false, x: start.x, y: start.y - 1 });
 //         }
 //     }
 // }

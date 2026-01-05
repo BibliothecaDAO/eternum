@@ -3,6 +3,7 @@ use dojo::world::WorldStorage;
 use crate::alias::ID;
 use crate::constants::DAYDREAMS_AGENT_ID;
 use crate::models::map::{Tile, TileOccupier};
+use crate::models::map2::{TileOpt};
 use crate::models::position::{Coord, CoordTrait};
 use crate::models::troop::{TroopTier, TroopType};
 use crate::utils::map::biomes::Biome;
@@ -108,39 +109,36 @@ pub impl IMapImpl of IMapTrait {
                 panic!("invalid level")
             }
         } else {
-            if realm_receives_wonder_bonus {
-                if realm_level == 0 {
-                    return TileOccupier::RealmRegularLevel1WonderBonus;
-                } else if realm_level == 1 {
-                    return TileOccupier::RealmRegularLevel2WonderBonus;
-                } else if realm_level == 2 {
-                    return TileOccupier::RealmRegularLevel3WonderBonus;
-                } else if realm_level == 3 {
-                    return TileOccupier::RealmRegularLevel4WonderBonus;
-                } else {
-                    panic!("invalid level")
-                }
+            if realm_level == 0 {
+                return TileOccupier::RealmRegularLevel1;
+            } else if realm_level == 1 {
+                return TileOccupier::RealmRegularLevel2;
+            } else if realm_level == 2 {
+                return TileOccupier::RealmRegularLevel3;
+            } else if realm_level == 3 {
+                return TileOccupier::RealmRegularLevel4;
             } else {
-                if realm_level == 0 {
-                    return TileOccupier::RealmRegularLevel1;
-                } else if realm_level == 1 {
-                    return TileOccupier::RealmRegularLevel2;
-                } else if realm_level == 2 {
-                    return TileOccupier::RealmRegularLevel3;
-                } else if realm_level == 3 {
-                    return TileOccupier::RealmRegularLevel4;
-                } else {
-                    panic!("invalid level")
-                }
+                panic!("invalid level")
             }
+            
         }
     }
 
 
     fn explore(ref world: WorldStorage, ref tile: Tile, biome: Biome) {
         tile.biome = biome.into();
-        world.write_model(@tile);
+
+        let tile_opt: TileOpt = tile.into();
+        world.write_model(@tile_opt);
         // todo add event {if not already explored}
+    }
+    
+    fn mark_reward_extracted(ref world: WorldStorage, ref tile: Tile) {
+
+        tile.reward_extracted = true;
+        let tile_opt: TileOpt = tile.into();
+        world.write_model(@tile_opt);
+        // todo add event {if not already extracted}
     }
 
     fn explore_ring(ref world: WorldStorage, start_coord: Coord, mut radius: u32) {
@@ -148,8 +146,10 @@ pub impl IMapImpl of IMapTrait {
         while radius > 0 {
             let coord_ring: Array<Coord> = start_coord.ring(radius);
             for coord in coord_ring {
-                let mut tile: Tile = world.read_model((coord.x, coord.y));
-                let biome: Biome = biome_library.get_biome(coord.x.into(), coord.y.into());
+                // Coord { alt: false
+                let tile_opt: TileOpt = world.read_model((start_coord.alt, coord.x, coord.y));
+                let mut tile: Tile = tile_opt.into();
+                let biome: Biome = biome_library.get_biome(start_coord.alt, coord.x.into(), coord.y.into());
                 Self::explore(ref world, ref tile, biome);
             }
             radius -= 1;
@@ -182,7 +182,8 @@ pub impl IMapImpl of IMapTrait {
             TileOccupier::ExplorerCrossbowmanT3Daydreams => false,
             _ => true,
         };
-        world.write_model(@tile);
+        let tile_opt: TileOpt = tile.into();
+        world.write_model(@tile_opt);
         // todo add event {if not already explored}
     }
 

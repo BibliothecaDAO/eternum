@@ -35,7 +35,7 @@
 //     let bank_entity_id = bank_systems_dispatcher
 //         .create_bank(
 //             1,
-//             Coord { x: 30, y: 800 },
+//             Coord { alt: false, x: 30, y: 800 },
 //             owner_fee_num,
 //             owner_fee_denom,
 //             owner_bridge_fee_dpt_percent,

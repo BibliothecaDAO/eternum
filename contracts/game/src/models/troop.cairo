@@ -360,6 +360,13 @@ pub impl TroopsImpl of TroopsTrait {
                     TroopType::Paladin => (SUBTRACT, VALUE) // -x
                 }
             },
+            Biome::Underground => {
+                match self.category {
+                    TroopType::Knight => (NEUTRAL, ZERO), // 0
+                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
+                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
+                }
+            },
         };
 
         if numerator.is_zero() {
@@ -495,6 +502,13 @@ pub impl TroopsImpl of TroopsTrait {
                     TroopType::Paladin => (ADD, VALUE) // +1
                 }
             },
+            Biome::Underground => {
+                match self.category {
+                    TroopType::Knight => (NEUTRAL, ZERO), // 0
+                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
+                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
+                }
+            }
         }
     }
 
@@ -536,6 +550,7 @@ pub impl TroopsImpl of TroopsTrait {
             Biome::SubtropicalDesert => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
             Biome::TropicalSeasonalForest => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
             Biome::TropicalRainForest => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::Underground => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
         }
     }
 

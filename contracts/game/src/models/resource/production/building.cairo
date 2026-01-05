@@ -569,7 +569,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
 #[generate_trait]
 pub impl BuildingImpl of BuildingTrait {
     fn center() -> Coord {
-        Coord { x: 10, y: 10 }
+        Coord { alt: false, x: 10, y: 10 }
     }
 
     /// Create a new building on a structure
@@ -874,7 +874,7 @@ pub impl BuildingImpl of BuildingTrait {
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
                     story: Story::BuildingPaymentStory(
                         BuildingPaymentStory {
-                            inner_coord: Coord { x: self.inner_col, y: self.inner_row },
+                            inner_coord: Coord { alt: false, x: self.inner_col, y: self.inner_row },
                             category: self.category,
                             cost: tcost.span(),
                         },
