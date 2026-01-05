@@ -18,7 +18,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
-import { getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, getConservativeBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -216,7 +216,8 @@ export const useAutomation = () => {
     let anyExecuted = false;
 
     try {
-      const { currentDefaultTick } = getBlockTimestamp();
+      // Use conservative tick for resource validation to prevent tx failures from clock desync
+      const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
 
       for (const realmConfig of realmList) {
         let activeRealmConfig = realmConfig;
@@ -228,14 +229,14 @@ export const useAutomation = () => {
             ? buildRealmResourceSnapshot({
                 components,
                 realmId: realmIdNum,
-                currentTick: currentDefaultTick,
+                currentTick: conservativeTick,
               })
             : new Map();
 
         console.log("[Automation] Prepared realm snapshot", {
           realmId: activeRealmConfig.realmId,
           realmName: realmLabel,
-          blockTick: currentDefaultTick,
+          blockTick: conservativeTick,
           balances: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
         });
 
