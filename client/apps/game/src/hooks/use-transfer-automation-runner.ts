@@ -5,6 +5,7 @@ import {
   calculateDonkeysNeeded,
   configManager,
   getBlockTimestamp,
+  getConservativeBlockTimestamp,
   getEntityIdFromKeys,
   getTotalResourceWeightKg,
   isMilitaryResource,
@@ -138,7 +139,9 @@ export const useTransferAutomationRunner = () => {
         return;
       }
 
-      const { currentDefaultTick, currentBlockTimestamp } = getBlockTimestamp();
+      const { currentBlockTimestamp } = getBlockTimestamp();
+      // Use conservative tick for resource validation to prevent tx failures from clock desync
+      const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
       if (isSeasonOver(currentBlockTimestamp)) {
         stopTransferAutomation();
         return;
@@ -187,7 +190,7 @@ export const useTransferAutomationRunner = () => {
             }
 
             const rm = new ResourceManager(components, sourceId);
-            const donkeyBalRaw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance ?? 0n;
+            const donkeyBalRaw = rm.balanceWithProduction(conservativeTick, ResourcesIds.Donkey).balance ?? 0n;
             const donkeyBalHuman = Number(donkeyBalRaw) / RESOURCE_PRECISION;
 
             // compute human amounts per resource based on per-resource configs (fallback to legacy fields)
@@ -201,7 +204,7 @@ export const useTransferAutomationRunner = () => {
             for (const rid of entry.resourceIds) {
               const desired = Math.max(0, Math.floor(configMap.get(rid) ?? 0));
               if (desired <= 0) continue;
-              const balRaw = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
+              const balRaw = rm.balanceWithProduction(conservativeTick, rid).balance ?? 0n;
               const balHuman = Number(balRaw) / RESOURCE_PRECISION;
               const amt = Math.max(0, Math.min(balHuman, desired));
               if (amt > 0) transferList.push({ resourceId: rid, humanAmount: amt });
