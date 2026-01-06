@@ -37,6 +37,32 @@ export default defineConfig({
         },
         sourcemap: true,
         manualChunks: (id) => {
+          // React ecosystem
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) {
+            return "react-vendor";
+          }
+          // TanStack router & query
+          if (id.includes("node_modules/@tanstack")) {
+            return "tanstack";
+          }
+          // Blockchain/Dojo ecosystem
+          if (
+            id.includes("@bibliothecadao") ||
+            id.includes("@dojoengine") ||
+            id.includes("starknet") ||
+            id.includes("@starknet-react")
+          ) {
+            return "blockchain";
+          }
+          // UI components (radix, lucide)
+          if (id.includes("@radix-ui") || id.includes("lucide-react")) {
+            return "ui-libs";
+          }
+          // Three.js (if used)
+          if (id.includes("three")) {
+            return "three";
+          }
+          // Other vendor code
           if (id.includes("node_modules")) {
             return "vendor";
           }

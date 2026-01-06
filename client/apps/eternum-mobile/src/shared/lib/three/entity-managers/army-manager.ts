@@ -6,8 +6,8 @@ import {
   configManager,
   ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
+  FELT_CENTER,
   getBlockTimestamp,
-  getFeltCenterOffset,
   Position,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -701,10 +701,10 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     const army = this.getObject(armyId);
     if (!army || actionPath.length < 2) return;
 
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     const targetHex = actionPath[actionPath.length - 1].hex;
-    const targetCol = targetHex.col - FELT_CENTER;
-    const targetRow = targetHex.row - FELT_CENTER;
+    const targetCol = targetHex.col - feltCenter;
+    const targetRow = targetHex.row - feltCenter;
 
     getWorldPositionForHex({ col: targetCol, row: targetRow }, true, this.tempVector3);
     const targetWorldPos = this.tempVector3.clone();

@@ -9,10 +9,10 @@ import {
   CombatSimulator,
   configManager,
   divideByPrecision,
+  FELT_CENTER,
   getArmy,
   getBlockTimestamp,
   getEntityIdFromKeys,
-  getFeltCenterOffset,
   getGuardsByStructure,
   getRemainingCapacityInKg,
   StaminaManager,
@@ -411,11 +411,11 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     console.log("selectedHex:", selectedHex);
     console.log("targetHex:", targetHex);
 
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
-      col: selectedHex.col + FELT_CENTER,
-      row: selectedHex.row + FELT_CENTER,
+      col: selectedHex.col + feltCenter,
+      row: selectedHex.row + feltCenter,
     };
     const normalizedTargetHex = {
       col: targetHex.x,
@@ -457,11 +457,11 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       return;
     }
 
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
-      col: selectedHex.col + FELT_CENTER,
-      row: selectedHex.row + FELT_CENTER,
+      col: selectedHex.col + feltCenter,
+      row: selectedHex.row + feltCenter,
     };
     const normalizedTargetHex = {
       col: targetHex.x,
@@ -497,11 +497,11 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       return;
     }
 
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
-      col: selectedHex.col + FELT_CENTER,
-      row: selectedHex.row + FELT_CENTER,
+      col: selectedHex.col + feltCenter,
+      row: selectedHex.row + feltCenter,
     };
     const normalizedTargetHex = {
       col: targetHex.x,

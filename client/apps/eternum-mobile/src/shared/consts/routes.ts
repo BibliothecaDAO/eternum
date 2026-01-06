@@ -1,5 +1,6 @@
 export const ROUTES = {
   LOGIN: "/",
+  WORLD_SELECT: "/world-select",
   HOME: "/home",
   LORDPEDIA: "/lordpedia",
   REALM: "/realm",

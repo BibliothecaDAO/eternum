@@ -1,20 +1,43 @@
-import { ChatPage } from "@/pages/chat";
-import { HomePage } from "@/pages/home";
-import { LoginPage } from "@/pages/login";
-import { LordpediaPage } from "@/pages/lordpedia";
-import { RealmPage } from "@/pages/realm";
-import { SettingsPage } from "@/pages/settings";
-import { TradePage } from "@/pages/trade";
-import { WorldmapPage } from "@/pages/worldmap";
+import { Suspense, lazy } from "react";
+import { Outlet, createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import { ROUTES } from "@/shared/consts/routes";
 import { useAuth } from "@/shared/hooks/use-auth";
-import { Outlet, createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
+import { useGameSelection } from "@bibliothecadao/game-selection";
+import { Loading } from "@/shared/ui/loading";
 import { Layout } from "../ui/layout";
+import { DojoReadyGate } from "../dojo/context/deferred-dojo-context";
+
+// Eager load login (first screen users see)
+import { LoginPage } from "@/pages/login";
+
+// Lazy load heavy pages for code splitting
+const HomePage = lazy(() => import("@/pages/home").then((m) => ({ default: m.HomePage })));
+const TradePage = lazy(() => import("@/pages/trade").then((m) => ({ default: m.TradePage })));
+const WorldmapPage = lazy(() => import("@/pages/worldmap").then((m) => ({ default: m.WorldmapPage })));
+const RealmPage = lazy(() => import("@/pages/realm").then((m) => ({ default: m.RealmPage })));
+const ChatPage = lazy(() => import("@/pages/chat").then((m) => ({ default: m.ChatPage })));
+const LordpediaPage = lazy(() => import("@/pages/lordpedia").then((m) => ({ default: m.LordpediaPage })));
+const SettingsPage = lazy(() => import("@/pages/settings").then((m) => ({ default: m.SettingsPage })));
+const WorldSelectPage = lazy(() => import("@/pages/world-select").then((m) => ({ default: m.WorldSelectPage })));
+
+// Suspense wrapper for lazy-loaded components
+function SuspenseWrapper({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<Loading className="min-h-screen" text="Loading..." />}>{children}</Suspense>;
+}
 
 // Create a root route
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
+
+// Protected layout component that wraps with DojoReadyGate
+function ProtectedLayout() {
+  return (
+    <DojoReadyGate>
+      <Layout />
+    </DojoReadyGate>
+  );
+}
 
 // Create a layout route for protected routes
 const protectedLayoutRoute = createRoute({
@@ -25,51 +48,88 @@ const protectedLayoutRoute = createRoute({
     if (!isAuthenticated) {
       throw redirect({ to: ROUTES.LOGIN });
     }
+    // Check if world is selected
+    const { selectedWorld } = useGameSelection.getState();
+    if (!selectedWorld) {
+      throw redirect({ to: ROUTES.WORLD_SELECT });
+    }
   },
-  component: () => <Layout />,
+  component: ProtectedLayout,
 });
 
-// Create routes
+// Login route (eager loaded)
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: ROUTES.LOGIN,
   component: LoginPage,
-  beforeLoad: async () => {
-    // const { isAuthenticated } = useAuth.getState();
-    // if (isAuthenticated) {
-    //   throw redirect({ to: ROUTES.HOME });
-    // }
-  },
 });
 
+// World selection route (lazy loaded, requires auth but not world selection)
+const worldSelectRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: ROUTES.WORLD_SELECT,
+  beforeLoad: async () => {
+    const { isAuthenticated } = useAuth.getState();
+    if (!isAuthenticated) {
+      throw redirect({ to: ROUTES.LOGIN });
+    }
+  },
+  component: () => (
+    <SuspenseWrapper>
+      <WorldSelectPage />
+    </SuspenseWrapper>
+  ),
+});
+
+// Protected routes (lazy loaded)
 const homeRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.HOME,
-  component: HomePage,
+  component: () => (
+    <SuspenseWrapper>
+      <HomePage />
+    </SuspenseWrapper>
+  ),
 });
 
 const lordpediaRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.LORDPEDIA,
-  component: LordpediaPage,
+  component: () => (
+    <SuspenseWrapper>
+      <LordpediaPage />
+    </SuspenseWrapper>
+  ),
 });
 
 const realmRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.REALM,
-  component: RealmPage,
+  component: () => (
+    <SuspenseWrapper>
+      <RealmPage />
+    </SuspenseWrapper>
+  ),
 });
 
 const settingsRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.SETTINGS,
-  component: SettingsPage,
+  component: () => (
+    <SuspenseWrapper>
+      <SettingsPage />
+    </SuspenseWrapper>
+  ),
 });
 
 const tradeRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.TRADE,
-  component: TradePage,
+  component: () => (
+    <SuspenseWrapper>
+      <TradePage />
+    </SuspenseWrapper>
+  ),
   validateSearch: (search: Record<string, unknown>) => ({
     buyResourceId: search.buyResourceId as number | undefined,
     sellResourceId: search.sellResourceId as number | undefined,
@@ -79,13 +139,21 @@ const tradeRoute = createRoute({
 const chatRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.CHAT,
-  component: ChatPage,
+  component: () => (
+    <SuspenseWrapper>
+      <ChatPage />
+    </SuspenseWrapper>
+  ),
 });
 
 const worldmapRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.WORLDMAP,
-  component: WorldmapPage,
+  component: () => (
+    <SuspenseWrapper>
+      <WorldmapPage />
+    </SuspenseWrapper>
+  ),
 });
 
 // Add catch-all route for 404
@@ -100,6 +168,7 @@ const notFoundRoute = createRoute({
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  worldSelectRoute,
   protectedLayoutRoute.addChildren([
     homeRoute,
     lordpediaRoute,

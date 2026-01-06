@@ -42,3 +42,34 @@ export function normalizeFactoryChain(chain: Chain): Chain {
 export function getWorldKey(world: { name: string; chain?: string }): string {
   return world.chain ? `${world.chain}:${world.name}` : world.name;
 }
+
+/**
+ * Get the Cartridge API base URL
+ */
+export function getCartridgeApiBase(): string {
+  return "https://api.cartridge.gg";
+}
+
+/**
+ * Get the RPC URL for a given chain and optional world name
+ */
+export function getRpcUrlForChain(chain: Chain, worldName?: string, cartridgeApiBase?: string): string {
+  const base = cartridgeApiBase || getCartridgeApiBase();
+  switch (chain) {
+    case "mainnet":
+      return `${base}/x/starknet/mainnet`;
+    case "sepolia":
+      return `${base}/x/starknet/sepolia`;
+    case "slot":
+    case "slottest":
+      // For slot chains, use the world's katana if available
+      if (worldName) {
+        return `${base}/x/${worldName}/katana`;
+      }
+      return `${base}/x/starknet/mainnet`;
+    case "local":
+      return "http://localhost:5050";
+    default:
+      return `${base}/x/starknet/mainnet`;
+  }
+}

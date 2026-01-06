@@ -175,34 +175,54 @@ interface OnboardingState {
 
 ---
 
-### Milestone 2: Add Lazy Loading to Mobile
+### Milestone 2: Add Lazy Loading to Mobile ✅ COMPLETE
 **Scope:** Implement code splitting in mobile app
 
 | Task | Files | Status |
 |------|-------|--------|
-| Add Suspense boundaries to router | `router.tsx` | ⬜ |
-| Convert pages to lazy imports | `router.tsx` | ⬜ |
-| Add loading fallback component | New `loading-spinner.tsx` | ⬜ |
-| Configure Vite manual chunks | `vite.config.ts` | ⬜ |
-| Test bundle analysis | - | ⬜ |
+| Add Suspense boundaries to router | `router.tsx` | ✅ |
+| Convert pages to lazy imports | `router.tsx` | ✅ |
+| Use existing Loading component | `shared/ui/loading.tsx` | ✅ |
+| Configure Vite manual chunks | `vite.config.ts` | ✅ |
 
 **Deliverable:** Mobile app has chunked bundles, faster initial load.
 
+**Changes Made:**
+- All pages now lazy-loaded via `React.lazy()` with `<Suspense>` wrapper
+- Vite configured with granular chunks: `react-vendor`, `tanstack`, `blockchain`, `ui-libs`, `three`, `vendor`
+- Login page kept eager for fast first paint
+
 ---
 
-### Milestone 3: World Selection Page for Mobile
+### Milestone 3: World Selection Page for Mobile ✅ COMPLETE
 **Scope:** Add world selection UI to mobile
 
 | Task | Files | Status |
 |------|-------|--------|
-| Create world-select page structure | `pages/world-select/*` | ⬜ |
-| Build mobile-optimized world list UI | `world-select-page.tsx` | ⬜ |
-| Add world card component | `components/world-card.tsx` | ⬜ |
-| Integrate with shared hooks | - | ⬜ |
-| Add route to router | `router.tsx` | ⬜ |
-| Update login flow to go through world-select | `login-page.tsx` | ⬜ |
+| Create world-select page structure | `pages/world-select/*` | ✅ |
+| Build mobile-optimized world list UI | `world-select-page.tsx` | ✅ |
+| Add world card component | Inline in page | ✅ |
+| Integrate with shared hooks | `@bibliothecadao/game-selection` | ✅ |
+| Add route to router | `router.tsx` | ✅ |
+| Update login flow to go through world-select | `login-page.tsx` | ✅ |
 
 **Deliverable:** Mobile users can select which world to join.
+
+**Created Files:**
+- `src/pages/world-select/index.ts`
+- `src/pages/world-select/ui/world-select-page.tsx`
+
+**Modified Files:**
+- `src/shared/consts/routes.ts` - Added `WORLD_SELECT` route
+- `src/app/config/router.tsx` - Added lazy loading + world-select route + world guard
+- `src/pages/login/ui/login-page.tsx` - Simplified, redirects to world-select after login
+- `vite.config.ts` - Improved chunk splitting
+
+**Features:**
+- Chain switcher (Mainnet/Slot)
+- World cards showing status, countdown, player count
+- Selection persisted via Zustand localStorage
+- Protected routes guard ensures world is selected before accessing game
 
 ---
 

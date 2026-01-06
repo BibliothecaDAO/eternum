@@ -1,9 +1,14 @@
 import { shortString } from "starknet";
-import type { Chain, FactoryWorld, WorldConfigMeta } from "../types";
-import { getFactorySqlBaseUrl, buildToriiBaseUrl } from "./chain-utils";
+import type { Chain, FactoryWorld, WorldConfigMeta, WorldProfile } from "../types";
+import { getFactorySqlBaseUrl, buildToriiBaseUrl, getCartridgeApiBase, getRpcUrlForChain } from "./chain-utils";
 
 const FACTORY_QUERY = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
 const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONTRACTS_QUERY = (name: string) =>
+  `SELECT contract_address, contract_selector FROM [wf-ContractDeployed] WHERE "world_name" = '${name}'`;
+const WORLD_DEPLOYMENT_QUERY = (name: string) =>
+  `SELECT "data.world_address" AS world_address FROM [wf-WorldDeployed] WHERE name = '${name}' LIMIT 1;`;
+const WORLD_ADDRESS_QUERY = `SELECT world_address FROM worlds LIMIT 1;`;
 
 /**
  * Decode a padded felt ASCII hex string to a human-readable string
@@ -150,4 +155,130 @@ export async function checkWorldAvailability(
 
   const meta = await fetchWorldConfigMeta(worldName, cartridgeApiBase);
   return { isAvailable: true, meta };
+}
+
+/**
+ * Fetch contract addresses from the factory for a specific world
+ */
+export async function fetchWorldContracts(
+  chain: Chain,
+  worldName: string,
+  cartridgeApiBase?: string,
+): Promise<Record<string, string>> {
+  const factorySqlBaseUrl = getFactorySqlBaseUrl(chain, cartridgeApiBase);
+  if (!factorySqlBaseUrl) return {};
+
+  try {
+    const query = WORLD_CONTRACTS_QUERY(worldName);
+    const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
+    const res = await fetch(url);
+    if (!res.ok) return {};
+
+    const rows = (await res.json()) as Array<{ contract_address?: string; contract_selector?: string }>;
+    const contracts: Record<string, string> = {};
+
+    for (const row of rows) {
+      if (row.contract_selector && row.contract_address) {
+        contracts[row.contract_selector] = row.contract_address;
+      }
+    }
+
+    return contracts;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Fetch world address from factory deployment table
+ */
+async function fetchWorldAddressFromFactory(
+  chain: Chain,
+  worldName: string,
+  cartridgeApiBase?: string,
+): Promise<string | null> {
+  const factorySqlBaseUrl = getFactorySqlBaseUrl(chain, cartridgeApiBase);
+  if (!factorySqlBaseUrl) return null;
+
+  try {
+    const query = WORLD_DEPLOYMENT_QUERY(worldName);
+    const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const rows = (await res.json()) as Array<{ world_address?: string }>;
+    if (rows.length > 0 && rows[0].world_address) {
+      return normalizeAddress(rows[0].world_address);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch world address from the world's own Torii
+ */
+async function fetchWorldAddressFromTorii(toriiBaseUrl: string): Promise<string | null> {
+  try {
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_ADDRESS_QUERY)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const rows = (await res.json()) as Array<{ world_address?: string }>;
+    if (rows.length > 0 && rows[0].world_address) {
+      return normalizeAddress(rows[0].world_address);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Normalize an address value to a hex string
+ */
+function normalizeAddress(addr: unknown): string | null {
+  if (addr == null) return null;
+  if (typeof addr === "string") {
+    // Already a string, ensure it has 0x prefix
+    if (addr.startsWith("0x") || addr.startsWith("0X")) return addr;
+    return "0x" + addr;
+  }
+  if (typeof addr === "bigint") return "0x" + addr.toString(16);
+  return null;
+}
+
+/**
+ * Build a complete WorldProfile by querying the factory and the target world's Torii
+ */
+export async function buildWorldProfile(chain: Chain, worldName: string, cartridgeApiBase?: string): Promise<WorldProfile> {
+  const base = cartridgeApiBase || getCartridgeApiBase();
+  const toriiBaseUrl = buildToriiBaseUrl(worldName, base);
+
+  // 1) Resolve contract selectors -> addresses from the factory
+  const contractsBySelector = await fetchWorldContracts(chain, worldName, base);
+
+  // 2) Resolve world address - try Torii first, then factory fallback
+  let worldAddress = await fetchWorldAddressFromTorii(toriiBaseUrl);
+  if (!worldAddress) {
+    worldAddress = await fetchWorldAddressFromFactory(chain, worldName, base);
+  }
+  // Default to 0x0 if not found
+  if (!worldAddress) worldAddress = "0x0";
+
+  // 3) Get RPC URL for this chain
+  const rpcUrl = getRpcUrlForChain(chain, worldName, base);
+
+  const profile: WorldProfile = {
+    name: worldName,
+    chain,
+    toriiBaseUrl,
+    rpcUrl,
+    worldAddress,
+    contractsBySelector,
+    fetchedAt: Date.now(),
+  };
+
+  return profile;
 }

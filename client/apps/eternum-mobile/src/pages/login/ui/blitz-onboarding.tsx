@@ -553,7 +553,7 @@ export const BlitzOnboarding = () => {
     components,
     systemCalls: {
       blitz_realm_register,
-      blitz_realm_create,
+      blitz_realm_assign_and_settle_realms,
       blitz_realm_make_hyperstructures,
       blitz_realm_obtain_entry_token,
     },
@@ -844,7 +844,8 @@ export const BlitzOnboarding = () => {
 
   const handleSettle = async () => {
     if (!account?.address) return;
-    await blitz_realm_create({ signer: account });
+    // Settle with single realm mode by default for mobile
+    await blitz_realm_assign_and_settle_realms({ signer: account, settlement_count: 1 });
     navigate({ to: ROUTES.HOME });
   };
 

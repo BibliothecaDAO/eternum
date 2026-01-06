@@ -5,7 +5,7 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { getFeltCenterOffset, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { FELT_CENTER, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { getLevelName } from "@bibliothecadao/types";
 import { ChevronDown, Copy, Eye, EyeOff, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
@@ -40,15 +40,15 @@ const CompactRealmHeader = () => {
     }
   }, [selectedRealm, playerRealmsAndVillages, setSelectedStructure]);
 
-  const FELT_CENTER = getFeltCenterOffset();
+  const feltCenter = FELT_CENTER();
 
   const adjustedCoords = useMemo(() => {
     if (!selectedRealm) return null;
     return {
-      x: selectedRealm.position.x - FELT_CENTER,
-      y: selectedRealm.position.y - FELT_CENTER,
+      x: selectedRealm.position.x - feltCenter,
+      y: selectedRealm.position.y - feltCenter,
     };
-  }, [selectedRealm]);
+  }, [selectedRealm, feltCenter]);
 
   const handleCopyCoords = () => {
     if (adjustedCoords) {
