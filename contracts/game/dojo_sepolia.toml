@@ -7,10 +7,10 @@ private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e6
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9"
 
 [lib_versions]
-"s1_eternum-combat_library" = "0_1_5"
-"s1_eternum-rng_library" = "0_1_5"
-"s1_eternum-biome_library" = "0_1_5"
-"s1_eternum-structure_creation_library" = "0_1_5"
+"s1_eternum-combat_library" = "0_1_6"
+"s1_eternum-rng_library" = "0_1_6"
+"s1_eternum-biome_library" = "0_1_6"
+"s1_eternum-structure_creation_library" = "0_1_6"
 
 
 [world]
