@@ -16,7 +16,7 @@ import {
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { FELT_CENTER, ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount } from "..";
+import { FELT_CENTER, ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount, getTileAt, DEFAULT_COORD_ALT } from "..";
 import { configManager } from "./config-manager";
 
 export class TileManager {
@@ -96,7 +96,7 @@ export class TileManager {
   };
 
   structureType = () => {
-    const tile = getComponentValue(this.components.Tile, getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]));
+    const tile = getTileAt(this.components, DEFAULT_COORD_ALT, this.col, this.row);
 
     if (tile?.occupier_is_structure) {
       const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(tile?.occupier_id)]));

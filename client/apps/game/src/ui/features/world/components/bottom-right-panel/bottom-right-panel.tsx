@@ -15,6 +15,8 @@ import {
   isTileOccupierQuest,
   isTileOccupierStructure,
   Position as PositionInterface,
+  getTileAt,
+  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
@@ -154,19 +156,15 @@ const PanelTabs = ({
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const { setup } = useDojo();
-  const tileComponent = setup.components.Tile;
 
   const tile = useMemo(() => {
-    if (!selectedHex || !tileComponent) return null;
+    if (!selectedHex) return null;
     const selectedHexContract = new PositionInterface({
       x: selectedHex.col,
       y: selectedHex.row,
     }).getContract();
-    return getComponentValue(
-      tileComponent,
-      getEntityIdFromKeys([BigInt(selectedHexContract.x), BigInt(selectedHexContract.y)]),
-    );
-  }, [selectedHex, tileComponent]);
+    return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHexContract.x, selectedHexContract.y);
+  }, [selectedHex]);
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;

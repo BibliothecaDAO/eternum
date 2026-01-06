@@ -7,6 +7,8 @@ import {
   isTileOccupierQuest,
   isTileOccupierStructure,
   Position as PositionInterface,
+  getTileAt,
+  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -31,11 +33,8 @@ export const HexEntityDetailsDrawer = ({ open, onOpenChange }: HexEntityDetailsD
       x: selectedHex.col,
       y: selectedHex.row,
     }).getContract();
-    return getComponentValue(
-      dojo.setup.components.Tile,
-      getEntityIdFromKeys([BigInt(selectedHexContract.x), BigInt(selectedHexContract.y)]),
-    );
-  }, [selectedHex?.col, selectedHex?.row, dojo.setup.components.Tile]);
+    return getTileAt(dojo.setup.components, DEFAULT_COORD_ALT, selectedHexContract.x, selectedHexContract.y);
+  }, [selectedHex?.col, selectedHex?.row]);
 
   const biome = useMemo(() => {
     return Biome.getBiome(selectedHex?.col || 0, selectedHex?.row || 0);

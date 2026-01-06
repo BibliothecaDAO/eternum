@@ -1,4 +1,13 @@
-import { Direction, EntityType, HexPosition, ID, Position, StructureType } from "@bibliothecadao/types";
+import {
+  Tile as CoreTile,
+  TileDataInput,
+  Direction,
+  EntityType,
+  HexPosition,
+  ID,
+  Position,
+  StructureType,
+} from "@bibliothecadao/types";
 
 // API response types
 export interface StructureLocation {
@@ -22,14 +31,7 @@ export interface TradeEvent {
   };
 }
 
-export interface Tile {
-  col: number;
-  row: number;
-  biome: number;
-  occupier_id: number;
-  occupier_type: number;
-  occupier_is_structure: boolean;
-}
+export type Tile = CoreTile;
 
 type DirectionString = "East" | "NorthEast" | "NorthWest" | "West" | "SouthWest" | "SouthEast";
 
@@ -132,8 +134,16 @@ export interface StoryEventData {
   explorer_directions?: string;
   explorer_explore?: boolean;
   explore_find?: string;
-  reward_resource_type?: number;
-  reward_resource_amount?: string;
+  // reward_resource_type?: number;
+  // reward_resource_amount?: string;
+
+  // ExplorerExtractRewardStory fields
+  extract_explorer_id?: number;
+  extract_explorer_structure_id?: number;
+  extract_coord_x?: number;
+  extract_coord_y?: number;
+  extract_reward_resource_type?: number;
+  extract_reward_resource_amount?: string;
 
   // StructureLevelUpStory fields
   structure_new_level?: number;
@@ -542,9 +552,7 @@ export enum EventType {
 }
 
 export interface ChestTile {
-  col: number;
-  row: number;
-  entity_id: number;
+  data: TileDataInput;
 }
 
 export interface StructureRelicsData {

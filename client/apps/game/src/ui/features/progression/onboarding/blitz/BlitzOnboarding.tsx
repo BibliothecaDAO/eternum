@@ -17,6 +17,7 @@ import { FactoryGamesList } from "../blitz/factory";
 import { GameState } from "../blitz/types";
 import { SpectateButton } from "../spectate-button";
 import { useBlitzGameState, useEntryTokens, useSettlement } from "./hooks";
+import { downloadPaymasterActionsJson } from "./paymaster-actions";
 
 const getBlitzHyperstructureCountForChain = (chain: string): number => {
   return chain === "mainnet" ? 1 : 4;
@@ -34,6 +35,7 @@ export const BlitzOnboarding = () => {
   const { connector } = useAccount();
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
   const addressNameKeyRef = useRef<string | null>(null);
+  const [isDownloadingActions, setIsDownloadingActions] = useState(false);
 
   // Custom hooks for state management
   const {
@@ -125,6 +127,17 @@ export const BlitzOnboarding = () => {
 
   const handleSelectGame = async () => {
     await selectGame();
+  };
+
+  const handleDownloadActionsJson = async () => {
+    setIsDownloadingActions(true);
+    try {
+      downloadPaymasterActionsJson();
+    } catch (error) {
+      console.error("Failed to download paymaster actions JSON", error);
+    } finally {
+      setIsDownloadingActions(false);
+    }
   };
 
   // Config error state
@@ -259,6 +272,18 @@ export const BlitzOnboarding = () => {
       <div className="bg-gold/10 border border-gold/30 rounded-lg p-4">
         <p className="text-sm text-gold/70 mb-3">Factory Games</p>
         <FactoryGamesList maxHeight="350px" />
+      </div>
+
+      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4">
+        <p className="text-sm text-gold/70 mb-3">Tools</p>
+        <Button
+          onClick={handleDownloadActionsJson}
+          disabled={isDownloadingActions}
+          forceUppercase={false}
+          className="w-full h-10 !text-brown !bg-gold/80 hover:!bg-gold rounded-md"
+        >
+          {isDownloadingActions ? "Preparing actions JSON…" : "Download actions JSON"}
+        </Button>
       </div>
     </div>
   );

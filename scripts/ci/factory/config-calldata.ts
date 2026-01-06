@@ -158,7 +158,6 @@ export async function generateWorldConfigCalldata(p: Params) {
   await C.setVictoryPointsConfig(ctx);
   await C.setDiscoverableVillageSpawnResourcesConfig(ctx);
   await C.setBlitzRegistrationConfig(ctx);
-  await C.setWonderBonusConfig(ctx);
   await C.setAgentConfig(ctx);
   await C.setVillageControllersConfig(ctx);
   await C.setTradeConfig(ctx);

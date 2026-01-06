@@ -18,8 +18,13 @@ const STORY_EVENT_SELECT_FIELDS = `
       "story.ExplorerMoveStory.directions" as explorer_directions,
       "story.ExplorerMoveStory.explore" as explorer_explore,
       "story.ExplorerMoveStory.explore_find" as explore_find,
-      "story.ExplorerMoveStory.reward_resource_type" as reward_resource_type,
-      "story.ExplorerMoveStory.reward_resource_amount" as reward_resource_amount,
+      -- ExplorerExtractRewardStory fields
+      "story.ExplorerExtractRewardStory.explorer_id" as extract_explorer_id,
+      "story.ExplorerExtractRewardStory.explorer_structure_id" as extract_explorer_structure_id,
+      "story.ExplorerExtractRewardStory.coord.x" as extract_coord_x,
+      "story.ExplorerExtractRewardStory.coord.y" as extract_coord_y,
+      "story.ExplorerExtractRewardStory.reward_resource_type" as extract_reward_resource_type,
+      "story.ExplorerExtractRewardStory.reward_resource_amount" as extract_reward_resource_amount,
       -- StructureLevelUpStory fields
       "story.StructureLevelUpStory.new_level" as structure_new_level,
       -- BattleStory fields

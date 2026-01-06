@@ -1,4 +1,15 @@
-import { ContractAddress, Coord, EntityType, GuardSlot, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  Coord,
+  EntityType,
+  GuardSlot,
+  ID,
+  ResourcesIds,
+  StructureType,
+  TileDataInput,
+  TileOccupier,
+  tileDataToTile,
+} from "@bibliothecadao/types";
 
 import {
   ArmyMapDataRaw,
@@ -13,11 +24,11 @@ import {
   Hyperstructure,
   HyperstructureRealmCountDataRaw,
   PlayerLeaderboardRow,
-  RawPlayerLeaderboardRow,
   PlayerRelicsData,
   PlayersData,
   PlayerStructure,
   QuestTileData,
+  RawPlayerLeaderboardRow,
   RawRealmVillageSlot,
   RealmVillageSlot,
   SeasonEnded,
@@ -40,6 +51,7 @@ import {
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
 import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
+import { LEADERBOARD_QUERIES } from "./leaderboard";
 import {
   addLeaderboardRanks,
   buildAdditionalLeaderboardEntries,
@@ -49,7 +61,6 @@ import {
   sanitizeLeaderboardPagination,
   sortLeaderboardEntries,
 } from "./leaderboard-helpers";
-import { LEADERBOARD_QUERIES } from "./leaderboard";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
 import { extractRelicsFromResourceData } from "./relics-utils";
@@ -60,6 +71,10 @@ import { TILES_QUERIES } from "./tiles";
 import { TRADING_QUERIES } from "./trading";
 
 const DEFAULT_HYPERSTRUCTURE_RADIUS = 8;
+
+type TileOptRow = {
+  data: TileDataInput;
+};
 
 export class SqlApi {
   constructor(private readonly baseUrl: string) {}
@@ -108,8 +123,11 @@ export class SqlApi {
       "{coords}",
       coordsList.map((coord) => `(${coord.col},${coord.row})`).join(","),
     );
+    console.log("Tiles Querty:", query);
     const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<Tile>(url, "Failed to fetch tiles by coords");
+    const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles by coords");
+    console.log("Tiles Rows:", rows);
+    return rows.map((row) => tileDataToTile(row.data));
   }
 
   /**
@@ -198,7 +216,8 @@ export class SqlApi {
    */
   async fetchAllTiles(): Promise<Tile[]> {
     const url = buildApiUrl(this.baseUrl, TILES_QUERIES.ALL_TILES);
-    return await fetchWithErrorHandling<Tile>(url, "Failed to fetch tiles");
+    const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles");
+    return rows.map((row) => tileDataToTile(row.data));
   }
 
   /**
@@ -414,13 +433,15 @@ export class SqlApi {
     const centerCoord = new Coord(center.x, center.y);
 
     return chestTiles
-      .map((chest) => {
-        const chestCoord = new Coord(chest.col, chest.row);
+      .map((chest) => tileDataToTile(chest.data))
+      .filter((tile) => tile.occupier_type === TileOccupier.Chest)
+      .map((tile) => {
+        const chestCoord = new Coord(tile.col, tile.row);
         const distance = centerCoord.distance(chestCoord);
 
         return {
-          entityId: chest.entity_id,
-          position: { x: chest.col, y: chest.row },
+          entityId: tile.occupier_id,
+          position: { x: tile.col, y: tile.row },
           distance: distance,
         };
       })

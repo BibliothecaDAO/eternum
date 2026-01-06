@@ -19,6 +19,7 @@ export * from "./realm";
 export * from "./relic";
 export * from "./resources";
 export * from "./structure";
+export * from "./tile";
 export * from "./timestamp";
 export * from "./trades";
 export * from "./transport";

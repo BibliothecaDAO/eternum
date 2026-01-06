@@ -1135,14 +1135,7 @@ export class ClientConfigManager {
   getWonderBonusConfig = () => {
     return this.getValueOrDefault(
       () => {
-        const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-        if (!worldConfig) return { withinTileDistance: 0, bonusPercentNum: 0 };
-
-        const wonderBonusConfig = (worldConfig as any).wonder_production_bonus_config;
-        return {
-          withinTileDistance: Number(wonderBonusConfig?.within_tile_distance ?? 0),
-          bonusPercentNum: Number(wonderBonusConfig?.bonus_percent_num ?? 0),
-        };
+        return { withinTileDistance: 0, bonusPercentNum: 0 };
       },
       {
         withinTileDistance: 0,

@@ -25,8 +25,8 @@ export const getTilesForPositionsFromTorii = async <S extends Schema>(
 
   const tileClauses = positions.map((pos) =>
     AndComposeClause([
-      MemberClause("s1_eternum-Tile", "col", "Eq", pos.col),
-      MemberClause("s1_eternum-Tile", "row", "Eq", pos.row),
+      MemberClause("s1_eternum-TileOpt", "col", "Eq", pos.col),
+      MemberClause("s1_eternum-TileOpt", "row", "Eq", pos.row),
     ]).build(),
   );
 
@@ -40,7 +40,7 @@ export const getTilesForPositionsFromTorii = async <S extends Schema>(
     },
     components as any,
     [],
-    ["s1_eternum-Tile"],
+    ["s1_eternum-TileOpt"],
     EVENT_QUERY_LIMIT,
     false,
   );
@@ -404,14 +404,14 @@ export const getMapFromTorii = async <S extends Schema>(
   return getEntities(
     client,
     AndComposeClause([
-      MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
-      MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
-      MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
-      MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
+      MemberClause("s1_eternum-TileOpt", "col", "Gte", startCol - range),
+      MemberClause("s1_eternum-TileOpt", "col", "Lte", startCol + range),
+      MemberClause("s1_eternum-TileOpt", "row", "Gte", startRow - range),
+      MemberClause("s1_eternum-TileOpt", "row", "Lte", startRow + range),
     ]).build(),
     components as any,
     [],
-    ["s1_eternum-Tile"],
+    ["s1_eternum-TileOpt"],
     EVENT_QUERY_LIMIT,
     false,
   );

@@ -1393,22 +1393,41 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    Tile: (() => {
+    // Tile: (() => {
+    //   return defineComponent(
+    //     world,
+    //     {
+    //       col: RecsType.Number,
+    //       row: RecsType.Number,
+    //       biome: RecsType.Number,
+    //       occupier_id: RecsType.Number,
+    //       occupier_type: RecsType.Number,
+    //       occupier_is_structure: RecsType.Boolean,
+    //     },
+    //     {
+    //       metadata: {
+    //         namespace: "s1_eternum",
+    //         name: "Tile",
+    //         types: ["u32", "u32", "u8", "u32", "u8", "bool"],
+    //         customTypes: [],
+    //       },
+    //     },
+    //   );
+    // })(),
+    TileOpt: (() => {
       return defineComponent(
         world,
         {
+          alt: RecsType.Boolean,
           col: RecsType.Number,
           row: RecsType.Number,
-          biome: RecsType.Number,
-          occupier_id: RecsType.Number,
-          occupier_type: RecsType.Number,
-          occupier_is_structure: RecsType.Boolean,
+          data: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "Tile",
-            types: ["u32", "u32", "u8", "u32", "u8", "bool"],
+            name: "TileOpt",
+            types: ["bool", "u32", "u32", "bool", "u128"],
             customTypes: [],
           },
         },
@@ -1643,10 +1662,6 @@ export function defineContractComponents(world: World) {
             token_address: RecsType.BigInt,
             mint_recipient_address: RecsType.BigInt,
           },
-          wonder_production_bonus_config: {
-            within_tile_distance: RecsType.Number,
-            bonus_percent_num: RecsType.BigInt,
-          },
           quest_config: {
             quest_discovery_prob: RecsType.Number,
             quest_discovery_fail_prob: RecsType.Number,
@@ -1803,8 +1818,6 @@ export function defineContractComponents(world: World) {
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
-              "u8", // WonderProductionBonusConfig within_tile_distance
-              "u128", // WonderProductionBonusConfig bonus_percent_num
               "u16", // QuestConfig quest_discovery_prob
               "u16", // QuestConfig quest_discovery_fail_prob
               "u64", // StructureCapacityConfig realm_structure_capacity
@@ -2172,15 +2185,35 @@ const eventsComponents = (world: World) => {
             explorer_structure_id: RecsType.Number,
             explorer_owner_address: RecsType.String,
             explore_find: RecsType.Number,
-            reward_resource_type: RecsType.Number,
-            reward_resource_amount: RecsType.BigInt,
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "s1_eternum",
               name: "ExplorerMoveEvent",
-              types: ["u32", "u32", "ContractAddress", "ExploreFind", "u8", "u128", "u64"],
+              types: ["u32", "u32", "ContractAddress", "ExploreFind", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      ExplorerRewardEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            explorer_id: RecsType.Number,
+            explorer_structure_id: RecsType.Number,
+            explorer_owner_address: RecsType.String,
+            reward_resource_id: RecsType.Number,
+            reward_resource_amount: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "ExplorerRewardEvent",
+              types: ["u32", "u32", "ContractAddress", "u8", "u128", "u64"],
               customTypes: [],
             },
           },

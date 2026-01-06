@@ -141,7 +141,7 @@ pub impl StructureBaseImpl of StructureBaseTrait {
     }
 
     fn coord(self: StructureBase) -> Coord {
-        return Coord { x: self.coord_x, y: self.coord_y };
+        return Coord { alt: false, x: self.coord_x, y: self.coord_y };
     }
 
     fn exists(self: StructureBase) -> bool {

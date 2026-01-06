@@ -644,6 +644,11 @@ export const buildPolicies = (manifest: any) =>
             entrypoint: "explorer_move",
           },
           {
+            name: "explorer_extract_reward",
+            entrypoint: "explorer_extract_reward",
+          },
+
+          {
             name: "dojo_name",
             entrypoint: "dojo_name",
           },

@@ -50,7 +50,6 @@ pub struct WorldConfig {
     pub village_find_resources_config: VillageFoundResourcesConfig,
     pub village_controller_config: VillageControllerConfig,
     pub village_pass_config: VillageTokenConfig,
-    pub wonder_production_bonus_config: WonderProductionBonusConfig,
     pub quest_config: QuestConfig,
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,

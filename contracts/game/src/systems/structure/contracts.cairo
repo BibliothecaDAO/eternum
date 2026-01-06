@@ -15,7 +15,9 @@ pub mod structure_systems {
     use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
     use crate::models::events::{Story, StoryEvent, StructureLevelUpStory};
     use crate::models::map::Tile;
+    use crate::models::map2::{TileOpt};
     use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::Coord;
     use crate::models::resource::production::building::BuildingImpl;
     use crate::models::resource::production::production::ProductionBoostBonus;
     use crate::models::resource::resource::{
@@ -93,7 +95,9 @@ pub mod structure_systems {
 
             // update structure tile
             if structure_base.category == StructureCategory::Realm.into() {
-                let mut structure_tile: Tile = world.read_model((structure_base.coord_x, structure_base.coord_y));
+                let structure_coord = Coord { alt: false, x: structure_base.coord_x, y: structure_base.coord_y };
+                let structure_tile_opt: TileOpt = world.read_model((structure_coord.alt, structure_coord.x, structure_coord.y));
+                let mut structure_tile: Tile = structure_tile_opt.into();
                 let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                     ref world, structure_id,
                 );

@@ -16,6 +16,8 @@ import {
   getGuardsByStructure,
   getRemainingCapacityInKg,
   StaminaManager,
+  getTileAt,
+  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
@@ -30,7 +32,6 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -66,7 +67,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     setup: {
       systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
       components,
-      components: { Tile, Structure, ExplorerTroops },
+      components: { Structure, ExplorerTroops },
     },
     network: { toriiClient },
   } = useDojo();
@@ -80,7 +81,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
   const selectedHex = useStore((state) => state.selectedHex);
   const closeAttackDrawer = useStore((state) => state.closeAttackDrawer);
 
-  const targetTile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+  const targetTile = getTileAt(components, DEFAULT_COORD_ALT, targetHex.x, targetHex.y);
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();

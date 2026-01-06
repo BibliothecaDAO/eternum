@@ -135,7 +135,7 @@ const formatters: Record<string, StoryFormatter> = {
     const structureRef = formatEntityRef(payload.explorer_structure_id ?? event.entityId);
     const path = formatDirectionSequence(payload.directions);
     const discovery = formatExploreFind(payload.explore_find);
-    const reward = buildRewardText(payload.reward_resource_type, payload.reward_resource_amount);
+    // const reward = buildRewardText(payload.reward_resource_type, payload.reward_resource_amount);
     const explorationFlag = payload.explore === true ? "Exploration recorded" : undefined;
     return {
       title: `${explorerLabel} moved`,
@@ -146,9 +146,26 @@ const formatters: Record<string, StoryFormatter> = {
           path ? `Course: ${path}` : undefined,
           explorationFlag,
           discovery,
-          reward,
+          // reward,
         ]) ?? "Explorer activity reported.",
       icon: "travel",
+    };
+  },
+  ExplorerExtractRewardStory: (event, payload, components) => {
+    const explorerId = formatNumber(payload.explorer_id);
+    const explorerLabel = explorerId ? `Explorer ${explorerId}` : "Explorer";
+    const structureRef = formatEntityRef(payload.explorer_structure_id ?? event.entityId);
+    const coord = formatCoord(payload.coord);
+    const reward = buildRewardText(payload.reward_resource_type, payload.reward_resource_amount);
+    return {
+      title: `${explorerLabel} extracted reward`,
+      description:
+        joinPieces([
+          structureRef ? `Origin: ${structureRef}` : undefined,
+          coord ? `Location ${coord}` : undefined,
+          reward,
+        ]) ?? "Extraction reward recorded.",
+      icon: "resource",
     };
   },
   BattleStory: (event, payload, components) => {

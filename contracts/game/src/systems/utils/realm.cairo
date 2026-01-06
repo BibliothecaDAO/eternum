@@ -1,15 +1,13 @@
-use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
 use crate::models::config::{
-    SeasonConfigImpl, SettlementConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl,
+    SeasonConfigImpl, SettlementConfigImpl, WorldConfigUtilImpl,
 };
 use crate::models::map::{TileImpl, TileOccupier};
 use crate::models::position::Coord;
 use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
 use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
-use crate::models::resource::production::production::ProductionBoostBonus;
 use crate::models::resource::resource::{
     ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
@@ -56,19 +54,6 @@ pub impl iRealmImpl of iRealmTrait {
                 .write_model(
                     @Wonder { structure_id: structure_id, realm_id: realm_id.try_into().unwrap(), coord: coord },
                 );
-
-            // grant wonder production bonus
-            let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("wonder_production_bonus_config"),
-            );
-            let mut production_boost_bonus: ProductionBoostBonus = Zero::zero();
-            production_boost_bonus.structure_id = structure_id;
-            production_boost_bonus
-                .wonder_incr_percent_num = wonder_production_bonus_config
-                .bonus_percent_num
-                .try_into()
-                .unwrap();
-            world.write_model(@production_boost_bonus);
         }
 
         // create structure

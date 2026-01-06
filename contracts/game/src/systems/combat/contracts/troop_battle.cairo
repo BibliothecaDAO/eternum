@@ -138,7 +138,7 @@ pub mod troop_battle_systems {
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+                .get_biome(explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
 
@@ -428,7 +428,7 @@ pub mod troop_battle_systems {
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
+                .get_biome(guarded_structure.coord().alt, guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::get_tick_interval(ref world);
@@ -686,7 +686,7 @@ pub mod troop_battle_systems {
             // aggressor attacks defender
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+                .get_biome(explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;

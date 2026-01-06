@@ -6,6 +6,7 @@ pub trait ITroopMovementSystems<TContractState> {
     fn explorer_move(
         ref self: TContractState, explorer_id: ID, directions: Span<Direction>, explore: bool,
     ) -> Span<Tile>;
+    fn explorer_extract_reward(ref self: TContractState, explorer_id: ID);
 }
 
 #[dojo::contract]
@@ -20,9 +21,10 @@ pub mod troop_movement_systems {
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
         VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
-    use crate::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent, PointsRegisteredStory, PointsActivity};
+    use crate::models::events::{ExploreFind, ExplorerMoveStory,ExplorerExtractRewardStory, Story, StoryEvent, PointsRegisteredStory, PointsActivity};
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
+    use crate::models::map2::{TileOpt};
     use crate::models::position::{CoordTrait, Direction};
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -42,7 +44,6 @@ pub mod troop_movement_systems {
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
-
     // to be removed
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -52,11 +53,20 @@ pub mod troop_movement_systems {
         pub explorer_structure_id: ID,
         pub explorer_owner_address: starknet::ContractAddress,
         pub explore_find: ExploreFind,
-        pub reward_resource_type: u8,
-        pub reward_resource_amount: u128,
         pub timestamp: u64,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplorerRewardEvent {
+        #[key]
+        pub explorer_id: ID,
+        pub explorer_structure_id: ID,
+        pub explorer_owner_address: starknet::ContractAddress,
+        pub reward_resource_id: u8,
+        pub reward_resource_amount: u128,
+        pub timestamp: u64,
+    }
     #[abi(embed_v0)]
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
         fn explorer_move(
@@ -83,7 +93,8 @@ pub mod troop_movement_systems {
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
 
             // ensure explorer tile is correct
-            let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
+            let tile_opt: TileOpt = world.read_model((explorer.coord.alt, explorer.coord.x, explorer.coord.y));
+            let mut tile: Tile = tile_opt.into();
             assert!(explorer_id == tile.occupier_id, "tile occupier should be explorer");
 
             // remove explorer from current tile
@@ -106,15 +117,22 @@ pub mod troop_movement_systems {
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
+
+                // todo: for the alternate map feature, it is very simple.
+                // simply add 15 steps to whatever direction the explorer is moving towards
+                // let next = explorer.coord.neighbor_after_distance(*(directions.pop_front().unwrap()), 15);
+
+
                 // ensure next coordinate is not occupied
                 let from = explorer.coord;
                 let next = explorer.coord.neighbor(*(directions.pop_front().unwrap()));
-                let mut tile: Tile = world.read_model((next.x, next.y));
+                let tile_opt: TileOpt = world.read_model((next.alt, next.x, next.y));
+                let mut tile: Tile = tile_opt.into(); 
                 assert!(tile.not_occupied(), "one of the tiles in path is occupied");
 
                 // add biome to biomes
                 let biome_library = biome_library::get_dispatcher(@world);
-                let biome = biome_library.get_biome(next.x.into(), next.y.into());
+                let biome = biome_library.get_biome(next.alt, next.x.into(), next.y.into());
                 biomes.append(biome);
 
                 let mut occupy_destination: bool = true;
@@ -160,34 +178,10 @@ pub mod troop_movement_systems {
                         occupy_destination = false;
 
                         // refresh tile model
-                        tile = world.read_model((next.x, next.y));
+                        let tile_opt: TileOpt = world.read_model((next.alt, next.x, next.y));
+                        tile = tile_opt.into();
                     }
 
-                    // grant resource reward for exploration
-                    let (_explore_reward_type, _explore_reward_amount) = iExplorerImpl::exploration_reward(
-                        ref world, Option::Some(explorer), current_tick, map_config, vrf_seed, blitz_mode_on,
-                    );
-                    explore_reward_type = _explore_reward_type;
-                    explore_reward_amount = _explore_reward_amount;
-
-                    let exploration_reward_receiver: ID = iExplorerImpl::exploration_reward_receiver(
-                        ref world, explorer, explore_reward_type,
-                    );
-                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
-                    let mut reward_receiver_weight: Weight = WeightStoreImpl::retrieve(
-                        ref world, exploration_reward_receiver,
-                    );
-                    let mut resource = SingleResourceStoreImpl::retrieve(
-                        ref world,
-                        exploration_reward_receiver,
-                        explore_reward_type,
-                        ref reward_receiver_weight,
-                        resource_weight_grams,
-                        true,
-                    );
-                    resource.add(explore_reward_amount, ref reward_receiver_weight, resource_weight_grams);
-                    resource.store(ref world);
-                    reward_receiver_weight.store(ref world, exploration_reward_receiver);
 
                     // emit explore achievement progression
                     AchievementTrait::progress(
@@ -260,9 +254,12 @@ pub mod troop_movement_systems {
                         // move explorer back to previous coordinate
                         explorer.coord = from;
                         // set explorer as occupier of previous coordinate
-                        let mut from_tile: Tile = world.read_model((from.x, from.y));
+                        let from_tile_opt: TileOpt = world.read_model((from.alt, from.x, from.y));
+                        let mut from_tile: Tile = from_tile_opt.into();
                         IMapImpl::occupy(ref world, ref from_tile, tile_occupier, explorer_id);
-                        world.write_model(@from_tile);
+
+                        let from_tile_opt: TileOpt = from_tile.into();
+                        world.write_model(@from_tile_opt);
                     }
                     tiles_to_return.append(tile);
                     break;
@@ -298,8 +295,6 @@ pub mod troop_movement_systems {
                                 directions: original_directions,
                                 explore,
                                 explore_find,
-                                reward_resource_type: explore_reward_type,
-                                reward_resource_amount: explore_reward_amount,
                             },
                         ),
                         timestamp: starknet::get_block_timestamp(),
@@ -333,8 +328,6 @@ pub mod troop_movement_systems {
                         explorer_structure_id: explorer.owner,
                         explorer_owner_address: starknet::get_caller_address(),
                         explore_find: explore_find,
-                        reward_resource_type: explore_reward_type,
-                        reward_resource_amount: explore_reward_amount,
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
@@ -343,6 +336,99 @@ pub mod troop_movement_systems {
             world.write_model(@explorer);
 
             tiles_to_return.span()
+        }
+        
+        fn explorer_extract_reward(ref self: ContractState, explorer_id: ID) {
+
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
+            // ensure caller owns explorer
+            let mut explorer: ExplorerTroops = world.read_model(explorer_id);
+            explorer.assert_caller_structure_or_agent_owner(ref world);
+
+            // ensure explorer is at the surface
+            assert!(explorer.coord.alt == false, "Eternum: explorer must be on surface to extract reward"); 
+
+            // ensure explorer is alive
+            assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
+
+            // ensure explorer tile is correct
+            let tile_opt: TileOpt = world.read_model((explorer.coord.alt, explorer.coord.x, explorer.coord.y));
+            let mut tile: Tile =tile_opt.into();
+            assert!(explorer_id == tile.occupier_id, "tile occupier should be explorer");
+            assert!(tile.biome != Biome::None.into(), "tile must be explored");
+            assert!(tile.reward_extracted == false, "tile reward already extracted");
+
+            // mark reward as extracted
+            IMapImpl::mark_reward_extracted(ref world, ref tile);
+
+            // get relevant data to grant reward
+            let caller = starknet::get_caller_address();
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
+            let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
+
+            // grant resource reward for exploration
+            let (explore_reward_type, explore_reward_amount) = iExplorerImpl::exploration_reward(
+                ref world, Option::Some(explorer), current_tick, map_config, vrf_seed, blitz_mode_on,
+            );
+
+            let exploration_reward_receiver: ID = iExplorerImpl::exploration_reward_receiver(
+                ref world, explorer, explore_reward_type,
+            );
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
+            let mut reward_receiver_weight: Weight = WeightStoreImpl::retrieve(
+                ref world, exploration_reward_receiver,
+            );
+            let mut resource = SingleResourceStoreImpl::retrieve(
+                ref world,
+                exploration_reward_receiver,
+                explore_reward_type,
+                ref reward_receiver_weight,
+                resource_weight_grams,
+                true,
+            );
+            resource.add(explore_reward_amount, ref reward_receiver_weight, resource_weight_grams);
+            resource.store(ref world);
+            reward_receiver_weight.store(ref world, exploration_reward_receiver);
+
+            // emit event
+            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(explorer_owner),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerExtractRewardStory(
+                            ExplorerExtractRewardStory {
+                                explorer_owner,
+                                explorer_id,
+                                explorer_structure_id: explorer.owner,
+                                coord: tile.into(),
+                                reward_resource_type: explore_reward_type,
+                                reward_resource_amount: explore_reward_amount,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
+            world
+                .emit_event(
+                    @ExplorerRewardEvent {
+                        explorer_id,
+                        explorer_structure_id: explorer.owner,
+                        explorer_owner_address: starknet::get_caller_address(),
+                        reward_resource_id: explore_reward_type,
+                        reward_resource_amount: explore_reward_amount,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
         }
     }
 }

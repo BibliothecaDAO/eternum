@@ -1,11 +1,13 @@
 import { sqlApi } from "@/services/api";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
+  DEFAULT_COORD_ALT,
   getArmyRelicEffects,
   getBlockTimestamp,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
+  getTileAt,
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -43,15 +45,15 @@ export const useAttackTargetData = (
   const {
     network: { toriiClient },
     setup: {
-      components: { Tile, Structure, ExplorerTroops, ProductionBoostBonus },
+      components,
+      components: { Structure, ExplorerTroops, ProductionBoostBonus },
     },
   } = useDojo();
 
-  const targetTileEntityId = useMemo(
-    () => getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]),
-    [targetHex.x, targetHex.y],
+  const targetTile = useMemo(
+    () => getTileAt(components, DEFAULT_COORD_ALT, targetHex.x, targetHex.y),
+    [components, targetHex.x, targetHex.y],
   );
-  const targetTile = useComponentValue(Tile, targetTileEntityId);
 
   const [target, setTarget] = useState<AttackTarget | null>(null);
   const [targetResources, setTargetResources] = useState<Array<{ resourceId: number; amount: number }>>([]);

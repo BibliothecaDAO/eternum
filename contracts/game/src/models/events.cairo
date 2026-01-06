@@ -30,6 +30,7 @@ pub enum Story {
     PointsRegisteredStory: PointsRegisteredStory,
     // Troop Movement
     ExplorerMoveStory: ExplorerMoveStory,
+    ExplorerExtractRewardStory: ExplorerExtractRewardStory,
     // Troop Battle
     BattleStory: BattleStory,
     // Resource Transfer
@@ -153,6 +154,14 @@ pub struct ExplorerMoveStory {
     pub end_coord: Coord,
     pub explore: bool,
     pub explore_find: ExploreFind,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct ExplorerExtractRewardStory {
+    pub explorer_owner: ContractAddress,
+    pub explorer_id: ID,
+    pub explorer_structure_id: ID,
+    pub coord: Coord,
     pub reward_resource_type: u8,
     pub reward_resource_amount: u128,
 }

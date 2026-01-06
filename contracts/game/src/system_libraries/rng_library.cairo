@@ -148,7 +148,7 @@ mod rng_library {
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IRNGlibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"rng_library_v0_1_5").expect('rng_library not found.');
+        let (_, class_hash) = world.dns(@"rng_library_v0_1_6").expect('rng_library not found.');
         super::IRNGlibraryLibraryDispatcher { class_hash }
     }
 }

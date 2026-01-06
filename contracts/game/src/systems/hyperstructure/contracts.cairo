@@ -162,6 +162,7 @@ pub mod hyperstructure_systems {
         HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
     };
     use crate::models::map::Tile;
+    use crate::models::map2::{TileOpt};
     use crate::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
     use crate::models::position::Coord;
     use crate::models::resource::resource::{
@@ -244,7 +245,9 @@ pub mod hyperstructure_systems {
             world.write_model(@hyperstructure);
 
             // update structure tile
-            let mut hyperstructure_tile: Tile = world.read_model((structure.coord_x, structure.coord_y));
+            let hyperstructure_coord = Coord { alt: false, x: structure.coord_x, y: structure.coord_y };
+            let hyperstructure_tile_opt: TileOpt = world.read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
+            let mut hyperstructure_tile: Tile = hyperstructure_tile_opt.into();
             let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(1);
             IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
         }
@@ -369,7 +372,9 @@ pub mod hyperstructure_systems {
                     );
 
                 // update structure tile
-                let mut hyperstructure_tile: Tile = world.read_model((structure_base.coord_x, structure_base.coord_y));
+                let hyperstructure_coord = Coord { alt: false, x: structure_base.coord_x, y: structure_base.coord_y };
+                let hyperstructure_tile_opt: TileOpt = world.read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
+                let mut hyperstructure_tile: Tile = hyperstructure_tile_opt.into();
                 let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(2);
                 IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
             }
@@ -434,7 +439,7 @@ pub mod hyperstructure_systems {
 
                     // count surrounding realms and determine points per second multiplier
                     let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
-                    let structure_coord: Coord = Coord { x: structure.coord_x, y: structure.coord_y };
+                    let structure_coord: Coord = Coord { alt: false, x: structure.coord_x, y: structure.coord_y };
                     let surrounding_realms_count: u8 = iHyperstructureBlitzImpl::count_surrounding_realms(
                         ref world, structure_coord,
                     );

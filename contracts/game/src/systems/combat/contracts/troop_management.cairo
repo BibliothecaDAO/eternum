@@ -73,6 +73,7 @@ pub mod troop_management_systems {
         GuardAddStory, GuardDeleteStory, GuardExplorerSwapStory, Story, StoryEvent,
     };
     use crate::models::map::{Tile, TileImpl};
+    use crate::models::map2::{TileOpt};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::{
@@ -267,7 +268,8 @@ pub mod troop_management_systems {
 
             // ensure spawn location is not occupied
             let spawn_coord: Coord = structure.coord().neighbor(spawn_direction);
-            let mut tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
+            let tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+            let mut tile: Tile = tile_opt.into();
             assert!(tile.not_occupied(), "explorer spawn location is occupied");
 
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);

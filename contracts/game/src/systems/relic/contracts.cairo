@@ -29,6 +29,7 @@ pub mod relic_systems {
     };
     use crate::models::events::{PointsRegisteredStory, Story, StoryEvent, PointsActivity};
     use crate::models::map::{Tile, TileImpl, TileOccupier};
+    use crate::models::map2::{TileOpt};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::position::{Coord, TravelTrait};
@@ -80,7 +81,8 @@ pub mod relic_systems {
             assert!(explorer.coord.is_adjacent(chest_coord), "explorer is not adjacent to chest");
 
             // ensure the tile specified is occupied by a chest
-            let mut chest_tile: Tile = world.read_model((chest_coord.x, chest_coord.y));
+            let chest_tile_opt: TileOpt = world.read_model((chest_coord.alt, chest_coord.x, chest_coord.y));
+            let mut chest_tile: Tile = chest_tile_opt.into();
             assert!(chest_tile.occupied(), "tile is not occupied");
             assert!(chest_tile.occupier_type == TileOccupier::Chest.into(), "Eternum: No chest found at coord");
 
@@ -219,6 +221,8 @@ pub mod relic_systems {
             current_tick: u32,
             troop_stamina_config: TroopStaminaConfig,
         ) {
+            assert!(explorer.coord.alt == false, "Eternum: explorer must be on surface to apply relic");
+            
             // refill stamina
             explorer
                 .troops
