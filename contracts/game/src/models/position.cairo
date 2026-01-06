@@ -187,7 +187,7 @@ pub struct Coord {
 
 pub impl CoordDisplay of Display<Coord> {
     fn fmt(self: @Coord, ref f: Formatter) -> Result<(), Error> {
-        let str: ByteArray = format!("Coord (x:{}, y:{}) ", self.x, self.y);
+        let str: ByteArray = format!("Coord (alt: {}, x:{}, y:{}) ", self.alt, self.x, self.y);
         f.buffer.append(@str);
 
         Result::Ok(())

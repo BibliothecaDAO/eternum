@@ -35,7 +35,7 @@ pub impl TileIntoCoord of Into<Tile, Coord> {
 pub impl TileImpl of TileTrait {
     fn keys_only(coord: Coord) -> Tile {
         Tile { 
-            alt: false,
+            alt: coord.alt,
             col: coord.x, 
             row: coord.y, 
             biome: 0, 

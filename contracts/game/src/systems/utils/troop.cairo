@@ -13,6 +13,7 @@ use crate::models::config::{
     TroopStaminaConfig, WorldConfigUtilImpl,
 };
 use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::map2::{TileOpt};
 use crate::models::name::AddressName;
 use crate::models::owner::OwnerAddressTrait;
 use crate::models::position::{Coord, CoordImpl, Direction};
@@ -140,12 +141,13 @@ pub impl iExplorerImpl of iExplorerTrait {
         let current_coord: Coord = current_tile.into();
         for direction in adjacent_directions {
             let adjacent_coord = current_coord.neighbor(direction);
-            let mut adjacent_tile: Tile = world.read_model((adjacent_coord.x, adjacent_coord.y));
+            let adjacent_tile_opt: TileOpt = world.read_model((adjacent_coord.alt, adjacent_coord.x, adjacent_coord.y));
+            let mut adjacent_tile: Tile = adjacent_tile_opt.into();
             if adjacent_tile.not_occupied() {
                 if !adjacent_tile.discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
                     let adjacent_coord_biome: Biome = biome_library
-                        .get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
+                        .get_biome(adjacent_coord.alt, adjacent_coord.x.into(), adjacent_coord.y.into());
                     IMapImpl::explore(ref world, ref adjacent_tile, adjacent_coord_biome);
                 }
 
@@ -459,7 +461,8 @@ pub impl iExplorerImpl of iExplorerTrait {
         assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
 
         // remove explorer from tile
-        let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
+        let tile_opt: TileOpt = world.read_model((explorer.coord.alt, explorer.coord.x, explorer.coord.y));
+        let mut tile: Tile = tile_opt.into();
         IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
         // erase explorer resource model

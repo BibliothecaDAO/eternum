@@ -6,6 +6,7 @@ use crate::constants::{
 };
 use crate::models::config::{MapConfig, TickImpl, WorldConfigUtilImpl};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::map2::{TileOpt};
 use crate::models::position::{Coord, CoordImpl, Direction, DirectionImpl, TravelImpl};
 use crate::models::record::RelicRecord;
 use crate::models::resource::resource::{
@@ -61,17 +62,18 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
         }
 
         loop {
-            let mut tile: Tile = world.read_model((destination_coord.x, destination_coord.y));
+            let tile_opt: TileOpt = world.read_model((destination_coord.alt, destination_coord.x, destination_coord.y));
+            let mut tile: Tile = tile_opt.into();
             let mut structure_reservation: StructureReservation = world.read_model(destination_coord);
             if tile.occupied() || structure_reservation.reserved {
                 destination_coord = destination_coord.neighbor(Direction::East);
             } else {
                 if tile.not_discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
-                    let biome: Biome = biome_library.get_biome(destination_coord.x.into(), destination_coord.y.into());
+                    let biome: Biome = biome_library.get_biome(destination_coord.alt, destination_coord.x.into(), destination_coord.y.into());
                     IMapImpl::explore(ref world, ref tile, biome);
                 }
-                IMapImpl::occupy(ref world, ref tile, TileOccupier::Chest.into(), world.dispatcher.uuid());
+                IMapImpl::occupy(ref world, ref tile, TileOccupier::Chest, world.dispatcher.uuid());
                 break;
             }
         };

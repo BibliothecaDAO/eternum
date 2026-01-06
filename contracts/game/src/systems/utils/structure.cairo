@@ -9,6 +9,7 @@ use crate::models::config::{
 };
 use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
 use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::map2::{TileOpt};
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::models::resource::resource::{
     ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
@@ -46,7 +47,8 @@ pub impl iStructureImpl of IStructureTrait {
         explore_village_coord: bool,
     ) {
         // ensure the tile is not occupied
-        let mut tile: Tile = world.read_model((coord.x, coord.y));
+        let tile_opt: TileOpt = world.read_model((coord.alt, coord.x, coord.y)); 
+        let mut tile: Tile = tile_opt.into();
         if category == StructureCategory::Realm || category == StructureCategory::Village {
             if tile.occupied() {
                 // ensure occupier is not a structure
@@ -90,13 +92,14 @@ pub impl iStructureImpl of IStructureTrait {
         }
 
         // retrieve tile again and ensure tile is not occupied
-        let mut tile: Tile = world.read_model((coord.x, coord.y));
+        let tile_opt: TileOpt = world.read_model((coord.alt, coord.x, coord.y));
+        let mut tile: Tile = tile_opt.into();
         assert!(tile.not_occupied(), "tile is occupied");
 
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
             let biome_library = biome_library::get_dispatcher(@world);
-            let biome: Biome = biome_library.get_biome(coord.x.into(), coord.y.into());
+            let biome: Biome = biome_library.get_biome(coord.alt,coord.x.into(), coord.y.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 
@@ -114,10 +117,11 @@ pub impl iStructureImpl of IStructureTrait {
             || explore_village_coord {
             for direction in structure_surrounding {
                 let neighbor_coord: Coord = coord.neighbor(direction);
-                let mut neighbor_tile: Tile = world.read_model((neighbor_coord.x, neighbor_coord.y));
+                let neighbor_tile_opt: TileOpt = world.read_model((neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
+                let mut neighbor_tile: Tile = neighbor_tile_opt.into();
                 if !neighbor_tile.discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
-                    let biome: Biome = biome_library.get_biome(neighbor_coord.x.into(), neighbor_coord.y.into());
+                    let biome: Biome = biome_library.get_biome(neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
                     IMapImpl::explore(ref world, ref neighbor_tile, biome);
                 }
 
@@ -126,11 +130,13 @@ pub impl iStructureImpl of IStructureTrait {
                     // explore village tile so that no structure can be built on it
                     let village_coord = coord
                         .neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
-                    let mut village_tile: Tile = world.read_model((village_coord.x, village_coord.y));
+
+                    let village_tile_opt: TileOpt = world.read_model((village_coord.alt, village_coord.x, village_coord.y));
+                    let mut village_tile: Tile = village_tile_opt.into();
                     if !village_tile.discovered() {
                         let biome_library = biome_library::get_dispatcher(@world);
                         let village_biome: Biome = biome_library
-                            .get_biome(village_coord.x.into(), village_coord.y.into());
+                            .get_biome(village_coord.alt, village_coord.x.into(), village_coord.y.into());
                         IMapImpl::explore(ref world, ref village_tile, village_biome);
                     }
 
@@ -290,7 +296,7 @@ pub impl iStructureImpl of IStructureTrait {
 
     fn grant_starting_resources(ref world: WorldStorage, structure_id: ID, structure_coord: Coord) {
         let biome_library = biome_library::get_dispatcher(@world);
-        let biome: Biome = biome_library.get_biome(structure_coord.x.into(), structure_coord.y.into());
+        let biome: Biome = biome_library.get_biome(structure_coord.alt, structure_coord.x.into(), structure_coord.y.into());
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
         let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
         let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {

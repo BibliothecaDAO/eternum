@@ -16,7 +16,7 @@ use alexandria_math::BitShift;
 use crate::alias::ID;
 use crate::models::map::Tile;
 
-#[derive(Copy, Drop, Serde, IntrospectPacked)]
+#[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct TileOpt {
     #[key]
@@ -187,14 +187,14 @@ pub impl TileIntoTileOpt of Into<Tile, TileOpt> {
 
 pub impl TileOptIntoTile of Into<TileOpt, Tile> {
     fn into(self: TileOpt) -> Tile {
-        let col = TileOptDataReadTrait::col(self.data);
-        let row = TileOptDataReadTrait::row(self.data);
+        let alt = self.alt;
+        let col = self.col;
+        let row = self.row;
         let biome = TileOptDataReadTrait::biome(self.data);
         let occupier_id = TileOptDataReadTrait::occupier_id(self.data);
         let occupier_type = TileOptDataReadTrait::occupier_type(self.data);
         let occupier_is_structure = TileOptDataReadTrait::occupier_is_structure(self.data);
         let reward_extracted = TileOptDataReadTrait::reward_extracted(self.data);
-        let alt = TileOptDataReadTrait::alt(self.data);
 
         Tile {
             alt,
