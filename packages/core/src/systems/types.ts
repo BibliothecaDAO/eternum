@@ -1,6 +1,7 @@
 import {
   BiomeType,
   BuildingType,
+  ContractAddress,
   HexPosition,
   ID,
   QuestType,
@@ -8,7 +9,7 @@ import {
   ResourcesIds,
   StructureType,
   TroopTier,
-  TroopType,
+  TroopType
 } from "@bibliothecadao/types";
 import type { ActiveProduction, GuardArmy } from "../stores/map-data-store";
 import { Position } from "./position";
@@ -117,11 +118,21 @@ export type BuildingSystemUpdate = {
 
 export type ExplorerMoveSystemUpdate = {
   explorerId: ID;
-  resourceId: ResourcesIds | 0;
-  amount: number;
-  rawAmount: bigint | number | string;
+  // resourceId: ResourcesIds | 0;
+  // amount: number;
+  // rawAmount: bigint | number | string;
   timestamp: number;
   exploreFind: string | null;
+};
+
+export type ExplorerRewardSystemUpdate = {
+  explorerId: ID;
+  explorerStructureId: ID;
+  explorerOwnerAddress: ContractAddress | null;
+  resourceId: ResourcesIds | 0;
+  amount: number;
+  rawAmount: bigint | number | string | null;
+  timestamp: number;
 };
 export type RealmSystemUpdate = {
   level: number;

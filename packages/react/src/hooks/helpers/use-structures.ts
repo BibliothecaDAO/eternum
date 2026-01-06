@@ -1,6 +1,6 @@
-import { getEntityIdFromKeys, getStructure } from "@bibliothecadao/eternum";
+import { DEFAULT_COORD_ALT, getStructure, getTileAt } from "@bibliothecadao/eternum";
 import { ContractAddress, Position, Structure } from "@bibliothecadao/types";
-import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../context";
@@ -38,10 +38,7 @@ export const usePlayerStructureAtPosition = ({ position }: { position: Position 
     setup: { components },
   } = useDojo();
 
-  const entityAtPosition = useComponentValue(
-    components.Tile,
-    getEntityIdFromKeys([BigInt(position.x), BigInt(position.y)]),
-  );
+  const entityAtPosition = getTileAt(components, DEFAULT_COORD_ALT, position.x, position.y);
 
   const ownStructure = useMemo(() => {
     if (!entityAtPosition || !entityAtPosition.occupier_is_structure) return null;

@@ -29,45 +29,48 @@ export interface SelectedEntity {
 
 export enum TileOccupier {
   None = 0,
+  //
   RealmRegularLevel1 = 1,
-  RealmWonderLevel1 = 2,
-  HyperstructureLevel1 = 3,
-  FragmentMine = 4,
-  Village = 5,
-  Bank = 6,
-  ExplorerKnightT1Regular = 7,
-  ExplorerKnightT2Regular = 8,
-  ExplorerKnightT3Regular = 9,
-  ExplorerPaladinT1Regular = 10,
-  ExplorerPaladinT2Regular = 11,
-  ExplorerPaladinT3Regular = 12,
-  ExplorerCrossbowmanT1Regular = 13,
-  ExplorerCrossbowmanT2Regular = 14,
-  ExplorerCrossbowmanT3Regular = 15,
-  ExplorerKnightT1Daydreams = 16,
-  ExplorerKnightT2Daydreams = 17,
-  ExplorerKnightT3Daydreams = 18,
-  ExplorerPaladinT1Daydreams = 19,
-  ExplorerPaladinT2Daydreams = 20,
-  ExplorerPaladinT3Daydreams = 21,
-  ExplorerCrossbowmanT1Daydreams = 22,
-  ExplorerCrossbowmanT2Daydreams = 23,
-  ExplorerCrossbowmanT3Daydreams = 24,
-  RealmRegularLevel2 = 25,
-  RealmRegularLevel3 = 26,
-  RealmRegularLevel4 = 27,
-  RealmWonderLevel2 = 28,
-  RealmWonderLevel3 = 29,
-  RealmWonderLevel4 = 30,
-  HyperstructureLevel2 = 31,
-  HyperstructureLevel3 = 32,
-  RealmRegularLevel1WonderBonus = 33,
-  RealmRegularLevel2WonderBonus = 34,
-  RealmRegularLevel3WonderBonus = 35,
-  RealmRegularLevel4WonderBonus = 36,
-  VillageWonderBonus = 37,
-  Quest = 38,
-  Chest = 39,
+  RealmRegularLevel2 = 2,
+  RealmRegularLevel3 = 3,
+  RealmRegularLevel4 = 4,
+  //
+  RealmWonderLevel1 = 5,
+  RealmWonderLevel2 = 6,
+  RealmWonderLevel3 = 7,
+  RealmWonderLevel4 = 8,
+  //
+  HyperstructureLevel1 = 9,
+  HyperstructureLevel2 = 10,
+  HyperstructureLevel3 = 11,
+  //
+  FragmentMine = 12,
+  Village = 13,
+  Bank = 14,
+  //
+  ExplorerKnightT1Regular = 15,
+  ExplorerKnightT2Regular = 16,
+  ExplorerKnightT3Regular = 17,
+  ExplorerPaladinT1Regular = 18,
+  ExplorerPaladinT2Regular = 19,
+  ExplorerPaladinT3Regular = 20,
+  ExplorerCrossbowmanT1Regular = 21,
+  ExplorerCrossbowmanT2Regular = 22,
+  ExplorerCrossbowmanT3Regular = 23,
+  //
+  ExplorerKnightT1Daydreams = 24,
+  ExplorerKnightT2Daydreams = 25,
+  ExplorerKnightT3Daydreams = 26,
+  ExplorerPaladinT1Daydreams = 27,
+  ExplorerPaladinT2Daydreams = 28,
+  ExplorerPaladinT3Daydreams = 29,
+  ExplorerCrossbowmanT1Daydreams = 30,
+  ExplorerCrossbowmanT2Daydreams = 31,
+  ExplorerCrossbowmanT3Daydreams = 32,
+  //
+  Quest = 33,
+  Chest = 34,
+  Spire = 35,
 }
 
 /**
@@ -142,12 +145,21 @@ export type Structure = {
 };
 
 export type Tile = {
+  alt: boolean;
   col: number;
   row: number;
   biome: number;
   occupier_id: ID;
   occupier_type: number;
   occupier_is_structure: boolean;
+  reward_extracted: boolean;
+};
+
+export type TileOpt = {
+  alt: boolean;
+  col: number;
+  row: number;
+  data: bigint;
 };
 
 export type Quest = {

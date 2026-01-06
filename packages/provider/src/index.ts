@@ -2285,25 +2285,35 @@ export class EternumProvider extends EnhancedDojoProvider {
     let callData: Call[] = [];
 
     if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestRandomCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-      };
-
-      callData = [requestRandomCall];
+      callData.push({
+          contractAddress: this.VRF_PROVIDER_ADDRESS!,
+          entrypoint: "request_random",
+          calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+        });
     }
 
-    const moveCall: Call = {
+    callData.push({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
       entrypoint: "explorer_move",
       calldata: [explorer_id, directions, explore ? 1 : 0],
-    };
+    });
+    if (explore) {
+      if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+        callData.push({
+          contractAddress: this.VRF_PROVIDER_ADDRESS!,
+          entrypoint: "request_random",
+          calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+        });
+      }
 
-    const call = this.createProviderCall(signer, [...callData, moveCall]);
+      callData.push({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+        entrypoint: "explorer_extract_reward",
+        calldata: [explorer_id],
+      });
+    }
 
-    console.log({ call });
-
+    const call = this.createProviderCall(signer, [...callData]);
     return await this.promiseQueue.enqueue(call);
   }
   /**
@@ -2781,15 +2791,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_wonder_bonus_config(props: SystemProps.SetWonderBonusConfigProps) {
-    const { within_tile_distance, bonus_percent_num, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_wonder_bonus_config",
-      calldata: [within_tile_distance, bonus_percent_num],
-    });
-  }
 
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const {
@@ -3705,7 +3706,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     calls.push({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-relic_systems`),
       entrypoint: "open_chest",
-      calldata: [explorer_id, chest_coord.x, chest_coord.y],
+      calldata: [explorer_id, false, chest_coord.x, chest_coord.y],
     });
     return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
   }

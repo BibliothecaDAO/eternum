@@ -2,7 +2,7 @@ import { Store } from "@/shared/store";
 import {
   ActionPaths,
   ActionType,
-  ExplorerMoveSystemUpdate,
+  ExplorerRewardSystemUpdate,
   getFeltCenterOffset,
   Position,
   WorldUpdateListener,
@@ -160,7 +160,9 @@ export class HexagonMap {
     this.systemManager.RelicEffect.onStructureProductionUpdate((update) =>
       this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
     );
-    this.systemManager.ExplorerMove.onExplorerMoveEventUpdate((update) => this.handleExplorerMoveUpdate(update));
+    this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) =>
+      this.handleExplorerRewardEvent(update),
+    );
   }
 
   private initializeGUI(): void {
@@ -935,20 +937,20 @@ export class HexagonMap {
     console.log("=== END PERFORMANCE SUMMARY ===\n");
   }
 
-  private handleExplorerMoveUpdate(update: ExplorerMoveSystemUpdate): void {
+  private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     const { explorerId, resourceId, amount } = update;
-    console.log("[HexagonMap] Explorer move update:", update);
+    if (!resourceId) {
+      return;
+    }
 
     setTimeout(() => {
       const armyPosition = this.armyManager.getArmyPosition(explorerId);
-      if (armyPosition && resourceId !== 0) {
-        console.log(
-          `Army ${explorerId} found resource ${resourceId} (amount: ${amount}) at position (${armyPosition.col}, ${armyPosition.row})`,
-        );
-
-        // Display the resource gain at the army's position
-        this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row);
+      if (!armyPosition) {
+        console.warn("ExplorerRewardEvent missing position for reward display", { explorerId, update });
+        return;
       }
+
+      this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row);
     }, 500);
   }
 

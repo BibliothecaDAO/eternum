@@ -4,13 +4,10 @@ export const RELICS_QUERIES = {
    * Chests have occupier_type = 39
    */
   CHESTS_NEAR_POSITION: `
-    SELECT 
-      col,
-      row,
-      occupier_id AS entity_id
-    FROM \`s1_eternum-Tile\`
-    WHERE occupier_type = 39
-      AND col >= {minX}
+    SELECT
+      data
+    FROM \`s1_eternum-TileOpt\`
+    WHERE col >= {minX}
       AND col <= {maxX}
       AND row >= {minY}
       AND row <= {maxY};

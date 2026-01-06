@@ -12,7 +12,7 @@ import {
   StructureType,
   TileOccupier,
   type TroopTier,
-  type TroopType,
+  type TroopType
 } from "@bibliothecadao/types";
 import {
   type Component,
@@ -33,6 +33,7 @@ import {
   getArmyRelicEffects,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
+  tileOptToTile,
   unpackBuildingCounts,
 } from "../utils";
 import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
@@ -43,6 +44,7 @@ import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
   ExplorerMoveSystemUpdate,
+  ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
   type RelicEffectSystemUpdate,
@@ -191,11 +193,13 @@ export class WorldUpdateListener {
     return {
       onTileUpdate: (callback: (value: ExplorerTroopsTileSystemUpdate) => void) => {
         this.setupSystem(
-          this.setup.components.Tile,
+          this.setup.components.TileOpt,
           callback,
           async (update: any): Promise<ExplorerTroopsTileSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.Tile)) {
-              const [currentState, _prevState] = update.value;
+            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
+              const [currentStateOpt, _prevStateOpt] = update.value;
+              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
               const previousExplorer = _prevState && getExplorerInfoFromTileOccupier(_prevState.occupier_type);
@@ -452,11 +456,13 @@ export class WorldUpdateListener {
       },
       onTileUpdate: (callback: (value: StructureTileSystemUpdate) => void) => {
         this.setupSystem(
-          this.setup.components.Tile,
+          this.setup.components.TileOpt,
           callback,
           async (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.Tile)) {
-              const [currentState, _prevState] = update.value;
+            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
+              const [currentStateOpt, _prevStateOpt] = update.value;
+              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
 
@@ -700,11 +706,13 @@ export class WorldUpdateListener {
     return {
       onTileUpdate: (callback: (value: TileSystemUpdate) => void) => {
         this.setupSystem(
-          this.setup.components.Tile,
+          this.setup.components.TileOpt,
           callback,
           async (update: any) => {
-            const newState = update.value[0];
-            const prevState = update.value[1];
+            const newStateOpt = update.value[0];
+            const prevStateOpt = update.value[1];
+            const newState = tileOptToTile(newStateOpt);
+            const prevState = tileOptToTile(prevStateOpt);
 
             const newStateBiomeType = BiomeIdToType[newState?.biome];
             const { col, row } = prevState || newState;
@@ -764,11 +772,13 @@ export class WorldUpdateListener {
     return {
       onTileUpdate: (callback: (value: any) => void) => {
         this.setupSystem(
-          this.setup.components.Tile,
+          this.setup.components.TileOpt,
           callback,
           (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.Tile)) {
-              const [currentState, _prevState] = update.value;
+            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
+              const [currentStateOpt, _prevStateOpt] = update.value;
+              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               if (!currentState) return;
 
@@ -823,15 +833,45 @@ export class WorldUpdateListener {
     };
   }
 
+  public get ExplorerReward() {
+    return {
+      onExplorerRewardEventUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
+        if (!this.setup.components.events?.ExplorerRewardEvent) {
+          console.warn("ExplorerRewardEvent component is not registered on setup.components.events");
+          return;
+        }
+
+        this.setupSystem(
+          this.setup.components.events.ExplorerRewardEvent,
+          (value: ExplorerRewardSystemUpdate) => {
+            console.log("[onExplorerRewardEventUpdate] ExplorerRewardSystemUpdate:", value);
+            callback(value);
+          },
+          async (update: any): Promise<ExplorerRewardSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.events.ExplorerRewardEvent)) {
+              const [currentState] = update.value;
+              if (!currentState) return undefined;
+
+              return this.parseExplorerRewardEvent(currentState);
+            }
+          },
+          false,
+        );
+      },
+    };
+  }
+
   public get Chest() {
     return {
       onTileUpdate: (callback: (value: any) => void) => {
         this.setupSystem(
-          this.setup.components.Tile,
+          this.setup.components.TileOpt,
           callback,
           (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.Tile)) {
-              const [currentState, _prevState] = update.value;
+            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
+              const [currentStateOpt, _prevStateOpt] = update.value;
+              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               if (!currentState) return;
 
@@ -860,11 +900,13 @@ export class WorldUpdateListener {
       },
       onDeadChest: (callback: (value: ID) => void) => {
         this.setupSystem(
-          this.setup.components.Tile,
+          this.setup.components.TileOpt,
           callback,
           async (update: any): Promise<ID | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.Tile)) {
-              const [currentState, prevState] = update.value;
+            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
+              const [currentStateOpt, prevStateOpt] = update.value;
+              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
 
               // Check if the previous state was a chest and current state is not
               if (
@@ -1131,7 +1173,7 @@ export class WorldUpdateListener {
       this.setup.components.events.StoryEvent,
       (event: StoryEventSystemUpdate) => {
         // Add log before publishing event
-        // console.log("[registerStoryEventStream] update:", event);
+        console.log("[registerStoryEventStream] update:", event);
         storyEventBus.publish(event);
       },
       async (update: any): Promise<StoryEventSystemUpdate | undefined> => {
@@ -1184,23 +1226,50 @@ export class WorldUpdateListener {
       return undefined;
     }
 
-    const resourceId = (this.toNumber(currentState?.reward_resource_type) ?? 0) as ResourcesIds | 0;
-    const rawAmount = currentState?.reward_resource_amount ?? 0;
-    const normalizedAmount = this.toNumber(rawAmount);
-    const amount = normalizedAmount !== null ? divideByPrecision(normalizedAmount) : 0;
+    // const resourceId = (this.toNumber(currentState?.reward_resource_type) ?? 0) as ResourcesIds | 0;
+    // const rawAmount = currentState?.reward_resource_amount ?? 0;
+    // const normalizedAmount = this.toNumber(rawAmount);
+    // const amount = normalizedAmount !== null ? divideByPrecision(normalizedAmount) : 0;
     const timestamp = this.toNumber(currentState?.timestamp) ?? 0;
     const exploreFindVariant = this.unwrapSchemaEnum(currentState?.explore_find);
     const exploreFind = exploreFindVariant?.name ?? null;
 
     const val = {
       explorerId,
-      resourceId,
-      amount,
-      rawAmount,
+      // resourceId,
+      // amount,
+      // rawAmount,
       timestamp,
       exploreFind,
     };
     // console.log("[parseExplorerMoveEvent] update:", val);
+    return val;
+  }
+
+  private parseExplorerRewardEvent(currentState: any): ExplorerRewardSystemUpdate | undefined {
+    const explorerId = this.toNumber(currentState?.explorer_id);
+    if (explorerId === null) {
+      return undefined;
+    }
+
+    const explorerStructureId = this.toNumber(currentState?.explorer_structure_id) ?? 0;
+    const ownerAddress = this.toContractAddress(currentState?.explorer_owner_address);
+    const resourceId = (this.toNumber(currentState?.reward_resource_id) ?? 0) as ResourcesIds | 0;
+    const rawAmount = currentState?.reward_resource_amount ?? null;
+    const normalizedAmount = this.toNumber(rawAmount);
+    const amount = normalizedAmount !== null ? divideByPrecision(normalizedAmount) : 0;
+    const timestamp = this.toNumber(currentState?.timestamp) ?? 0;
+
+    const val = {
+      explorerId,
+      explorerStructureId,
+      explorerOwnerAddress: ownerAddress,
+      resourceId,
+      amount,
+      rawAmount,
+      timestamp,
+    };
+    // console.log("[parseExplorerRewardEvent] update:", val);
     return val;
   }
 
@@ -1254,6 +1323,7 @@ export class WorldUpdateListener {
   private mapStoryEventPayload(currentState: any): StoryEventSystemUpdate {
     const owner = this.normalizeOptionalValue<string | bigint | number>(currentState.owner);
     const entityId = this.normalizeOptionalValue<number | string>(currentState.entity_id);
+    console.log({currentState})
 
     const ownerAddress = owner === null ? null : this.stringifyValue(owner);
     const numericEntityId = entityId === null ? null : Number(entityId);
@@ -1265,6 +1335,8 @@ export class WorldUpdateListener {
     const storyVariant = this.extractStoryVariant(currentState.story);
     const storyType = storyVariant.storyType;
     let storyPayload = storyVariant.storyPayload;
+
+    console.log({storyPayload, storyType})
 
     if ((!storyPayload || storyType === "Unknown") && currentState.story) {
       console.debug("ℹ️ StoryEvent: Unparsed payload", {
@@ -1279,8 +1351,8 @@ export class WorldUpdateListener {
       if (fallback) {
         storyPayload = {
           explorer_id: fallback.explorerId,
-          reward_resource_type: fallback.resourceId,
-          reward_resource_amount: fallback.rawAmount,
+          // reward_resource_type: fallback.resourceId,
+          // reward_resource_amount: fallback.rawAmount,
           explore_find: fallback.exploreFind ?? undefined,
         } as Record<string, unknown>;
       }
@@ -1367,6 +1439,40 @@ export class WorldUpdateListener {
       }
       const parsed = Number(value);
       return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    return null;
+  }
+
+  private toContractAddress(value: unknown): ContractAddress | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (typeof value === "bigint") {
+      return value;
+    }
+
+    if (typeof value === "number") {
+      if (!Number.isFinite(value) || value === 0) {
+        return null;
+      }
+      try {
+        return BigInt(Math.trunc(value));
+      } catch (error) {
+        return null;
+      }
+    }
+
+    if (typeof value === "string") {
+      if (value === "0x0" || value === "0" || value.trim() === "") {
+        return null;
+      }
+      try {
+        return BigInt(value);
+      } catch (error) {
+        return null;
+      }
     }
 
     return null;

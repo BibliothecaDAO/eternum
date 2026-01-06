@@ -47,6 +47,7 @@ const STORY_FILTER_ORDER = [
   "StructureLevelUpStory",
   "ProductionStory",
   "ExplorerMoveStory",
+  "ExplorerExtractRewardStory",
   "BattleStory",
   "ResourceTransferStory",
   "ResourceBurnStory",
@@ -109,6 +110,13 @@ const STORY_TYPE_CONFIG: Record<StoryTypeKey, StoryTypeConfig> = {
     accent: "text-teal-200",
     halo: "from-teal-500/40 to-cyan-900/20",
     badge: "border-teal-400/60 bg-teal-500/15 text-teal-100",
+  },
+  ExplorerExtractRewardStory: {
+    label: "Explorer Reward",
+    icon: Package,
+    accent: "text-amber-200",
+    halo: "from-amber-500/35 to-orange-900/20",
+    badge: "border-amber-400/60 bg-amber-500/15 text-amber-100",
   },
   BattleStory: {
     label: "Battle Report",

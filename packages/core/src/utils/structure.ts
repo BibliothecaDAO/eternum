@@ -13,6 +13,7 @@ import {
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import { getTileAt, DEFAULT_COORD_ALT } from "./tile";
 import { configManager } from "../managers";
 import { currentTickCount } from "./utils";
 
@@ -21,7 +22,7 @@ export const getStructureAtPosition = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): Structure | undefined => {
-  const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(x), BigInt(y)]));
+  const tile = getTileAt(components, DEFAULT_COORD_ALT, x, y);
   const structureEntity = getEntityIdFromKeys([BigInt(tile?.occupier_id || 0n)]);
 
   if (!structureEntity) return;

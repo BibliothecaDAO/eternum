@@ -28,7 +28,6 @@ import {
   setVictoryPointsConfig,
   setVillageControllersConfig,
   setWeightConfig,
-  setWonderBonusConfig,
   setWorldConfig,
   setupGlobals,
 } from "@config-deployer/config";
@@ -1398,7 +1397,6 @@ export const FactoryPage = () => {
                                               await setVictoryPointsConfig(ctx);
                                               await setDiscoverableVillageSpawnResourcesConfig(ctx);
                                               await setBlitzRegistrationConfig(ctx);
-                                              await setWonderBonusConfig(ctx);
                                               await setAgentConfig(ctx);
                                               await setVillageControllersConfig(ctx);
                                               await setTradeConfig(ctx);

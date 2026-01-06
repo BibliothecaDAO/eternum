@@ -1,16 +1,15 @@
-import { BuildingThumbs } from "@/ui/config";
 import { sqlApi } from "@/services/api";
-import { ActionPath, getRemainingCapacityInKg } from "@bibliothecadao/eternum";
-import type { ID } from "@bibliothecadao/types";
+import { BuildingThumbs } from "@/ui/config";
+import { ActionPath, DEFAULT_COORD_ALT, getRemainingCapacityInKg, getTileAt } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";
+import type { ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useEffect, useMemo, useState } from "react";
 
-import { InfoLabel } from "./info-label";
 import { formatAmount } from "./format-amount";
+import { InfoLabel } from "./info-label";
 
 interface QuestInfoProps {
   selectedEntityId: ID;
@@ -20,7 +19,8 @@ interface QuestInfoProps {
 export const QuestInfo = memo(({ selectedEntityId, path }: QuestInfoProps) => {
   const {
     setup: {
-      components: { Tile, Resource },
+      components: { TileOpt, Resource },
+      components,
     },
   } = useDojo();
 
@@ -29,16 +29,13 @@ export const QuestInfo = memo(({ selectedEntityId, path }: QuestInfoProps) => {
 
   useEffect(() => {
     const fetchQuest = async () => {
-      const targetEntity = getComponentValue(
-        Tile,
-        getEntityIdFromKeys([BigInt(questCoords.col), BigInt(questCoords.row)]),
-      );
+      const targetEntity = getTileAt(components, DEFAULT_COORD_ALT, questCoords.col, questCoords.row);
       const result = await sqlApi.fetchQuest(targetEntity?.occupier_id || 0);
       setQuestTileEntity(result ?? undefined);
     };
 
     fetchQuest();
-  }, [Tile, questCoords]);
+  }, [TileOpt, questCoords]);
 
   const rewardAmount = questTileEntity?.amount ?? 0;
 

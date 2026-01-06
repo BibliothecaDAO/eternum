@@ -447,10 +447,6 @@ export interface SetVillageTokenProps extends SystemSigner {
   village_mint_initial_recipient: BigNumberish;
 }
 
-export interface SetWonderBonusConfigProps extends SystemSigner {
-  within_tile_distance: BigNumberish;
-  bonus_percent_num: BigNumberish;
-}
 
 export interface SetTradeConfigProps extends SystemSigner {
   max_count: BigNumberish;

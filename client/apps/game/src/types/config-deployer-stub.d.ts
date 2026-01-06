@@ -11,7 +11,6 @@ declare module "@config-deployer/config" {
   export const setVictoryPointsConfig: any;
   export const setVillageControllersConfig: any;
   export const setWeightConfig: any;
-  export const setWonderBonusConfig: any;
   export const setGameModeConfig: any;
   export const setHyperstructureConfig: any;
   export const setRealmUpgradeConfig: any;

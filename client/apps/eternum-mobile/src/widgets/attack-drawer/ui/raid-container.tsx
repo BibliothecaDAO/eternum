@@ -14,6 +14,8 @@ import {
   getRemainingCapacityInKg,
   RaidSimulator,
   StaminaManager,
+  getTileAt,
+  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
@@ -28,7 +30,6 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -65,7 +66,7 @@ export const RaidContainer = ({ attackerEntityId, targetHex }: RaidContainerProp
     setup: {
       systemCalls: { raid_explorer_vs_guard },
       components,
-      components: { Tile, Structure },
+      components: { Structure },
     },
   } = useDojo();
 
@@ -77,7 +78,7 @@ export const RaidContainer = ({ attackerEntityId, targetHex }: RaidContainerProp
   const selectedHex = useStore((state) => state.selectedHex);
   const closeAttackDrawer = useStore((state) => state.closeAttackDrawer);
 
-  const targetTile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+  const targetTile = getTileAt(components, DEFAULT_COORD_ALT, targetHex.x, targetHex.y);
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();

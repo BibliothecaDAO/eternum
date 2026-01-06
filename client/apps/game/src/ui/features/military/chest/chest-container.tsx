@@ -4,7 +4,7 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getCrateName } from "@bibliothecadao/eternum";
+import { getCrateName, getTileAt, DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
 import { useComponentSystem, useDojo } from "@bibliothecadao/react";
 import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue, isComponentUpdate } from "@dojoengine/recs";
@@ -348,7 +348,7 @@ export const ChestContainer = ({
   const CLICKS_TO_OPEN = 5;
 
   const chestName = useMemo(() => {
-    const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(chestHex.x), BigInt(chestHex.y)]));
+    const tile = getTileAt(components, DEFAULT_COORD_ALT, chestHex.x, chestHex.y);
     if (!tile) return "Unknown Crate";
     return getCrateName(tile.occupier_id);
   }, [chestHex.x, chestHex.y]);

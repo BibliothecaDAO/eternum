@@ -137,8 +137,17 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         directions: parseMaybeJson(event.explorer_directions),
         explore: event.explorer_explore,
         explore_find: parseMaybeJson(event.explore_find),
-        reward_resource_type: event.reward_resource_type,
-        reward_resource_amount: event.reward_resource_amount,
+        // reward_resource_type: event.reward_resource_type,
+        // reward_resource_amount: event.reward_resource_amount,
+      };
+
+    case "ExplorerExtractRewardStory":
+      return {
+        explorer_id: event.extract_explorer_id,
+        explorer_structure_id: event.extract_explorer_structure_id,
+        coord: buildCoord(event.extract_coord_x ?? null, event.extract_coord_y ?? null),
+        reward_resource_type: event.extract_reward_resource_type,
+        reward_resource_amount: event.extract_reward_resource_amount,
       };
 
     case "BattleStory":

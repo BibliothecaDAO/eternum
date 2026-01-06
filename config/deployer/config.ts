@@ -112,9 +112,6 @@ export class GameConfigDeployer {
     await grantCollectibleEliteNftMinterRole(config);
     await this.sleepNonLocal();
 
-    await setWonderBonusConfig(config);
-    await this.sleepNonLocal();
-
     await setAgentConfig(config);
     await this.sleepNonLocal();
 
@@ -974,30 +971,6 @@ export const setupGlobals = async (config: Config) => {
   console.log(chalk.green(`    ✔ Quest configured `) + chalk.gray(txQuest.statusReceipt));
 };
 
-export const setWonderBonusConfig = async (config: Config) => {
-  const calldata = {
-    signer: config.account,
-    within_tile_distance: config.config.wonderProductionBonus.within_tile_distance,
-    bonus_percent_num: config.config.wonderProductionBonus.bonus_percent_num,
-  };
-
-  console.log(
-    chalk.cyan(`
-  🏰 Wonder Bonus Configuration
-  ═══════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Wonder Bonus")}
-    │  ${chalk.gray("Within Tile Distance:")} ${chalk.white(calldata.within_tile_distance)}
-    │  ${chalk.gray("Bonus Percent Num:")} ${chalk.white((calldata.bonus_percent_num / 10_000) * 100)}%
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_wonder_bonus_config(calldata);
-  console.log(chalk.green(`    ✔ Wonder Bonus configured `) + chalk.gray(tx.statusReceipt));
-};
 
 export const setAgentConfig = async (config: Config) => {
   const calldata = {

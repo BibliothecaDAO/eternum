@@ -15,6 +15,8 @@ import {
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierStructure,
+  getTileAt,
+  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { HexPosition } from "@bibliothecadao/types";
@@ -33,7 +35,6 @@ export const SelectedWorldmapEntity = () => {
 
 const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { setup } = useDojo();
-  const tileComponent = setup.components.Tile;
   const openPopup = useUIStore((state) => state.openPopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
@@ -42,14 +43,9 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
 
   const tile = useMemo(() => {
-    if (!selectedHex || !tileComponent) return undefined;
-    const contractPosition = {
-      x: BigInt(selectedHex.col),
-      y: BigInt(selectedHex.row),
-    };
-
-    return getComponentValue(tileComponent, getEntityIdFromKeys([contractPosition.x, contractPosition.y]));
-  }, [tileComponent, selectedHex?.col, selectedHex?.row]);
+    if (!selectedHex) return undefined;
+    return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHex.col, selectedHex.row);
+  }, [selectedHex?.col, selectedHex?.row]);
 
   const biome = useMemo(() => {
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);

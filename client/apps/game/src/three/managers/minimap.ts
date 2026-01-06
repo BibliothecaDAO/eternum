@@ -5,9 +5,9 @@ import type { GameModeConfig } from "@/config/game-modes";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { playerColorManager } from "@/three/systems/player-colors";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, Position } from "@bibliothecadao/eternum";
+import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, Position, tileOptToTile } from "@bibliothecadao/eternum";
 
-import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
+import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier, TileOpt } from "@bibliothecadao/types";
 import type { Clause, Entity as ToriiEntity, ToriiClient } from "@dojoengine/torii-wasm/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
@@ -1060,9 +1060,9 @@ class Minimap {
       let cursor: string | undefined;
       const clause: Clause = {
         Keys: {
-          keys: [undefined, undefined],
+          keys: [undefined, undefined, undefined],
           pattern_matching: "FixedLen",
-          models: ["s1_eternum-Tile"],
+          models: ["s1_eternum-TileOpt"],
         },
       };
 
@@ -1071,7 +1071,7 @@ class Minimap {
           pagination: { limit, cursor, direction: "Forward", order_by: [] },
           clause,
           no_hashed_keys: false,
-          models: ["s1_eternum-Tile"],
+          models: ["s1_eternum-TileOpt"],
           historical: false,
         });
 
@@ -1116,9 +1116,9 @@ class Minimap {
 
     const clause: Clause = {
       Keys: {
-        keys: [undefined, undefined],
+        keys: [undefined, undefined, undefined],
         pattern_matching: "FixedLen",
-        models: ["s1_eternum-Tile"],
+        models: ["s1_eternum-TileOpt"],
       },
     };
 
@@ -1164,7 +1164,7 @@ class Minimap {
   }
 
   private extractTileFromToriiEntity(entity: ToriiEntity): Tile | null {
-    const tileModel = entity.models?.["s1_eternum-Tile"];
+    const tileModel = entity.models?.["s1_eternum-TileOpt"];
     if (!tileModel) return null;
 
     const readNumber = (field: string) => {
@@ -1184,18 +1184,34 @@ class Minimap {
       return Boolean(value);
     };
 
+    const readBigInt = (field: string) => {
+      const ty = (tileModel as any)[field];
+      if (!ty) return 0n;
+      const value = (ty as any).value;
+      return typeof value === "bigint" ? value : BigInt(value);
+    };
+
     const colRaw = readNumber("col");
     const rowRaw = readNumber("row");
+    const alt = readBoolean("alt");
+    const data = readBigInt("data");
+
     const position = new Position({ x: colRaw, y: rowRaw });
     const { x: col, y: row } = position.getNormalized();
 
+    const tileOpt: TileOpt = {
+      alt,
+      col: colRaw,
+      row: rowRaw,
+      data,
+    };
+
+    const tile = tileOptToTile(tileOpt);
+
     return {
+      ...tile,
       col,
       row,
-      biome: readNumber("biome"),
-      occupier_id: readNumber("occupier_id"),
-      occupier_type: readNumber("occupier_type"),
-      occupier_is_structure: readBoolean("occupier_is_structure"),
     };
   }
 

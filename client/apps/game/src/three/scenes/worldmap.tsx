@@ -37,6 +37,7 @@ import {
   BattleEventSystemUpdate,
   ChestSystemUpdate,
   ExplorerMoveSystemUpdate,
+  ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   isRelicActive,
@@ -60,8 +61,9 @@ import {
   HexPosition,
   ID,
   RelicEffect,
+  ResourcesIds,
   Structure,
-  StructureType,
+  StructureType
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -768,7 +770,8 @@ export default class WorldmapScene extends HexagonScene {
 
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.ExplorerMove.onExplorerMoveEventUpdate((update: ExplorerMoveSystemUpdate) => {
-        const { explorerId, resourceId, amount } = update;
+        const { explorerId } = update;
+        // const { explorerId, resourceId, amount } = update;
 
         // Find the army position using explorerId
         setTimeout(() => {
@@ -782,28 +785,34 @@ export default class WorldmapScene extends HexagonScene {
             if (followArmyMoves && currentScene === SceneName.WorldMap) {
               this.focusCameraOnEvent(armyPosition.col, armyPosition.row, "Following Army Movement");
             }
-            if (resourceId === 0) {
-              return;
-            }
-            const resource = findResourceById(resourceId);
-            const ownerAddress = this.getEntityOwnerAddress(explorerId);
-            const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
-            if (isOwnArmy) {
-              // Play the sound for the resource gain only when it belongs to the local player
-              playResourceSound(resourceId);
-            }
-            // Display the resource gain at the army's position
-            this.displayResourceGain(
-              resourceId,
-              amount,
-              armyPosition.col,
-              armyPosition.row,
-              resource?.trait + " found",
-            );
+            // if (resourceId === 0) {
+            //   return;
+            // }
+            // const resource = findResourceById(resourceId);
+            // const ownerAddress = this.getEntityOwnerAddress(explorerId);
+            // const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
+            // if (isOwnArmy) {
+            //   // Play the sound for the resource gain only when it belongs to the local player
+            //   playResourceSound(resourceId);
+            // }
+            // // Display the resource gain at the army's position
+            // this.displayResourceGain(
+            //   resourceId,
+            //   amount,
+            //   armyPosition.col,
+            //   armyPosition.row,
+            //   resource?.trait + " found",
+            // );
           } else {
             console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
           }
         }, 500);
+      }),
+    );
+
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.ExplorerReward.onExplorerRewardEventUpdate((update: ExplorerRewardSystemUpdate) => {
+        this.handleExplorerRewardEvent(update);
       }),
     );
 
@@ -1112,6 +1121,42 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     return undefined;
+  }
+
+  private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
+    if (this.isRewardDebugEnabled()) {
+      console.debug("[ExplorerRewardEvent] update", update);
+    }
+
+    const { explorerId, resourceId, amount } = update;
+    if (!resourceId) {
+      return;
+    }
+
+    setTimeout(() => {
+      const armyPosition = this.armiesPositions.get(explorerId);
+      if (!armyPosition) {
+        console.warn("ExplorerRewardEvent missing position for reward display", { explorerId, update });
+        return;
+      }
+
+      const resource = findResourceById(resourceId);
+      const text = resource?.trait ? `${resource.trait} found` : undefined;
+      const ownerAddress = this.getEntityOwnerAddress(explorerId);
+      const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
+
+      if (isOwnArmy) {
+        playResourceSound(resourceId as ResourcesIds);
+      }
+
+      void this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, text);
+    }, 500);
+  }
+
+  private isRewardDebugEnabled(): boolean {
+    return Boolean(
+      (globalThis as { __ETERNUM_DEBUG_REWARD_EVENTS__?: boolean }).__ETERNUM_DEBUG_REWARD_EVENTS__,
+    );
   }
 
   private getEntityLabel(entityId: ID): string {
