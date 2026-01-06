@@ -53,11 +53,20 @@ pub mod troop_movement_systems {
         pub explorer_structure_id: ID,
         pub explorer_owner_address: starknet::ContractAddress,
         pub explore_find: ExploreFind,
-        pub reward_resource_type: u8,
-        pub reward_resource_amount: u128,
         pub timestamp: u64,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplorerRewardEvent {
+        #[key]
+        pub explorer_id: ID,
+        pub explorer_structure_id: ID,
+        pub explorer_owner_address: starknet::ContractAddress,
+        pub reward_resource_id: u8,
+        pub reward_resource_amount: u128,
+        pub timestamp: u64,
+    }
     #[abi(embed_v0)]
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
         fn explorer_move(
@@ -319,8 +328,6 @@ pub mod troop_movement_systems {
                         explorer_structure_id: explorer.owner,
                         explorer_owner_address: starknet::get_caller_address(),
                         explore_find: explore_find,
-                        reward_resource_type: explore_reward_type,
-                        reward_resource_amount: explore_reward_amount,
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
@@ -409,6 +416,19 @@ pub mod troop_movement_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
+
+            world
+                .emit_event(
+                    @ExplorerRewardEvent {
+                        explorer_id,
+                        explorer_structure_id: explorer.owner,
+                        explorer_owner_address: starknet::get_caller_address(),
+                        reward_resource_id: explore_reward_type,
+                        reward_resource_amount: explore_reward_amount,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
         }
     }
 }
