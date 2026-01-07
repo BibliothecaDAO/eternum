@@ -3,10 +3,12 @@ import { MergedNftData } from "@/types";
 import { ChestAsset, AssetRarity } from "@/utils/cosmetics";
 import { useChestContent } from "@/hooks/use-chest-content";
 import { useOpenChest } from "@/hooks/use-open-chest";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { useChestOpeningFlow } from "./use-chest-opening-flow";
 import { ChestSelectionModal } from "./chest-selection-modal";
-import { OpeningStage, PendingOverlay } from "./opening-stage";
+import { OpeningStage, getChestOpeningVideo } from "./opening-stage";
+import { PendingOverlay } from "./pending-overlay";
 import { RevealStage } from "./reveal-stage";
 import { ChestStageContainer, ChestStageContent } from "./chest-stage-container";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
   const { flowState, actions } = useChestOpeningFlow();
   const { openChest, isLoading: isOpenChestLoading } = useOpenChest();
   const { chestOpenTimestamp, setShowLootChestOpening } = useLootChestOpeningStore();
+  const isMobile = useIsMobile();
 
   // Track content visibility for animations
   const [showRevealContent, setShowRevealContent] = useState(false);
@@ -142,16 +145,22 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
         />
       )}
 
-      {/* Pending State */}
-      {flowState.state === "pending" && <PendingOverlay />}
+      {/* Pending State - Waiting for blockchain confirmation */}
+      {flowState.state === "pending" && (
+        <PendingOverlay
+          active={true}
+          title="Opening chest"
+          subtitle="Waiting for confirmation"
+          rarity={flowState.selectedChestRarity}
+        />
+      )}
 
       {/* Opening Stage (Video) */}
       {flowState.state === "opening" && (
         <OpeningStage
-          chestRarity={flowState.selectedChestRarity}
-          isPending={false}
-          isOpening={true}
-          onVideoEnd={handleVideoEnd}
+          active={true}
+          videoSrc={getChestOpeningVideo(flowState.selectedChestRarity, isMobile)}
+          onComplete={handleVideoEnd}
           onSkip={handleSkip}
         />
       )}
