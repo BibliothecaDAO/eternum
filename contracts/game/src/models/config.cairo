@@ -8,6 +8,8 @@ use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::utils::random::VRFImpl;
 use starknet::ContractAddress;
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
+use crate::utils::math::{PercentageImpl};
+
 //
 // GLOBAL CONFIGS
 //
@@ -276,7 +278,7 @@ pub impl SpeedImpl of SpeedTrait {
     }
 }
 
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct MapConfig {
     pub reward_resource_amount: u16,
     pub shards_mines_win_probability: u16,
@@ -303,11 +305,19 @@ pub struct QuestConfig {
     pub quest_discovery_fail_prob: u16,
 }
 
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct SettlementConfig {
     pub center: u32,
-    pub base_distance: u32,
-    pub subsequent_distance: u32,
+    pub base_distance: u8,
+    pub layers_skipped: u8,
+    pub layer_max: u8,
+    pub layer_capacity_increment: u8,
+    pub layer_capacity_bps: u16,
+
+    pub spires_layer_distance: u8,
+    pub spires_max_count: u16,
+    pub spires_settled_count: u16,
+
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -318,93 +328,128 @@ pub struct RealmCountConfig {
 
 #[generate_trait]
 pub impl SettlementConfigImpl of SettlementConfigTrait {
-    fn log_layer_capacity() { // // Get the current realm count
-    // let realm_count: u16 =  8000;
-    // // Calculate the maximum layer based on realm count
-    // // We need to find n where 3n² - 3n + 1 >= realm_count
-    // // Solving the quadratic equation: 3n² - 3n - (realm_count - 1) >= 0
 
-    // // Start from layer 1 and find the first layer that can accommodate all realms
-    // let mut layer: u32 = 1;
-    // let mut capacity: u32 = 5; // Layer 1 capacity
-    // println!("Layer: 1, Capacity: 5, Added Capacity: 5");
-
-    // while capacity < realm_count.into() {
-    //     layer += 1;
-    //     // Each new layer adds 6 * layer realms
-    //     capacity += 6 * layer;
-    //     println!("Layer: {}, Capacity: {}, Added Capacity: {}", layer, capacity, 6 * layer);
-
-    // };
-
-    // println!("Max layer: {}", layer);
+    fn _num_hex_directions() -> u32 {
+        6
     }
 
-    // Calculate the maximum layer on the concentric hexagon
-    // that can be built on based on realm count
-    fn max_layer(realm_count: u32) -> u32 {
-        // each layer's capacity can be obtained by calling the function
-        // above (fn log_layer_capacity)
-
-        if realm_count <= 1500 {
-            return 26; // 2106 capacity
-        }
-
-        if realm_count <= 2500 {
-            return 32; // 3168 capacity
-        }
-
-        if realm_count <= 3500 {
-            return 37; // 4218 capacity
-        }
-
-        if realm_count <= 4500 {
-            return 41; // 5166 capacity
-        }
-
-        if realm_count <= 5500 {
-            return 45; // 6210 capacity
-        }
-
-        if realm_count <= 6500 {
-            return 49; // 7350 capacity
-        }
-
-        return 52; // 8268 capacity
+    // Calculate sum of x*y + x*(y-1) + x*(y-2) + ... + x*0
+    // Formula: x * (y + 1) * y / 2
+    // Used to calculate total capacity up to a certain layer
+    fn _calculate_sum(x: u32, y: u32) -> u32 {
+        (x * (y + 1) * y) / 2
     }
 
-    fn max_points(layer: u32) -> u32 {
+
+
+    fn _max_spots(layer_number: u32, layers_skipped: u32) -> u32 {
+        // this gets the max number of points that can fit 
+        // in from layer 1 to layer y where each layer
+        // has capacity of _num_hex_directions() * layer_number
+
+        // we also need to account for layers skipped
+
+        assert!(layer_number >= layers_skipped, "Layer number must be greater than or equal to layers skipped");
+        if layer_number == layers_skipped {return 0;}
+        let a = Self::_calculate_sum( Self::_num_hex_directions(), layer_number);
+        let b = Self::_calculate_sum( Self::_num_hex_directions(), layers_skipped);
+        a - b
+    }
+
+    fn _spire_layer_number(layer_number: u32, spires_layer_distance: u8) -> u32 {
+        layer_number / spires_layer_distance.into()
+    }
+    
+    fn _spire_center_point_count() -> u32 {
+        1
+    }
+
+    fn _max_spire_spots(layer_number: u32, spires_layer_distance: u8) -> u16 {
+        (Self::_spire_center_point_count() 
+        + Self::_max_spots(
+            Self::_spire_layer_number(layer_number, spires_layer_distance), 
+            0
+        )).try_into().unwrap()
+    }
+
+    fn _max_point_index(layer: u32) -> u32 {
         layer - 1
     }
 
     // todo: test aggresively
-    fn generate_coord(self: SettlementConfig, max_layer: u32, side: u32, layer: u32, point: u32, map_center: Coord) -> Coord {
+    fn generate_coord(self: SettlementConfig, spire: bool, side: u32, mut layer: u32, point_index: u32, map_center: Coord) -> Coord {
         assert!(side < 6, "Side must be less than 6"); // 0 - 5
-        assert!(layer > 0, "Layer must be greater than 0");
-        assert!(layer <= max_layer, "Layer must be less than max layer");
-        assert!(point <= Self::max_points(layer), "Point must be less than max side points");
+        assert!(layer > 0, "Layer must be greater than 0"); // 1 - layer_max
+
+        let mut base_distance: u32 = self.base_distance.into();
+        if spire {
+
+             
+            let max_spire_layer = Self::_spire_layer_number(self.layer_max.into(), self.spires_layer_distance);
+            assert!(layer <= max_spire_layer.into(), "Layer must be less than max layer for spires");
+
+            // scale the map such that layer 1 of spires is 
+            // like layer 6 (self.spires_layer_distance) for realms
+            // so we scale down the layer number and scale up the base distance.
+            // we basically zoom out and rescale the map for spires.
+            // we expect the layer to be scaled down already
+
+            base_distance = self.base_distance.into() * self.spires_layer_distance.into(); 
+
+        } else {
+            assert!(layer <= self.layer_max.into(), "Layer must be less than max layer");
+            assert!(layer > self.layers_skipped.into(), "Layer must be greater than layers skipped");
+        }
+
+        assert!(point_index <= Self::_max_point_index(layer), "Point must be less than max side points");
+
 
         let mut start_coord: Coord = map_center;
+
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest), (Direction::East, Direction::SouthWest),
-            (Direction::West, Direction::NorthEast), (Direction::West, Direction::SouthEast),
-            (Direction::SouthEast, Direction::West), (Direction::NorthEast, Direction::West),
+            (Direction::East, Direction::SouthWest),
+            (Direction::SouthEast, Direction::West), 
+            (Direction::SouthWest, Direction::NorthWest), 
+            (Direction::West, Direction::NorthEast), 
+            (Direction::NorthWest, Direction::East),
+            (Direction::NorthEast, Direction::SouthEast)
         ];
         let (start_direction, triangle_direction) = *start_directions.at(side);
-        assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
 
         // get the coord of the first structure on layer 1 of the selected side
         let side_first_structure__layer_one: Coord = start_coord
-            .neighbor_after_distance(start_direction, self.base_distance)
-            .neighbor_after_distance(triangle_direction, self.base_distance / 2);
+            .neighbor_after_distance(start_direction, base_distance);
 
         // get the coord of the first structure on selected layer of the selected side
         let side_first_structure__layer_x = side_first_structure__layer_one
-            .neighbor_after_distance(start_direction, self.subsequent_distance * (layer - 1));
+            .neighbor_after_distance(start_direction, base_distance * (layer - 1));
 
         let destination_coord: Coord = side_first_structure__layer_x
-            .neighbor_after_distance(triangle_direction, self.subsequent_distance * point);
+            .neighbor_after_distance(triangle_direction, base_distance * point_index);
         return destination_coord;
+    }
+
+    fn update_max_layer_and_spires(ref self: SettlementConfig, realm_count: u64) {
+
+        // max realm spots
+        let mut current_max_realm_spots_capacity 
+            = Self::_max_spots(self.layer_max.into(), self.layers_skipped.into())
+            // add back the center spire spot that will be taken in _max_spire_spots 
+            // because it is not counted in realms spots
+            + Self::_spire_center_point_count()
+            - Self::_max_spire_spots(self.layer_max.into(), self.spires_layer_distance).into();
+
+
+        let capacity_threshold = PercentageImpl::get(
+                current_max_realm_spots_capacity.into(), self.layer_capacity_bps.into(),
+            );
+        if realm_count > capacity_threshold{
+            self.layer_max += self.layer_capacity_increment;
+            self.spires_max_count = Self::_max_spire_spots(
+                self.layer_max.into(), 
+                self.spires_layer_distance
+            );
+        }
     }
 }
 

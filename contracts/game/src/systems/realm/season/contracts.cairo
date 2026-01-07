@@ -88,12 +88,23 @@ pub mod realm_systems {
             // anti bot protection
             let tx_info: TxInfo = starknet::get_tx_info().unbox();
             let tx_hash: felt252 = tx_info.transaction_hash;
+
             let caller: ContractAddress = starknet::get_caller_address();
 
+            // todo: use tx origin instead
             let mut anti_bot: AntiBot = world.read_model((caller, tx_hash));
             assert!(!anti_bot.used, "multicalls not allowed");
             anti_bot.used = true;
             world.write_model(@anti_bot);
+
+            // ensure all spires have been settled before allowing new realms
+            let mut settlement_config: SettlementConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("settlement_config"),
+            );
+            assert!(
+                settlement_config.spires_max_count == settlement_config.spires_settled_count,
+                "Eternum: All spires must be created before creating new realms"
+            );
 
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
@@ -115,13 +126,11 @@ pub mod realm_systems {
             WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);
 
             // get realm coordinates
-            let settlement_config: SettlementConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("settlement_config"),
-            );
-            let settlement_max_layer: u32 = SettlementConfigImpl::max_layer(realm_count.count.into());
             let map_center: Coord = CoordImpl::center(ref world);
             let coord: Coord = settlement_config
-                .generate_coord(settlement_max_layer, settlement.side, settlement.layer, settlement.point, map_center);
+                .generate_coord(false, settlement.side, settlement.layer, settlement.point, map_center);
+            settlement_config.update_max_layer_and_spires(realm_count.count.into());
+            WorldConfigUtilImpl::set_member(ref world,selector!("settlement_config"),settlement_config);
 
             // create realm
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
