@@ -428,7 +428,7 @@ pub mod troop_battle_systems {
 
             // ensure explorer is adjacent to structure
             assert!(
-                explorer_aggressor.coord.neighbor(structure_direction) == guarded_structure.coord(),
+                explorer_aggressor.coord.is_adjacent(guarded_structure.coord()),
                 "explorer is not adjacent to structure",
             );
 
@@ -687,7 +687,7 @@ pub mod troop_battle_systems {
 
             // ensure structure is adjacent to explorer
             assert!(
-                explorer_defender.coord == structure_aggressor_base.coord().neighbor(explorer_direction),
+                structure_aggressor_base.coord().is_adjacent(explorer_defender.coord),
                 "structure is not adjacent to explorer",
             );
 

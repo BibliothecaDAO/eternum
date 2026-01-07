@@ -24,7 +24,7 @@ pub mod troop_raid_systems {
         WorldConfigUtilImpl,
     };
     use crate::models::owner::OwnerAddressTrait;
-    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::position::{CoordTrait, Direction, TravelTrait};
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
@@ -120,7 +120,7 @@ pub mod troop_raid_systems {
 
             // ensure explorer is adjacent to structure
             assert!(
-                explorer_aggressor.coord.neighbor(structure_direction) == guarded_structure.coord(),
+                explorer_aggressor.coord.is_adjacent(guarded_structure.coord()),
                 "explorer is not adjacent to structure",
             );
 
