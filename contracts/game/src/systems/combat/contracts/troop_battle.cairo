@@ -32,7 +32,7 @@ pub mod troop_battle_systems {
     };
     use crate::models::events::{BattleStory, BattleType, BattleStructureType, Story, StoryEvent};
     use crate::models::owner::OwnerAddressTrait;
-    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::position::{Coord, CoordTrait, Direction, TravelTrait};
     use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
@@ -66,6 +66,14 @@ pub mod troop_battle_systems {
         winner_id: ID,
         max_reward: Span<(u8, u128)>,
         timestamp: u64,
+    }
+
+    fn is_explorer_battle_adjacent(aggressor: Coord, defender: Coord) -> bool {
+        if aggressor.alt == defender.alt {
+            aggressor.is_adjacent(defender)
+        } else {
+            aggressor.x == defender.x && aggressor.y == defender.y
+        }
     }
 
 
@@ -127,7 +135,7 @@ pub mod troop_battle_systems {
 
             // ensure both explorers are adjacent to each other
             assert!(
-                explorer_defender.coord == explorer_aggressor.coord.neighbor(defender_direction),
+                is_explorer_battle_adjacent(explorer_aggressor.coord, explorer_defender.coord),
                 "explorers are not adjacent",
             );
 
