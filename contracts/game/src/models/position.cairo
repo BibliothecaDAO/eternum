@@ -22,12 +22,14 @@ pub const CENTER_COL: u32 = CENTER_ROW;
 
 // multiplier to convert hex distance to km
 const HEX_DISTANCE_TO_KM: u128 = 1;
+pub const REGULAR_TO_ALTERNATE_MAP_SCALE: u128 = 15;
 
 
 // https://www.redblobgames.com/grids/hexagons/#coordinates-cube
 
 #[derive(Copy, Drop, PartialEq, Serde)]
 struct Cube {
+    alt: bool,
     q: i128,
     r: i128,
     s: i128,
@@ -43,7 +45,7 @@ pub struct Travel {
 
 impl CubeZeroable of Zero<Cube> {
     fn zero() -> Cube {
-        Cube { q: 0, r: 0, s: 0 }
+        Cube { alt: false, q: 0, r: 0, s: 0 }
     }
     fn is_zero(self: @Cube) -> bool {
         self.q == @0 && self.r == @0 && self.s == @0
@@ -57,15 +59,15 @@ impl CubeZeroable of Zero<Cube> {
 #[generate_trait]
 impl CubeImpl of CubeTrait {
     fn subtract(self: Cube, other: Cube) -> Cube {
-        Cube { q: self.q - other.q, r: self.r - other.r, s: self.s - other.s }
+        Cube { alt: self.alt, q: self.q - other.q, r: self.r - other.r, s: self.s - other.s }
     }
 
     fn add(self: Cube, other: Cube) -> Cube {
-        Cube { q: self.q + other.q, r: self.r + other.r, s: self.s + other.s }
+        Cube { alt: self.alt, q: self.q + other.q, r: self.r + other.r, s: self.s + other.s }
     }
 
     fn abs(self: Cube) -> Cube {
-        Cube { q: self.q.abs(), r: self.r.abs(), s: self.s.abs() }
+        Cube { alt: self.alt, q: self.q.abs(), r: self.r.abs(), s: self.s.abs() }
     }
 
     fn neighbor_after_distance(self: Cube, direction: Direction, tile_distance: u32) -> Cube {
@@ -75,12 +77,12 @@ impl CubeImpl of CubeTrait {
         //      Also, NorthWest and SouthWest
         let di: i128 = tile_distance.into();
         let cube_direction_vectors = match direction {
-            Direction::East => Cube { q: di, r: 0, s: -di },
-            Direction::NorthEast => Cube { q: 0, r: di, s: -di },
-            Direction::NorthWest => Cube { q: -di, r: di, s: 0 },
-            Direction::West => Cube { q: -di, r: 0, s: di },
-            Direction::SouthWest => Cube { q: 0, r: -di, s: di },
-            Direction::SouthEast => Cube { q: di, r: -di, s: 0 },
+            Direction::East => Cube { alt: self.alt, q: di, r: 0, s: -di },
+            Direction::NorthEast => Cube { alt: self.alt, q: 0, r: di, s: -di },
+            Direction::NorthWest => Cube { alt: self.alt, q: -di, r: di, s: 0 },
+            Direction::West => Cube { alt: self.alt, q: -di, r: 0, s: di },
+            Direction::SouthWest => Cube { alt: self.alt, q: 0, r: -di, s: di },
+            Direction::SouthEast => Cube { alt: self.alt, q: di, r: -di, s: 0 },
         };
 
         let neighbor = self.add(cube_direction_vectors);
@@ -115,7 +117,7 @@ impl CubeImpl of CubeTrait {
 
     fn scale(self: Cube, factor: i128) -> Cube {
         // https://www.redblobgames.com/grids/hexagons/#rings-single
-        Cube { q: self.q * factor, r: self.r * factor, s: self.s * factor }
+        Cube { alt: self.alt, q: self.q * factor, r: self.r * factor, s: self.s * factor }
     }
 
     fn ring(self: Cube, radius: u32) -> Array<Cube> {
@@ -124,6 +126,7 @@ impl CubeImpl of CubeTrait {
 
         let mut results: Array<Cube> = array![];
         let mut zero_cube: Cube = Zero::zero();
+        zero_cube.alt = self.alt;
         let mut hex = self.add(zero_cube.neighbor_after_distance(Direction::SouthWest, 1).scale(radius.into()));
         for direction in DirectionImpl::all() {
             for _ in 0..radius {
@@ -200,6 +203,15 @@ pub impl CoordImpl of CoordTrait {
         let map_center_offset = WorldConfigUtilImpl::get_member(world, selector!("map_center_offset"));
         Coord { alt: false, x: CENTER_COL - map_center_offset, y: CENTER_ROW - map_center_offset }
     }
+
+    fn step_distance(self: Coord) -> u32 {
+        if self.alt {
+            REGULAR_TO_ALTERNATE_MAP_SCALE.try_into().unwrap()
+        } else {
+            1
+        }
+    }
+
     fn neighbor(self: Coord, direction: Direction) -> Coord {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
         // NOTE: NorthEast and SouthEast are swapped
@@ -207,22 +219,22 @@ pub impl CoordImpl of CoordTrait {
         if self.y & 1 == 0 {
             // where self.y (row) is even
             match direction {
-                Direction::East(()) => Coord { alt: false, x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord { alt: false, x: self.x + 1, y: self.y + 1 },
-                Direction::NorthWest(()) => Coord { alt: false, x: self.x, y: self.y + 1 },
-                Direction::West(()) => Coord { alt: false, x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord { alt: false, x: self.x, y: self.y - 1 },
-                Direction::SouthEast(()) => Coord { alt: false, x: self.x + 1, y: self.y - 1 },
+                Direction::East(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y },
+                Direction::NorthEast(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y + 1 },
+                Direction::NorthWest(()) => Coord { alt: self.alt, x: self.x, y: self.y + 1 },
+                Direction::West(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y },
+                Direction::SouthWest(()) => Coord { alt: self.alt, x: self.x, y: self.y - 1 },
+                Direction::SouthEast(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y - 1 },
             }
         } else {
             // where self.y (row) is odd
             match direction {
-                Direction::East(()) => Coord { alt: false, x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord { alt: false, x: self.x, y: self.y + 1 },
-                Direction::NorthWest(()) => Coord { alt: false, x: self.x - 1, y: self.y + 1 },
-                Direction::West(()) => Coord { alt: false, x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord { alt: false, x: self.x - 1, y: self.y - 1 },
-                Direction::SouthEast(()) => Coord { alt: false, x: self.x, y: self.y - 1 },
+                Direction::East(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y },
+                Direction::NorthEast(()) => Coord { alt: self.alt, x: self.x, y: self.y + 1 },
+                Direction::NorthWest(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y + 1 },
+                Direction::West(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y },
+                Direction::SouthWest(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y - 1 },
+                Direction::SouthEast(()) => Coord { alt: self.alt, x: self.x, y: self.y - 1 },
             }
         }
     }
@@ -230,7 +242,9 @@ pub impl CoordImpl of CoordTrait {
     fn neighbor_after_distance(self: Coord, direction: Direction, tile_distance: u32) -> Coord {
         let cube: Cube = self.into();
         let neighbor = cube.neighbor_after_distance(direction, tile_distance);
-        neighbor.into()
+        let mut coord: Coord = neighbor.into();
+        coord.alt = self.alt;
+        coord
     }
 
     fn ring(self: Coord, radius: u32) -> Array<Coord> {
@@ -238,7 +252,8 @@ pub impl CoordImpl of CoordTrait {
         let cube_ring: Array<Cube> = cube.ring(radius.into());
         let mut coord_ring: Array<Coord> = array![];
         for cube in cube_ring {
-            coord_ring.append(cube.into());
+            let mut coord: Coord = cube.into();
+            coord_ring.append(coord);
         }
         coord_ring
     }
@@ -270,7 +285,7 @@ pub impl CubeIntoCoord of Into<Cube, Coord> {
         // convert cube to even-r coordinates
         let col: i128 = self.q + ((self.r + (self.r % 2)) / 2);
         let row: i128 = self.r;
-        Coord { alt: false, x: col.try_into().unwrap(), y: row.try_into().unwrap() }
+        Coord { alt: self.alt, x: col.try_into().unwrap(), y: row.try_into().unwrap() }
     }
 }
 
@@ -290,7 +305,7 @@ pub impl CoordIntoCube of Into<Coord, Cube> {
         // was col, it would be (col & 1) where `&` is bitwise AND
         let r = row;
         let s = -q - r;
-        Cube { q, r, s }
+        Cube { alt: self.alt, q, r, s }
     }
 }
 
@@ -302,22 +317,25 @@ pub trait TravelTrait<T> {
     fn km_travel_time(self: T, destination: T, sec_per_km: u16) -> u64;
 }
 
-pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
-    fn is_adjacent(self: T, destination: T) -> bool {
-        // todo: test
+pub impl TravelImpl of TravelTrait<Coord> {
+    fn is_adjacent(self: Coord, destination: Coord) -> bool {
+        if self.alt != destination.alt {
+            return false;
+        }
         let tile_distance = Self::tile_distance(self, destination);
-        tile_distance == 1
+        let expected_distance: u128 = if self.alt { REGULAR_TO_ALTERNATE_MAP_SCALE } else { 1 };
+        tile_distance == expected_distance
     }
 
-    fn tile_distance(self: T, destination: T) -> u128 {
+    fn tile_distance(self: Coord, destination: Coord) -> u128 {
         CubeImpl::distance(self.into(), destination.into())
     }
 
-    fn km_distance(self: T, destination: T) -> u128 {
+    fn km_distance(self: Coord, destination: Coord) -> u128 {
         CubeImpl::distance(self.into(), destination.into()) * HEX_DISTANCE_TO_KM
     }
 
-    fn km_travel_time(self: T, destination: T, sec_per_km: u16) -> u64 {
+    fn km_travel_time(self: Coord, destination: Coord, sec_per_km: u16) -> u64 {
         let distance = self.km_distance(destination);
         let time = distance * sec_per_km.into();
         time.try_into().unwrap()
@@ -509,5 +527,3 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 //         }
 //     }
 // }
-
-

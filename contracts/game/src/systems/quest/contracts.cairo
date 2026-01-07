@@ -446,7 +446,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         let amount: u128 = base_reward_amount * QUEST_REWARD_BASE_MULTIPLIER.into() * (level.into() + 1);
 
         let id = world.dispatcher.uuid();
-        let coord = Coord { alt: false, x: tile.col, y: tile.row };
+        let coord = Coord { alt: tile.alt, x: tile.col, y: tile.row };
 
         let quest_tile = @QuestTile {
             id, game_address, coord, level, resource_type, amount, capacity, participant_count: 0,

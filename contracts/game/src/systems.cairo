@@ -113,6 +113,14 @@ pub mod quest {
     pub mod contracts;
 }
 
+pub mod alt_movement {
+    pub mod contracts;
+}
+
+pub mod spire {
+    pub mod contracts;
+}
+
 pub mod prize_distribution {
     pub mod contracts;
     #[cfg(test)]
