@@ -101,8 +101,6 @@ pub mod troop_movement_systems {
             IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
             let mut explore_find = ExploreFind::None;
-            let mut explore_reward_type = 0;
-            let mut explore_reward_amount = 0;
 
             let caller = starknet::get_caller_address();
 
@@ -358,6 +356,7 @@ pub mod troop_movement_systems {
             let mut tile: Tile =tile_opt.into();
             assert!(explorer_id == tile.occupier_id, "tile occupier should be explorer");
             assert!(tile.biome != Biome::None.into(), "tile must be explored");
+            if tile.reward_extracted {return;}
             assert!(tile.reward_extracted == false, "tile reward already extracted");
 
             // mark reward as extracted
