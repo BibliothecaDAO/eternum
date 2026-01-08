@@ -49,6 +49,7 @@
     "graphql": "^16.9.0",
     "graphql-tag": "^2.12.6",
     "gsap": "^3.12.5",
+    "html-to-image": "^1.11.13",
     "jotai": "^2.10.1",
     "nuqs": "^2.0.4",
     "open": "catalog:",

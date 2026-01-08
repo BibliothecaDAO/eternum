@@ -718,6 +718,9 @@ importers:
       gsap:
         specifier: ^3.12.5
         version: 3.14.2
+      html-to-image:
+        specifier: ^1.11.13
+        version: 1.11.13
       jotai:
         specifier: ^2.10.1
         version: 2.16.1(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@18.3.27)(react@18.3.1)
@@ -1881,7 +1884,7 @@ packages:
   '@cartridge/connector@0.7.14-alpha.3':
     resolution: {integrity: sha512-nO5ab6OQNOHgXFNsWPqgqAW35gEzlovrgK5Lb8IiMixNNxcyGYX9H93MiRqaU6IniNpfca2Bgx00AFSDE2VUuQ==}
     peerDependencies:
-      '@starknet-react/core': ^3.7.3
+      '@starknet-react/core': 3.7.2
 
   '@cartridge/controller@0.7.13':
     resolution: {integrity: sha512-LBor+FxYtAETgj8+m+23BDVhwXEZ+FqtwaLAVBEen6oz4//o3pU+wP2xBl8YAtcAL6mJ8gYcOhfqdHK/Ux5rwQ==}
@@ -8299,6 +8302,9 @@ packages:
 
   html-parse-stringify@3.0.1:
     resolution: {integrity: sha512-KknJ50kTInJ7qIScF3jeaFRpMpE8/lfiTdzf/twXyPBLAGrLRTmkz3AdTnKeh40X8k9L2fdYwEp/42WGXIRGcg==}
+
+  html-to-image@1.11.13:
+    resolution: {integrity: sha512-cuOPoI7WApyhBElTTb9oqsawRvZ0rHhaHwghRLlTuffoD1B2aDemlCruLeZrUIIdvG7gs9xeELEPm6PhuASqrg==}
 
   html-void-elements@3.0.0:
     resolution: {integrity: sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg==}
@@ -22007,6 +22013,8 @@ snapshots:
   html-parse-stringify@3.0.1:
     dependencies:
       void-elements: 3.1.0
+
+  html-to-image@1.11.13: {}
 
   html-void-elements@3.0.0: {}
 

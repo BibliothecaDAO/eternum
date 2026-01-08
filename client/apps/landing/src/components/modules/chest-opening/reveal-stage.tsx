@@ -1,15 +1,32 @@
+import { Button } from "@/components/ui/button";
 import { useChestSounds } from "@/hooks/use-chest-sounds";
+import { useRevealShare } from "@/hooks/use-reveal-share";
 import { AssetRarity, ChestAsset, RARITY_STYLES } from "@/utils/cosmetics";
-import { Loader2 } from "lucide-react";
+import { Copy, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ChestStageContainer, ChestStageContent, ChestStageHeader } from "./chest-stage-container";
 import { TiltCard } from "./tilt-card";
 import { createCardRevealAnimation } from "./use-gsap-timeline";
 
+// X (Twitter) brand icon
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
 interface RevealStageProps {
   assets: ChestAsset[];
+  chestRarity: AssetRarity;
   onComplete: () => void;
   showContent: boolean;
+  // Action handlers for buttons
+  onClose?: () => void;
+  onOpenAnother?: () => void;
+  remainingChestsCount?: number;
+  isDone?: boolean;
 }
 
 // Helper to preload a single image
@@ -128,7 +145,16 @@ const resolveAndPreloadAssetImages = async (
   return imageMap;
 };
 
-export function RevealStage({ assets, onComplete, showContent }: RevealStageProps) {
+export function RevealStage({
+  assets,
+  chestRarity,
+  onComplete,
+  showContent,
+  onClose,
+  onOpenAnother,
+  remainingChestsCount = 0,
+  isDone = false,
+}: RevealStageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
@@ -138,6 +164,11 @@ export function RevealStage({ assets, onComplete, showContent }: RevealStageProp
 
   // Sound effects
   const { playCompletion } = useChestSounds();
+
+  // Share functionality
+  const { captureRef, copyImageToClipboard, shareOnX, isCapturing } = useRevealShare({
+    chestRarity,
+  });
 
   // Fetch metadata and preload images when assets change
   useEffect(() => {
@@ -234,8 +265,8 @@ export function RevealStage({ assets, onComplete, showContent }: RevealStageProp
 
   return (
     <ChestStageContainer>
-      <ChestStageContent className="py-8">
-        <div ref={containerRef} className="flex flex-col items-center w-full overflow-hidden">
+      <ChestStageContent className="py-4 !justify-start overflow-y-auto">
+        <div ref={containerRef} className="flex flex-col items-center w-full">
           {/* Loading state while images preload */}
           {showContent && isPreloading && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -244,64 +275,121 @@ export function RevealStage({ assets, onComplete, showContent }: RevealStageProp
             </div>
           )}
 
-          {/* Header - show once images are loaded */}
-          <div className={`transition-opacity duration-500 ${canShowCards ? "opacity-100" : "opacity-0"}`}>
-            <ChestStageHeader
-              title="Chest Opened!"
-              subtitle={`You received ${displayAssets.length} item${displayAssets.length !== 1 ? "s" : ""}`}
-            />
+          {/* Capture area for screenshot - excludes share buttons */}
+          <div ref={captureRef} className="flex flex-col items-center w-full pt-4 pb-6">
+            {/* Header - show once images are loaded */}
+            <div className={`transition-opacity duration-500 ${canShowCards ? "opacity-100" : "opacity-0"}`}>
+              <ChestStageHeader
+                title="Chest Opened!"
+                subtitle={`You received ${displayAssets.length} item${displayAssets.length !== 1 ? "s" : ""}`}
+              />
+            </div>
+
+            {/* Cards container - only render when images are loaded */}
+            {imagesLoaded && (
+              <div
+                ref={cardsRef}
+                className={`flex ${getLayoutClass()} items-center max-w-full overflow-hidden py-4 px-8`}
+              >
+                {displayAssets.map((asset, index) => (
+                  <div
+                    key={`${asset.id}-${index}`}
+                    className="reveal-card opacity-0"
+                    style={{
+                      // Highlight the rarest item
+                      zIndex: asset === rarestAsset ? 10 : 1,
+                      transform: asset === rarestAsset ? "scale(1.05)" : "scale(1)",
+                    }}
+                  >
+                    <TiltCard
+                      asset={asset}
+                      size={
+                        asset === rarestAsset && displayAssets.length > 1
+                          ? { width: cardSize.width * 1.1, height: cardSize.height * 1.1 }
+                          : cardSize
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Stats summary - always rendered to prevent layout shift */}
+            <div
+              className={`mt-6 flex flex-wrap justify-center gap-3 transition-opacity duration-500 ${
+                canShowCards && animationComplete ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {Object.entries(
+                displayAssets.reduce(
+                  (acc, asset) => {
+                    acc[asset.rarity] = (acc[asset.rarity] || 0) + 1;
+                    return acc;
+                  },
+                  {} as Record<string, number>,
+                ),
+              ).map(([rarity, count]) => {
+                const style = RARITY_STYLES[rarity as keyof typeof RARITY_STYLES];
+                return (
+                  <div key={rarity} className={`px-3 py-1.5 rounded-lg ${style.bg}/20 border ${style.border}`}>
+                    <span className={`text-sm font-bold ${style.text}`}>
+                      {count}x {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Cards container - only render when images are loaded */}
-          {imagesLoaded && (
-            <div ref={cardsRef} className={`flex ${getLayoutClass()} items-center max-w-full overflow-hidden py-4 px-8`}>
-              {displayAssets.map((asset, index) => (
-                <div
-                  key={`${asset.id}-${index}`}
-                  className="reveal-card opacity-0"
-                  style={{
-                    // Highlight the rarest item
-                    zIndex: asset === rarestAsset ? 10 : 1,
-                    transform: asset === rarestAsset ? "scale(1.05)" : "scale(1)",
-                  }}
-                >
-                  <TiltCard
-                    asset={asset}
-                    size={
-                      asset === rarestAsset && displayAssets.length > 1
-                        ? { width: cardSize.width * 1.1, height: cardSize.height * 1.1 }
-                        : cardSize
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Stats summary - always rendered to prevent layout shift */}
+          {/* Action buttons - outside capture area */}
           <div
-            className={`mt-6 flex flex-wrap justify-center gap-3 transition-opacity duration-500 ${
+            className={`mt-6 flex w-full justify-between items-center px-4 transition-opacity duration-500 ${
               canShowCards && animationComplete ? "opacity-100" : "opacity-0"
             }`}
           >
-            {Object.entries(
-              displayAssets.reduce(
-                (acc, asset) => {
-                  acc[asset.rarity] = (acc[asset.rarity] || 0) + 1;
-                  return acc;
-                },
-                {} as Record<string, number>,
-              ),
-            ).map(([rarity, count]) => {
-              const style = RARITY_STYLES[rarity as keyof typeof RARITY_STYLES];
-              return (
-                <div key={rarity} className={`px-3 py-1.5 rounded-lg ${style.bg}/20 border ${style.border}`}>
-                  <span className={`text-sm font-bold ${style.text}`}>
-                    {count}x {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
-                  </span>
-                </div>
-              );
-            })}
+            {/* Left group: Share buttons */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={shareOnX}
+                className="gap-2 text-gold border-gold/50 hover:bg-gold/10"
+                disabled={isCapturing}
+              >
+                <XIcon className="w-4 h-4" />
+                Share on X
+              </Button>
+              <Button
+                variant="outline"
+                onClick={copyImageToClipboard}
+                disabled={isCapturing}
+                className="gap-2 text-gold border-gold/50 hover:bg-gold/10"
+              >
+                {isCapturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                {isCapturing ? "Preparing..." : "Copy Image"}
+              </Button>
+            </div>
+
+            {/* Right group: Close and Choose Next buttons */}
+            {isDone && (
+              <div className="flex gap-3">
+                {onClose && (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={onClose}
+                    className="text-gold border-gold/50 hover:bg-gold/10 gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Close
+                  </Button>
+                )}
+                {onOpenAnother && remainingChestsCount > 0 && (
+                  <Button variant="cta" size="default" onClick={onOpenAnother} className="gap-2">
+                    Choose Next Chest ({remainingChestsCount} available)
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </ChestStageContent>

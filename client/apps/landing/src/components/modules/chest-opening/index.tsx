@@ -5,7 +5,7 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { AssetRarity, ChestAsset, getHighestRarity } from "@/utils/cosmetics";
-import { Package, X } from "lucide-react";
+import { Package } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { env } from "../../../../env";
 import { ChestSelectionModal } from "./chest-selection-modal";
@@ -167,32 +167,16 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
 
       {/* Reveal Stage - Keep single instance for both reveal and done states */}
       {(flowState.state === "reveal" || flowState.state === "done") && displayContent.length > 0 && (
-        <RevealStage assets={displayContent} onComplete={handleRevealComplete} showContent={showRevealContent} />
-      )}
-
-      {/* Done State - Action buttons overlay (on top of RevealStage) */}
-      {flowState.state === "done" && (
-        <div
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-4 z-[60]"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        >
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleClose}
-            className="text-gold border-gold/50 hover:bg-gold/10 gap-2"
-          >
-            <X className="w-4 h-4" />
-            Close
-          </Button>
-
-          {remainingChests.length > 0 && (
-            <Button variant="cta" size="lg" onClick={handleOpenAnother} className="gap-2">
-              {/* <RotateCcw className="w-1" /> */}
-              Choose Next Chest ({remainingChests.length} available)
-            </Button>
-          )}
-        </div>
+        <RevealStage
+          assets={displayContent}
+          chestRarity={flowState.selectedChestRarity}
+          onComplete={handleRevealComplete}
+          showContent={showRevealContent}
+          onClose={handleClose}
+          onOpenAnother={handleOpenAnother}
+          remainingChestsCount={remainingChests.length}
+          isDone={flowState.state === "done"}
+        />
       )}
 
       {/* Error State */}
