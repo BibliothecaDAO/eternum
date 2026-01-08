@@ -35,7 +35,23 @@ export const useChainTimeStore = create<ChainTimeState>((set, get) => ({
   nowMs: Date.now(),
   setHeartbeat: (heartbeat) =>
     set((state) => {
+      // Reject heartbeat if it's older than the last received heartbeat
       if (state.lastHeartbeat && state.lastHeartbeat.timestamp > heartbeat.timestamp) {
+        return state;
+      }
+
+      // Check if new heartbeat would cause time to jump backwards from our current interpolated time
+      const currentInterpolatedMs = computeNowMs(state.anchorTimestampMs, state.anchorPerfMs);
+      const timeDeltaMs = heartbeat.timestamp - currentInterpolatedMs;
+
+      // Only accept heartbeats that move time forward (or are very close to current time)
+      // This prevents time from jumping backwards, which causes UI issues like timers resetting
+      const TOLERANCE_MS = 1000; // Allow small backwards adjustments within 1 second
+      if (timeDeltaMs < -TOLERANCE_MS) {
+        console.warn(
+          `[chain-time] Rejecting heartbeat: would move time backwards by ${Math.abs(timeDeltaMs)}ms. ` +
+            `Current: ${currentInterpolatedMs}, Chain: ${heartbeat.timestamp}`
+        );
         return state;
       }
 

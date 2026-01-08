@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getCharacterName } from "@/utils/agent";
 import {
@@ -41,6 +42,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     },
   } = useDojo();
   const mode = useGameModeConfig();
+  const { currentArmiesTick } = useBlockTimestamp();
 
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
@@ -104,8 +106,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
-    const { currentArmiesTick } = getBlockTimestamp();
-
     const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
     const maxStamina = StaminaManager.getMaxStamina(
       explorer.troops.category as TroopType,
@@ -129,7 +129,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [explorer, structure, components, userAddress, armyEntityId, mode]);
+  }, [explorer, structure, components, userAddress, armyEntityId, mode, currentArmiesTick]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;

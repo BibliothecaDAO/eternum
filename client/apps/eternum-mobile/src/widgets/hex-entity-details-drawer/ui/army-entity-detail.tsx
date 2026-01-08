@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { ArmyCapacity } from "@/shared/ui/army-capacity";
 import { Badge } from "@/shared/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -73,6 +74,7 @@ export const ArmyEntityDetail = ({
     setup: { components },
   } = useDojo();
 
+  const { currentArmiesTick, currentDefaultTick } = useBlockTimestamp();
   const userAddress = ContractAddress(account.address);
 
   const [relicDrawerOpen, setRelicDrawerOpen] = useState(false);
@@ -112,8 +114,6 @@ export const ArmyEntityDetail = ({
   const derivedData = useMemo(() => {
     if (!explorer) return undefined;
 
-    const { currentArmiesTick } = getBlockTimestamp();
-
     const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
     const maxStamina = StaminaManager.getMaxStamina(
       explorer.troops.category as TroopType,
@@ -140,7 +140,7 @@ export const ArmyEntityDetail = ({
       addressName,
       structureOwnerName,
     };
-  }, [explorer, structure, components, userAddress, armyEntityId]);
+  }, [explorer, structure, components, userAddress, armyEntityId, currentArmiesTick]);
 
   const staminaPercentage = useMemo(() => {
     if (!derivedData?.maxStamina || !derivedData?.stamina?.amount) return 0;
@@ -150,7 +150,6 @@ export const ArmyEntityDetail = ({
   const { regularResources, relics } = useMemo(() => {
     if (!explorerResources) return { regularResources: [], relics: [] };
 
-    const { currentDefaultTick } = getBlockTimestamp();
     const balances = ResourceManager.getResourceBalancesWithProduction(explorerResources, currentDefaultTick).filter(
       (resource) => resource.amount > 0,
     );
@@ -170,7 +169,7 @@ export const ArmyEntityDetail = ({
       regularResources: regular.sort((a, b) => b.amount - a.amount),
       relics: relicList.sort((a, b) => b.amount - a.amount),
     };
-  }, [explorerResources]);
+  }, [explorerResources, currentDefaultTick]);
 
   if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
     return (

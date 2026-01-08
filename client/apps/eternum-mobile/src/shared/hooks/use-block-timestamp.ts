@@ -3,12 +3,21 @@ import { TickIds } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 
 export const useBlockTimestamp = () => {
-  const [currentDefaultTick, setCurrentDefaultTick] = useState(0);
+  const [currentBlockTimestamp, setCurrentBlockTimestamp] = useState<number>(Math.floor(Date.now() / 1000));
+  const [currentDefaultTick, setCurrentDefaultTick] = useState<number>(0);
+  const [currentArmiesTick, setCurrentArmiesTick] = useState<number>(0);
 
   useEffect(() => {
     const updateTick = () => {
-      const currentTick = Math.floor(Date.now() / 1000);
-      setCurrentDefaultTick(currentTick);
+      const {
+        currentBlockTimestamp: timestamp,
+        currentDefaultTick: newDefaultTick,
+        currentArmiesTick: newArmiesTick,
+      } = getBlockTimestamp();
+
+      setCurrentBlockTimestamp(timestamp);
+      setCurrentDefaultTick(newDefaultTick);
+      setCurrentArmiesTick(newArmiesTick);
     };
 
     updateTick();
@@ -18,7 +27,9 @@ export const useBlockTimestamp = () => {
   }, []);
 
   return {
+    currentBlockTimestamp,
     currentDefaultTick,
+    currentArmiesTick,
   };
 };
 
