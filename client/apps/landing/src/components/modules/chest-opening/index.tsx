@@ -157,6 +157,7 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
       {/* Opening Stage (Video) - Video rarity based on highest item rarity */}
       {flowState.state === "opening" && (
         <OpeningStage
+          key={flowState.selectedChestId}
           active={true}
           videoSrc={getChestOpeningVideo(getHighestRarity(displayContent), isMobile)}
           onComplete={handleVideoEnd}

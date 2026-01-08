@@ -68,6 +68,7 @@ export function OpeningStage({ active, videoSrc, onComplete, onSkip }: OpeningSt
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const hasStartedRef = useRef(false);
 
   // Stable callback ref to avoid re-triggering effects
   const onCompleteRef = useRef(onComplete);
@@ -95,10 +96,14 @@ export function OpeningStage({ active, videoSrc, onComplete, onSkip }: OpeningSt
     if (!active) return;
     if (!containerRef.current || !videoRef.current) return;
 
+    // Skip if already started (prevents double-play)
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
     const container = containerRef.current;
     const video = videoRef.current;
 
-    // Kill any existing timeline first (handles StrictMode double-mount)
+    // Kill any existing timeline first
     if (timelineRef.current) {
       timelineRef.current.kill();
       timelineRef.current = null;
@@ -163,13 +168,15 @@ export function OpeningStage({ active, videoSrc, onComplete, onSkip }: OpeningSt
       video.removeEventListener("ended", handleVideoEnded);
       video.pause();
       video.currentTime = 0;
+      hasStartedRef.current = false;
 
       if (timelineRef.current) {
         timelineRef.current.kill();
         timelineRef.current = null;
       }
     };
-  }, [active, videoSrc]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   // Don't render if not active
   if (!active) return null;

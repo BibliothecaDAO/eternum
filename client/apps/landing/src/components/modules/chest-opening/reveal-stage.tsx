@@ -226,12 +226,9 @@ export function RevealStage({ assets, onComplete, showContent }: RevealStageProp
     return { width: 220, height: 290 };
   };
 
-  // Find rarest item for highlighting (will be in the middle after reordering)
-  const rarestAsset = displayAssets.length > 0 ? displayAssets.reduce((rarest, current) => {
-    const rarestIndex = RARITY_ORDER.indexOf(rarest.rarity);
-    const currentIndex = RARITY_ORDER.indexOf(current.rarity);
-    return currentIndex > rarestIndex ? current : rarest;
-  }, displayAssets[0]) : null;
+  // The rarest item is already in the middle after reordering
+  const middleIndex = Math.floor(displayAssets.length / 2);
+  const rarestAsset = displayAssets.length > 0 ? displayAssets[middleIndex] : null;
 
   const cardSize = getCardSize();
 
