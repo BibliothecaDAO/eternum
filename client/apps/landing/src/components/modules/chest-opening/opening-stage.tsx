@@ -52,17 +52,16 @@ interface OpeningStageProps {
 }
 
 /**
- * OpeningStage - Video-only stage for chest opening animation.
+ * OpeningStage - Video stage for chest opening animation with sound.
  *
  * Responsibilities:
- * - Display chest opening video
+ * - Display chest opening video with audio
  * - Animate stage entrance/exit with GSAP
  * - Signal completion to parent for transition to RevealStage
  *
  * Does NOT handle:
  * - Blockchain transaction waiting (PendingOverlay)
  * - Item reveals (RevealStage)
- * - Sound playback
  */
 export function OpeningStage({ active, videoSrc, onComplete, onSkip }: OpeningStageProps) {
   // Refs for DOM elements and timeline
@@ -186,7 +185,6 @@ export function OpeningStage({ active, videoSrc, onComplete, onSkip }: OpeningSt
         <video
           ref={videoRef}
           src={videoSrc}
-          muted
           playsInline
           preload="auto"
           className="w-full h-full object-cover"
