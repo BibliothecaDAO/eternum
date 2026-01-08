@@ -177,6 +177,7 @@ export interface CreateBuildingProps extends SystemSigner {
 export interface DestroyBuildingProps extends SystemSigner {
   entity_id: BigNumberish;
   building_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };
@@ -185,6 +186,7 @@ export interface DestroyBuildingProps extends SystemSigner {
 export interface PauseProductionProps extends SystemSigner {
   entity_id: BigNumberish;
   building_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };
@@ -193,6 +195,7 @@ export interface PauseProductionProps extends SystemSigner {
 export interface ResumeProductionProps extends SystemSigner {
   entity_id: BigNumberish;
   building_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };
@@ -202,6 +205,7 @@ export interface CreateAdminBanksProps extends SystemSigner {
   banks: {
     name: string;
     coord: {
+      alt: boolean;
       x: BigNumberish;
       y: BigNumberish;
     };
@@ -1077,6 +1081,7 @@ export interface TroopBurnProps extends SystemSigner {
 export interface OpenChestProps extends SystemSigner {
   explorer_id: BigNumberish;
   chest_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };

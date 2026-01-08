@@ -1,6 +1,7 @@
 import { ClientComponents, EntityType, ID, StructureType } from "@bibliothecadao/types";
 import { Entity, getComponentValue, getComponentValueStrict, HasValue, runQuery } from "@dojoengine/recs";
 import { configManager } from "../managers";
+import { DEFAULT_COORD_ALT } from "./tile";
 import { calculateDistance, getEntityIdFromKeys } from "./utils";
 
 export type ClosestBank = {
@@ -34,8 +35,8 @@ export const getClosestBank = (entityId: ID, components: ClientComponents): Clos
       // back and forth
       const distance =
         calculateDistance(
-          { x: Number(bankStructure.base.coord_x), y: Number(bankStructure.base.coord_y) },
-          { x: Number(playerStructure.base.coord_x), y: Number(playerStructure.base.coord_y) },
+          { alt: DEFAULT_COORD_ALT, x: Number(bankStructure.base.coord_x), y: Number(bankStructure.base.coord_y) },
+          { alt: DEFAULT_COORD_ALT, x: Number(playerStructure.base.coord_x), y: Number(playerStructure.base.coord_y) },
         ) * 2;
 
       // Calculate travel time if secPerKm is provided

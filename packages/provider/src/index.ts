@@ -1532,6 +1532,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props - Properties for destroying building
    * @param props.entity_id - ID of the entity destroying the building
    * @param props.building_coord - Coordinates of building to destroy
+   * @param props.building_coord.alt - Whether this is an alt map coordinate (default: false)
    * @param props.building_coord.x - X coordinate of building
    * @param props.building_coord.y - Y coordinate of building
    * @param props.signer - Account executing the transaction
@@ -1545,6 +1546,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    *   entrypoint: "destroy_building",
    *   calldata: [
    *     123,     // entity_id
+   *     false,   // building_coord.alt
    *     10,      // building_coord.x
    *     20       // building_coord.y
    *   ]
@@ -1553,11 +1555,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     const { entity_id, building_coord, signer } = props;
+    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "destroy_building",
-      calldata: [entity_id, false, building_coord.x, building_coord.y],
+      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1569,6 +1572,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props - Properties for pausing production
    * @param props.entity_id - ID of the entity that owns the building
    * @param props.building_coord - Coordinates of the building
+   * @param props.building_coord.alt - Whether this is an alt map coordinate (default: false)
    * @param props.building_coord.x - X coordinate of the building
    * @param props.building_coord.y - Y coordinate of the building
    * @param props.signer - Account executing the transaction
@@ -1579,18 +1583,19 @@ export class EternumProvider extends EnhancedDojoProvider {
    * // Pause production at building at coordinates (10, 20)
    * {
    *   entity_id: 123,
-   *   building_coord: { x: 10, y: 20 },
+   *   building_coord: { alt: false, x: 10, y: 20 },
    *   signer: account
    * }
    * ```
    */
   public async pause_production(props: SystemProps.PauseProductionProps) {
     const { entity_id, building_coord, signer } = props;
+    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "pause_building_production",
-      calldata: [entity_id, false, building_coord.x, building_coord.y],
+      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1602,6 +1607,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props - Properties for resuming production
    * @param props.entity_id - ID of the entity that owns the building
    * @param props.building_coord - Coordinates of the building
+   * @param props.building_coord.alt - Whether this is an alt map coordinate (default: false)
    * @param props.building_coord.x - X coordinate of the building
    * @param props.building_coord.y - Y coordinate of the building
    * @param props.signer - Account executing the transaction
@@ -1612,18 +1618,19 @@ export class EternumProvider extends EnhancedDojoProvider {
    * // Resume production at building at coordinates (10, 20)
    * {
    *   entity_id: 123,
-   *   building_coord: { x: 10, y: 20 },
+   *   building_coord: { alt: false, x: 10, y: 20 },
    *   signer: account
    * }
    * ```
    */
   public async resume_production(props: SystemProps.ResumeProductionProps) {
     const { entity_id, building_coord, signer } = props;
+    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "resume_building_production",
-      calldata: [entity_id, false, building_coord.x, building_coord.y],
+      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1739,12 +1746,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * Create an admin bank
    *
    * @param props - Properties for creating an admin bank
-   * @param props.name - Name of the admin bank
-   * @param props.coord - Coordinates for the bank location
-   * @param props.owner_fee_num - Numerator for owner fee calculation
-   * @param props.owner_fee_denom - Denominator for owner fee calculation
-   * @param props.owner_bridge_fee_dpt_percent - Owner bridge fee percentage for deposits
-   * @param props.owner_bridge_fee_wtdr_percent - Owner bridge fee percentage for withdrawals
+   * @param props.banks - Banks to create
+   * @param props.banks[].name - Name of the admin bank
+   * @param props.banks[].coord - Coordinates for the bank location
+   * @param props.banks[].coord.alt - Whether this is an alt map coordinate (default: false)
+   * @param props.banks[].coord.x - X coordinate of the bank
+   * @param props.banks[].coord.y - Y coordinate of the bank
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    *
@@ -1752,23 +1759,29 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Create an admin bank with 1% fees
    * {
-   *   name: "Admin Bank 1",
-   *   coord: 456,
-   *   owner_fee_num: 1,
-   *   owner_fee_denom: 100,
-   *   owner_bridge_fee_dpt_percent: 100,
-   *   owner_bridge_fee_wtdr_percent: 100,
-   *   signer: account
+   *   banks: [
+   *     {
+   *       name: "Admin Bank 1",
+   *       coord: { alt: false, x: 10, y: 20 },
+   *     },
+   *   ],
+   *   signer: account,
    * }
    * ```
    */
   public async create_banks(props: SystemProps.CreateAdminBanksProps) {
     const { banks, signer } = props;
+    const bankCalldata = banks.flatMap((bank) => [
+      bank.name,
+      bank.coord.alt ?? false,
+      bank.coord.x,
+      bank.coord.y,
+    ]);
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "create_banks",
-      calldata: [banks.length, ...banks.flatMap((bank) => [bank.name, bank.coord.x, bank.coord.y])],
+      calldata: [banks.length, ...bankCalldata],
     });
   }
 
@@ -3692,6 +3705,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async open_chest(props: SystemProps.OpenChestProps) {
     const { signer, explorer_id, chest_coord } = props;
+    const coordAlt = chest_coord.alt ?? false;
     const calls = [];
     if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
       const requestRandomCall: Call = {
@@ -3706,7 +3720,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     calls.push({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-relic_systems`),
       entrypoint: "open_chest",
-      calldata: [explorer_id, false, chest_coord.x, chest_coord.y],
+      calldata: [explorer_id, coordAlt, chest_coord.x, chest_coord.y],
     });
     return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
   }

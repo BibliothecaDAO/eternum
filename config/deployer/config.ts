@@ -1719,7 +1719,7 @@ export const createBanks = async (config: Config) => {
   const stepsFromCenter = 220;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
   for (const [_, coord] of Object.entries(distantCoordinates)) {
-    bank_coords.push({ x: coord.x, y: coord.y });
+    bank_coords.push({ alt: false, x: coord.x, y: coord.y });
   }
 
   for (let i = 0; i < config.config.banks.maxNumBanks; i++) {

@@ -471,6 +471,7 @@ export function defineContractComponents(world: World) {
           connected_realm_entity_id: RecsType.Number,
           connected_realm_id: RecsType.Number,
           connected_realm_coord: {
+            alt: RecsType.Boolean,
             x: RecsType.Number,
             y: RecsType.Number,
           },
@@ -584,6 +585,7 @@ export function defineContractComponents(world: World) {
           id: RecsType.Number,
           game_address: RecsType.String,
           coord: {
+            alt: RecsType.Boolean,
             x: RecsType.Number,
             y: RecsType.Number,
           },
@@ -1148,6 +1150,7 @@ export function defineContractComponents(world: World) {
             battle_cooldown_end: RecsType.Number,
           },
           coord: {
+            alt: RecsType.Boolean,
             x: RecsType.Number,
             y: RecsType.Number,
           },
@@ -2160,6 +2163,7 @@ const eventsComponents = (world: World) => {
           {
             explorer_id: RecsType.Number,
             chest_coord: {
+              alt: RecsType.Boolean,
               x: RecsType.Number,
               y: RecsType.Number,
             },

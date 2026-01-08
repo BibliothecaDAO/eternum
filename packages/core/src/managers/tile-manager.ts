@@ -380,6 +380,7 @@ export class TileManager {
         signer,
         entity_id: structureEntityId,
         building_coord: {
+          alt: DEFAULT_COORD_ALT,
           x: col,
           y: row,
         },
@@ -399,6 +400,7 @@ export class TileManager {
         signer,
         entity_id: structureEntityId,
         building_coord: {
+          alt: DEFAULT_COORD_ALT,
           x: col,
           y: row,
         },
@@ -419,6 +421,7 @@ export class TileManager {
         signer,
         entity_id: structureEntityId,
         building_coord: {
+          alt: DEFAULT_COORD_ALT,
           x: col,
           y: row,
         },

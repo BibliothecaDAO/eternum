@@ -441,7 +441,7 @@ export class SqlApi {
 
         return {
           entityId: tile.occupier_id,
-          position: { x: tile.col, y: tile.row },
+          position: { alt: false, x: tile.col, y: tile.row },
           distance: distance,
         };
       })
@@ -490,7 +490,7 @@ export class SqlApi {
           entityId: structure.entity_id,
           structureType: structure.entity_type,
           type: EntityType.STRUCTURE,
-          position: { x: structure.coord_x, y: structure.coord_y },
+          position: { alt: false, x: structure.coord_x, y: structure.coord_y },
           relics,
         };
       });
@@ -501,7 +501,7 @@ export class SqlApi {
         return {
           entityId: army.entity_id,
           type: EntityType.ARMY,
-          position: { x: army.coord_x, y: army.coord_y },
+          position: { alt: false, x: army.coord_x, y: army.coord_y },
           relics,
         };
       });

@@ -1,4 +1,5 @@
 import {
+  DEFAULT_COORD_ALT,
   getAddressNameFromEntity,
   getHyperstructureCurrentAmounts,
   getHyperstructureProgress,
@@ -63,7 +64,7 @@ export const useHyperstructures = (): HyperstructureInfo[] => {
       entity_id: hyperstructure.hyperstructure_id,
       hyperstructure,
       structure,
-      position: { x: structure.base.coord_x, y: structure.base.coord_y },
+      position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
       owner,
       isOwner,
       ownerName,

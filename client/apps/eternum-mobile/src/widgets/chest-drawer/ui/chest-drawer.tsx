@@ -86,6 +86,7 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
           signer: account,
           explorer_id: explorerEntityId,
           chest_coord: {
+            alt: false,
             x: chestHex.x,
             y: chestHex.y,
           },

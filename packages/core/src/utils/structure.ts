@@ -54,7 +54,7 @@ const getStructureInfo = (
     entityId: structure.entity_id,
     structure,
     owner: structure.owner,
-    position: { x: structure.base.coord_x, y: structure.base.coord_y },
+    position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
     isMine: ContractAddress(structure.owner) === playerAddress,
     isMercenary: structure.owner === 0n,
     ownerName,

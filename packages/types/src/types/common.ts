@@ -102,7 +102,7 @@ export type HyperstructureInfo = {
   entity_id: ID;
   hyperstructure: ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
-  position: { x: number; y: number };
+  position: Position;
   owner: bigint;
   ownerName: string;
   isOwner: boolean;
@@ -174,6 +174,7 @@ export type QuestTile = {
   id: number;
   game_address: ContractAddress;
   coord: {
+    alt: boolean;
     x: number;
     y: number;
   };
@@ -374,6 +375,7 @@ export interface RealmInterface {
 }
 
 export interface Position {
+  alt: boolean;
   x: number;
   y: number;
 }
