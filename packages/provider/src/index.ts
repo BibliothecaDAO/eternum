@@ -1557,7 +1557,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "destroy_building",
-      calldata: [entity_id, building_coord.x, building_coord.y],
+      calldata: [entity_id, false, building_coord.x, building_coord.y],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1590,7 +1590,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "pause_building_production",
-      calldata: [entity_id, building_coord.x, building_coord.y],
+      calldata: [entity_id, false, building_coord.x, building_coord.y],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1623,7 +1623,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "resume_building_production",
-      calldata: [entity_id, building_coord.x, building_coord.y],
+      calldata: [entity_id, false, building_coord.x, building_coord.y],
     });
 
     return await this.promiseQueue.enqueue(call);
