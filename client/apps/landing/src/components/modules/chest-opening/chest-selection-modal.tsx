@@ -1,22 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MergedNftData } from "@/types";
-import { AssetRarity, RARITY_STYLES } from "@/utils/cosmetics";
+import { AssetRarity } from "@/utils/cosmetics";
 import gsap from "gsap";
-import { ArrowUpDown, Package } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Filter, Package, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getChestRarityFromMetadata } from "./mock-data";
+import { ChestStageContainer } from "./chest-stage-container";
 
-// Rarity order for sorting (highest to lowest)
-const RARITY_ORDER: AssetRarity[] = [
-  AssetRarity.Legendary,
-  AssetRarity.Epic,
-  AssetRarity.Rare,
-  AssetRarity.Uncommon,
-  AssetRarity.Common,
-];
-
-type RarityFilter = AssetRarity | "all";
+type SortMode = "id-asc" | "id-desc";
 
 interface ChestSelectionModalProps {
   isOpen: boolean;
@@ -35,10 +31,15 @@ interface ChestCardProps {
   index: number;
 }
 
+// Extract all trait values for a specific trait type
+function getTraitValue(metadata: MergedNftData["metadata"] | undefined, traitType: string): string | null {
+  if (!metadata?.attributes) return null;
+  const attr = metadata.attributes.find((a) => a.trait_type.toLowerCase() === traitType.toLowerCase());
+  return attr ? String(attr.value) : null;
+}
+
 function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const rarity = getChestRarityFromMetadata(chest.metadata);
-  const rarityStyle = RARITY_STYLES[rarity];
 
   // Transform IPFS URLs to use Pinata gateway
   const image = chest.metadata?.image?.startsWith("ipfs://")
@@ -106,7 +107,7 @@ function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardP
       className={`
         relative rounded-xl overflow-hidden cursor-pointer
         transition-shadow duration-200
-        ${isSelected ? `ring-2 ring-gold shadow-xl ${rarityStyle.glow}` : "shadow-lg hover:shadow-xl"}
+        ${isSelected ? "ring-2 ring-gold shadow-xl shadow-gold/20" : "shadow-lg hover:shadow-xl"}
         ${isLoading && isSelected ? "pointer-events-none" : ""}
       `}
       onClick={onSelect}
@@ -140,14 +141,11 @@ function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardP
       <div className="p-3 bg-slate-800">
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-medium text-white">#{chest.token_id}</span>
-          <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${rarityStyle.bg} text-white`}>
-            {rarity}
-          </span>
         </div>
         {/* Show key attributes from metadata */}
         {chest.metadata?.attributes && chest.metadata.attributes.length > 0 && (
           <div className="space-y-0.5">
-            {chest.metadata.attributes.slice(0, 2).map((attr, idx) => (
+            {chest.metadata.attributes.slice(0, 3).map((attr, idx) => (
               <div key={idx} className="text-xs text-white/50 truncate">
                 <span className="text-white/70">{attr.trait_type}:</span> {attr.value}
               </div>
@@ -156,9 +154,50 @@ function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardP
         )}
       </div>
 
-      {/* Glow effect for rarity */}
-      <div className={`absolute inset-0 pointer-events-none rounded-xl opacity-20 ${rarityStyle.border} border`} />
+      {/* Glow effect */}
+      <div className="absolute inset-0 pointer-events-none rounded-xl opacity-20 border border-gold/30" />
     </div>
+  );
+}
+
+// Filter dropdown component
+interface FilterDropdownProps {
+  label: string;
+  value: string | null;
+  options: string[];
+  onChange: (value: string | null) => void;
+}
+
+function FilterDropdown({ label, value, options, onChange }: FilterDropdownProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={value ? "default" : "outline"}
+          size="sm"
+          className={`gap-1 text-xs min-w-[100px] justify-between ${
+            value ? "" : "text-white/70 border-white/20 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <span className="truncate">{value || label}</span>
+          <ChevronDown className="w-3 h-3 flex-shrink-0" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+        <DropdownMenuItem onClick={() => onChange(null)} className={!value ? "bg-gold/10" : ""}>
+          All {label}s
+        </DropdownMenuItem>
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option}
+            onClick={() => onChange(option)}
+            className={value === option ? "bg-gold/10" : ""}
+          >
+            {option}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -171,64 +210,105 @@ export function ChestSelectionModal({
   selectedChestId = null,
 }: ChestSelectionModalProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
-  const [sortByRarity, setSortByRarity] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("id-desc");
+  const [filters, setFilters] = useState<Record<string, string | null>>({});
+
+  // Extract all unique trait types and their values from all chests
+  const traitOptions = useMemo(() => {
+    const traits: Record<string, Set<string>> = {};
+
+    chests.forEach((chest) => {
+      if (!chest.metadata?.attributes) return;
+
+      chest.metadata.attributes.forEach((attr) => {
+        const traitType = attr.trait_type;
+        if (!traits[traitType]) {
+          traits[traitType] = new Set();
+        }
+        traits[traitType].add(String(attr.value));
+      });
+    });
+
+    // Convert Sets to sorted arrays
+    const result: Record<string, string[]> = {};
+    Object.entries(traits).forEach(([traitType, values]) => {
+      result[traitType] = Array.from(values).sort((a, b) => {
+        // Try numeric sort first
+        const numA = Number(a);
+        const numB = Number(b);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+        return a.localeCompare(b);
+      });
+    });
+
+    return result;
+  }, [chests]);
+
+  // Get list of trait types
+  const traitTypes = useMemo(() => Object.keys(traitOptions).sort(), [traitOptions]);
 
   // Filter and sort chests
   const filteredAndSortedChests = useMemo(() => {
     let result = [...chests];
 
-    // Apply rarity filter
-    if (rarityFilter !== "all") {
-      result = result.filter((chest) => {
-        const rarity = getChestRarityFromMetadata(chest.metadata);
-        return rarity === rarityFilter;
-      });
-    }
+    // Apply all active filters
+    Object.entries(filters).forEach(([traitType, filterValue]) => {
+      if (filterValue) {
+        result = result.filter((chest) => {
+          const value = getTraitValue(chest.metadata, traitType);
+          return value === filterValue;
+        });
+      }
+    });
 
-    // Apply rarity sort (highest to lowest)
-    if (sortByRarity) {
-      result.sort((a, b) => {
-        const aRarity = getChestRarityFromMetadata(a.metadata);
-        const bRarity = getChestRarityFromMetadata(b.metadata);
-        return RARITY_ORDER.indexOf(aRarity) - RARITY_ORDER.indexOf(bRarity);
-      });
-    }
+    // Apply sorting
+    result.sort((a, b) => {
+      if (sortMode === "id-asc") {
+        return Number(a.token_id) - Number(b.token_id);
+      } else {
+        return Number(b.token_id) - Number(a.token_id);
+      }
+    });
 
     return result;
-  }, [chests, rarityFilter, sortByRarity]);
+  }, [chests, filters, sortMode]);
 
-  // Get rarity counts for filter badges
-  const rarityCounts = useMemo(() => {
-    const counts: Record<AssetRarity, number> = {
-      [AssetRarity.Common]: 0,
-      [AssetRarity.Uncommon]: 0,
-      [AssetRarity.Rare]: 0,
-      [AssetRarity.Epic]: 0,
-      [AssetRarity.Legendary]: 0,
-    };
-    chests.forEach((chest) => {
-      const rarity = getChestRarityFromMetadata(chest.metadata);
-      counts[rarity]++;
-    });
-    return counts;
-  }, [chests]);
+  // Count active filters
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
-  // Handle chest selection
-  const handleSelect = (chest: MergedNftData) => {
-    if (isLoading) return;
-
-    const rarity = getChestRarityFromMetadata(chest.metadata);
-    onSelect(String(chest.token_id), rarity);
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({});
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col bg-slate-900 border-gold/20">
-        <DialogTitle className="sr-only">Select a Chest to Open</DialogTitle>
+  // Update a specific filter
+  const updateFilter = (traitType: string, value: string | null) => {
+    setFilters((prev) => ({
+      ...prev,
+      [traitType]: value,
+    }));
+  };
 
+  // Toggle sort mode
+  const toggleSortMode = () => {
+    setSortMode((current) => (current === "id-desc" ? "id-asc" : "id-desc"));
+  };
+
+  // Handle chest selection - pass a default rarity since it's not available
+  const handleSelect = (chest: MergedNftData) => {
+    if (isLoading) return;
+    onSelect(String(chest.token_id), AssetRarity.Common);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <ChestStageContainer onClose={onClose} showCloseButton>
+      <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gold/10">
+        <div className="px-6 py-4 border-b border-gold/10 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gold">Select a Chest</h2>
@@ -236,43 +316,40 @@ export function ChestSelectionModal({
             </div>
             {/* Sort toggle */}
             <Button
-              variant={sortByRarity ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={() => setSortByRarity(!sortByRarity)}
-              className="gap-2"
+              onClick={toggleSortMode}
+              className="gap-2 text-gold border-gold/50 hover:bg-gold/10"
             >
               <ArrowUpDown className="w-4 h-4" />
-              {sortByRarity ? "By Rarity" : "Sort"}
+              ID {sortMode === "id-desc" ? "↓" : "↑"}
             </Button>
           </div>
 
-          {/* Rarity filter chips */}
-          {chests.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              <Button
-                variant={rarityFilter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setRarityFilter("all")}
-                className="text-xs"
-              >
-                All ({chests.length})
-              </Button>
-              {RARITY_ORDER.map((rarity) => {
-                const count = rarityCounts[rarity];
-                if (count === 0) return null;
-                const style = RARITY_STYLES[rarity];
-                return (
-                  <Button
-                    key={rarity}
-                    variant={rarityFilter === rarity ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setRarityFilter(rarity)}
-                    className={`text-xs capitalize ${rarityFilter === rarity ? style.bg : ""}`}
-                  >
-                    {rarity} ({count})
-                  </Button>
-                );
-              })}
+          {/* Filter dropdowns */}
+          {traitTypes.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <Filter className="w-4 h-4 text-white/50" />
+              {traitTypes.map((traitType) => (
+                <FilterDropdown
+                  key={traitType}
+                  label={traitType}
+                  value={filters[traitType] || null}
+                  options={traitOptions[traitType]}
+                  onChange={(value) => updateFilter(traitType, value)}
+                />
+              ))}
+              {activeFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="gap-1 text-xs text-white/60 hover:text-white hover:bg-white/10"
+                >
+                  <X className="w-3 h-3" />
+                  Clear ({activeFilterCount})
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -289,17 +366,22 @@ export function ChestSelectionModal({
               <p className="text-sm text-white/50 max-w-sm">
                 {chests.length === 0
                   ? "You don't have any loot chests to open. Acquire chests through gameplay or the marketplace."
-                  : "No chests match the current filter. Try selecting a different rarity."}
+                  : "No chests match the current filters. Try adjusting your selection."}
               </p>
-              {rarityFilter !== "all" && (
-                <Button variant="outline" size="sm" onClick={() => setRarityFilter("all")} className="mt-4">
-                  Clear Filter
+              {activeFilterCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="mt-4 text-gold border-gold/50 hover:bg-gold/10"
+                >
+                  Clear Filters
                 </Button>
               )}
             </div>
           ) : (
             // Chest grid
-            <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {filteredAndSortedChests.map((chest, index) => (
                 <ChestCard
                   key={chest.token_id}
@@ -315,14 +397,14 @@ export function ChestSelectionModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gold/10 flex justify-between items-center">
+        <div className="px-6 py-4 border-t border-gold/10 flex justify-between items-center flex-shrink-0">
           <span className="text-sm text-white/50">
-            {rarityFilter !== "all"
+            {activeFilterCount > 0
               ? `${filteredAndSortedChests.length} of ${chests.length} chest${chests.length !== 1 ? "s" : ""}`
               : `${chests.length} chest${chests.length !== 1 ? "s" : ""} available`}
           </span>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ChestStageContainer>
   );
 }

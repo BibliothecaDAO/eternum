@@ -96,8 +96,8 @@ export function TiltCard({
     onMouseLeave?.();
   }, [onMouseLeave]);
 
-  // Transform image path if needed
-  const imagePath = asset.imagePath.startsWith("/") ? asset.imagePath : `/${asset.imagePath}`;
+  // Use imagePath directly - it's now a full URL from IPFS
+  const imagePath = asset.imagePath;
 
   return (
     <div
@@ -214,8 +214,8 @@ export function TiltCardMini({
 }) {
   const rarityStyle = RARITY_STYLES[asset.rarity];
 
-  // Transform image path if needed
-  const imagePath = asset.imagePath.startsWith("/") ? asset.imagePath : `/${asset.imagePath}`;
+  // Use imagePath directly - it's now a full URL from IPFS
+  const imagePath = asset.imagePath;
 
   return (
     <div

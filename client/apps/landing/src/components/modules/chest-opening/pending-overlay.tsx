@@ -1,9 +1,8 @@
-import { useRef, useEffect, useCallback, useState } from "react";
-import gsap from "gsap";
-import { Copy, Check, AlertCircle, RotateCcw, X } from "lucide-react";
-import { ChestStageContainer, ChestStageContent } from "./chest-stage-container";
-import { RARITY_STYLES, AssetRarity } from "@/utils/cosmetics";
 import { Button } from "@/components/ui/button";
+import gsap from "gsap";
+import { AlertCircle, Check, Copy, RotateCcw, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChestStageContainer, ChestStageContent } from "./chest-stage-container";
 
 interface PendingOverlayProps {
   /** Whether the overlay should be visible */
@@ -14,8 +13,6 @@ interface PendingOverlayProps {
   subtitle?: string;
   /** Transaction hash (if available) */
   txHash?: string;
-  /** Chest rarity for styling */
-  rarity?: AssetRarity;
   /** Error state */
   error?: Error | null;
   /** Called when user wants to close (may be blocked during pending) */
@@ -40,7 +37,6 @@ export function PendingOverlay({
   title = "Opening chest",
   subtitle = "Waiting for confirmation",
   txHash,
-  rarity = AssetRarity.Common,
   error,
   onClose,
   onRetry,
@@ -51,7 +47,12 @@ export function PendingOverlay({
   const pulseTimelineRef = useRef<gsap.core.Timeline | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const rarityStyle = RARITY_STYLES[rarity];
+  // Use gold/neutral styling for pending state (rarity unknown until reveal)
+  const pendingStyle = {
+    bg: "bg-gold",
+    border: "border-gold",
+    text: "text-gold",
+  };
 
   // Copy tx hash to clipboard
   const handleCopyTxHash = useCallback(async () => {
@@ -149,49 +150,18 @@ export function PendingOverlay({
           {/* Animated glow background */}
           <div
             ref={glowRef}
-            className={`absolute inset-0 -m-8 rounded-full blur-3xl opacity-30 ${rarityStyle.bg}`}
+            className={`absolute inset-0 -m-8 rounded-full blur-3xl opacity-30 ${pendingStyle.bg}`}
             style={{ willChange: "transform, opacity" }}
           />
 
           {/* Content */}
           <div className="relative z-10 flex flex-col items-center gap-6">
-            {/* Rarity badge */}
-            {rarity && (
-              <div
-                className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${rarityStyle.bg} text-white`}
-              >
-                {rarity}
-              </div>
-            )}
-
-            {/* Chest icon with animation */}
-            <div className="relative">
-              {/* Animated rings */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className={`w-24 h-24 rounded-full border-2 ${rarityStyle.border} animate-ping opacity-20`}
-                  style={{ animationDuration: "2s" }}
-                />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className={`w-20 h-20 rounded-full border ${rarityStyle.border} animate-ping opacity-30`}
-                  style={{ animationDuration: "2s", animationDelay: "0.5s" }}
-                />
-              </div>
-
-              {/* Center spinner */}
-              <div className="relative w-16 h-16 flex items-center justify-center">
-                <div
-                  className={`w-16 h-16 rounded-full border-4 border-t-transparent ${rarityStyle.border} animate-spin`}
-                  style={{ animationDuration: "1.2s" }}
-                />
-                {/* Inner glow */}
-                <div
-                  className={`absolute w-8 h-8 rounded-full ${rarityStyle.bg} opacity-50 blur-sm`}
-                />
-              </div>
-            </div>
+            {/* Eternum loader */}
+            <img
+              src="/images/logos/eternum-loader.png"
+              alt="Loading"
+              className="w-14 animate-pulse"
+            />
 
             {/* Title with animated dots */}
             {error ? (

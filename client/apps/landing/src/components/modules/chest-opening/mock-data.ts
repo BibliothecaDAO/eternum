@@ -1,5 +1,5 @@
 import { env } from "../../../../env";
-import { AssetRarity, ChestAsset, chestAssets } from "@/utils/cosmetics";
+import { AssetRarity, ChestAsset, getAllChestAssets } from "@/utils/cosmetics";
 import { MergedNftData } from "@/types";
 
 // Check if mock mode is enabled via environment variable
@@ -47,15 +47,17 @@ export const MOCK_CHESTS: Partial<MergedNftData>[] = [
 
 // Get a random subset of chest assets for mock reveals
 export const getMockRevealAssets = (count: number = 3): ChestAsset[] => {
-  const shuffled = [...chestAssets].sort(() => Math.random() - 0.5);
+  const allAssets = getAllChestAssets();
+  const shuffled = [...allAssets].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };
 
 // Get mock assets weighted by a specific rarity (for testing specific rarity videos)
 export const getMockRevealAssetsByRarity = (targetRarity: AssetRarity, count: number = 3): ChestAsset[] => {
+  const allAssets = getAllChestAssets();
   // Include at least one asset of the target rarity
-  const targetAssets = chestAssets.filter((a) => a.rarity === targetRarity);
-  const otherAssets = chestAssets.filter((a) => a.rarity !== targetRarity);
+  const targetAssets = allAssets.filter((a) => a.rarity === targetRarity);
+  const otherAssets = allAssets.filter((a) => a.rarity !== targetRarity);
 
   const result: ChestAsset[] = [];
 
