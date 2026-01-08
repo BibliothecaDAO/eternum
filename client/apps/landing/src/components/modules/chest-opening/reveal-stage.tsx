@@ -1,4 +1,5 @@
-import { ChestAsset, RARITY_STYLES, AssetRarity } from "@/utils/cosmetics";
+import { useChestSounds } from "@/hooks/use-chest-sounds";
+import { AssetRarity, ChestAsset, RARITY_STYLES } from "@/utils/cosmetics";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ChestStageContainer, ChestStageContent, ChestStageHeader } from "./chest-stage-container";
@@ -135,6 +136,9 @@ export function RevealStage({ assets, onComplete, showContent }: RevealStageProp
   const [isPreloading, setIsPreloading] = useState(false);
   const [resolvedAssets, setResolvedAssets] = useState<ChestAsset[]>([]);
 
+  // Sound effects
+  const { playCompletion } = useChestSounds();
+
   // Fetch metadata and preload images when assets change
   useEffect(() => {
     if (assets.length === 0) return;
@@ -168,6 +172,16 @@ export function RevealStage({ assets, onComplete, showContent }: RevealStageProp
     const cards = cardsRef.current.querySelectorAll<HTMLElement>(".reveal-card");
     if (cards.length === 0) return;
 
+    // Find highest rarity for completion sound
+    const highestRarity = assets.reduce((highest, asset) => {
+      const currentIndex = RARITY_ORDER.indexOf(asset.rarity);
+      const highestIndex = RARITY_ORDER.indexOf(highest);
+      return currentIndex > highestIndex ? asset.rarity : highest;
+    }, AssetRarity.Common);
+
+    // Play completion sound immediately when cards start revealing
+    playCompletion(highestRarity);
+
     // Create and play the reveal animation
     const animation = createCardRevealAnimation(cards, {
       duration: 0.6,
@@ -182,7 +196,7 @@ export function RevealStage({ assets, onComplete, showContent }: RevealStageProp
     return () => {
       animation.kill();
     };
-  }, [showContent, imagesLoaded, resolvedAssets, animationComplete, onComplete]);
+  }, [showContent, imagesLoaded, resolvedAssets, animationComplete, onComplete, assets, playCompletion]);
 
   // Show content only when images are loaded
   const canShowCards = showContent && imagesLoaded;

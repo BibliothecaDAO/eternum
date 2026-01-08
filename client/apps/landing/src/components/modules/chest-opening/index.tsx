@@ -5,9 +5,9 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { AssetRarity, ChestAsset, getHighestRarity } from "@/utils/cosmetics";
-import { env } from "../../../../env";
-import { Package, RotateCcw, X } from "lucide-react";
+import { Package, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { env } from "../../../../env";
 import { ChestSelectionModal } from "./chest-selection-modal";
 import { ChestStageContainer, ChestStageContent } from "./chest-stage-container";
 import { MOCK_CHEST_OPENING, getMockRevealAssets } from "./mock-data";
@@ -187,7 +187,7 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
 
           {remainingChests.length > 0 && (
             <Button variant="cta" size="lg" onClick={handleOpenAnother} className="gap-2">
-              <RotateCcw className="w-4 h-4" />
+              {/* <RotateCcw className="w-1" /> */}
               Choose Next Chest ({remainingChests.length} available)
             </Button>
           )}

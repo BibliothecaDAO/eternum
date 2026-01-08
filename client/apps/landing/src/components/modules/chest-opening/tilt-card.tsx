@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from "react";
-import { ChestAsset, RARITY_STYLES, AssetType } from "@/utils/cosmetics";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Sword, Sparkles, Hexagon, Castle, Crown, Diamond } from "lucide-react";
+import { AssetType, ChestAsset, RARITY_STYLES } from "@/utils/cosmetics";
+import { Castle, Crown, Diamond, Hexagon, Shield, Sparkles, Sword } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 
 interface TiltCardProps {
   asset: ChestAsset;
@@ -35,6 +35,9 @@ const getAssetTypeIcon = (type: AssetType) => {
   }
 };
 
+// Hover sound
+const HOVER_SOUND_SRC = "/sound/ui/ui-click-1.wav";
+
 export function TiltCard({
   asset,
   tiltEffect = "reverse",
@@ -45,6 +48,7 @@ export function TiltCard({
   onClick,
 }: TiltCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [tiltValues, setTiltValues] = useState({
     rX: 0,
@@ -55,6 +59,16 @@ export function TiltCard({
 
   const rarityStyle = RARITY_STYLES[asset.rarity];
   const TypeIcon = getAssetTypeIcon(asset.type);
+
+  // Play hover sound
+  const playHoverSound = useCallback(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(HOVER_SOUND_SRC);
+      audioRef.current.volume = 0.2;
+    }
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => {});
+  }, []);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -87,8 +101,9 @@ export function TiltCard({
 
   const handleMouseEnter = useCallback(() => {
     setIsActive(true);
+    playHoverSound();
     onMouseEnter?.();
-  }, [onMouseEnter]);
+  }, [onMouseEnter, playHoverSound]);
 
   const handleMouseLeave = useCallback(() => {
     setIsActive(false);
