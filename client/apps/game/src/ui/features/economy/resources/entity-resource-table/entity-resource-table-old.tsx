@@ -40,8 +40,8 @@ export const EntityResourceTableOld = React.memo(
       }
     });
 
-  const { setup } = useDojo();
-  const mode = useGameModeConfig();
+    const { setup } = useDojo();
+    const mode = useGameModeConfig();
 
     if (!entityId || entityId === 0) {
       return <div>No Entity Selected</div>;

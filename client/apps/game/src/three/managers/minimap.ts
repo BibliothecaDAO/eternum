@@ -5,9 +5,22 @@ import type { GameModeConfig } from "@/config/game-modes";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { playerColorManager } from "@/three/systems/player-colors";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, Position, tileOptToTile } from "@bibliothecadao/eternum";
+import {
+  getExplorerInfoFromTileOccupier,
+  getStructureInfoFromTileOccupier,
+  Position,
+  tileOptToTile,
+} from "@bibliothecadao/eternum";
 
-import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier, TileOpt } from "@bibliothecadao/types";
+import {
+  BiomeIdToType,
+  HexPosition,
+  ResourcesIds,
+  StructureType,
+  Tile,
+  TileOccupier,
+  TileOpt,
+} from "@bibliothecadao/types";
 import type { Clause, Entity as ToriiEntity, ToriiClient } from "@dojoengine/torii-wasm/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";

@@ -869,133 +869,131 @@ export const WorldSelectorModal = ({
                   return sorted.map(({ name: s, chain, isOnline, isEnded: gameIsEnded, meta }) => {
                     const isChainMatch = chain ? normalizeFactoryChain(chain) === activeFactoryChain : true;
                     return (
-                    <div
-                      key={s}
-                      className={`group relative rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${
-                        selected === s
-                          ? isOnline
-                            ? gameIsEnded
-                              ? "border-gold/40 bg-brown/20 shadow-lg shadow-gold/10 opacity-70"
-                              : "border-gold bg-gold/10 shadow-lg shadow-gold/20"
-                            : "border-danger/50 bg-danger/5 shadow-lg shadow-danger/10"
-                          : isOnline
-                            ? gameIsEnded
-                              ? "border-gold/10 bg-brown/20 hover:bg-brown/30 hover:border-gold/20 opacity-60"
-                              : "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
-                            : "border-danger/40 bg-danger/5 hover:bg-danger/10"
-                      }`}
-                      onClick={() => setSelected(s)}
-                      onDoubleClick={() =>
-                        handleDoubleClick(
-                          savedWorldsByName.get(s) ?? { name: s, chain: undefined, worldKey: s },
-                        )
-                      }
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div
-                              className={`truncate font-bold text-base ${gameIsEnded ? "text-gold/50" : "text-gold"}`}
-                            >
-                              {s}
-                            </div>
-                            {chain && (
-                              <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
-                                  chain === "mainnet"
-                                    ? "border-brilliance/30 bg-brilliance/10 text-brilliance"
-                                    : "border-gold/30 bg-gold/10 text-gold/70"
-                                } ${isChainMatch ? "" : "opacity-60"}`}
+                      <div
+                        key={s}
+                        className={`group relative rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${
+                          selected === s
+                            ? isOnline
+                              ? gameIsEnded
+                                ? "border-gold/40 bg-brown/20 shadow-lg shadow-gold/10 opacity-70"
+                                : "border-gold bg-gold/10 shadow-lg shadow-gold/20"
+                              : "border-danger/50 bg-danger/5 shadow-lg shadow-danger/10"
+                            : isOnline
+                              ? gameIsEnded
+                                ? "border-gold/10 bg-brown/20 hover:bg-brown/30 hover:border-gold/20 opacity-60"
+                                : "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
+                              : "border-danger/40 bg-danger/5 hover:bg-danger/10"
+                        }`}
+                        onClick={() => setSelected(s)}
+                        onDoubleClick={() =>
+                          handleDoubleClick(savedWorldsByName.get(s) ?? { name: s, chain: undefined, worldKey: s })
+                        }
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div
+                                className={`truncate font-bold text-base ${gameIsEnded ? "text-gold/50" : "text-gold"}`}
                               >
-                                {chain}
-                              </span>
-                            )}
-                            {selected === s && (
-                              <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
-                                <Check className="w-3 h-3 text-gold" />
+                                {s}
                               </div>
+                              {chain && (
+                                <span
+                                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+                                    chain === "mainnet"
+                                      ? "border-brilliance/30 bg-brilliance/10 text-brilliance"
+                                      : "border-gold/30 bg-gold/10 text-gold/70"
+                                  } ${isChainMatch ? "" : "opacity-60"}`}
+                                >
+                                  {chain}
+                                </span>
+                              )}
+                              {selected === s && (
+                                <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
+                                  <Check className="w-3 h-3 text-gold" />
+                                </div>
+                              )}
+                            </div>
+                            {isOnline && meta != null && meta.startMainAt != null && (
+                              <WorldCountdownDetailed
+                                startMainAt={meta.startMainAt}
+                                endAt={meta.endAt}
+                                status={statusMap[s]}
+                                className={`text-sm md:text-base font-semibold mt-1 block ${
+                                  gameIsEnded ? "text-white/40" : "text-white"
+                                }`}
+                              />
                             )}
+                            {renderRegistrationSummary({
+                              registrationCount: meta?.registrationCount ?? null,
+                              isRegistered: meta?.isRegistered ?? null,
+                              isOnline,
+                              isLoading: statusMap[s] === "checking" || (isOnline && !meta),
+                              className: "mt-2",
+                            })}
                           </div>
-                          {isOnline && meta != null && meta.startMainAt != null && (
-                            <WorldCountdownDetailed
-                              startMainAt={meta.startMainAt}
-                              endAt={meta.endAt}
-                              status={statusMap[s]}
-                              className={`text-sm md:text-base font-semibold mt-1 block ${
-                                gameIsEnded ? "text-white/40" : "text-white"
+
+                          <div className="flex flex-col items-end gap-2">
+                            {/* Status Badge */}
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide border ${
+                                statusMap[s] === "ok"
+                                  ? "bg-brilliance/10 text-brilliance border-brilliance/30"
+                                  : statusMap[s] === "fail"
+                                    ? "bg-danger/10 text-danger border-danger/30"
+                                    : "bg-gold/10 text-gold/60 border-gold/20"
                               }`}
-                            />
-                          )}
-                          {renderRegistrationSummary({
-                            registrationCount: meta?.registrationCount ?? null,
-                            isRegistered: meta?.isRegistered ?? null,
-                            isOnline,
-                            isLoading: statusMap[s] === "checking" || (isOnline && !meta),
-                            className: "mt-2",
-                          })}
-                        </div>
+                            >
+                              {statusMap[s] === "ok" ? (
+                                <>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-brilliance animate-pulse" />
+                                  Online
+                                </>
+                              ) : statusMap[s] === "fail" ? (
+                                <>
+                                  <AlertCircle className="w-3 h-3" />
+                                  Offline
+                                </>
+                              ) : (
+                                <>
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  Checking
+                                </>
+                              )}
+                            </span>
 
-                        <div className="flex flex-col items-end gap-2">
-                          {/* Status Badge */}
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide border ${
-                              statusMap[s] === "ok"
-                                ? "bg-brilliance/10 text-brilliance border-brilliance/30"
-                                : statusMap[s] === "fail"
-                                  ? "bg-danger/10 text-danger border-danger/30"
-                                  : "bg-gold/10 text-gold/60 border-gold/20"
-                            }`}
-                          >
-                            {statusMap[s] === "ok" ? (
-                              <>
-                                <div className="w-1.5 h-1.5 rounded-full bg-brilliance animate-pulse" />
-                                Online
-                              </>
-                            ) : statusMap[s] === "fail" ? (
-                              <>
-                                <AlertCircle className="w-3 h-3" />
-                                Offline
-                              </>
-                            ) : (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Checking
-                              </>
-                            )}
-                          </span>
-
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {/* Enter Game Button */}
-                            {isOnline && (
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {/* Enter Game Button */}
+                              {isOnline && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEnterGame(
+                                      savedWorldsByName.get(s) ?? { name: s, chain: undefined, worldKey: s },
+                                    );
+                                  }}
+                                  className="p-1.5 rounded-md bg-brilliance/10 text-brilliance border border-brilliance/30 hover:bg-brilliance/20 transition-all"
+                                  title="Enter game"
+                                >
+                                  <Play className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {/* Delete Button */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleEnterGame(
-                                    savedWorldsByName.get(s) ?? { name: s, chain: undefined, worldKey: s },
-                                  );
+                                  handleRemoveWorld(s);
                                 }}
-                                className="p-1.5 rounded-md bg-brilliance/10 text-brilliance border border-brilliance/30 hover:bg-brilliance/20 transition-all"
-                                title="Enter game"
+                                className="p-1.5 rounded-md text-danger/60 hover:text-danger hover:bg-danger/10 border border-transparent hover:border-danger/30"
+                                title="Remove game"
                               >
-                                <Play className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
-                            )}
-                            {/* Delete Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveWorld(s);
-                              }}
-                              className="p-1.5 rounded-md text-danger/60 hover:text-danger hover:bg-danger/10 border border-transparent hover:border-danger/30"
-                              title="Remove game"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
                     );
                   });
                 })()}

@@ -1,4 +1,10 @@
-import { formatArmies, getEntityIdFromKeys, getGuardsByStructure, getTileAt, DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
+import {
+  formatArmies,
+  getEntityIdFromKeys,
+  getGuardsByStructure,
+  getTileAt,
+  DEFAULT_COORD_ALT,
+} from "@bibliothecadao/eternum";
 import { ContractAddress, ID, type Position } from "@bibliothecadao/types";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";

@@ -146,7 +146,13 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
       <div className={`rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center ${className}`}>
         <ServerOff className="w-8 h-8 mx-auto text-red-400 mb-2" />
         <p className="text-sm text-red-300">{error}</p>
-        <Button onClick={() => void handleRefresh()} size="xs" variant="outline" className="mt-3" forceUppercase={false}>
+        <Button
+          onClick={() => void handleRefresh()}
+          size="xs"
+          variant="outline"
+          className="mt-3"
+          forceUppercase={false}
+        >
           <div className="flex items-center gap-1.5">
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Retry</span>

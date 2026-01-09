@@ -27,7 +27,7 @@ export const ChestList = ({ chests }: ChestListProps) => {
         .map((chest) => ({
           ...chest,
           name: getCrateName(chest.entityId),
-          position: new Position({ x: chest.position.x, y: chest.position.y }).getNormalized(),
+          position: { ...new Position({ x: chest.position.x, y: chest.position.y }).getNormalized(), alt: false },
         })),
     [chests],
   );

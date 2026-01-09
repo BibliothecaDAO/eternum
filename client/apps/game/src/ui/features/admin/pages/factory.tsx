@@ -1195,7 +1195,9 @@ export const FactoryPage = () => {
                                           </p>
                                         </div>
                                         <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">Single Realm Mode</label>
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Single Realm Mode
+                                          </label>
                                           <div className="flex items-center gap-2">
                                             <input
                                               id={`single-realm-mode-${name}`}
@@ -1210,11 +1212,16 @@ export const FactoryPage = () => {
                                               }
                                               className="h-4 w-4 accent-blue-600"
                                             />
-                                            <label htmlFor={`single-realm-mode-${name}`} className="text-xs text-slate-700">
+                                            <label
+                                              htmlFor={`single-realm-mode-${name}`}
+                                              className="text-xs text-slate-700"
+                                            >
                                               Enable single realm mode for this world
                                             </label>
                                           </div>
-                                          <p className="text-[10px] text-slate-500">Controls settlement spawning behavior.</p>
+                                          <p className="text-[10px] text-slate-500">
+                                            Controls settlement spawning behavior.
+                                          </p>
                                         </div>
                                       </div>
 

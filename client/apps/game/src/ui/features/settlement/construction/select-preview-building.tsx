@@ -426,8 +426,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const mode = useGameModeConfig();
 
   const buildingTypes = useMemo(
-    () =>
-      Object.keys(BuildingType).filter((key) => mode.rules.isBuildingTypeAllowed(key)),
+    () => Object.keys(BuildingType).filter((key) => mode.rules.isBuildingTypeAllowed(key)),
     [mode],
   );
 

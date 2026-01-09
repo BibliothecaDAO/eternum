@@ -358,11 +358,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  private completeTransactionSpan(
-    span: Span,
-    transactionHash: string,
-    receipt: GetTransactionReceiptResponse,
-  ): void {
+  private completeTransactionSpan(span: Span, transactionHash: string, receipt: GetTransactionReceiptResponse): void {
     const receiptAny = receipt as any;
     const blockNumber =
       typeof receiptAny?.block_number === "number"
@@ -1555,12 +1551,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     const { entity_id, building_coord, signer } = props;
-    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "destroy_building",
-      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
+      calldata: CallData.compile([
+        entity_id,
+        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+      ]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1590,12 +1588,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async pause_production(props: SystemProps.PauseProductionProps) {
     const { entity_id, building_coord, signer } = props;
-    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "pause_building_production",
-      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
+      calldata: CallData.compile([
+        entity_id,
+        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+      ]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1625,12 +1625,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async resume_production(props: SystemProps.ResumeProductionProps) {
     const { entity_id, building_coord, signer } = props;
-    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "resume_building_production",
-      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
+      calldata: CallData.compile([
+        entity_id,
+        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+      ]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1771,12 +1773,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async create_banks(props: SystemProps.CreateAdminBanksProps) {
     const { banks, signer } = props;
-    const bankCalldata = banks.flatMap((bank) => [
-      bank.name,
-      bank.coord.alt ?? false,
-      bank.coord.x,
-      bank.coord.y,
-    ]);
+    const bankCalldata = banks.flatMap((bank) => [bank.name, bank.coord.alt ?? false, bank.coord.x, bank.coord.y]);
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
@@ -2299,10 +2296,10 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
       callData.push({
-          contractAddress: this.VRF_PROVIDER_ADDRESS!,
-          entrypoint: "request_random",
-          calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-        });
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      });
     }
 
     callData.push({
@@ -2803,7 +2800,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [village_pass_nft_address, village_mint_initial_recipient],
     });
   }
-
 
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const {

@@ -98,7 +98,7 @@ export class PlayerDataStore {
           this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
           const realmName =
             actualRealmId === "0"
-              ? mode.structure.getTypeName(Number(actualCategory) as StructureType) ?? "Structure"
+              ? (mode.structure.getTypeName(Number(actualCategory) as StructureType) ?? "Structure")
               : realmsData[actualRealmId].name;
           this.structureToNameMap.set(actualStructureId, realmName);
         });

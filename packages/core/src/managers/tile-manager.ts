@@ -16,8 +16,20 @@ import {
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { FELT_CENTER, ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount, getTileAt, DEFAULT_COORD_ALT } from "..";
+import {
+  FELT_CENTER,
+  ResourceManager,
+  getBuildingCosts,
+  getBuildingCount,
+  setBuildingCount,
+  getTileAt,
+  DEFAULT_COORD_ALT,
+} from "..";
 import { configManager } from "./config-manager";
+
+// Module-level Set to track pending builds across TileManager instances
+// This prevents race conditions between optimistic updates and Torii sync
+const pendingBuilds = new Set<string>();
 
 export class TileManager {
   private col: number;
@@ -88,9 +100,17 @@ export class TileManager {
   };
 
   isHexOccupied = (hexCoords: HexPosition) => {
+    const { col, row } = hexCoords;
+
+    // Check pending builds first to prevent race conditions
+    const buildKey = `${this.col},${this.row},${col},${row}`;
+    if (pendingBuilds.has(buildKey)) {
+      return true;
+    }
+
     const building = getComponentValue(
       this.components.Building,
-      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(col), BigInt(row)]),
     );
     return building !== undefined && building.category !== BuildingType.None;
   };
@@ -348,6 +368,10 @@ export class TileManager {
   ) => {
     const { col, row } = hexCoords;
 
+    // Track this build as pending to prevent race conditions
+    const buildKey = `${this.col},${this.row},${col},${row}`;
+    pendingBuilds.add(buildKey);
+
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
@@ -356,18 +380,28 @@ export class TileManager {
     const removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
 
     try {
-      return await this.systemCalls.create_building({
+      const result = await this.systemCalls.create_building({
         signer,
         entity_id: structureEntityId,
         directions: directions,
         building_category: buildingType,
         use_simple: useSimpleCost,
       });
+
+      // On success, delay override removal to allow Torii sync
+      // The pendingBuilds Set ensures isHexOccupied returns true during this window
+      setTimeout(() => {
+        removeBuildingOverride();
+        pendingBuilds.delete(buildKey);
+      }, 500);
+
+      return result;
     } catch (error) {
+      // On error, remove immediately
+      removeBuildingOverride();
+      pendingBuilds.delete(buildKey);
       console.error(error);
       throw error;
-    } finally {
-      removeBuildingOverride();
     }
   };
 

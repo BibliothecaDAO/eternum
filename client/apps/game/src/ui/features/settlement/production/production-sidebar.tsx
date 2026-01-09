@@ -1,11 +1,6 @@
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import {
-  configManager,
-  getEntityIdFromKeys,
-  getStructureRelicEffects,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { configManager, getEntityIdFromKeys, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getProducedResource, ID, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
