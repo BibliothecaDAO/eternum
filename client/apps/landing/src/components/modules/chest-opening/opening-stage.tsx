@@ -3,41 +3,49 @@ import { useCallback, useEffect, useRef } from "react";
 import { ChestStageContainer } from "./chest-stage-container";
 
 // Video imports - high resolution
-import chestOpeningCommon from "@videos/chest-opening/high-res/common.mp4";
-import chestOpeningEpic from "@videos/chest-opening/high-res/epic.mp4";
-import chestOpeningLegendary from "@videos/chest-opening/high-res/legendary.mp4";
-import chestOpeningRare from "@videos/chest-opening/high-res/rare.mp4";
-import chestOpeningUncommon from "@videos/chest-opening/high-res/uncommon.mp4";
 
-// Video imports - low resolution (for mobile)
-import chestOpeningCommonLowRes from "@videos/chest-opening/low-res/common.mov";
-import chestOpeningEpicLowRes from "@videos/chest-opening/low-res/epic.mov";
-import chestOpeningLegendaryLowRes from "@videos/chest-opening/low-res/legendary.mov";
-import chestOpeningRareLowRes from "@videos/chest-opening/low-res/rare.mov";
-import chestOpeningUncommonLowRes from "@videos/chest-opening/low-res/uncommon.mov";
+// Eternum Rewards S1
+import chestOpeningEternumRewardsS1Common from "@videos/chest-opening/eternum-rewards-s1/common.mp4";
+import chestOpeningEternumRewardsS1Epic from "@videos/chest-opening/eternum-rewards-s1/epic.mp4";
+import chestOpeningEternumRewardsS1Legendary from "@videos/chest-opening/eternum-rewards-s1/legendary.mp4";
+import chestOpeningEternumRewardsS1Rare from "@videos/chest-opening/eternum-rewards-s1/rare.mp4";
+import chestOpeningEternumRewardsS1Uncommon from "@videos/chest-opening/eternum-rewards-s1/uncommon.mp4";
 
-const chestOpeningVideoHighRes: Record<string, string> = {
-  common: chestOpeningCommon,
-  uncommon: chestOpeningUncommon,
-  rare: chestOpeningRare,
-  epic: chestOpeningEpic,
-  legendary: chestOpeningLegendary,
+// Blitz Rewards S0
+import chestOpeningBlitzRewardsS0Epic from "@videos/chest-opening/blitz-rewards-s0/epic.mp4";
+import chestOpeningBlitzRewardsS0Legendary from "@videos/chest-opening/blitz-rewards-s0/legendary.mp4";
+import chestOpeningBlitzRewardsS0Rare from "@videos/chest-opening/blitz-rewards-s0/rare.mp4";
+
+const chestOpeningVideoEternumRewardsS1: Record<string, string> = {
+  common: chestOpeningEternumRewardsS1Common,
+  uncommon: chestOpeningEternumRewardsS1Uncommon,
+  rare: chestOpeningEternumRewardsS1Rare,
+  epic: chestOpeningEternumRewardsS1Epic,
+  legendary: chestOpeningEternumRewardsS1Legendary,
 };
 
-const chestOpeningVideoLowRes: Record<string, string> = {
-  common: chestOpeningCommonLowRes,
-  uncommon: chestOpeningUncommonLowRes,
-  rare: chestOpeningRareLowRes,
-  epic: chestOpeningEpicLowRes,
-  legendary: chestOpeningLegendaryLowRes,
+const chestOpeningVideoBlitzRewardsS0: Record<string, string> = {
+  rare: chestOpeningBlitzRewardsS0Rare,
+  epic: chestOpeningBlitzRewardsS0Epic,
+  legendary: chestOpeningBlitzRewardsS0Legendary,
+};
+
+// Map epoch to video collection
+const videoCollections: Record<string, Record<string, string>> = {
+  "eternum-rewards-s1": chestOpeningVideoEternumRewardsS1,
+  "blitz-rewards-s0": chestOpeningVideoBlitzRewardsS0,
 };
 
 /**
- * Get the appropriate chest opening video based on rarity and device type.
+ * Get the appropriate chest opening video based on rarity and epoch.
  * Exported for use by parent components.
+ * @param rarity - The chest rarity (common, uncommon, rare, epic, legendary)
+ * @param epoch - The chest epoch ("eternum-rewards-s1" | "blitz-rewards-s0")
  */
-export function getChestOpeningVideo(chestType: string, isMobile: boolean): string {
-  return isMobile ? chestOpeningVideoLowRes[chestType] : chestOpeningVideoHighRes[chestType];
+export function getChestOpeningVideo(rarity: string, epoch: string): string {
+  const collection = videoCollections[epoch] || chestOpeningVideoEternumRewardsS1;
+  // Fall back to closest available rarity if not found in collection
+  return collection[rarity] || collection["rare"] || chestOpeningVideoEternumRewardsS1["common"];
 }
 
 interface OpeningStageProps {

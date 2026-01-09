@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { useChestContent } from "@/hooks/use-chest-content";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
-import { AssetRarity, ChestAsset, getHighestRarity } from "@/utils/cosmetics";
+import { ChestAsset, getHighestRarity } from "@/utils/cosmetics";
 import { Package } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { env } from "../../../../env";
@@ -14,7 +13,7 @@ import { MOCK_CHEST_OPENING, getMockRevealAssets } from "./mock-data";
 import { OpeningStage, getChestOpeningVideo } from "./opening-stage";
 import { PendingOverlay } from "./pending-overlay";
 import { RevealStage } from "./reveal-stage";
-import { useChestOpeningFlow } from "./use-chest-opening-flow";
+import { ChestEpoch, useChestOpeningFlow } from "./use-chest-opening-flow";
 
 // Re-export components for external use
 export { FloatingOpenButton } from "./floating-open-button";
@@ -30,7 +29,6 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
   const { flowState, actions } = useChestOpeningFlow();
   const { openChest, isLoading: isOpenChestLoading } = useOpenChest();
   const { chestOpenTimestamp, setShowLootChestOpening } = useLootChestOpeningStore();
-  const isMobile = useIsMobile();
 
   // Track content visibility for animations
   const [showRevealContent, setShowRevealContent] = useState(false);
@@ -61,9 +59,9 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
 
   // Handle chest selection
   const handleSelectChest = useCallback(
-    async (chestId: string, rarity: AssetRarity) => {
+    async (chestId: string, epoch: ChestEpoch) => {
       // Update flow state
-      actions.selectChest(chestId, rarity);
+      actions.selectChest(chestId, epoch);
 
       if (MOCK_CHEST_OPENING) {
         // Mock mode: generate fake content
@@ -154,12 +152,12 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
         />
       )}
 
-      {/* Opening Stage (Video) - Video rarity based on highest item rarity */}
+      {/* Opening Stage (Video) - Video based on highest item rarity and chest epoch */}
       {flowState.state === "opening" && (
         <OpeningStage
           key={flowState.selectedChestId}
           active={true}
-          videoSrc={getChestOpeningVideo(getHighestRarity(displayContent), isMobile)}
+          videoSrc={getChestOpeningVideo(getHighestRarity(displayContent), flowState.selectedChestEpoch)}
           onComplete={handleVideoEnd}
           onSkip={handleSkip}
         />
@@ -169,7 +167,7 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
       {(flowState.state === "reveal" || flowState.state === "done") && displayContent.length > 0 && (
         <RevealStage
           assets={displayContent}
-          chestRarity={flowState.selectedChestRarity}
+          chestRarity={getHighestRarity(displayContent)}
           onComplete={handleRevealComplete}
           showContent={showRevealContent}
           onClose={handleClose}

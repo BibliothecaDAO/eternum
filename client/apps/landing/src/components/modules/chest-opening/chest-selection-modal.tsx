@@ -6,21 +6,48 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MergedNftData } from "@/types";
-import { AssetRarity } from "@/utils/cosmetics";
 import gsap from "gsap";
 import { ArrowUpDown, ChevronDown, Filter, Package, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChestStageContainer } from "./chest-stage-container";
+import { ChestEpoch } from "./use-chest-opening-flow";
 
 type SortMode = "id-asc" | "id-desc";
 
 interface ChestSelectionModalProps {
   isOpen: boolean;
   chests: MergedNftData[];
-  onSelect: (chestId: string, rarity: AssetRarity) => void;
+  onSelect: (chestId: string, epoch: ChestEpoch) => void;
   onClose: () => void;
   isLoading?: boolean;
   selectedChestId?: string | null;
+}
+
+// Helper to extract chest epoch from metadata using Epoch and ID attributes
+function getChestEpoch(metadata: MergedNftData["metadata"] | undefined): ChestEpoch {
+  if (!metadata?.attributes) return "eternum-rewards-s1";
+
+  // Get the ID attribute (e.g., "Eternum Rewards Chest", "Blitz Rewards Chest")
+  const idAttr = metadata.attributes.find((a) => a.trait_type === "ID");
+  // Get the Epoch attribute (e.g., "Season 0", "Season 1")
+  const epochAttr = metadata.attributes.find((a) => a.trait_type === "Epoch");
+
+  if (idAttr && epochAttr) {
+    const idValue = String(idAttr.value).toLowerCase();
+    const epochValue = String(epochAttr.value).toLowerCase();
+
+    // Blitz Rewards Chest + Season 0 → blitz-rewards-s0
+    if (idValue.includes("blitz") && epochValue.includes("0")) {
+      return "blitz-rewards-s0";
+    }
+    // Eternum Rewards Chest + Season 1 → eternum-rewards-s1
+    if (idValue.includes("eternum") && epochValue.includes("1")) {
+      return "eternum-rewards-s1";
+    }
+  }
+
+  // Default to eternum-rewards-s1
+  return "eternum-rewards-s1";
 }
 
 interface ChestCardProps {
@@ -296,10 +323,11 @@ export function ChestSelectionModal({
     setSortMode((current) => (current === "id-desc" ? "id-asc" : "id-desc"));
   };
 
-  // Handle chest selection - pass a default rarity since it's not available
+  // Handle chest selection - extract epoch from metadata
   const handleSelect = (chest: MergedNftData) => {
     if (isLoading) return;
-    onSelect(String(chest.token_id), AssetRarity.Common);
+    const epoch = getChestEpoch(chest.metadata);
+    onSelect(String(chest.token_id), epoch);
   };
 
   if (!isOpen) return null;

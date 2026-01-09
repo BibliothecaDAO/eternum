@@ -1,15 +1,17 @@
 import { useCallback, useState } from "react";
-import { AssetRarity, ChestAsset } from "@/utils/cosmetics";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
-import { MOCK_CHEST_OPENING, simulatePendingDelay, getMockRevealAssets } from "./mock-data";
+import { MOCK_CHEST_OPENING, simulatePendingDelay } from "./mock-data";
 
 // State machine states for the chest opening flow
 export type ChestOpeningState = "idle" | "selecting" | "pending" | "opening" | "reveal" | "done";
 
+// Chest epoch types for video selection
+export type ChestEpoch = "eternum-rewards-s1" | "blitz-rewards-s0";
+
 export interface ChestOpeningFlowState {
   state: ChestOpeningState;
   selectedChestId: string | null;
-  selectedChestRarity: AssetRarity;
+  selectedChestEpoch: ChestEpoch;
   error: Error | null;
 }
 
@@ -17,7 +19,7 @@ interface UseChestOpeningFlowReturn {
   flowState: ChestOpeningFlowState;
   actions: {
     openSelection: () => void;
-    selectChest: (chestId: string, rarity: AssetRarity) => void;
+    selectChest: (chestId: string, epoch: ChestEpoch) => void;
     startPending: () => void;
     startOpening: () => void;
     startReveal: () => void;
@@ -31,7 +33,7 @@ interface UseChestOpeningFlowReturn {
 const initialState: ChestOpeningFlowState = {
   state: "idle",
   selectedChestId: null,
-  selectedChestRarity: AssetRarity.Common,
+  selectedChestEpoch: "eternum-rewards-s1",
   error: null,
 };
 
@@ -42,7 +44,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
 
   // Transition to selection modal
   const openSelection = useCallback(() => {
-    setFlowState((prev) => ({
+    setFlowState((prev: ChestOpeningFlowState) => ({
       ...prev,
       state: "selecting",
       error: null,
@@ -51,11 +53,11 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
 
   // Select a chest and prepare for opening
   const selectChest = useCallback(
-    (chestId: string, rarity: AssetRarity) => {
-      setFlowState((prev) => ({
+    (chestId: string, epoch: ChestEpoch) => {
+      setFlowState((prev: ChestOpeningFlowState) => ({
         ...prev,
         selectedChestId: chestId,
-        selectedChestRarity: rarity,
+        selectedChestEpoch: epoch,
         error: null,
       }));
 
@@ -67,7 +69,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
 
   // Transition to pending state (waiting for blockchain)
   const startPending = useCallback(() => {
-    setFlowState((prev) => ({
+    setFlowState((prev: ChestOpeningFlowState) => ({
       ...prev,
       state: "pending",
     }));
@@ -78,7 +80,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
     // In mock mode, simulate delay then transition to opening
     if (MOCK_CHEST_OPENING) {
       simulatePendingDelay().then(() => {
-        setFlowState((prev) => ({
+        setFlowState((prev: ChestOpeningFlowState) => ({
           ...prev,
           state: "opening",
         }));
@@ -88,7 +90,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
 
   // Transition to opening state (video playing)
   const startOpening = useCallback(() => {
-    setFlowState((prev) => ({
+    setFlowState((prev: ChestOpeningFlowState) => ({
       ...prev,
       state: "opening",
     }));
@@ -96,7 +98,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
 
   // Transition to reveal state (showing cards)
   const startReveal = useCallback(() => {
-    setFlowState((prev) => ({
+    setFlowState((prev: ChestOpeningFlowState) => ({
       ...prev,
       state: "reveal",
     }));
@@ -104,7 +106,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
 
   // Complete the flow
   const complete = useCallback(() => {
-    setFlowState((prev) => ({
+    setFlowState((prev: ChestOpeningFlowState) => ({
       ...prev,
       state: "done",
     }));
@@ -118,7 +120,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
 
   // Reset for opening another chest (keeps selection modal open)
   const reset = useCallback(() => {
-    setFlowState((prev) => ({
+    setFlowState(() => ({
       ...initialState,
       state: "selecting",
     }));
@@ -127,7 +129,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
   // Set error state
   const setError = useCallback(
     (error: Error) => {
-      setFlowState((prev) => ({
+      setFlowState((prev: ChestOpeningFlowState) => ({
         ...prev,
         state: "idle",
         error,
