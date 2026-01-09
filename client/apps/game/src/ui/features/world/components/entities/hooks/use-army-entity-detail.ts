@@ -210,6 +210,7 @@ export const useBannerArmyInfo = (
       position: {
         x: fallbackX,
         y: fallbackY,
+        alt: false,
       },
       owner: BigInt(explorer.owner),
       entity_owner_id: explorer.owner,

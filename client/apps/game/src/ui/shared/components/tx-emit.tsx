@@ -3,7 +3,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-const getTxMessage = (type: TransactionType) => {
+const getTxMessage = (type: (typeof TransactionType)[keyof typeof TransactionType]) => {
   switch (type) {
     case TransactionType.EXPLORE:
       return "🗺️ Scouts sent to explore new lands";
@@ -110,7 +110,7 @@ const getTxMessage = (type: TransactionType) => {
 
 type TransactionFailurePayload = {
   message?: string;
-  type?: TransactionType;
+  type?: (typeof TransactionType)[keyof typeof TransactionType];
   transactionCount?: number;
   transactionHash?: string;
 };

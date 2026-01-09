@@ -116,7 +116,10 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   };
 };
 
-export const calculateDistanceInHexes = (start: Position, destination: Position): number | undefined => {
+export const calculateDistanceInHexes = (
+  start: Pick<Position, "x" | "y">,
+  destination: Pick<Position, "x" | "y">,
+): number | undefined => {
   const distance = calculateDistance(start, destination);
   if (distance) {
     return Math.round(distance / HEX_SIZE / 2);

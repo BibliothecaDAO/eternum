@@ -1555,12 +1555,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     const { entity_id, building_coord, signer } = props;
-    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "destroy_building",
-      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
+      calldata: CallData.compile([
+        entity_id,
+        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+      ]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1590,12 +1592,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async pause_production(props: SystemProps.PauseProductionProps) {
     const { entity_id, building_coord, signer } = props;
-    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "pause_building_production",
-      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
+      calldata: CallData.compile([
+        entity_id,
+        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+      ]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1625,12 +1629,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async resume_production(props: SystemProps.ResumeProductionProps) {
     const { entity_id, building_coord, signer } = props;
-    const coordAlt = building_coord.alt ?? false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "resume_building_production",
-      calldata: [entity_id, coordAlt, building_coord.x, building_coord.y],
+      calldata: CallData.compile([
+        entity_id,
+        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+      ]),
     });
 
     return await this.promiseQueue.enqueue(call);
