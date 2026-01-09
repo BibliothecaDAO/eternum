@@ -358,11 +358,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  private completeTransactionSpan(
-    span: Span,
-    transactionHash: string,
-    receipt: GetTransactionReceiptResponse,
-  ): void {
+  private completeTransactionSpan(span: Span, transactionHash: string, receipt: GetTransactionReceiptResponse): void {
     const receiptAny = receipt as any;
     const blockNumber =
       typeof receiptAny?.block_number === "number"
@@ -1777,12 +1773,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async create_banks(props: SystemProps.CreateAdminBanksProps) {
     const { banks, signer } = props;
-    const bankCalldata = banks.flatMap((bank) => [
-      bank.name,
-      bank.coord.alt ?? false,
-      bank.coord.x,
-      bank.coord.y,
-    ]);
+    const bankCalldata = banks.flatMap((bank) => [bank.name, bank.coord.alt ?? false, bank.coord.x, bank.coord.y]);
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
@@ -2305,10 +2296,10 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
       callData.push({
-          contractAddress: this.VRF_PROVIDER_ADDRESS!,
-          entrypoint: "request_random",
-          calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-        });
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      });
     }
 
     callData.push({
@@ -2809,7 +2800,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [village_pass_nft_address, village_mint_initial_recipient],
     });
   }
-
 
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const {

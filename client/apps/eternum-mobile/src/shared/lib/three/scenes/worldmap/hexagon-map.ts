@@ -160,9 +160,7 @@ export class HexagonMap {
     this.systemManager.RelicEffect.onStructureProductionUpdate((update) =>
       this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
     );
-    this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) =>
-      this.handleExplorerRewardEvent(update),
-    );
+    this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
   }
 
   private initializeGUI(): void {

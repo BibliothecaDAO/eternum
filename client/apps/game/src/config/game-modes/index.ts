@@ -1,9 +1,4 @@
-import {
-  configManager,
-  getEntityInfo,
-  getStructureName,
-  getStructureTypeName,
-} from "@bibliothecadao/eternum";
+import { configManager, getEntityInfo, getStructureName, getStructureTypeName } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   type ClientComponents,

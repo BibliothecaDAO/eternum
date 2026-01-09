@@ -30,7 +30,11 @@ export const buildPaymasterActions = (): PaymasterAction[] => {
   let manifest: GameManifestLike = baseManifest;
 
   if (activeWorld && activeWorld.contractsBySelector && activeWorld.worldAddress) {
-    manifest = patchManifestWithFactory(baseManifest, activeWorld.worldAddress, activeWorld.contractsBySelector) as unknown as GameManifestLike;
+    manifest = patchManifestWithFactory(
+      baseManifest,
+      activeWorld.worldAddress,
+      activeWorld.contractsBySelector,
+    ) as unknown as GameManifestLike;
   }
 
   const actionsMap = new Map<string, PaymasterAction>();

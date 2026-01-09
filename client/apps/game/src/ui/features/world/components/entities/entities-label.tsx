@@ -6,7 +6,7 @@ import {
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierStructure,
-  Position as PositionInterface
+  Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import type { Tile } from "@bibliothecadao/types";

@@ -451,7 +451,6 @@ export interface SetVillageTokenProps extends SystemSigner {
   village_mint_initial_recipient: BigNumberish;
 }
 
-
 export interface SetTradeConfigProps extends SystemSigner {
   max_count: BigNumberish;
 }

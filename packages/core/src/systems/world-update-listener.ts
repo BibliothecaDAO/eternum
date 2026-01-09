@@ -12,7 +12,7 @@ import {
   StructureType,
   TileOccupier,
   type TroopTier,
-  type TroopType
+  type TroopType,
 } from "@bibliothecadao/types";
 import {
   type Component,
@@ -1323,7 +1323,7 @@ export class WorldUpdateListener {
   private mapStoryEventPayload(currentState: any): StoryEventSystemUpdate {
     const owner = this.normalizeOptionalValue<string | bigint | number>(currentState.owner);
     const entityId = this.normalizeOptionalValue<number | string>(currentState.entity_id);
-    console.log({currentState})
+    console.log({ currentState });
 
     const ownerAddress = owner === null ? null : this.stringifyValue(owner);
     const numericEntityId = entityId === null ? null : Number(entityId);
@@ -1336,7 +1336,7 @@ export class WorldUpdateListener {
     const storyType = storyVariant.storyType;
     let storyPayload = storyVariant.storyPayload;
 
-    console.log({storyPayload, storyType})
+    console.log({ storyPayload, storyType });
 
     if ((!storyPayload || storyType === "Unknown") && currentState.story) {
       console.debug("ℹ️ StoryEvent: Unparsed payload", {

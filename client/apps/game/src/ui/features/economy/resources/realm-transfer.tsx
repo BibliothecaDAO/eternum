@@ -410,8 +410,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 <div className="py-8 text-center text-sm text-gold/60">
                   <div className="mb-2 text-lg">No valid destinations</div>
                   <p>
-                    {mode.structure.getName(selectedStructure).name} cannot transfer troops. Only Realms can
-                    transfer military units.
+                    {mode.structure.getName(selectedStructure).name} cannot transfer troops. Only Realms can transfer
+                    military units.
                   </p>
                 </div>
               ) : structuresForTransfer.length === 0 ? (
@@ -630,9 +630,7 @@ const RealmTransferBalance = memo(
       <div className="flex flex-col gap-2 border-b-2 mt-2 pb-2 border-gold/20">
         <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
-            <div className="uppercase font-bold h4 truncate">
-              {mode.structure.getName(structure.structure).name}
-            </div>
+            <div className="uppercase font-bold h4 truncate">{mode.structure.getName(structure.structure).name}</div>
           </div>
         </div>
         <div className="w-full">
@@ -646,9 +644,7 @@ const RealmTransferBalance = memo(
                 !canCarry || relevantDonkeyBalance === 0 ? "text-red" : "text-green"
               }`}
             >
-              {type === "send"
-                ? "Your Donkeys:"
-                : `${mode.structure.getName(structure.structure).name}'s Donkeys:`}{" "}
+              {type === "send" ? "Your Donkeys:" : `${mode.structure.getName(structure.structure).name}'s Donkeys:`}{" "}
               {currencyFormat(relevantDonkeyBalance, 0).toLocaleString()} / <br /> Needs:{" "}
               {neededDonkeysForThisTransfer.toLocaleString()} 🐴
             </div>

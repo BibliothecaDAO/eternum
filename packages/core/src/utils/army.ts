@@ -13,7 +13,16 @@ import {
 } from "@bibliothecadao/types";
 import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { configManager, divideByPrecision, getAddressNameFromEntity, getArmyName, gramToKg, nanogramToKg, getTileAt, DEFAULT_COORD_ALT } from "..";
+import {
+  configManager,
+  divideByPrecision,
+  getAddressNameFromEntity,
+  getArmyName,
+  gramToKg,
+  nanogramToKg,
+  getTileAt,
+  DEFAULT_COORD_ALT,
+} from "..";
 
 export const formatArmies = (
   armies: Entity[],

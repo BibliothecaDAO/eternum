@@ -63,7 +63,7 @@ import {
   RelicEffect,
   ResourcesIds,
   Structure,
-  StructureType
+  StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -1154,9 +1154,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private isRewardDebugEnabled(): boolean {
-    return Boolean(
-      (globalThis as { __ETERNUM_DEBUG_REWARD_EVENTS__?: boolean }).__ETERNUM_DEBUG_REWARD_EVENTS__,
-    );
+    return Boolean((globalThis as { __ETERNUM_DEBUG_REWARD_EVENTS__?: boolean }).__ETERNUM_DEBUG_REWARD_EVENTS__);
   }
 
   private getEntityLabel(entityId: ID): string {

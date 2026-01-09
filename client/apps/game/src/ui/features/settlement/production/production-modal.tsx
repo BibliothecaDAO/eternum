@@ -108,11 +108,7 @@ export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?:
   const managedStructures = useMemo(() => {
     const combined = [...playerRealms, ...playerVillages]
       .slice()
-      .sort((a, b) =>
-        mode.structure
-          .getName(a.structure)
-          .name.localeCompare(mode.structure.getName(b.structure).name),
-      );
+      .sort((a, b) => mode.structure.getName(a.structure).name.localeCompare(mode.structure.getName(b.structure).name));
     return combined;
   }, [mode, playerRealms, playerVillages]);
 

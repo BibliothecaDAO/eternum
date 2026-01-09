@@ -971,7 +971,6 @@ export const setupGlobals = async (config: Config) => {
   console.log(chalk.green(`    ✔ Quest configured `) + chalk.gray(txQuest.statusReceipt));
 };
 
-
 export const setAgentConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,

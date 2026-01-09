@@ -16,7 +16,15 @@ import {
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { FELT_CENTER, ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount, getTileAt, DEFAULT_COORD_ALT } from "..";
+import {
+  FELT_CENTER,
+  ResourceManager,
+  getBuildingCosts,
+  getBuildingCount,
+  setBuildingCount,
+  getTileAt,
+  DEFAULT_COORD_ALT,
+} from "..";
 import { configManager } from "./config-manager";
 
 // Module-level Set to track pending builds across TileManager instances

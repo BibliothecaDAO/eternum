@@ -1,4 +1,3 @@
-
 // export const getTileFromToriiEntity = (entityData: any) => {
 //   const tile: ComponentValue<ClientComponents["Tile"]["schema"]> = {
 //     col: entityData.col?.value,
