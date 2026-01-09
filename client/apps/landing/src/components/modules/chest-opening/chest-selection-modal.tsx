@@ -67,6 +67,7 @@ function getTraitValue(metadata: MergedNftData["metadata"] | undefined, traitTyp
 
 function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [imageError, setImageError] = useState(false);
 
   // Transform IPFS URLs to use Pinata gateway
   const image = chest.metadata?.image?.startsWith("ipfs://")
@@ -141,11 +142,16 @@ function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardP
     >
       {/* Chest image */}
       <div className="aspect-square bg-slate-900 relative">
-        {image ? (
-          <img src={image} alt={`Chest #${chest.token_id}`} className="w-full h-full object-cover" />
+        {image && !imageError ? (
+          <img
+            src={image}
+            alt={`Chest #${chest.token_id}`}
+            className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Package className="w-16 h-16 text-gold/50" />
+            <Package className="w-16 h-16" />
           </div>
         )}
 

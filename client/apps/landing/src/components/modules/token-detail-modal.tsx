@@ -11,7 +11,7 @@ import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Copy, Loader2 } from "lucide-react";
+import { AlertTriangle, Copy, ImageOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
@@ -137,6 +137,7 @@ export const TokenDetailModal = ({
   const hasSufficientBalance = userBalance >= nftPrice;
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Effect to detect when indexer data has updated props
   useEffect(() => {
@@ -339,7 +340,18 @@ export const TokenDetailModal = ({
             <div className="grid gap-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center justify-center">
-                  <img src={image} alt={name ?? "Realm"} className="rounded-md  object-contain" />
+                  {image && !imageError ? (
+                    <img
+                      src={image}
+                      alt={name ?? "Realm"}
+                      className="rounded-md object-contain"
+                      onError={() => setImageError(true)}
+                    />
+                  ) : (
+                    <div className="w-full aspect-square bg-slate-800 rounded-md flex items-center justify-center">
+                      <ImageOff className="w-24 h-24" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-5">
                   <div className="flex flex-col gap-2">
