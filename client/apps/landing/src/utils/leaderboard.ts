@@ -5,7 +5,7 @@ export interface ContractAddressAndAmount {
   percentage: number;
 }
 
-export interface CalculateUnregisteredShareholderPointsCacheOptions {
+interface CalculateUnregisteredShareholderPointsCacheOptions {
   pointsPerSecondWithoutMultiplier: number;
   realmCountPerHyperstructures?: Map<number, number>;
   seasonEnd: number;
