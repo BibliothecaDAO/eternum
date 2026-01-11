@@ -20,7 +20,7 @@ trait ICosmeticCollectiblesClaim<TState> {
 }
 
 #[starknet::interface]
-trait CollectibleMetadataTrait<TState> {
+trait PaymentTokenMetadataTrait<TState> {
     fn get_metadata_raw(self: @TState, token_id: u256) -> u128;
 }
 
@@ -62,7 +62,7 @@ mod CosmeticCollectiblesClaim {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use super::{
         CollectibleMintTrait, CollectibleMintTraitDispatcher, CollectibleMintTraitDispatcherTrait,
-        ICosmeticCollectiblesClaim, CollectibleMetadataTrait, CollectibleMetadataTraitDispatcher, CollectibleMetadataTraitDispatcherTrait
+        ICosmeticCollectiblesClaim, PaymentTokenMetadataTrait, PaymentTokenMetadataTraitDispatcher, PaymentTokenMetadataTraitDispatcherTrait
     };
     use super::{UPGRADER_ROLE};
     use super::CollectibleClaimInternalTrait;
@@ -143,6 +143,9 @@ mod CosmeticCollectiblesClaim {
         }
     }
 
+    const ETERNUM_REWARDS_CHEST_TYPE: u128 = 0x101;
+    const BLITZ_REWARDS_S0_CHEST_TYPE: u128 = 0x201;
+
     #[abi(embed_v0)]
     impl CosmeticCollectiblesClaimImpl of ICosmeticCollectiblesClaim<ContractState> {
         fn claim(ref self: ContractState, token_id: u256) {
@@ -159,14 +162,14 @@ mod CosmeticCollectiblesClaim {
 
             // mint the randomly collectibles
             let collectible_token_address = self.collectible_erc721_address.read();
-            let collectible_metadata = CollectibleMetadataTraitDispatcher { contract_address: collectible_token_address };
+            let payment_token_metadata = PaymentTokenMetadataTraitDispatcher { contract_address: self.payment_erc721_address.read() };
 
-            let chest_raw_metadata = collectible_metadata.get_metadata_raw(token_id);
+            let payment_token_raw_metadata = payment_token_metadata.get_metadata_raw(token_id);
             let collectible_attributes 
-                = if chest_raw_metadata == 0x101 {  // Eternum Rewards Chest
+                = if payment_token_raw_metadata == ETERNUM_REWARDS_CHEST_TYPE {  // Eternum Rewards Chest
                     EternumRewardsChestClaimImpl::get_collectibles_attributes(vrf_seed)
                 } else {
-                    assert!(chest_raw_metadata == 0x201, "Invalid chest type"); // Blitz Rewards S0 Chest
+                    assert!(payment_token_raw_metadata == BLITZ_REWARDS_S0_CHEST_TYPE, "Invalid chest type"); // Blitz Rewards S0 Chest
                     BlitzRewardsS0ChestClaimImpl::get_collectibles_attributes(vrf_seed)
                 };
             
