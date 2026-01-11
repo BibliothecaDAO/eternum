@@ -19,6 +19,19 @@ trait ICosmeticCollectiblesClaim<TState> {
     fn claim(ref self: TState, token_id: u256);
 }
 
+#[starknet::interface]
+trait CollectibleMetadataTrait<TState> {
+    fn get_metadata_raw(self: @TState, token_id: u256) -> u128;
+}
+
+
+// Internal trait for collectible claim logic
+trait CollectibleClaimInternalTrait {
+    fn num_collectibles() -> u128;
+    fn collectibles_attributes_probabilities() -> (Span<u128>, Span<u128>);
+    fn get_collectibles_attributes(vrf_seed: u256) -> Span<u128>;
+}
+
 
 // Role constants for access control
 const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
@@ -49,9 +62,10 @@ mod CosmeticCollectiblesClaim {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use super::{
         CollectibleMintTrait, CollectibleMintTraitDispatcher, CollectibleMintTraitDispatcherTrait,
-        ICosmeticCollectiblesClaim,
+        ICosmeticCollectiblesClaim, CollectibleMetadataTrait, CollectibleMetadataTraitDispatcher, CollectibleMetadataTraitDispatcherTrait
     };
     use super::{UPGRADER_ROLE};
+    use super::CollectibleClaimInternalTrait;
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
@@ -142,13 +156,22 @@ mod CosmeticCollectiblesClaim {
             // randomly select the collectible attributes
             let vrf_provider_address = self.vrf_provider_address.read();
             let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider_address);
-            let collectible_attributes = InternalImpl::get_collectibles_attributes(vrf_seed);
 
             // mint the randomly collectibles
             let collectible_token_address = self.collectible_erc721_address.read();
+            let collectible_metadata = CollectibleMetadataTraitDispatcher { contract_address: collectible_token_address };
+
+            let chest_raw_metadata = collectible_metadata.get_metadata_raw(token_id);
+            let collectible_attributes 
+                = if chest_raw_metadata == 0x101 {  // Eternum Rewards Chest
+                    EternumRewardsChestClaimImpl::get_collectibles_attributes(vrf_seed)
+                } else {
+                    assert!(chest_raw_metadata == 0x201, "Invalid chest type"); // Blitz Rewards S0 Chest
+                    BlitzRewardsS0ChestClaimImpl::get_collectibles_attributes(vrf_seed)
+                };
+            
             let collectible_token = CollectibleMintTraitDispatcher { contract_address: collectible_token_address };
             let now = starknet::get_block_timestamp();
-
             for i in 0..collectible_attributes.len() {
                 let attributes_raw = *collectible_attributes[i];
                 collectible_token.safe_mint(caller, attributes_raw);
@@ -167,8 +190,7 @@ mod CosmeticCollectiblesClaim {
         }
     }
 
-    #[generate_trait]
-    impl InternalImpl of InternalTrait {
+    impl EternumRewardsChestClaimImpl of CollectibleClaimInternalTrait {
         fn num_collectibles() -> u128 {
             3
         }
@@ -189,6 +211,39 @@ mod CosmeticCollectiblesClaim {
                 ]
                     .span(),
                 array![141, 141, 422, 845, 845, 1268, 1268, 1690, 1690, 1690].span(),
+            )
+        }
+
+
+        fn get_collectibles_attributes(vrf_seed: u256) -> Span<u128> {
+            let (choices, weights) = Self::collectibles_attributes_probabilities();
+            random::choices(choices, weights, array![].span(), Self::num_collectibles(), true, vrf_seed)
+        }
+    }
+
+
+    impl BlitzRewardsS0ChestClaimImpl of CollectibleClaimInternalTrait {
+        fn num_collectibles() -> u128 {
+            1
+        }
+
+        fn collectibles_attributes_probabilities() -> (Span<u128>, Span<u128>) {
+            (
+                array![
+                    0x207050c01,
+                    0x4040d01,
+                    0x8040e01,
+                    0x4030f01,
+                    0x8031001,
+                    0x3021101,
+                    0x105021201,
+                    0x106021301,
+                    0x1011401,
+                    0x305011501,
+                    0x306011601,
+                ]
+                    .span(),
+                array![121, 366, 366, 732, 732, 1098, 1098, 1098, 1463, 1463, 1463].span(),
             )
         }
 
