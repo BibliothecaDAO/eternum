@@ -73,21 +73,25 @@ export const useChestContent = (debugMode: boolean = false, timestamp: number) =
 
     if (collectibleClaimedQuery && Array.isArray(collectibleClaimedQuery)) {
       const currentLength = collectibleClaimedQuery.length;
+      const previousLength = previousLengthRef.current;
 
-      // If exactly 3 new items were added, get the last 3 items
-      if (currentLength === previousLengthRef.current + 3) {
-        const lastThreeTokens = collectibleClaimedQuery.slice(-3);
+      // If new items were added, get all the new items
+      if (currentLength > previousLength) {
+        const newItemCount = currentLength - previousLength;
+        const newTokens = collectibleClaimedQuery.slice(-newItemCount);
 
         // Parse the event data to extract chest assets
-        const newAssets: ChestAsset[] = parseCollectibleClaimedData(lastThreeTokens);
+        const newAssets: ChestAsset[] = parseCollectibleClaimedData(newTokens);
 
-        setChestContent(newAssets);
+        if (newAssets.length > 0) {
+          setChestContent(newAssets);
+        }
       }
 
       // Update ref with current length for next comparison
       previousLengthRef.current = currentLength;
     }
-  }, [collectibleClaimedQuery, debugMode, timestamp]); // Added debugMode and timestamp to dependencies
+  }, [collectibleClaimedQuery, debugMode, timestamp]);
 
   const resetChestContent = () => {
     setChestContent([]);

@@ -64,10 +64,11 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
       actions.selectChest(chestId, epoch);
 
       if (MOCK_CHEST_OPENING) {
-        // Mock mode: generate fake content
+        // Mock mode: generate fake content with random item count (1-3)
         actions.startPending();
         setTimeout(() => {
-          setMockContent(getMockRevealAssets(3));
+          const randomCount = Math.floor(Math.random() * 3) + 1;
+          setMockContent(getMockRevealAssets(randomCount));
         }, 1500);
       } else {
         // Real mode: call blockchain

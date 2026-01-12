@@ -25,24 +25,40 @@ interface ChestSelectionModalProps {
 
 // Helper to extract chest epoch from metadata using Epoch and ID attributes
 function getChestEpoch(metadata: MergedNftData["metadata"] | undefined): ChestEpoch {
-  if (!metadata?.attributes) return "eternum-rewards-s1";
+  if (!metadata?.attributes) {
+    return "eternum-rewards-s1";
+  }
 
-  // Get the ID attribute (e.g., "Eternum Rewards Chest", "Blitz Rewards Chest")
   const idAttr = metadata.attributes.find((a) => a.trait_type === "ID");
-  // Get the Epoch attribute (e.g., "Season 0", "Season 1")
   const epochAttr = metadata.attributes.find((a) => a.trait_type === "Epoch");
 
   if (idAttr && epochAttr) {
     const idValue = String(idAttr.value).toLowerCase();
     const epochValue = String(epochAttr.value).toLowerCase();
 
-    // Blitz Rewards Chest + Season 0 → blitz-rewards-s0
-    if (idValue.includes("blitz") && epochValue.includes("0")) {
-      return "blitz-rewards-s0";
+    // Infer Blitz/Eternum rewards by ID, and the season by Epoch string and fallback on ID
+    if (idValue.includes("blitz")) {
+      // Prefer explicit Epoch detection, fallback to s0 if found in ID
+      if (epochValue.includes("0") || idValue.includes("(s0)")) {
+        return "blitz-rewards-s0";
+      }
+      if (epochValue.includes("1") || idValue.includes("(s1)")) {
+        // For future-proofing if s1 Blitz exists
+        // return "blitz-rewards-s1";
+        return "blitz-rewards-s0"; // fallback to s0 (as s1 does not exist yet)
+      }
+      return "blitz-rewards-s0"; // Default for legacy/ambiguous "blitz"
     }
-    // Eternum Rewards Chest + Season 1 → eternum-rewards-s1
-    if (idValue.includes("eternum") && epochValue.includes("1")) {
-      return "eternum-rewards-s1";
+    if (idValue.includes("eternum")) {
+      if (epochValue.includes("1") || idValue.includes("(s1)")) {
+        return "eternum-rewards-s1";
+      }
+      if (epochValue.includes("0") || idValue.includes("(s0)")) {
+        // For future-proofing if s0 Eternum exists
+        // return "eternum-rewards-s0";
+        return "eternum-rewards-s1"; // fallback to s1 (unlikely but for coverage)
+      }
+      return "eternum-rewards-s1"; // Default for ambiguous "eternum"
     }
   }
 

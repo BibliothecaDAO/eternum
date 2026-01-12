@@ -249,7 +249,8 @@ export function RevealStage({
   const getCardSize = () => {
     const count = displayAssets.length;
     if (count === 1) {
-      return { width: 320, height: 420 };
+      // Smaller size for single item to fit in container without overflow
+      return { width: 280, height: 370 };
     }
     if (count <= 3) {
       return { width: 260, height: 340 };
@@ -296,9 +297,9 @@ export function RevealStage({
                     key={`${asset.id}-${index}`}
                     className="reveal-card opacity-0"
                     style={{
-                      // Highlight the rarest item
-                      zIndex: asset === rarestAsset ? 10 : 1,
-                      transform: asset === rarestAsset ? "scale(1.05)" : "scale(1)",
+                      // Highlight the rarest item (only when multiple items)
+                      zIndex: asset === rarestAsset && displayAssets.length > 1 ? 10 : 1,
+                      transform: asset === rarestAsset && displayAssets.length > 1 ? "scale(1.05)" : "scale(1)",
                     }}
                   >
                     <TiltCard
@@ -404,7 +405,7 @@ interface CollectionSummaryProps {
   collectionSize?: number;
 }
 
-export function CollectionSummary({ assets, totalOwned = 0, collectionSize = 11 }: CollectionSummaryProps) {
+export function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 }: CollectionSummaryProps) {
   // Group by rarity
   const byRarity = assets.reduce(
     (acc, asset) => {

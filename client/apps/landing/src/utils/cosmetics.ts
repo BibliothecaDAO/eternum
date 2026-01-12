@@ -44,6 +44,17 @@ export const COSMETIC_NAMES = [
   { id: "9", name: "Hunter's Bow", epoch: "Season 1", attributesRaw: "0x205010901" },
   { id: "10", name: "Hunter's Quiver", epoch: "Season 1", attributesRaw: "0x206010a01" },
   { id: "11", name: "Carved Wooden Base", epoch: "Season 1", attributesRaw: "0x8010b01" },
+  { id: "12", name: "Legacy Hunter", epoch: "Season 1", attributesRaw: "0x207050c01" },
+  { id: "13", name: "Overgrown Wreath", epoch: "Season 1", attributesRaw: "0x4040d01" },
+  { id: "14", name: "Overgrown Foundation", epoch: "Season 1", attributesRaw: "0x8040e01" },
+  { id: "15", name: "Winter Vortex", epoch: "Season 1", attributesRaw: "0x4030f01" },
+  { id: "16", name: "Winter's Footing", epoch: "Season 1", attributesRaw: "0x8031001" },
+  { id: "17", name: "Overgrown Nest", epoch: "Season 1", attributesRaw: "0x3021101" },
+  { id: "18", name: "Winter Trooper's Broadaxe", epoch: "Season 1", attributesRaw: "0x105021201" },
+  { id: "19", name: "Winter Trooper's Targe", epoch: "Season 1", attributesRaw: "0x106021301" },
+  { id: "20", name: "Witness of the Morning Wars", epoch: "Season 1", attributesRaw: "0x1011401" },
+  { id: "21", name: "Light Cavalry Sword", epoch: "Season 1", attributesRaw: "0x305011501" },
+  { id: "22", name: "Light Cavalry Shield", epoch: "Season 1", attributesRaw: "0x306011601" },
 ];
 
 // Base path for local NFT images (stored in /public/images/nft-images/)
@@ -72,6 +83,17 @@ export const ATTRIBUTES_TO_IPFS: Record<string, string> = {
   "0x205010901": "bafybeib6agbyv47bymhz3aw2hzt25kqrjnca7rrjhgvtrfvtn62vi4dlrq",
   "0x206010a01": "bafybeif5dts3wmed4hun6n2zoqlenqyybvjvfadhvuaromlmeiavnxhrpi",
   "0x8010b01": "bafybeield35i6xi7vpwuq2qklnrt7blaiugeyqiuvox3km6xdnlrpmvv3q",
+  "0x207050c01": "bafybeidh2ft7gd7f5tq57pvkdxhmmmxmamb4djhb6bhzffwkfigkihgjwy",
+  "0x4040d01": "bafybeicvo6v37qw56rjzwmirxeo6cnqks6whd3bjbs6rdtxvrb3qtg6fyu",
+  "0x8040e01": "bafybeiaskp74zuu7ozoalzwn45asqsiqrvpbj7sg7ue67rb7soqe735tqi",
+  "0x4030f01": "bafybeihtlpf5lxj3ayvru7kjknhqhny4shakowvydrpjlfeg4qsvksn2ay",
+  "0x8031001": "bafybeihfdqzatf5qhz4vcck7emrd3g6qf2rrtmpprdkc3ixfrwv6fkbjzq",
+  "0x3021101": "bafybeiam2lsfkkdj4hn5ubva52lt5spoqh3a6gsdgqf5qfwuh3f4vlmn2m",
+  "0x105021201": "bafybeibed6y4o55m43atofexwpw5wi2ta24uvdz7wo2nigefdgkrhxngnq",
+  "0x106021301": "bafybeifdrpmlmkyq2ojjk3nksir62impkkeswlhey2u3wxiftr6e5js62a",
+  "0x1011401": "bafybeieojvjz4pf5xsyrxybbilbyvensrh235ncyie4mogxgxldacgtkna",
+  "0x305011501": "bafybeiak2h7oo6fyiuvsx4u2wlgd47rokikz6wdjac4oy2bxanabpwy6qm",
+  "0x306011601": "bafybeifzlfccebwoljp3arwip5bbfe4wt4jqkxkgtascjehzyo6lldjuvu",
 };
 
 /**
@@ -159,7 +181,30 @@ const TRAIT_TYPES = ["Epoch", "Epoch Item", "Rarity", "Type", "Troop Type"] as c
 // Trait value names by trait type ID and value ID
 const TRAIT_VALUES: Record<number, Record<number, string>> = {
   0: { 1: "Season 1" },
-  1: { 1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9", 10: "10", 11: "11" },
+  1: {
+    1: "1",
+    2: "2",
+    3: "3",
+    4: "4",
+    5: "5",
+    6: "6",
+    7: "7",
+    8: "8",
+    9: "9",
+    10: "10",
+    11: "11",
+    12: "12",
+    13: "13",
+    14: "14",
+    15: "15",
+    16: "16",
+    17: "17",
+    18: "18",
+    19: "19",
+    20: "20",
+    21: "21",
+    22: "22",
+  },
   2: { 1: "Common", 2: "Uncommon", 3: "Rare", 4: "Epic", 5: "Legendary", 6: "Mythic" },
   3: {
     1: "Realm Title",
