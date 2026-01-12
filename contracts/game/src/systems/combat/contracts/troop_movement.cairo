@@ -356,6 +356,13 @@ pub mod troop_movement_systems {
             let mut tile: Tile =tile_opt.into();
             assert!(explorer_id == tile.occupier_id, "tile occupier should be explorer");
             assert!(tile.biome != Biome::None.into(), "tile must be explored");
+
+            // ensure to consume vrf seed even if tile.reward_extracted is true
+            // to prevent client errors 
+            let caller = starknet::get_caller_address();
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
+
             if tile.reward_extracted {return;}
             assert!(tile.reward_extracted == false, "tile reward already extracted");
 
@@ -363,12 +370,10 @@ pub mod troop_movement_systems {
             IMapImpl::mark_reward_extracted(ref world, ref tile);
 
             // get relevant data to grant reward
-            let caller = starknet::get_caller_address();
             let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
             let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
-            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
+
 
             // grant resource reward for exploration
             let (explore_reward_type, explore_reward_amount) = iExplorerImpl::exploration_reward(
