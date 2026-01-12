@@ -4,6 +4,7 @@ no_fee = true
 
 [server]
 http_cors_origins = "*"
+timeout = 300   
 
 [cartridge]
 controllers = true

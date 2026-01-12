@@ -5,7 +5,7 @@ default = "s1_eternum"
 ## local
 account_address = "0x6677fe62ee39c7b07401f754138502bab7fac99d2d3c5d37df7d1c6fab10819"
 private_key = "0x3e3979c1ed728490308054fe357a9f49cf67f80f9721f44cc57235129e090f4"
-rpc_url = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9"
+rpc_url = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana"
 
 [lib_versions]
 "s1_eternum-combat_library" = "0_1_6"
