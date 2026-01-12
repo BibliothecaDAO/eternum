@@ -351,7 +351,7 @@ export class ClientConfigManager {
         case BiomeType.Taiga:
           return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
         case BiomeType.Snow:
-          return baseStaminaCost;
+          return baseStaminaCost; // No modifier
         case BiomeType.Bare:
           return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
         case BiomeType.Scorched:
@@ -444,6 +444,7 @@ export class ClientConfigManager {
         [TroopType.Crossbowman]: -biomeBonus,
         [TroopType.Paladin]: biomeBonus,
       },
+      // Scorched biome: +30% crossbowman, 0% knight, -30% paladin
       [BiomeType.Scorched]: {
         [TroopType.Knight]: 0,
         [TroopType.Crossbowman]: biomeBonus,

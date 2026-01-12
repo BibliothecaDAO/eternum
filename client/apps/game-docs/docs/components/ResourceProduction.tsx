@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { RESOURCE_RARITY, ResourcesIds, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
-import { colors, section, table } from "./styles";
+import { colors } from "./styles";
 
 const isMilitary = (id: number): boolean => {
   if (id === ResourcesIds.Knight) return true;
@@ -120,13 +120,10 @@ const componentStyles = {
   },
   gridStyle: {
     display: "grid",
-    gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
     gap: "1rem",
     marginTop: "1rem",
     marginBottom: "1rem",
-    "@media (min-width: 640px)": {
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    },
   },
   sectionItemStyle: {
     backgroundColor: colors.background.light,
@@ -252,7 +249,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Wood",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 0.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -261,7 +258,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Coal",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 1, name: "Labor" },
       ],
       output: 1,
     },
@@ -270,7 +267,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Copper",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 1, name: "Labor" },
       ],
       output: 1,
     },
@@ -279,7 +276,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Ironwood",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -288,7 +285,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Cold Iron",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -297,7 +294,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Gold",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -306,7 +303,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Adamantine",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
       output: 1,
     },
@@ -315,7 +312,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Mithral",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
       output: 1,
     },
@@ -324,7 +321,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Dragonhide",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
       output: 1,
     },
@@ -793,8 +790,8 @@ export const BlitzStandardResourceProduction = () => {
       name: "Coal",
       wheat: 1,
       inputs: [
-        { resource: ResourcesIds.Wood, amount: 0.36, name: "Wood" },
-        { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" },
+        { resource: ResourcesIds.Wood, amount: 0.3, name: "Wood" },
+        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
       ],
       output: 1,
     },
@@ -803,8 +800,8 @@ export const BlitzStandardResourceProduction = () => {
       name: "Copper",
       wheat: 1,
       inputs: [
-        { resource: ResourcesIds.Wood, amount: 0.36, name: "Wood" },
-        { resource: ResourcesIds.Coal, amount: 0.24, name: "Coal" },
+        { resource: ResourcesIds.Wood, amount: 0.3, name: "Wood" },
+        { resource: ResourcesIds.Coal, amount: 0.2, name: "Coal" },
       ],
       output: 1,
     },
@@ -813,8 +810,8 @@ export const BlitzStandardResourceProduction = () => {
       name: "Ironwood",
       wheat: 2,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" },
+        { resource: ResourcesIds.Coal, amount: 0.6, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
       ],
       output: 1,
     },
@@ -823,8 +820,8 @@ export const BlitzStandardResourceProduction = () => {
       name: "Cold Iron",
       wheat: 2,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" },
+        { resource: ResourcesIds.Coal, amount: 0.6, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
       ],
       output: 1,
     },
@@ -833,38 +830,38 @@ export const BlitzStandardResourceProduction = () => {
       name: "Gold",
       wheat: 2,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" },
+        { resource: ResourcesIds.Coal, amount: 0.6, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
       ],
       output: 1,
     },
     {
       id: ResourcesIds.Adamantine,
       name: "Adamantine",
-      wheat: 4,
+      wheat: 3,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
-        { resource: ResourcesIds.Ironwood, amount: 0.48, name: "Ironwood" },
+        { resource: ResourcesIds.Coal, amount: 0.9, name: "Coal" },
+        { resource: ResourcesIds.Ironwood, amount: 0.6, name: "Ironwood" },
       ],
       output: 1,
     },
     {
       id: ResourcesIds.Mithral,
       name: "Mithral",
-      wheat: 4,
+      wheat: 3,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
-        { resource: ResourcesIds.ColdIron, amount: 0.48, name: "Cold Iron" },
+        { resource: ResourcesIds.Coal, amount: 0.9, name: "Coal" },
+        { resource: ResourcesIds.ColdIron, amount: 0.6, name: "Cold Iron" },
       ],
       output: 1,
     },
     {
       id: ResourcesIds.Dragonhide,
       name: "Dragonhide",
-      wheat: 4,
+      wheat: 3,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
-        { resource: ResourcesIds.Gold, amount: 0.48, name: "Gold" },
+        { resource: ResourcesIds.Coal, amount: 0.9, name: "Coal" },
+        { resource: ResourcesIds.Gold, amount: 0.6, name: "Gold" },
       ],
       output: 1,
     },
@@ -984,9 +981,9 @@ export const BlitzLaborProduction = () => {
 export const BlitzSimpleTroopProduction = () => {
   // Hardcoded data for Blitz simple troop production
   const blitzSimpleTroops = [
-    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, labor: 2.5, output: 5 },
-    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, labor: 2.5, output: 5 },
-    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, labor: 2.5, output: 5 },
+    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, labor: 0.5, output: 5 },
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, labor: 0.5, output: 5 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, labor: 0.5, output: 5 },
   ];
 
   return (
@@ -1049,7 +1046,7 @@ export const BlitzStandardTroopProduction = () => {
       wheat: 2,
       troopInput: null,
       troopInputRate: null,
-      inputs: [{ resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }],
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" }],
       output: 5,
     },
     {
@@ -1058,7 +1055,7 @@ export const BlitzStandardTroopProduction = () => {
       wheat: 2,
       troopInput: null,
       troopInputRate: null,
-      inputs: [{ resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }],
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" }],
       output: 5,
     },
     {
@@ -1067,19 +1064,19 @@ export const BlitzStandardTroopProduction = () => {
       wheat: 2,
       troopInput: null,
       troopInputRate: null,
-      inputs: [{ resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }],
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" }],
       output: 5,
     },
     // T2
     {
       id: ResourcesIds.KnightT2,
       name: "T2 Knight",
-      wheat: 4,
+      wheat: 3,
       troopInput: ResourcesIds.Knight,
       troopInputRate: 10,
       inputs: [
-        { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
-        { resource: ResourcesIds.ColdIron, amount: 0.32, name: "Cold Iron" },
+        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
+        { resource: ResourcesIds.ColdIron, amount: 0.6, name: "Cold Iron" },
         { resource: ResourcesIds.Essence, amount: 1, name: "Essence" },
       ],
       output: 5,
@@ -1087,12 +1084,12 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.CrossbowmanT2,
       name: "T2 Crossbowman",
-      wheat: 4,
+      wheat: 3,
       troopInput: ResourcesIds.Crossbowman,
       troopInputRate: 10,
       inputs: [
-        { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
-        { resource: ResourcesIds.Ironwood, amount: 0.32, name: "Ironwood" },
+        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
+        { resource: ResourcesIds.Ironwood, amount: 0.6, name: "Ironwood" },
         { resource: ResourcesIds.Essence, amount: 1, name: "Essence" },
       ],
       output: 5,
@@ -1100,12 +1097,12 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.PaladinT2,
       name: "T2 Paladin",
-      wheat: 4,
+      wheat: 3,
       troopInput: ResourcesIds.Paladin,
       troopInputRate: 10,
       inputs: [
-        { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
-        { resource: ResourcesIds.Gold, amount: 0.32, name: "Gold" },
+        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
+        { resource: ResourcesIds.Gold, amount: 0.6, name: "Gold" },
         { resource: ResourcesIds.Essence, amount: 1, name: "Essence" },
       ],
       output: 5,
@@ -1114,12 +1111,12 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.KnightT3,
       name: "T3 Knight",
-      wheat: 7,
+      wheat: 4,
       troopInput: ResourcesIds.KnightT2,
       troopInputRate: 10,
       inputs: [
-        { resource: ResourcesIds.ColdIron, amount: 0.64, name: "Cold Iron" },
-        { resource: ResourcesIds.Mithral, amount: 0.72, name: "Mithral" },
+        { resource: ResourcesIds.ColdIron, amount: 0.4, name: "Cold Iron" },
+        { resource: ResourcesIds.Mithral, amount: 0.8, name: "Mithral" },
         { resource: ResourcesIds.Essence, amount: 3, name: "Essence" },
       ],
       output: 5,
@@ -1127,12 +1124,12 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.CrossbowmanT3,
       name: "T3 Crossbowman",
-      wheat: 7,
+      wheat: 4,
       troopInput: ResourcesIds.CrossbowmanT2,
       troopInputRate: 10,
       inputs: [
-        { resource: ResourcesIds.Ironwood, amount: 0.64, name: "Ironwood" },
-        { resource: ResourcesIds.Adamantine, amount: 0.72, name: "Adamantine" },
+        { resource: ResourcesIds.Ironwood, amount: 0.4, name: "Ironwood" },
+        { resource: ResourcesIds.Adamantine, amount: 0.8, name: "Adamantine" },
         { resource: ResourcesIds.Essence, amount: 3, name: "Essence" },
       ],
       output: 5,
@@ -1140,12 +1137,12 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.PaladinT3,
       name: "T3 Paladin",
-      wheat: 7,
+      wheat: 4,
       troopInput: ResourcesIds.PaladinT2,
       troopInputRate: 10,
       inputs: [
-        { resource: ResourcesIds.Gold, amount: 0.64, name: "Gold" },
-        { resource: ResourcesIds.Dragonhide, amount: 0.72, name: "Dragonhide" },
+        { resource: ResourcesIds.Gold, amount: 0.4, name: "Gold" },
+        { resource: ResourcesIds.Dragonhide, amount: 0.8, name: "Dragonhide" },
         { resource: ResourcesIds.Essence, amount: 3, name: "Essence" },
       ],
       output: 5,
@@ -1236,14 +1233,13 @@ export const BlitzDonkeyProduction = () => {
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceGroupStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />5
+                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />3
                   </div>
                 </div>
               </td>
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceItemStyle}>
-                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
-                  0.1
+                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />1
                 </div>
               </td>
             </tr>
@@ -1256,112 +1252,3 @@ export const BlitzDonkeyProduction = () => {
     </div>
   );
 };
-
-export default function ResourceProduction() {
-  return (
-    <div style={section.wrapper}>
-      <div style={section.subtitle}>Resource Production & Consumption</div>
-
-      <div style={componentStyles.infoStyle}>
-        Resources are produced and consumed in real-time based on your realm's buildings and infrastructure.
-      </div>
-
-      <div style={componentStyles.gridStyle}>
-        {/* Food Production Section */}
-        <div style={componentStyles.sectionItemStyle}>
-          <div style={componentStyles.sectionTitleStyle}>Food Production</div>
-
-          <div style={componentStyles.valueStyle}>
-            <span style={componentStyles.labelStyle}>Base production</span>
-            <span style={componentStyles.amountStyle}>10 per hour</span>
-          </div>
-
-          <div style={componentStyles.valueStyle}>
-            <span style={componentStyles.labelStyle}>Farm (level 1)</span>
-            <span style={componentStyles.amountStyle}>+5 per hour</span>
-          </div>
-
-          <div style={componentStyles.valueStyle}>
-            <span style={componentStyles.labelStyle}>Farm (level 2)</span>
-            <span style={componentStyles.amountStyle}>+10 per hour</span>
-          </div>
-
-          <div style={componentStyles.valueStyle}>
-            <span style={componentStyles.labelStyle}>Farm (level 3)</span>
-            <span style={componentStyles.amountStyle}>+20 per hour</span>
-          </div>
-        </div>
-
-        {/* Food Consumption Section */}
-        <div style={componentStyles.sectionItemStyle}>
-          <div style={componentStyles.sectionTitleStyle}>Food Consumption</div>
-
-          <div style={componentStyles.valueStyle}>
-            <span style={componentStyles.labelStyle}>Worker</span>
-            <span style={componentStyles.amountStyle}>-2 per hour</span>
-          </div>
-
-          <div style={componentStyles.valueStyle}>
-            <span style={componentStyles.labelStyle}>Warrior</span>
-            <span style={componentStyles.amountStyle}>-5 per hour</span>
-          </div>
-
-          <div style={componentStyles.valueStyle}>
-            <span style={componentStyles.labelStyle}>Archer</span>
-            <span style={componentStyles.amountStyle}>-4 per hour</span>
-          </div>
-
-          <div style={componentStyles.buildingRequiredStyle}>* Units will desert if food supplies run out</div>
-        </div>
-      </div>
-
-      <div style={table.wrapper}>
-        <div style={section.subtitle}>Resource Gathering Buildings</div>
-        <table style={table.table}>
-          <thead style={table.tableHead}>
-            <tr>
-              <th style={table.headerCell}>Building</th>
-              <th style={table.headerCell}>Resource</th>
-              <th style={table.headerCell}>Level 1</th>
-              <th style={table.headerCell}>Level 2</th>
-              <th style={table.headerCell}>Level 3</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={table.cell}>Farm</td>
-              <td style={table.cell}>Food</td>
-              <td style={table.cell}>5/hr</td>
-              <td style={table.cell}>10/hr</td>
-              <td style={table.cell}>20/hr</td>
-            </tr>
-            <tr>
-              <td style={table.cell}>Lumbermill</td>
-              <td style={table.cell}>Wood</td>
-              <td style={table.cell}>3/hr</td>
-              <td style={table.cell}>6/hr</td>
-              <td style={table.cell}>12/hr</td>
-            </tr>
-            <tr>
-              <td style={table.cell}>Quarry</td>
-              <td style={table.cell}>Stone</td>
-              <td style={table.cell}>2/hr</td>
-              <td style={table.cell}>4/hr</td>
-              <td style={table.cell}>8/hr</td>
-            </tr>
-            <tr>
-              <td style={table.cell}>Mine</td>
-              <td style={table.cell}>Ore</td>
-              <td style={table.cell}>1/hr</td>
-              <td style={table.cell}>3/hr</td>
-              <td style={table.cell}>6/hr</td>
-            </tr>
-          </tbody>
-        </table>
-        <div style={componentStyles.tableFootnoteStyle}>
-          * Resource production is boosted by corresponding realm traits and nearby resources
-        </div>
-      </div>
-    </div>
-  );
-}

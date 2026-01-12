@@ -27,3 +27,11 @@ export const getMarketplaceAddress = () => {
 export const getLootChestsAddress = () => {
   return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lootChests;
 };
+
+export const getCosmeticsAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).cosmetics;
+};
+
+export const getCosmeticsClaimAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).cosmeticsClaim;
+};

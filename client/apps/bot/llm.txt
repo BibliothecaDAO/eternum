@@ -53,7 +53,67 @@ meta: {}
 
 # 🏆 Achievements
 
-*Work in Progress...*
+*Work in Progress*
+
+
+
+---
+
+file: docs/pages/blitz/game-entry.mdx
+meta: {
+  "title": "Game Entry",
+  "description": "How to enter and compete in Blitz"
+}
+
+# Game Entry
+
+While an Eternum season is a single game instance that unfolds over several weeks, Blitz games are frequently hosted to
+allow players to jump into the action at a time that suits them. Competitive Blitz tournaments, composed of Warrior and
+Elite bracket games are organized into 'series' that are hosted in the development period between Eternum seasons.
+Recruit and Gladiator bracket games are hosted continuously on a rotating timetable.
+
+Unlike Eternum, Blitz does not require ownership of Realms NFTs or Season Passes for entry. Entry requirements and
+stakes are determined by the bracket that players choose to compete in.
+
+## Bracket System
+
+Blitz gameplay is structured around multiple brackets with varying stakes and entry requirements, catering to different
+playstyles and competitiveness levels.
+
+🍻 **Recruit Bracket - No Stakes**
+
+Free-to-enter bracket for introduction, playtesting and practice, allowing players to experience Blitz gameplay with no
+stakes. Recruit games run multiple times per day on a rotating schedule to encourage participation from players in all
+time zones.
+
+💰 **Gladiator Bracket - $LORDS Stakes**
+
+Competitive games with $LORDS stakes. Players pay a $LORDS entry fee, contributing to a shared prize pool which is split
+between the top 20% of players by score at the end of the game. All players have a chance to earn additional Loot Chest
+rewards. Games run daily on a rotating schedule.
+
+🏅 **Warrior Bracket - Series Games**
+
+These games form the bulk of a competitive Blitz Series. Players pay a $LORDS entry fee, contributing to a shared prize
+pool which is split between the top 20% of players by score at the end of the game. All players have a chance at earning
+additional rewards in the form of Blitz Rewards Chests. The highest placing players can also win tradable NFT invites to
+the Elite bracket. Games run according to the series schedule, but primarily during prime time for key timezones (USA,
+Europe, Asia-Pacific).
+
+🏆 **Elite Bracket - Series Finals**
+
+Representing the highest level of Blitz gameplay, Elite bracket games are considered the 'finals' of a Blitz Series.
+Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost). These games offer large, DAO-funded prize
+pools along with coveted Elite Blitz Rewards Chests. A limited number of Elite games are run at the end of a Blitz
+series.
+
+## Realm Control Mechanics
+
+Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
+other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
+forces, territorial positioning, and resource management to survive and thrive within the intense two-hour game
+duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed
+world state.
 
 
 
@@ -73,25 +133,26 @@ Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, com
 players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
 high skill ceiling that rewards skill and experience. The no-stakes Recruit bracket allows new players to learn the
-game, while experienced Lords can sharpen their skills or test new strategies in preparation for a Blitz series. Warrior
-bracket games, which require a $LORDS entry fee, form the core of each series—where success brings rewards and
-qualifications for the coveted Elite games, offering even greater prizes.
+game, while experienced Lords can sharpen their skills in preparation for higher-stakes games. Lords can compete for
+$LORDS token stakes in Gladiator bracket, while Warrior bracket games form the core of a Blitz 'series'—where success
+brings additional Loot Chest rewards and invitations to the coveted Elite bracket, which offers even greater prizes!
 
 ## Rule Summary
 
 ### Game Duration
 
-Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in length to support the fast-paced format.
+Each Blitz game runs for exactly **2 hours**. Time is measured in Eternum Days, which are six minutes long and divided
+into six 'phases'.
 
 ### Realms
 
 * **Three Starting Realms**: Each player starts with three Realms, evenly spaced apart in a triangle formation.
-* **Equal Capability**: All Realms in Blitz are functionally identical.
+* **Equal Capability**: At the start of the game, all Realms in Blitz are functionally identical.
 * **Free Building**: Players can construct any resource building they wish, restricted only by build space and
   population.
 * **No Wonders or Villages**: Wonder bonuses and the Village system are not present in Blitz.
-* **Conquest Mechanics**: All Realms are vulnerable to capture by other players, encouraging constant vigilance and
-  strategic interaction.
+* **Conquest Mechanics**: All Realms are vulnerable to capture by other players, any armies of a captured Realm will
+  become the property of the conquering Lord.
 
 ### Materials
 
@@ -100,20 +161,21 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 * **Simplified Food**: Only 1 food type - Wheat.
 * **Essence**: New material found by exploring the map and interacting with World Structures, required for some
   production, buildings and upgrades.
-* **Labor**: Required for all construction and 'simple mode' production, acquired through burning resources.
+* **Labor**: Produced by each Realm at a fixed rate, required for all construction and 'labor mode' production.
 * **Donkeys**: Required for moving materials around the world, essential for logistics.
 * **Troops**: 3 types (Knights, Crossbowmen, Paladins), 3 tiers (T1, T2, T3).
-* **Restricted Bridging**: Players may only bridge Relics into the game (not out).
+* **Restricted Bridging**: Players may only bridge Relics into the game (not out). Other materials can't be bridged.
+  *Note: This feature is a work in progress, the tokenized Relics and Relic Chest system is not active yet.*
 * **Donkey Cost**: Donkeys only cost food to produce (no $LORDS cost).
 * **No P2P Transfers**: No direct transfers or trade between players.
 
 ### Buildings
 
-* **Construction**: Standard and simple mode building systems.
+* **Construction**: 'Resource mode' and 'labor mode' building systems.
 * **Building Types**:
   * **The Keep**: Central structure automatically constructed at game start.
   * **Resource Buildings**: Specific buildings for each of the 9 resources.
-  * **Economic Buildings**: Includes Farms, Worker Huts, Storehouses, and Markets.
+  * **Economic Buildings**: Includes Farms, Worker Huts, and Markets.
   * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
 * **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
   are upgraded.
@@ -122,8 +184,8 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 
 * **Production Types**:
   * **Food**: Wheat can be produced without inputs.
-  * **Resources**: Require combinations of other resources (standard) or labor (simple).
-  * **Labor**: Produced by burning resources in the Keep.
+  * **Resources**: Require combinations of other resources (resource mode) or labor (labor mode).
+  * **Labor**: Produced by the Keep at a steady rate.
   * **Troops**: Essential for exploration and warfare, with production of higher tier troops requiring lower tier troops
     as inputs.
   * **Donkeys**: One-time-use transport, consumed after a single journey.
@@ -132,15 +194,14 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 
 ### World Map
 
-* **Exploration System**: Players must explore unrevealed hexes to find Essence, claim Hyperstructures, and attack
+* **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
   neighbors.
-* **No Resource Discovery**: Players will no longer find resources when exploring.
-* **Essence Discovery**: Players primarily find Essence when exploring, along with small stacks of donkeys, T1 troops
-  and labor.
+* **Essence Discovery**: Players primarily find essence when exploring, along with small stacks of donkeys, T1 troops
+  and labor. Resources cannot be discovered through exploration.
 * **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
 * **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +60 per Eternum Day), with costs varying by biome
-  and troop type.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Phase, +120 per Eternum Day), with costs
+  varying by biome and troop type.
 
 ### Military
 
@@ -150,7 +211,7 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 * **Army Types**:
   * **Field Armies**: Deploy onto the world map for exploration and conquest.
   * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +60 stamina each Eternum Day.
+* **Stamina System**: Armies recover +20 stamina each Phase (6 phases per Eternum Day, totaling +120 stamina per day).
 * **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
 * **Reinforcement Movement**: Players can't transport troops by donkey to World Structures - reinforcements must be
@@ -163,44 +224,53 @@ and control World Structures. Victory Points are awarded for:
 
 * Exploring tiles
 * Claiming World Structures
+* Opening Relic Crates
 * Claiming Hyperstructures
 * Holding Hyperstructures throughout the game
 
 ### Victory
 
-Blitz uses a scoring-based system rather than victory points. The players with the highest Total Score on the
-leaderboard at the end of the two hours share in the $LORDS prize pool. This pool is made up of the cumulative entry
-fees that players pay to enter the game.
+Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the two hours
+share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the game.
 
-## Blitz Brackets
+## Blitz Variants
+
+Blitz games come in many forms, and can be configured and deployed by anyone. But the majority of Blitz games are
+deployed by the core team in the following forms:
 
 ### Recruit Bracket
 
-* **Low Stakes**: Free-to-enter bracket for introduction and practice.
+* **No Stakes**: Free-to-enter bracket for introduction, playtesting and practice.
 * **No Entry Cost**: No $LORDS required to participate.
-* **Prizes**: Relic Chests only.
-* **Frequency**: Games run every day on varying schedules to encourage global participation.
+* **Frequency**: Games run multiple times per day on a rotating schedule.
+
+### Gladiator Bracket
+
+* **$LORDS Stakes**: Competitive games with $LORDS stakes.
+* **Entry Cost**: Players pay a $LORDS entry fee, contributing to the prize pool.
+* **Prize Distribution**: Top 20% of players share the prize pool.
+* **Frequency**: Games run on a rotating schedule.
 
 ### Warrior Bracket
 
-* **Medium Stakes**: Competitive games requiring a $LORDS entry fee.
-* **$LORDS Entry Cost**: $LORDS fee contributes to shared prize pool.
-* **Prize Distribution**: Top 15% of players share the prize pool.
-* **Rewards**: Relic Chests and Blitz Rewards Chests.
-* **Special Reward**: Highest placing players win tradable NFT invites to Elite bracket.
-* **Frequency**: Games run a few times weekly during prime time for key timezones (USA, Europe, Asia-Pacific).
+* **Series Games**: These games form part of a competitive Blitz Series.
+* **$LORDS Stakes**: Competitive games requiring a $LORDS entry fee, contributing to a prize pool.
+* **Prize Distribution**: Top 20% of players share the prize pool.
+* **Additional Rewards**: Blitz Rewards Chests containing cosmetic items.
+* **Special Invites**: Highest placing players win tradable NFT invites to the Elite bracket.
+* **Frequency**: Games run daily during prime time for key timezones (USA, Europe, Asia-Pacific).
 
 ### Elite Bracket
 
-* **High Stakes**: Highest level of Blitz competition.
-* **Ticket Entry Cost**: NFT invite from Warrior bracket (no additional $LORDS cost).
-* **Prize Pool**: Large, DAO-funded prize pool (pending BIP).
-* **Rewards**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests.
-* **Frequency**: Games run at the end of a Blitz series.
+* **Series Games**: These games represent the highest level of play in a competitive Blitz Series.
+* **Ticket Entry Cost**: Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost).
+* **Prize Pool**: Large, DAO-funded prize pool.
+* **Rewards**: Elite Blitz Rewards Chests containing cosmetic items.
+* **Frequency**: A limited number of games run in the final week of a Blitz series.
 
 ### Blitz Series
 
-While Recruit games can be deployed and played as frequently as the player base demands, games with stakes
+While Recruit and Gladiator games can be deployed and played as frequently as the player base demands, games with stakes
 (Warrior/Elite) are organized into 'series'. Each series takes place between Eternum seasons to bridge the gap in
 gameplay and provide continuous competitive opportunities.
 
@@ -209,20 +279,76 @@ gameplay and provide continuous competitive opportunities.
 Successful Blitz players can earn various rewards including:
 
 * **$LORDS Token**: Prize pool distributions for top players.
-* **Loot Chests**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic
-  items.
-* **Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
+* **Loot Chests**: Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic items.
+* **Elite Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
 
 
 
 ---
 
 file: docs/pages/blitz/prize-pool.mdx
-meta: {}
+meta: {
+  "title": "Prize Pool & Distribution",
+  "description": "How prizes are distributed in Blitz competitive games"
+}
 
-# 💰 Prize Pool
+# Prize Pool & Distribution
 
-*Work in Progress...*
+Blitz competitive games feature a prize distribution system that ensures fair rewards for top-ranked Lords while
+maintaining sustainable game economics. This system is designed to be flexible and can be adapted for use with any token
+on Starknet, allowing game hosts to deploy their own games with customized prize distribution settings.
+
+## Entry Fee Structure
+
+Every Blitz match in the Gladiator and Warrior brackets currently collects an entry fee of **250 $LORDS** per player.
+This fee is allocated to support both player rewards and the ecosystem:
+
+* **70%** forms the **prize pool** that gets distributed among winners
+* **15%** fee is directed to the Realms ecosystem through the Lordship Protocol (veLORDS)
+* **15%** is sent to the development fund to support ongoing operations of the core team
+
+At the conclusion of each Blitz match, players are ranked by their final score. The **top 20% of the field** (rounded up
+to the nearest whole player) are designated as winners and eligible for prize distribution. If there are less than 5
+players, the top ranked player is the sole winner.
+
+## Prize Distribution Mechanics
+
+The prize distribution system employs a weighting formula that ensures fair and predictable rewards. Each winner first
+receives a **refund of their 250 $LORDS buy-in**, and the remainder of the prize pool is then distributed among winners
+according to a geometric weighting system based on finishing rank.
+
+### Weighting System
+
+The weighting system uses a decay factor that adjusts based on lobby size, ensuring appropriate reward curves for
+different game scales. The decay factor `s` is calculated using the formula:
+
+`s(n) = min(0.95, 0.2 × log10(n) + 0.4)`
+
+Where `n` represents the number of players in the match. This formula creates steeper reward curves in smaller lobbies
+and flatter curves in larger ones, but never flatter than 0.95.
+
+### Individual Winner Calculations
+
+Each winner's bonus is calculated using their individual weight divided by the total weight sum. The weight for rank `i`
+is `s^(i-1)`, meaning the top finisher has a weight of 1, second place has weight `s`, third place has weight `s²`, and
+so on. The total weight sum `W` is calculated as the sum of this geometric series.
+
+The bonus for each winner is then calculated as: `bonus_i = (weight_i / W) × R`
+
+Where `R` represents the remainder of the prize pool after refunds are distributed.
+
+## Flexibility and Customization
+
+This prize distribution system is designed to be adaptable for various gaming scenarios. Game hosts can deploy their own
+Blitz games with modified prize distribution settings, adjusting factors such as entry fees, winner percentages, and
+decay factors to suit their specific requirements. The system can also be configured to work with any token on Starknet,
+making it versatile for different blockchain gaming ecosystems.
+
+## NFT Prize Distribution
+
+The NFT prize distribution system for Blitz games is currently under development. This system will allow for the
+distribution of unique digital assets, collectibles, and special rewards that complement the existing $LORDS prize
+pools. Until the NFT distribution system is fully implemented, Blitz game NFT rewards will be handled offchain.
 
 
 
@@ -244,10 +370,23 @@ map and control World Structures. Victory Points are awarded for:
 
 * Exploring tiles
 * Claiming World Structures (Essence Rifts and Camps)
+* Opening Relic Crates
 * Claiming Hyperstructures
 * Holding Hyperstructures throughout the game
 
-*Note: Wolrd Structure claim VP are only rewarded the first time a World Structure is captured (from bandit forces).*
+*Note: VP for claiming World Structures and Hyperstructures are only rewarded the first time a structure is captured
+(from bandit forces).*
+
+## Hyperstructure Victory Points
+
+Hyperstructures provide ongoing Victory Points based on the number of surrounding player Realms. The VP/second earned
+from holding a hyperstructure is determined by the number of Realms within 8 tiles.
+
+<img src="/images/gifs/hyperstructure_ring_progression.gif" alt="Hyperstructure Ring Progression" className="w-full rounded-lg my-6" />
+
+This system rewards players who can capture hyperstructures in high-traffic areas where many players spawn, while
+hyperstructures in remote locations with no nearby players provide no ongoing VP benefits. Capturing a hyperstructure
+from resident bandits will always yield the VP for the feat of claiming it, even if it offers no ongoing control VP.
 
 The number of VP awarded for each feat described above is as follows:
 
@@ -264,22 +403,27 @@ The number of VP awarded for each feat described above is as follows:
       <tbody>
         <tr style={table.tableRow}>
           <td style={table.cell}>Explore a tile</td>
-          <td style={table.cell}>5 VP</td>
+          <td style={table.cell}>10 VP</td>
         </tr>
 
         <tr style={table.tableRow}>
           <td style={table.cell}>Claim a World Structure from bandits</td>
-          <td style={table.cell}>200 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Claim a Hyperstructure from bandits</td>
           <td style={table.cell}>500 VP</td>
         </tr>
 
         <tr style={table.tableRow}>
+          <td style={table.cell}>Open a Relic Crate</td>
+          <td style={table.cell}>1,000 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Claim a Hyperstructure from bandits</td>
+          <td style={table.cell}>3,000 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
           <td style={table.cell}>Control a Hyperstructure</td>
-          <td style={table.cell}>1 VP/second</td>
+          <td style={table.cell}>1-6 VP/second (based on no. of nearby Realms)</td>
         </tr>
       </tbody>
     </table>
@@ -309,25 +453,25 @@ Each Blitz game runs for exactly **2 hours**.
 
 ## Time
 
-Time within a Blitz game is measured in Eternum Days, and each is precisely 5 minutes in length. One day ends and the
-next begins every 5 minutes, so a single Blitz game takes place over 24 Eternum Days.
+Time within a Blitz game is measured in Eternum Days, and each is precisely six minutes in length. Each Eternum Day is
+divided into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting
+one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 20 Eternum Days.
 
 ## Materials
 
-In Blitz, materials such as food, resources, troops and donkeys are isolated within each round. There is no bridging of
-materials in and out of the game (other than Relics, which can be bridged in prior to the start of the game). All
-materials have an associated weight, which determines the amount that can be stored and the number of donkeys required
-to move the goods from place to place.
+In Blitz, materials such as food, resources, troops, and donkeys are isolated within each round. There is no bridging of
+materials in and out of the game (other than Relics, which can be bridged in prior to the start of the game - *WIP
+feature*). All materials have an associated weight, which determines the number of Donkeys required to move the goods
+from place to place.
 
-*Note: This document will use 'materials' to refer to all tangible assets - i.e. food, resources, essence, labor,
-troops, and donkeys. This is not to be confused with 'resources', which specifically refers to the 9 resources in
-Blitz.*
+*Note: This guide will use 'materials' to refer to all tangible assets - i.e. food, resources, essence, labor, troops,
+and donkeys. This is not to be confused with 'resources', which specifically refers to the 9 resources in Blitz.*
 
 ## Cost of Production
 
-With the exception of food, nothing in Blitz is produced for free; every unit of production demands an input—food,
-labor, resources, or some combination the three. Lords must consider these costs and effectively balance production to
-ensure they can maximize their Score within the 2-hour game window.
+With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
+input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
+production to ensure they can maximize their Score within the 2-hour game window.
 
 ## Travel
 
@@ -339,11 +483,11 @@ Troops can also be moved between Realms using donkeys, but to dominate your enem
 troops must be deployed to an army on the world map. Once troops are deployed, they cannot be taken back into the
 inventory. Their mobility is then governed by stamina, limiting the distance they can travel and the number of actions
 they can perform. Traveling between hexes or initiating an attack expends valuable stamina points, which are partially
-replensished each Eternum Day.
+replenished each Eternum Day.
 
 ## Hexes
 
-Blitz unfolds across a procedurally-generated, hexagonal-tile world map. This represents the physical space of the world
+Blitz unfolds across a procedurally generated, hexagonal-tile world map. This represents the physical space of the world
 and defines spawn locations, biome distribution, and distances between Realms and other World Structures. This is the
 layer in which armies explore, fight, and capture, and is explorable in the 'World' view.
 
@@ -365,7 +509,7 @@ The map on which Blitz takes place is designed to position Lords as equally as p
 battlefield that scales appropriately. Each player starts the game with three Realms, evenly spaced apart in a triangle
 and positioned between three complete and revealed Hyperstructures. Player Realms and Hyperstructures are placed in a
 specific pattern to ensure that all Lords have a comparable number of neighbors and equal access to Hyperstructures.
-More detail on the Realm and Hyperstructure placement systems are available in the [Realms](/blitz/realms/realm) and
+More details on the Realm and Hyperstructure placement systems are available in the [Realms](/blitz/realms/realm) and
 [World Map](/blitz/worldmap-movement/worldmap) sections.
 
 The primary objective of Blitz is to capture and hold as many Hyperstructures and World Structures as possible to
@@ -380,6 +524,9 @@ accumulate Victory Points and secure a position at the top of the leaderboard.
 file: docs/pages/blitz/world-structures.mdx
 meta: {}
 
+import ResourceIcon from "@/components/ResourceIcon";
+import { table } from "@/components/styles";
+
 # 🏗️ World Structures
 
 All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
@@ -388,8 +535,8 @@ claimed.
 ## Hyperstructures
 
 In Blitz, Hyperstructures are **fully constructed** and positioned around the map at the start of the game, ready to be
-claimed by eliminating resident bandit forces. There is no construction process - Hyperstructures are immediately
-functional once claimed and will begin accumulating Score for the owning player.
+claimed by eliminating the resident bandit forces. There is no construction process - Hyperstructures are immediately
+functional once claimed and will begin accumulating Victory Points for the owning player.
 
 <img src="/images/buildings/construction/hyperstructure.png" width="800" />
 
@@ -402,12 +549,273 @@ The number of Hyperstructures in the game, and their positioning on the world ma
 
 Essence Rifts are striking fissures in the earth where valuable Essence has swelled from beneath the surface. These
 locations provide a steady source of the valuable dust to the owning player, reducing the need to explore new hexes for
-continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 1 unit per second.
+continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 10 units per second from the
+moment they're discovered. Lords have a 1/50 chance of finding one of these structures when exploring a hex.
 
 ## Camps
 
 Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
 that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
+Lords have a 1/30 chance of finding one of these structures when exploring a hex.
+
+### Starting Materials
+
+When a camp is claimed, it spawns with an initial stockpile of materials.
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Resource</th>
+          <th style={table.headerCell}>Amount</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={35} name="Wheat" size="md" />
+
+              Wheat
+            </div>
+          </td>
+
+          <td style={table.cell}>500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={23} name="Labor" size="md" />
+
+              Labor
+            </div>
+          </td>
+
+          <td style={table.cell}>2,500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={25} name="Donkey" size="md" />
+
+              Donkeys
+            </div>
+          </td>
+
+          <td style={table.cell}>200</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+---
+
+file: docs/pages/changelog/14-november-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 14th November 2025
+
+## Documentation Updates
+
+### Balance and Content Updates
+
+* [Blitz/World Map & Movement](/blitz/worldmap-movement/movement): Updated the wheat consumption to **0.03/troop unit**
+  for both exploration and travel.
+* [Blitz/World Structures](/blitz/world-structures): Reduced Essence Rift discovery chance from **1/30** to **1/50** and
+  increased essence output from **5 units/second** to **10 units/second**.
+* [Blitz/Realms/Buildings](/blitz/realms/buildings): Population capacity from the Keep and Worker’s Huts has been
+  increased from **+5** to **+6**. Construction costs for Farms, Worker’s Huts, T3 resource sites, and T2/T3 military
+  buildings have been adjusted.
+* [Blitz/Materials/Production](/blitz/materials/production): Wheat production from farms has been increased from **5
+  units/second** to **6 units/second**. Wheat cost has been reduced from **4/second** to **3/second** for T2 troop
+  production, and reduced from **7/second** to **4/second** for T3 troop production.
+* [Blitz/Materials/Relics](/blitz/materials/relics): Removed Labor Production relics from the game due to
+  incompatibility with the labor system in Blitz.
+* [Blitz/Military/Stamina & Biomes](/blitz/military/stamina-and-biomes): Scorched biome combat bonuses have been changed
+  to provide a damage bonus for Crossbowmen, a damage penalty for Paladins, and neither an advantage or penalty for
+  Knights. Knights and Crossbowmen no longer have a stamina penalty on snow biomes.
+* [Blitz/Realms/Realm](/blitz/realms/realm): Starting troop guidance now indicates that Realms on scorched biomes spawn
+  Crossbowmen as their starting troop type. Essence costs for Realm upgrades have been revised.
+* [Blitz/Victory](/blitz/victory): Victory Points awarded for exploring a tile have been reduced from **50 VP** to **25
+  VP**.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release. For detailed information about
+specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/3-september-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 3rd September 2025
+
+## Documentation Updates
+
+### New Features
+
+* **Changelog Section**: Added new independent Changelog section to sidebar navigation
+* **Changelog Page**: Created first changelog entry for September 3rd, 2025 release
+* **Loot Chest Documentation**: Added comprehensive [Loot Chests](/overview/chests/loot-chests) section with detailed
+  information on chest contents and cosmetic items
+* **Cosmetic Collection**: New [Cosmetics](/overview/chests/cosmetics) page detailing the cosmetic item collection
+  system
+
+### Prize Distribution
+
+* **Game Entry**: Updated Blitz bracket system information to align with current key concepts
+  * Added Gladiator Bracket with 250 $LORDS entry fee
+  * Updated Recruit Bracket
+  * Delineated Warrior and Elite bracket games as being part of a 'series', hosted by the core team.
+* **Blitz Prize Pool**: Added [Prize Pool & Distribution](/blitz/prize-pool) page with detailed formulas and
+  distribution mechanics
+
+### Combat System Updates
+
+* **Time System**: Eternum days are now divided into six 'phases', each phase is 1 minute in Blitz or 12 minutes in
+  Eternum
+* **Damage Calculation**: Updated damage calculation systems for both [Blitz](/blitz/military/damage) and
+  [Eternum](/eternum/military/damage), including the addition of 'battle timer' and refund mechanics
+* **Stamina System**: Updated stamina mechanics and regeneration rates across both game modes
+* **Troop Transfer**: Updated troop transfer to include impact to battle timers
+
+### Blitz Gameplay Changes
+
+* **Storage System Removal**: Completely removed storage system from Blitz, including storehouses - players should
+  review [Materials & Production](/blitz/materials/production)
+* **Victory Points**: Updated [Victory](/blitz/victory) page with changes to VP/second awarded for holding
+  hyperstructures
+
+### Technical Improvements
+
+* **Navigation**: Restructured and updated the sidebar
+
+***
+
+*This changelog reflects all documentation updates made since the previous release. For detailed information about
+specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/7-november-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 7th November 2025
+
+## Documentation Updates
+
+### New Features
+
+* **Game Entry Split**: Split the combined Game Entry page into two dedicated pages placed under their sections:
+  * [Eternum/Game Entry](/eternum/game-entry)
+  * [Blitz/Game Entry](/blitz/game-entry)
+
+### Content Updates
+
+* [Blitz/Game Entry](/blitz/game-entry): Minor clarifications to scheduling, prize pool distribution, and rewards
+  wording.
+* [Overview/Loot Chests](/overview/chests/loot-chests): Clarified opening flow (collection page), epoch labeling, and
+  current dev status.
+* [Overview/Chest Contents](/overview/chests/contents): Clarified per-epoch item lists and independent roll mechanics;
+  noted WIP sections.
+* [Overview/Cosmetics](/overview/chests/cosmetics): Clarified equip slots, Season 2 scope for per‑Realm cosmetics, and
+  ownership persistence.
+* [Overview/$LORDS Token](/overview/lords): Clarified Blitz entry fees convert to $LORDS and prize pools pay top
+  performers.
+* [Blitz/Key Concepts](/blitz/key-concepts): Clarified exploration (no resource discovery), mode names (resource/labor),
+  and rewards phrasing.
+* [Blitz/World Physics](/blitz/world-physics): Clarified time/phase wording, materials isolation/bridging (WIP), and
+  stamina/travel notes.
+* [Blitz/Realms](/blitz/realms/realm): Added missing starting Wheat (1,000) to Starting Resources table.
+* [Blitz/Production](/blitz/materials/production): Refreshed production tables and labels to align with labor/resource
+  modes.
+* [Blitz/World Map & Movement](/blitz/worldmap-movement/movement): Minor clarifications; Relic Crates now award 1,000 VP
+  on open.
+* [Blitz/World Structures](/blitz/world-structures): Updated discovery chances for Essence Rifts and Camps.
+* [Blitz/Troop Tiers](/blitz/military/troop-tiers): Revised tier presentation and naming; images updated.
+* [Blitz/Prize Pool](/blitz/prize-pool) / [Blitz/Victory](/blitz/victory): Minor text clarifications; VP and
+  distribution wording tightened.
+
+### Balance Change Summary
+
+* [Production](/blitz/materials/production): Tables updated; mode rename (standard/simple → resource/labor).
+* [Buildings](/blitz/realms/buildings): Building construction costs updated; labor vs. resource requirements now
+  explicitly documented (standard/simple → resource/labor).
+* [Realm Upgrades](/blitz/realms/realm): Reduced labor, resource, and essence requirements.
+* [Army Size](blitz/military/armies): Maximum army size reduced from 100,000 to 30,000.
+* Exploration & Rewards: Relic Crates grant 1,000 VP; minor movement/map clarifications; troop exploration bundles
+  reduced (2,500 → 1,000). See [World Map & Movement](/blitz/worldmap-movement/movement) and [Victory](/blitz/victory).
+* Discovery Rates: Essence Rifts and Camps discovery chances adjusted from 1/20 to 1/30. See
+  [World Structures](/blitz/world-structures).
+* Troop Power Curve: T2 = 3× T1, T3 = 9× T1; presentation refreshed. See [Troop Tiers](/blitz/military/troop-tiers).
+
+### Technical Improvements
+
+* **Navigation/Sidebar**: Updated sidebar to list Game Entry as sibling items under Key Concepts for both Blitz and
+  Eternum; removed the Overview Game Entry link.
+* **Prev/Next Order**: Fixed navigation loops for first pages in groups; prev/next now follows sidebar sequence across
+  all pages and subpages.
+* **Naming Consistency (Blitz)**: Standard/Simple renamed to Resource/Labor across buildings; component props updated.
+  Corrected resource IDs to ensure proper icons in military building cards.
+* **Asset Cleanup**: Removed deprecated GIFs no longer referenced after buildings/production updates.
+
+### Incoming Updates
+
+* GIFs and client flow instructions: updates pending to reflect new UI/flows.
+* Competitive Series (Warrior & Elite): expanded details expected in November.
+* Automation: docs overhaul planned after the in-progress automation upgrade.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release. For detailed information about
+specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/8-december-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 8th December 2025
+
+## Balance Updates
+
+* [Blitz/Production](/blitz/materials/production): Updated resource recipes, troop upgrade inputs, and donkey production output rate.
+* [Blitz/Buildings](/blitz/realms/buildings): Adjusted T2/T3 resource and military building costs for both labor and resource modes.
+
+## Starting Resources
+
+* [Blitz/Realms](/blitz/realms/realm): Increased starting labor per Realm to 1,200.
+* [Blitz/World Structures](/blitz/world-structures): Documented revised camp spawn stockpiles (500 Wheat, 2,500 Labor, 200 Donkeys).
+
+## Victory Points
+
+* [Blitz/Victory](/blitz/victory): Exploration VP reduced to 10 per tile.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release.*
 
 
 
@@ -607,25 +1015,25 @@ This is useful to provide a better user experience by updating the UI immediatel
 
 ```ts
 private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
-	const overrideId = uuid();
-	const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-	const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
-	const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
-	this.setup.components.Building.addOverride(overrideId, {
-		entity,
-		value: {
-		outer_col: outercol,
-		outer_row: outerrow,
-		inner_col: col,
-		inner_row: row,
-		category: "None",
-		produced_resource_type: 0,
-		bonus_percent: 0,
-		entity_id: 0,
-		outer_entity_id: 0,
-		},
-	});
-	return overrideId;
+  const overrideId = uuid();
+  const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+  const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
+  const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+  this.setup.components.Building.addOverride(overrideId, {
+    entity,
+    value: {
+      outer_col: outercol,
+      outer_row: outerrow,
+      inner_col: col,
+      inner_row: row,
+      category: "None",
+      produced_resource_type: 0,
+      bonus_percent: 0,
+      entity_id: 0,
+      outer_entity_id: 0,
+    },
+  });
+  return overrideId;
 };
 ```
 
@@ -717,7 +1125,7 @@ pub struct ExampleEvent {
     id: ID,
     #[key]
     event_id: EventType,
-	my_data_field: u8
+    my_data_field: u8
 }
 ```
 
@@ -741,16 +1149,16 @@ Things to note:
 trait IBuildingContract<TContractState> {
     fn create(
         entity_id: ID,
-        building_coord: crate::models::position::Coord,
-        building_category: crate::models::resource::production::building::BuildingCategory,
+        building_coord: s1_eternum::models::position::Coord,
+        building_category: s1_eternum::models::resource::production::building::BuildingCategory,
         produce_resource_type: Option<u8>
     );
 }
 
 #[dojo::contract]
 mod production_systems {
-    use crate::alias::ID;
-    use crate::models::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::models::{
         resource::resource::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
         order::Orders, position::{Coord, Position, PositionTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingImpl},
@@ -1038,6 +1446,80 @@ this logic in any other project that uses Typescript, e.g. new mobile client, da
 
 ---
 
+file: docs/pages/eternum/achievements.mdx
+meta: {}
+
+# Achievements & Quests
+
+*WIP*
+
+
+
+---
+
+file: docs/pages/eternum/game-entry.mdx
+meta: {
+  "title": "Game Entry",
+  "description": "How to join Eternum via Season Passes and Villages"
+}
+
+# Game Entry
+
+Eternum takes place in 'Seasons', multi-week campaigns with long-term strategic and diplomatic developments. There are
+several weeks between each season that allow for iterative development and feature expansion in each subsequent season.
+
+## Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
+
+Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
+Passes. Each Season Pass is unique to the Realm it was minted from and allows the holder to initiate a settling
+transaction to enter the game. To do this, Lords must first mint the Season Pass
+[here](https://empire.realms.world/mint) using the wallet that contains the Realms NFT, then transfer the Season Pass to
+their [Cartridge Wallet](/overview/controller).
+
+## Non-Realm Holder Entry
+
+⚖️ **Season Pass Marketplace**
+
+Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
+[Season Pass Marketplace](https://empire.realms.world/trade), providing an avenue for non-Realm holders to acquire
+Season Passes to participate in the game.
+
+🏕️ **Villages**
+
+Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
+Eternum. Villages have some restrictions but offer a low-cost, casual taste of Eternum gameplay to newcomers while also
+acting as an avenue for established players to expand their production. Each Realm can support up to six surrounding
+Villages.
+
+For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
+our [Villages guide](/eternum/realm-and-villages/villages).
+
+## Realm Control Mechanics
+
+As long as you maintain control of a settled Realm or Village, you can actively participate without additional entry
+fees, engage in the market using **$LORDS** tokens, and enjoy uninterrupted gameplay until the end of the season.
+However, Eternum is a high-stakes game, it can be unforgiving and players must accept that their valuable holdings may
+become a target for other players. Thankfully, the game offers high-stakes and low-stakes gameplay to ensure that
+players can participate in the world at their own pace and risk tolerance.
+
+⚔️ **Realms - High Stakes**
+
+Once settled, Realms can be conquered and claimed within a Season, transferring control to the conqueror. Realms are the
+key playing pieces in Eternum and allow for the full gameplay experience in producing resources, training armies,
+conducting trade, and pursuing territorial expansion. This level of capability comes with increased risk, as Realms must
+continually manage defenses, alliances, and strategic positioning to protect themselves from rivals.
+
+🌴 **Villages - Low Stakes**
+
+Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
+lower-risk gameplay experience. Villages can still participate in most gameplay activities, but production rates are
+limited to 50% the rate of Realms and progression paths are limited. These features make Villages perfect for new
+players looking to learn the game mechanics without the constant threat of conquest.
+
+
+
+---
+
 file: docs/pages/eternum/key-concepts.mdx
 meta: {
   "title": "Key Concepts",
@@ -1059,8 +1541,8 @@ This section outlines the core mechanics and systems that form the foundation of
 * **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
   buildable hexes and defensive army slots.
 * **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
-* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a 12
-  tile radius.
+* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a
+  12- tile radius.
 * **Hardcore Gameplay**: If a Realm’s defenses crumble, it can be claimed by another player—transferring gameplay rights
   to the conqueror.
 
@@ -1084,9 +1566,9 @@ This section outlines the core mechanics and systems that form the foundation of
   * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
   * **Troops**: Units with unique properties that can be assigned to armies.
   * **Donkeys**: Required for moving materials around the world, essential for logistics.
-  * **Labor**: A new material in S1, allows players to build and produce in 'simple mode', acquired through burning
+  * **Labor**: A new material in S1 that allows players to build and produce in 'simple mode', acquired through burning
     resources.
-  * **Ancient Fragments**: Found in game, critical for the construction of Hyperstructures.
+  * **Ancient Fragments**: Found in-game, critical for the construction of Hyperstructures.
 * **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
   Realms.
 
@@ -1118,8 +1600,8 @@ This section outlines the core mechanics and systems that form the foundation of
   adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
 * **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
   movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
-  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +2 per Phase, +12 per Eternum Day), with costs
+  varying by biome and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
 * **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
   exploring armies may discover resources or encounter world structures and agent armies.
 
@@ -1133,7 +1615,7 @@ This section outlines the core mechanics and systems that form the foundation of
 * **Army Types**:
   * **Field Armies**: Deploy onto the world map for exploration and conquest.
   * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
+* **Stamina System**: Armies recover +2 stamina per Phase (6 phases per Eternum Day, totaling +12 stamina per day).
 * **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
 * **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
@@ -1320,12 +1802,12 @@ within Eternum and rely on player-driven interactions including arrangements of 
 * Any player can create a tribe
 * Set tribe name
 * Set to public or private
-* If private, send invites to player
+* If private, send invites to players
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/create-guild.gif" alt="Create Guild" />
 
-  <em>Flow to create tribe</em>
+  <em>Flow to create a tribe</em>
 </div>
 
 
@@ -1427,8 +1909,9 @@ season—signalling the tide to come back in and put an end to the Lords' fun…
 
 ## Time
 
-Time within a season is measured in Eternum Days, and each is precisely one hour in length. One day ends and the next
-begins at the top of every real-world hour.
+Time within a season is measured in Eternum Days, and each is precisely one hour in length. Each Eternum Day is divided
+into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting ten
+minutes. One day ends and the next begins at the top of every real-world hour.
 
 ## Materials
 
@@ -1519,7 +2002,7 @@ path to victory in Eternum, making them ultimate strategic targets for ambitious
 
 ### Hyperstructure Foundations
 
-These ancient, indestructible platforms are primarily scattered within the ring of Banks that surround the centre of the
+These ancient, indestructible platforms are primarily scattered within the ring of Banks that surround the center of the
 map. There is a chance of discovering a Hyperstructure Foundation each time an army explores an unrevealed hex,
 calculated using the following formula:
 
@@ -1529,7 +2012,7 @@ Discovery Chance = (0.975^x × y) - (z × 0.001)
 
 Where:
 
-* **x** = the number of hexes from the centre of the map
+* **x** = the number of hexes from the center of the map
 * **y** = the base chance of finding a Hyperstructure Foundation on the central hex (4%)
 * **z** = the number of Hyperstructure Foundations already discovered
 
@@ -1543,8 +2026,8 @@ Discovery Chance = (0.975^100 × 4) - (5 × 0.001)
 ```
 
 The result of this function means that Hyperstructure Foundations are generally only able to be found within 300 tiles
-of the centre of the map. As more are found, the chance of finding another diminishes and makes it even less likely to
-find one further from the centre. Lords are therefore incentivised to explore early in the season to discover these key
+of the center of the map. As more are found, the chance of finding another diminishes and makes it even less likely to
+find one further from the center. Lords are therefore incentivized to explore early in the season to discover these key
 components for victory.
 
 Hyperstructure Foundations and Hyperstructures both have four defense slots to deter attacks from rival Lords. However,
@@ -1577,7 +2060,7 @@ import { importantNote } from "@/components/styles";
 
 ***
 
-title: Cartridge Controller description: Using the Cartridge Controller in the Realmverse
+title: Cartridge Controller description: Using the Cartridge Controller to play Realms games
 
 ***
 
@@ -1593,7 +2076,7 @@ documentation [here](https://docs.cartridge.gg/controller/overview).
 
 If you are playing with a Village in Eternum or entering a Recruit game in Blitz, you can play purely using the
 controller. However, to use Season Passes and **$LORDS**, you will need to transfer them to your controller from
-Starknet using your ArgentX or Braavos wallet.
+Starknet using your Ready (formerly ArgentX) or Braavos wallet.
 
 To use the controller, you can either log in or sign up when starting either Eternum or Blitz. To create a controller,
 simply input a username and sign up.
@@ -1677,17 +2160,24 @@ Should you have any issues with the controller or require support, you can join 
 file: docs/pages/overview/disclaimer.mdx
 meta: {}
 
-import { formatNumberWithSpaces } from "@/utils/formatting";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { Callout } from "vocs/components";
-import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
-
 # Disclaimer and Risk Acknowledgment
 
-<Callout type="danger">
-  Important Disclaimer – Please Read Carefully <br />
-  By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
-</Callout>
+<div
+  style={{
+  backgroundColor: "#dc2626",
+  color: "white",
+  padding: "1rem",
+  borderRadius: "0.5rem",
+  marginBottom: "1.5rem",
+  border: "1px solid #b91c1c",
+}}
+>
+  <h3 style={{ margin: "0 0 0.5rem 0", color: "white" }}>⚠️ Important Disclaimer – Please Read Carefully</h3>
+
+  <p style={{ margin: 0 }}>
+    By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
+  </p>
+</div>
 
 ## Immutable Contracts
 
@@ -1704,9 +2194,8 @@ financial impact incurred.
 
 ## Eternum
 
-A season of Eternum concludes when a single player achieves the required
-**{formatNumberWithSpaces(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
-Victory Points and clicks the "End Season" button. At this point:
+A season of Eternum concludes when a single player achieves the required **Victory Points** and clicks the "End Season"
+button. At this point:
 
 ### ⚠️ SEASON END CRITICAL INFORMATION
 
@@ -1735,9 +2224,13 @@ Please refer to the documentation for detailed instructions on the bridging proc
 
 ## Blitz
 
-Blitz game instances operate on a fixed schedule with immediate prize distribution upon completion. Unlike Eternum
-seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes within
-the session timeframe.
+Blitz game instances operate on a fixed schedule with immediate $LORDS prize distribution upon completion. Unlike
+Eternum seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes
+within the session timeframe.
+
+Distribution of Loot Chest NFT rewards is more complex and is currently managed using offchain processes. It is intended
+that a distribution framework will be developed in the near future to handle additional NFT rewards in an automated and
+decentralized manner.
 
 ## No Recourse
 
@@ -1753,118 +2246,10 @@ outlined in the game's documentation.
 
 ---
 
-file: docs/pages/overview/entry.mdx
-meta: {
-  "title": "Game Entry & Participation",
-  "description": "How to join and participate in the Realmverse"
-}
-
-# Game Entry & Participation
-
-## Eternum
-
-Eternum takes place in 'Seasons', multi-week campaigns with long-term strategic and diplomatic developments. There are
-several weeks in between each season that allow for iterative development and feature expansion in each subsequent
-season.
-
-### Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
-
-Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
-Passes. Each Season Pass is unique to the Realm it was minted from and allows the holder to initiate a settling
-transaction to enter the game. To do this, Lords must first mint the Season Pass
-[here](https://empire.realms.world/mint) using the wallet that contains the Realms NFT, then transfer the Season Pass to
-their [Cartridge Wallet](/overview/controller).
-
-### Non-Realm Holder Entry
-
-⚖️ **Season Pass Marketplace**
-
-Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
-[Season Pass Marketplace](https://empire.realms.world/trade), providing an avenue for non-Realm holders to acquire
-Season Passes to participate in the game.
-
-🏕️ **Villages**
-
-Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
-Eternum. Villages have some restrictions, but offer a low-cost, casual taste of Eternum gameplay to newcomers while also
-acting as an avenue for established players to expand their production. Each Realm can support up to six surrounding
-Villages.
-
-For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
-our [Villages guide](/eternum/realm-and-villages/villages).
-
-### Realm Control Mechanics
-
-As long as you maintain control of a settled Realm or Village, you can actively participate without additional entry
-fees, engage in the market using **$LORDS** tokens, and enjoy uninterrupted gameplay until the end of the season.
-However, Eternum is a high-stakes game, it can be unforgiving and players must accept that their valuable holdings may
-become a target for other players. Thankfully, the game offers high-stakes and low-stakes gameplay to ensure that
-players can participate in the world at their own pace and risk tolerance.
-
-⚔️ **Realms - High Stakes**
-
-Once settled, Realms can be conquered and claimed within a Season, transferring control to the conqueror. Realms are the
-key playing pieces in Eternum and allow for the full gameplay experience in producing resources, training armies,
-conducting trade, and pursuing territorial expansion. This level of capability comes with increased risk, as Realms must
-continually manage defenses, alliances, and strategic positioning to protect themselves from rivals.
-
-🌴 **Villages - Low Stakes**
-
-Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
-lower-risk gameplay experience. Villages can still participate in most gameplay activities but production rates are
-limited to 50% the rate of Realms and progression paths are limited. These features make Villages perfect for new
-players looking to learn the game mechanics without the constant threat of conquest.
-
-## Blitz
-
-While an Eternum season is a single game instance that unfolds over weeks, Blitz competitions take place in 'series'
-that are hosted in the development period between seasons. Unlike Eternum, Blitz does not require ownership of Realms
-NFTs or Season Passes for entry. Entry requirements and stakes are determined by the bracket that players choose to
-compete in.
-
-### Bracket System
-
-Blitz gameplay is structured around three progressively competitive brackets: Recruit, Warrior, and Elite. Each tier
-escalates both the stakes and the rewards, catering to various playstyles and competitiveness levels.
-
-🥉 **Recruit - Low Stakes**
-
-Free-to-enter, this bracket is not beholden to being part of a series and serves as an introduction and practice
-environment. Players can experience Blitz gameplay with no stakes while potentially earning some low-value Loot Chest
-rewards. Recruit bracket games run every day on a varying timetable to encourage participation from players in all time
-zones.
-
-🥈 **Warrior - Medium Stakes**
-
-This bracket makes up the bulk of competitive games in a Blitz series. Each Warrior game requires an entry fee in
-$LORDS, which contributes to a shared prize pool-bolstered by additional Loot Chest rewards and entry tickets to the
-coveted Elite bracket games. Warrior bracket games run a few times a week while the series is active, typically during
-prime time gaming windows for three key timezones (USA, Europe, and Asia-Pacific).
-
-🥇 **Elite - High Stakes**
-
-Representing the highest level of Blitz gameplay, Elite bracket games are considered the 'finals' of a Blitz series.
-These games don't require an entry fee in $LORDS, instead demanding an entry ticket NFT that can only be earned in
-leaderboard positions of Warrior bracket games (or purchased off the secondary market from another Lord). These games
-run at the end of a Blitz series and offer substantial $LORDS prize pools, Loot Chest rewards, and prestige to the best
-performing Lords.
-
-### Realm Control Mechanics
-
-Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
-other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
-forces, territorial positioning, and resource management to survive and thrive within the intense two-hour game
-duration. There is no progression beyond the conclusion of the game and each game instance starts with a refreshed world
-state.
-
-
-
----
-
 file: docs/pages/overview/introduction.mdx
 meta: {
-  "title": "Introduction to the Realmverse",
-  "description": "Understanding the Realmverse"
+  "title": "Introduction to the Realms",
+  "description": "An introduction to the Realms gaming ecosystem"
 }
 
 # Welcome to the Realms
@@ -1902,7 +2287,7 @@ greatness.
 
 * **Fully Onchain Gameplay** - Every action, decision, and outcome is transparently executed and verifiable onchain.
   Secured by Ethereum and seamlessly scaled by Starknet, the integrity and immutability of gameplay are guaranteed.
-* **Player‑Driven Economy** – Every resource produced, trade executed, and asset exchanged originates solely from player
+* **Player-Driven Economy** – Every resource produced, trade executed, and asset exchanged originates solely from player
   decisions. Collectively, these choices dictate supply, demand, and market prices, forming a dynamic and ever-evolving
   economy across the entire ecosystem.
 * **Strategic Depth** – Long-term success requires efficient production management, tactical territorial expansion, and
@@ -1924,8 +2309,8 @@ offers rewarding experiences suited to every play style.
 
 **Blitz** - Blitz provides an exciting contrast through rapid, high-intensity, free-for-all competition lasting exactly
 two hours. This mode distills strategic gameplay into streamlined mechanics, accelerated resource production, and
-immediate military engagements, rewarding quick thinking and decisive action. Blitz is structured around a three-tier
-competitive bracket system—Recruit, Warrior, and Elite—allowing Lords to engage at their preferred intensity level, from
+immediate military engagements, rewarding quick thinking and decisive action. Blitz is structured around a competitive
+bracket system—Recruit, Gladiator, Warrior, and Elite—allowing Lords to engage at their preferred intensity level, from
 casual challenges to elite competitions with significant stakes and rewards. Whether testing new strategies or vying for
 glory, Blitz delivers exhilarating, accessible, and fiercely competitive battles.
 
@@ -1933,7 +2318,7 @@ glory, Blitz delivers exhilarating, accessible, and fiercely competitive battles
 
 Lords who prove their skill and strategic prowess across both Eternum and Blitz are rewarded generously for their
 efforts. Success in competitive events can award portions of [$LORDS token](/overview/lords) prize pools, as well as
-[Loot Chests](/overview/loot-chests) containing consumables and exclusive cosmetic items.
+[Loot Chests](/overview/chests/loot-chests) containing consumables and exclusive cosmetic items.
 
 ## Vision
 
@@ -1947,7 +2332,7 @@ Explore our
 file: docs/pages/overview/links.mdx
 meta: {
   "title": "Quick Links",
-  "description": "Essential links for Eternum"
+  "description": "Essential links for Realms games"
 }
 
 # Quick Links
@@ -1956,8 +2341,7 @@ meta: {
 
 * [Empire Home](https://empire.realms.world/) - The home of Realms games
 * [Play Eternum](https://eternum.realms.world/) - Season 1 has concluded
-* [Realms NFT Marketplace](https://empire.realms.world/trade/realms) - Trade your Realms NFTs
-* [Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests) - Trade Loot Chests
+* [Marketplace](https://empire.realms.world/trade) - Trade Realms and other ecosystem assets
 * [Statistics](https://stats.eternum.realms.world/) - Revenue and gameplay stats
 * [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
 
@@ -1966,65 +2350,7 @@ meta: {
 * [Realms World](https://realms.world/) - The DAO behind Eternum
 * [Discord](https://discord.gg/realmsworld) - Join our discord
 * [Twitter](https://x.com/LootRealms) - Follow the community
-* [Twitter](https://x.com/realms_gg) - Follow for Realms games updates
-
-
-
----
-
-file: docs/pages/overview/loot-chests.mdx
-meta: {
-  "title": "Loot Chests",
-  "description": "Understanding Loot Chests in the Realmverse"
-}
-
-import { importantNote } from "../../components/styles";
-
-# 🎁 Loot Chests
-
-Loot Chests are reward containers that Lords can earn through various activities in the ecosystem. These chests are
-primarily rewarded for achievements and high-scoring gameplay, and are rumoured to contain advantageous consumables or
-flashy cosmetic items.
-
-The secrets of the Loot Chests are yet to be revealed, as they are not yet able to be opened. But some Lords are already
-speculating on the contents of Eternum Rewards Chests from Season 1 on the
-[Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests).
-
-## Epochs
-
-Epochs mark the distinct eras of gameplay and development. An epoch begins with the start of each new Eternum season and
-ends with the start of the next. Each Loot Chest carries the mark of its epoch, defining not only when it was earned but
-also the specific rewards contained within. Chests from different epochs therefore maintain their unique character over
-time, and can be opened or left sealed at the owner's discretion (as some Lords may wish to speculate on long-term
-sealed chest value).
-
-## Chest Types in Epoch 1
-
-The current epoch introduces four distinct chest types with varying contents, each obtained through different gameplay
-experiences within the ecosystem.
-
-**Eternum Rewards Chest** - These premium chests are earned through participation and success in the flagship seasonal
-game mode. 2,244 Eternum Rewards Chests were distributed to players of Eternum Season 1 on the basis of their
-achievement score. There will be no further issuance of these chests in Epoch 1.
-
-**Blitz Rewards Chest** - Fast-paced competition in Series 1 Blitz games will yield these chests. (Warrior and Elite
-bracket only)
-
-**Elite Blitz Rewards Chest** - The highest tier of Blitz competition produces these exclusive chests, reserved for
-Lords who prove themselves in Elite bracket games.
-
-**Relic Chest** - These mysterious containers hold various Relics, consumables that can give Lords an edge in
-competition when used correctly. They can be earned through participation in any Blitz bracket and through other
-yet-to-be-announced interactions in the ecosystem.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    Loot Chests are a feature in development. Keep an eye out for announcements in the Realms Discord relating to Loot
-    Chest rewards. This page will be updated as more information is made available to the community.
-  </p>
-</div>
+* [Twitter](https://x.com/RealmsEternum) - Follow for Realms game updates
 
 
 
@@ -2037,8 +2363,8 @@ meta: {}
 
 ![LORDS Token](/images/resources/37.png)
 
-$LORDS is the native token of the Realms Autonomous World. It serves as the primary currency within the ecosystem,
-enabling economic activity and participation in various games.
+$LORDS is the native token of the Realms. It serves as the primary currency within the ecosystem, enabling economic
+activity and participation in various games.
 
 ## Token Details
 
@@ -2046,7 +2372,7 @@ enabling economic activity and participation in various games.
 * **Network**: Starknet
 * **Contract Address**:
   [0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49](https://starkscan.co/token/0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49)
-* **Total Supply**: 300,000,000 LORDS
+* **Total Supply**: 300,000,000
 
 ## $LORDS in Gameplay
 
@@ -2056,8 +2382,8 @@ enabling economic activity and participation in various games.
 * **Transport System**: $LORDS are essential for producing donkeys, the backbone of Eternum's transport system,
   effectively acting as the "gas" token required for facilitating all in-game logistics and resource transfers.
 
-* **Blitz Entry Fees**: In Blitz series, $LORDS are used for entry fees in Warrior bracket competitions, with these fees
-  contributing to the prize pools distributed to top performers.
+* **Blitz Entry Fees**: In Blitz, all entry fees in Gladiator and Warrior bracket games are converted to $LORDS before
+  being added to the prize pool, which is distributed to top performers at the end of a game.
 
 ## How to get $LORDS
 
@@ -2114,230 +2440,129 @@ import { ResourceAddresses } from "@/components/ResourceAddresses";
 file: docs/pages/blitz/materials/automation.mdx
 meta: {}
 
-# 🤖 Resource Automation
+# 🤖 Production Automation
 
-Resource automation covers two loops in Blitz: **production automation** (continuous realm/village crafting) and
-**transfer automation** (recurring shipments between your entities). This update focuses on the production side, which
-recently moved away from “orders” in favor of preset-driven allocations.
+Resource automation allows players to set up continuous production processes within their entities. This system helps
+manage resource generation and distribution efficiently without constant manual intervention.
 
-## Production Automation at a Glance
+## Overview
 
-* **Global loop**: Every 60 seconds the client evaluates all of your realms/villages and executes any valid production
-  plan.
-* **Per-resource percentages**: Instead of one-off jobs, each resource has sliders that describe how much of its inputs
-  you are willing to burn through complex (resource→resource) or simple (labor→resource) recipes.
-* **Safety rails**: Inputs are capped at 90% of their current balance, Wheat/Labor outputs are blocked entirely, and
-  Donkeys are automatically limited to 10% for complex crafting.
+Instead of micromanaging multiple production orders, the automation now runs off a single set of sliders per entity,
+recomputing the entire plan from those percentages every loop.
+
+**Key Features:**
+
+* **Every minute**: the client starts up production plans for any owned entity with a valid setup.
+* **Per-resource percentages**: Each tracked resource has sliders for complex and simple recipes.
 * **Presets**: “Labor”, “Resource”, “Custom”, and “Idle” presets instantly distribute percentages across every resource
-  that has active buildings, respecting entity type (realm vs village) and recipe availability.
-* **Local persistence**: Configurations are saved per season in your browser. Refreshing or closing the tab keeps the
-  latest sliders and last execution summary.
+  with active buildings, respecting entity type and recipe availability.
+* **Safety rails**: Inputs are capped at 90% of the live balance.
+* **Local persistence**: Configurations are saved per game in your browser so refreshes keep the latest sliders and
+  last-run summaries.
 
-> ⚠️ The automation loop runs inside your browser. Keep the Blitz tab in the foreground (or at least open) whenever you
-> expect automation to fire; closing the tab stops both production and transfer processing.
+## How It Works
 
-## How the Loop Works
+Production automation runs a global loop that goes through every owned realm and camp.
 
-1. **Realm discovery**: On load the client pulls every realm/village you own and ensures each has an automation config.
-2. **Resource scan**: Any resource with buildings or active production is auto-added (unless it’s blocked) so its inputs
-   are tracked even if you never touched the sliders.
-3. **Budgeting**: For each resource the system computes a “budget” equal to 90% of its simulated balance at the current
-   tick. Percentages merely describe how much of that budget to dedicate to complex vs simple recipes.
-4. **Plan generation**:
-   * Complex recipes reserve inputs based on your percentage cap and the recipe’s per-cycle requirement.
-   * Labor recipes do the same with their listed inputs. If not enough inputs are available the recipe is skipped and
-     appears in the summary.
-5. **Execution**: If at least one recipe has non-zero cycles, Blitz submits a single `execute_realm_production_plan`
-   Starknet transaction for that realm/village.
-6. **Feedback loop**: The store records how many cycles ran, total inputs consumed, outputs produced, and any skipped
-   resources so the UI can show “last run” stats.
+1. **Realm discovery**: On execution, the client fetches every owned entity and ensures it has an automation profile.
+2. **Resource scan**: Any resource with buildings or an active recipe is auto-added to bootstrap production, even if you
+   never touch the sliders.
+3. **Budgeting**: Each resource receives 90% of its current balance as a budget. Sliders dictate how much of that budget
+   the loop can spend on complex vs. simple recipes.
+4. **Plan generation**: Recipes reserve inputs according to your percentages and their per-cycle requirements. Recipes
+   without enough inputs are skipped and reported in the summary.
+5. **Execution**: If at least one recipe has non-zero cycles, the automation is submitted for that entity.
+6. **Feedback loop**: The store records cycles, inputs, outputs, and skipped resources so the UI can show fresh "last
+   run" stats.
 
 ### Entity Coverage
 
-* **Realms and Villages** are supported. Hyperstructures and other entity types are ignored by the production loop.
-* Each entity gets its own automation profile. Removing ownership (selling, conquest) causes the profile to be pruned.
+* **Realms and Camps** are supported; other entity types are ignored for production automation.
+* Losing ownership of a realm automatically prunes the associated automation profile.
 
-### Blocked or Special Resources
+## Production Types
 
-* **Wheat and Labor outputs** are blocked from automation to prevent runaway feedback loops.
-* **Donkeys** default to 10% resource→resource and 0% labor→resource. The slider enforces these caps so you always have
-  beasts of burden for transfers/military.
-* **Input-only restrictions**: Even if an output is blocked, it can still be consumed as an input for other recipes.
-
-## Configuring Production Automation
-
-1. **Open a realm/village** and select the **Automation** panel in the production sidebar.
-2. **Review auto-added resources**. Any resource that currently has buildings is already listed with baseline
-   percentages. You can remove extras if you want to keep the panel tidy.
-3. **Adjust percentages**:
-   * `Resource → Resource`: How much of that resource’s complex inputs you are willing to burn per loop.
-   * `Labor → Resource`: How much labor-based production to run. (Disabled for Donkeys and military-only recipes.)
-   * Values are rounded to 5% increments and clamped between 0 and 90%.
-4. **Apply presets** (optional):
-   * `Labor`: Evenly spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
-   * `Resource`: Pushes complex crafting as high as possible (still honoring input caps and blocked resources).
-   * `Custom`: Keeps whatever manual sliders you set.
-   * `Idle`: Sets every slider to 0%, effectively pausing production for that entity.
-5. **Save & repeat** for your other entities. Any slider change is saved immediately and will be used in the next loop.
-
-### Auto-balancing & Maintenance
-
-* When a resource starts producing (new buildings finish) the automation store ensures it has a slider entry so presets
-  continue to work. Removing the building later automatically drops the extra entry.
-* If you reset an entity the store wipes its allocations but keeps the entity record so you can reconfigure quickly.
-* Per-season pruning means you get a clean slate when a new Blitz season launches, avoiding stale configs.
-
-## Execution Summaries
-
-After each successful loop the realm panel shows:
-
-* **Timestamp** of the last run.
-* **Produced/Consumed totals** grouped by resource so you can see net flows.
-* **Skipped recipes** with reasons (missing inputs, missing labor recipe, etc.).
-* **Total cycles** executed across complex and simple recipes.
-
-Use this view to verify slider settings or debug why a resource is not being automated (e.g., labor inputs depleted).
-
-***
-
-## Production Inputs
-
-Automation currently runs two recipe families:
+There are still two production paths, now governed by slider percentages:
 
 1. **Complex (Resource → Resource)**:
-   * Burns existing resources to craft another output.
-   * Uses the `Resource → Resource` slider for each resource entry.
-   * Example: Converting Wood + Stone into Tools.
+   * Burns existing resources to craft another according to the `Resource → Resource` slider.
+   * Example: Spend Wood + Coal to produce Copper.
 2. **Simple (Labor → Resource)**:
-   * Spends Labor to produce a resource.
-   * Uses the `Labor → Resource` slider.
-   * Example: Spending Labor to harvest Food.
-
-`Resource → Labor` conversions and any recipe that would output Wheat or Labor are blocked from automation entirely.
-Those actions must be run manually from the production UI.
+   * Spends Labor to produce a resource using the `Labor → Resource` slider.
+   * Example: Spending Labor to produce Stone.
 
 ## Allocation & Execution Rules
 
-* **Percentages replace orders**: There are no longer bespoke “produce once/maintain” orders. Every loop recomputes
-  usage based on your sliders, entity type, and building activity.
-* **Per-resource budgets**: Each resource receives a budget equal to 90% of its simulated balance. The complex and labor
-  sliders consume that budget; if either slider is zero the loop skips that recipe.
-* **5% increments & clamping**: UI sliders move in 5% increments and are clamped between 0% and 90%. Donkeys are
-  additionally capped at 10% resource burn and 0% labor.
-* **Auto-managed lists**: Any resource with active production is auto-added to the automation list so presets keep
-  working when new buildings finish. Removing the building later prunes the entry.
-* **Single transaction per entity**: If at least one recipe has cycles, Blitz submits a single
-  `execute_realm_production_plan` transaction for that realm/village and records the execution summary.
+* **Percentages replace orders**: Every loop recomputes usage based on sliders, entity type, and building activity.
+* **Per-resource budgets**: Complex and labor sliders consume independent portions of the 90% resource budget; zeroing a
+  slider skips that recipe.
+* **5% increments & clamping**: Sliders move in 5% increments and stay within the 0–90% range.
+* **Auto-managed lists**: Any resource with active production is auto-added so presets work the moment new buildings are
+  created. Removing the building later prunes the entry automatically.
 
-***
+## Presets
 
-## Transfer Automation
+* `Labor:` Spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
+* `Resource:` Pushes complex crafting to the ceiling.
+* `Custom:` Combines resource + labor preset.
+* `Idle:` Drops every slider to 0%, effectively pausing production for that entity.
 
-Transfer automation schedules recurring shipments between structures you own. It runs in-browser alongside production
-automation and is stored per season (localStorage key `eternum-transfer-automation`).
+## Managing Automation Orders (UI)
 
-### Runner Basics
+![Managing Automation Orders](/gifs/produce-from-automation.gif)
 
-* **Interval-based**: Each entry stores a source, destination, resource list, and interval. Intervals are clamped
-  between 1 and 30 minutes (default 5). The runner wakes roughly once per second to check whether an entry’s `nextRunAt`
-  has elapsed.
-* **Immediate send + schedule**: When you enable “Repeat” in the transfer panel, Blitz sends the payload once (if
-  possible) and also creates one entry per destination. The immediate send time is recorded as `lastRunAt`, and the
-  first automated run occurs after the selected interval.
-* **Resource locking**: Every entry keeps per-resource amounts. Each execution clamps those amounts to live balances and
-  available donkey capacity so partial shipments still happen safely.
-* **Safety checks**: Military resources can only move Realm ↔ Realm. Fragment mines can only send Donkeys/Essence. The
-  runner enforces donkey weight limits and ownership checks before submitting Starknet calls. Failed runs are skipped,
-  rescheduled, and surfaced via toasts.
-* **Season pruning**: Switching seasons automatically prunes stored entries that do not match the current game ID.
+1. **Open a realm or camp** and select the **Automation** panel in the right side navigation menu.
+2. **Click modify** to open up the production setup.
+3. **Adjust percentages**:
+   * `Resource → Resource`: How much of that resource’s complex inputs to burn per loop.
+   * `Labor → Resource`: How much labor-based production to run (disabled for Donkeys and military-only recipes).
+4. **Apply presets** (optional): Labor, Resource, Custom, and Idle presets instantly redistribute sliders across the
+   entity.
+5. **Repeat for other entities**. Changes save instantly and feed into the next global loop.
 
-### Creating a Scheduled Transfer
+#### Auto-balancing & Maintenance
 
-1. **Choose a source**: Realms, Villages, and Fragment Mines you own appear in the “Transfer” panel. Fragment Mines are
-   restricted to Donkeys + Essence payloads.
-2. **Pick resources & amounts**: Select up to the resources currently held at the source. Amount inputs are whole-number
-   units and the panel previews donkey demand so you can stay within available capacity.
-3. **Select destinations**:
-   * When only one resource is selected you may multi-select destinations; Blitz creates one entry per destination.
-   * With multiple resources the panel enforces a single destination.
-   * Military payloads auto-filter destinations to Realms only.
-4. **Set frequency**:
-   * `One-off` fires a single `send_resources_multiple` call (no automation entry).
-   * `Repeat` executes immediately and schedules future runs at the chosen 1‑30 minute interval (slider defaults to 5
-     minutes).
-5. **Create transfers**: Confirm to send the immediate shipment (if possible) and persist the scheduled entries.
+* When new buildings finish, their resources auto-insert into the automation list so presets continue to work.
+* Resetting an entity wipes its allocations but keeps the entity record for fast reconfiguration.
+* At the start of a new Blitz season, stored configs are cleared to avoid stale setups.
 
-### Managing Scheduled Transfers
+### Pausing Automation
 
-Open the **Scheduled Transfers** (Advanced) modal to control saved entries:
+You can pause production at different levels:
 
-* Filter by source/destination, run any entry immediately, or delete it.
-* Inspect per-entry stats, including the configured interval and a “last run” timestamp (immediate runs show as “just
-  now”).
-* Pause/resume individual entries; pausing clears `nextRunAt` until you resume.
-* Bulk actions (pause/resume/run active now) operate on the currently filtered list so you can target specific routes.
-  Manual runs obey the same donkey and resource checks as the automated loop.
+1. **Individual Resource**: Set both sliders to 0% for a single resource.
+2. **Entity-wide**: Apply the Idle preset to drop all sliders to 0% until you are ready to resume.
 
-### Transfer Requirements & Safeguards
+## Execution Summaries
 
-* Sources and destinations must be structures you own. The UI only lists owned entities and the runner double-checks IDs
-  before calling `send_resources_multiple`.
-* Donkey supply is mandatory. The runner converts the requested payload into kilograms, calls `calculateDonkeysNeeded`,
-  and skips the entry if the source lacks enough Donkeys.
-* Entries reschedule themselves even when a run transacts zero resources (e.g., source empty). Keep an eye on toasts to
-  know when an entry is repeatedly skipped.
-* Resource amounts are integer units; decimals are rounded down. Each run clamps to the current balance, so you can
-  safely request more than is presently available.
-* Multi-destination setups are represented internally as one entry per destination so each route tracks its own
-  `lastRunAt`/`nextRunAt`.
+After each loop the realm panel shows:
+
+* **Timestamp** of the last run.
+* **Produced/Consumed totals** grouped by resource so you can see net flows.
+* **Skipped recipes** plus reasons (missing inputs, missing labor recipe, etc.).
+* **Total cycles** executed across complex and simple recipes.
+
+Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted labor inputs).
 
 ## Important Considerations
 
 ### General Requirements
 
-* **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
-  automated processes will stop.
-* **Loop Cadence**: Production automation evaluates every \~60 seconds. The transfer runner polls roughly once per second
-  but only fires entries whose 1‑30 minute interval has elapsed.
-* **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
-  blockchain transaction, which incurs network transaction fees.
-* **Processing Time**: On-chain confirmation time plus wallet prompts can add delay after an automation cycle triggers.
-  Keep notifications enabled so you can approve transactions promptly.
+* **Browser must stay open**: The automation store lives in your browser. Closing the Blitz tab pauses every loop.
+* **Loop cadence**: Production automation evaluates roughly every 60 seconds; it won’t react faster even if you change a
+  slider immediately.
 
 ### Production Automation Considerations
 
-* **Resource Availability**: Production orders will only execute if the required input resources are available in the
-  realm at the time of processing.
-* **Recipe Dependencies**: Production follows predefined game recipes. You cannot produce resources that don't have
-  valid recipes.
-* **Storage Limits**: Produced resources will increase your realm's balance and may cause resource loss if storage is
-  full.
-* **Season Reset**: Production allocations are saved locally per season. When a new Blitz season starts your old
-  configurations are pruned to avoid stale data.
-
-### Transfer Automation Considerations
-
-* **Entity Ownership**: You can only set up transfers between entities you own.
-* **Interval Limits**: Every scheduled entry enforces a 1‑30 minute interval. Values below 1 minute are raised to 1 and
-  anything above 30 minutes is clamped down by the UI slider.
-* **Resource & Donkey Checks**: Each run clamps requested amounts to the source’s current balance and donkey capacity.
-  If either requirement fails, the entry is skipped and rescheduled.
-* **Payload Restrictions**: Military resources require Realm ↔ Realm routes. Fragment mines may only ship Donkeys and
-  Essence.
-* **Per-Route Tracking**: Multi-destination setups become discrete entries. Pausing or deleting one route does not
-  affect the others.
+* **Resource availability**: Production only executes if the realm has the required inputs at processing time.
+* **Recipe dependencies**: You can’t produce outputs that lack valid recipes or buildings.
 
 ### Best Practices
 
-1. **Start Simple**: Begin with conservative production percentages or a single transfer route to validate your setup.
-2. **Monitor Initially**: Watch the first few executions (and wallet prompts) to confirm inputs, outputs, and donkey
-   usage match expectations.
-3. **Leverage Presets**: Use the Labor/Resource/Idle presets to quickly reset entities instead of dragging dozens of
-   sliders.
-4. **Use the Advanced Modal**: Pause/resume or run transfer entries from the Scheduled Transfers modal before leaving
-   the game idle.
-5. **Audit Resource Flows**: Review execution summaries and transfer toasts periodically to ensure automation is still
-   aligned with your current goals.
+1. **Start conservative**: Begin with low percentages to watch how inputs drain.
+2. **Monitor early loops**: Use execution summaries after the first few runs to confirm cycle counts and skips.
+3. **Lean on presets**: Labor/Resource/Idle presets are the fastest way to reorient an entity without endless slider
+   drags.
 
 
 
@@ -2350,14 +2575,14 @@ meta: {}
 
 Bridging in Blitz is limited to the bridging of Relics into the game. This is to prevent players from gaining advantage
 through the import of materials previously extracted from Eternum seasons, while still encouraging the use of
-consumables for engaging and competitive gameplay. There is no bridging out of Blitz sessions, once relics are bridged
-in they cannot be taken out of the session.
+consumables for engaging and competitive gameplay. There is no bridging out of Blitz sessions; once relics are bridged
+in, they cannot be taken out of the session.
 
 ## Bridging Relics
 
 *Work in Progress... Initial versions of Blitz will only feature Relics found within
 [Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates). More information on tokenized Relics will be made
-available soon*
+available soon.*
 
 
 
@@ -2377,39 +2602,37 @@ import {
 
 # ⚒️ Production
 
-## Standard vs. Simple
+## Resource Mode vs. Labor Mode
 
-As is the case for building construction, Lords can choose between standard and simple production systems when deciding
-how they wish to produce their materials. This can be done by selecting the appropriate panel when making an order in
-the production screen.
-
-![Simple Mode Production](/gifs/labor-production.gif)
+As is the case for building construction, Lords can choose between resource-based and labor-based production systems
+when deciding how they wish to produce their materials. This can be done by selecting the appropriate panel when making
+an order in the production screen.
 
 *Note: Lords must commit the full material requirements to the production order upfront. The output is then produced at
 a given rate per second.*
 
-### Standard Mode
+### Resource Mode
 
 The classic production system—every resource and troop production order requires food and a combination of other
-resources as inputs. As with buildings, standard mode is the more complex but efficient way to produce materials.
+resources as inputs. As with buildings, resource mode is the more complex but efficient way to produce materials.
 
-### Simple Mode
+### Labor Mode
 
-Simple mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
+Labor mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
 both time and resources—but it allows Lords to produce resources on their Realm even if they haven't yet aquired the
-input resources required for standard mode production.
+input resources required for resource mode production.
 
 ## Materials Production
 
 ### Food
 
 Wheat is the only food source in Blitz and can be produced without inputs. Once a Farm has been constructed, it can
-produce food indefinitely. Each Farm produces 5 Wheat per second.
+produce food indefinitely. Each Farm produces 6 Wheat per second.
 
 ### Resources
 
 The 9 resources found in Blitz are the backbone of the economy. Producing one resource requires the input of two other
-resources (standard mode), or labor (simple mode). Resources are also the main components in building construction and
+resources (resource mode), or labor (labor mode). Resources are also the main components in building construction and
 troop production - so mastery of these assets is key to success and security.
 
 ![Produce from building](/gifs/produce-from-building-click.gif)
@@ -2420,12 +2643,9 @@ troop production - so mastery of these assets is key to success and security.
 
 ### Labor
 
-Labor is the primary input for construction and production in simple mode, but is also required in standard mode for
-building construction and Realm upgrades. It is produced by permanently burning resources in the Keep. This creates a
-steady stream of Labor at a fixed rate. Each of the 9 resources can be burned to produce Labor at varying efficiency,
-dependent on rarity. The amount of resources burned per second to produce Labor at the fixed rate is as follows:
-
-<BlitzLaborProduction />
+Labor is the primary input for construction and production in simple mode, but is also required in resource mode for
+building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady stream at a fixed
+rate of 1 labor per second.
 
 ### Troops
 
@@ -2433,8 +2653,8 @@ Troops are essential for exploration, defending your lands and conquering your e
 produce troops to ensure they remain a relevant force throughout the game. Three troop tiers are available, each
 requiring a combination of food, rare resources, and troops of the previous tier as input for production.
 
-*Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in
-standard mode.*
+*Note: Only T1 troops can be produced in both resource and labor mode. T2 and T3 troops can only be produced in resource
+mode.*
 
 <BlitzSimpleTroopProduction />
 
@@ -2456,17 +2676,28 @@ steady stream of food to produce.
 file: docs/pages/blitz/materials/relics.mdx
 meta: {}
 
+import RelicTable from "@/components/RelicTable";
+
 # 🏺 Relics
 
 Relics are powerful consumables that can be discovered in Blitz from
-[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates), or rewarded for playing Blitz games through Relic
-Chests. Depending on the nature of a Relic, it can be consumed by an army or a Realm in exchange for a time-limited
-bonus, such as a damage or production boost. When utilized at the right time, these items can provide a strategic edge
-over your opponents.
+[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates). Depending on the nature of a relic, it can be consumed
+by an army or a Realm in exchange for a time-limited bonus, such as a damage or production boost. When utilized at the
+right time, these items can provide a strategic edge over your opponents.
+
+There are currently nine relic types, each with two levels. A level 2 relic is simply a more powerful version of the
+level 1 counterpart. Every relic type has a distinct effect, which determines whether it can be activated by a Realm or
+an army. To activate a relic and gain the desired effect, the army or Realm must pay an amount of Essence. These
+details, as well as the discovery chance of each relic in a Relic Crate, are defined in the table below:
+
+<RelicTable />
+
+Each Relic Crate yields three relics. For every crate, the chances in the table above are rolled three separate times,
+so you may receive duplicates in a single crate.
 
 *Note: Relics are still under development. Initial versions of Blitz will limit their scope to within the game instance.
-However, it is expected that Relics will have a much broader presence and impact in the Realms ecosystem. Keep an eye
-out for announcements in the Realms Discord relating to Relics. This page will be updated as more information is made
+However, it is expected that relics will have a much broader presence and impact in the Realms ecosystem. Keep an eye
+out for announcements in the Realms Discord relating to relics. This page will be updated as more information is made
 available to the community.*
 
 
@@ -2487,14 +2718,13 @@ import { ResourcesIds } from "@bibliothecadao/types";
 Materials encompass all transportable assets in Blitz, including:
 
 * **Resources**: 9 distinct resource types that can be produced on Realms.
-* **Food**: Essential wheat that fuels production and troop movement.
+* **Food**: Essential Wheat that fuels production and troop movement.
 * **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies.
 * **Donkeys**: One-time-use transport units required for moving materials across the world.
 * **Labor**: A special material that enables construction and production.
 * **Essence**: A new strategic resource found through exploration and required for building, production, and upgrades.
 
-While all materials can be transported within the game, **no materials can be bridged out** of Blitz. Players may only
-bridge Relics into the game.
+While all materials can be transported within the game, **no materials can be bridged out** of Blitz.
 
 ## Material Categories
 
@@ -2529,7 +2759,7 @@ advanced military operations.
   <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
 </div>
 
-Food is the cornerstone of a Realm's economy and is required in all production chains. Only wheat is available in Blitz
+Food is the cornerstone of a Realm's economy and is required in all production chains. Only Wheat is available in Blitz
 and it can be produced without inputs.
 
 ### Troops
@@ -2561,8 +2791,8 @@ consumed after a single journey.
   <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
 </div>
 
-Labor is a key component in the construction of all buildings and required for 'simple mode' production. It is produced
-by burning resources, with rarer resources yielding more labor.
+Labor is a key component in the construction of all buildings and required for 'simple mode' production. In Blitz, it is
+produced freely in the Keep of each Realm.
 
 ### Essence
 
@@ -2577,50 +2807,11 @@ required in all Realm upgrades, as well as for some building construction and pr
 
 ---
 
-file: docs/pages/blitz/materials/storage.mdx
-meta: {}
-
-import { WeightTable } from "@/components/WeightTable";
-import { formatNumberWithCommas } from "@/utils/formatting";
-import { divideByPrecision } from "@/utils/resources";
-import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { BlitzWeightTable } from "@/components/WeightTable";
-import { StorageTable } from "@/components/StorageTable";
-
-# 📦 Storage System
-
-Your available storage limits the amount of materials your Realm can hold. Each Realm begins with a base capacity of
-**20,000 kg**. You'll need to construct storehouses to expand your storage capabilities.
-
-## Material Weights
-
-Materials have different weights that affect storage:
-
-<BlitzWeightTable />
-
-## Storehouses
-
-<img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
-
-Each storehouse adds 20,000 kg of storage capacity. Lords must be careful not to exceed the storage capacity of their
-Realms, as any produced materials that cannot be stored will be permanently lost.
-
-## World Structure Storage
-
-All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
-capacities are as follows:
-
-<StorageTable />
-
-
-
----
-
 file: docs/pages/blitz/materials/transfers-and-trade.mdx
 meta: {}
 
 import { importantNote } from "@/components/styles";
+import { BlitzWeightTable } from "@/components/WeightTable";
 
 # 📜 Transfers
 
@@ -2629,14 +2820,18 @@ such, there are no Banks, no P2P transfers, and no AMM or Orderbook through whic
 
 ## Transferring Materials
 
-Throughout the game, Lords will face the need to transfer materials from place to place around the world map, whether it
-be to their own Realms, or other structures like Hyperstructures, Essence Rifts and Camps. Lords have two primary
+Throughout the game, Lords may face the need to transfer materials from place to place around the world map, whether it
+be to their own Realms or other structures like Hyperstructures, Essence Rifts, and Camps. Lords have two primary
 options for initiating transfers:
 
-* **Detailed Transfer**: Players can use the comprehensive transfer menu accessible from the Trade tab. This allows
-  transfers of multiple types of materials simultaneously, to any structure on the map.
+* **Detailed Transfer**: Players can use the comprehensive transfer panel accessible from the right side navigation
+  menu. This allows transfers of multiple types of materials simultaneously to any structure on the map.
 
-![Detailed Transfer](/gifs/transfer-all.gif)
+![Detailed Transfer](/gifs/transfer-panel.gif)
+
+Players can choose to do one off shipments or repeat them on a schedule through automation (transfers can be repeated
+every 1-30min). To manage scheduled transfers, you can click on the advanced button of the transfer panel. From there
+you'll be able to force a new run, pause/resume or delete the transfer automations.
 
 * **Quick Transfer**: Alternatively, Lords can swiftly transfer resources between their own structures using the
   resources sidebar, ideal for managing internal logistics and maintaining supply chains.
@@ -2651,13 +2846,22 @@ When a transfer is initiated, donkeys travel through the invisible and immutable
 infrastructure upon which all material transport takes place. One donkey is capable of carrying up to **50 kg** of
 materials, so the number of donkeys required for a transfer depends on the total weight of the materials being moved.
 Once a transfer is initiated, it cannot be canceled, and the journey will take some time depending on the distance to
-the destination structure. Upon arrival, transferred materials and donkeys must be manually claimed via the 'Resource
-Arrivals' tab before they become available for use.
+the destination structure. You can check the 'Resource Arrivals' tab to follow your shipments.
+
+Upon arrival, transferred resources are now automatically claimed :
+
+![Autoclaim transfers](/gifs/transfer-autoclaim.gif)
+
+### Material Weights
+
+Materials have different weights that affect transportation:
+
+<BlitzWeightTable />
 
 ### Blitz Restrictions
 
 While troops can be transferred between Realms as normal, donkeys cannot be used to transport troops between Realms and
-Hyperstructures, Essence Rifts or Camps. This is to reduce the defensive advantage that a player can leverage by being
+Hyperstructures, Essence Rifts, or Camps. This is to reduce the defensive advantage that a player can leverage by being
 able to move troops quickly into guard armies on these structures once claimed. All players must therefore deploy armies
 from Realms and move them across the map to contest these critical points.
 
@@ -2752,13 +2956,64 @@ import { DamageCalculation } from "@/components/DamageCalculation";
 ## Damage Overview
 
 Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
-the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
-Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
-troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
-numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on a
+damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer penalties.
+
+## Combat Process
+
+When an army attacks another from an adjacent tile, the following sequence occurs:
+
+1. **Stamina Assessment**: The attacker must have sufficient stamina to engage in combat, the defender must have enough
+   to avoid a low-stamina damage penalty
+2. **Damage Calculation**: Damage is calculated for both combatants using the damage formula
+3. **Casualty Application**: Damage is applied simultaneously to both armies
+4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while
+   active.
+5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Damage Calculation
 
 <DamageCalculation />
+
+## Battle Timers
+
+Immediately after damage is applied, each combatant receives a **battle timer** that prevents it from attacking an army
+or Realm until the timer expires. Armies are free to take any other action while the timer is active. The base duration
+is the length of a single Phase (one minute in Blitz). Timers for different armies are maintained independently of the
+world clock.
+
+If an army that currently has a battle timer is attacked by another army, it will deal 15% less damage during that
+combat round. This reduction is represented by the battle timer penalty modifier (T) in the damage equation and reflects
+the army's reduced combat readiness while recovering from previous engagements.
+
+## Damage-Ratio Refunds
+
+The combat system includes a refund mechanism designed to prevent smaller, weaker armies from indefinitely stalling
+larger forces. When combat is significantly imbalanced, the dominant army receives:
+
+* **Stamina Refunds**: Based on the damage ratio between armies
+* **Battle Timer Reduction**: Shorter cooldowns for overwhelming victories
+
+### Refund Calculation
+
+The system calculates a **Refund Factor** based on the damage ratio between armies **x** and **y**:
+
+* **Damage Ratio (R<sub>x</sub>)**: **x**'s damage ÷ **y**'s damage
+
+* **Refund Factor f(R<sub>x</sub>)**: determines the amount of stamina refunded and battle timer reduction
+
+* **If R<sub>x</sub> ≥ 10**: f(R<sub>x</sub>) = 1 (maximum refund)
+
+* **If R<sub>x</sub> ≤ 2.5**: f(R<sub>x</sub>) = 0 (no refund)
+
+* **If 2.5 \< R<sub>x</sub> \< 10**: f(R<sub>x</sub>) = (R<sub>x</sub> - 2.5) ÷ (10 - 2.5)
+
+For army **x**:
+
+* **Refunded Stamina**: (combat cost) × f(R<sub>x</sub>), rounded up
+* **Battle Timer Length**: (base timer) × \[1 - f(R<sub>x</sub>)]
+
+The same calculations are applied for army **y**
 
 
 
@@ -2776,24 +3031,32 @@ import { BiomeCombat } from "@/components/BiomeCombat";
 Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army has a maximum stamina
 value determined by its troop type and tier as explained above. Field armies expend stamina when moving, exploring
 unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina when
-attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
+attacking armies in hexes adjacent to their structure.
+
+## Daily Phases and Stamina
+
+Every Eternum Day is divided into six equal phases: early hours, dawn, morning, afternoon, dusk, and late evening.
+Stamina is granted instantly when a new Phase begins, and no other automatic stamina regeneration occurs.
+
+**Blitz Stamina System:**
+
+* **Day Length**: 6 minutes (1 minute per phase)
+* **Stamina Regeneration per Phase**: 20 stamina
+* **Total Stamina Regeneration per Day**: 120 stamina
+
+## Combat Stamina Mechanics
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. Attacks require a minimum of **30 stamina**, so armies
-with less than 30 stamina cannot initiate an attack. Each additional stamina point above this threshold grants a **1%**
-damage bonus, up to a maximum of **+30%** damage at **60 stamina**. Additional stamina spend is not optional, so
-attacking armies will use all available stamina up to a maximum of **60** for any one attack. If the attacking army
-destroys the defending army, they gain **+30 stamina**.
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
+stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
+rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. Defending armies rely on having stamina
-available to maintain full combat effectiveness. When attacked, defending armies incur a **1%** damage reduction for
-every stamina point below **30**. For example, if an army is attacked while they have **10 stamina**, they would deal
-**-20%** damage to the attacking army. The maximum penalty is **-30%** damage if stamina is completely depleted.
-Successfully defending an attack does not deplete stamina. Lords should manage their armies' stamina carefully, ensuring
-they retain enough reserves to remain effective against unexpected attacks.
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
+stamina** (2.0 × stamina regen per phase). If the defender's current stamina is below this required threshold, they
+receive a **30% damage penalty** during that combat round.
 
 ## Biomes (Combat Effects)
 
@@ -2810,7 +3073,7 @@ and make the most of their ranged capabilities. However, they will be disadvanta
 or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
 modifiers of the three troop types.
 
-🐴 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
+️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
 water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
 type. In combination with the biome effects on stamina use, Paladins are less versatile than Knights or Crossbowmen, but
 are devastatingly effective in the right situations.
@@ -2866,32 +3129,30 @@ import { BlitzBuildingCard } from "@/components/BlitzBuildingCard";
 
 # 🪓 Buildings
 
-## Standard vs. Simple
+## Resource Mode vs. Labor Mode
 
-Blitz offers two building systems. Lords can switch between standard and simple building modes at any time by clicking
+Blitz offers two building systems. Lords can switch between resource and labor building modes at any time by clicking
 the toggle at the top of the construction tab.
 
-![Simple Mode Production](/gifs/simple-mode.gif)
-
 *Note: Some buildings only require labor to construct. Farms and Wood Mills have the same construction cost in both
-standard and simple building modes.*
+resource and labor building modes.*
 
-### Standard Mode
+### Resource Mode
 
 This is the classic building experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Standard mode is more complex and involves a greater number of materials in storage, however it
-is far more efficient overall.
+as building materials. Resource mode is more complex and involves a greater number of materials, however it is far more
+efficient overall.
 
-### Simple Mode
+### Labor Mode
 
-This mode allows players to utilize Labor as the singular input for construction. Simple mode greatly improves
+This mode allows players to utilize labor as the singular input for construction. Labor mode greatly improves
 accessibility and simplifies gameplay overall, but is much less efficient in both time and materials.
 
 ## Placement & Population
 
 ### Placement
 
-The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm,
+The construction tab can be accessed in the local view. Buildings can be constructed on any buildable hex of a Realm,
 provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the upgrade level
 (Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
 
@@ -2911,15 +3172,15 @@ buildings.
 
 All Realms start the game with a structure in the center of the buildable hexes, known as the Keep. This structure
 represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
-production. This building cannot be destroyed and provides a baseline population capacity of 5.
+production. This building cannot be destroyed and provides a baseline population capacity of 6.
 
-<BuildingCard title="Keep" image="/images/buildings/construction/castleZero.png" buildingType={25} description={["Produces Labor", "Provides a baseline population capacity of 5", "Cannot be constructed or destroyed"]} />
+<BuildingCard title="Keep" image="/images/buildings/construction/castleZero.png" buildingType={25} description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]} />
 
 ### Resource Buildings
 
 There is a specific resource building for each of the 9 resources in Blitz, so Lords will require separate resource
 buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
-have the same requirements in simple and standard mode.
+have the same requirements in labor and resource mode.
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BlitzBuildingCard
@@ -2927,11 +3188,11 @@ have the same requirements in simple and standard mode.
     image="/images/buildings/construction/lumber_mill.png"
     buildingType={5}
     description={["Produces Wood resource"]}
-    simpleCosts={[
-  { resource: 23, amount: 400 } // Labor
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 30 } // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 400 } // Labor
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 30 } // Labor
 ]}
   />
 
@@ -2940,12 +3201,12 @@ have the same requirements in simple and standard mode.
     image="/images/buildings/construction/mine.png"
     buildingType={4}
     description={["Produces Coal resource"]}
-    simpleCosts={[
-  { resource: 23, amount: 560 }, // Labor
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 90 }, // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 400 }, // Labor
-  { resource: 3, amount: 80 }, // Wood
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 30 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 30 }, // Wood
 ]}
   />
 
@@ -2954,13 +3215,13 @@ have the same requirements in simple and standard mode.
     image="/images/buildings/construction/forge.png"
     buildingType={6}
     description={["Produces Copper resource"]}
-    simpleCosts={[
-  { resource: 23, amount: 1200 }, // Labor
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 300 }, // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 600 }, // Labor
-  { resource: 3, amount: 120 }, // Wood
-  { resource: 2, amount: 90 }, // Coal
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 60 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 60 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 30 }, // Coal
 ]}
   />
 
@@ -2969,14 +3230,14 @@ have the same requirements in simple and standard mode.
     image="/images/buildings/construction/lumber_mill.png"
     buildingType={7}
     description={["Produces Ironwood resource"]}
-    simpleCosts={[
-  { resource: 23, amount: 3120 }, // Labor
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 1200 }, // Labor
-  { resource: 3, amount: 240 }, // Wood
-  { resource: 2, amount: 180 }, // Coal
-  { resource: 4, amount: 180 }, // Copper
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
 ]}
   />
 
@@ -2985,14 +3246,14 @@ have the same requirements in simple and standard mode.
     image="/images/buildings/construction/forge.png"
     buildingType={13}
     description={["Produces Cold Iron resource"]}
-    simpleCosts={[
-  { resource: 23, amount: 3120 }, // Labor
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 1200 }, // Labor
-  { resource: 3, amount: 240 }, // Wood
-  { resource: 2, amount: 180 }, // Coal
-  { resource: 4, amount: 180 }, // Copper
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
 ]}
   />
 
@@ -3001,14 +3262,14 @@ have the same requirements in simple and standard mode.
     image="/images/buildings/construction/forge.png"
     buildingType={9}
     description={["Produces Gold resource"]}
-    simpleCosts={[
-  { resource: 23, amount: 3120 }, // Labor
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 1200 }, // Labor
-  { resource: 3, amount: 240 }, // Wood
-  { resource: 2, amount: 180 }, // Coal
-  { resource: 4, amount: 180 }, // Copper
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
 ]}
   />
 
@@ -3016,12 +3277,12 @@ have the same requirements in simple and standard mode.
     title="Adamantine Mine"
     image="/images/buildings/construction/forge.png"
     buildingType={21}
-    description={["Produces Adamantine resource", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 3600 }, // Labor
-  { resource: 3, amount: 720 }, // Wood
-  { resource: 4, amount: 540 }, // Copper
-  { resource: 5, amount: 540 }, // Ironwood
+    description={["Produces Adamantine resource", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
     standardOnly={true}
@@ -3031,12 +3292,12 @@ have the same requirements in simple and standard mode.
     title="Mithral Forge"
     image="/images/buildings/construction/forge.png"
     buildingType={11}
-    description={["Produces Mithral resource", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 3600 }, // Labor
-  { resource: 3, amount: 720 }, // Wood
-  { resource: 4, amount: 540 }, // Copper
-  { resource: 11, amount: 540 }, // Cold Iron
+    description={["Produces Mithral resource", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
     standardOnly={true}
@@ -3048,14 +3309,14 @@ have the same requirements in simple and standard mode.
     buildingType={24}
     description={[
   "Produces Dragonhide resource",
-  "Only available in standard building mode",
+  "Only available in resource mode",
 ]}
-    standardCosts={[
-  { resource: 23, amount: 3600 }, // Labor
-  { resource: 3, amount: 720 }, // Wood
-  { resource: 4, amount: 540 }, // Copper
-  { resource: 7, amount: 540 }, // Gold
-  { resource: ResourcesIds.Essence, amount: 600 } // Essence
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.Gold, amount: 60 }, // Gold
+  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
     standardOnly={true}
   />
@@ -3063,9 +3324,9 @@ have the same requirements in simple and standard mode.
 
 ### Economic Buildings
 
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
-varying costs and population requirements:
+These buildings define the utility of a Realm or Village, including food production, donkey production, and population
+capacity. All of these buildings can be constructed in either resource or labor mode, but have varying costs and
+population requirements:
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BlitzBuildingCard
@@ -3074,10 +3335,10 @@ varying costs and population requirements:
     buildingType={37}
     description={["Produces Wheat (food)"]}
     simpleCosts={[
-  { resource: 23, amount: 200 } // Labor
+  { resource: 23, amount: 10 } // Labor
 ]}
     standardCosts={[
-  { resource: 23, amount: 200 } // Labor
+  { resource: 23, amount: 10 } // Labor
 ]}
   />
 
@@ -3085,28 +3346,13 @@ varying costs and population requirements:
     title="Worker's Hut"
     image="/images/buildings/construction/workers_hut.png"
     buildingType={1}
-    description={["Increases population capacity by 5"]}
+    description={["Increases population capacity by 6"]}
     simpleCosts={[
-  { resource: 23, amount: 560 }, // Labor
+  { resource: 23, amount: 60 }, // Labor
 ]}
     standardCosts={[
-  { resource: 23, amount: 400 }, // Labor
-  { resource: 3, amount: 80 }, // Wood
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Storehouse"
-    image="/images/buildings/construction/storehouse.png"
-    buildingType={2}
-    description={["Increases storage capacity by 20,000 kg for each material"]}
-    simpleCosts={[
-  { resource: 23, amount: 1200 }, // Labor
-]}
-    standardCosts={[
-  { resource: 23, amount: 600 }, // Labor
-  { resource: 3, amount: 120 }, // Wood
-  { resource: 4, amount: 90 }, // Copper
+  { resource: 23, amount: 20 }, // Labor
+  { resource: 3, amount: 20 }, // Wood
 ]}
   />
 
@@ -3118,11 +3364,11 @@ varying costs and population requirements:
   "Produces Donkeys for transportation of materials",
 ]}
     simpleCosts={[
-  { resource: 23, amount: 840 } // Labor
+  { resource: 23, amount: 180 } // Labor
 ]}
     standardCosts={[
-  { resource: 23, amount: 600 }, // Labor
-  { resource: 3, amount: 120 } // Wood
+  { resource: 23, amount: 60 }, // Labor
+  { resource: 3, amount: 60 } // Wood
 ]}
   />
 </div>
@@ -3133,8 +3379,8 @@ Your military buildings are essential for training up armies to defend your terr
 are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
 such, there are a total of 9 military buildings in the game.
 
-Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
-available for construction in standard mode.
+Note: Only T1 troop buildings can be constructed in both labor and resource mode. T2 and T3 military buildings are only
+available for construction in resource mode.
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BlitzBuildingCard
@@ -3143,15 +3389,15 @@ available for construction in standard mode.
     buildingType={28}
     description={[
   "Produces T1 Knights",
-  "Available in both simple and standard building modes"
+  "Available in both labor and resource modes"
 ]}
-    simpleCosts={[
-  { resource: 23, amount: 3600 } // Labor
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 1200 } // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 1800 }, // Labor
-  { resource: 3, amount: 360 }, // Wood
-  { resource: 4, amount: 70 } // Copper
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 } // Copper
 ]}
   />
 
@@ -3159,12 +3405,12 @@ available for construction in standard mode.
     title="Barracks (T2)"
     image="/images/buildings/construction/barracks.png"
     buildingType={29}
-    description={["Produces T2 Knights", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 3600 }, // Labor
-  { resource: 3, amount: 720 }, // Wood
-  { resource: 4, amount: 540 }, // Copper
-  { resource: 6, amount: 540 }, // Cold Iron
+    description={["Produces T2 Knights", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+  { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
   />
@@ -3173,12 +3419,12 @@ available for construction in standard mode.
     title="Barracks (T3)"
     image="/images/buildings/construction/barracks.png"
     buildingType={30}
-    description={["Produces T3 Knights", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 7200 }, // Labor
-  { resource: 3, amount: 1440 }, // Wood
-  { resource: 6, amount: 1080 }, // Cold Iron
-  { resource: 8, amount: 1080 }, // Mithral
+    description={["Produces T3 Knights", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+  { resource: ResourcesIds.ColdIron, amount: 240 }, // Cold Iron
+  { resource: ResourcesIds.Mithral, amount: 120 }, // Mithral
   { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
 ]}
   />
@@ -3197,14 +3443,14 @@ available for construction in standard mode.
     title="Archery Range (T1)"
     image="/images/buildings/construction/archery.png"
     buildingType={31}
-    description={["Produces T1 Crossbowmen", "Available in both simple and standard building modes"]}
-    simpleCosts={[
-  { resource: 23, amount: 3600 }, // Labor
+    description={["Produces T1 Crossbowmen", "Available in both labor and resource modes"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 1800 }, // Labor
-  { resource: 3, amount: 360 }, // Wood
-  { resource: 4, amount: 70 }, // Copper
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
 ]}
   />
 
@@ -3212,12 +3458,12 @@ available for construction in standard mode.
     title="Archery Range (T2)"
     image="/images/buildings/construction/archery.png"
     buildingType={32}
-    description={["Produces T2 Crossbowmen", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 3600 }, // Labor
-  { resource: 3, amount: 720 }, // Wood
-  { resource: 4, amount: 540 }, // Copper
-  { resource: 7, amount: 540 }, // Ironwood
+    description={["Produces T2 Crossbowmen", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+  { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
   />
@@ -3226,12 +3472,12 @@ available for construction in standard mode.
     title="Archery Range (T3)"
     image="/images/buildings/construction/archery.png"
     buildingType={33}
-    description={["Produces T3 Crossbowmen", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 7200 }, // Labor
-  { resource: 3, amount: 1440 }, // Wood
-  { resource: 7, amount: 1080 }, // Ironwood
-  { resource: 9, amount: 1080 }, // Adamantine
+    description={["Produces T3 Crossbowmen", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+  { resource: ResourcesIds.Ironwood, amount: 240 }, // Ironwood
+  { resource: ResourcesIds.Adamantine, amount: 120 }, // Adamantine
   { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
 ]}
   />
@@ -3250,14 +3496,14 @@ available for construction in standard mode.
     title="Stables (T1)"
     image="/images/buildings/construction/stable.png"
     buildingType={34}
-    description={["Produces T1 Paladins", "Available in both simple and standard building modes"]}
-    simpleCosts={[
-  { resource: 23, amount: 3600 }, // Labor
+    description={["Produces T1 Paladins", "Available in both labor and resource modes"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
 ]}
-    standardCosts={[
-  { resource: 23, amount: 1800 }, // Labor
-  { resource: 3, amount: 360 }, // Wood
-  { resource: 4, amount: 70 }, // Copper
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
 ]}
   />
 
@@ -3265,12 +3511,12 @@ available for construction in standard mode.
     title="Stables (T2)"
     image="/images/buildings/construction/stable.png"
     buildingType={35}
-    description={["Produces T2 Paladins", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 3600 }, // Labor
-  { resource: 3, amount: 720 }, // Wood
-  { resource: 4, amount: 540 }, // Copper
-  { resource: 10, amount: 540 }, // Gold
+    description={["Produces T2 Paladins", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+  { resource: ResourcesIds.Gold, amount: 60 }, // Gold
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
   />
@@ -3279,12 +3525,12 @@ available for construction in standard mode.
     title="Stables (T3)"
     image="/images/buildings/construction/stable.png"
     buildingType={36}
-    description={["Produces T3 Paladins", "Only available in standard building mode"]}
-    standardCosts={[
-  { resource: 23, amount: 7200 }, // Labor
-  { resource: 3, amount: 1440 }, // Wood
-  { resource: 10, amount: 1080 }, // Gold
-  { resource: 11, amount: 1080 }, // Dragonhide
+    description={["Produces T3 Paladins", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+  { resource: ResourcesIds.Gold, amount: 240 }, // Gold
+  { resource: ResourcesIds.Dragonhide, amount: 120 }, // Dragonhide
   { resource: ResourcesIds.Essence, amount: 1200 } // Essence 
 ]}
   />
@@ -3341,30 +3587,28 @@ and strategy of their Lord.
 
 ## Registration
 
-All Lords willing to participate in a Blitz game are required to register prior to the start of the Settling Phase. The
+All Lords willing to participate in a Blitz game are required to register prior to the start of the game. The
 'Registration Phase' is different for each bracket, but in all cases it is used to predetermine the number of players
-and establish the size of the game world. Each wallet address can only be registered once per Blitz game. More
-information on Blitz registration requirements will be made available prior to launch.
+and establish the size of the game world. Each wallet address can only be registered once per Blitz game.
 
 ## Settling
 
-Realms are settled during the 30-minute 'Settling Phase' prior to the start of the game. During this phase, registered
-Lords must confirm their participation in the game, after which their three Realms will be placed in a randomly assigned
-position. Lords who do not confirm participation within this timeframe will forfeit their entry into the session,
-leaving a potential spawn position empty throughout the game.
+Realms can be settled as soon as the game officially starts. This will confirm a Lord's participation in the game and
+place their Realms in a randomized spawn position. If a Lord fails to settle their Realms, their spawn position will
+remain empty throughout the game and any entry fee paid during registration will be forfeit. Lords should settle their
+Realms as soon as possible after the game starts to avoid falling behind their neighbors.
 
 ### Settling Algorithm
 
 The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available
 for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric
-Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated. The details of Hyperstructure
+Hyperstructure 'rings' are spawned every 15 hexes until all players are accommodated. The details of Hyperstructure
 spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
 
-Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the
-bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is
-sequential and follows a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal
-opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence for an example of 24
-players is visualized below:
+When the game starts, the size of the map and the number of Hyperstructures are finalized. Player positions are
+randomized within the bounds of the Hyperstructure rings, following a rotational pattern to distribute Lords as evenly
+as possible to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement
+sequence for an example of 24 players is visualized below:
 
 <img src="/images/gifs/blitz-map-build.gif" alt="Blitz map building sequence showing hyperstructure placement and player realm spawns" className="w-full rounded-lg my-6" />
 
@@ -3379,7 +3623,7 @@ players is visualized below:
 
 ## Realm Details
 
-### Starting Resources
+### Starting Materials
 
 <div style={table.container}>
   <div style={table.wrapper}>
@@ -3395,13 +3639,61 @@ players is visualized below:
         <tr style={table.tableRow}>
           <td style={table.cell}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={35} name="Wheat" size="md" />
+
+              Wheat
+            </div>
+          </td>
+
+          <td style={table.cell}>1,000</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <ResourceIcon id={23} name="Labor" size="md" />
 
               Labor
             </div>
           </td>
 
-          <td style={table.cell}>5,000</td>
+          <td style={table.cell}>1,200</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={3} name="Wood" size="md" />
+
+              Wood
+            </div>
+          </td>
+
+          <td style={table.cell}>180</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={2} name="Coal" size="md" />
+
+              Coal
+            </div>
+          </td>
+
+          <td style={table.cell}>120</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={4} name="Copper" size="md" />
+
+              Copper
+            </div>
+          </td>
+
+          <td style={table.cell}>60</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -3466,8 +3758,9 @@ import { ExplorationRewards } from "@/components/ExplorationRewards";
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +60 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Phase (one
+minute), totaling +120 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined
+in the table below:
 
 <BlitzTroopMovementTable />
 
@@ -3477,7 +3770,7 @@ themselves severely disadvantaged if attacked by enemy forces.
 ## Movement
 
 Armies can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a Realm, another
-army, or a world structure such as a Hyperstructure. Armies may also move to more distant hexes, provided there is a
+army, or a World Structure such as a Hyperstructure. Armies may also move to more distant hexes, provided there is a
 continuous path of adjacent, unoccupied hexes leading to the destination, and the army has sufficient stamina available
 for the entire journey.
 
@@ -3487,10 +3780,13 @@ for the entire journey.
   <em>Moving armies in the client</em>
 </div>
 
-The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
-within the army. The table below details biome-specific stamina costs for each troop type:
+The amount of stamina consumed when moving into an explored hex depends on both the biome of that hex and the type of
+troops within the army. The table below details biome-specific stamina costs for each troop type:
 
 <BiomeStamina />
+
+Troops also require Wheat to move. This is consumed from their home Realm when a movement order is executed. Each unit
+consumes **0.03** Wheat to traverse or explore a new tile.
 
 ## Exploring
 
@@ -3507,10 +3803,9 @@ reward chances for any explored hex are as follows:
 
 <ExplorationRewards />
 
-If an army doesn't have sufficient carrying capacity to store the discovered materials, the materials will be
-permanently lost (burned) but the army will be able to continue exploring provided they have enough stamina. Armies can
-return to a structure to offload the materials, or drop them to free up space. Note that any materials discarded in the
-field will also be burned.
+Exploration rewards are automatically sent back to the home Realm of the exploring army, so armies aren't limited by
+their carry capacity in Blitz. However, the mist is a scary place and troops don't like to delve into it alone, so a
+minimum of 10 troops are required in an army to explore a hex.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/explore.gif" alt="Explore" />
@@ -3522,10 +3817,12 @@ field will also be burned.
 
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
 the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
-Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
-Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
-that of the lower stamina army.
+on the worldmap using left-click, then right-click on the target and select the Transfer Troops tab. Troops can be
+transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle timers.
+However, in all instances of a troop transfer, the army that has received troops:
+
+* adopts the **lower** of the two armies' stamina values, and
+* adopts the **higher** of the two armies' battle timers.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
@@ -3561,20 +3858,20 @@ hex (i.e. the biome and whether it contains a world structure) is permanently re
 
 The number of registered Lords for a game of Blitz determines the size of the map and the number of Hyperstructures
 available for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric
-Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
+Hyperstructure 'rings' are spawned every 15 hexes until all players are accommodated.
 
 <HyperstructureRings />
 
 ### Realm Positioning
 
 Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the
-bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is
+bounds of the Hyperstructure rings. While the order in which players are placed is randomized, the positioning is
 sequential and follows a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal
 opportunity in accessing the Hyperstructure objectives.
 
-The Realms of each participating Lord are positioned six hexes apart in a triangle formation. Each Realm is also located
-within eight hexes of a Hyperstructure, and eight hexes from the nearest Realm belonging to another Lord (assuming all
-available player positions are filled). More details of the positioning system are available in the
+The Realms of each participating Lord are positioned three hexes apart in a triangle formation. Each Realm is also
+located within eight hexes of a Hyperstructure and eight hexes from the nearest Realm belonging to another Lord
+(assuming all available player positions are filled). More details of the positioning system are available in the
 [Realms](/blitz/realms/realm) section.
 
 <div style={importantNote.container}>
@@ -3592,8 +3889,8 @@ An unknown force occasionally reveals treasures from the past in random location
 hexes, there is a chance that a Relic Crate will be revealed on a different nearby tile, visible to all players. These
 crates can contain powerful boosts that can accelerate the production of your Realms, improve the stamina regeneration
 of your armies, or even give them combat damage boosts to give you an edge over your foes. The first army to reach and
-activate the crate will be receive the contents directly into their inventory, so be sure to secure them before your
-enemies do!
+activate the crate will receive **three** Relics directly into their inventory and **1,000 victory points** for their
+Lord, so be sure to secure them before your enemies do!
 
 <img src="/images/covers/blitz-relic-crate.png" alt="Relic Crate" className="w-full rounded-lg my-6" />
 
@@ -3646,7 +3943,7 @@ Guard armies do not appear on the world map; instead, they occupy defense slots 
 view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
 opening up the Details tab.
 
-Unlike Realms and Villages, world structures have a static number of defence slots:
+Unlike Realms and Villages, world structures have a static number of defense slots:
 
 <WorldStructureDefenseSlotsTable />
 
@@ -3683,13 +3980,64 @@ import { DamageCalculation } from "@/components/DamageCalculation";
 ## Damage Overview
 
 Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
-the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
-Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
-troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
-numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on a
+damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer penalties.
+
+## Combat Process
+
+When an army attacks another from an adjacent tile, the following sequence occurs:
+
+1. **Stamina Assessment**: The attacker must have sufficient stamina to engage in combat, the defender must have enough
+   to avoid a low-stamina damage penalty
+2. **Damage Calculation**: Damage is calculated for both combatants using the damage formula
+3. **Casualty Application**: Damage is applied simultaneously to both armies
+4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while
+   active.
+5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Damage Calculation
 
 <DamageCalculation />
+
+## Battle Timers
+
+Immediately after damage is applied, each combatant receives a **battle timer** that prevents it from attacking an army
+or Realm until the timer expires. Armies are free to take any other action while the timer is active. The base duration
+is the length of a single Phase (ten minutes in Eternum). Timers for different armies are maintained independently of
+the world clock.
+
+If an army that currently has a battle timer is attacked by another army, it will deal 15% less damage during that
+combat round. This reduction is represented by the battle timer penalty modifier (T) in the damage equation and reflects
+the army's reduced combat readiness while recovering from previous engagements.
+
+## Damage-Ratio Refunds
+
+The combat system includes a refund mechanism designed to prevent smaller, weaker armies from indefinitely stalling
+larger forces. When combat is significantly imbalanced, the dominant army receives:
+
+* **Stamina Refunds**: Based on the damage ratio between armies
+* **Battle Timer Reduction**: Shorter cooldowns for overwhelming victories
+
+### Refund Calculation
+
+The system calculates a **Refund Factor** based on the damage ratio between armies **x** and **y**:
+
+* **Damage Ratio (R<sub>x</sub>)**: **x**'s damage ÷ **y**'s damage
+
+* **Refund Factor f(R<sub>x</sub>)**: determines the amount of stamina refunded and battle timer reduction
+
+* **If R<sub>x</sub> ≥ 10**: f(R<sub>x</sub>) = 1 (maximum refund)
+
+* **If R<sub>x</sub> ≤ 2.5**: f(R<sub>x</sub>) = 0 (no refund)
+
+* **If 2.5 \< R<sub>x</sub> \< 10**: f(R<sub>x</sub>) = (R<sub>x</sub> - 2.5) ÷ (10 - 2.5)
+
+For army **x**:
+
+* **Refunded Stamina**: (combat cost) × f(R<sub>x</sub>), rounded up
+* **Battle Timer Length**: (base timer) × \[1 - f(R<sub>x</sub>)]
+
+The same calculations are applied for army **y**
 
 
 
@@ -3814,22 +4162,32 @@ import { BiomeCombat } from "@/components/BiomeCombat";
 Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army possesses a maximum
 stamina value determined by its troop type and tier as explained above. Field armies expend stamina when moving,
 exploring unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina
-when attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
+when attacking armies in hexes adjacent to their structure.
 
-### Attacking Army (the army initiating combat)
+## Daily Phases and Stamina
 
-Attacks require a minimum of **30 stamina**, so armies with less than 30 stamina cannot initiate an attack. Each
-additional stamina point above this threshold grants a **1%** damage bonus, up to a maximum of **+30%** damage at **60
-stamina**. Additional stamina spend is not optional, so attacking armies will use all available stamina up to a maximum
-of **60** for any one attack. If the attacking army destroys the defending army, they gain **+30 stamina**.
+Every Eternum Day is divided into six equal phases: early hours, dawn, morning, afternoon, dusk, and late evening.
+Stamina is granted instantly when a new Phase begins, and no other automatic stamina regeneration occurs.
 
-### Defending Army (the army being attacked)
+**Eternum Stamina System:**
 
-Defending armies rely on having stamina available to maintain full combat effectiveness. When attacked, defending armies
-incur a **1%** damage reduction for every stamina point below **30**. For example, if an army is attacked while they
-have **10 stamina**, they would deal **-20%** damage to the attacking army. The maximum penalty is **-30%** damage if
-stamina is completely depleted. Successfully defending an attack does not deplete stamina. Lords should manage their
-armies' stamina carefully, ensuring they retain enough reserves to remain effective against unexpected attacks.
+* **Day Length**: 60 minutes (10 minutes per phase)
+* **Stamina Regeneration per Phase**: 2 stamina
+* **Total Stamina Regeneration per Day**: 12 stamina
+
+## Combat Stamina Mechanics
+
+### Attacking Army
+
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **5
+stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
+rejected and no combat occurs.
+
+### Defending Army
+
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **4 stamina**
+(2 × stamina regen per phase). If the defender's current stamina is below this required threshold, they receive a **30%
+damage penalty** during that combat round.
 
 ## Biomes (Combat Effects)
 
@@ -4440,7 +4798,7 @@ meaning of this alignment has been lost to the mist… for now.
 
 To settle a Realm, Lords must first burn a Season Pass, which gives them the ability to select the location of their
 homeland from an array of locations scattered across the map. For Season 1, there is a seven-day settling period before
-the game starts, allowing players to organise and position themselves before a move can be made. Realms can still be
+the game starts, allowing players to organize and position themselves before a move can be made. Realms can still be
 settled after this period, however the earlier in the season that Lords can establish their holdings, the greater their
 production potential and overall experience.
 
@@ -4479,7 +4837,7 @@ environment.
 
 Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
 additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
-your defences. Each progression requires specific materials, outlined in the table below:
+your defenses. Each progression requires specific materials, outlined in the table below:
 
 <RealmLeveling />
 
@@ -4616,13 +4974,13 @@ priorities.
 * **Entity-Specific**: Automation is configured on a per-entity basis.
 * **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to
   function.
-* **10-Minute Cycles**: All automation is processed every minute.
+* **10-Minute Cycles**: All automation is processed every 10 minutes.
 
 ## How It Works
 
 The automation system periodically checks and processes active orders for each entity.
 
-1. **Processing Interval**: All orders are evaluated every 1 minute.
+1. **Processing Interval**: All orders are evaluated every 10 minutes.
 2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
 3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
 4. **Order Processing**: The system processes different order types:
@@ -4676,7 +5034,7 @@ Transfer automation allows you to automatically move resources between your enti
 
 1. **Recurring Transfers**:
    * Transfers resources at regular intervals.
-   * Minimum interval: 1 minute (due to automation cycle).
+   * Minimum interval: 10 minutes (due to automation cycle).
    * Example: Transfer 1,000 Food from Realm A to Village B every 2 hours.
    * *\[GIF placeholder: Setting up a recurring transfer]*
 
@@ -4750,7 +5108,7 @@ Transfer automation allows you to move resources between any of your entities.
    * **Resources to Transfer**:
      * Add multiple resources with specific amounts
    * **Schedule/Conditions**:
-     * For Recurring: Set interval in minutes (minimum 1 minute)
+     * For Recurring: Set interval in minutes (minimum 10 minutes)
      * For conditional transfers: Set threshold amounts
 
 3. Click "Add Transfer Automation".
@@ -4759,7 +5117,7 @@ Transfer automation allows you to move resources between any of your entities.
 
 #### Transfer Interval Guidelines
 
-* **Minimum Interval**: 1 minute (matches automation processing cycle)
+* **Minimum Interval**: 10 minutes (matches automation processing cycle)
 * **Common Intervals**:
   * 10m, 30m, 1h, 2h, 6h, 24h (preset buttons available)
   * Custom intervals can be set in minutes
@@ -4808,7 +5166,7 @@ You can pause automation at different levels:
 
 * **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
   automation will stop.
-* **10-Minute Processing Cycle**: All automation is processed every minute. This affects timing for all orders.
+* **10-Minute Processing Cycle**: All automation is processed every 10 minutes. This affects timing for all orders.
 * **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
   blockchain transaction, which incurs network transaction fees.
 * **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay
@@ -4827,8 +5185,8 @@ You can pause automation at different levels:
 
 * **Entity Ownership**: You can only set up transfers between entities you own.
 * **Transfer Timing**:
-  * Minimum effective interval is 1 minute due to processing cycle
-  * Intervals shorter than 1 minute will effectively transfer every minute
+  * Minimum effective interval is 10 minutes due to processing cycle
+  * Intervals shorter than 10 minutes will effectively transfer every 10 minutes
   * Non-10-minute multiples may have irregular timing based on when transfers align with processing cycles
 * **Resource Availability**: Transfers will only execute if the source entity has sufficient resources at processing
   time.
@@ -4982,7 +5340,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 
 # 🧱 Materials
 
-# Materials Overview
+## Materials Overview
 
 Materials encompass all transportable assets in Eternum, including:
 
@@ -5106,24 +5464,6 @@ Strategic end-game material:
 * Required to commence the construction of Hyperstructures
 * Cannot be produced
 
-#### Relics
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Relic E1" id={39} />
-
-  <ResourceIcon name="Relic E2" id={40} />
-
-  <ResourceIcon name="Relic E3" id={41} />
-</div>
-
-Mysterious artifacts from a forgotten age:
-
-* Discovered through **Relic Chests** found during exploration
-* Three types of relics (E1, E2, E3) with different rarities
-* Cannot be produced - only found in the world
-* Automatically granted to explorers who open relic chests
-* Used for advanced crafting and endgame mechanics
-
 
 
 ---
@@ -5241,7 +5581,7 @@ be manually claimed via the 'Resource Arrivals' tab before they become available
   <img src="/images/buildings/construction/bank.png" alt="Bank Building" style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }} />
 </div>
 
-Six ancient Banks stand evenly distributed around, and equidistant from, the centre of the map.
+Six ancient Banks stand evenly distributed around, and equidistant from, the center of the map.
 
 At the start of the game, each Bank is occupied by powerful groups of bandits. Lords who conquer a Bank become the
 beneficiary of any fees from the Automated Market Maker (AMM) trades that they facilitate. Although Banks collect fees
@@ -5284,8 +5624,9 @@ stamina, a critical resource Lords must carefully manage.
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +2 stamina per Phase (10 minutes),
+totaling +12 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined in the
+table below:
 
 <TroopMovementTable />
 
@@ -5318,14 +5659,8 @@ the known boundaries of the world.
 
 If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
 back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
-gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory.
-
-**Relic Chest Discovery**: Each exploration also triggers a global check for **Relic Chest** discovery. If enough time
-has passed since the last chest was discovered globally, a new chest will spawn at a calculated distance from the
-exploration point. This creates exciting opportunities for explorers to trigger discoveries that benefit the entire game
-world.
-
-If an army becomes overloaded, they will not be able to undertake further exploration, but can continue to travel on
+gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
+an army becomes overloaded, they will not be able to undertake further exploration, but can continue to travel on
 previously-explored hexes. Armies can return to a structure to offload the materials, or drop them to free up space.
 Note that any materials discarded in the field will be permanently lost (burned).
 
@@ -5342,10 +5677,12 @@ armies are well-prepared and capable of defending themselves in unexpected comba
 
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
 the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
-Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
-Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
-that of the lower stamina army.
+on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab. Troops
+can be transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle
+timers. However, in all instances of a troop transfer, the army that has received troops:
+
+* adopts the **lower** of the two armies' stamina values, and
+* adopts the **higher** of the two armies' battle timers.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
@@ -5368,7 +5705,7 @@ meta: {}
 
 At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
 exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
-can be seen when settling and when observing the world view, each equidistant from the centre of the map and from one
+can be seen when settling and when observing the world view, each equidistant from the center of the map and from one
 another.
 
 When Lords settle a Realm, the six hexes directly adjacent to the Realm hex and the six possible village locations are
@@ -5388,4 +5725,181 @@ explained in more detail in the [Military section](/eternum/military/stamina-and
 potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop type
 differently as they move between hexes—this is explained further in the
 [Movement & Exploration](/eternum/worldmap-movement/movement) section below.
+
+
+
+---
+
+file: docs/pages/overview/chests/contents.mdx
+meta: {
+  "title": "Chest Contents",
+  "description": "Details on the contents of Loot Chests"
+}
+
+import EternumRewardsChestTable from "@/components/EternumRewardsChestTable";
+
+# 📜 Chest Contents
+
+Each Loot Chest contains a varying number of items. For each item slot in a chest, an independent roll is performed
+against the item list for that Loot Chest type. Every item on the list has a defined draw chance. Because each roll is
+independent, Lords may receive multiple copies of the same item in a single Loot Chest.
+
+As seasons pass and new epochs of Loot Chest emerge, new chests of the same type (but bearing the mark of a new epoch)
+may be discovered. Loot Chest item lists are defined by both the Loot Chest type and the epoch from which they
+originated. So the items that can potentially be drawn from an Eternum Rewards Chest from epoch 2 are different to those
+drawn from an epoch 1 version of that chest.
+
+While most types of Loot Chests contain cosmetic items, Relic Chests contain consumable items that can be used in Blitz
+and Eternum to provide minor boosts, giving Lords slight advantages over their opponents when used strategically.
+
+*Note: While relics can currently be found in [Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates) in Blitz,
+onchain Relic Chests are still in development. These sections will be updated with more information as it becomes
+available.*
+
+## Loot Chest Item Lists
+
+The following item lists contain information on the cosmetic items that can potentially be drawn from the various types
+of Loot Chest in the Realms ecosystem. Each cosmetic item is defined by:
+
+* **Item Name**
+* **Epoch Item Number** - the ID of unique items within an Epoch, the numbering starts again from 1 for each new epoch
+  (consider each epoch of items as a separate collection).
+* **Description** - a basic description, including the item set it is part of (if any).
+* **Rarity** - the relative rarity of the item, according to the designed item supply.
+* **Type** - the type of item (i.e. the 'slot' that the cosmetic occupies when outfitting a Realm).
+* **Troop Type** - whether the cosmetic item is relevant to a particular type of troop (Knight, Crossbowman, or
+  Paladin).
+* **Draw Chance** - the percentage chance of rolling this item on any of the three possible draws per Loot Chest.
+
+### Eternum Rewards Chest
+
+The Eternum Rewards Chest can contain three items from the following list:
+
+<EternumRewardsChestTable />
+
+### Blitz Rewards Chest
+
+*Work in progress...*
+
+### Elite Blitz Rewards Chest
+
+*Work in progress...*
+
+## Relic Chests
+
+*Work in progress...*
+
+
+
+---
+
+file: docs/pages/overview/chests/cosmetics.mdx
+meta: {
+  "title": "Cosmetic Items",
+  "description": "Using your Realms Cosmetics"
+}
+
+import { importantNote } from "../../../components/styles";
+
+# 🎨 Cosmetic Items
+
+## Equipping Cosmetic Items
+
+The ability to equip cosmetic items in Blitz and Eternum is still in development. However, owners (and aspiring owners)
+of cosmetic items should note the following design intentions, as they are relevant to understanding cosmetic NFT
+collection design and secondary-market valuation.
+
+* **14 slots** - Each Realm has 14 available 'slots' that cosmetic items can be equipped to. These include:
+  * 1 x Realm Title
+  * 1 x Realm Aura
+  * 1 x Realm Skin
+  * 1 x Troop Aura
+  * 3 x Troop Primary (One for each troop type)
+  * 3 x Troop Secondary (One for each troop type)
+  * 3 x Troop Armor (One for each troop type)
+  * 1 x Troop Base
+
+* **Items with multiple models** - Equipped Realm Skins and Troop Armors can display evolving models in-game:
+  * Realm Skins - one for each Realm level (Settlement, City, Kingdom, Empire)
+  * Troop Armor - one for each troop tier (T1, T2, T3)
+
+* **Troop skins on all armies** - Troop cosmetics equipped to a Realm will apply to all armies deployed from that Realm
+  (items with a troop type only apply to that troop type).
+
+* **No stakes** - While a Realm with cosmetics equipped may be captured by other players in-game, the cosmetic NFT will
+  remain the property of the original owner.
+
+* **One item per slot** - A cosmetic NFT can only be equipped to a slot on a single Realm. If Lords wish to have
+  multiple Realms with the same cosmetic item, they will require multiple copies of that NFT.
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    Note: Initial versions of Blitz will only have 14 slots available that apply to all 3 starting Realms of a player.
+    Cosmetics will apply to single Realms in both Blitz and Eternum game modes from Eternum Season 2 onwards.
+  </p>
+</div>
+
+
+
+---
+
+file: docs/pages/overview/chests/loot-chests.mdx
+meta: {
+  "title": "Loot Chests",
+  "description": "Understanding Loot Chest rewards from Realms games"
+}
+
+import { importantNote } from "../../../components/styles";
+
+# 🎁 Loot Chests
+
+Loot Chests are reward containers that Lords can earn through various activities in the ecosystem. These chests are
+primarily rewarded for achievements and high-scoring gameplay and contain advantageous consumables or flashy cosmetic
+items. In their sealed (unopened) form, they can be traded on the
+[Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests).
+
+The secrets of the Loot Chests are now revealed and their opening mechanisms have been unlocked. Lords can find more
+detail on the contents of each Loot Chest type in the [Chest Contents](/overview/chests/contents) section, and open Loot
+Chests on the [Loot Chest Collection Page](https://empire.realms.world/loot-chests).
+
+## Epochs
+
+Epochs mark the distinct eras of gameplay and development. An epoch begins with the start of each new Eternum season and
+ends with the start of the next. Each Loot Chest carries the mark of its epoch, defining not only when it was earned but
+also the specific rewards contained within. Chests from different epochs therefore maintain their unique character over
+time, and can be opened or left sealed at the owner's discretion (as some Lords may wish to speculate on long-term
+sealed chest value).
+
+## Chest Types in Epoch 1
+
+The current epoch introduces four distinct chest types with varying contents, each obtained through different gameplay
+experiences within the ecosystem.
+
+**Eternum Rewards Chest** - These premium chests were earned through participation and success in the flagship seasonal
+game mode. 2,244 Eternum Rewards Chests were distributed to players of Eternum Season 1 on the basis of their
+achievement score. There will be no further issuance of these chests in Epoch 1.
+
+<div style={{ textAlign: "center" }}>
+  <img src="/images/loot-chests/eternum-chest.png" alt="Eternum Rewards Chest" style={{ width: "25%", height: "auto", display: "block", margin: "0 auto" }} />
+</div>
+
+**Blitz Rewards Chest** - Success in Series Blitz games (Warrior bracket) will yield these chests.
+
+**Elite Blitz Rewards Chest** - The highest tier of Blitz competition produces these exclusive chests, reserved for
+Lords who prove themselves in Elite bracket games.
+
+**Relic Chest** - These mysterious containers hold various Relics, consumables that can give Lords an edge in
+competition when used correctly. Players will be able to earn these through participation in any Blitz bracket and
+through other yet-to-be-announced interactions in the ecosystem.
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    Loot Chests are a feature in development. Keep an eye out for announcements in the Realms Discord relating to Loot
+    Chest rewards. This section will be updated as more information is made available to the community.
+  </p>
+</div>
 

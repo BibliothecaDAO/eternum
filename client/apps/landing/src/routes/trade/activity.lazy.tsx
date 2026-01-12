@@ -93,7 +93,9 @@ function ActivityPage() {
             <div className="w-full">
               {marketEvents.map((event) => {
                 const metadata = event.metadata;
-                const image = metadata?.image || "";
+                const image = metadata?.image?.startsWith("ipfs://")
+                  ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                  : metadata?.image;
                 const price = event.price ? formatUnits(BigInt(event.price), 18) : "0";
                 const displayStatus = getDisplayStatus(event.state);
 
