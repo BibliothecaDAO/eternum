@@ -9,6 +9,12 @@ logic, React bindings, Torii integrations, type defs), imports are done with `@b
 contracts and deployment scripts are grouped in `contracts/*`, with environment files in `contracts/common`. Shared
 TypeScript utilities for both client and contracts reside in `common/`.
 
+## App-Specific Context
+
+When working within any app in `client/apps/*`, check for an `AGENTS.md` file at the root of that app directory (e.g.,
+`client/apps/game/AGENTS.md`). If present, read and follow its instructions as additional context specific to that app.
+These files contain app-specific guidelines, architecture decisions, and conventions that supplement this document.
+
 ## Build, Test & Development Commands
 
 Run `pnpm install` once at the workspace root. Use `pnpm dev` for the Blitz client (`client/apps/game`) and `pnpm dev`
