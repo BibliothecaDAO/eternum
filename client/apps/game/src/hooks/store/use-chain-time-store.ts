@@ -1,5 +1,9 @@
-import type { ProviderHeartbeat } from "@bibliothecadao/provider";
 import { create } from "zustand";
+
+export type ProviderHeartbeat = {
+  timestamp: number;
+  // Add more fields if the real ProviderHeartbeat has them
+};
 
 interface ChainTimeState {
   lastHeartbeat: ProviderHeartbeat | null;
@@ -33,7 +37,7 @@ export const useChainTimeStore = create<ChainTimeState>((set, get) => ({
   anchorTimestampMs: null,
   anchorPerfMs: null,
   nowMs: Date.now(),
-  setHeartbeat: (heartbeat) =>
+  setHeartbeat: (heartbeat: ProviderHeartbeat) =>
     set((state) => {
       if (state.lastHeartbeat && state.lastHeartbeat.timestamp > heartbeat.timestamp) {
         return state;

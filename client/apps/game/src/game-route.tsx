@@ -3,22 +3,28 @@
  * into the landing page bundle.
  */
 import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
-import type { Account, AccountInterface } from "starknet";
 import { useEffect } from "react";
+import type { Account, AccountInterface } from "starknet";
+import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
+import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
 import { World } from "./ui/layouts/world";
 import { LoadingScreen } from "./ui/modules/loading-screen";
-import { env } from "../env";
 
 type ReadyAppProps = {
   backgroundImage: string;
   setupResult: SetupResult;
   account: Account | AccountInterface;
+};
+
+const TransactionListenerBridge = () => {
+  useTransactionListener();
+  return null;
 };
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
@@ -28,6 +34,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
         <ErrorBoundary>
           <StoryEventToastProvider>
             <StoryEventToastBridge />
+            <TransactionListenerBridge />
             <TransactionNotification />
             <World backgroundImage={backgroundImage} />
             <WorldLoading />

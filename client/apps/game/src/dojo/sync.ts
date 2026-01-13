@@ -196,7 +196,6 @@ export const syncEntitiesDebounced = async (
   const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
     try {
       queueProcessor.queueUpdate(data.hashed_keys, data, origin);
-      setupResult.network.provider.recordStreamActivity();
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
@@ -233,8 +232,6 @@ export const syncEntitiesDebounced = async (
     eventUpdateCount = 0;
     lastLogTime = now;
   }, LOG_INTERVAL);
-
-  setupResult.network.provider.recordStreamActivity();
 
   return {
     cancel: () => {
