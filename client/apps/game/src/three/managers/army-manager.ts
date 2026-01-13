@@ -45,7 +45,10 @@ import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
+import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { getIndicatorYOffset } from "../constants/indicator-constants";
+import { MAX_INSTANCES } from "../constants/army-constants";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -158,10 +161,15 @@ export class ArmyManager {
   private pathRenderer: PathRenderer;
   private selectedArmyForPath: ID | null = null;
 
+  // Player indicator dots
+  private playerIndicatorManager: PlayerIndicatorManager;
+  private indicatorMetadataCache: Map<ID, number> = new Map(); // entityId -> yOffset
+
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
+  private readonly tempColor: Color = new Color();
 
   constructor(
     scene: Scene,
@@ -225,6 +233,9 @@ export class ArmyManager {
     // Initialize path renderer for movement visualization
     this.pathRenderer = PathRenderer.getInstance();
     this.pathRenderer.initialize(scene);
+
+    // Initialize player indicator manager
+    this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -774,6 +785,12 @@ export class ArmyManager {
       new Color(army.color),
     );
 
+    // Update player indicator dot above unit
+    const indicatorYOffset = getIndicatorYOffset(modelType);
+    this.indicatorMetadataCache.set(army.entityId, indicatorYOffset); // Cache for movement updates
+    this.tempColor.set(army.color);
+    this.playerIndicatorManager.updateIndicator(army.entityId, position, this.tempColor, indicatorYOffset);
+
     this.recordLastKnownHexFromWorld(army.entityId, position);
 
     const activeLabel = this.entityIdLabels.get(army.entityId);
@@ -810,6 +827,10 @@ export class ArmyManager {
     this.lastKnownVisibleHexes.delete(entityId);
     this.removeArmyPointIcon(entityId);
     this.removeEntityIdLabel(entityId);
+
+    // Remove player indicator dot
+    this.playerIndicatorManager.removeIndicator(entityId);
+    this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
 
     const numericId = this.toNumericId(entityId);
     if (this.activeArmyAttachmentEntities.has(numericId)) {
@@ -1033,6 +1054,7 @@ export class ArmyManager {
     if (buffersDirty) {
       this.armyModel.updateAllInstances();
       this.armyModel.computeBoundingSphere();
+      this.playerIndicatorManager.computeBoundingSphere();
       this.frustumVisibilityDirty = true;
     }
   }
@@ -1836,9 +1858,10 @@ export class ArmyManager {
     const hasPointsRenderers = this.pointsRenderers !== undefined;
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
     const hasRelicEffects = this.armyRelicEffects.size > 0;
+    const hasIndicators = this.playerIndicatorManager.getVisibleCount() > 0;
 
     // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasRelicEffects) {
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasRelicEffects && !hasIndicators) {
       return;
     }
 
@@ -1875,6 +1898,20 @@ export class ArmyManager {
           entityId: army.entityId,
           position: iconPosition,
         });
+      }
+
+      // 1b. Update indicator dot positions for moving armies
+      if (instanceData?.isMoving && instanceData.position) {
+        // Use cached yOffset to avoid redundant lookups every frame
+        const indicatorYOffset = this.indicatorMetadataCache.get(army.entityId) ?? 2.5;
+
+        this.tempColor.set(army.color);
+        this.playerIndicatorManager.updateIndicator(
+          army.entityId,
+          instanceData.position,
+          this.tempColor,
+          indicatorYOffset,
+        );
       }
 
       // 2. Update attachment transforms
@@ -2727,6 +2764,10 @@ ${
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
+
+    // Dispose player indicator manager
+    this.playerIndicatorManager.dispose();
+    this.indicatorMetadataCache.clear();
 
     // Tear down FX to avoid lingering RAF loops and textures
     this.fxManager.destroy();
