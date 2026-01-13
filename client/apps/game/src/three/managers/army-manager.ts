@@ -163,11 +163,13 @@ export class ArmyManager {
 
   // Player indicator dots
   private playerIndicatorManager: PlayerIndicatorManager;
+  private indicatorMetadataCache: Map<ID, number> = new Map(); // entityId -> yOffset
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
+  private readonly tempColor: Color = new Color();
 
   constructor(
     scene: Scene,
@@ -785,7 +787,9 @@ export class ArmyManager {
 
     // Update player indicator dot above unit
     const indicatorYOffset = getIndicatorYOffset(modelType);
-    this.playerIndicatorManager.updateIndicator(army.entityId, position, new Color(army.color), indicatorYOffset);
+    this.indicatorMetadataCache.set(army.entityId, indicatorYOffset); // Cache for movement updates
+    this.tempColor.set(army.color);
+    this.playerIndicatorManager.updateIndicator(army.entityId, position, this.tempColor, indicatorYOffset);
 
     this.recordLastKnownHexFromWorld(army.entityId, position);
 
@@ -826,6 +830,7 @@ export class ArmyManager {
 
     // Remove player indicator dot
     this.playerIndicatorManager.removeIndicator(entityId);
+    this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
 
     const numericId = this.toNumericId(entityId);
     if (this.activeArmyAttachmentEntities.has(numericId)) {
@@ -1853,9 +1858,10 @@ export class ArmyManager {
     const hasPointsRenderers = this.pointsRenderers !== undefined;
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
     const hasRelicEffects = this.armyRelicEffects.size > 0;
+    const hasIndicators = this.playerIndicatorManager.getVisibleCount() > 0;
 
     // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasRelicEffects) {
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasRelicEffects && !hasIndicators) {
       return;
     }
 
@@ -1892,6 +1898,20 @@ export class ArmyManager {
           entityId: army.entityId,
           position: iconPosition,
         });
+      }
+
+      // 1b. Update indicator dot positions for moving armies
+      if (instanceData?.isMoving && instanceData.position) {
+        // Use cached yOffset to avoid redundant lookups every frame
+        const indicatorYOffset = this.indicatorMetadataCache.get(army.entityId) ?? 2.5;
+
+        this.tempColor.set(army.color);
+        this.playerIndicatorManager.updateIndicator(
+          army.entityId,
+          instanceData.position,
+          this.tempColor,
+          indicatorYOffset,
+        );
       }
 
       // 2. Update attachment transforms
@@ -2747,6 +2767,7 @@ ${
 
     // Dispose player indicator manager
     this.playerIndicatorManager.dispose();
+    this.indicatorMetadataCache.clear();
 
     // Tear down FX to avoid lingering RAF loops and textures
     this.fxManager.destroy();

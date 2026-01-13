@@ -26,6 +26,7 @@ export class PlayerIndicatorManager {
   private availableSlots: number[]; // Reusable slots from removed indicators
   private scene: THREE.Scene;
   private capacity: number;
+  private boundingSphereDirty = false; // Flag to track when bounding sphere needs recomputation
 
   // Temporary objects to avoid allocations
   private tempPosition = new THREE.Vector3();
@@ -102,6 +103,7 @@ export class PlayerIndicatorManager {
       // Increase mesh count to include this new instance
       if (index >= this.indicatorMesh.count) {
         this.indicatorMesh.count = index + 1;
+        this.boundingSphereDirty = true; // Bounding sphere needs update when count changes
       }
     }
 
@@ -138,6 +140,7 @@ export class PlayerIndicatorManager {
     // Free the slot for reuse
     this.availableSlots.push(index);
     this.visibleIndicators.delete(entityId);
+    this.boundingSphereDirty = true; // Bounding sphere may need update when removing
   }
 
   /**
@@ -176,9 +179,20 @@ export class PlayerIndicatorManager {
   /**
    * Compute bounding sphere for proper frustum culling
    * Should be called after batch updates (same as army-model)
+   * Only recomputes if dirty flag is set for performance
    */
   public computeBoundingSphere(): void {
-    this.indicatorMesh.computeBoundingSphere();
+    if (this.boundingSphereDirty) {
+      this.indicatorMesh.computeBoundingSphere();
+      this.boundingSphereDirty = false;
+    }
+  }
+
+  /**
+   * Check if bounding sphere needs recomputation
+   */
+  public isBoundingSphereDirty(): boolean {
+    return this.boundingSphereDirty;
   }
 
   /**
@@ -201,6 +215,12 @@ export class PlayerIndicatorManager {
   public dispose(): void {
     this.indicatorMesh.geometry.dispose();
     (this.indicatorMesh.material as THREE.Material).dispose();
+
+    // Dispose instance color buffer
+    if (this.indicatorMesh.instanceColor) {
+      this.indicatorMesh.instanceColor.array = null as any;
+    }
+
     this.scene.remove(this.indicatorMesh);
     this.visibleIndicators.clear();
     this.availableSlots.length = 0;
