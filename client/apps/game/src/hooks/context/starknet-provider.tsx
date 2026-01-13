@@ -87,6 +87,7 @@ const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
 const chain_id = resolvedChainId;
 
 const controller = new ControllerConnector({
+  errorDisplayMode: "notification",
   propagateSessionErrors: true,
   // chain_id,
   chains: [

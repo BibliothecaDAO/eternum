@@ -1,8 +1,10 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { latestFeatures, leaderboard, rewards, settings, shortcuts } from "@/ui/features/world";
+import { latestFeatures, leaderboard, rewards, settings, shortcuts, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
@@ -24,9 +26,36 @@ export const SecondaryMenuItems = () => {
 
   const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
 
+  const { unseenCount: unseenFeaturesCount } = useLatestFeaturesSeen();
+
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  // Transaction status for the network button indicator
+  const txTransactions = useTransactionStore((state) => state.transactions);
+  const txStuckThresholdMs = useTransactionStore((state) => state.stuckThresholdMs);
+
+  const txStatus = useMemo(() => {
+    const now = Date.now();
+    const pending = txTransactions.filter((t) => t.status === "pending");
+    const stuck = pending.filter((t) => now - t.submittedAt >= txStuckThresholdMs);
+    const recentReverted = txTransactions.some(
+      (t) => t.status === "reverted" && t.confirmedAt && now - t.confirmedAt < 60_000,
+    );
+
+    let status: "idle" | "pending" | "stuck" | "error" = "idle";
+    if (recentReverted) status = "error";
+    else if (stuck.length > 0) status = "stuck";
+    else if (pending.length > 0) status = "pending";
+
+    return {
+      status,
+      pendingCount: pending.length,
+      notificationColor:
+        status === "error" ? "red" : status === "stuck" ? "orange" : status === "pending" ? "gold" : undefined,
+    };
+  }, [txTransactions, txStuckThresholdMs]);
 
   const handleTrophyClick = useCallback(() => {
     if (!connector?.controller) {
@@ -98,6 +127,15 @@ export const SecondaryMenuItems = () => {
           label={"Latest Features"}
           size="md"
           onClick={() => togglePopup(latestFeatures)}
+          primaryNotification={
+            unseenFeaturesCount > 0
+              ? {
+                  value: unseenFeaturesCount,
+                  color: "gold",
+                  location: "topright",
+                }
+              : undefined
+          }
         />
         {/* Settings */}
         <CircleButton
@@ -109,6 +147,36 @@ export const SecondaryMenuItems = () => {
           size="md"
           onClick={() => togglePopup(settings)}
         />
+        {/* Transactions */}
+        <div className="relative">
+          <CircleButton
+            className="transactions-selector border-none"
+            tooltipLocation="bottom"
+            active={isPopupOpen(transactions)}
+            image="/image-icons/network.png"
+            label={"Transactions"}
+            size="md"
+            onClick={() => togglePopup(transactions)}
+            primaryNotification={
+              txStatus.pendingCount > 0
+                ? {
+                    value: txStatus.pendingCount,
+                    color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
+                    location: "topright",
+                  }
+                : undefined
+            }
+          />
+          {/* Status dot indicator */}
+          <div
+            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
+                        ${txStatus.status === "idle" ? "bg-brilliance" : ""}
+                        ${txStatus.status === "pending" ? "bg-gold animate-pulse" : ""}
+                        ${txStatus.status === "stuck" ? "bg-orange animate-pulse" : ""}
+                        ${txStatus.status === "error" ? "bg-danger" : ""}
+                        shadow-[0_0_6px_currentColor]`}
+          />
+        </div>
         {/* Main menu (home) */}
         <HomeButton />
         {/* Controller button */}
