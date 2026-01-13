@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { latestFeatures, leaderboard, rewards, settings, shortcuts, transactions } from "@/ui/features/world";
@@ -24,6 +25,8 @@ export const SecondaryMenuItems = () => {
   const { connector } = useAccountStore((state) => state);
 
   const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
+
+  const { unseenCount: unseenFeaturesCount } = useLatestFeaturesSeen();
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -123,6 +126,15 @@ export const SecondaryMenuItems = () => {
           label={"Latest Features"}
           size="md"
           onClick={() => togglePopup(latestFeatures)}
+          primaryNotification={
+            unseenFeaturesCount > 0
+              ? {
+                  value: unseenFeaturesCount,
+                  color: "gold",
+                  location: "topright",
+                }
+              : undefined
+          }
         />
         {/* Settings */}
         <CircleButton
