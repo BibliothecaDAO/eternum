@@ -61,9 +61,7 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
         <div className="flex items-center gap-2">
           <span className="text-sm text-gold truncate">{transaction.description}</span>
           {transaction.transactionCount && transaction.transactionCount > 1 && (
-            <span className="text-xs text-gold/60 flex-shrink-0">
-              ({transaction.transactionCount} txs)
-            </span>
+            <span className="text-xs text-gold/60 flex-shrink-0">({transaction.transactionCount} txs)</span>
           )}
         </div>
 
@@ -86,20 +84,8 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
         <div className={`flex items-center gap-1.5 ${statusColor}`}>
           {transaction.status === "pending" && (
             <>
-              <svg
-                className="w-3.5 h-3.5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
+              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path
                   className="opacity-75"
                   fill="currentColor"

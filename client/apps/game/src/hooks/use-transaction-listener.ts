@@ -94,38 +94,24 @@ export const useTransactionListener = () => {
       }
     };
 
-    const handleTransactionFailed = (
-      error: string | TransactionFailedPayload,
-      meta?: TransactionFailedPayload,
-    ) => {
+    const handleTransactionFailed = (error: string | TransactionFailedPayload, meta?: TransactionFailedPayload) => {
       // Parse the error payload (can be string or object)
       const message =
-        typeof error === "string"
-          ? error
-          : typeof error?.message === "string"
-            ? error.message
-            : "Transaction failed";
+        typeof error === "string" ? error : typeof error?.message === "string" ? error.message : "Transaction failed";
 
-      const type =
-        typeof error === "object" && error?.type
-          ? error.type
-          : meta?.type ?? null;
+      const type = typeof error === "object" && error?.type ? error.type : (meta?.type ?? null);
 
       const transactionHash =
-        typeof error === "object" && error?.transactionHash
-          ? error.transactionHash
-          : meta?.transactionHash ?? null;
+        typeof error === "object" && error?.transactionHash ? error.transactionHash : (meta?.transactionHash ?? null);
 
       const transactionCount =
         typeof error === "object" && error?.transactionCount
           ? error.transactionCount
-          : meta?.transactionCount ?? undefined;
+          : (meta?.transactionCount ?? undefined);
 
       if (transactionHash) {
         // Try to update existing transaction
-        const existingTx = useTransactionStore
-          .getState()
-          .transactions.find((t) => t.hash === transactionHash);
+        const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === transactionHash);
 
         if (existingTx) {
           updateTransaction(transactionHash, {

@@ -52,7 +52,8 @@ export const SecondaryMenuItems = () => {
     return {
       status,
       pendingCount: pending.length,
-      notificationColor: status === "error" ? "red" : status === "stuck" ? "orange" : status === "pending" ? "gold" : undefined,
+      notificationColor:
+        status === "error" ? "red" : status === "stuck" ? "orange" : status === "pending" ? "gold" : undefined,
     };
   }, [txTransactions, txStuckThresholdMs]);
 

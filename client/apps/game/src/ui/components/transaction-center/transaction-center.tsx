@@ -8,10 +8,7 @@ interface TransactionCenterProps {
   className?: string;
 }
 
-export const TransactionCenter = ({
-  position = "bottom-right",
-  className = "",
-}: TransactionCenterProps) => {
+export const TransactionCenter = ({ position = "bottom-right", className = "" }: TransactionCenterProps) => {
   const isMinimized = useTransactionStore((state) => state.isMinimized);
   const toggleMinimized = useTransactionStore((state) => state.toggleMinimized);
   const setMinimized = useTransactionStore((state) => state.setMinimized);
@@ -60,10 +57,7 @@ export const TransactionCenter = ({
   };
 
   return (
-    <div
-      ref={panelRef}
-      className={`fixed z-50 ${positionClasses[position]} ${className}`}
-    >
+    <div ref={panelRef} className={`fixed z-50 ${positionClasses[position]} ${className}`}>
       {isMinimized ? (
         <StatusBeacon onClick={toggleMinimized} />
       ) : (
@@ -113,9 +107,7 @@ export const TransactionCenter = ({
 
           {/* Footer with helpful info */}
           <div className="px-3 py-2 border-t border-gold/10 bg-dark-brown/30">
-            <p className="text-[10px] text-gold/30 text-center">
-              Click a transaction to view on Voyager
-            </p>
+            <p className="text-[10px] text-gold/30 text-center">Click a transaction to view on Voyager</p>
           </div>
         </div>
       )}

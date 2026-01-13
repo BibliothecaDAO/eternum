@@ -109,9 +109,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
   getPendingTransactions: () => {
     const { transactions, stuckThresholdMs } = get();
     const now = Date.now();
-    return transactions.filter(
-      (t) => t.status === "pending" && now - t.submittedAt < stuckThresholdMs,
-    );
+    return transactions.filter((t) => t.status === "pending" && now - t.submittedAt < stuckThresholdMs);
   },
 
   getSuccessTransactions: () => {
@@ -127,9 +125,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
   getStuckTransactions: () => {
     const { transactions, stuckThresholdMs } = get();
     const now = Date.now();
-    return transactions.filter(
-      (t) => t.status === "pending" && now - t.submittedAt >= stuckThresholdMs,
-    );
+    return transactions.filter((t) => t.status === "pending" && now - t.submittedAt >= stuckThresholdMs);
   },
 
   getOverallStatus: () => {
@@ -141,9 +137,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
     );
     if (hasReverted) return "error";
 
-    const hasStuck = transactions.some(
-      (t) => t.status === "pending" && now - t.submittedAt >= stuckThresholdMs,
-    );
+    const hasStuck = transactions.some((t) => t.status === "pending" && now - t.submittedAt >= stuckThresholdMs);
     if (hasStuck) return "stuck";
 
     const hasPending = transactions.some((t) => t.status === "pending");

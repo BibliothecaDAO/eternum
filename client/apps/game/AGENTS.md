@@ -2,7 +2,8 @@
 
 ## Documenting UX Changes and New Features
 
-Whenever you make a UX change or add a new feature in the client, you **must** add an entry to the latest features list at:
+Whenever you make a UX change or add a new feature in the client, you **must** add an entry to the latest features list
+at:
 
 ```
 src/ui/features/world/latest-features.ts

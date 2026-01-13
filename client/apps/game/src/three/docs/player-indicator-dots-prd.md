@@ -14,29 +14,33 @@
 
 ## Problem Statement
 
-Units in the three.js world previously had colored bases (the "stand" material) to indicate player ownership. The base has been removed from unit models, making it difficult for players to distinguish which units belong to which player during gameplay.
+Units in the three.js world previously had colored bases (the "stand" material) to indicate player ownership. The base
+has been removed from unit models, making it difficult for players to distinguish which units belong to which player
+during gameplay.
 
 ## Goals
 
 ### Primary Goals
+
 - Provide clear visual indication of unit ownership in the 3D world
 - Maintain performance with 1000+ unit instances
 - Integrate seamlessly with existing player color system
 - Follow established three.js architecture patterns
 
 ### Non-Goals
+
 - Replace or modify existing minimap indicators
 - Add interactive functionality to dots (clickable, hoverable)
 - Support for non-unit entities (buildings, structures)
 
 ## Success Metrics
 
-| Metric | Target | Method |
-|--------|--------|--------|
-| Performance Impact | <5% FPS drop with 1000 units | Performance profiling |
-| Visual Clarity | 95%+ player color accuracy | Visual inspection |
-| Memory Usage | <15KB for 1000 instances | Memory profiling |
-| Code Quality | TypeScript strict mode, no linting errors | Automated checks |
+| Metric             | Target                                    | Method                |
+| ------------------ | ----------------------------------------- | --------------------- |
+| Performance Impact | <5% FPS drop with 1000 units              | Performance profiling |
+| Visual Clarity     | 95%+ player color accuracy                | Visual inspection     |
+| Memory Usage       | <15KB for 1000 instances                  | Memory profiling      |
+| Code Quality       | TypeScript strict mode, no linting errors | Automated checks      |
 
 ## Technical Architecture
 
@@ -56,12 +60,14 @@ Scene
 ### Key Components
 
 #### 1. PlayerIndicatorManager
+
 - **File:** `client/apps/game/src/three/managers/player-indicator-manager.ts`
 - **Responsibility:** Manage lifecycle of indicator dots
 - **Pattern:** InstancedMesh for batch rendering
 - **Capacity:** 1000 instances (MAX_INSTANCES)
 
 #### 2. Integration Points
+
 - **ArmyManager:** Add/update/remove indicator calls
 - **PlayerColorManager:** Reuse existing color profiles
 - **Constants:** Y-offset configuration per model type
@@ -84,59 +90,59 @@ InstancedMesh matrices and colors updated
 
 ### Functional Requirements
 
-| ID | Requirement | Priority | Status |
-|----|-------------|----------|--------|
-| FR-1 | Display colored dot above each unit | P0 | Phase 1 |
-| FR-2 | Use player color from PlayerColorManager | P0 | Phase 1 |
-| FR-3 | Update dot position when unit moves | P0 | Phase 1 |
-| FR-4 | Remove dot when unit is destroyed | P0 | Phase 1 |
-| FR-5 | Support all unit types (Knight, Crossbowman, Paladin, Boat, Agents) | P0 | Phase 1 |
-| FR-6 | Adjust Y-offset based on unit model height | P1 | Phase 1 |
-| FR-7 | Hide dots when units are not visible (culling) | P1 | Phase 2 |
-| FR-8 | User setting to enable/disable indicators | P2 | Phase 2 |
-| FR-9 | User setting to adjust size and opacity | P2 | Phase 2 |
-| FR-10 | Handle overlapping dots for stacked armies | P2 | Phase 2 |
+| ID    | Requirement                                                         | Priority | Status  |
+| ----- | ------------------------------------------------------------------- | -------- | ------- |
+| FR-1  | Display colored dot above each unit                                 | P0       | Phase 1 |
+| FR-2  | Use player color from PlayerColorManager                            | P0       | Phase 1 |
+| FR-3  | Update dot position when unit moves                                 | P0       | Phase 1 |
+| FR-4  | Remove dot when unit is destroyed                                   | P0       | Phase 1 |
+| FR-5  | Support all unit types (Knight, Crossbowman, Paladin, Boat, Agents) | P0       | Phase 1 |
+| FR-6  | Adjust Y-offset based on unit model height                          | P1       | Phase 1 |
+| FR-7  | Hide dots when units are not visible (culling)                      | P1       | Phase 2 |
+| FR-8  | User setting to enable/disable indicators                           | P2       | Phase 2 |
+| FR-9  | User setting to adjust size and opacity                             | P2       | Phase 2 |
+| FR-10 | Handle overlapping dots for stacked armies                          | P2       | Phase 2 |
 
 ### Non-Functional Requirements
 
-| ID | Requirement | Priority | Status |
-|----|-------------|----------|--------|
-| NFR-1 | Performance: <5% FPS impact with 1000 units | P0 | Phase 1 |
-| NFR-2 | Memory: <15KB additional memory for indicators | P0 | Phase 1 |
-| NFR-3 | Render order: Dots render after units but before UI | P0 | Phase 1 |
-| NFR-4 | Code follows existing TypeScript/Three.js patterns | P0 | Phase 1 |
-| NFR-5 | Proper resource disposal on cleanup | P0 | Phase 1 |
+| ID    | Requirement                                         | Priority | Status  |
+| ----- | --------------------------------------------------- | -------- | ------- |
+| NFR-1 | Performance: <5% FPS impact with 1000 units         | P0       | Phase 1 |
+| NFR-2 | Memory: <15KB additional memory for indicators      | P0       | Phase 1 |
+| NFR-3 | Render order: Dots render after units but before UI | P0       | Phase 1 |
+| NFR-4 | Code follows existing TypeScript/Three.js patterns  | P0       | Phase 1 |
+| NFR-5 | Proper resource disposal on cleanup                 | P0       | Phase 1 |
 
 ## Visual Design
 
 ### Indicator Specifications
 
-| Property | Value | Rationale |
-|----------|-------|-----------|
-| Geometry | Sphere (8×6 segments) | Low-poly for performance, recognizable shape |
-| Size | 0.4 world units diameter | Visible but not obtrusive |
-| Material | MeshBasicMaterial | Unlit, always visible, no shadow computation |
-| Opacity | 0.9 | Slightly transparent to blend naturally |
-| Color | PlayerColorProfile.primary | Consistent with player color system |
-| Position | Unit position + Y-offset | Floats above unit bounding box |
-| Depth Test | Enabled | Occludes behind terrain/buildings |
-| Render Order | 10 | After units (0), before UI (100+) |
+| Property     | Value                      | Rationale                                    |
+| ------------ | -------------------------- | -------------------------------------------- |
+| Geometry     | Sphere (8×6 segments)      | Low-poly for performance, recognizable shape |
+| Size         | 0.4 world units diameter   | Visible but not obtrusive                    |
+| Material     | MeshBasicMaterial          | Unlit, always visible, no shadow computation |
+| Opacity      | 0.9                        | Slightly transparent to blend naturally      |
+| Color        | PlayerColorProfile.primary | Consistent with player color system          |
+| Position     | Unit position + Y-offset   | Floats above unit bounding box               |
+| Depth Test   | Enabled                    | Occludes behind terrain/buildings            |
+| Render Order | 10                         | After units (0), before UI (100+)            |
 
 ### Y-Offset Configuration
 
-| Unit Type | Y-Offset | Notes |
-|-----------|----------|-------|
-| Knight T1 | 2.5 | Standard height |
-| Knight T2 | 2.7 | Slightly taller |
-| Knight T3 | 2.9 | Tallest knight |
-| Crossbowman T1 | 2.3 | Shorter stance |
-| Crossbowman T2 | 2.5 | Standard height |
-| Crossbowman T3 | 2.7 | Taller with gear |
-| Paladin T1 | 2.8 | Large armor |
-| Paladin T2 | 3.0 | Larger armor |
-| Paladin T3 | 3.2 | Largest model |
-| Boat | 2.0 | Low profile on water |
-| Agent Models | 2.5 | Standard AI agents |
+| Unit Type      | Y-Offset | Notes                |
+| -------------- | -------- | -------------------- |
+| Knight T1      | 2.5      | Standard height      |
+| Knight T2      | 2.7      | Slightly taller      |
+| Knight T3      | 2.9      | Tallest knight       |
+| Crossbowman T1 | 2.3      | Shorter stance       |
+| Crossbowman T2 | 2.5      | Standard height      |
+| Crossbowman T3 | 2.7      | Taller with gear     |
+| Paladin T1     | 2.8      | Large armor          |
+| Paladin T2     | 3.0      | Larger armor         |
+| Paladin T3     | 3.2      | Largest model        |
+| Boat           | 2.0      | Low profile on water |
+| Agent Models   | 2.5      | Standard AI agents   |
 
 ## Implementation Plan
 
@@ -145,6 +151,7 @@ InstancedMesh matrices and colors updated
 **Goal:** Basic functional indicator dots with player colors
 
 **Tasks:**
+
 - [x] Create PRD document
 - [ ] Create `PlayerIndicatorManager` class
   - [ ] InstancedMesh setup with sphere geometry
@@ -165,6 +172,7 @@ InstancedMesh matrices and colors updated
   - [ ] Verify colors match PlayerColorManager
 
 **Acceptance Criteria:**
+
 - ✅ Colored dots visible above all units
 - ✅ Correct player colors displayed
 - ✅ Dots follow units during movement
@@ -180,6 +188,7 @@ InstancedMesh matrices and colors updated
 **Goal:** Add user settings and performance optimizations
 
 **Tasks:**
+
 - [ ] Implement LOD system
   - [ ] Hide indicators beyond certain camera distance
   - [ ] Scale indicators based on zoom level
@@ -200,6 +209,7 @@ InstancedMesh matrices and colors updated
   - [ ] 1000 unit stress test
 
 **Acceptance Criteria:**
+
 - ✅ User can customize indicator appearance
 - ✅ Indicators scale appropriately with camera
 - ✅ No overlapping dots for stacked armies
@@ -214,6 +224,7 @@ InstancedMesh matrices and colors updated
 **Goal:** Advanced features for improved UX
 
 **Potential Features:**
+
 - Billboard orientation (always face camera)
 - Bounding box height auto-calculation
 - Pulse/glow effects for selected units
@@ -243,24 +254,19 @@ client/apps/game/src/three/
 
 ```typescript
 class PlayerIndicatorManager {
-  constructor(scene: THREE.Scene, capacity: number)
+  constructor(scene: THREE.Scene, capacity: number);
 
-  public updateIndicator(
-    entityId: ID,
-    position: Vector3,
-    color: Color,
-    yOffset: number
-  ): void
+  public updateIndicator(entityId: ID, position: Vector3, color: Color, yOffset: number): void;
 
-  public removeIndicator(entityId: ID): void
+  public removeIndicator(entityId: ID): void;
 
-  public setEnabled(enabled: boolean): void
+  public setEnabled(enabled: boolean): void;
 
-  public setSize(size: number): void
+  public setSize(size: number): void;
 
-  public setOpacity(opacity: number): void
+  public setOpacity(opacity: number): void;
 
-  public dispose(): void
+  public dispose(): void;
 }
 ```
 
@@ -278,13 +284,13 @@ export const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
 
 ### Performance Budget
 
-| Resource | Budget | Current | Notes |
-|----------|--------|---------|-------|
-| Draw Calls | +1 | TBD | Single InstancedMesh |
-| Triangles | +84 per instance | TBD | 8×6 sphere geometry |
-| Memory | <15KB | TBD | Matrix + color buffers |
-| CPU (update) | <1ms per frame | TBD | Only on position/color change |
-| FPS Impact | <5% | TBD | With 1000 units |
+| Resource     | Budget           | Current | Notes                         |
+| ------------ | ---------------- | ------- | ----------------------------- |
+| Draw Calls   | +1               | TBD     | Single InstancedMesh          |
+| Triangles    | +84 per instance | TBD     | 8×6 sphere geometry           |
+| Memory       | <15KB            | TBD     | Matrix + color buffers        |
+| CPU (update) | <1ms per frame   | TBD     | Only on position/color change |
+| FPS Impact   | <5%              | TBD     | With 1000 units               |
 
 ## Testing Strategy
 
@@ -326,11 +332,13 @@ export const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
 ## Dependencies
 
 ### External Dependencies
+
 - Three.js (already in project)
 - PlayerColorManager (existing system)
 - ArmyManager (existing system)
 
 ### Internal Dependencies
+
 - `@bibliothecadao/types` - TroopType, TroopTier, ModelType
 - `client/apps/game/src/three/types/army.ts` - Type definitions
 - `client/apps/game/src/three/systems/player-colors.ts` - Color profiles
@@ -338,13 +346,13 @@ export const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
 
 ## Risks & Mitigations
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| Performance degradation with 1000+ units | High | Medium | Use InstancedMesh, batch updates, dirty flags |
-| Indicators not visible at certain camera angles | Medium | Low | Test multiple camera distances, adjust size |
-| Color confusion with existing UI elements | Medium | Low | Use distinct render order, test with actual gameplay |
-| Z-fighting with terrain | Low | Low | Proper depth testing, adjust Y-offset |
-| Memory leaks from improper cleanup | High | Low | Comprehensive dispose() implementation, testing |
+| Risk                                            | Impact | Probability | Mitigation                                           |
+| ----------------------------------------------- | ------ | ----------- | ---------------------------------------------------- |
+| Performance degradation with 1000+ units        | High   | Medium      | Use InstancedMesh, batch updates, dirty flags        |
+| Indicators not visible at certain camera angles | Medium | Low         | Test multiple camera distances, adjust size          |
+| Color confusion with existing UI elements       | Medium | Low         | Use distinct render order, test with actual gameplay |
+| Z-fighting with terrain                         | Low    | Low         | Proper depth testing, adjust Y-offset                |
+| Memory leaks from improper cleanup              | High   | Low         | Comprehensive dispose() implementation, testing      |
 
 ## Open Questions
 
@@ -357,45 +365,52 @@ export const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
 ## Alternatives Considered
 
 ### Alternative 1: CSS2D Labels
+
 **Rejected** - Poor performance with 1000+ labels, doesn't integrate well with 3D depth
 
 ### Alternative 2: Sprite Textures
+
 **Considered** - Simpler than geometry, but requires texture atlas and custom color shader
 
 ### Alternative 3: Shader-Based Procedural Dots
+
 **Future** - Maximum performance, but more complex to implement and debug
 
 ### Alternative 4: Modify Existing Selection System
+
 **Rejected** - Selection system is for user interaction, not persistent indicators
 
 ## References
 
 ### Code References
+
 - `client/apps/game/src/three/managers/army-manager.ts` - Unit lifecycle management
 - `client/apps/game/src/three/managers/army-model.ts` - Unit rendering with InstancedMesh
 - `client/apps/game/src/three/systems/player-colors.ts` - Player color profiles
 - `client/apps/game/src/three/managers/selection-pulse-manager.ts` - Precedent for scene indicators
 
 ### Documentation
+
 - Three.js InstancedMesh: https://threejs.org/docs/#api/en/objects/InstancedMesh
 - Three.js BufferGeometry: https://threejs.org/docs/#api/en/core/BufferGeometry
 
 ## Changelog
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2026-01-13 | 0.1 | Initial PRD creation | Claude |
-| 2026-01-13 | 0.2 | Started Phase 1 implementation | Claude |
+| Date       | Version | Changes                        | Author |
+| ---------- | ------- | ------------------------------ | ------ |
+| 2026-01-13 | 0.1     | Initial PRD creation           | Claude |
+| 2026-01-13 | 0.2     | Started Phase 1 implementation | Claude |
 
 ## Appendix
 
 ### Color System Reference
 
 **PlayerColorProfile Structure:**
+
 ```typescript
 interface PlayerColorProfile {
   playerId: string;
-  primary: Color;          // Used for indicator dots
+  primary: Color; // Used for indicator dots
   secondary: Color;
   minimap: Color;
   selection: Color;
@@ -408,6 +423,7 @@ interface PlayerColorProfile {
 ```
 
 **Player Type Colors:**
+
 - Self: #4ADE80 (bright green)
 - Ally: #60A5FA (sky blue)
 - AI Agent: #FBBF24 (gold/amber)
@@ -417,6 +433,7 @@ interface PlayerColorProfile {
 ### ModelType Reference
 
 Available model types (from `army.ts`):
+
 - Knight1, Knight2, Knight3
 - Crossbowman1, Crossbowman2, Crossbowman3
 - Paladin1, Paladin2, Paladin3

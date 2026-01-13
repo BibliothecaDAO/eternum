@@ -135,12 +135,7 @@ export const TransactionList = ({ maxRecentTransactions = 10 }: TransactionListP
   return (
     <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
       {/* Stuck transactions (warning state) */}
-      <CollapsibleSection
-        title="Stuck Transactions"
-        count={stuckTxs.length}
-        variant="warning"
-        defaultExpanded={true}
-      >
+      <CollapsibleSection title="Stuck Transactions" count={stuckTxs.length} variant="warning" defaultExpanded={true}>
         <div className="space-y-px">
           {stuckTxs.map((tx) => (
             <TransactionItem key={tx.hash} transaction={tx} isStuck={true} />
@@ -166,9 +161,7 @@ export const TransactionList = ({ maxRecentTransactions = 10 }: TransactionListP
             </svg>
             Refresh Client
           </button>
-          <p className="text-[10px] text-orange/50 text-center mt-1">
-            Try refreshing if transactions are stuck
-          </p>
+          <p className="text-[10px] text-orange/50 text-center mt-1">Try refreshing if transactions are stuck</p>
         </div>
       </CollapsibleSection>
 
