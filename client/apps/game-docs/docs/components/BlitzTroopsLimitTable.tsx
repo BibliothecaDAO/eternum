@@ -14,7 +14,7 @@ export default function BlitzTroopsLimitTable() {
         </div>
         <div>
           <div style={stats.label}>Max Troop Count Per Army:</div>
-          <div style={stats.value}>{formatNumberWithCommas(100000)}</div>
+          <div style={stats.value}>{formatNumberWithCommas(30000)}</div>
         </div>
         <div>
           <div style={stats.label}>Guard Resurrection:</div>
