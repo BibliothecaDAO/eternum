@@ -12,7 +12,8 @@ type OSWindows =
   | "BattleSimulation"
   | "Rewards"
   | "Shortcuts"
-  | "LatestFeatures";
+  | "LatestFeatures"
+  | "Transactions";
 
 export interface OSInterface {
   onClick: () => void;
@@ -41,3 +42,4 @@ export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";
 export const shortcuts: OSWindows = "Shortcuts";
 export const latestFeatures: OSWindows = "LatestFeatures";
+export const transactions: OSWindows = "Transactions";

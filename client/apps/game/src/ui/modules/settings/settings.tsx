@@ -6,9 +6,6 @@ import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer } from "@/audio";
-import { resubscribeEntityStream } from "@/dojo/sync";
-import { useNetworkStatusStore } from "@/hooks/store/use-network-status-store";
-import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { applyWorldSelection } from "@/runtime/world";
 import { ToriiSetting } from "@/types";
@@ -75,7 +72,6 @@ export const SettingsWindow = () => {
   const [isResyncing, setIsResyncing] = useState(false);
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const clearForcedDesync = useNetworkStatusStore((state) => state.clearForcedDesync);
 
   const addressName = getAddressName(ContractAddress(account.address), components);
 
@@ -108,24 +104,6 @@ export const SettingsWindow = () => {
   const copyToClipBoard = () => {
     navigator.clipboard.writeText(account.address);
     toast("Copied address to clipboard!");
-  };
-
-  const handleResumeFromLatestBlock = async () => {
-    if (isResyncing) return;
-    setIsResyncing(true);
-    try {
-      const uiStore = useUIStore.getState();
-      const { setInitialSyncProgress } = useSyncStore.getState();
-      await resubscribeEntityStream(setup, uiStore, setInitialSyncProgress, true);
-      clearForcedDesync();
-      networkProvider.simulateHeartbeat({ source: "stream" });
-      toast.success("Reconnected to game state stream");
-    } catch (error) {
-      console.error("[Settings] Failed to resubscribe", error);
-      toast.error("Unable to resubscribe to the network stream");
-    } finally {
-      setIsResyncing(false);
-    }
   };
 
   // Old music player system - replaced with new audio system
@@ -303,23 +281,6 @@ export const SettingsWindow = () => {
             <div className="w-fit text-xs text-gray-gold mx-auto">Changing this setting will reload the page</div>
           </section>
 
-          {/* Network Section */}
-          <section className="space-y-3">
-            <Headline>Network</Headline>
-            <div className="space-y-2 text-xs text-white/70">
-              <p>Reconnect to the latest game state if you suspect the client is behind.</p>
-              <Button
-                size="xs"
-                variant="secondary"
-                onClick={handleResumeFromLatestBlock}
-                disabled={isResyncing}
-                isLoading={isResyncing}
-                aria-busy={isResyncing}
-              >
-                Resume from latest block
-              </Button>
-            </div>
-          </section>
           {/* Video Section */}
           <section className="space-y-3">
             <Headline>Video</Headline>
