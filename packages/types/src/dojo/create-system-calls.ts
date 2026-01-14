@@ -353,6 +353,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.explorer_move(props);
   };
 
+  const explorer_travel = async (props: SystemProps.ExplorerTravelProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.explorer_travel(props);
+  };
+
+  const explorer_explore = async (props: SystemProps.ExplorerExploreProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.explorer_explore(props);
+  };
+
   const attack_explorer_vs_explorer = async (
     props: SystemProps.AttackExplorerVsExplorerProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -551,6 +559,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     explorer_guard_swap: withAuth(explorer_guard_swap),
     guard_explorer_swap: withAuth(guard_explorer_swap),
     explorer_move: withAuth(explorer_move),
+    explorer_travel: withAuth(explorer_travel),
+    explorer_explore: withAuth(explorer_explore),
     attack_explorer_vs_explorer: withAuth(attack_explorer_vs_explorer),
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),

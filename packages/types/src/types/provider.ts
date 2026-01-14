@@ -799,6 +799,26 @@ export interface ExplorerMoveProps extends SystemSigner {
 }
 
 /**
+ * Properties for traveling an explorer (no exploration)
+ */
+export interface ExplorerTravelProps extends SystemSigner {
+  /** ID of the explorer to move */
+  explorer_id: number;
+  /** Array of directions to move in */
+  directions: number[];
+}
+
+/**
+ * Properties for exploring with an explorer (includes VRF and reward extraction)
+ */
+export interface ExplorerExploreProps extends SystemSigner {
+  /** ID of the explorer to move */
+  explorer_id: number;
+  /** Array of directions to move in */
+  directions: number[];
+}
+
+/**
  * Properties for swapping troops between explorers
  */
 export interface ExplorerExplorerSwapProps extends SystemSigner {
