@@ -641,7 +641,18 @@ export const useQuickMarketCreate = (
     } finally {
       setIsCreating(false);
     }
-  }, [canCreate, account, oracleAddress, worldName, marketAddress, selectedPlayers, fundingAmount, gameEndTime, playerWeights, noneWeight]);
+  }, [
+    canCreate,
+    account,
+    oracleAddress,
+    worldName,
+    marketAddress,
+    selectedPlayers,
+    fundingAmount,
+    gameEndTime,
+    playerWeights,
+    noneWeight,
+  ]);
 
   return useMemo(
     () => ({
