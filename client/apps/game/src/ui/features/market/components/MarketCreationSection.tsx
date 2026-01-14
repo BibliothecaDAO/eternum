@@ -38,28 +38,29 @@ interface MarketCreationSectionProps {
 }
 
 /**
- * Player selection item component.
+ * Player selection item component with editable weight and % chance.
  */
 const PlayerSelectionItem = ({
   player,
   isSelected,
   oddsWeight,
+  chancePercent,
   onToggle,
+  onWeightChange,
   disabled,
 }: {
   player: MarketPlayer;
   isSelected: boolean;
   oddsWeight: number;
+  chancePercent: number;
   onToggle: () => void;
+  onWeightChange: (weight: number) => void;
   disabled: boolean;
 }) => {
   const displayName = player.name || `${player.address.slice(0, 6)}...${player.address.slice(-4)}`;
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      disabled={disabled && !isSelected}
+    <div
       className={`flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-xs transition ${
         isSelected
           ? "border-gold/60 bg-gold/20 text-white"
@@ -68,7 +69,12 @@ const PlayerSelectionItem = ({
             : "border-white/10 bg-white/5 text-gold/70 hover:border-gold/30 hover:bg-gold/10"
       }`}
     >
-      <div className="flex items-center gap-2 overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled && !isSelected}
+        className="flex items-center gap-2 overflow-hidden"
+      >
         <div
           className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm border ${
             isSelected ? "border-gold bg-gold" : "border-white/30 bg-transparent"
@@ -77,11 +83,30 @@ const PlayerSelectionItem = ({
           {isSelected && <Check className="h-3 w-3 text-black" />}
         </div>
         <span className="truncate">{displayName}</span>
+      </button>
+      <div className="flex flex-shrink-0 items-center gap-2">
+        <span className={`text-[10px] font-medium ${isSelected ? "text-progress-bar-good" : "text-gold/40"}`}>
+          {chancePercent.toFixed(1)}%
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-gold/60">wt:</span>
+          <input
+            type="number"
+            min="1"
+            max="100"
+            value={oddsWeight}
+            onChange={(e) => onWeightChange(parseInt(e.target.value) || 1)}
+            onClick={(e) => e.stopPropagation()}
+            disabled={!isSelected}
+            className={`w-10 rounded border bg-black/40 px-1 py-0.5 text-center text-[10px] outline-none ${
+              isSelected
+                ? "border-white/20 text-gold/80 focus:border-gold/60"
+                : "cursor-not-allowed border-white/10 text-gold/30"
+            }`}
+          />
+        </div>
       </div>
-      <span className="flex-shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-gold/60">
-        weight: {oddsWeight}
-      </span>
-    </button>
+    </div>
   );
 };
 
@@ -193,8 +218,9 @@ export const MarketCreationSection = ({
     allPlayers,
     selectedPlayers,
     togglePlayerSelection,
-    requiresManualSelection,
     selectionComplete,
+    minSelectedPlayers,
+    maxSelectedPlayers,
     fundingAmount,
     setFundingAmount,
     minFundingAmount,
@@ -202,6 +228,11 @@ export const MarketCreationSection = ({
     balance,
     isBalanceLoading,
     getPlayerOddsWeight,
+    getPlayerChancePercent,
+    setPlayerWeight,
+    noneWeight,
+    setNoneWeight,
+    noneChancePercent,
     preconditions,
   } = useQuickMarketCreate(worldName, oracleAddress, gameEndTime, handleMarketFound);
 
@@ -214,10 +245,10 @@ export const MarketCreationSection = ({
     if (!preconditions.hasWallet) return "Connect wallet to create";
     if (!preconditions.hasGameEndTime) return "Game end time not available or game has ended";
     if (!preconditions.hasValidSelection) {
-      if (requiresManualSelection) {
-        return `Select exactly 5 players (${selectedPlayers.length}/5)`;
+      if (selectedPlayers.length === 0) {
+        return `Select ${minSelectedPlayers}-${maxSelectedPlayers} players`;
       }
-      return "No players selected";
+      return `Select ${minSelectedPlayers}-${maxSelectedPlayers} players (${selectedPlayers.length} selected)`;
     }
     if (!preconditions.hasValidFunding) return `Minimum funding: ${minFundingAmount} LORDS`;
     if (isBalanceLoading) return "Checking balance...";
@@ -231,9 +262,10 @@ export const MarketCreationSection = ({
     preconditions,
     isBalanceLoading,
     balance,
-    requiresManualSelection,
     selectedPlayers.length,
     minFundingAmount,
+    minSelectedPlayers,
+    maxSelectedPlayers,
   ]);
 
   // No oracle address means we can't create a market
@@ -253,7 +285,7 @@ export const MarketCreationSection = ({
   }
 
   // Limit reached for selection
-  const selectionLimitReached = selectedPlayers.length >= 5;
+  const selectionLimitReached = selectedPlayers.length >= maxSelectedPlayers;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -280,15 +312,12 @@ export const MarketCreationSection = ({
             <div className="flex items-center gap-1.5 text-xs font-medium text-gold/80">
               <Users className="h-3.5 w-3.5" />
               <span>
-                {requiresManualSelection ? "Select 5 Players" : "Players"} ({selectedPlayers.length}
-                {requiresManualSelection ? "/5" : `/${allPlayers.length}`})
+                Players ({selectedPlayers.length}/{maxSelectedPlayers} max)
               </span>
             </div>
-            {requiresManualSelection && (
-              <span className={`text-[10px] ${selectionComplete ? "text-progress-bar-good" : "text-gold/50"}`}>
-                {selectionComplete ? "Ready" : "Select players"}
-              </span>
-            )}
+            <span className={`text-[10px] ${selectionComplete ? "text-progress-bar-good" : "text-gold/50"}`}>
+              {selectionComplete ? "Ready" : `Select ${minSelectedPlayers}-${maxSelectedPlayers}`}
+            </span>
           </div>
 
           {loadingPlayers ? (
@@ -310,11 +339,36 @@ export const MarketCreationSection = ({
                     player={player}
                     isSelected={isSelected}
                     oddsWeight={getPlayerOddsWeight(player)}
+                    chancePercent={getPlayerChancePercent(player)}
                     onToggle={() => togglePlayerSelection(player)}
+                    onWeightChange={(weight) => setPlayerWeight(player.address, weight)}
                     disabled={selectionLimitReached && !isSelected}
                   />
                 );
               })}
+
+              {/* "None of the above" option - always shown when players exist */}
+              <div className="mt-2 border-t border-white/10 pt-2">
+                <div className="flex w-full items-center justify-between rounded-md border border-gold/40 bg-gold/10 px-2 py-1.5 text-xs">
+                  <span className="text-gold/80">None of the above</span>
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    <span className="text-[10px] font-medium text-progress-bar-good">
+                      {noneChancePercent.toFixed(1)}%
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-gold/60">wt:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={noneWeight}
+                        onChange={(e) => setNoneWeight(parseInt(e.target.value) || 1)}
+                        className="w-10 rounded border border-white/20 bg-black/40 px-1 py-0.5 text-center text-[10px] text-gold/80 outline-none focus:border-gold/60"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -337,9 +391,13 @@ export const MarketCreationSection = ({
             <div className="flex flex-wrap gap-1">
               {selectedPlayers.map((player) => (
                 <span key={player.address} className="rounded-full bg-gold/20 px-2 py-0.5 text-gold/90">
-                  {player.name || `${player.address.slice(0, 6)}...`}
+                  {player.name || `${player.address.slice(0, 6)}...`}{" "}
+                  <span className="text-progress-bar-good">{getPlayerChancePercent(player).toFixed(1)}%</span>
                 </span>
               ))}
+              <span className="rounded-full bg-gold/30 px-2 py-0.5 text-gold/90">
+                None <span className="text-progress-bar-good">{noneChancePercent.toFixed(1)}%</span>
+              </span>
             </div>
           </div>
         )}
