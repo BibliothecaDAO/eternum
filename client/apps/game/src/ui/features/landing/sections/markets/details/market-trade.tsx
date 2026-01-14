@@ -226,7 +226,7 @@ export function MarketTrade({
   const isResolved = market.isResolved();
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
 
-  const { claimableDisplay, hasRedeemablePositions, isRedeeming, redeem } = useMarketRedeem(market);
+  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
 
   const tradePreview = useMemo(() => {
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
@@ -339,14 +339,14 @@ export function MarketTrade({
   if (!outcomes) return null;
 
   if (!isTradeable) {
-    const claimDisabled = isSubmitting || isRedeeming || !isResolved || (!!account && !hasRedeemablePositions);
+    const claimDisabled = isSubmitting || isRedeeming || !isResolved || (!!account && !hasAnythingToClaim);
     const claimMessage = !account
-      ? "Connect a wallet to check if you have redeemable positions."
+      ? "Connect a wallet to check if you have claimable amounts."
       : !isResolved
         ? "Claims unlock once the market is resolved."
-        : !hasRedeemablePositions
-          ? "No redeemable positions detected in your wallet."
-          : "Redeem your position tokens to claim your payout.";
+        : !hasAnythingToClaim
+          ? "No redeemable positions or vault fees detected in your wallet."
+          : "Claim your position tokens and vault fees.";
 
     return isResolved ? (
       <div className="flex flex-col gap-3 rounded-lg border border-progress-bar-good/30 bg-progress-bar-good/5 p-4 text-sm text-gold/80">

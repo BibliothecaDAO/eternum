@@ -12,7 +12,14 @@ import { AlertCircle, Globe, Home } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { env } from "../../../../../../env";
-import { DevOptions, GameActiveState, HyperstructureForge, NoGameState, RegistrationState } from "../blitz/components";
+import {
+  DevOptions,
+  GameActiveState,
+  HyperstructureForge,
+  NoGameState,
+  PrizePoolDisplay,
+  RegistrationState,
+} from "../blitz/components";
 import { FactoryGamesList } from "../blitz/factory";
 import { GameState } from "../blitz/types";
 import { SpectateButton } from "../spectate-button";
@@ -267,6 +274,9 @@ export const BlitzOnboarding = () => {
           feeTokenSymbol={entryTokens.feeTokenSymbol}
         />
       )}
+
+      {/* Prize Pool Display - mainnet only */}
+      <PrizePoolDisplay />
 
       {/* Factory Games List */}
       <div className="bg-gold/10 border border-gold/30 rounded-lg p-4">
