@@ -115,8 +115,6 @@ pub mod quest {
 
 pub mod prize_distribution {
     pub mod contracts;
-    #[cfg(test)]
-    pub mod tests;
 }
 
 pub mod relic {

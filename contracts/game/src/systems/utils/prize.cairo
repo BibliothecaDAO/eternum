@@ -46,31 +46,78 @@ pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
         rank_weight / sum_rank_weights
     }
 
-    // Get winner count based on registered player count and number of players with non-zero points
-    fn get_winner_count(registered_player_count: u16, num_players_with_non_zero_points: u16) -> u16 {
+    fn _get_minimum(a: Fixed, b: Fixed) -> Fixed {
+        if fixed_ops::lt(a, b) {
+            a
+        } else {
+            b
+        }
+    }
+    
+    fn _clamp_min_max(value: Fixed, min_value: Fixed, max_value: Fixed) -> Fixed {
+        if fixed_ops::lt(value, min_value) {
+            min_value
+        } else if fixed_ops::gt(value, max_value) {
+            max_value
+        } else {
+            value
+        }
+    }
+
+    fn _sponsorship_factor(total_entry_fee_amount: u128, total_prize_pool_amount: u128) -> Fixed {
+        // 1 - (B6/B8)^0.5
+        let total_entry_fee_amount_fixed: Fixed = FixedTrait::new(total_entry_fee_amount, false);
+        let total_prize_pool_amount: Fixed = FixedTrait::new(total_prize_pool_amount, false);
+        fc::_1() - (total_entry_fee_amount_fixed / total_prize_pool_amount).pow(fc::_0_5())
+    }
+
+    fn _get_rb_raw(registered_player_count: u16) -> Fixed {
+        // 1 - (1.03 * (MIN(1,(B3/1000)))^ 0.13)
+        let min_ratio = Self::_get_minimum(fc::_1(), registered_player_count.into() / fc::_1000());
+        let rb_raw = fc::_1() - (fc::_1_03() * min_ratio.pow(fc::_0_13()));
+        rb_raw
+    }
+
+
+    fn get_winner_count(
+        registered_player_count: u16,
+        num_players_with_non_zero_points: u16,
+        total_entry_fee_amount: u128,
+        total_prize_pool_amount: u128,
+    ) -> u16 {
         assert!(registered_player_count > 0, "Registered player count must be greater than zero");
-        assert!(
-            num_players_with_non_zero_points > 0, "Number of players with non-zero points must be greater than zero",
-        );
+        assert!(num_players_with_non_zero_points > 0, "Number of players with non-zero points must be greater than zero");
         assert!(registered_player_count >= num_players_with_non_zero_points, "Invalid player counts");
 
         let registered_player_count_fixed: Fixed = registered_player_count.into();
 
-        let one = fc::_1();
-        let r = (registered_player_count_fixed / fc::_1000());
-        let min = if fixed_ops::lt(one,r) {one} else {r};
+        let rb_raw = Self::_get_rb_raw(registered_player_count);
 
-        let winners_to_players_ratio = fc::_1() - (fc::_0_93() * min.pow(fc::_0_09()));
-        let winner_count_from_ratio: u16 = (registered_player_count_fixed * winners_to_players_ratio)
-            .ceil()
-            .try_into()
-            .unwrap();
+        // clamp min max to be between 0.02 and 0.6
+        let rb = Self::_clamp_min_max(rb_raw, fc::_0_02(), fc::_0_6());
+        let a = Self::_sponsorship_factor(total_entry_fee_amount, total_prize_pool_amount);
+        let rcap = fc::_0_5() + (fc::_0_5() * a);
 
-        crate::utils::math::min(winner_count_from_ratio, num_players_with_non_zero_points)
+        // gw = 0.05 + (0.95 * (20 / (X + 20))^2)
+        let twenty = FixedTrait::new_unscaled(20, false);
+        let twenty_over = twenty / (registered_player_count_fixed + twenty);
+        let gw = fc::_0_05() + (fc::_0_95() * twenty_over.pow(fc::_2()));
+
+        // r = max(0.02, min(rcap, rb + (3.3 * a * gw * (rcap - rb))))
+        let raw_ratio = rb + (fc::_3_3() * a * gw * (rcap - rb));
+        let r = Self::_clamp_min_max(raw_ratio, fc::_0_02(), rcap);
+
+        let winner_ratio = (registered_player_count_fixed * r).ceil();
+        let winner_count_from_ratio: u16 = winner_ratio.try_into().unwrap();
+
+        if winner_count_from_ratio < num_players_with_non_zero_points {
+            winner_count_from_ratio
+        } else {
+            num_players_with_non_zero_points
+        }
     }
 
 
-    // update this as well
     fn get_s_parameter(registered_player_count: u16) -> Fixed {
         // 0.3+(0.64*(1-(B3^(-0.7))))
         fc::_0_3() + (fc::_0_64() * (fc::_1() - (registered_player_count.into().pow(-fc::_0_7()))))
@@ -105,15 +152,19 @@ mod tests {
     #[test]
     fn test_get_position_prize_amount() {
         let _1e18: u128 = 1_000_000_000_000_000_000;
-        let prize_pool_amount: u128 = (14_250 * _1e18); // incentive bonus
-        let registered_player_count: u16 = 50;
-        let total_players_with_non_zero_points: u16 = 50;
+        let total_entry_fee_amount: u128 = (6_300 * _1e18);
+        let total_sponsored_fee_amount: u128 = (10_000 * _1e18); 
+        let total_prize_amount: u128 = total_entry_fee_amount + total_sponsored_fee_amount;
+        
+        let registered_player_count: u16 = 36;
+        let total_players_with_non_zero_points: u16 = 36;
 
-        let calc_prize_pool: Fixed = FixedTrait::new(prize_pool_amount, false);
+        let calc_prize_pool: Fixed = FixedTrait::new(total_prize_amount, false);
         let calc_winner_count: u16 = iPrizeDistributionCalcImpl::get_winner_count(
             registered_player_count, total_players_with_non_zero_points,
-        )
-            .into();
+            total_entry_fee_amount, total_prize_amount
+
+        );
         let calc_s_parameter: Fixed = iPrizeDistributionCalcImpl::get_s_parameter(registered_player_count);
         let calc_sum_position_weights: Fixed = iPrizeDistributionCalcImpl::get_sum_rank_weights(
             calc_winner_count, calc_s_parameter,
@@ -139,10 +190,10 @@ mod tests {
             calc_sum_position_weights, calc_s_parameter, calc_winner_count
         );
 
-        assert_eq!(p1, 1808665710182722317564);
-        assert_eq!(p5, 1179348803697853754885);
-        assert_eq!(p14, 450589631438543659187);
-        assert_eq!(p15, 404904110226735944549);
+        assert_eq!(p1, 2196_243_834_924_649_237_442);
+        assert_eq!(p5, 1365064247722514238314);
+        assert_eq!(p14, 468237616212351302112);
+        assert_eq!(p15, 415_752_083_516_790_685_844);
     }
 }
 
