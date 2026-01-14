@@ -26,7 +26,9 @@ pub struct RelicRecord {
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzFeeSplitRecord {
+    pub total_sponsorship: u128,
     pub creator_receives_amount: u128,
+    pub velords_receives_amount: u128,
     pub players_receive_amount: u128,
 }
 
@@ -41,7 +43,7 @@ pub impl BlitzFeeSplitRecordImpl of BlitzFeeSplitRecordTrait {
         PercentageValueImpl::_15()
     }
 
-    fn already_split_fees(ref self: BlitzFeeSplitRecord) -> bool {
+    fn already_split_fees(self: BlitzFeeSplitRecord) -> bool {
         return self.creator_receives_amount > 0 || self.players_receive_amount > 0;
     }
 
@@ -55,11 +57,19 @@ pub impl BlitzFeeSplitRecordImpl of BlitzFeeSplitRecordTrait {
         let players_fee = total_reg_fees - creator_fee - velords_fee + total_bonus_amount;
 
         assert!(creator_fee > 0, "Eternum: creator_fee is zero");
+        assert!(velords_fee > 0, "Eternum: velords_fee is zero");
         assert!(players_fee > 0, "Eternum: players_fee is zero");
 
         // todo: add velords amount here 
+        self.total_sponsorship = total_bonus_amount;
+        self.velords_receives_amount = velords_fee;
         self.creator_receives_amount = creator_fee;
         self.players_receive_amount = players_fee;
+    }
+
+    fn total_entry_cost_less_fees(self: BlitzFeeSplitRecord) -> u128 {
+        assert!(self.already_split_fees(), "Eternum: fees not split");
+        return self.players_receive_amount - self.total_sponsorship;
     }
 }
 

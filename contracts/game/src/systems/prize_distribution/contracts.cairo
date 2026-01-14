@@ -349,6 +349,7 @@ use core::num::traits::zero::Zero;
 
             // ensure the trial id can be used
             let caller = starknet::get_caller_address();
+            let mut blitz_fee_split_record: BlitzFeeSplitRecord = WorldRecordImpl::get_member(world, selector!("blitz_fee_split_record"));
             let mut trial: PlayersRankTrial = world.read_model(trial_id);
             let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_registration_config"),
@@ -362,7 +363,6 @@ use core::num::traits::zero::Zero;
                 assert!(total_player_count_committed > 0, "Eternum: total_player_count_committed must be > 0");
 
                 // split fees and send game creator fees
-                let mut blitz_fee_split_record: BlitzFeeSplitRecord = WorldRecordImpl::get_member(world, selector!("blitz_fee_split_record"));
                 if !blitz_fee_split_record.already_split_fees() {
                     // split the fees
                     let this = starknet::get_contract_address();
@@ -381,6 +381,13 @@ use core::num::traits::zero::Zero;
                             "Eternum: Failed to transfer creator fees"
                     );
 
+                    // todo: fix: send velords to correct address
+                    // send the velords fees
+                    assert!(
+                        reward_token.transfer(blitz_registration_config.fee_recipient, blitz_fee_split_record.velords_receives_amount.into()), 
+                            "Eternum: Failed to transfer velords fees"
+                    );
+
                     WorldRecordImpl::set_member(ref world, selector!("blitz_fee_split_record"), blitz_fee_split_record);
                 }
 
@@ -396,6 +403,8 @@ use core::num::traits::zero::Zero;
             let calc_prize_pool: Fixed = FixedTrait::new(prize_pool_amount, false);
             let calc_winner_count: u16 = iPrizeDistributionCalcImpl::get_winner_count(
                 registered_player_count, trial.total_player_count_committed,
+                blitz_fee_split_record.total_entry_cost_less_fees(),
+                prize_pool_amount,
             );
             let calc_s_parameter: Fixed = iPrizeDistributionCalcImpl::get_s_parameter(registered_player_count);
             let calc_sum_position_weights: Fixed = iPrizeDistributionCalcImpl::get_sum_rank_weights(
