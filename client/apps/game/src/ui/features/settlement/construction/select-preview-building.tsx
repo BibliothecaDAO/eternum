@@ -147,6 +147,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   useEffect(() => {
     occupiedSpotsRef.current.clear();
     vacatedSpotsRef.current.clear();
+    setPendingBuilds({});
+    setPendingDestroys({});
   }, [entityId]);
 
   useEffect(() => {
