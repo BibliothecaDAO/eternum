@@ -9,6 +9,13 @@ export interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-01-15",
+    title: "Open Loot Chests",
+    description:
+      "Open loot chests directly from the Cosmetics section. Select from your owned chests, watch the animated opening sequence, and reveal your rewards with a premium card reveal experience.",
+    type: "feature",
+  },
+  {
     date: "2026-01-14",
     title: "Prediction Market: Combined Claims",
     description:

@@ -40,6 +40,13 @@ const envSchema = z.object({
   VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
   VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
 
+  // Marketplace API endpoint (added)
+  VITE_PUBLIC_MARKETPLACE_URL: z
+    .string()
+    .url()
+    .optional()
+    .default("https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii"),
+
   // Action Dispatcher
   VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),
   VITE_PUBLIC_ACTION_DISPATCHER_SECRET: z.string().optional(),

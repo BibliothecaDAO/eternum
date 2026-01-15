@@ -1,3 +1,6 @@
+import { useLootChestOpeningStore } from "@/hooks/store/use-loot-chest-opening-store";
+import { ChestOpeningExperience, FloatingOpenButton } from "@/ui/features/landing/chest-opening";
+import { useOwnedChests } from "@/ui/features/landing/chest-opening/hooks/use-owned-chests";
 import { CosmeticGallery, CosmeticShowcase } from "@/ui/features/landing/cosmetics/components";
 import {
   COSMETIC_MODEL_BY_EPOCH_ITEM,
@@ -21,6 +24,11 @@ export const LandingCosmetics = () => {
   const { data: toriiCosmetics, isLoading, isError } = useToriiCosmetics();
   const [selectedId, setSelectedId] = useState<string | null>(COSMETIC_ITEMS[0]?.id ?? null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Chest opening state
+  const { showLootChestOpening, setShowLootChestOpening } = useLootChestOpeningStore();
+  const { ownedChests } = useOwnedChests();
+  console.log({ ownedChests, toriiCosmetics });
 
   const toriiItems = useMemo<CosmeticItem[]>(() => {
     if (!toriiCosmetics || toriiCosmetics.length === 0) {
@@ -112,39 +120,47 @@ export const LandingCosmetics = () => {
   }, [filteredItems, selectedId]);
 
   return (
-    <section className="flex w-full flex-col gap-6 xl:flex-row container  h-[70vh]">
-      <div className="w-full xl:w-1/2 rounded-3xl border border-white/10 bg-black/60 p-6 backdrop-blur panel-wood overflow-y-auto space-y-4">
-        <div className="space-y-2">
-          <label className="sr-only" htmlFor="cosmetic-search">
-            Search cosmetics
-          </label>
-          <input
-            id="cosmetic-search"
-            type="search"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search by name, rarity, or trait"
-            className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-gold focus:outline-none focus:ring-0"
-          />
+    <>
+      <section className="flex w-full flex-col gap-6 xl:flex-row container  h-[70vh]">
+        <div className="w-full xl:w-1/2 rounded-3xl border border-white/10 bg-black/60 p-6 backdrop-blur panel-wood overflow-y-auto space-y-4">
+          <div className="space-y-2">
+            <label className="sr-only" htmlFor="cosmetic-search">
+              Search cosmetics
+            </label>
+            <input
+              id="cosmetic-search"
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search by name, rarity, or trait"
+              className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-gold focus:outline-none focus:ring-0"
+            />
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            {isLoading && <p className="text-white/60">Loading on-chain cosmetics…</p>}
-            {isError && !isLoading && (
-              <p className="text-rose-300">Failed to load on-chain cosmetics. Showing curated preview.</p>
-            )}
-            {!isLoading && !isError && toriiItems.length === 0 && (
-              <p className="text-white/50">Showing curated preview set.</p>
-            )}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              {isLoading && <p className="text-white/60">Loading on-chain cosmetics…</p>}
+              {isError && !isLoading && (
+                <p className="text-rose-300">Failed to load on-chain cosmetics. Showing curated preview.</p>
+              )}
+              {!isLoading && !isError && toriiItems.length === 0 && (
+                <p className="text-white/50">Showing curated preview set.</p>
+              )}
+            </div>
           </div>
+
+          <CosmeticGallery items={filteredItems} selectedId={selectedId} onSelect={(id) => setSelectedId(id)} />
         </div>
 
-        <CosmeticGallery items={filteredItems} selectedId={selectedId} onSelect={(id) => setSelectedId(id)} />
-      </div>
+        <aside className="relative flex h-full w-full flex-col overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/70 to-black/95 p-6 shadow-2xl backdrop-blur xl:w-1/2 xl:min-w-[26rem]">
+          <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/5" aria-hidden />
+          <CosmeticShowcase item={selectedItem} />
+        </aside>
+      </section>
 
-      <aside className="relative flex h-full w-full flex-col overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/70 to-black/95 p-6 shadow-2xl backdrop-blur xl:w-1/2 xl:min-w-[26rem]">
-        <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/5" aria-hidden />
-        <CosmeticShowcase item={selectedItem} />
-      </aside>
-    </section>
+      {/* Floating Open Chest Button */}
+      <FloatingOpenButton chestCount={ownedChests.length} onClick={() => setShowLootChestOpening(true)} />
+
+      {/* Chest Opening Experience Modal */}
+      {showLootChestOpening && <ChestOpeningExperience onClose={() => setShowLootChestOpening(false)} />}
+    </>
   );
 };
