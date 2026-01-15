@@ -2,83 +2,41 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { seasonPassAddress } from "@/config";
+import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useOpenChest } from "@/hooks/use-open-chest";
 import { formatRelativeTime } from "@/lib/utils";
+import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Copy, Info, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
+import { env } from "../../../env";
 import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Separator } from "../ui/separator";
 import { CreateListingsDrawer } from "./marketplace-create-listings-drawer";
 import { EditListingDrawer } from "./marketplace-edit-listing-drawer";
+import { CollectionType } from "./token-card";
 
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
 
-// Define the props for the modal component
-interface TokenDetailModalProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  tokenData: MergedNftData;
-  isOwner: boolean;
-  marketplaceActions: ReturnType<typeof useMarketplace>;
-  // Listing details passed from RealmCard
-  isListed: boolean;
-  price?: bigint;
-  orderId?: string;
-  expiration?: number; // Added: Expiration timestamp (seconds)
+// Timer component for auction countdown
+interface TimerProps {
+  expiration?: number;
 }
 
-export const TokenDetailModal = ({
-  isOpen,
-  onOpenChange,
-  tokenData,
-  isOwner,
-  marketplaceActions,
-  isListed,
-  price,
-  orderId,
-  expiration, // Added
-}: TokenDetailModalProps) => {
-  const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
-
-  // Transform IPFS URLs to use Pinata gateway
-  const image = originalImage?.startsWith("ipfs://")
-    ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
-    : originalImage;
-  const { cancelOrder, editOrder, acceptOrders, isLoading } = marketplaceActions;
-
-  const { data: activeMarketOrder } = useQuery({
-    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
-    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
-    refetchInterval: 30_000,
-    enabled: isOpen,
-  });
-
-  // Get wallet state
-  const { address } = useAccount();
-  const { connectors, connect } = useConnect();
-
-  const { lordsBalance } = useLords();
-
-  const userBalance = lordsBalance ?? BigInt(0);
-  const nftPrice = price ?? BigInt(0);
-  const hasSufficientBalance = userBalance >= nftPrice;
-
-  const [isSyncing, setIsSyncing] = useState(false);
+const Timer = ({ expiration }: TimerProps) => {
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
-  // Calculate time remaining for auctions about to expire
   useEffect(() => {
     if (!expiration) return;
 
@@ -107,15 +65,117 @@ export const TokenDetailModal = ({
     return () => clearInterval(interval);
   }, [expiration]);
 
-  // Reset inputs AND syncing state when modal closes or relevant props change
-  /*useEffect(() => {
-    setShowEditInputs(false);
-    setEditPrice(price ? formatUnits(price, 18) : "");
+  if (timeRemaining) {
+    return <span className="text-red-500 font-medium">{timeRemaining}</span>;
+  }
 
-    if (!isOpen) {
-      setIsSyncing(false);
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={0} defaultOpen={false} disableHoverableContent>
+        <TooltipTrigger asChild>
+          <span>Expires {formatRelativeTime(expiration)}</span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{new Date(Number(expiration) * 1000).toLocaleString()}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+// Define the props for the modal component
+interface TokenDetailModalProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  tokenData: MergedNftData;
+  isOwner: boolean;
+  collectionType: CollectionType;
+  marketplaceActions: ReturnType<typeof useMarketplace>;
+  // Listing details passed from RealmCard
+  isListed: boolean;
+  price?: bigint;
+  orderId?: string;
+  expiration?: number; // Added: Expiration timestamp (seconds)
+  displayName: string; // Added: Display name passed from parent
+}
+
+export const TokenDetailModal = ({
+  isOpen,
+  onOpenChange,
+  tokenData,
+  isOwner,
+  collectionType,
+  marketplaceActions,
+  isListed,
+  price,
+  orderId,
+  expiration, // Added
+  displayName, // Added
+}: TokenDetailModalProps) => {
+  const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
+
+  // Transform IPFS URLs to use Pinata gateway
+  const image = originalImage?.startsWith("ipfs://")
+    ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+    : originalImage;
+  const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
+
+  const { data: activeMarketOrder } = useQuery({
+    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
+    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
+    refetchInterval: 30_000,
+    enabled: isOpen,
+  });
+
+  console.log("[TokenDetailModal] tokenData", tokenData);
+
+  const { setShowLootChestOpening, setChestOpenTimestamp, setOpenedChestTokenId } = useLootChestOpeningStore();
+
+  // Get wallet state
+  const { address } = useAccount();
+  const { connector, connectors, connect } = useConnect();
+
+  const [isController, setIsController] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const id = (connector as any)?.controller?.id;
+      const hasController = id === "controller";
+      setIsController(hasController);
     }
-  }, [isOpen, price]);*/
+  }, [connectors, isOpen]);
+
+  const { lordsBalance } = useLords();
+
+  const userBalance = lordsBalance ?? BigInt(0);
+  const nftPrice = price ?? BigInt(0);
+  const hasSufficientBalance = userBalance >= nftPrice;
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const { openChest, error: chestOpeningError } = useOpenChest();
+
+  const handleOpenChest = () => {
+    if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
+      openChest({
+        tokenId: BigInt(tokenData.token_id),
+        onSuccess: () => {
+          console.log("Chest opened successfully");
+          // Set timestamp for when chest is opened to listen for new events
+          setChestOpenTimestamp(Math.floor(Date.now() / 1000));
+          setShowLootChestOpening(true);
+          setOpenedChestTokenId(tokenData.token_id.toString());
+        },
+        onError: (error) => {
+          console.error("Failed to open chest:", error);
+        },
+      });
+    } else {
+      setShowLootChestOpening(true);
+      setOpenedChestTokenId(tokenData.token_id.toString());
+      setChestOpenTimestamp(Math.floor(Date.now() / 1000));
+    }
+  };
 
   // Effect to detect when indexer data has updated props
   useEffect(() => {
@@ -155,6 +215,13 @@ export const TokenDetailModal = ({
     }
   };
 
+  // Determine ownership validity: current owner must match lister
+  const normalizedCurrentOwner = tokenData.token_owner ? String(tokenData.token_owner).toLowerCase() : undefined;
+  const normalizedOrderOwner = tokenData.order_owner ? String(tokenData.order_owner).toLowerCase() : undefined;
+  const ownershipInvalid = Boolean(
+    isListed && normalizedCurrentOwner && normalizedOrderOwner && normalizedCurrentOwner !== normalizedOrderOwner,
+  );
+
   const renderPriceSection = () => {
     if (!isListed || price === undefined) {
       return (
@@ -180,20 +247,7 @@ export const TokenDetailModal = ({
           </div>
           <ResourceIcon resource="Lords" size="sm" />
           <div className="text-sm text-muted-foreground">
-            {timeRemaining ? (
-              <span className="text-red-500 font-medium">{timeRemaining}</span>
-            ) : (
-              <TooltipProvider>
-                <Tooltip delayDuration={0} defaultOpen={false} disableHoverableContent>
-                  <TooltipTrigger asChild>
-                    <span>Expires {formatRelativeTime(expiration)}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{new Date(Number(expiration) * 1000).toLocaleString()}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            <Timer expiration={expiration} />
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">Includes {MARKETPLACE_FEE_PERCENT}% marketplace fee</p>
@@ -226,12 +280,40 @@ export const TokenDetailModal = ({
           </Button>
         </div>
       ) : (
-        <CreateListingsDrawer
-          isLoading={isLoading}
-          isSyncing={isSyncing}
-          tokens={[tokenData]}
-          marketplaceActions={marketplaceActions}
-        />
+        <div className="flex flex-col gap-2 mt-2">
+          {isOwner && collectionType === CollectionType.LootChest && (
+            <>
+              {!isController && (
+                <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md p-3 mb-2">
+                  <Info className="h-4 w-4 flex-shrink-0" />
+                  <span>Send to Cartridge Controller to open chests</span>
+                </div>
+              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full">
+                      <Button
+                        variant="default"
+                        className="w-full"
+                        onClick={handleOpenChest}
+                        disabled={isLoading || !isController || env.VITE_PUBLIC_BLOCK_CHEST_OPENING}
+                      >
+                        Open Chest {env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : ""}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                </Tooltip>
+              </TooltipProvider>
+            </>
+          )}
+          <CreateListingsDrawer
+            isLoading={isLoading}
+            isSyncing={isSyncing}
+            tokens={[tokenData]}
+            marketplaceActions={marketplaceActions}
+          />
+        </div>
       )}
     </>
   );
@@ -273,6 +355,15 @@ export const TokenDetailModal = ({
 
     return (
       <div className="flex flex-col items-center sm:items-stretch mt-2">
+        {ownershipInvalid && (
+          <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+            <span>
+              This listing is no longer valid because the token has been transferred to a different owner. Purchase is
+              disabled.
+            </span>
+          </div>
+        )}
         {showInsufficientBalance && (
           <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
             <AlertTriangle className="h-5 w-5 flex-shrink-0" />
@@ -290,10 +381,16 @@ export const TokenDetailModal = ({
           onClick={handleAcceptOrder}
           size="lg"
           variant="cta"
-          disabled={isLoading || isSyncing || marketplaceActions.isAcceptingOrder || isExpired}
+          disabled={isLoading || isSyncing || marketplaceActions.isAcceptingOrder || isExpired || ownershipInvalid}
           className="w-full sm:w-auto"
         >
-          {isExpired ? "Listing Expired" : marketplaceActions.isAcceptingOrder ? "Purchasing..." : "Buy Now"}
+          {isExpired
+            ? "Listing Expired"
+            : ownershipInvalid
+              ? "Purchase Disabled"
+              : marketplaceActions.isAcceptingOrder
+                ? "Purchasing..."
+                : "Buy Now"}
         </Button>
       </div>
     );
@@ -311,36 +408,76 @@ export const TokenDetailModal = ({
                 </div>
                 <div className="flex flex-col gap-5">
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-gold font-semibold text-3xl">{name || "N/A"}</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-gold font-semibold text-3xl">{displayName}</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const collectionKey = Object.entries(marketplaceCollections).find(
+                            ([_, config]) => config.address === tokenData.contract_address,
+                          )?.[0];
+
+                          if (collectionKey) {
+                            const shareUrl = `${window.location.origin}/trade/${collectionKey}/${tokenData.token_id}`;
+                            navigator.clipboard.writeText(shareUrl);
+                            toast.success("Link copied to clipboard!");
+                          } else {
+                            toast.error("Unable to create share link");
+                          }
+                        }}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Share Token
+                      </Button>
+                    </div>
                     <div className="flex items-center gap-2  ">
                       <div className="flex items-center gap-2">{tokenData.name}</div>
                       <Separator orientation="vertical" className="h-4" />
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground text-sm">Owned By</span>
-                        <span className="text-foreground">{shortenHex(tokenData.account_address ?? "", 10)}</span>
+                        {(() => {
+                          const v = (tokenData as any)?.token_owner as unknown;
+                          let addr = "";
+                          if (typeof v === "string") {
+                            addr = v;
+                          } else if (typeof v === "number" || typeof v === "bigint") {
+                            try {
+                              addr = `0x${BigInt(v).toString(16)}`;
+                            } catch {}
+                          } else if (v != null) {
+                            try {
+                              addr = String(v);
+                            } catch {}
+                          }
+                          return <span className="text-foreground">{addr ? shortenHex(addr, 10) : ""}</span>;
+                        })()}
                       </div>
                     </div>
                   </div>
                   <Badge variant="outline" className="w-fit">
                     <span>TOKEN #{parseInt(tokenData.token_id?.toString())}</span>
                   </Badge>
-                  {/* Display Resources */}
-                  <div>
-                    <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
-                      Resources
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {attributes
-                        ?.filter((attribute) => attribute.trait_type === "Resource")
-                        .map((attribute, index) => (
-                          <ResourceIcon
-                            resource={attribute.value as string}
-                            size="lg"
-                            key={`${attribute.trait_type}-${index}`}
-                          />
-                        ))}
+                  {/* Display Resources - Only for Realms collection */}
+                  {tokenData.contract_address === realmsAddress && (
+                    <div>
+                      <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
+                        Resources
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {attributes
+                          ?.filter((attribute) => attribute.trait_type === "Resource")
+                          .map((attribute, index) => (
+                            <ResourceIcon
+                              resource={attribute.value as string}
+                              size="lg"
+                              key={`${attribute.trait_type}-${index}`}
+                            />
+                          ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {/* Display Wonder */}
                   {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
                     <div className="border-t items-center flex uppercase flex-wrap w-full py-2 justify-center text-center text-sm bg-crimson/50 rounded-lg">
@@ -356,18 +493,24 @@ export const TokenDetailModal = ({
                     {renderPriceSection()}
                     {isOwner ? renderOwnerActions() : isListed && price !== undefined && renderBuyerActions()}
                   </div>
-                  <div className="grid grid-cols-4 flex-wrap gap-2">
-                    {attributes
-                      ?.filter((attribute) => ["Regions", "Cities", "Harbors", "Rivers"].includes(attribute.trait_type))
-                      .map((attribute, index) => (
-                        <Card key={`${attribute.trait_type}-${index}`} className="flex flex-col items-center p-1">
-                          <Label className="uppercase tracking-wider flex justify-between items-center text-muted-foreground text-xs">
-                            {attribute.trait_type}
-                          </Label>
-                          <span>{attribute.value}</span>
-                        </Card>
-                      ))}
-                  </div>
+                  {/* Display all attributes */}
+                  {attributes && attributes.length > 0 && (
+                    <div>
+                      <Label className="uppercase tracking-wider mb-2 flex justify-between items-center text-muted-foreground text-xs">
+                        All Attributes
+                      </Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {attributes.map((attribute, index) => (
+                          <Card key={`${attribute.trait_type}-${index}`} className="flex flex-col p-3">
+                            <Label className="uppercase tracking-wider flex justify-between items-center text-muted-foreground text-xs mb-1">
+                              {attribute.trait_type}
+                            </Label>
+                            <span className="text-sm font-medium">{attribute.value}</span>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

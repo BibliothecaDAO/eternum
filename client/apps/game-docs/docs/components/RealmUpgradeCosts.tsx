@@ -28,11 +28,8 @@ export default function RealmUpgradeCosts({ level, description }: Props) {
     },
     resourcesGrid: {
       display: "grid",
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+      gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
       gap: "1rem",
-      "@media (min-width: 640px)": {
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-      },
     },
     resourceItem: {
       display: "flex",

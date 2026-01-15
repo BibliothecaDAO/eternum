@@ -10,8 +10,9 @@ import { ExplorationRewards } from "@/components/ExplorationRewards";
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +60 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Phase (one
+minute), totaling +120 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined
+in the table below:
 
 <BlitzTroopMovementTable />
 
@@ -21,7 +22,7 @@ themselves severely disadvantaged if attacked by enemy forces.
 ## Movement
 
 Armies can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a Realm, another
-army, or a world structure such as a Hyperstructure. Armies may also move to more distant hexes, provided there is a
+army, or a World Structure such as a Hyperstructure. Armies may also move to more distant hexes, provided there is a
 continuous path of adjacent, unoccupied hexes leading to the destination, and the army has sufficient stamina available
 for the entire journey.
 
@@ -30,10 +31,13 @@ for the entire journey.
   <em>Moving armies in the client</em>
 </div>
 
-The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
-within the army. The table below details biome-specific stamina costs for each troop type:
+The amount of stamina consumed when moving into an explored hex depends on both the biome of that hex and the type of
+troops within the army. The table below details biome-specific stamina costs for each troop type:
 
 <BiomeStamina />
+
+Troops also require Wheat to move. This is consumed from their home Realm when a movement order is executed. Each unit
+consumes **0.03** Wheat to traverse or explore a new tile.
 
 ## Exploring
 
@@ -50,10 +54,9 @@ reward chances for any explored hex are as follows:
 
 <ExplorationRewards />
 
-If an army doesn't have sufficient carrying capacity to store the discovered materials, the materials will be
-permanently lost (burned) but the army will be able to continue exploring provided they have enough stamina. Armies can
-return to a structure to offload the materials, or drop them to free up space. Note that any materials discarded in the
-field will also be burned.
+Exploration rewards are automatically sent back to the home Realm of the exploring army, so armies aren't limited by
+their carry capacity in Blitz. However, the mist is a scary place and troops don't like to delve into it alone, so a
+minimum of 10 troops are required in an army to explore a hex.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/explore.gif" alt="Explore" />
@@ -63,11 +66,21 @@ field will also be burned.
 ## Troop Transfers
 
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
-the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
-Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
-Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
-that of the lower stamina army.
+the same tier. Field armies are bound to the Realm or Camp that created them, so transfers are limited by structure
+ownership:
+
+- Field armies can only merge with field armies from the same Realm or Camp.
+- Field armies can only transfer into guard slots of their own structure.
+- Guard armies can only transfer into field armies from the same structure (guard armies on Realms, Camps, Essence
+  Rifts, or Hyperstructures cannot reinforce field armies from other structures).
+
+To transfer troops from one army to another, or to a structure, the player first needs to select its army on the
+worldmap using left-click, then right-click on the target and select the Transfer Troops tab. Troops can be transferred
+between armies and guard slots at any time, and transfers are not impacted by battle timers. However, in all instances
+of a troop transfer, the army that has received troops:
+
+- adopts the **lower** of the two armies' stamina values, and
+- adopts the **higher** of the two armies' battle timers.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />

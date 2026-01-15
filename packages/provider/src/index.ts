@@ -2226,7 +2226,77 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Move an explorer along a path of directions
+   * Move an explorer without exploring (can be batched with other transactions)
+   *
+   * @param props - Properties for traveling an explorer
+   * @param props.explorer_id - ID of the explorer to move
+   * @param props.directions - Array of directions to move in
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_travel(props: SystemProps.ExplorerTravelProps) {
+    const { explorer_id, directions, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      entrypoint: "explorer_move",
+      calldata: [explorer_id, directions, 0],
+    });
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Move an explorer and explore new tiles (never batched - executed in isolation)
+   *
+   * @param props - Properties for exploring with an explorer
+   * @param props.explorer_id - ID of the explorer to move
+   * @param props.directions - Array of directions to move in
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_explore(props: SystemProps.ExplorerExploreProps) {
+    const { explorer_id, directions, signer } = props;
+
+    let callData: Call[] = [];
+
+    // Pre-move VRF request
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      callData.push({
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      });
+    }
+
+    // Explorer move with explore=1
+    callData.push({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      entrypoint: "explorer_move",
+      calldata: [explorer_id, directions, 1],
+    });
+
+    // Post-move VRF request for reward extraction
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      callData.push({
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      });
+    }
+
+    // Extract reward
+    callData.push({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      entrypoint: "explorer_extract_reward",
+      calldata: [explorer_id],
+    });
+
+    // Execute directly, bypassing the queue to ensure this is never batched
+    return await this.executeAndCheckTransaction(signer, callData);
+  }
+
+  /**
+   * @deprecated Use explorer_travel or explorer_explore instead
    *
    * @param props - Properties for moving an explorer
    * @param props.explorer_id - ID of the explorer to move
@@ -2238,39 +2308,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_move(props: SystemProps.ExplorerMoveProps) {
     const { explorer_id, directions, explore, signer } = props;
 
-    let callData: Call[] = [];
-
-    if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      callData.push({
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-      });
-    }
-
-    callData.push({
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
-      entrypoint: "explorer_move",
-      calldata: [explorer_id, directions, explore ? 1 : 0],
-    });
     if (explore) {
-      if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-        callData.push({
-          contractAddress: this.VRF_PROVIDER_ADDRESS!,
-          entrypoint: "request_random",
-          calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-        });
-      }
-
-      callData.push({
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
-        entrypoint: "explorer_extract_reward",
-        calldata: [explorer_id],
-      });
+      return await this.explorer_explore({ explorer_id, directions, signer });
+    } else {
+      return await this.explorer_travel({ explorer_id, directions, signer });
     }
-
-    const call = this.createProviderCall(signer, [...callData]);
-    return await this.promiseQueue.enqueue(call);
   }
   /**
    * Attack an explorer with another explorer
@@ -3432,6 +3474,41 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return await this.promiseQueue.enqueue(call);
+  }
+
+  // Loot Chest functions
+
+  public async open_loot_chest(props: SystemProps.OpenLootChestProps) {
+    const { signer, token_id, loot_chest_address, claim_address } = props;
+
+    let callData: Call[] = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [claim_address, 0, signer.address],
+      };
+
+      callData = [requestRandomCall];
+    }
+
+    // create multicall
+    // first approve
+    callData.push({
+      contractAddress: loot_chest_address,
+      entrypoint: "approve",
+      calldata: [claim_address, token_id.toString(), 0],
+    });
+
+    // then claim
+    callData.push({
+      contractAddress: claim_address,
+      entrypoint: "claim",
+      calldata: [token_id.toString(), 0],
+    });
+
+    return await signer.execute(callData);
   }
 
   // Marketplace functions

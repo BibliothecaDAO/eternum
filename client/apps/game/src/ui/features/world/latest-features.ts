@@ -9,6 +9,20 @@ export interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-01-14",
+    title: "Prediction Market: Combined Claims",
+    description:
+      "When claiming from a resolved prediction market, your position winnings and vault fees are now claimed together in a single transaction. The displayed amount shows the combined total for a smoother experience.",
+    type: "improvement",
+  },
+  {
+    date: "2026-01-14",
+    title: "Prediction Market: Custom Odds",
+    description:
+      "Create prediction markets with customizable player weights and odds. Select 1-5 players, adjust individual weights, and see real-time percentage chances. The 'None of the above' option is also customizable. Minimum funding reduced to 100 LORDS.",
+    type: "feature",
+  },
+  {
     date: "2026-01-13",
     title: "Transaction Status Center",
     description:

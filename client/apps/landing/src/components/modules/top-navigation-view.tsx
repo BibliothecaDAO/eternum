@@ -1,9 +1,16 @@
 import { displayAddress } from "@/lib/utils";
 import ControllerConnector from "@cartridge/connector/controller";
-import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
-import { ArrowDownUp, CoinsIcon, PlayIcon } from "lucide-react";
+import { ArrowDownUp, ChevronDown, CoinsIcon, LogIn, LogOut, PlayIcon, Sparkles, Wallet } from "lucide-react";
 import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
@@ -28,118 +35,134 @@ export const TopNavigationView = ({
   const { address, connector, isConnected } = useAccount();
 
   const chain = import.meta.env.VITE_PUBLIC_CHAIN;
+  const isSepolia = chain === "sepolia";
+
+  const playUrl = isSepolia ? "https://dev.eternum.realms.world" : null;
+  const playLabel = "Play Eternum (Sepolia)";
+
+  const formattedLords = (lordsBalance / 10n ** 18n).toLocaleString("en-US");
+
+  const handleOpenPlay = () => {
+    if (!playUrl) return;
+    window.open(playUrl, "_blank");
+  };
+
+  const handleOpenSwap = () => {
+    const baseUrl = "https://app.ekubo.org/?outputCurrency=LORDS&amount=&inputCurrency=ETH";
+    window.open(baseUrl, "_blank");
+  };
+
+  const handleOpenBridge = () => {
+    const baseUrl =
+      "https://app.rhino.fi/bridge?mode=receive&chainIn=ARBITRUM&chainOut=STARKNET&tokenOut=ETH&token=ETH&recipient=";
+    const userAddress = address || "";
+    window.open(baseUrl + userAddress, "_blank");
+  };
+
+  const handleOpenControllerInventory = () => {
+    if (connector?.id === "controller") {
+      (connector as unknown as ControllerConnector).controller.openProfile("inventory");
+    }
+  };
+
+  const handleDisconnect = () => {
+    onDisconnect();
+  };
 
   return (
-    <div className="flex justify-between items-center w-full p-2 max-w-[100vw] overflow-y-auto">
-      <div className="flex items-center gap-4">
+    <div className="flex w-full flex-wrap items-center justify-between gap-3 px-3 py-2">
+      <div className="flex items-center gap-3">
         <SidebarTrigger />
         <ModeToggle />
-
-        {chain === "sepolia" && (
-          <Button variant="outline" onClick={onMintTestLords}>
-            Mint Lords
+        {isSepolia && (
+          <Button variant="cta" size="sm" onClick={handleOpenPlay} className="gap-2 px-4">
+            <PlayIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">{playLabel}</span>
+            <span className="sm:hidden">Play</span>
           </Button>
         )}
-
-        <div className="text-sm text-primary border border-primary/40 rounded-md px-2 py-2 flex items-center gap-2">
-          {(lordsBalance / 10n ** 18n).toLocaleString("en-US")}
-          <ResourceIcon size="sm" resource="Lords" className="w-4 h-4" />
-        </div>
-
-        <Button
-          disabled={false}
-          variant="cta"
-          onClick={() => {
-            window.open(
-              chain === "sepolia" ? "https://dev.eternum.realms.world" : "https://eternum.realms.world",
-              "_blank",
-            );
-          }}
-          className="gap-2 hidden sm:flex"
-        >
-          <PlayIcon className="!w-4 h-2" />
-          {chain === "sepolia" ? "Play Realms (Sepolia)" : "Play Realms (Mainnet)"}
-        </Button>
-
-        <Button
-          variant="outline"
-          onClick={() => {
-            window.open("https://discord.gg/realmsworld", "_blank");
-          }}
-          className="gap-2 hidden lg:flex"
-        >
-          <img src="/images/buildings/thumb/discord.png" alt="Discord" className="w-4 h-4" />
-          Discord
-        </Button>
       </div>
-      <SeasonStartTimer />
-      {/* <SeasonRegistrationTimer /> */}
-      <div className="flex gap-2 justify-between">
-        <Button
-          variant="outline"
-          onClick={() => {
-            const baseUrl = "https://app.ekubo.org/?outputCurrency=LORDS&amount=&inputCurrency=ETH";
 
-            window.open(baseUrl, "_blank");
-          }}
-          className="gap-2 hidden sm:flex uppercase"
-        >
-          <ArrowDownUp className="w-4 h-4" />
-          Swap
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            const baseUrl =
-              "https://app.rhino.fi/bridge?mode=receive&chainIn=ARBITRUM&chainOut=STARKNET&tokenOut=ETH&token=ETH&recipient=";
-            const userAddress = address || "";
-            window.open(baseUrl + userAddress, "_blank");
-          }}
-          className="gap-2 hidden lg:flex uppercase"
-        >
-          <CoinsIcon className="w-4 h-4" />
-          Bridge
-        </Button>
-        {!isConnected ? (
-          <>
-            {connectors.map((connector, index) => (
-              <Button size={"default"} key={index} onClick={() => onConnect(connector)} variant="outline">
-                <img
-                  className="w-5"
-                  src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark}
-                />{" "}
-              </Button>
-            ))}
-          </>
-        ) : (
-          <Button
-            variant="outline"
-            className="gap-2"
-            size={"default"}
-            onClick={() => {
-              if (connector?.id === "controller") {
-                (connector as unknown as ControllerConnector).controller.openProfile("inventory");
-              } else {
-                onDisconnect();
-              }
-            }}
-          >
-            <img className="w-5" src={typeof connector?.icon === "string" ? connector?.icon : connector?.icon.dark} />{" "}
-            {address ? displayAddress(address) : ""}
-          </Button>
-        )}
-        {isConnected ? (
-          <Button
-            variant="outline"
-            className="px-1"
-            size={"default"}
-            onClick={() => {
-              onDisconnect();
-            }}
-          >
-            <ExitIcon />
-          </Button>
-        ) : null}
+      <div className="order-3 w-full lg:order-none lg:flex lg:flex-1 lg:justify-center">
+        <div className="mx-auto max-w-full lg:max-w-none">
+          <SeasonStartTimer />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2 rounded-full border border-primary/40 bg-background/80 px-3 py-1 text-sm text-primary">
+          {formattedLords}
+          <ResourceIcon size="sm" resource="Lords" className="h-4 w-4" />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="flex items-center gap-2 rounded-full px-3">
+              <Wallet className="h-4 w-4" />
+              {isConnected && address ? (
+                <span className="text-sm font-medium">{displayAddress(address)}</span>
+              ) : (
+                <span className="text-sm font-medium">Connect Wallet</span>
+              )}
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[220px]">
+            <DropdownMenuLabel>Quick actions</DropdownMenuLabel>
+            <DropdownMenuItem onSelect={handleOpenSwap}>
+              <ArrowDownUp className="h-4 w-4" /> Swap on Ekubo
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleOpenBridge}>
+              <CoinsIcon className="h-4 w-4" /> Bridge via Rhino.fi
+            </DropdownMenuItem>
+            {isSepolia && (
+              <DropdownMenuItem
+                disabled={!isConnected}
+                onSelect={() => {
+                  if (!isConnected) return;
+                  void onMintTestLords();
+                }}
+              >
+                <Sparkles className="h-4 w-4" /> Mint test LORDS
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            {isConnected ? (
+              <>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Balance</DropdownMenuLabel>
+                <DropdownMenuItem disabled>
+                  <span className="flex items-center gap-2 text-sm">
+                    {formattedLords}
+                    <ResourceIcon size="sm" resource="Lords" className="h-4 w-4" />
+                  </span>
+                </DropdownMenuItem>
+                {connector?.id === "controller" && (
+                  <DropdownMenuItem onSelect={handleOpenControllerInventory}>
+                    <LogIn className="h-4 w-4" /> Open Cartridge Inventory
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={handleDisconnect}>
+                  <LogOut className="h-4 w-4" /> Disconnect
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <>
+                <DropdownMenuLabel className="text-xs uppercase text-muted-foreground">Connect with</DropdownMenuLabel>
+                {connectors.map((walletConnector, index) => {
+                  const icon =
+                    typeof walletConnector.icon === "string" ? walletConnector.icon : walletConnector.icon?.dark;
+                  const name = walletConnector.name ?? `Wallet ${index + 1}`;
+
+                  return (
+                    <DropdownMenuItem key={walletConnector.id ?? index} onSelect={() => onConnect(walletConnector)}>
+                      {icon ? <img src={icon} alt="" className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
+                      {name}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

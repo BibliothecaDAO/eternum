@@ -11,25 +11,27 @@ Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, com
 players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
 high skill ceiling that rewards skill and experience. The no-stakes Recruit bracket allows new players to learn the
-game, while experienced Lords can sharpen their skills or test new strategies in preparation for a Blitz series. Warrior
-bracket games, which require a $LORDS entry fee, form the core of each series—where success brings rewards and
-qualifications for the coveted Elite games, offering even greater prizes.
+game, while experienced Lords can sharpen their skills in preparation for higher-stakes games. Lords can compete for
+$LORDS token stakes in Gladiator bracket, while Warrior bracket games form the core of a Blitz 'series'—where success
+brings additional Loot Chest rewards and invitations to the coveted Elite bracket, which offers even greater prizes!
 
 ## Rule Summary
 
 ### Game Duration
 
-Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in length to support the fast-paced format.
+Each Blitz game runs for exactly **2 hours**. Time is measured in Eternum Days, which are six minutes long and divided
+into six 'phases'.
 
 ### Realms
 
 - **Three Starting Realms**: Each player starts with three Realms, evenly spaced apart in a triangle formation.
-- **Equal Capability**: All Realms in Blitz are functionally identical.
+- **Equal Capability**: At the start of the game, all Realms in Blitz are functionally identical.
 - **Free Building**: Players can construct any resource building they wish, restricted only by build space and
   population.
 - **No Wonders or Villages**: Wonder bonuses and the Village system are not present in Blitz.
-- **Conquest Mechanics**: All Realms are vulnerable to capture by other players, encouraging constant vigilance and
-  strategic interaction.
+- **Conquest Mechanics**: All Realms are vulnerable to capture by other players; deployed armies of a captured Realm
+  become the property of the conquering Lord, while any troops stored in the structure or in transit to it are destroyed
+  (this destruction rule applies to all player-owned structures).
 
 ### Materials
 
@@ -38,20 +40,21 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 - **Simplified Food**: Only 1 food type - Wheat.
 - **Essence**: New material found by exploring the map and interacting with World Structures, required for some
   production, buildings and upgrades.
-- **Labor**: Required for all construction and 'simple mode' production, acquired through burning resources.
+- **Labor**: Produced by each Realm at a fixed rate, required for all construction and 'labor mode' production.
 - **Donkeys**: Required for moving materials around the world, essential for logistics.
 - **Troops**: 3 types (Knights, Crossbowmen, Paladins), 3 tiers (T1, T2, T3).
-- **Restricted Bridging**: Players may only bridge Relics into the game (not out).
+- **Restricted Bridging**: Players may only bridge Relics into the game (not out). Other materials can't be bridged.
+  _Note: This feature is a work in progress, the tokenized Relics and Relic Chest system is not active yet._
 - **Donkey Cost**: Donkeys only cost food to produce (no $LORDS cost).
 - **No P2P Transfers**: No direct transfers or trade between players.
 
 ### Buildings
 
-- **Construction**: Standard and simple mode building systems.
+- **Construction**: 'Resource mode' and 'labor mode' building systems.
 - **Building Types**:
   - **The Keep**: Central structure automatically constructed at game start.
   - **Resource Buildings**: Specific buildings for each of the 9 resources.
-  - **Economic Buildings**: Includes Farms, Worker Huts, Storehouses, and Markets.
+  - **Economic Buildings**: Includes Farms, Worker Huts, and Markets.
   - **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
 - **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
   are upgraded.
@@ -60,8 +63,8 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 
 - **Production Types**:
   - **Food**: Wheat can be produced without inputs.
-  - **Resources**: Require combinations of other resources (standard) or labor (simple).
-  - **Labor**: Produced by burning resources in the Keep.
+  - **Resources**: Require combinations of other resources (resource mode) or labor (labor mode).
+  - **Labor**: Produced by the Keep at a steady rate.
   - **Troops**: Essential for exploration and warfare, with production of higher tier troops requiring lower tier troops
     as inputs.
   - **Donkeys**: One-time-use transport, consumed after a single journey.
@@ -70,15 +73,14 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 
 ### World Map
 
-- **Exploration System**: Players must explore unrevealed hexes to find Essence, claim Hyperstructures, and attack
+- **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
   neighbors.
-- **No Resource Discovery**: Players will no longer find resources when exploring.
-- **Essence Discovery**: Players primarily find Essence when exploring, along with small stacks of donkeys, T1 troops
-  and labor.
+- **Essence Discovery**: Players primarily find essence when exploring, along with small stacks of donkeys, T1 troops
+  and labor. Resources cannot be discovered through exploration.
 - **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
 - **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
-- **Movement & Stamina**: Armies move using stamina (regenerating at +60 per Eternum Day), with costs varying by biome
-  and troop type.
+- **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Phase, +120 per Eternum Day), with costs
+  varying by biome and troop type.
 
 ### Military
 
@@ -88,11 +90,11 @@ Each Blitz game runs for exactly **2 hours**. Eternum Days are 5 minutes in leng
 - **Army Types**:
   - **Field Armies**: Deploy onto the world map for exploration and conquest.
   - **Guard Armies**: Deployed to defense slots to protect structures.
-- **Stamina System**: Armies recover +60 stamina each Eternum Day.
+- **Stamina System**: Armies recover +20 stamina each Phase (6 phases per Eternum Day, totaling +120 stamina per day).
 - **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
-- **Reinforcement Movement**: Players can't transport troops by donkey to World Structures - reinforcements must be
-  moved across the map from a Realm.
+- **Reinforcement Movement**: Troops can be transported by donkey to any player-owned Realms, Camps, Essence Rifts, or
+  Hyperstructures, while transfers into armies still follow same-structure transfer rules.
 
 ### Scoring System
 
@@ -101,44 +103,53 @@ and control World Structures. Victory Points are awarded for:
 
 - Exploring tiles
 - Claiming World Structures
+- Opening Relic Crates
 - Claiming Hyperstructures
 - Holding Hyperstructures throughout the game
 
 ### Victory
 
-Blitz uses a scoring-based system rather than victory points. The players with the highest Total Score on the
-leaderboard at the end of the two hours share in the $LORDS prize pool. This pool is made up of the cumulative entry
-fees that players pay to enter the game.
+Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the two hours
+share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the game.
 
-## Blitz Brackets
+## Blitz Variants
+
+Blitz games come in many forms, and can be configured and deployed by anyone. But the majority of Blitz games are
+deployed by the core team in the following forms:
 
 ### Recruit Bracket
 
-- **Low Stakes**: Free-to-enter bracket for introduction and practice.
+- **No Stakes**: Free-to-enter bracket for introduction, playtesting and practice.
 - **No Entry Cost**: No $LORDS required to participate.
-- **Prizes**: Relic Chests only.
-- **Frequency**: Games run every day on varying schedules to encourage global participation.
+- **Frequency**: Games run multiple times per day on a rotating schedule.
+
+### Gladiator Bracket
+
+- **$LORDS Stakes**: Competitive games with $LORDS stakes.
+- **Entry Cost**: Players pay a $LORDS entry fee, contributing to the prize pool.
+- **Prize Distribution**: Top 20% of players share the prize pool.
+- **Frequency**: Games run on a rotating schedule.
 
 ### Warrior Bracket
 
-- **Medium Stakes**: Competitive games requiring a $LORDS entry fee.
-- **$LORDS Entry Cost**: $LORDS fee contributes to shared prize pool.
-- **Prize Distribution**: Top 15% of players share the prize pool.
-- **Rewards**: Relic Chests and Blitz Rewards Chests.
-- **Special Reward**: Highest placing players win tradable NFT invites to Elite bracket.
-- **Frequency**: Games run a few times weekly during prime time for key timezones (USA, Europe, Asia-Pacific).
+- **Series Games**: These games form part of a competitive Blitz Series.
+- **$LORDS Stakes**: Competitive games requiring a $LORDS entry fee, contributing to a prize pool.
+- **Prize Distribution**: Top 20% of players share the prize pool.
+- **Additional Rewards**: Blitz Rewards Chests containing cosmetic items.
+- **Special Invites**: Highest placing players win tradable NFT invites to the Elite bracket.
+- **Frequency**: Games run daily during prime time for key timezones (USA, Europe, Asia-Pacific).
 
 ### Elite Bracket
 
-- **High Stakes**: Highest level of Blitz competition.
-- **Ticket Entry Cost**: NFT invite from Warrior bracket (no additional $LORDS cost).
-- **Prize Pool**: Large, DAO-funded prize pool (pending BIP).
-- **Rewards**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests.
-- **Frequency**: Games run at the end of a Blitz series.
+- **Series Games**: These games represent the highest level of play in a competitive Blitz Series.
+- **Ticket Entry Cost**: Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost).
+- **Prize Pool**: Large, DAO-funded prize pool.
+- **Rewards**: Elite Blitz Rewards Chests containing cosmetic items.
+- **Frequency**: A limited number of games run in the final week of a Blitz series.
 
 ### Blitz Series
 
-While Recruit games can be deployed and played as frequently as the player base demands, games with stakes
+While Recruit and Gladiator games can be deployed and played as frequently as the player base demands, games with stakes
 (Warrior/Elite) are organized into 'series'. Each series takes place between Eternum seasons to bridge the gap in
 gameplay and provide continuous competitive opportunities.
 
@@ -147,6 +158,5 @@ gameplay and provide continuous competitive opportunities.
 Successful Blitz players can earn various rewards including:
 
 - **$LORDS Token**: Prize pool distributions for top players.
-- **Loot Chests**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic
-  items.
-- **Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
+- **Loot Chests**: Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic items.
+- **Elite Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.

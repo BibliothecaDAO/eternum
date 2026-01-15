@@ -25,7 +25,8 @@ import playerOddsConfig from "../config/player-odds.json";
 
 // Constants
 const MAX_SELECTED_PLAYERS = 5;
-const MIN_FUNDING_LORDS = 1000;
+const MIN_SELECTED_PLAYERS = 1;
+const MIN_FUNDING_LORDS = 100;
 const DEFAULT_CREATOR_FEE = "10";
 const DEFAULT_FEE_CURVE_RANGE = { start: 0, end: 2000 };
 const DEFAULT_FEE_SHARE_CURVE_RANGE = { start: 10000, end: 0 };
@@ -68,6 +69,8 @@ export interface UseQuickMarketCreateResult {
   togglePlayerSelection: (player: MarketPlayer) => void;
   requiresManualSelection: boolean;
   selectionComplete: boolean;
+  minSelectedPlayers: number;
+  maxSelectedPlayers: number;
 
   // Funding amount
   fundingAmount: string;
@@ -81,8 +84,15 @@ export interface UseQuickMarketCreateResult {
   hasSufficientBalance: boolean;
   isBalanceLoading: boolean;
 
-  // Odds lookup
+  // Odds/weights
   getPlayerOddsWeight: (player: MarketPlayer) => number;
+  getPlayerChancePercent: (player: MarketPlayer) => number;
+  playerWeights: Record<string, number>;
+  setPlayerWeight: (playerAddress: string, weight: number) => void;
+  noneWeight: number;
+  setNoneWeight: (weight: number) => void;
+  noneChancePercent: number;
+  totalWeight: number;
 
   // Preconditions
   preconditions: {
@@ -211,8 +221,8 @@ const normalizeVariants = (value: unknown): unknown => {
 };
 
 /**
- * Builds market parameters with odds from JSON config.
- * Players are weighted based on their name lookup in the odds config.
+ * Builds market parameters with custom weights.
+ * Players are weighted based on custom weights or JSON config fallback.
  */
 const buildQuickMarketParams = (
   worldName: string,
@@ -222,12 +232,18 @@ const buildQuickMarketParams = (
   startAt: number,
   endAt: number,
   resolveAt: number,
+  customWeights: Record<string, number>,
+  noneWeight: number,
 ): RawArgsObject | null => {
   if (players.length === 0) return null;
 
-  // Get weights from odds config for each player
-  const weights = players.map((player) => getOddsWeightByName(player.name));
-  const noneWeight = 1; // "None" option always has weight 1
+  // Get weights - use custom weight if set, otherwise fall back to JSON config
+  const weights = players.map((player) => {
+    if (customWeights[player.address] !== undefined) {
+      return customWeights[player.address];
+    }
+    return getOddsWeightByName(player.name);
+  });
 
   const fundingBase = parseLordsToBaseUnits(fundingLords);
   if (fundingBase == null) return null;
@@ -295,6 +311,25 @@ export const useQuickMarketCreate = (
   // Player selection state
   const [selectedPlayers, setSelectedPlayers] = useState<MarketPlayer[]>([]);
 
+  // Custom weights per player (address -> weight)
+  const [playerWeights, setPlayerWeights] = useState<Record<string, number>>({});
+
+  // "None of the above" weight
+  const [noneWeight, setNoneWeightState] = useState<number>(1);
+
+  // Set weight for a specific player
+  const setPlayerWeight = useCallback((playerAddress: string, weight: number) => {
+    setPlayerWeights((prev) => ({
+      ...prev,
+      [playerAddress]: Math.max(1, Math.floor(weight)), // Ensure weight is at least 1
+    }));
+  }, []);
+
+  // Set weight for "None of the above"
+  const setNoneWeight = useCallback((weight: number) => {
+    setNoneWeightState(Math.max(1, Math.floor(weight))); // Ensure weight is at least 1
+  }, []);
+
   // Funding amount state (default to minimum)
   const [fundingAmount, setFundingAmount] = useState<string>(String(MIN_FUNDING_LORDS));
 
@@ -314,10 +349,9 @@ export const useQuickMarketCreate = (
   // Check if manual selection is required (> 5 players)
   const requiresManualSelection = allPlayers.length > MAX_SELECTED_PLAYERS;
 
-  // Selection is complete when we have exactly 5 players selected (or all if <= 5)
-  const selectionComplete = requiresManualSelection
-    ? selectedPlayers.length === MAX_SELECTED_PLAYERS
-    : selectedPlayers.length === allPlayers.length && allPlayers.length > 0;
+  // Selection is complete when we have 1-5 players selected
+  const selectionComplete =
+    selectedPlayers.length >= MIN_SELECTED_PLAYERS && selectedPlayers.length <= MAX_SELECTED_PLAYERS;
 
   // Validate funding amount
   const isFundingValid = useMemo(() => {
@@ -431,10 +465,51 @@ export const useQuickMarketCreate = (
     [setSelectedPlayers],
   );
 
-  // Get odds weight for a player
-  const getPlayerOddsWeight = useCallback((player: MarketPlayer) => {
-    return getOddsWeightByName(player.name);
-  }, []);
+  // Get odds weight for a player (custom weight takes priority over JSON config)
+  // Returns 0 for unselected players
+  const getPlayerOddsWeight = useCallback(
+    (player: MarketPlayer) => {
+      const isSelected = selectedPlayers.some((p) => p.address === player.address);
+      if (!isSelected) return 0;
+
+      // Check custom weight first
+      if (playerWeights[player.address] !== undefined) {
+        return playerWeights[player.address];
+      }
+      // Fall back to JSON config
+      return getOddsWeightByName(player.name);
+    },
+    [playerWeights, selectedPlayers],
+  );
+
+  // Calculate total weight of all selected players + "None"
+  const totalWeight = useMemo(() => {
+    const playersWeight = selectedPlayers.reduce((sum, player) => {
+      if (playerWeights[player.address] !== undefined) {
+        return sum + playerWeights[player.address];
+      }
+      return sum + getOddsWeightByName(player.name);
+    }, 0);
+    return playersWeight + noneWeight;
+  }, [selectedPlayers, playerWeights, noneWeight]);
+
+  // Get % chance for a player (based on weight / totalWeight)
+  const getPlayerChancePercent = useCallback(
+    (player: MarketPlayer) => {
+      const isSelected = selectedPlayers.some((p) => p.address === player.address);
+      if (!isSelected || totalWeight === 0) return 0;
+
+      const weight = playerWeights[player.address] ?? getOddsWeightByName(player.name);
+      return (weight / totalWeight) * 100;
+    },
+    [selectedPlayers, playerWeights, totalWeight],
+  );
+
+  // Get % chance for "None of the above"
+  const noneChancePercent = useMemo(() => {
+    if (totalWeight === 0) return 0;
+    return (noneWeight / totalWeight) * 100;
+  }, [noneWeight, totalWeight]);
 
   // Preconditions
   const preconditions = useMemo(
@@ -510,6 +585,8 @@ export const useQuickMarketCreate = (
       startAt,
       endAt,
       resolveAt,
+      playerWeights,
+      noneWeight,
     );
 
     if (!params) {
@@ -564,7 +641,18 @@ export const useQuickMarketCreate = (
     } finally {
       setIsCreating(false);
     }
-  }, [canCreate, account, oracleAddress, worldName, marketAddress, selectedPlayers, fundingAmount, gameEndTime]);
+  }, [
+    canCreate,
+    account,
+    oracleAddress,
+    worldName,
+    marketAddress,
+    selectedPlayers,
+    fundingAmount,
+    gameEndTime,
+    playerWeights,
+    noneWeight,
+  ]);
 
   return useMemo(
     () => ({
@@ -581,6 +669,8 @@ export const useQuickMarketCreate = (
       togglePlayerSelection,
       requiresManualSelection,
       selectionComplete,
+      minSelectedPlayers: MIN_SELECTED_PLAYERS,
+      maxSelectedPlayers: MAX_SELECTED_PLAYERS,
       fundingAmount,
       setFundingAmount,
       minFundingAmount: MIN_FUNDING_LORDS,
@@ -590,6 +680,13 @@ export const useQuickMarketCreate = (
       hasSufficientBalance,
       isBalanceLoading,
       getPlayerOddsWeight,
+      getPlayerChancePercent,
+      playerWeights,
+      setPlayerWeight,
+      noneWeight,
+      setNoneWeight,
+      noneChancePercent,
+      totalWeight,
       preconditions,
     }),
     [
@@ -614,6 +711,13 @@ export const useQuickMarketCreate = (
       hasSufficientBalance,
       isBalanceLoading,
       getPlayerOddsWeight,
+      getPlayerChancePercent,
+      playerWeights,
+      setPlayerWeight,
+      noneWeight,
+      setNoneWeight,
+      noneChancePercent,
+      totalWeight,
       preconditions,
     ],
   );
