@@ -1,0 +1,1073 @@
+import { getGameModeConfig } from "@/config/game-modes";
+import { Position } from "@bibliothecadao/eternum";
+
+import { getCharacterName } from "@/utils/agent";
+import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { CameraView } from "../../scenes/hexagon-scene";
+import {
+  createContentContainer,
+  createDirectionIndicators,
+  createGuardArmyDisplay,
+  createOwnerDisplayElement,
+  createProductionDisplay,
+  createStaminaBar,
+  createTroopCountDisplay,
+  updateDirectionIndicators,
+  updateStaminaBar,
+} from "./label-components";
+import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
+import { LabelData, LabelTypeDefinition } from "./label-types";
+import { resolveCameraView } from "./label-view";
+
+/**
+ * Structure icon paths
+ */
+const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
+  STRUCTURES: {
+    [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Realm]: "/images/labels/enemy_realm.png",
+    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
+    [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`, // Lords resource ID
+    [StructureType.FragmentMine]: fragmentMineIcon,
+  } as Record<StructureType, string>,
+  MY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Realm]: "/images/labels/realm.png",
+  } as Record<StructureType, string>,
+  ALLY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Realm]: "/images/labels/allies_realm.png",
+  } as Record<StructureType, string>,
+});
+
+/**
+ * Extended label data interfaces
+ */
+export interface ArmyLabelData extends LabelData {
+  category: TroopType;
+  tier: TroopTier;
+  isMine: boolean;
+  isDaydreamsAgent: boolean;
+  owner: {
+    address: bigint;
+    ownerName: string;
+    guildName: string;
+  };
+  color: string;
+  troopCount: number;
+  currentStamina: number;
+  maxStamina: number;
+  attackedFromDegrees?: number; // Degrees from which this army has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
+}
+
+export interface StructureLabelData extends LabelData {
+  structureType: StructureType;
+  stage: number;
+  initialized: boolean;
+  level: number;
+  isMine: boolean;
+  hasWonder: boolean;
+  owner: {
+    address: bigint;
+    ownerName: string;
+    guildName: string;
+  };
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  hyperstructureRealmCount?: number;
+  attackedFromDegrees?: number; // Degrees from which this structure has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this structure has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
+}
+
+// For backward compatibility with existing StructureInfo type
+export interface StructureInfoCompat {
+  entityId: number;
+  structureName: string;
+  hexCoords: { col: number; row: number }; // Different from Position
+  structureType: StructureType;
+  stage: number;
+  initialized: boolean;
+  level: number;
+  isMine: boolean;
+  hasWonder: boolean;
+  owner: {
+    address: bigint;
+    ownerName: string;
+    guildName: string;
+  };
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+}
+
+export interface ChestLabelData extends LabelData {
+  // Chests have minimal data
+}
+
+export interface QuestLabelData extends LabelData {
+  questType: number; // QuestType enum value
+  occupierId: number;
+}
+
+/**
+ * Create base label element with common properties
+ */
+const createLabelBase = (isMine: boolean, inputView: CameraView, isDaydreamsAgent?: boolean): HTMLElement => {
+  const cameraView = resolveCameraView(inputView);
+  const labelDiv = document.createElement("div");
+
+  // Add common classes - using inline-flex for compact horizontal layout
+  labelDiv.classList.add(
+    "rounded-md",
+    "p-0.5",
+    "-translate-x-1/2",
+    "text-xxs",
+    "inline-flex",
+    "items-center",
+    "group",
+    "shadow-md",
+    "font-semibold",
+  );
+
+  if (cameraView === CameraView.Medium) {
+    labelDiv.classList.remove("p-0.5");
+    labelDiv.classList.add("px-1", "py-0.5", "gap-1", "text-[11px]");
+  } else if (cameraView === CameraView.Close) {
+    labelDiv.classList.add("px-1", "py-1", "gap-1");
+  }
+
+  if (cameraView === CameraView.Far) {
+    labelDiv.classList.remove("inline-flex", "items-center");
+    labelDiv.classList.add("flex", "flex-col", "items-center", "justify-center", "gap-1");
+  }
+
+  // Get appropriate style
+  const styles = getOwnershipStyle(isMine, isDaydreamsAgent);
+
+  // Apply styles directly
+  labelDiv.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+  labelDiv.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
+  labelDiv.style.setProperty("color", styles.default.textColor!, "important");
+
+  // Add hover effect
+  labelDiv.addEventListener("mouseenter", () => {
+    labelDiv.style.setProperty("background-color", styles.hover.backgroundColor!, "important");
+  });
+
+  labelDiv.addEventListener("mouseleave", () => {
+    labelDiv.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+  });
+
+  // Prevent right click
+  labelDiv.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  return labelDiv;
+};
+
+const attachDirectionIndicators = (
+  labelElement: HTMLElement,
+  directionIndicators: HTMLElement | null,
+  cameraView: CameraView,
+): void => {
+  if (!directionIndicators) {
+    return;
+  }
+
+  const existing = labelElement.querySelector('[data-component="direction-indicators"]');
+  if (existing && existing !== directionIndicators) {
+    existing.remove();
+  }
+
+  const offsetClass = cameraView === CameraView.Close ? "mt-1.5" : "mt-1";
+  const textSizeClass = cameraView === CameraView.Close ? "text-[11px]" : "text-[10px]";
+
+  directionIndicators.classList.remove("ml-2", "w-full", "mt-1", "px-2");
+  directionIndicators.classList.add(
+    "absolute",
+    "left-1/2",
+    "-translate-x-1/2",
+    "top-full",
+    offsetClass,
+    "px-2.5",
+    "py-0.5",
+    "rounded-full",
+    "bg-black/40",
+    "border",
+    "border-white/10",
+    "shadow-sm",
+    "backdrop-blur-sm",
+    "flex",
+    "items-center",
+    "gap-1.5",
+    textSizeClass,
+  );
+
+  labelElement.classList.add("relative", "overflow-visible");
+  labelElement.appendChild(directionIndicators);
+};
+
+/**
+ * Army label type definition
+ */
+export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
+  type: "army",
+  defaultConfig: LABEL_TYPE_CONFIGS.ARMY,
+
+  createElement: (data: ArmyLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
+    // Create base label
+    const labelDiv = createLabelBase(data.isMine, cameraView, data.isDaydreamsAgent);
+    labelDiv.style.transform = "scale(0.5)";
+    labelDiv.style.transformOrigin = "center bottom";
+
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Far;
+
+    // Add army icon
+    const img = document.createElement("img");
+    img.src = data.isDaydreamsAgent
+      ? "/images/logos/daydreams.png"
+      : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+    img.setAttribute("data-component", "army-icon");
+
+    // Create text container
+    const textContainer = createContentContainer(cameraView);
+
+    // Add owner information
+    const ownerDisplay = createOwnerDisplayElement({
+      owner: data.owner,
+      isMine: data.isMine,
+      cameraView,
+      color: data.color,
+      isDaydreamsAgent: data.isDaydreamsAgent,
+    });
+    textContainer.appendChild(ownerDisplay);
+
+    // Add troop type information for Daydreams agents
+    if (data.isDaydreamsAgent) {
+      const line2 = document.createElement("strong");
+      line2.textContent = getCharacterName(data.tier, data.category, data.entityId) || "";
+      textContainer.appendChild(line2);
+    }
+
+    // Add troop count display
+    let troopCountDisplay: HTMLElement | undefined;
+    if (data.troopCount !== undefined) {
+      troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
+      textContainer.appendChild(troopCountDisplay);
+    }
+
+    let staminaHandledInline = false;
+    if (
+      cameraView === CameraView.Medium &&
+      troopCountDisplay &&
+      data.currentStamina !== undefined &&
+      data.maxStamina !== undefined &&
+      data.maxStamina > 0
+    ) {
+      const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+      troopCountDisplay.appendChild(staminaBar);
+      staminaHandledInline = true;
+    }
+
+    if (!staminaHandledInline) {
+      if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
+        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+        textContainer.appendChild(staminaBar);
+      } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
+        const staminaInfo = document.createElement("div");
+        staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+
+        const staminaIcon = document.createElement("span");
+        staminaIcon.textContent = "⚡";
+        staminaIcon.classList.add("text-yellow-400");
+        staminaInfo.appendChild(staminaIcon);
+
+        const staminaText = document.createElement("span");
+        staminaText.textContent = `${data.currentStamina}`;
+        staminaText.classList.add("font-mono");
+        staminaText.style.color = "#f6f1e5";
+        staminaInfo.appendChild(staminaText);
+
+        textContainer.appendChild(staminaInfo);
+      }
+    }
+
+    // Structure based on view and directions
+    if (hasDirections && isExpanded) {
+      // Expanded with directions: flex-col layout
+      labelDiv.classList.remove("inline-flex", "items-center");
+      labelDiv.classList.add("flex", "flex-col");
+
+      // Create content row for icon and text
+      const contentRow = document.createElement("div");
+      contentRow.classList.add("flex", "items-center");
+      contentRow.appendChild(img);
+      contentRow.appendChild(textContainer.wrapper);
+      labelDiv.appendChild(contentRow);
+
+      const directionIndicators = createDirectionIndicators(
+        data.attackedFromDegrees,
+        data.attackedTowardDegrees,
+        data.battleTimerLeft,
+      );
+
+      attachDirectionIndicators(labelDiv, directionIndicators, cameraView);
+    } else {
+      // Contracted or no directions: simple horizontal layout
+      labelDiv.appendChild(img);
+      labelDiv.appendChild(textContainer.wrapper);
+
+      // Add direction indicators to the right
+      if (hasDirections) {
+        const directionIndicators = createDirectionIndicators(
+          data.attackedFromDegrees,
+          data.attackedTowardDegrees,
+          data.battleTimerLeft,
+        );
+
+        attachDirectionIndicators(labelDiv, directionIndicators, cameraView);
+      }
+    }
+
+    return labelDiv;
+  },
+
+  updateElement: (element: HTMLElement, data: ArmyLabelData, inputView: CameraView): void => {
+    const cameraView = resolveCameraView(inputView);
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Far;
+
+    // Update layout based on view state
+    if (hasDirections && isExpanded) {
+      element.classList.remove("inline-flex", "items-center");
+      element.classList.add("flex", "flex-col");
+    } else {
+      element.classList.remove("flex", "flex-col");
+      element.classList.add("inline-flex", "items-center");
+    }
+
+    // Update container colors based on ownership
+    const styles = getOwnershipStyle(data.isMine, data.isDaydreamsAgent);
+    element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
+    element.style.setProperty("color", styles.default.textColor!, "important");
+
+    element.onmouseenter = () => {
+      element.style.setProperty("background-color", styles.hover.backgroundColor!, "important");
+    };
+
+    element.onmouseleave = () => {
+      element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    };
+
+    const contentContainer = element.querySelector('[data-component="content-container"]') as HTMLElement | null;
+
+    if (contentContainer) {
+      contentContainer.innerHTML = "";
+
+      if (cameraView === CameraView.Medium) {
+        contentContainer.classList.add("gap-1");
+      } else if (cameraView === CameraView.Close) {
+        contentContainer.classList.add("gap-1");
+      } else {
+        contentContainer.classList.remove("gap-1");
+      }
+
+      if (cameraView !== CameraView.Far) {
+        const spacerDiv = document.createElement("div");
+        spacerDiv.classList.add(cameraView === CameraView.Medium ? "w-1" : "w-2");
+        contentContainer.appendChild(spacerDiv);
+      }
+
+      const ownerDisplay = createOwnerDisplayElement({
+        owner: data.owner,
+        isMine: data.isMine,
+        cameraView,
+        color: data.color,
+        isDaydreamsAgent: data.isDaydreamsAgent,
+      });
+      contentContainer.appendChild(ownerDisplay);
+
+      if (data.isDaydreamsAgent) {
+        const line2 = document.createElement("strong");
+        line2.textContent = getCharacterName(data.tier, data.category, data.entityId) || "";
+        contentContainer.appendChild(line2);
+      }
+
+      let troopCountDisplay: HTMLElement | undefined;
+      if (data.troopCount !== undefined) {
+        troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
+        contentContainer.appendChild(troopCountDisplay);
+      }
+
+      let staminaHandledInline = false;
+      if (
+        cameraView === CameraView.Medium &&
+        troopCountDisplay &&
+        data.currentStamina !== undefined &&
+        data.maxStamina !== undefined &&
+        data.maxStamina > 0
+      ) {
+        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+        troopCountDisplay.appendChild(staminaBar);
+        staminaHandledInline = true;
+      }
+
+      if (!staminaHandledInline) {
+        if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
+          const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+          contentContainer.appendChild(staminaBar);
+        } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
+          const staminaInfo = document.createElement("div");
+          staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+
+          const staminaIcon = document.createElement("span");
+          staminaIcon.textContent = "⚡";
+          staminaIcon.classList.add("text-yellow-400");
+          staminaInfo.appendChild(staminaIcon);
+
+          const staminaText = document.createElement("span");
+          staminaText.textContent = `${data.currentStamina}`;
+          staminaText.classList.add("font-mono");
+          staminaText.style.color = "#f6f1e5";
+          staminaInfo.appendChild(staminaText);
+
+          contentContainer.appendChild(staminaInfo);
+        }
+      }
+    }
+
+    const armyIcon = element.querySelector('[data-component="army-icon"]') as HTMLImageElement;
+    if (armyIcon) {
+      armyIcon.src = data.isDaydreamsAgent
+        ? "/images/logos/daydreams.png"
+        : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+    }
+
+    const staminaBar = element.querySelector('[data-component="stamina-bar"]');
+    if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
+      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
+    }
+
+    const directionIndicators = updateDirectionIndicators(
+      element,
+      data.attackedFromDegrees,
+      data.attackedTowardDegrees,
+      data.battleTimerLeft,
+    );
+
+    attachDirectionIndicators(element, directionIndicators, cameraView);
+  },
+};
+
+/**
+ * Structure label type definition
+ */
+export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
+  type: "structure",
+  defaultConfig: LABEL_TYPE_CONFIGS.STRUCTURE,
+
+  createElement: (data: StructureLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
+    const mode = getGameModeConfig();
+    const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
+
+    // Create base label
+    const labelDiv = createLabelBase(data.isMine, cameraView);
+    labelDiv.style.transform = "scale(0.5)";
+    labelDiv.style.transformOrigin = "center bottom";
+
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Far;
+
+    // Create icon container
+    const iconContainer = document.createElement("div");
+    iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
+    iconContainer.setAttribute("data-component", "structure-icon-container");
+
+    // Select appropriate icon
+    let iconPath = structureIcons.STRUCTURES[data.structureType];
+    if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
+      iconPath = data.isMine
+        ? structureIcons.MY_STRUCTURES[data.structureType]
+        : structureIcons.STRUCTURES[data.structureType];
+    }
+
+    // Create and set icon image
+    const iconImg = document.createElement("img");
+    iconImg.src = iconPath;
+    iconImg.classList.add("w-10", "h-10", "object-contain");
+    iconImg.setAttribute("data-component", "structure-icon");
+    iconContainer.appendChild(iconImg);
+
+    // Create content container
+    const contentContainer = createContentContainer(cameraView);
+
+    // Add owner display
+    const ownerText = createOwnerDisplayElement({
+      owner: data.owner,
+      isMine: data.isMine,
+      cameraView,
+      structureName: data.structureName,
+    });
+
+    contentContainer.appendChild(ownerText);
+
+    // Add guard armies display
+    if (Array.isArray(data.guardArmies)) {
+      const guardArmiesDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
+      contentContainer.appendChild(guardArmiesDisplay);
+    }
+
+    if (data.activeProductions && data.activeProductions.length > 0) {
+      const productionsDisplay = createProductionDisplay(data.activeProductions, cameraView);
+      contentContainer.appendChild(productionsDisplay);
+    }
+
+    // Add hyperstructure realm count display
+    if (data.hyperstructureRealmCount !== undefined && data.structureType === StructureType.Hyperstructure) {
+      const isOwned = data.owner && data.owner.address && data.owner.address !== 0n;
+
+      const realmCountDisplay = document.createElement("div");
+      realmCountDisplay.classList.add(
+        "flex",
+        "items-center",
+        "gap-1.5",
+        "mt-1",
+        "px-2",
+        "py-0.5",
+        "rounded",
+        "transition-all",
+        "duration-300",
+      );
+
+      // Style based on ownership status
+      if (isOwned) {
+        // Active/earning style
+        realmCountDisplay.classList.add(
+          "bg-order-brilliance/20",
+          "border",
+          "border-order-brilliance/30",
+          "animate-slowPulse",
+        );
+      } else {
+        // Inactive/unclaimed style
+        realmCountDisplay.classList.add("/20", "border", "border-gray-600/30", "border-dashed");
+      }
+
+      realmCountDisplay.setAttribute("data-component", "realm-count");
+
+      // Add icon based on status
+      const vpIcon = document.createElement("span");
+      vpIcon.classList.add("text-xs");
+      if (isOwned) {
+        vpIcon.textContent = "⚡"; // Lightning for active
+        vpIcon.classList.add("text-order-brilliance");
+      } else {
+        vpIcon.textContent = "💤"; // Sleeping for inactive
+        vpIcon.classList.add("text-muted-foreground");
+      }
+      realmCountDisplay.appendChild(vpIcon);
+
+      // Add the VP value
+      const realmCountText = document.createElement("span");
+      realmCountText.classList.add("font-bold", "text-xs");
+
+      if (isOwned) {
+        realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
+      } else {
+        realmCountText.classList.add("text-muted-foreground");
+      }
+
+      realmCountText.textContent = `${data.hyperstructureRealmCount}`;
+      realmCountDisplay.appendChild(realmCountText);
+
+      // Add VP/s label with status
+      const vpLabel = document.createElement("span");
+      vpLabel.classList.add("text-xxs", "font-normal");
+
+      if (isOwned) {
+        vpLabel.classList.add("text-order-brilliance/80");
+        vpLabel.textContent = "VP/s";
+      } else {
+        vpLabel.classList.add("text-muted-foreground/80");
+        vpLabel.textContent = "VP/s (unclaimed)";
+      }
+
+      realmCountDisplay.appendChild(vpLabel);
+
+      contentContainer.appendChild(realmCountDisplay);
+    }
+
+    // Structure based on view and directions
+    if (hasDirections && isExpanded) {
+      // Expanded with directions: flex-col layout
+      labelDiv.classList.remove("inline-flex", "items-center");
+      labelDiv.classList.add("flex", "flex-col");
+
+      // Create content row for icon and text
+      const contentRow = document.createElement("div");
+      contentRow.classList.add("flex", "items-center");
+      contentRow.setAttribute("data-component", "structure-content-row");
+      contentRow.appendChild(iconContainer);
+      contentRow.appendChild(contentContainer.wrapper);
+      labelDiv.appendChild(contentRow);
+
+      const directionIndicators = createDirectionIndicators(
+        data.attackedFromDegrees,
+        data.attackedTowardDegrees,
+        data.battleTimerLeft,
+      );
+
+      attachDirectionIndicators(labelDiv, directionIndicators, cameraView);
+    } else {
+      // Contracted or no directions: simple horizontal layout
+      labelDiv.appendChild(iconContainer);
+      labelDiv.appendChild(contentContainer.wrapper);
+
+      // Add direction indicators to the right
+      if (hasDirections) {
+        const directionIndicators = createDirectionIndicators(
+          data.attackedFromDegrees,
+          data.attackedTowardDegrees,
+          data.battleTimerLeft,
+        );
+
+        attachDirectionIndicators(labelDiv, directionIndicators, cameraView);
+      }
+    }
+
+    return labelDiv;
+  },
+
+  // add here
+  updateElement: (element: HTMLElement, data: StructureLabelData, inputView: CameraView): void => {
+    const cameraView = resolveCameraView(inputView);
+    const mode = getGameModeConfig();
+    const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
+
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Far;
+
+    // Update layout based on view state
+    if (hasDirections && isExpanded) {
+      element.classList.remove("inline-flex", "items-center");
+      element.classList.add("flex", "flex-col");
+    } else {
+      element.classList.remove("flex", "flex-col");
+      element.classList.add("inline-flex", "items-center");
+    }
+
+    // Update container colors based on ownership
+    const styles = getOwnershipStyle(data.isMine);
+    element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
+    element.style.setProperty("color", styles.default.textColor!, "important");
+
+    // Update hover effect
+    element.onmouseenter = () => {
+      element.style.setProperty("background-color", styles.hover.backgroundColor!, "important");
+    };
+
+    element.onmouseleave = () => {
+      element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    };
+
+    // Update structure icon based on ownership
+    const structureIcon = element.querySelector('[data-component="structure-icon"]') as HTMLImageElement;
+    if (structureIcon) {
+      let iconPath = structureIcons.STRUCTURES[data.structureType];
+      if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
+        iconPath = data.isMine
+          ? structureIcons.MY_STRUCTURES[data.structureType]
+          : structureIcons.STRUCTURES[data.structureType];
+      }
+      structureIcon.src = iconPath;
+    }
+
+    const iconContainer = element.querySelector('[data-component="structure-icon-container"]');
+    const contentWrapper = element.querySelector('[data-component="content-container-wrapper"]') as HTMLElement | null;
+    const contentContainer = element.querySelector('[data-component="content-container"]') as HTMLElement | null;
+    let structureContentRow = element.querySelector('[data-component="structure-content-row"]');
+
+    const directionIndicatorsEl = element.querySelector('[data-component="direction-indicators"]');
+
+    if (hasDirections && isExpanded) {
+      if (!structureContentRow && iconContainer && contentWrapper) {
+        const newContentRow = document.createElement("div");
+        newContentRow.classList.add("flex", "items-center");
+        newContentRow.setAttribute("data-component", "structure-content-row");
+
+        if (iconContainer.parentElement) {
+          iconContainer.parentElement.removeChild(iconContainer);
+        }
+        if (contentWrapper.parentElement) {
+          contentWrapper.parentElement.removeChild(contentWrapper);
+        }
+
+        newContentRow.appendChild(iconContainer);
+        newContentRow.appendChild(contentWrapper);
+
+        if (directionIndicatorsEl) {
+          element.insertBefore(newContentRow, directionIndicatorsEl);
+        } else {
+          element.appendChild(newContentRow);
+        }
+
+        structureContentRow = newContentRow;
+      }
+    } else {
+      if (structureContentRow) {
+        structureContentRow.remove();
+        structureContentRow = null;
+      }
+
+      const placeBeforeDirections = (node: HTMLElement | null) => {
+        if (!node) return;
+        if (node.parentElement) {
+          node.parentElement.removeChild(node);
+        }
+        if (directionIndicatorsEl) {
+          element.insertBefore(node, directionIndicatorsEl);
+        } else {
+          element.appendChild(node);
+        }
+      };
+
+      placeBeforeDirections(iconContainer as HTMLElement | null);
+      placeBeforeDirections(contentWrapper as HTMLElement | null);
+    }
+
+    const guardDisplay = element.querySelector('[data-component="guard-armies"]');
+    if (Array.isArray(data.guardArmies)) {
+      const newGuardDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
+      if (guardDisplay) {
+        guardDisplay.replaceWith(newGuardDisplay);
+      } else if (contentContainer) {
+        const ownerNode = contentContainer.querySelector('[data-component="owner"]');
+        if (ownerNode && ownerNode.parentElement === contentContainer) {
+          contentContainer.insertBefore(newGuardDisplay, ownerNode.nextSibling);
+        } else {
+          contentContainer.appendChild(newGuardDisplay);
+        }
+      }
+    } else if (guardDisplay) {
+      guardDisplay.remove();
+    }
+
+    const ownerDisplay = element.querySelector('[data-component="owner"]');
+    if (ownerDisplay) {
+      const updatedOwnerDisplay = createOwnerDisplayElement({
+        owner: data.owner,
+        isMine: data.isMine,
+        cameraView,
+        structureName: data.structureName,
+      });
+
+      ownerDisplay.replaceWith(updatedOwnerDisplay);
+    }
+
+    // Update active productions display
+    const productionsDisplay = element.querySelector('[data-component="productions"]');
+    if (productionsDisplay) {
+      const newProductionsDisplay = createProductionDisplay(data.activeProductions ?? [], cameraView);
+      productionsDisplay.replaceWith(newProductionsDisplay);
+    }
+
+    // Update hyperstructure realm count
+    const realmCountDisplay = element.querySelector('[data-component="realm-count"]');
+    if (data.hyperstructureRealmCount !== undefined && data.structureType === StructureType.Hyperstructure) {
+      const isOwned = data.owner && data.owner.address && data.owner.address !== 0n;
+
+      if (realmCountDisplay) {
+        // Update existing display
+        const vpIcon = realmCountDisplay.querySelector("span:first-child");
+        const realmCountText = realmCountDisplay.querySelector("span.font-bold");
+        const vpLabel = realmCountDisplay.querySelector("span:last-child");
+
+        if (vpIcon && realmCountText && vpLabel) {
+          // Update icon
+          if (isOwned) {
+            vpIcon.textContent = "⚡";
+            vpIcon.className = "text-xs text-order-brilliance";
+          } else {
+            vpIcon.textContent = "💤";
+            vpIcon.className = "text-xs text-muted-foreground";
+          }
+
+          // Update count
+          realmCountText.textContent = `${data.hyperstructureRealmCount}`;
+          realmCountText.className = "font-bold text-xs";
+          if (isOwned) {
+            realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
+          } else {
+            realmCountText.classList.add("text-muted-foreground");
+          }
+
+          // Update label
+          vpLabel.className = "text-xxs font-normal";
+          if (isOwned) {
+            vpLabel.classList.add("text-order-brilliance/80");
+            vpLabel.textContent = "VP/s";
+          } else {
+            vpLabel.classList.add("text-muted-foreground/80");
+            vpLabel.textContent = "VP/s (unclaimed)";
+          }
+
+          // Update container styles
+          realmCountDisplay.className =
+            "flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded transition-all duration-300";
+          if (isOwned) {
+            realmCountDisplay.classList.add(
+              "bg-order-brilliance/20",
+              "border",
+              "border-order-brilliance/30",
+              "animate-slowPulse",
+            );
+          } else {
+            realmCountDisplay.classList.add("/20", "border", "border-gray-600/30", "border-dashed");
+          }
+        }
+      } else {
+        // Create new realm count display if it doesn't exist
+        const newRealmCountDisplay = document.createElement("div");
+        newRealmCountDisplay.classList.add(
+          "flex",
+          "items-center",
+          "gap-1.5",
+          "mt-1",
+          "px-2",
+          "py-0.5",
+          "rounded",
+          "transition-all",
+          "duration-300",
+        );
+
+        if (isOwned) {
+          newRealmCountDisplay.classList.add(
+            "bg-order-brilliance/20",
+            "border",
+            "border-order-brilliance/30",
+            "animate-slowPulse",
+          );
+        } else {
+          newRealmCountDisplay.classList.add("/20", "border", "border-gray-600/30", "border-dashed");
+        }
+
+        newRealmCountDisplay.setAttribute("data-component", "realm-count");
+
+        // Add icon
+        const vpIcon = document.createElement("span");
+        vpIcon.classList.add("text-xs");
+        if (isOwned) {
+          vpIcon.textContent = "⚡";
+          vpIcon.classList.add("text-order-brilliance");
+        } else {
+          vpIcon.textContent = "💤";
+          vpIcon.classList.add("text-muted-foreground");
+        }
+        newRealmCountDisplay.appendChild(vpIcon);
+
+        // Add the VP value
+        const realmCountText = document.createElement("span");
+        realmCountText.classList.add("font-bold", "text-xs");
+
+        if (isOwned) {
+          realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
+        } else {
+          realmCountText.classList.add("text-muted-foreground");
+        }
+
+        realmCountText.textContent = `${data.hyperstructureRealmCount}`;
+        newRealmCountDisplay.appendChild(realmCountText);
+
+        // Add VP/s label
+        const vpLabel = document.createElement("span");
+        vpLabel.classList.add("text-xxs", "font-normal");
+
+        if (isOwned) {
+          vpLabel.classList.add("text-order-brilliance/80");
+          vpLabel.textContent = "VP/s";
+        } else {
+          vpLabel.classList.add("text-muted-foreground/80");
+          vpLabel.textContent = "VP/s (unclaimed)";
+        }
+
+        newRealmCountDisplay.appendChild(vpLabel);
+
+        const contentContainer = element.querySelector('[data-component="content-container"]');
+        if (contentContainer) {
+          contentContainer.appendChild(newRealmCountDisplay);
+        }
+      }
+    } else if (realmCountDisplay) {
+      // Remove realm count display if no longer needed
+      realmCountDisplay.remove();
+    }
+
+    const directionIndicators = updateDirectionIndicators(
+      element,
+      data.attackedFromDegrees,
+      data.attackedTowardDegrees,
+      data.battleTimerLeft,
+    );
+
+    attachDirectionIndicators(element, directionIndicators, cameraView);
+  },
+};
+
+/**
+ * Chest label type definition
+ */
+export const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
+  type: "chest",
+  defaultConfig: LABEL_TYPE_CONFIGS.CHEST,
+
+  createElement: (data: ChestLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
+    // Create base label with chest styling
+    const labelDiv = createLabelBase(false, cameraView); // Chests don't have ownership
+
+    // Override text color for chests
+    labelDiv.style.setProperty("color", LABEL_STYLES.CHEST.textColor!, "important");
+    labelDiv.style.setProperty("background-color", LABEL_STYLES.CHEST.backgroundColor!, "important");
+    labelDiv.style.setProperty("border-color", LABEL_STYLES.CHEST.borderColor!, "important");
+
+    // Add chest icon
+    const img = document.createElement("img");
+    img.src = "/images/labels/chest.png";
+    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+    img.setAttribute("data-component", "chest-icon");
+    labelDiv.appendChild(img);
+
+    // Create content container
+    const contentContainer = createContentContainer(cameraView);
+
+    // Add chest label
+    const line1 = document.createElement("span");
+    line1.textContent = "Relic Crate";
+    line1.style.color = "inherit";
+    contentContainer.appendChild(line1);
+
+    labelDiv.appendChild(contentContainer.wrapper);
+    return labelDiv;
+  },
+
+  // Chests don't need updates
+  updateElement: undefined,
+};
+
+/**
+ * Quest label type definition
+ */
+export const QuestLabelType: LabelTypeDefinition<QuestLabelData> = {
+  type: "quest",
+  defaultConfig: {
+    ...LABEL_TYPE_CONFIGS.CHEST, // Similar to chest positioning
+    positionOffset: { x: 0, y: 1.5, z: 0 },
+  },
+
+  createElement: (data: QuestLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
+    // Create base label with quest styling
+    const labelDiv = createLabelBase(false, cameraView); // Quests don't have ownership
+
+    // Override text color for quests (gold)
+    labelDiv.style.setProperty("color", "#fbbf24", "important");
+    labelDiv.style.setProperty("background-color", "rgba(251, 191, 36, 0.3)", "important");
+    labelDiv.style.setProperty("border-color", "rgba(245, 158, 11, 0.5)", "important");
+
+    // Add quest icon
+    const img = document.createElement("img");
+    img.src = "/images/labels/quest.png";
+    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+    img.setAttribute("data-component", "quest-icon");
+    labelDiv.appendChild(img);
+
+    // Create content container
+    const contentContainer = createContentContainer(cameraView);
+
+    // Add quest label
+    const line1 = document.createElement("span");
+    line1.textContent = "Quest";
+    line1.style.color = "inherit";
+    contentContainer.appendChild(line1);
+
+    labelDiv.appendChild(contentContainer.wrapper);
+    return labelDiv;
+  },
+
+  // Quests don't need updates
+  updateElement: undefined,
+};
+
+/**
+ * Factory function to create label type definitions with custom configurations
+ */
+export function createCustomLabelType<T extends LabelData = LabelData>(
+  type: string,
+  config: Partial<LabelTypeDefinition<T>>,
+): LabelTypeDefinition<T> {
+  return {
+    type,
+    defaultConfig: config.defaultConfig || LABEL_TYPE_CONFIGS.ARMY,
+    createElement: config.createElement || ((data, view) => document.createElement("div")),
+    updateElement: config.updateElement,
+    shouldDisplay: config.shouldDisplay,
+  };
+}
+
+/**
+ * Convenience functions for backward compatibility
+ */
+
+// Helper function to convert StructureInfoCompat to StructureLabelData
+const convertStructureInfo = (structure: StructureInfoCompat): StructureLabelData => {
+  return {
+    ...structure,
+    hexCoords: new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }),
+  };
+};
+
+export const createArmyLabel = (army: ArmyLabelData, cameraView: CameraView): HTMLElement => {
+  return ArmyLabelType.createElement(army, cameraView);
+};
+
+export const updateArmyLabel = (
+  labelElement: HTMLElement,
+  army: ArmyLabelData,
+  cameraView: CameraView = CameraView.Medium,
+): void => {
+  ArmyLabelType.updateElement?.(labelElement, army, cameraView);
+};
+
+export const createStructureLabel = (structure: StructureInfoCompat, cameraView: CameraView): HTMLElement => {
+  return StructureLabelType.createElement(convertStructureInfo(structure), cameraView);
+};
+
+export const updateStructureLabel = (
+  labelElement: HTMLElement,
+  structure: StructureInfoCompat,
+  cameraView: CameraView = CameraView.Medium,
+): void => {
+  StructureLabelType.updateElement?.(labelElement, convertStructureInfo(structure), cameraView);
+};
+
+export const createChestLabel = (chest: ChestLabelData, cameraView: CameraView): HTMLElement => {
+  return ChestLabelType.createElement(chest, cameraView);
+};
+
+export const createQuestLabel = (quest: QuestLabelData, cameraView: CameraView): HTMLElement => {
+  return QuestLabelType.createElement(quest, cameraView);
+};

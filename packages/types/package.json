@@ -8,10 +8,12 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     }
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "scripts": {
     "build": "tsup",
     "gen:docs": "typedoc --plugin typedoc-plugin-markdown",
@@ -25,7 +27,8 @@
     "@scure/starknet": "^1.1.0",
     "chalk": "^5.4.1",
     "eventemitter3": "^5.0.1",
-    "starknet": "catalog:"
+    "starknet": "catalog:",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",

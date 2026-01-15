@@ -1,208 +1,132 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
-import { useMinigameStore } from "@/hooks/store/use-minigame-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
-import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { NotLoggedInMessage, SeasonWinnerMessage } from "@/ui/shared";
+import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { Leva } from "leva";
-import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
-import { lazy, Suspense, useEffect, useMemo } from "react";
 import { env } from "../../../env";
+import { Tooltip } from "../design-system/molecules/tooltip";
+import { StoryEventStream } from "../features";
+import { RealmTransferManager } from "../features/economy/resources";
+import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
+import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
+import { ActionInfo } from "../features/world/components/actions/action-info";
+import { ActionInstructions } from "../features/world/components/actions/action-instructions";
+import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
+import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
+import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
+import { TopHeader } from "../features/world/containers/top-header/top-header";
+import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
+import { CombatSimulation } from "../modules/simulation/combat-simulation";
+import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { StoreManagers } from "../store-managers";
-
-// Lazy load components
-const SelectedArmy = lazy(() =>
-  import("../features/world/components/actions/selected-worldmap-entity").then((module) => ({
-    default: module.SelectedWorldmapEntity,
-  })),
-);
-
-const ActionInfo = lazy(() =>
-  import("../features/world/components/actions/action-info").then((module) => ({ default: module.ActionInfo })),
-);
-
-const ActionInstructions = lazy(() =>
-  import("../features/world/components/actions/action-instructions").then((module) => ({
-    default: module.ActionInstructions,
-  })),
-);
-
-const BlankOverlayContainer = lazy(() =>
-  import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
-);
-const EntitiesInfoLabel = lazy(() =>
-  import("../features/world/components/entities/entities-label").then((module) => ({
-    default: module.EntitiesLabel,
-  })),
-);
-const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
-const BottomRightContainer = lazy(() =>
-  import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
-);
-const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
-const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
-const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
-const Tooltip = lazy(() =>
-  import("../design-system/molecules/tooltip").then((module) => ({ default: module.Tooltip })),
-);
-const TopMiddleNavigation = lazy(() =>
-  import("../features/world/containers/top-navigation").then((module) => ({ default: module.TopNavigation })),
-);
-const BottomMiddleContainer = lazy(() =>
-  import("../shared/containers/bottom-middle-container").then((module) => ({ default: module.BottomMiddleContainer })),
-);
-const LeftNavigationModule = lazy(() =>
-  import("../features/world/containers/left-navigation-module").then((module) => ({
-    default: module.LeftNavigationModule,
-  })),
-);
-const RightNavigationModule = lazy(() =>
-  import("../features/world/containers/right-navigation-module").then((module) => ({
-    default: module.RightNavigationModule,
-  })),
-);
-const TopLeftNavigation = lazy(() =>
-  import("../features/world/containers/top-left-navigation").then((module) => ({ default: module.TopLeftNavigation })),
-);
-const Onboarding = lazy(() => import("./onboarding").then((module) => ({ default: module.Onboarding })));
-
-const MiniMapNavigation = lazy(() =>
-  import("../features/world/containers/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
-);
-
-const RealmTransferManager = lazy(() =>
-  import("../features/economy/resources").then((module) => ({
-    default: module.RealmTransferManager,
-  })),
-);
-
-const StructureSynchronizerManager = () => {
-  useSyncPlayerStructures();
-  return null;
-};
-
-// Modal component to prevent unnecessary World re-renders
-const ModalOverlay = () => {
-  const showModal = useUIStore((state) => state.showModal);
-  const modalContent = useUIStore((state) => state.modalContent);
-
-  return (
-    <Suspense fallback={null}>
-      <BlankOverlayContainer zIndex={120} open={showModal}>
-        {modalContent}
-      </BlankOverlayContainer>
-    </Suspense>
-  );
-};
-
-// Blank overlay component for onboarding
-const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => {
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-
-  return (
-    <Suspense fallback={null}>
-      <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
-        <Onboarding backgroundImage={backgroundImage} />
-      </BlankOverlayContainer>
-    </Suspense>
-  );
-};
+import { PlayOverlayManager } from "./play-overlay-manager";
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const minigameStore = useMinigameStore.getState();
-
-  const { data: minigames } = useMiniGames({});
-
-  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
-
-  const { data: settingsMetadata } = useGameSettingsMetadata({
-    gameAddresses: minigameAddresses,
-  });
-
-  useEffect(() => {
-    if (minigames) {
-      minigameStore.setMinigames(minigames);
-    }
-
-    if (settingsMetadata) {
-      minigameStore.setSettingsMetadata(settingsMetadata);
-    }
-  }, [minigames, settingsMetadata, minigameStore]);
-
   return (
     <>
-      <StoreManagers />
-      <StructureSynchronizerManager />
-      <NotLoggedInMessage />
-      <SeasonWinnerMessage />
+      {/* Background managers and effects (no UI) */}
+      <BackgroundSystems />
 
       {/* Main world layer */}
       <div
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-        }}
-        onMouseMove={(e) => {
-          e.stopPropagation();
-        }}
+        onClick={(e) => e.stopPropagation()}
+        onDoubleClick={(e) => e.stopPropagation()}
+        onMouseMove={(e) => e.stopPropagation()}
         id="world"
         className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
       >
         <div className="vignette" />
 
-        <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-          <RealmTransferManager zIndex={100} />
+        {/* Game systems */}
+        <GameSystems backgroundImage={backgroundImage} />
 
-          {/* Extracted modal components */}
-          <ModalOverlay />
-          <OnboardingOverlay backgroundImage={backgroundImage} />
+        {/* Action feedback overlays */}
+        <ActionOverlays />
 
-          <ActionInstructions />
-          <ActionInfo />
-          <EntitiesInfoLabel />
+        {/* HUD (heads-up display) elements */}
+        <HUD />
 
-          <div>
-            <LeftMiddleContainer>
-              <LeftNavigationModule />
-            </LeftMiddleContainer>
-
-            <TopCenterContainer>
-              <TopMiddleNavigation />
-            </TopCenterContainer>
-
-            <BottomMiddleContainer>
-              <SelectedArmy />
-            </BottomMiddleContainer>
-
-            <BottomRightContainer>
-              <MiniMapNavigation />
-            </BottomRightContainer>
-
-            <RightMiddleContainer>
-              <RightNavigationModule />
-            </RightMiddleContainer>
-
-            <TopLeftContainer>
-              <TopLeftNavigation />
-            </TopLeftContainer>
-          </div>
-
-          <LoadingOroborus loading={isLoadingScreenEnabled} />
-
-          {/* todo: put this somewhere else maybe ? */}
-          {/* <Redirect to="/" /> */}
-          <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
-          <Tooltip />
-          <VersionDisplay />
-          <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
-        </Suspense>
+        {/* Utility overlays */}
+        <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
+        <Tooltip />
+        <VersionDisplay />
+        <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>
   );
 };
+
+/**
+ * Background systems that run without rendering UI.
+ * These manage state synchronization, automation, and global modals.
+ */
+const BackgroundSystems = () => (
+  <>
+    <StoreManagers />
+    <StructureSynchronizer />
+    <ChainTimePoller />
+    <NotLoggedInMessage />
+    <EndgameModal />
+    <BlitzSetHyperstructureShareholdersTo100 />
+    <AutomationManager />
+    <TransferAutomationManager />
+  </>
+);
+
+const StructureSynchronizer = () => {
+  useSyncPlayerStructures();
+  return null;
+};
+
+/**
+ * Core game systems that render interactive content.
+ */
+const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
+  <>
+    <RealmTransferManager zIndex={100} />
+    <PlayOverlayManager backgroundImage={backgroundImage} />
+    <CombatSimulation />
+    <StoryEventStream />
+  </>
+);
+
+/**
+ * Action feedback overlays - contextual information about current actions.
+ */
+const ActionOverlays = () => (
+  <>
+    <ActionInstructions />
+    <ActionInfo />
+  </>
+);
+
+/**
+ * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
+ * Layout:
+ * - Top-left: TopHeader (player info, map toggle, tick progress)
+ * - Left: LeftCommandSidebar (structure selector, navigation, views)
+ * - Bottom-right: BottomRightPanel (tile info, minimap)
+ * - Floating: ModalWindows (settings, shortcuts, social - rendered when open)
+ */
+const HUD = () => (
+  <>
+    {/* Top-left: Player info and controls */}
+    <div className="absolute top-0 left-0 pointer-events-auto z-20">
+      <TopHeader />
+    </div>
+
+    {/* Left side: Command sidebar */}
+    <div className="absolute z-20 w-auto top-0 h-screen left-0 flex pointer-events-none">
+      <LeftCommandSidebar />
+    </div>
+
+    {/* Bottom-right: Tile info and minimap */}
+    <BottomRightPanel />
+
+    {/* Floating modal windows (settings, social, etc.) - needs high z-index and pointer-events */}
+    <div className="absolute w-screen top-10 flex pointer-events-none z-[100]">
+      <ModalWindows />
+    </div>
+  </>
+);
 
 const VersionDisplay = () => (
   <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1">

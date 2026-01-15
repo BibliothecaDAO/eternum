@@ -27,7 +27,7 @@ export async function setupNetwork(
 
   const toriiClient = await createClient({
     worldAddress: config.manifest.world.address || "",
-    relayUrl: config.relayUrl,
+    // relayUrl: config.relayUrl,
     toriiUrl: config.toriiUrl,
   });
 

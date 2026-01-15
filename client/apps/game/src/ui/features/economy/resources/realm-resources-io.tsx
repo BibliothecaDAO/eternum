@@ -63,7 +63,7 @@ export const RealmResourcesIO = ({
                   />
                 ))
               ) : (
-                <span className="text-xs text-gray-400 italic">None</span>
+                <span className="text-xs  italic">None</span>
               )}
             </div>
           </div>
@@ -106,7 +106,7 @@ export const RealmResourcesIO = ({
                   </div>
                 ))
               ) : (
-                <span className="text-xs text-gray-400 italic">No resources consumed</span>
+                <span className="text-xs  italic">No resources consumed</span>
               )}
             </div>
           </div>

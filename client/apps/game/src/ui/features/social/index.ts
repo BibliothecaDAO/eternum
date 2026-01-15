@@ -7,6 +7,7 @@ export * from "./chat/hooks/use-socket-events";
 export * from "./chat/types";
 export { useChatStore } from "./chat/use-chat-store";
 export * from "./chat/utils";
+export * from "./realtime-chat";
 
 // Guild Management - Exports used externally
 export { CreateGuildButton } from "./guilds/create-guild-button";

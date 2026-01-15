@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 #[starknet::interface]
 trait ILiquiditySystems<T> {
     fn add(
@@ -13,28 +13,26 @@ mod liquidity_systems {
     use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
     // Eternum imports
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::ResourceTypes;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::models::bank::liquidity::{Liquidity};
-    use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{SeasonConfigImpl};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::resource::resource::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
+    use crate::models::bank::liquidity::Liquidity;
+    use crate::models::bank::market::{Market, MarketTrait};
+    use crate::models::config::SeasonConfigImpl;
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::config::contracts::config_systems::{check_caller_is_admin};
-    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
+    use crate::models::weight::Weight;
+    use crate::systems::config::contracts::config_systems::check_caller_is_admin;
+    use crate::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use crate::systems::utils::resource::iResourceTransferImpl;
     use starknet::ContractAddress;
 
 

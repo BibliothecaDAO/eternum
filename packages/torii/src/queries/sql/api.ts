@@ -1,19 +1,42 @@
-import { ContractAddress, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  Coord,
+  EntityType,
+  GuardSlot,
+  ID,
+  ResourcesIds,
+  StructureType,
+  TileDataInput,
+  TileOccupier,
+  tileDataToTile,
+} from "@bibliothecadao/types";
 
 import {
+  ArmyMapDataRaw,
+  ArmyRelicsData,
   BattleLogEvent,
+  ChestInfo,
+  ChestTile,
+  EntityWithRelics,
   EventType,
   Guard,
   GuardData,
   Hyperstructure,
+  HyperstructureRealmCountDataRaw,
+  PlayerLeaderboardRow,
+  PlayerRelicsData,
   PlayersData,
   PlayerStructure,
   QuestTileData,
+  RawPlayerLeaderboardRow,
   RawRealmVillageSlot,
   RealmVillageSlot,
   SeasonEnded,
+  StoryEventData,
   StructureDetails,
   StructureLocation,
+  StructureMapDataRaw,
+  StructureRelicsData,
   SwapEventResponse,
   Tile,
   TokenTransfer,
@@ -27,11 +50,31 @@ import {
   hexToBigInt,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
+import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
+import { LEADERBOARD_QUERIES } from "./leaderboard";
+import {
+  addLeaderboardRanks,
+  buildAdditionalLeaderboardEntries,
+  buildRegisteredLeaderboardEntries,
+  computeUnregisteredShareholderPoints,
+  fetchLeaderboardSourceData,
+  sanitizeLeaderboardPagination,
+  sortLeaderboardEntries,
+} from "./leaderboard-helpers";
 import { QUEST_QUERIES } from "./quest";
+import { RELICS_QUERIES } from "./relics";
+import { extractRelicsFromResourceData } from "./relics-utils";
 import { SEASON_QUERIES } from "./season";
+import { STORY_QUERIES } from "./story";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
 import { TRADING_QUERIES } from "./trading";
+
+const DEFAULT_HYPERSTRUCTURE_RADIUS = 8;
+
+type TileOptRow = {
+  data: TileDataInput;
+};
 
 export class SqlApi {
   constructor(private readonly baseUrl: string) {}
@@ -80,8 +123,11 @@ export class SqlApi {
       "{coords}",
       coordsList.map((coord) => `(${coord.col},${coord.row})`).join(","),
     );
+    console.log("Tiles Querty:", query);
     const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<Tile>(url, "Failed to fetch tiles by coords");
+    const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles by coords");
+    console.log("Tiles Rows:", rows);
+    return rows.map((row) => tileDataToTile(row.data));
   }
 
   /**
@@ -170,7 +216,8 @@ export class SqlApi {
    */
   async fetchAllTiles(): Promise<Tile[]> {
     const url = buildApiUrl(this.baseUrl, TILES_QUERIES.ALL_TILES);
-    return await fetchWithErrorHandling<Tile>(url, "Failed to fetch tiles");
+    const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles");
+    return rows.map((row) => tileDataToTile(row.data));
   }
 
   /**
@@ -299,7 +346,7 @@ export class SqlApi {
     // Transform the flat SQL result into structured Guard objects
     const guards: Guard[] = [
       {
-        slot: 0,
+        slot: GuardSlot.Delta,
         troops:
           guardData.delta_count && hexToBigInt(guardData.delta_count) > 0n
             ? {
@@ -316,7 +363,7 @@ export class SqlApi {
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
-        slot: 1,
+        slot: GuardSlot.Charlie,
         troops:
           guardData.charlie_count && hexToBigInt(guardData.charlie_count) > 0n
             ? {
@@ -333,7 +380,7 @@ export class SqlApi {
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
-        slot: 2,
+        slot: GuardSlot.Bravo,
         troops:
           guardData.bravo_count && hexToBigInt(guardData.bravo_count) > 0n
             ? {
@@ -350,7 +397,7 @@ export class SqlApi {
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
-        slot: 3,
+        slot: GuardSlot.Alpha,
         troops:
           guardData.alpha_count && hexToBigInt(guardData.alpha_count) > 0n
             ? {
@@ -369,5 +416,365 @@ export class SqlApi {
     ];
 
     return guards;
+  }
+
+  /**
+   * Fetch chest tiles near a given position from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchChestsNearPosition(center: { x: number; y: number }, radius: number): Promise<ChestInfo[]> {
+    const query = RELICS_QUERIES.CHESTS_NEAR_POSITION.replace("{minX}", (center.x - radius).toString())
+      .replace("{maxX}", (center.x + radius).toString())
+      .replace("{minY}", (center.y - radius).toString())
+      .replace("{maxY}", (center.y + radius).toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    const chestTiles = await fetchWithErrorHandling<ChestTile>(url, "Failed to fetch nearby chests");
+
+    const centerCoord = new Coord(center.x, center.y);
+
+    return chestTiles
+      .map((chest) => tileDataToTile(chest.data))
+      .filter((tile) => tile.occupier_type === TileOccupier.Chest)
+      .map((tile) => {
+        const chestCoord = new Coord(tile.col, tile.row);
+        const distance = centerCoord.distance(chestCoord);
+
+        return {
+          entityId: tile.occupier_id,
+          position: { alt: false, x: tile.col, y: tile.row },
+          distance: distance,
+        };
+      })
+      .sort((a, b) => a.distance - b.distance);
+  }
+
+  /**
+   * Fetch all relics owned by a player's structures from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchPlayerStructureRelics(owner: string): Promise<StructureRelicsData[]> {
+    const formattedOwner = formatAddressForQuery(owner);
+    const query = RELICS_QUERIES.PLAYER_STRUCTURE_RELICS.replace("{owner}", formattedOwner);
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StructureRelicsData>(url, "Failed to fetch player structure relics");
+  }
+
+  /**
+   * Fetch all relics owned by a player's armies from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchPlayerArmyRelics(owner: string): Promise<ArmyRelicsData[]> {
+    const formattedOwner = formatAddressForQuery(owner);
+    const query = RELICS_QUERIES.PLAYER_ARMY_RELICS.replace("{owner}", formattedOwner);
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ArmyRelicsData>(url, "Failed to fetch player army relics");
+  }
+
+  /**
+   * Get all relics owned by a player across all their entities
+   * @param sqlApi - The SQL API instance
+   * @param playerAddress - The player's contract address
+   * @returns All relics grouped by entity type
+   */
+  async fetchAllPlayerRelics(playerAddress: string): Promise<PlayerRelicsData> {
+    try {
+      const [structureRelics, armyRelics] = await Promise.all([
+        this.fetchPlayerStructureRelics(playerAddress),
+        this.fetchPlayerArmyRelics(playerAddress),
+      ]);
+
+      const structures: EntityWithRelics[] = structureRelics.map((structure) => {
+        const relics = extractRelicsFromResourceData(structure);
+
+        return {
+          entityId: structure.entity_id,
+          structureType: structure.entity_type,
+          type: EntityType.STRUCTURE,
+          position: { alt: false, x: structure.coord_x, y: structure.coord_y },
+          relics,
+        };
+      });
+
+      const armies: EntityWithRelics[] = armyRelics.map((army) => {
+        const relics = extractRelicsFromResourceData(army);
+
+        return {
+          entityId: army.entity_id,
+          type: EntityType.ARMY,
+          position: { alt: false, x: army.coord_x, y: army.coord_y },
+          relics,
+        };
+      });
+
+      return {
+        structures,
+        armies,
+      };
+    } catch (error) {
+      console.error("Error fetching player relics:", error);
+      return {
+        structures: [],
+        armies: [],
+      };
+    }
+  }
+
+  /**
+   * Fetch all structures for map display from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchAllStructuresMapData(): Promise<StructureMapDataRaw[]> {
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_STRUCTURES_MAP_DATA);
+    return await fetchWithErrorHandling<StructureMapDataRaw>(url, "Failed to fetch all structures map data");
+  }
+
+  /**
+   * Fetch all armies for map display from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchAllArmiesMapData(): Promise<ArmyMapDataRaw[]> {
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_ARMIES_MAP_DATA);
+    return await fetchWithErrorHandling<ArmyMapDataRaw>(url, "Failed to fetch all armies map data");
+  }
+
+  /**
+   * Fetch the world contract address from the SQL database.
+   * SQL queries always return arrays, so we extract the first result.
+   */
+  async fetchWorldAddress(): Promise<ContractAddress | null> {
+    const query = `SELECT contract_address FROM contracts WHERE contract_type = 'WORLD'`;
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<{ contract_address: ContractAddress }>(
+      url,
+      "Failed to fetch world address",
+    );
+
+    const firstResult = extractFirstOrNull(results);
+    return firstResult?.contract_address ?? null;
+  }
+
+  /**
+   * Fetch hyperstructures with count of realms within a given radius.
+   * SQL queries always return arrays.
+   */
+  async fetchHyperstructuresWithRealmCount(radius: number): Promise<HyperstructureRealmCountDataRaw[]> {
+    const query = HYPERSTRUCTURE_QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replace(
+      "{radius}",
+      (radius * radius).toString(),
+    );
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<HyperstructureRealmCountDataRaw>(
+      url,
+      "Failed to fetch hyperstructures with realm count",
+    );
+  }
+
+  /**
+   * Fetches story events with pagination support.
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEvents(limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const query = STORY_QUERIES.ALL_STORY_EVENTS.replace("{limit}", limit.toString()).replace(
+      "{offset}",
+      offset.toString(),
+    );
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events");
+  }
+
+  /**
+   * Fetches story events since a given timestamp (for auto-refresh).
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEventsSince(timestamp: number): Promise<StoryEventData[]> {
+    const query = STORY_QUERIES.STORY_EVENTS_SINCE.replace("{timestamp}", timestamp.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events since timestamp");
+  }
+
+  /**
+   * Fetches story events by entity ID with pagination.
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEventsByEntity(entityId: ID, limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const query = STORY_QUERIES.STORY_EVENTS_BY_ENTITY.replace("{entityId}", entityId.toString())
+      .replace("{limit}", limit.toString())
+      .replace("{offset}", offset.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events by entity");
+  }
+
+  /**
+   * Fetches story events by owner address with pagination.
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEventsByOwner(owner: string, limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const formattedOwner = formatAddressForQuery(owner);
+    const query = STORY_QUERIES.STORY_EVENTS_BY_OWNER.replace("{owner}", formattedOwner)
+      .replace("{limit}", limit.toString())
+      .replace("{offset}", offset.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events by owner");
+  }
+
+  /**
+   * Counts total number of story events for pagination.
+   * SQL queries always return arrays, so we extract the first result.
+   */
+  async fetchStoryEventsCount(): Promise<number> {
+    const url = buildApiUrl(this.baseUrl, STORY_QUERIES.STORY_EVENTS_COUNT);
+    const results = await fetchWithErrorHandling<{ total_count: number }>(url, "Failed to count story events");
+    const firstResult = extractFirstOrNull(results);
+    return firstResult?.total_count ?? 0;
+  }
+
+  /**
+   * Fetches registered player points directly from PlayerRegisteredPoints and ranks them client-side.
+   * Uses buildRegisteredLeaderboardEntries to keep parsing consistent with the main leaderboard helpers.
+   */
+  async fetchRegisteredPlayerPoints(limit: number = 10, offset: number = 0): Promise<PlayerLeaderboardRow[]> {
+    const { safeLimit, safeOffset, effectiveLimit } = sanitizeLeaderboardPagination(limit, offset);
+
+    if (safeLimit === 0) {
+      return [];
+    }
+
+    const query = LEADERBOARD_QUERIES.REGISTERED_PLAYER_POINTS.replace("{limit}", effectiveLimit.toString()).replace(
+      "{offset}",
+      "0",
+    );
+    const url = buildApiUrl(this.baseUrl, query);
+    const registeredRows = await fetchWithErrorHandling<RawPlayerLeaderboardRow>(
+      url,
+      "Failed to fetch registered player points",
+    );
+
+    const { entries } = buildRegisteredLeaderboardEntries({
+      registeredRows,
+      unregisteredShareholderPoints: new Map<string, number>(),
+    });
+
+    const rankedEntries = addLeaderboardRanks(sortLeaderboardEntries(entries));
+    return rankedEntries.slice(safeOffset, safeOffset + safeLimit);
+  }
+
+  /**
+   * Fetches player leaderboard data with unregistered shareholder points aggregated server-side.
+   */
+  async fetchPlayerLeaderboard(limit: number = 10, offset: number = 0): Promise<PlayerLeaderboardRow[]> {
+    const { safeLimit, safeOffset, effectiveLimit } = sanitizeLeaderboardPagination(limit, offset);
+
+    if (safeLimit === 0) {
+      return [];
+    }
+
+    const { registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRow } =
+      await fetchLeaderboardSourceData({
+        baseUrl: this.baseUrl,
+        effectiveLimit,
+        defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+      });
+
+    const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
+      configRow: hyperstructureConfigRow,
+      hyperstructureRows,
+      hyperstructureShareholderRows,
+    });
+
+    const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({
+      registeredRows,
+      unregisteredShareholderPoints,
+    });
+
+    const additionalEntries = buildAdditionalLeaderboardEntries({
+      unregisteredShareholderPoints,
+      processedAddresses,
+    });
+
+    const sortedEntries = sortLeaderboardEntries([...registeredEntries, ...additionalEntries]);
+    const rankedEntries = addLeaderboardRanks(sortedEntries);
+
+    return rankedEntries.slice(safeOffset, safeOffset + safeLimit);
+  }
+
+  /**
+   * Fetches leaderboard data for a single player by address, including unregistered shareholder points.
+   */
+  async fetchPlayerLeaderboardByAddress(playerAddress: string): Promise<PlayerLeaderboardRow | null> {
+    const trimmed = playerAddress.trim().toLowerCase();
+    if (!trimmed) {
+      return null;
+    }
+
+    const prefixed = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
+    if (!/^0x[0-9a-f]+$/.test(prefixed)) {
+      return null;
+    }
+
+    let canonicalAddress: string;
+    try {
+      canonicalAddress = formatAddressForQuery(prefixed).toLowerCase();
+    } catch {
+      return null;
+    }
+
+    const leaderboardSourceData = await fetchLeaderboardSourceData({
+      baseUrl: this.baseUrl,
+      effectiveLimit: 0,
+      defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+    });
+
+    const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
+      configRow: leaderboardSourceData.hyperstructureConfigRow,
+      hyperstructureRows: leaderboardSourceData.hyperstructureRows,
+      hyperstructureShareholderRows: leaderboardSourceData.hyperstructureShareholderRows,
+    });
+
+    const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({
+      registeredRows: leaderboardSourceData.registeredRows,
+      unregisteredShareholderPoints,
+    });
+
+    const additionalEntries = buildAdditionalLeaderboardEntries({
+      unregisteredShareholderPoints,
+      processedAddresses,
+    });
+
+    const rankedEntries = addLeaderboardRanks(sortLeaderboardEntries([...registeredEntries, ...additionalEntries]));
+
+    const candidateAddresses = new Set<string>();
+    const pushCandidate = (value: string | null | undefined) => {
+      if (typeof value !== "string") {
+        return;
+      }
+
+      const normalized = value.trim().toLowerCase();
+      if (normalized) {
+        candidateAddresses.add(normalized);
+      }
+    };
+
+    pushCandidate(canonicalAddress);
+    pushCandidate(prefixed);
+
+    try {
+      pushCandidate(`0x${BigInt(prefixed).toString(16)}`);
+    } catch {
+      // ignore invalid conversions
+    }
+
+    try {
+      pushCandidate(`0x${BigInt(canonicalAddress).toString(16)}`);
+    } catch {
+      // ignore invalid conversions
+    }
+
+    const match = rankedEntries.find((entry) => {
+      const entryCandidates = [typeof entry.playerAddress === "string" ? entry.playerAddress.toLowerCase() : null];
+
+      return entryCandidates.some((value) => value !== null && candidateAddresses.has(value));
+    });
+
+    return match ?? null;
   }
 }

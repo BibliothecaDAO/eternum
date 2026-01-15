@@ -1,5 +1,5 @@
-import { CapacityInfo } from "@/ui/features/world";
-import { getStructureName } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { CapacityInfo } from "@/ui/features/world/containers/capacity-info";
 import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/types";
 import { memo } from "react";
 
@@ -10,6 +10,7 @@ const CASTLE_IMAGES: Partial<Record<RealmLevels, string>> = {
 } as const;
 
 export const RealmInfo = memo(({ realm }: { realm: RealmInfoType }) => {
+  const mode = useGameModeConfig();
   const levelImage = CASTLE_IMAGES[realm.level as unknown as keyof typeof CASTLE_IMAGES];
 
   return (
@@ -22,7 +23,7 @@ export const RealmInfo = memo(({ realm }: { realm: RealmInfoType }) => {
             </div>
           )}
           <div className="flex flex-col gap-2">
-            <h1>{getStructureName(realm.structure).name} </h1>
+            <h1>{mode.structure.getName(realm.structure).name} </h1>
             <CapacityInfo structureEntityId={realm.entityId} className="flex flex-row text-xl" />
           </div>
         </div>

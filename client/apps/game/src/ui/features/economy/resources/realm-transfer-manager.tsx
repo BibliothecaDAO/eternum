@@ -19,6 +19,7 @@ const RealmTransferContainer = ({ resource, zIndex }: { resource: number; zIndex
       title={resources.find((r) => r.id === resource)?.trait ?? ""}
       onClick={() => togglePopup(resource.toString())}
       show={isOpen}
+      width="600px"
       className={`z-[${zIndex}]`}
     >
       <RealmTransfer resource={resource} />

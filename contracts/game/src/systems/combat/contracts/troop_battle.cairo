@@ -1,6 +1,6 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Direction};
-use s1_eternum::models::troop::GuardSlot;
+use crate::alias::ID;
+use crate::models::position::Direction;
+use crate::models::troop::GuardSlot;
 
 
 #[starknet::interface]
@@ -24,28 +24,31 @@ pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
+    use crate::models::config::{
         BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::position::{CoordTrait, Direction};
-    use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
-    use s1_eternum::models::stamina::{StaminaImpl};
-    use s1_eternum::models::structure::{
+    use crate::models::events::{BattleStory, BattleType, BattleStructureType, Story, StoryEvent};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
+    use crate::models::stamina::StaminaImpl;
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::{
-        resource::{iResourceTransferImpl}, structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
-    };
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::utils::random::{VRFImpl};
+    use crate::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
+    use crate::models::weight::Weight;
+    use crate::systems::utils::resource::iResourceTransferImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::map::biomes::Biome;
+    use crate::utils::random::VRFImpl;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
     use super::super::super::super::super::models::troop::GuardTrait;
 
 
@@ -89,9 +92,17 @@ pub mod troop_battle_systems {
             let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
             explorer_defender.assert_caller_not_structure_or_agent_owner(ref world);
 
+            // capture owner addresses before battle
+            let explorer_aggressor_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_aggressor.owner,
+            );
+            let explorer_defender_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_defender.owner,
+            );
+
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -125,17 +136,25 @@ pub mod troop_battle_systems {
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
-            let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library
+                .get_biome(explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
-            explorer_aggressor_troops
-                .attack(
-                    ref explorer_defender_troops,
+
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_aggressor, updated_defender) = combat_library
+                .troops_attack(
+                    explorer_aggressor_troops,
+                    explorer_defender_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
+                    tick.interval(),
                 );
+            explorer_aggressor_troops = updated_aggressor;
+            explorer_defender_troops = updated_defender;
 
             // update both explorers
             explorer_aggressor.troops = explorer_aggressor_troops;
@@ -157,12 +176,6 @@ pub mod troop_battle_systems {
                 false,
             );
 
-            let explorer_aggressor_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
-            );
-            let explorer_defender_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_defender.owner,
-            );
             // save or delete explore
             if explorer_aggressor_troops.count.is_zero() {
                 if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
@@ -283,6 +296,59 @@ pub mod troop_battle_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
+
+            // emit story events
+            let battle_story = BattleStory {
+                battle_type: BattleType::ExplorerVsExplorer,
+                attacker_id: explorer_aggressor.explorer_id,
+                attacker_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
+                attacker_owner_id: explorer_aggressor.owner,
+                attacker_owner_address: explorer_aggressor_owner_address,
+                attacker_troops_type: explorer_aggressor.troops.category,
+                attacker_troops_tier: explorer_aggressor.troops.tier,
+                attacker_troops_before: explorer_aggressor_troop_count_before_attack,
+                attacker_troops_lost: explorer_aggressor_troop_count_before_attack - explorer_aggressor_troops.count,
+                defender_id: explorer_defender.explorer_id,
+                defender_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
+                defender_owner_id: explorer_defender.owner,
+                defender_owner_address: explorer_defender_owner_address,
+                defender_troops_type: explorer_defender.troops.category,
+                defender_troops_tier: explorer_defender.troops.tier,
+                defender_troops_before: explorer_defender_troop_count_before_attack,
+                defender_troops_lost: explorer_defender_troop_count_before_attack - explorer_defender_troops.count,
+                winner_id: winner_owner_structure_id,
+                stolen_resources: steal_resources,
+            };
+
+            // Emit from attacker perspective
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(explorer_aggressor_owner_address),
+                        entity_id: Option::Some(explorer_aggressor.explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::BattleStory(battle_story),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
+            // Emit from defender perspective
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(explorer_defender_owner_address),
+                        entity_id: Option::Some(explorer_defender.explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::BattleStory(battle_story),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -305,8 +371,15 @@ pub mod troop_battle_systems {
             );
             guarded_structure_owner.assert_caller_not_owner();
 
+            // capture owner address before battle
+            let explorer_aggressor_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_aggressor.owner,
+            );
+
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
+
+            let mut structure_claimed_after_battle: bool = false;
 
             // ensure structure id is for a structure
             let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -314,7 +387,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -333,6 +406,7 @@ pub mod troop_battle_systems {
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
                 // claim structure
+                structure_claimed_after_battle = true;
                 iStructureImpl::battle_claim(
                     ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
                 );
@@ -352,16 +426,28 @@ pub mod troop_battle_systems {
 
             // aggressor attacks defender
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
-            let defender_biome: Biome = get_biome(
-                guarded_structure.coord().x.into(), guarded_structure.coord().y.into(),
-            );
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library
+                .get_biome(guarded_structure.coord().alt, guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
-            explorer_aggressor_troops
-                .attack(ref guard_troops, defender_biome, troop_stamina_config, troop_damage_config, tick.current());
+            let guard_troop_count_before_attack = guard_troops.count;
 
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_aggressor, updated_guard) = combat_library
+                .troops_attack(
+                    explorer_aggressor_troops,
+                    guard_troops,
+                    defender_biome,
+                    troop_stamina_config,
+                    troop_damage_config,
+                    tick.current(),
+                    tick.interval(),
+                );
+            explorer_aggressor_troops = updated_aggressor;
+            guard_troops = updated_guard;
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
 
@@ -423,6 +509,7 @@ pub mod troop_battle_systems {
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
                     if guard_slot.is_none() {
                         // claim structure
+                        structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
                             ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
                         );
@@ -435,12 +522,6 @@ pub mod troop_battle_systems {
             }
 
             // you only win if you kill the other AND survive
-            let explorer_aggressor_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
-            );
-            let guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, structure_id,
-            );
             let mut winner_owner_structure_id: ID = Zero::zero();
             let mut winner_owner_structure_address: starknet::ContractAddress = Zero::zero();
             if explorer_aggressor_troops.count.is_zero() && guard_troops.count.is_non_zero() {
@@ -478,6 +559,59 @@ pub mod troop_battle_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
+
+            // emit story events
+            let battle_story = BattleStory {
+                battle_type: BattleType::ExplorerVsGuard,
+                attacker_id: explorer_id,
+                attacker_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
+                attacker_owner_id: explorer_aggressor.owner,
+                attacker_owner_address: explorer_aggressor_owner_address,
+                attacker_troops_type: explorer_aggressor.troops.category,
+                attacker_troops_tier: explorer_aggressor.troops.tier,
+                attacker_troops_before: explorer_aggressor_troop_count_before_attack,
+                attacker_troops_lost: explorer_aggressor_troop_count_before_attack - explorer_aggressor_troops.count,
+                defender_id: structure_id,
+                defender_structure: BattleStructureType {
+                    structure_category: guarded_structure.category.into(),
+                    structure_taken: structure_claimed_after_battle,
+                },
+                defender_owner_id: structure_id,
+                defender_owner_address: guarded_structure_owner,
+                defender_troops_type: guard_troops.category,
+                defender_troops_tier: guard_troops.tier,
+                defender_troops_before: guard_troop_count_before_attack,
+                defender_troops_lost: guard_troop_count_before_attack - guard_troops.count,
+                winner_id: winner_owner_structure_id,
+                stolen_resources: array![].span(),
+            };
+
+            // Emit from attacker perspective
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(explorer_aggressor_owner_address),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::BattleStory(battle_story),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
+            // Emit from defender perspective
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(guarded_structure_owner),
+                        entity_id: Option::Some(structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::BattleStory(battle_story),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -506,8 +640,15 @@ pub mod troop_battle_systems {
             // );
             // explorer_defender_owner.assert_caller_not_owner();
 
+            // capture owner address before battle
+            let explorer_defender_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_defender.owner,
+            );
+
             // ensure explorer has troops
             assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
+
+            let mut structure_claimed_after_battle: bool = false;
 
             // ensure structure is allowed to use guard slot
             let mut structure_guards_aggressor: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
@@ -525,7 +666,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             structure_aggressor_base.assert_not_cloaked(battle_config, tick, season_config);
 
             // ensure defender is not cloaked
@@ -543,19 +684,28 @@ pub mod troop_battle_systems {
             );
 
             // aggressor attacks defender
-            let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library
+                .get_biome(explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
-            structure_guard_aggressor_troops
-                .attack(
-                    ref explorer_defender_troops,
+            let structure_guard_aggressor_troop_count_before_attack = structure_guard_aggressor_troops.count;
+
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_guard, updated_explorer) = combat_library
+                .troops_attack(
+                    structure_guard_aggressor_troops,
+                    explorer_defender_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
+                    tick.interval(),
                 );
+            structure_guard_aggressor_troops = updated_guard;
+            explorer_defender_troops = updated_explorer;
 
             // update explorer
             explorer_defender.troops = explorer_defender_troops;
@@ -618,6 +768,7 @@ pub mod troop_battle_systems {
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
                     if guard_slot.is_none() {
                         // claim structure
+                        structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
                             ref world,
                             ref structure_guards_aggressor,
@@ -637,12 +788,6 @@ pub mod troop_battle_systems {
             }
 
             // grant achievement
-            let explorer_defender_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_defender.owner,
-            );
-            let structure_aggressor_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, structure_id,
-            );
             let mut winner_owner_structure_id: ID = Zero::zero();
             let mut winner_owner_structure_address: starknet::ContractAddress = Zero::zero();
             if structure_guard_aggressor_troops.count.is_zero() && explorer_defender.troops.count.is_non_zero() {
@@ -669,6 +814,60 @@ pub mod troop_battle_systems {
                         defender_owner: explorer_defender.owner,
                         winner_id: winner_owner_structure_id,
                         max_reward: array![].span(),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
+            // emit story events
+            let battle_story = BattleStory {
+                battle_type: BattleType::GuardVsExplorer,
+                attacker_id: structure_id,
+                attacker_structure: BattleStructureType {
+                    structure_category: structure_aggressor_base.category.into(),
+                    structure_taken: structure_claimed_after_battle,
+                },
+                attacker_owner_id: structure_id,
+                attacker_owner_address: structure_aggressor_owner,
+                attacker_troops_type: structure_guard_aggressor_troops.category,
+                attacker_troops_tier: structure_guard_aggressor_troops.tier,
+                attacker_troops_before: structure_guard_aggressor_troop_count_before_attack,
+                attacker_troops_lost: structure_guard_aggressor_troop_count_before_attack
+                    - structure_guard_aggressor_troops.count,
+                defender_id: explorer_id,
+                defender_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
+                defender_owner_id: explorer_defender.owner,
+                defender_owner_address: explorer_defender_owner_address,
+                defender_troops_type: explorer_defender.troops.category,
+                defender_troops_tier: explorer_defender.troops.tier,
+                defender_troops_before: explorer_defender_troop_count_before_attack,
+                defender_troops_lost: explorer_defender_troop_count_before_attack - explorer_defender.troops.count,
+                winner_id: winner_owner_structure_id,
+                stolen_resources: array![].span(),
+            };
+
+            // Emit from attacker perspective
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_aggressor_owner),
+                        entity_id: Option::Some(structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::BattleStory(battle_story),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
+            // Emit from defender perspective
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(explorer_defender_owner_address),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::BattleStory(battle_story),
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );

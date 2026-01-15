@@ -50,15 +50,44 @@ export default {
       colors: {
         gold: "#dfaa54",
         crimson: "#582C4D",
+        relic: "#a78bfa", // purple-300
+        relic2: "#c084f5", // purple-400
+        "relic-activated": "#a855f7", // purple-500/20
+        relics: {
+          stamina: {
+            bg: "rgba(22, 101, 52, 0.2)",
+            text: "#4ade80",
+          },
+          damage: {
+            bg: "rgba(220, 38, 38, 0.2)",
+            text: "#f87171",
+          },
+          damageReduction: {
+            bg: "rgba(37, 99, 235, 0.2)",
+            text: "#60a5fa",
+          },
+          exploration: {
+            bg: "rgba(147, 51, 234, 0.2)",
+            text: "#c084fc",
+          },
+          production: {
+            bg: "rgba(202, 138, 4, 0.2)",
+            text: "#facc15",
+          },
+          gray: {
+            bg: "rgba(75, 85, 99, 0.2)",
+            text: "#d1d5db",
+          },
+        },
         brilliance: "#7DFFBA",
         orange: "#FE993C",
         yellow: "#FAFF00",
-        red: "#FC4C4C",
+        // red: "#FC4C4C",
         blueish: "#6B7FD7",
         "anger-light": "#CD8290",
         "gray-gold": "#776756",
         "light-pink": "#CAB1A6",
-        gray: "#1B1B1B",
+        "custom-gray": "#1B1B1B",
         "light-brown": "#14110B",
         brown: "#14100D",
         "light-red": "#EF5858",
@@ -67,11 +96,14 @@ export default {
         danger: "#C84444",
         "dark-green": "#064105",
         "dark-green-accent": "#3A3D23",
-        green: "#B5BD75",
+        // green: "#B5BD75",
         lightest: "#FFF5EA",
         ally: "#2B2E3E",
         cta: "#FFA200",
         enemy: "#46201D", // New color for enemies
+        "progress-bar-good": "#10b981", // green-500
+        "progress-bar-medium": "#f59e0b", // amber-500
+        "progress-bar-danger": "#ef4444", // red-500
         order: {
           power: "#F4B547",
           giants: "#EB544D",
@@ -113,7 +145,7 @@ export default {
       backgroundImage: {
         map: "url(/images/map.svg)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
-        "dark-wood": "url(/images/textures/dark-wood.png)",
+        "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
       },
       fontSize: {
         xs: ".975rem",
@@ -122,20 +154,65 @@ export default {
       cursor: {
         fancy: "url(/images/icons/cursor.png), pointer",
         pointer: "url(/images/icons/cursor.png), pointer",
-        grab: "url(public/images/icons/grab.png), grab",
         crosshair: "url(public/images/icons/cursor-cross.png), crosshair",
         wait: "url(public/images/logos/eternum-animated.png), wait",
       },
       strokeWidth: {
         8: "8px",
       },
+      zIndex: {
+        1: "1",
+        100: "100",
+        250: "250",
+        1000: "1000",
+      },
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",
+        "gradient-bg": "gradientBg 30s ease-in-out infinite",
+        "float-up": "floatUp 2s ease-out forwards",
+        "rank-up": "rankUp 3s ease-out forwards",
+        "rank-down": "rankDown 3s ease-out forwards",
+        "row-glow-up": "rowGlowUp 2s ease-out forwards",
+        "row-glow-down": "rowGlowDown 1.5s ease-out forwards",
+        "burst-ring": "burstRing 0.6s ease-out forwards",
       },
       keyframes: {
         slowPulse: {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.8" },
+        },
+        gradientBg: {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
+        floatUp: {
+          "0%": { opacity: "1", transform: "translateY(0)" },
+          "100%": { opacity: "0", transform: "translateY(-24px)" },
+        },
+        rankUp: {
+          "0%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.9", transform: "scale(1.15)" },
+          "100%": { opacity: "0", transform: "scale(1)" },
+        },
+        rankDown: {
+          "0%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.9", transform: "scale(1.15)" },
+          "100%": { opacity: "0", transform: "scale(1)" },
+        },
+        rowGlowUp: {
+          "0%": { boxShadow: "0 0 0 0 rgba(74, 222, 128, 0)" },
+          "15%": { boxShadow: "0 0 20px 2px rgba(74, 222, 128, 0.5)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(74, 222, 128, 0)" },
+        },
+        rowGlowDown: {
+          "0%": { boxShadow: "0 0 0 0 rgba(248, 113, 113, 0)" },
+          "15%": { boxShadow: "0 0 12px 1px rgba(248, 113, 113, 0.4)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(248, 113, 113, 0)" },
+        },
+        burstRing: {
+          "0%": { boxShadow: "0 0 0 0 currentColor", opacity: "0.6" },
+          "100%": { boxShadow: "0 0 0 12px currentColor", opacity: "0" },
         },
       },
     },
@@ -229,6 +306,16 @@ export default {
     "text-enemy",
     "bg-ally",
     "bg-enemy",
+    // Stamina bar classes
+    "bg-green-500",
+    "bg-yellow-500",
+    "bg-red-500",
+    "bg-amber-500",
+    "text-yellow-400",
+    "h-2",
+    "w-16",
+    "rounded-full",
+    "text-[10px]",
   ],
   plugins: [
     require("@tailwindcss/typography"),

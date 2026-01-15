@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blitz Highlight Card Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Montserrat:wght@400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        font-family:
+          "Montserrat",
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        color: #ffffff;
+        background-color: #000000;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 20% 20%, rgba(191, 149, 63, 0.04), #000000);
+        color: inherit;
+        padding: 32px 12px 48px;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 1100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        text-align: center;
+      }
+
+      .cards-grid {
+        width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 28px;
+        overflow-x: auto;
+        padding: 8px 6px 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        color: #f5e6c3;
+      }
+
+      .hint {
+        margin: 0;
+        max-width: 740px;
+        color: rgba(255, 255, 255, 0.74);
+        font-size: 14px;
+      }
+
+      .hint code {
+        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #f0d78c;
+      }
+
+      .blitz-card {
+        position: relative;
+        width: 960px;
+        height: 540px;
+        background: #000000;
+        overflow: hidden;
+        box-shadow: 0 40px 120px rgba(0, 0, 0, 0.65);
+        flex: 0 0 auto;
+      }
+
+      .bg-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .bg-mark,
+      .bg-mark-glow,
+      .bg-smoke,
+      .bg-texture {
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .bg-mark {
+        width: 927px;
+        height: 812px;
+        left: -486px;
+        top: -136px;
+        background: url("../../public/images/logos/Eternum-Mark-Black.png") center/contain no-repeat;
+        opacity: 0.05;
+        filter: invert(1) brightness(1.6);
+        z-index: 1;
+      }
+
+      /* .bg-mark-glow {
+        width: 927px;
+        height: 812px;
+        left: -486px;
+        top: -136px;
+        background: linear-gradient(108.33deg, #ffffff 55.43%, rgba(255, 255, 255, 0) 85.3%);
+        mix-blend-mode: screen;
+        opacity: 0.35;
+        z-index: 1;
+      } */
+
+      .bg-smoke {
+        width: 1198px;
+        height: 724px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) rotate(180deg);
+        background: url("../../public/images/score-cards/smoke.png") center/cover no-repeat;
+        opacity: 0.05;
+        z-index: 1;
+      }
+
+      .bg-texture {
+        width: 1282px;
+        height: 854px;
+        left: 50%;
+        top: -148px;
+        transform: translateX(-50%);
+        background: url("../../public/images/score-cards/texture.jpg") center/cover no-repeat;
+        mix-blend-mode: lighten;
+        opacity: 0.3;
+        z-index: 1;
+      }
+
+      .gradient-overlay {
+        background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #b38728 79.96%);
+        mix-blend-mode: exclusion;
+        opacity: 0.5;
+        z-index: 2;
+      }
+
+      .card-silver .gradient-overlay {
+        background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #434343 79.96%);
+      }
+
+      .card-emerald .gradient-overlay {
+        background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #4e8b87 79.96%);
+      }
+
+      .card-neutral .gradient-overlay {
+        background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #691c87 79.96%);
+      }
+
+      .card-bronze .gradient-overlay {
+        background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #6e3a06 79.96%);
+      }
+
+      .dark-overlay {
+        background: radial-gradient(
+          120% 120% at 50% 50%,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(0, 0, 0, 0.65) 60%,
+          rgba(0, 0, 0, 0.8) 100%
+        );
+        mix-blend-mode: multiply;
+        opacity: 0.8;
+        z-index: 3;
+      }
+
+      .border-frame {
+        inset: -7px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow:
+          inset 0 0 40px rgba(191, 149, 63, 0.18),
+          0 0 0 1px rgba(0, 0, 0, 0.35);
+        z-index: 6;
+      }
+
+      .card-silver .border-frame {
+        box-shadow:
+          inset 0 0 40px rgba(172, 172, 172, 0.16),
+          0 0 0 1px rgba(0, 0, 0, 0.35);
+      }
+
+      .card-emerald .border-frame {
+        box-shadow:
+          inset 0 0 40px rgba(78, 139, 135, 0.2),
+          0 0 0 1px rgba(0, 0, 0, 0.35);
+      }
+
+      .card-neutral .border-frame {
+        box-shadow:
+          inset 0 0 40px rgba(105, 28, 135, 0.2),
+          0 0 0 1px rgba(0, 0, 0, 0.35);
+      }
+
+      .card-bronze .border-frame {
+        box-shadow:
+          inset 0 0 40px rgba(146, 85, 24, 0.2),
+          0 0 0 1px rgba(0, 0, 0, 0.35);
+      }
+
+      .corner-mark {
+        position: absolute;
+        width: 73px;
+        height: 64px;
+        left: 32px;
+        top: 32px;
+        object-fit: contain;
+        filter: invert(1);
+        opacity: 0.92;
+        z-index: 4;
+      }
+
+      .title-stack {
+        position: absolute;
+        left: 130px;
+        top: 33px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        align-items: flex-start;
+        font-family: "IM Fell English", serif;
+        z-index: 4;
+      }
+
+      .title-stack .eyebrow {
+        font-size: 16px;
+        line-height: 20px;
+        font-style: italic;
+        color: #ffffff;
+        opacity: 0.75;
+      }
+
+      .title-stack .title {
+        font-size: 32px;
+        line-height: 41px;
+        font-weight: 400;
+        color: #ffffff;
+      }
+
+      .points {
+        position: absolute;
+        left: 32px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 330px;
+        height: 244px;
+        z-index: 4;
+      }
+
+      .points-label {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 127px;
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 24px;
+        line-height: 30px;
+        text-align: right;
+        color: #ffffff;
+      }
+
+      .points-value {
+        position: absolute;
+        left: 0;
+        top: 34px;
+        width: 237px;
+        font-family: "Montserrat", sans-serif;
+        font-weight: 800;
+        font-size: 64px;
+        line-height: 78px;
+        color: #bf953f;
+      }
+
+      .card-silver .points-value {
+        color: #bdbdbd;
+      }
+
+      .card-emerald .points-value {
+        color: #4e7e8b;
+      }
+
+      .card-neutral .points-value {
+        color: #651886;
+      }
+
+      .card-bronze .points-value {
+        color: #925518;
+      }
+
+      .stat {
+        position: absolute;
+      }
+
+      .stat-label {
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 16px;
+        line-height: 20px;
+        color: #ffffff;
+        opacity: 0.75;
+      }
+
+      .stat-value {
+        margin-top: 4px;
+        font-family: "Montserrat", sans-serif;
+        font-weight: 800;
+        font-size: 20px;
+        line-height: 24px;
+        color: #ffffff;
+        opacity: 0.75;
+        white-space: nowrap;
+      }
+
+      .stat-tiles {
+        left: 0;
+        top: 124px;
+      }
+
+      .stat-rifts {
+        left: 0;
+        top: 196px;
+      }
+
+      .stat-crates {
+        left: 155px;
+        top: 124px;
+      }
+
+      .stat-hs-taken {
+        left: 133px;
+        top: 196px;
+      }
+
+      .stat-hs-held {
+        left: 272px;
+        top: 196px;
+      }
+
+      /* .rank-ghost {
+        position: absolute;
+        width: 321px;
+        height: 555px;
+        left: calc(50% - 160.5px + 81.5px);
+        top: -21px;
+        font-family: "Montserrat", sans-serif;
+        font-weight: 800;
+        font-size: 790.685px;
+        line-height: 555px;
+        text-align: center;
+        color: #ffffff;
+        opacity: 0.05;
+        z-index: 3;
+        pointer-events: none;
+      } */
+
+      .card-silver .rank-ghost {
+        width: 474px;
+        left: calc(50% - 474px / 2 + 81px);
+        -webkit-text-stroke: 2.6px rgba(255, 255, 255, 0.14);
+        text-stroke: 2.6px rgba(255, 255, 255, 0.14);
+      }
+
+      .card-silver .rank-ghost::after {
+        -webkit-text-stroke: 2px rgba(0, 0, 0, 0.6);
+        text-stroke: 2px rgba(0, 0, 0, 0.6);
+      }
+
+      .card-emerald .rank-ghost {
+        width: 834px;
+        left: calc(50% - 834px / 2 + 81px);
+        opacity: 0.05;
+      }
+
+      .card-neutral .rank-ghost {
+        width: 794px;
+        left: calc(50% - 794px / 2 + 81px);
+        opacity: 0.05;
+      }
+
+      .card-bronze .rank-ghost {
+        width: 474px;
+        left: calc(50% - 474px / 2 + 81px);
+        opacity: 0.05;
+      }
+
+      .rank-main {
+        position: absolute;
+        width: 290px;
+        height: 219px;
+        left: 515px;
+        top: calc(50% - 109.5px - 40px);
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 8px;
+        z-index: 4;
+      }
+
+      .card-silver .rank-main {
+        width: 396px;
+        left: 462px;
+      }
+
+      .card-emerald .rank-main {
+        width: 514px;
+        left: 403px;
+      }
+
+      .card-neutral .rank-main {
+        width: 498px;
+        left: 411px;
+      }
+
+      .card-bronze .rank-main {
+        width: 389px;
+        left: 466px;
+      }
+
+      .rank-number {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 800;
+        font-size: 312px;
+        line-height: 1;
+        display: inline-block;
+        background: linear-gradient(180deg, #fcf6ba 0%, #b38728 50%, #bf953f 100%);
+        -webkit-text-fill-color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+        text-fill-color: transparent;
+      }
+
+      .card-silver .rank-number {
+        background: linear-gradient(180deg, #f8f8f8 0%, #acacac 50%, #929292 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .card-emerald .rank-number {
+        background: linear-gradient(180deg, #7bffe6 0%, #2c4063 50%, #112b26 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .card-neutral .rank-number {
+        background: linear-gradient(180deg, #691c87 0%, #2c0745 50%, #230537 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .card-bronze .rank-number {
+        background: linear-gradient(180deg, #925518 0%, #6e3a06 50%, #532c04 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .rank-suffix {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 800;
+        font-size: 120px;
+        line-height: 1;
+        display: inline-block;
+        background: linear-gradient(180deg, #fcf6ba 0%, #b38728 50%, #bf953f 100%);
+        -webkit-text-fill-color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+        text-fill-color: transparent;
+      }
+
+      .card-silver .rank-suffix {
+        background: linear-gradient(180deg, #f8f8f8 0%, #acacac 50%, #929292 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .card-emerald .rank-suffix {
+        background: linear-gradient(180deg, #7bffe6 0%, #2c4063 50%, #112b26 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .card-neutral .rank-suffix {
+        background: linear-gradient(180deg, #691c87 0%, #2c0745 50%, #230537 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .card-bronze .rank-suffix {
+        background: linear-gradient(180deg, #925518 0%, #6e3a06 50%, #532c04 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+      .cta {
+        position: absolute;
+        width: 192px;
+        height: 72px;
+        left: 736px;
+        top: 436px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 4px;
+        font-family: "IM Fell English", serif;
+        z-index: 4;
+      }
+
+      .cta-title {
+        font-size: 40px;
+        line-height: 51px;
+        color: #ffffff;
+        margin-top: -4px;
+      }
+
+      .cta-subtitle {
+        font-size: 20px;
+        line-height: 25px;
+        font-style: italic;
+        color: #ffffff;
+        opacity: 0.75;
+      }
+
+      .player {
+        position: absolute;
+        width: 116px;
+        height: 62px;
+        left: 32px;
+        top: 446px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        font-family: "IM Fell English", serif;
+        z-index: 4;
+      }
+
+      .player .name {
+        font-size: 32px;
+        line-height: 41px;
+        color: #ffffff;
+        margin-top: -4px;
+      }
+
+      .player .address {
+        font-size: 20px;
+        line-height: 25px;
+        font-style: italic;
+        color: #ffffff;
+        opacity: 0.75;
+      }
+
+      .powered {
+        position: absolute;
+        width: 149px;
+        height: 62px;
+        left: 196px;
+        top: 446px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 11px;
+        color: #ffffff;
+        z-index: 4;
+      }
+
+      .powered img {
+        width: 134px;
+        height: 31px;
+        object-fit: contain;
+      }
+
+      .powered .copy {
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 16px;
+        line-height: 20px;
+        color: #ffffff;
+        opacity: 0.75;
+      }
+
+      .realms-logo {
+        position: absolute;
+        width: 93px;
+        height: 52px;
+        left: 835px;
+        top: 36px;
+        object-fit: contain;
+        z-index: 4;
+        filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.4));
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>Blitz Leaderboard Covers</h1>
+      <p class="hint">
+        Figma recreations for #1 gold and #2 silver covers. Textures load from
+        <code>client/public/images/score-cards</code>; logos are pulled from the existing public assets.
+      </p>
+
+      <div class="cards-grid">
+        <div class="blitz-card card-gold" role="img" aria-label="Realms Blitz leaderboard first place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
+
+          <div class="rank-ghost" data-ghost="1" aria-hidden="true">1</div>
+          <div class="rank-main" aria-label="1st place">
+            <span class="rank-number">1</span>
+            <span class="rank-suffix">ST</span>
+          </div>
+
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
+          </div>
+
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">64,000</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">119 - 3k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">3 - 3k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">2 - 6k Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">2k Pts</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">dev.blitz.realms.world</div>
+          </div>
+
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x6b52...7311</div>
+          </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
+        </div>
+
+        <div class="blitz-card card-silver" role="img" aria-label="Realms Blitz leaderboard second place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
+
+          <div class="rank-ghost" data-ghost="2" aria-hidden="true">2</div>
+          <div class="rank-main" aria-label="2nd place">
+            <span class="rank-number">2</span>
+            <span class="rank-suffix">ND</span>
+          </div>
+
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
+          </div>
+
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">48,200</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">102 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">2 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">1 - 1k Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">1 - 3k Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">1k Pts</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">dev.blitz.realms.world</div>
+          </div>
+
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x92c1...a7f9</div>
+          </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
+        </div>
+
+        <div class="blitz-card card-bronze" role="img" aria-label="Realms Blitz leaderboard third place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
+
+          <div class="rank-ghost" data-ghost="3" aria-hidden="true">3</div>
+          <div class="rank-main" aria-label="3rd place">
+            <span class="rank-number">3</span>
+            <span class="rank-suffix">RD</span>
+          </div>
+
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
+          </div>
+
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">36,400</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">88 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">1 - 1k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">500 Pts</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">dev.blitz.realms.world</div>
+          </div>
+
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x4e91...ff35</div>
+          </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
+        </div>
+
+        <div class="blitz-card card-neutral" role="img" aria-label="Realms Blitz leaderboard eighth place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
+
+          <div class="rank-ghost" data-ghost="8" aria-hidden="true">8</div>
+          <div class="rank-main" aria-label="8th place">
+            <span class="rank-number">8</span>
+            <span class="rank-suffix">TH</span>
+          </div>
+
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
+          </div>
+
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">11,000</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">88 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">1 - 1k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">500 Pts</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">dev.blitz.realms.world</div>
+          </div>
+
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x3d19...8ace</div>
+          </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
+        </div>
+
+        <div class="blitz-card card-emerald" role="img" aria-label="Realms Blitz leaderboard sixteenth place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
+
+          <div class="rank-ghost" data-ghost="16" aria-hidden="true">16</div>
+          <div class="rank-main" aria-label="16th place">
+            <span class="rank-number">16</span>
+            <span class="rank-suffix">TH</span>
+          </div>
+
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
+          </div>
+
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">11,000</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">88 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">1 - 1k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">500 Pts</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">dev.blitz.realms.world</div>
+          </div>
+
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x7c54...e1a2</div>
+          </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

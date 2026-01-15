@@ -1,191 +1,100 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { DepositResources } from "@/ui/features/economy/resources";
-import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, divideByPrecision, formatTime, getStructureName } from "@bibliothecadao/eternum";
-import { useArrivalsByStructure, useResourceManager } from "@bibliothecadao/react";
-import { ResourceArrivalInfo, Structure } from "@bibliothecadao/types";
-import clsx from "clsx";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-export const StructureArrivals = memo(({ structure }: { structure: Structure }) => {
-  const { currentBlockTimestamp } = getBlockTimestamp();
+import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useArrivalsByStructure } from "@bibliothecadao/react";
+import { ResourcesIds, Structure } from "@bibliothecadao/types";
+import { Loader2, Clock3 } from "lucide-react";
+import { memo, useMemo } from "react";
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [now, setNow] = useState(currentBlockTimestamp);
-
+export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {
+  const chainNowMs = useChainTimeStore((state) => state.nowMs);
   const arrivals = useArrivalsByStructure(structure.entityId);
 
-  // Calculate summary information
-  const readyArrivals = arrivals.filter((arrival) => arrival.arrivesAt <= currentBlockTimestamp).length;
-  const pendingArrivals = arrivals.length - readyArrivals;
-
-  // Count total resources
-  const totalResources = arrivals.reduce((total, arrival) => total + arrival.resources.filter(Boolean).length, 0);
-
-  const toggleStructure = () => {
-    setIsExpanded((prev) => !prev);
-  };
-
-  useEffect(() => {
-    if (!currentBlockTimestamp) return;
-    setNow(currentBlockTimestamp);
-
-    const interval = setInterval(() => {
-      setNow((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentBlockTimestamp]);
-
+  const now = nowOverride ?? Math.floor(chainNowMs / 1000);
+  const mode = useGameModeConfig();
   const structureName = useMemo(() => {
-    return getStructureName(structure.structure).name;
-  }, [structure]);
+    return mode.structure.getName(structure.structure).name;
+  }, [mode.structure, structure]);
 
-  if (arrivals.length === 0) return null;
+  const arrivalsWithResources = useMemo(
+    () =>
+      arrivals
+        .filter((arrival) => arrival.resources.some(Boolean))
+        .sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
+    [arrivals],
+  );
+
+  const arrivalSummaries = useMemo(() => {
+    return arrivalsWithResources.map((arrival) => {
+      const resources = arrival.resources.filter(Boolean).map((resource) => ({
+        resourceId: resource.resourceId as ResourcesIds,
+        amount: divideByPrecision(resource.amount),
+      }));
+
+      const secondsUntilArrival = Math.max(0, Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS - now);
+      const isReady = secondsUntilArrival === 0;
+
+      return {
+        id: `${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`,
+        resources,
+        secondsUntilArrival,
+        isReady,
+      };
+    });
+  }, [arrivalsWithResources, now]);
+
+  if (arrivalSummaries.length === 0) {
+    return null;
+  }
+
+  const incomingLabel =
+    arrivalSummaries.length === 1 ? "1 incoming transfer" : `${arrivalSummaries.length} incoming transfers`;
 
   return (
-    <div className="border border-gold/5">
-      <button
-        className="flex w-full justify-between items-center px-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
-        onClick={toggleStructure}
-      >
-        <div className="flex items-center">
-          <h6 className="">{structureName}</h6>
-        </div>
-        <div className="flex items-center gap-2">
-          {readyArrivals > 0 && (
-            <div className="flex items-center gap-1 bg-emerald-900/40 text-emerald-400 rounded-md px-2 py-0.5 text-xs font-medium">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-              <span>{readyArrivals} ready</span>
-            </div>
-          )}
-          {pendingArrivals > 0 && (
-            <div className="flex items-center gap-1 bg-amber-900/40 text-amber-400 rounded-md px-2 py-0.5 text-xs font-medium">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
-              <span>{pendingArrivals} pending</span>
-            </div>
-          )}
-          <div className="text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">{totalResources} resources</div>
-          <div className="text-gold ml-2">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
-        </div>
-      </button>
+    <div className="border border-gold/5 rounded-md bg-gold/5 p-3 flex flex-col gap-4">
+      <div className="flex flex-wrap items-baseline gap-2 text-gold">
+        <h6 className="text-base">{structureName}</h6>
+        <span className="text-xs text-gold/70">· {incomingLabel}</span>
+      </div>
 
-      {isExpanded && (
-        <div className="flex flex-col gap-2 p-1">
-          {arrivals.map((arrival) => (
-            <ResourceArrival
-              now={now}
-              arrival={arrival}
-              key={`${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`}
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col gap-2">
+        {arrivalSummaries.map((summary) => (
+          <div
+            key={summary.id}
+            className="flex items-center gap-3 border border-gold/10 rounded-md px-2 py-2 bg-gold/10 text-gold w-full"
+          >
+            <div className="flex items-center gap-1 text-xs uppercase tracking-wide whitespace-nowrap min-w-[110px]">
+              {summary.isReady ? (
+                <>
+                  <Loader2 size={14} className="animate-spin text-emerald-300" />
+                  <span className="text-emerald-300">Auto-claiming…</span>
+                </>
+              ) : (
+                <>
+                  <Clock3 size={14} className="text-amber-300" />
+                  <span className="text-amber-300">{formatTime(summary.secondsUntilArrival)}</span>
+                </>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 flex-1">
+              {summary.resources.map((resource) => (
+                <ResourceCost
+                  key={`${summary.id}-${resource.resourceId}`}
+                  type="vertical"
+                  size="xs"
+                  withTooltip
+                  className="!text-gold bg-gold/15 rounded-md px-1 py-1"
+                  resourceId={resource.resourceId}
+                  amount={resource.amount}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 });
-
-const ResourceArrival = ({ arrival, now }: { arrival: ResourceArrivalInfo; now: number }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
-  const resourceManager = useResourceManager(arrival.structureEntityId);
-
-  const storeCapacityKg = resourceManager.getStoreCapacityKg();
-
-  const totalWeight = useMemo(() => {
-    return arrival.resources.reduce((total, resource) => {
-      const weightPerUnit = configManager.resourceWeightsKg[resource.resourceId] || 0;
-
-      const resourceAmount = divideByPrecision(resource.amount);
-      return total + resourceAmount * weightPerUnit;
-    }, 0);
-  }, [arrival.resources]);
-
-  const isOverCapacity = useMemo(() => {
-    return totalWeight + storeCapacityKg.capacityUsedKg > storeCapacityKg.capacityKg;
-  }, [totalWeight, storeCapacityKg]);
-
-  const isArrived = useMemo(() => {
-    return now ? arrival.arrivesAt <= now : false;
-  }, [arrival.arrivesAt, now]);
-
-  const renderEntityStatus = useMemo(() => {
-    if (!now) return null;
-
-    return isArrived ? (
-      <div className="flex flex-wrap items-center  bg-emerald-900/40 text-emerald-400 rounded-md px-2 font-medium border border-emerald-700/50 uppercase text-xs">
-        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-        <span className="ml-2">Ready to offload</span>
-      </div>
-    ) : (
-      <div className="flex items-center gap-2 bg-amber-900/40 text-amber-400 rounded-md px-2 font-medium border border-amber-700/50">
-        <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-        <span> {formatTime(Number(arrival.arrivesAt) - now)}</span>
-      </div>
-    );
-  }, [arrival.arrivesAt, now, isArrived]);
-
-  const renderedResources = useMemo(() => {
-    return arrival.resources
-      .filter(Boolean)
-      .map((resource) => (
-        <ResourceCost
-          key={resource.resourceId}
-          className={clsx("!text-gold", isArrived && "ring-1 ring-emerald-500/30 bg-emerald-900/20 rounded-md p-1")}
-          type="vertical"
-          size="xs"
-          withTooltip={true}
-          resourceId={resource.resourceId}
-          amount={divideByPrecision(resource.amount)}
-        />
-      ));
-  }, [arrival.resources, isArrived]);
-
-  return (
-    <div className={clsx("flex flex-col text-gold")}>
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-1">
-          <div>{isArrived ? "🏰" : "🫏"}</div>
-          {renderEntityStatus}
-        </div>
-        <div className="flex justify-between items-center">
-          <DepositResources isMaxCapacity={isOverCapacity} arrival={arrival} />
-        </div>
-      </div>
-      {isOverCapacity && (
-        <div
-          onMouseEnter={() => {
-            setTooltip({
-              position: "top",
-              content: (
-                <>
-                  {isOverCapacity
-                    ? "This arrival is over capacity - if you accept the order some resources will be lost. Use some of your realms resources in order to fully offload this order"
-                    : "This arrival is under storage capacity and will be fully offloaded"}
-                </>
-              ),
-            });
-          }}
-          onMouseLeave={() => {
-            setTooltip(null);
-          }}
-          className={clsx(
-            "w-full border border-gold/10 p-1 rounded-md mt-1 justify-between flex text-xs uppercase",
-            isOverCapacity ? "bg-red/30 border-red-700/50 text-red/90 animate-pulse" : "text-gold/70 bg-gold/10",
-          )}
-        >
-          <span className={clsx(isOverCapacity && "font-bold")}>
-            Cap: {storeCapacityKg.capacityUsedKg.toLocaleString()}kg / {storeCapacityKg.capacityKg.toLocaleString()}
-            kg
-          </span>
-          <span className={clsx(isOverCapacity && "font-bold")}>Total: {totalWeight.toLocaleString()}kg</span>
-        </div>
-      )}
-
-      {renderedResources && renderedResources.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap py-2">{renderedResources}</div>
-      )}
-    </div>
-  );
-};

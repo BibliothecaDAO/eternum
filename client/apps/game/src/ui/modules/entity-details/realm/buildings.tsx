@@ -3,12 +3,20 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getEntityIdFromKeys, getRealmInfo, TileManager, toHexString } from "@bibliothecadao/eternum";
+import { configManager, getEntityIdFromKeys, getRealmInfo, TileManager, toHexString } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { Building, isFoodBuilding, isMilitaryBuilding, isResourceBuilding, ResourcesIds } from "@bibliothecadao/types";
+import {
+  Building,
+  isFoodBuilding,
+  isMilitaryBuilding,
+  isResourceBuilding,
+  ResourcesIds,
+  TickIds,
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 
+const NORMALIZED_BATCH_AMOUNT = 100;
 export const Buildings = ({ structure }: { structure: any }) => {
   const dojo = useDojo();
 
@@ -131,16 +139,6 @@ export const Buildings = ({ structure }: { structure: any }) => {
   );
 };
 
-const BuildingsHeader = () => {
-  return (
-    <div className="grid grid-cols-3 gap-2 mb-4 text-xs text-gold tracking-wider uppercase">
-      <div className=""></div>
-      <div className="text-center">Produces /s</div>
-      <div className="text-center">Consumes /s</div>
-    </div>
-  );
-};
-
 interface BuildingRowProps {
   building: Building;
   isOwner: boolean;
@@ -148,6 +146,31 @@ interface BuildingRowProps {
   handlePauseResumeProduction: (paused: boolean, innerCol: number, innerRow: number) => void;
 }
 const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction }: BuildingRowProps) => {
+  const displayName = useMemo(() => {
+    return building.name.replace(/\s+Resource$/i, "");
+  }, [building.category, building.name]);
+
+  const bonusMultiplier = 1 + building.bonusPercent / 10000;
+  const producedPerTick = building.produced.amount * bonusMultiplier;
+  const hasProduction = producedPerTick > 0;
+  const scaleFactor = hasProduction ? NORMALIZED_BATCH_AMOUNT / producedPerTick : 0;
+  const tickSeconds = configManager.getTick(TickIds.Default) || 1;
+  const normalizedProducedDisplay = hasProduction ? NORMALIZED_BATCH_AMOUNT : 0;
+  const rawBatchTimeSeconds = hasProduction ? scaleFactor * tickSeconds : 0;
+  const normalizedConsumption = useMemo(() => {
+    return building.consumed.map((resource) => ({
+      resource: resource.resource,
+      amount: hasProduction ? Math.round(resource.amount * scaleFactor) : 0,
+    }));
+  }, [building.consumed, hasProduction, scaleFactor]);
+
+  const formatAmount = (value: number) => value.toLocaleString();
+  const timeLabel = hasProduction
+    ? rawBatchTimeSeconds < 1
+      ? "<1 sec"
+      : `${Math.round(rawBatchTimeSeconds).toLocaleString()} sec`
+    : "--";
+
   return (
     <div className="flex flex-col p-2 mb-4 text-md rounded transition-colors border border-gold/10">
       <div className="flex justify-between items-center mb-4">
@@ -156,7 +179,7 @@ const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction
             className="w-24 bg-brown/40 rounded-xl p-1"
             src={BUILDING_IMAGES_PATH[building.category as keyof typeof BUILDING_IMAGES_PATH]}
           />
-          <h4 className="text-lg font-medium">{building.name}</h4>
+          <h4 className="text-lg font-medium">{displayName}</h4>
         </div>
 
         {isOwner && (
@@ -177,24 +200,27 @@ const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction
       </div>
 
       {!building.paused && (
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <p className="text-green font-medium">
-              +{(building.produced.amount * (1 + building.bonusPercent / 10000)).toFixed(1)}
-            </p>
-            <ResourceIcon resource={ResourcesIds[building.produced.resource]} size={"sm"} />
-            {building.bonusPercent !== 0 && <p className="text-green text-sm">(+{building.bonusPercent / 100}%)</p>}
-          </div>
+        <>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <p className="text-green font-medium">+{normalizedProducedDisplay.toLocaleString()}</p>
+              <ResourceIcon resource={ResourcesIds[building.produced.resource]} size="sm" />
+              {building.bonusPercent !== 0 && <p className="text-green text-sm">(+{building.bonusPercent / 100}%)</p>}
+            </div>
 
-          <div className="flex items-center space-x-4">
-            {building.consumed.map((resource, index) => (
-              <div key={index} className="flex items-center space-x-1">
-                <p className="text-light-red font-medium">-{resource.amount}</p>
-                <ResourceIcon resource={ResourcesIds[resource.resource]} size={"sm"} />
+            {normalizedConsumption.map((resource, index) => (
+              <div key={`${resource.resource}-${index}`} className="flex items-center gap-2">
+                <p className="text-light-red font-medium">-{formatAmount(resource.amount)}</p>
+                <ResourceIcon resource={ResourcesIds[resource.resource]} size="sm" />
               </div>
             ))}
+
+            <div className="flex items-center gap-2">
+              <span className="text-gold font-medium">{timeLabel}</span>
+            </div>
           </div>
-        </div>
+          <p className="text-xs text-gold/60 mt-2">Normalized to {NORMALIZED_BATCH_AMOUNT.toLocaleString()} units</p>
+        </>
       )}
     </div>
   );

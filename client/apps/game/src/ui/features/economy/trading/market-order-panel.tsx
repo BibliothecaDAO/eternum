@@ -1,5 +1,5 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -211,7 +211,7 @@ const OrderRow = memo(
   }) => {
     const dojo = useDojo();
 
-    const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+    const playLordsSound = useUISound("resources.lords.add");
 
     const { currentDefaultTick } = useBlockTimestamp();
 
@@ -452,7 +452,7 @@ const OrderCreation = memo(
     const [showConfirmation, setShowConfirmation] = useState(false);
     const { currentBlockTimestamp } = useBlockTimestamp();
 
-    const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+    const playLordsSound = useUISound("resources.lords.add");
 
     const {
       account: { account },

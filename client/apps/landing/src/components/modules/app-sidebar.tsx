@@ -125,7 +125,7 @@ export function AppSidebar() {
         {isMobile && (
           <button
             onClick={() => setOpenMobile(false)}
-            className="absolute top-4 right-4 p-1 text-gray-300 hover:text-white focus:outline-none z-50"
+            className="absolute top-4 right-4 p-1  hover:text-white focus:outline-none z-50"
             aria-label="Close sidebar"
           >
             <X className="h-6 w-6" />

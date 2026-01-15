@@ -1,6 +1,7 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import clsx from "clsx";
+import { memo, useCallback, useMemo } from "react";
 
 type CircleButtonProps = {
   onClick: () => void;
@@ -33,10 +34,64 @@ const sizes = {
 };
 
 const notificationPositions = {
-  topleft: "-top-1 -left-1",
-  topright: "-top-1 -right-1",
-  bottomleft: "-bottom-1 -left-1",
-  bottomright: "-bottom-1 -right-1",
+  topleft: "-top-0.5 -left-0.5",
+  topright: "-top-0.5 -right-0.5",
+  bottomleft: "-bottom-0.5 -left-0.5",
+  bottomright: "-bottom-0.5 -right-0.5",
+};
+
+type NotificationColor = Exclude<NonNullable<CircleButtonProps["primaryNotification"]>["color"], undefined>;
+
+const notificationToneStyles: Record<
+  NotificationColor,
+  {
+    background: string;
+    border: string;
+    text: string;
+    shadow: string;
+  }
+> = {
+  green: {
+    background: "bg-progress-bar-good/90",
+    border: "border-progress-bar-good/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(16,185,129,0.45)]",
+  },
+  red: {
+    background: "bg-progress-bar-danger/90",
+    border: "border-progress-bar-danger/80",
+    text: "text-lightest",
+    shadow: "shadow-[0_0_10px_rgba(239,68,68,0.4)]",
+  },
+  blue: {
+    background: "bg-blueish/90",
+    border: "border-blueish/80",
+    text: "text-lightest",
+    shadow: "shadow-[0_0_10px_rgba(107,127,215,0.4)]",
+  },
+  yellow: {
+    background: "bg-yellow/90",
+    border: "border-yellow/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(250,255,0,0.45)]",
+  },
+  gold: {
+    background: "bg-gold/90",
+    border: "border-gold/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(223,170,84,0.45)]",
+  },
+  orange: {
+    background: "bg-orange/90",
+    border: "border-orange/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(254,153,60,0.45)]",
+  },
+};
+
+const getToneClasses = (color: NotificationColor | undefined, fallback: NotificationColor) => {
+  const tone = notificationToneStyles[color ?? fallback];
+  return clsx(tone.background, tone.border, tone.text, tone.shadow);
 };
 
 const CircleButton = ({
@@ -53,32 +108,39 @@ const CircleButton = ({
   secondaryNotification,
   ...props
 }: CircleButtonProps) => {
-  const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
-  const { play: playClick } = useUiSounds(soundSelector.click);
+  const playHoverClick = useUISound("ui.hover");
+  const playClick = useUISound("ui.click");
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const handleMouseEnter = () => {
-    hoverClick();
-    if (label) {
+  const tooltipContent = useMemo(
+    () => (label ? <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span> : null),
+    [label],
+  );
+
+  const handleMouseEnter = useCallback(() => {
+    playHoverClick();
+    if (tooltipContent) {
       setTooltip({
         position: tooltipLocation,
-        content: <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span>,
+        content: tooltipContent,
       });
     }
-  };
+  }, [playHoverClick, setTooltip, tooltipContent, tooltipLocation]);
 
-  const handleClick = () => {
+  const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);
+
+  const handleClick = useCallback(() => {
     if (!disabled) {
       onClick();
       playClick();
     }
-  };
+  }, [disabled, onClick, playClick]);
 
   return (
     <div className="relative">
       <button
         onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setTooltip(null)}
+        onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         className={clsx(
           "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
@@ -101,11 +163,9 @@ const CircleButton = ({
       {primaryNotification && primaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border",
-            `border-${primaryNotification.color || "green"}`,
-            `bg-${primaryNotification.color || "green"}`,
-            "text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
             notificationPositions[primaryNotification.location || "topleft"],
+            getToneClasses(primaryNotification.color, "green"),
           )}
         >
           {primaryNotification.value}
@@ -114,11 +174,9 @@ const CircleButton = ({
       {secondaryNotification && secondaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border",
-            `border-${secondaryNotification.color || "blue"}`,
-            `bg-${secondaryNotification.color || "blue"}`,
-            "text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
             notificationPositions[secondaryNotification.location || "topright"],
+            getToneClasses(secondaryNotification.color, "blue"),
           )}
         >
           {secondaryNotification.value}
@@ -128,4 +186,4 @@ const CircleButton = ({
   );
 };
 
-export default CircleButton;
+export default memo(CircleButton);

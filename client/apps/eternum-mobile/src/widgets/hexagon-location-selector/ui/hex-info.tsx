@@ -20,7 +20,7 @@ export function HexInfo({ selectedLocation }: HexInfoProps) {
             <div className="text-sm">{selectedLocation.row}</div>
           </div>
         ) : (
-          <div className="text-sm text-gray-500">No hexagon selected</div>
+          <div className="text-sm ">No hexagon selected</div>
         )}
       </CardContent>
     </Card>

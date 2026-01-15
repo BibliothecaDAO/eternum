@@ -1,28 +1,15 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { RealmResourcesIO } from "@/ui/features/economy/resources";
 import { ProductionModal } from "@/ui/features/settlement";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getEntityIdFromKeys,
-  unpackValue,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  ContractAddress,
-  ID,
-  LEVEL_DESCRIPTIONS,
-  RealmLevels,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
 import { sqlApi } from "@/services/api";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { useComponentValue } from "@dojoengine/react";
 import { AlertCircleIcon, ArrowUpRightIcon, ChevronDownIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 
@@ -38,11 +25,13 @@ export const Castle = () => {
   const [wonderStructureId, setWonderStructureId] = useState<ID | null>(null);
   const [showMissingResources, setShowMissingResources] = useState(false);
 
-  const productionWonderBonus = useComponentValue(
-    dojo.setup.components.ProductionWonderBonus,
+  const productionBoostBonus = useComponentValue(
+    dojo.setup.components.ProductionBoostBonus,
     getEntityIdFromKeys([BigInt(structureEntityId)]),
   );
-  const hasActivatedWonderBonus = !!productionWonderBonus;
+  const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
+
+  const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
 
   const onActivateWonderBonus = async () => {
     setIsWonderBonusLoading(true);
@@ -90,18 +79,21 @@ export const Castle = () => {
     if (!getNextRealmLevel) return false;
 
     const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
+    if (!cost) return false;
 
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
-  }, [getBalance, structureEntityId]);
+  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
 
   const missingResources = useMemo(() => {
     if (!getNextRealmLevel) return [];
 
     const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
+    if (!cost) return [];
+
     const missing: { resource: number; amount: number; current: number }[] = [];
 
     Object.keys(cost).forEach((resourceId) => {
@@ -119,7 +111,7 @@ export const Castle = () => {
     });
 
     return missing;
-  }, [getNextRealmLevel, structureEntityId, currentDefaultTick]);
+  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
 
   const levelUpRealm = async () => {
     setIsLevelUpLoading(true);
@@ -138,10 +130,6 @@ export const Castle = () => {
     setIsLevelUpLoading(false);
   };
 
-  const resourcesProduced = useMemo(() => {
-    return unpackValue(structure?.resources_packed || 0n);
-  }, [structure]);
-
   if (!structure) return null;
   const isOwner = structure.owner === ContractAddress(dojo.account.account.address);
 
@@ -152,7 +140,7 @@ export const Castle = () => {
           {/* Wonder Bonus Section */}
           {wonderStructureId && (
             <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
-              <div className="absolute inset-0 bg-[url('/images/patterns/gold-pattern.png')] opacity-5"></div>
+              <div className="absolute inset-0 opacity-5"></div>
               <div className="relative">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -280,21 +268,8 @@ export const Castle = () => {
             )}
           </div>
 
-          {/* Resources Section */}
-          <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
-            {structure &&
-              (structure.base.category === StructureType.Realm ||
-                structure.base.category === StructureType.Village) && (
-                <RealmResourcesIO
-                  size="md"
-                  titleClassName="uppercase font-semibold text-gold"
-                  resourcesProduced={resourcesProduced}
-                />
-              )}
-          </div>
-
           {/* Labor Production Button */}
-          {isOwner && (
+          {isOwner && isLaborProductionEnabled && (
             <div className="flex justify-center">
               <Button
                 onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}

@@ -1,51 +1,135 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
-import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { battleSimulation } from "@/ui/features";
-import { ArmyChip } from "./army-chip";
-import { HintSection } from "@/ui/features/progression";
-import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { useExplorersByStructure } from "@bibliothecadao/react";
-import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { Position } from "@bibliothecadao/eternum";
+import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { HasValue, runQuery } from "@dojoengine/recs";
+import { ShieldIcon, SwordIcon } from "lucide-react";
+import { ArmyChip, NavigateToPositionIcon } from "./army-chip";
+
+const getArmiesCountByStructure = (structureEntityId: ID, components: ClientComponents) => {
+  const armies = runQuery([HasValue(components.ExplorerTroops, { owner: structureEntityId })]);
+  return armies.size;
+};
 
 export const EntitiesArmyTable = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const togglePopup = useUIStore((state) => state.togglePopup);
+  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
+
+  // Check if any structure has armies
+  const hasAnyArmies = playerStructures.some((entity: any) => {
+    const armyCount = getArmiesCountByStructure(entity.entityId, components);
+    return armyCount > 0;
+  });
 
   return (
     <>
-      <div className="w-full flex justify-center mt-4">
-        <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(battleSimulation)}>
-          Simulate a battle
-        </Button>
+      <div className="mt-8 flex w-full justify-center px-3">
+        <div className="flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-gold/30 bg-brown/15 px-4 py-4 sm:px-6 sm:py-5">
+          {playerStructures.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gold/70 sm:text-sm">
+                Create armies
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => {
+                    openArmyCreationPopup({
+                      structureId: playerStructures[0]?.entityId || 0,
+                      isExplorer: true,
+                    });
+                  }}
+                  className="rounded-full"
+                  aria-label="Create attack army"
+                  title="Create attack army"
+                >
+                  <SwordIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => {
+                    openArmyCreationPopup({
+                      structureId: playerStructures[0]?.entityId || 0,
+                      isExplorer: false,
+                      maxDefenseSlots: playerStructures[0]?.structure.base.troop_max_guard_count,
+                    });
+                  }}
+                  className="rounded-full"
+                  aria-label="Create defense army"
+                  title="Create defense army"
+                >
+                  <ShieldIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      <CombatSimulation />
-      {playerStructures.map((entity: any, index: number) => {
-        return <StructureWithArmy key={entity.entityId} entity={entity} showHint={index === 0} />;
-      })}
+      {!hasAnyArmies ? (
+        <div className="text-center mt-8 p-6 bg-gold/10 rounded-lg">
+          <p className="text-gold mb-2">You don't have any Field Armies</p>
+          <p className="text-sm text-gold/60">
+            To build one, go to the local view of your realm and ensure you have troops in your balance
+          </p>
+        </div>
+      ) : (
+        playerStructures.map((entity: any) => {
+          return <StructureWithArmy key={entity.entityId} entity={entity} />;
+        })
+      )}
     </>
   );
 };
 
-const StructureWithArmy = ({ entity, showHint }: { entity: any; showHint: boolean }) => {
+const StructureWithArmy = ({ entity }: { entity: any }) => {
+  const mode = useGameModeConfig();
   const explorers = useExplorersByStructure({ structureEntityId: entity.entityId });
 
-  // Skip rendering if there are no armies
   if (explorers.length === 0) {
     return null;
   }
 
+  const structureComponent = entity.structure;
+  const structureName = structureComponent ? mode.structure.getName(structureComponent).name : undefined;
+  const displayName = structureName || entity.name || `Structure ${entity.entityId}`;
+  const structurePosition = structureComponent?.base
+    ? new Position({
+        x: Number(structureComponent.base.coord_x ?? 0),
+        y: Number(structureComponent.base.coord_y ?? 0),
+      })
+    : null;
+  const showActions = Boolean(structurePosition);
+
   return (
-    <div className="p-2">
+    <div className="p-2 rounded-lg">
       <Headline>
-        <div className="flex gap-2">
-          <div className="self-center">{entity.name} </div>
-          {showHint && <HintModalButton section={HintSection.Buildings} />}
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm font-semibold text-gold">{displayName}</span>
+          {showActions && (
+            <div className="flex items-center gap-2">
+              {structurePosition && (
+                <>
+                  <ViewOnMapIcon position={structurePosition} />
+                  <NavigateToPositionIcon position={structurePosition} tooltipContent="Point compass" />
+                </>
+              )}
+            </div>
+          )}
         </div>
       </Headline>
+
       <div className="grid grid-cols-1 gap-4">
         <EntityArmyTable structureEntityId={entity.entityId} />
       </div>

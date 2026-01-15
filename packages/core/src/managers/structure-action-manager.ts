@@ -1,24 +1,26 @@
-import { getComponentValue, type Entity } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   BiomeType,
-  FELT_CENTER,
-  getNeighborHexes,
   ClientComponents,
   ContractAddress,
+  getNeighborHexes,
   HexEntityInfo,
   ID,
 } from "@bibliothecadao/types";
+import { getComponentValue, type Entity } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { FELT_CENTER } from "../utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 
 export class StructureActionManager {
   private readonly entity: Entity;
+  private readonly FELT_CENTER: number;
 
   constructor(
     private readonly components: ClientComponents,
     entityId: ID,
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
+    this.FELT_CENTER = FELT_CENTER();
   }
 
   private readonly _getCurrentPosition = () => {
@@ -49,17 +51,18 @@ export class StructureActionManager {
     const neighbors = getNeighborHexes(startPos.col, startPos.row);
 
     for (const { col, row } of neighbors) {
-      const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
 
       // Skip unexplored hexes
       if (!isExplored) continue;
 
-      const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
+      const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
+      const isArmyMine =
+        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner === playerAddress || false;
 
       // Check if there's an army
       if (hasArmy) {
-        const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+        const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
 
         // Determine action type based on ownership
         const actionType = isArmyMine ? ActionType.Help : ActionType.Attack;
@@ -76,6 +79,15 @@ export class StructureActionManager {
         ];
 
         // Add the path to the action paths
+        actionPaths.set(ActionPaths.posKey({ col, row }), path);
+      } else {
+        const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
+
+        const path: ActionPath[] = [
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          { hex: { col, row }, actionType: ActionType.CreateArmy, biomeType: biome },
+        ];
+
         actionPaths.set(ActionPaths.posKey({ col, row }), path);
       }
     }

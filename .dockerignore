@@ -1,0 +1,10 @@
+node_modules
+**/node_modules
+.git
+.gitignore
+.turbo
+pnpm-debug.log
+dist
+**/dist
+tmp
+*.log

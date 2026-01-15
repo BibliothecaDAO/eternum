@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, ResourcesIds } from "@bibliothecadao/types";
 import { Army, CombatParameters, CombatSimulator } from "./combat-simulator";
 
 export enum RaidOutcome {
@@ -57,14 +57,16 @@ export class RaidSimulator {
    * @param raider - The raiding army
    * @param defenders - Array of defending armies
    * @param biome - The biome where the raid occurs
-   * @param raidDamageMultiplier - Damage reduction factor for raids (e.g., 0.1 for 10% of normal damage)
-   * @param randomValue - A random value between 0 and 1 for probability in Chance outcomes
+   * @param raiderRelics - Array of resource IDs representing raider's active relic effects
+   * @param defenderRelics - Array of resource IDs representing defenders' active relic effects
    * @returns Object containing raid results
    */
   public simulateRaid(
     raider: Army,
     defenders: Army[],
     biome: BiomeType,
+    raiderRelics: ResourcesIds[] = [],
+    defenderRelics: ResourcesIds[] = [],
   ): {
     raiderDamageTaken: number;
     defenderDamageTaken: number;
@@ -95,9 +97,17 @@ export class RaidSimulator {
 
     // Calculate combined defensive damage for outcome determination
     // and damage to each defender
+    let now = Math.floor(Date.now() / 1000);
     for (const defender of defenders) {
       if (defender.troopCount > 0) {
-        const combat = this.combatSimulator.simulateBattle(dividedRaider, defender, biome);
+        const combat = this.combatSimulator.simulateBattle(
+          now,
+          dividedRaider,
+          defender,
+          biome,
+          raiderRelics,
+          defenderRelics,
+        );
         // damage done by attacker
         const attackerDamage = Math.min(
           Math.floor((combat.attackerDamage * this.params.damage_raid_percent_num) / 10_000),

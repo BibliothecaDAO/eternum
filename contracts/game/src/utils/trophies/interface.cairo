@@ -1,4 +1,4 @@
-use achievement::types::task::{Task as BushidoTask};
+use achievement::types::task::Task as BushidoTask;
 
 pub trait TrophyTrait {
     fn identifier(level: u8) -> felt252;

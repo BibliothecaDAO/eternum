@@ -1,0 +1,34 @@
+{
+  "name": "eternum-realtime-server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "bun run src/server.ts",
+    "client": "bun run src/ws/client.ts",
+    "test": "vitest run",
+    "lint": "eslint . --ext .ts",
+    "migrate:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "migrate:push": "drizzle-kit push --config drizzle.config.ts"
+  },
+  "dependencies": {
+    "@bibliothecadao/types": "workspace:*",
+    "@fastify/redis": "^6.0.0",
+    "@types/pg": "^8.15.5",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.44.6",
+    "hono": "^4.9.12",
+    "pg": "^8.16.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "bun-types": "^1.2.2",
+    "drizzle-kit": "^0.31.5",
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2",
+    "vitest": "^2.1.9"
+  }
+}

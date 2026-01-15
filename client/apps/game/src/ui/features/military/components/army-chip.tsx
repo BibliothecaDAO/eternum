@@ -1,19 +1,20 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { InventoryResources } from "@/ui/features/economy/resources";
-import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
+import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ActorType, ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
 import { HelpModal } from "./help-modal";
 import { TroopChip } from "./troop-chip";
@@ -78,17 +79,25 @@ export const ArmyChip = ({
   const isHome = army.isHome;
   const hasAdjacentOwnedStructure = army.hasAdjacentStructure;
 
-  const [location] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { hexPosition } = useQuery();
 
-  const isOnMap = useMemo(() => location.includes("map"), [location]);
+  const isOnMap = useMemo(() => location.pathname.includes("/play"), [location.pathname]);
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
 
   const { currentArmiesTick } = useBlockTimestamp();
 
+  const relicEffects = useMemo(() => {
+    return getArmyRelicEffects(army.troops, currentArmiesTick).map((relic) => relic.id);
+  }, [army.troops, currentArmiesTick]);
+
   const stamina = useMemo(() => {
     if (!army.troops) return { amount: 0n, updated_tick: 0n };
+
+    // Convert relic effects to resource IDs for StaminaManager
+    // todo: check relic effect active
     return StaminaManager.getStamina(army.troops, currentArmiesTick);
   }, [army.troops, currentArmiesTick]);
 
@@ -188,6 +197,11 @@ export const ArmyChip = ({
                           <ViewOnMapIcon
                             className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
                             position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
+                            // onClick={() => {
+                            //   if (!isOnMap) {
+                            //     navigate("/play/map");
+                            //   }
+                            // }}
                           />
                         }
                         {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
@@ -251,13 +265,18 @@ export const ArmyChip = ({
               )}
             </div>
             <div className="flex flex-col w-[45%] gap-2">
-              <TroopChip troops={army.troops} className="h-auto" iconSize="lg" />
+              <TroopChip troops={army.troops} className="h-auto" size="lg" />
               {army.troops.count > 0n && resources && (
                 <InventoryResources
                   resources={resources}
+                  relicEffects={relicEffects}
                   className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"
+                  entityId={army.entityId}
+                  entityOwnerId={army.entity_owner_id}
+                  recipientType={RelicRecipientType.Explorer}
                   textSize="xxs"
+                  activateRelics={showButtons && army.isMine}
                 />
               )}
             </div>

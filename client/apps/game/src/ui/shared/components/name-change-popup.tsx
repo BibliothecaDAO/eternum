@@ -1,5 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
-import { X } from "lucide-react";
+import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import React, { useState } from "react";
 
 interface NameChangePopupProps {
@@ -27,45 +27,35 @@ export const NameChangePopup: React.FC<NameChangePopupProps> = ({
     event.stopPropagation();
   };
 
-  return (
-    <div
-      className="fixed inset-0 bg-brown bg-opacity-60 z-50 flex justify-center items-center"
-      onKeyDown={handleKeyDown}
-    >
-      <div className="border border-gold/10 bg-brown/90 panel-wood rounded p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
-        <div className="absolute top-3 right-3">
-          <Button className="!p-4" size="xs" variant="default" onClick={onCancel}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-        <h4 className="text-xl font-bold">Change Structure Name</h4>
-        <div className="text-center mt-4 w-full">
-          <div className="mb-4">
-            <p className="text-sm text-gold/80">Current name: {currentName}</p>
-            {!isOriginalName && <p className="text-sm text-gold/80">Original name: {originalName}</p>}
-          </div>
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="bg-brown/20 border border-gold/30 rounded w-full px-3 py-2 text-gold mb-4"
-            placeholder="Enter new name"
-          />
-          <p className="text-sm text-gold/60 mb-4">
-            Note: This change is only visible to you locally and not to other players
-          </p>
-        </div>
-        <div className="flex justify-center mt-4 w-full">
-          <div className="flex justify-center space-x-4">
-            <Button variant="danger" onClick={onDelete}>
-              Remove Name
-            </Button>
-            <Button variant="gold" onClick={() => onConfirm(newName)} disabled={isNameUnchanged || isNameEmpty}>
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </div>
+  const footer = (
+    <div className="flex justify-center space-x-4">
+      <Button variant="danger" onClick={onDelete}>
+        Remove Name
+      </Button>
+      <Button variant="gold" onClick={() => onConfirm(newName)} disabled={isNameUnchanged || isNameEmpty}>
+        Save Changes
+      </Button>
     </div>
+  );
+
+  return (
+    <BasePopup title="Change Structure Name" onClose={onCancel} footer={footer} contentClassName="">
+      <div onKeyDown={handleKeyDown}>
+        <div className="mb-4">
+          <p className="text-sm text-gold/80">Current name: {currentName}</p>
+          {!isOriginalName && <p className="text-sm text-gold/80">Original name: {originalName}</p>}
+        </div>
+        <input
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          className="bg-brown/20 border border-gold/30 rounded w-full px-3 py-2 text-gold mb-4"
+          placeholder="Enter new name"
+        />
+        <p className="text-sm text-gold/60 mb-4">
+          Note: This change is only visible to you locally and not to other players
+        </p>
+      </div>
+    </BasePopup>
   );
 };

@@ -1,8 +1,8 @@
 import { HEX_SIZE } from "@/three/constants";
-import * as THREE from "three";
+import { EdgesGeometry, LineBasicMaterial, LineSegments, Shape, ShapeGeometry, Vector2 } from "three";
 
 export const createHexagonShape = (radius: number) => {
-  const shape = new THREE.Shape();
+  const shape = new Shape();
   for (let i = 0; i < 6; i++) {
     // Adjust the angle to start the first point at the top
     const angle = (Math.PI / 3) * i - Math.PI / 2;
@@ -20,7 +20,7 @@ export const createHexagonShape = (radius: number) => {
 };
 
 export const createRoundedHexagonShape = (radius: number, cornerRadius: number = radius * 0.15) => {
-  const shape = new THREE.Shape();
+  const shape = new Shape();
 
   // Calculate points of the hexagon
   const points = [];
@@ -28,7 +28,7 @@ export const createRoundedHexagonShape = (radius: number, cornerRadius: number =
     const angle = (Math.PI / 3) * i - Math.PI / 2;
     const x = radius * Math.cos(angle);
     const y = radius * Math.sin(angle);
-    points.push(new THREE.Vector2(x, y));
+    points.push(new Vector2(x, y));
   }
 
   // Get rounded corner points
@@ -48,22 +48,16 @@ function getLength(dx: number, dy: number): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-function getProportionPoint(
-  point: THREE.Vector2,
-  segment: number,
-  length: number,
-  dx: number,
-  dy: number,
-): THREE.Vector2 {
+function getProportionPoint(point: Vector2, segment: number, length: number, dx: number, dy: number): Vector2 {
   const factor = segment / length;
-  return new THREE.Vector2(point.x - dx * factor, point.y - dy * factor);
+  return new Vector2(point.x - dx * factor, point.y - dy * factor);
 }
 
-function getRoundPoints(points: THREE.Vector2[], radius: number, pointsCount: number): THREE.Vector2[] {
+function getRoundPoints(points: Vector2[], radius: number, pointsCount: number): Vector2[] {
   if (points.length < 3) return points;
   if (pointsCount < 2) pointsCount = 2;
 
-  const allPoints: THREE.Vector2[] = [];
+  const allPoints: Vector2[] = [];
 
   for (let i = 0; i < points.length; i++) {
     let p1Index = i - 1;
@@ -88,12 +82,12 @@ function getRoundPoints(points: THREE.Vector2[], radius: number, pointsCount: nu
 }
 
 function getOneRoundedCorner(
-  angularPoint: THREE.Vector2,
-  p1: THREE.Vector2,
-  p2: THREE.Vector2,
+  angularPoint: Vector2,
+  p1: Vector2,
+  p2: Vector2,
   radius: number,
   pointsCount: number,
-): THREE.Vector2[] {
+): Vector2[] {
   // Vector 1
   const dx1 = angularPoint.x - p1.x;
   const dy1 = angularPoint.y - p1.y;
@@ -148,7 +142,7 @@ function getOneRoundedCorner(
   }
 
   // Array to store generated points
-  const points: THREE.Vector2[] = [];
+  const points: Vector2[] = [];
 
   // Generate points along the arc
   const angleStep = sweepAngle / (pointsCount - 1);
@@ -157,19 +151,19 @@ function getOneRoundedCorner(
     const angle = startAngle + i * angleStep;
     const x = circlePoint.x + Math.cos(angle) * radius;
     const y = circlePoint.y + Math.sin(angle) * radius;
-    points.push(new THREE.Vector2(x, y));
+    points.push(new Vector2(x, y));
   }
 
   return points;
 }
 
-const edgesGeometry = new THREE.EdgesGeometry(new THREE.ShapeGeometry(createHexagonShape(HEX_SIZE)));
-const edgesMaterial = new THREE.LineBasicMaterial({
+const edgesGeometry = new EdgesGeometry(new ShapeGeometry(createHexagonShape(HEX_SIZE)));
+const edgesMaterial = new LineBasicMaterial({
   color: "black",
   linewidth: 1,
   transparent: true,
   opacity: 0.15,
 });
 
-const hexagonEdgeMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+const hexagonEdgeMesh = new LineSegments(edgesGeometry, edgesMaterial);
 hexagonEdgeMesh.rotateX(Math.PI / 2);

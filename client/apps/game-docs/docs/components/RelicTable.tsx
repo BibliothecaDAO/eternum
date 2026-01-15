@@ -4,7 +4,7 @@ const RELIC_DATA = [
   {
     relic: "Stamina Relic",
     level: 1,
-    effect: "Increases stamina regeneration by 50% for 3 Eternum Days.",
+    effect: "Increases stamina regeneration by 50% for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 250,
     discoveryChance: "7.5%",
@@ -12,7 +12,7 @@ const RELIC_DATA = [
   {
     relic: "Stamina Relic",
     level: 2,
-    effect: "Increases stamina regeneration by 100% for 3 Eternum Days.",
+    effect: "Increases stamina regeneration by 100% for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 500,
     discoveryChance: "4.0%",
@@ -20,7 +20,7 @@ const RELIC_DATA = [
   {
     relic: "Damage Relic",
     level: 1,
-    effect: "Increases damage by 20% for 3 Eternum Days.",
+    effect: "Increases damage by 20% for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 250,
     discoveryChance: "7.5%",
@@ -28,7 +28,7 @@ const RELIC_DATA = [
   {
     relic: "Damage Relic",
     level: 2,
-    effect: "Increases damage by 40% for 3 Eternum Days.",
+    effect: "Increases damage by 40% for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 500,
     discoveryChance: "4.0%",
@@ -36,7 +36,7 @@ const RELIC_DATA = [
   {
     relic: "Damage Reduction Relic",
     level: 1,
-    effect: "Reduces damage taken by 20% for 3 Eternum Days.",
+    effect: "Reduces damage taken by 20% for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 250,
     discoveryChance: "7.5%",
@@ -44,7 +44,7 @@ const RELIC_DATA = [
   {
     relic: "Damage Reduction Relic",
     level: 2,
-    effect: "Reduces damage taken by 40% for 3 Eternum Days.",
+    effect: "Reduces damage taken by 40% for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 500,
     discoveryChance: "4.0%",
@@ -68,7 +68,7 @@ const RELIC_DATA = [
   {
     relic: "Exploration Reward Relic",
     level: 1,
-    effect: "Double all exploration rewards for 3 Eternum Days.",
+    effect: "Double all exploration rewards for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 250,
     discoveryChance: "7.5%",
@@ -76,7 +76,7 @@ const RELIC_DATA = [
   {
     relic: "Exploration Reward Relic",
     level: 2,
-    effect: "Triple all exploration rewards for 3 Eternum Days.",
+    effect: "Triple all exploration rewards for 5 Eternum Days (30 minutes).",
     activatedBy: "Army",
     essenceCost: 500,
     discoveryChance: "4.0%",
@@ -84,7 +84,7 @@ const RELIC_DATA = [
   {
     relic: "Structure Damage Reduction Relic",
     level: 1,
-    effect: "Reduces damage taken by all guard armies by 15% for 6 Eternum Days.",
+    effect: "Reduces damage taken by all guard armies by 15% for 5 Eternum Days (30 minutes).",
     activatedBy: "Realm",
     essenceCost: 250,
     discoveryChance: "7.5%",
@@ -92,7 +92,7 @@ const RELIC_DATA = [
   {
     relic: "Structure Damage Reduction Relic",
     level: 2,
-    effect: "Reduces damage taken by all guard armies by 30% for 6 Eternum Days.",
+    effect: "Reduces damage taken by all guard armies by 30% for 5 Eternum Days (30 minutes).",
     activatedBy: "Realm",
     essenceCost: 500,
     discoveryChance: "4.0%",
@@ -100,7 +100,7 @@ const RELIC_DATA = [
   {
     relic: "Production Relic",
     level: 1,
-    effect: "Increases resource production rate by 20% for 3 Eternum Days.",
+    effect: "Increases resource production rate by 20% for 5 Eternum Days (30 minutes).",
     activatedBy: "Realm",
     essenceCost: 250,
     discoveryChance: "7.5%",
@@ -108,7 +108,7 @@ const RELIC_DATA = [
   {
     relic: "Production Relic",
     level: 2,
-    effect: "Increases resource production rate by 40% for 3 Eternum Days.",
+    effect: "Increases resource production rate by 40% for 5 Eternum Days (30 minutes).",
     activatedBy: "Realm",
     essenceCost: 500,
     discoveryChance: "4.0%",
@@ -116,7 +116,7 @@ const RELIC_DATA = [
   {
     relic: "Troop Production Relic",
     level: 1,
-    effect: "Increases troop production rate by 20% for 6 Eternum Days.",
+    effect: "Increases troop production rate by 20% for 5 Eternum Days (30 minutes).",
     activatedBy: "Realm",
     essenceCost: 250,
     discoveryChance: "6.0%",
@@ -124,7 +124,7 @@ const RELIC_DATA = [
   {
     relic: "Troop Production Relic",
     level: 2,
-    effect: "Increases troop production rate by 20% for 12 Eternum Days.",
+    effect: "Increases troop production rate by 20% for 5 Eternum Days (30 minutes).",
     activatedBy: "Realm",
     essenceCost: 500,
     discoveryChance: "2.0%",

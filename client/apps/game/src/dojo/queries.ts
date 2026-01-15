@@ -14,6 +14,10 @@ import {
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
+const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isFinite(id);
+const hasValidPosition = (position: HexPosition | undefined): position is HexPosition =>
+  !!position && Number.isFinite(position.col) && Number.isFinite(position.row);
+
 export const getTilesForPositionsFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
@@ -25,8 +29,8 @@ export const getTilesForPositionsFromTorii = async <S extends Schema>(
 
   const tileClauses = positions.map((pos) =>
     AndComposeClause([
-      MemberClause("s1_eternum-Tile", "col", "Eq", pos.col),
-      MemberClause("s1_eternum-Tile", "row", "Eq", pos.row),
+      MemberClause("s1_eternum-TileOpt", "col", "Eq", pos.col),
+      MemberClause("s1_eternum-TileOpt", "row", "Eq", pos.row),
     ]).build(),
   );
 
@@ -40,7 +44,7 @@ export const getTilesForPositionsFromTorii = async <S extends Schema>(
     },
     components as any,
     [],
-    ["s1_eternum-Tile"],
+    ["s1_eternum-TileOpt"],
     EVENT_QUERY_LIMIT,
     false,
   );
@@ -51,19 +55,39 @@ export const getStructuresDataFromTorii = async (
   components: Component<Schema, Metadata, undefined>[],
   structures: { entityId: ID; position: HexPosition }[],
 ) => {
+  const structuresToSync = structures.filter((structure) => {
+    const valid = isValidId(structure.entityId) && hasValidPosition(structure.position);
+
+    if (!valid && import.meta.env.DEV) {
+      console.warn("[torii] Skipping structure sync for invalid payload", structure);
+    }
+
+    return valid;
+  });
+
+  if (structuresToSync.length === 0) {
+    if (import.meta.env.DEV) {
+      console.warn("[torii] No valid structures to sync", structures);
+    }
+    return;
+  }
+
   const playerStructuresModels = [
     "s1_eternum-Structure",
     "s1_eternum-Resource",
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
-    "s1_eternum-ProductionWonderBonus",
+    "s1_eternum-ProductionBoostBonus",
+    // needed to check for hyperstructure shareholders 100% in blitz mode
+    "s1_eternum-HyperstructureShareholders",
+    "s1_eternum-Hyperstructure",
   ];
 
   // Create promises for all queries without awaiting them
   const structuresPromise = debouncedGetEntitiesFromTorii(
     client,
     components as any,
-    structures.map((structure) => structure.entityId),
+    structuresToSync.map((structure) => structure.entityId),
     playerStructuresModels,
     () => {},
   );
@@ -71,19 +95,19 @@ export const getStructuresDataFromTorii = async (
   const armiesPromise = debouncedGetOwnedArmiesFromTorii(
     client,
     components as any,
-    structures.map((structure) => structure.entityId),
+    structuresToSync.map((structure) => structure.entityId),
     () => {},
   );
 
   const buildingsPromise = debouncedGetBuildingsFromTorii(
     client,
     components as any,
-    structures.map((structure) => structure.position),
+    structuresToSync.map((structure) => structure.position),
     () => {},
   );
 
   // Query tile components for the structure positions
-  const tilePositions = structures.map((structure) => structure.position);
+  const tilePositions = structuresToSync.map((structure) => structure.position);
   const tilePromise = debouncedGetTilesForPositionsFromTorii(client, components as any, tilePositions, () => {});
 
   // Execute all promises in parallel
@@ -96,21 +120,32 @@ export const getConfigFromTorii = async <S extends Schema>(
 ) => {
   const oneKeyConfigModels = [
     "s1_eternum-WorldConfig",
-    "s1_eternum-HyperstructureConstructConfig",
+    "s1_eternum-HyperstrtConstructConfig",
     "s1_eternum-HyperstructureGlobals",
     "s1_eternum-WeightConfig",
     "s1_eternum-ResourceFactoryConfig",
     "s1_eternum-BuildingCategoryConfig",
-    "s1_eternum-ResourceBridgeWhitelistConfig",
+    "s1_eternum-ResourceBridgeWtlConfig",
     "s1_eternum-StructureLevelConfig",
     "s1_eternum-SeasonPrize",
     "s1_eternum-SeasonEnded",
     "s1_eternum-QuestLevels",
     "s1_eternum-AddressName",
     "s1_eternum-PlayerRegisteredPoints",
+    "s1_eternum-BlitzRealmPlayerRegister",
+    "s1_eternum-BlitzEntryTokenRegister",
+    "s1_eternum-BlitzRealmSettleFinish",
+    // Blitz prize models (single key)
+    "s1_eternum-PlayersRankTrial",
+    "s1_eternum-PlayersRankFinal",
   ];
 
-  const twoKeyConfigModels = ["s1_eternum-ResourceList"];
+  const twoKeyConfigModels = [
+    "s1_eternum-ResourceList",
+    // Blitz prize models (two keys)
+    "s1_eternum-PlayerRank",
+    "s1_eternum-RankPrize",
+  ];
 
   const configModels = [...oneKeyConfigModels, ...twoKeyConfigModels];
   // todo: only 1 undefined clause variable len
@@ -195,10 +230,27 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
+  const validIds = hyperstructureIds.filter((id) => {
+    const valid = isValidId(id);
+
+    if (!valid && import.meta.env.DEV) {
+      console.warn("[torii] Skipping hyperstructure sync for invalid id", id);
+    }
+
+    return valid;
+  });
+
+  if (validIds.length === 0) {
+    if (import.meta.env.DEV) {
+      console.warn("[torii] No valid hyperstructure ids to sync", hyperstructureIds);
+    }
+    return;
+  }
+
   const structureQuery = {
     Composite: {
       operator: "Or" as LogicalOperator,
-      clauses: hyperstructureIds.map((id) => ({
+      clauses: validIds.map((id) => ({
         Keys: {
           keys: [id.toString()],
           pattern_matching: "FixedLen" as PatternMatching,
@@ -274,11 +326,34 @@ export const getEntitiesFromTorii = async <S extends Schema>(
   entityIDs: ID[],
   entityModels: string[],
 ) => {
+  // Debug: Track what's calling this function repeatedly
+  if (import.meta.env.DEV) {
+    console.log(`[getEntitiesFromTorii] Called with ${entityIDs.length} entities, models:`, entityModels);
+    console.trace("[getEntitiesFromTorii] Call stack:");
+  }
+
+  const validEntityIDs = entityIDs.filter((id) => {
+    const valid = isValidId(id);
+
+    if (!valid && import.meta.env.DEV) {
+      console.warn("[torii] Skipping entity sync for invalid id", id);
+    }
+
+    return valid;
+  });
+
+  if (validEntityIDs.length === 0) {
+    if (import.meta.env.DEV) {
+      console.warn("[torii] No valid entity ids to sync", entityIDs);
+    }
+    return;
+  }
+
   const query =
-    entityIDs.length === 1
+    validEntityIDs.length === 1
       ? {
           Keys: {
-            keys: [entityIDs[0].toString()],
+            keys: [validEntityIDs[0].toString()],
             pattern_matching: "VariableLen" as PatternMatching,
             models: [],
           },
@@ -287,7 +362,7 @@ export const getEntitiesFromTorii = async <S extends Schema>(
           Composite: {
             operator: "Or" as LogicalOperator,
             clauses: [
-              ...entityIDs.map((id) => ({
+              ...validEntityIDs.map((id) => ({
                 Keys: {
                   keys: [id.toString()],
                   pattern_matching: "VariableLen" as PatternMatching,
@@ -398,14 +473,38 @@ export const getMapFromTorii = async <S extends Schema>(
   return getEntities(
     client,
     AndComposeClause([
-      MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
-      MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
-      MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
-      MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
+      MemberClause("s1_eternum-TileOpt", "col", "Gte", startCol - range),
+      MemberClause("s1_eternum-TileOpt", "col", "Lte", startCol + range),
+      MemberClause("s1_eternum-TileOpt", "row", "Gte", startRow - range),
+      MemberClause("s1_eternum-TileOpt", "row", "Lte", startRow + range),
     ]).build(),
     components as any,
     [],
-    ["s1_eternum-Tile"],
+    ["s1_eternum-TileOpt"],
+    EVENT_QUERY_LIMIT,
+    false,
+  );
+};
+
+export const getMapFromToriiExact = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  minCol: number,
+  maxCol: number,
+  minRow: number,
+  maxRow: number,
+) => {
+  return getEntities(
+    client,
+    AndComposeClause([
+      MemberClause("s1_eternum-TileOpt", "col", "Gte", minCol),
+      MemberClause("s1_eternum-TileOpt", "col", "Lte", maxCol),
+      MemberClause("s1_eternum-TileOpt", "row", "Gte", minRow),
+      MemberClause("s1_eternum-TileOpt", "row", "Lte", maxRow),
+    ]).build(),
+    components as any,
+    [],
+    ["s1_eternum-TileOpt"],
     EVENT_QUERY_LIMIT,
     false,
   );

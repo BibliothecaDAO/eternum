@@ -1,53 +1,68 @@
 import { QuestModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
-import { Position } from "@/types/position";
-import { FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
+import { FELT_CENTER } from "@/ui/config";
+import { Position, QuestData, QuestSystemUpdate } from "@bibliothecadao/eternum";
+
+import { ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
-import { QuestData, QuestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
+import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { createContentContainer, createLabelBase, transitionManager } from "../utils/";
+import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
+import { LabelManager } from "../utils/labels/label-manager";
 import { gltfLoader } from "../utils/utils";
 const MAX_INSTANCES = 1000;
-
-const ICONS = {
-  [QuestType.DarkShuffle]: "/images/labels/quest.png",
-};
 
 export class QuestManager {
   private scene: THREE.Scene;
   private questModels: Map<QuestType, InstancedModel[]> = new Map();
+  private questModelPromises: Map<QuestType, Promise<void>> = new Map();
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
   private dummy: THREE.Object3D = new THREE.Object3D();
   quests: Quests = new Quests();
   private visibleQuests: QuestData[] = [];
   private currentChunkKey: string | null = "190,170";
-  private entityIdLabels: Map<ID, CSS2DObject> = new Map();
-  private labelsGroup: THREE.Group;
   private entityIdMaps: Map<QuestType, Map<number, ID>> = new Map();
+  private questInstanceOrder: Map<QuestType, ID[]> = new Map();
+  private questInstanceIndices: Map<ID, { questType: QuestType; index: number }> = new Map();
   private scale: number = 1;
+  private chunkSize: number;
   private currentCameraView: CameraView;
+  private labelManager: LabelManager;
   questHexCoords: Map<number, Set<number>> = new Map();
+  private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
-    this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
+    this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.loadModels().then(() => {
-      if (this.currentChunkKey) {
-        this.renderVisibleQuests(this.currentChunkKey);
-      }
+
+    // Initialize the label manager
+    this.labelManager = new LabelManager({
+      labelsGroup: labelsGroup || new THREE.Group(),
+      initialCameraView: this.currentCameraView,
+      maxLabels: 1000,
+      autoCleanup: true,
     });
+
+    // Register the quest label type
+    this.labelManager.registerLabelType(QuestLabelType);
+    if (this.currentChunkKey) {
+      void this.renderVisibleQuests(this.currentChunkKey).catch((error) =>
+        console.error("[QuestManager] Failed to render initial quests", error),
+      );
+    }
 
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
@@ -55,24 +70,17 @@ export class QuestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled);
+    this.questModels.forEach((models) => {
+      models.forEach((model) => model.setContactShadowsEnabled(enableContactShadows));
+    });
+
     if (this.currentCameraView === view) return;
-
-    // If we're moving away from Medium view, clean up transition state
-    if (this.currentCameraView === CameraView.Medium) {
-      transitionManager.clearMediumViewTransition();
-    }
-
     this.currentCameraView = view;
 
-    // If we're switching to Medium view, store timestamp
-    if (view === CameraView.Medium) {
-      transitionManager.setMediumViewTransition();
-    }
-
-    // Update all existing labels to reflect the new view
-    this.visibleQuests.forEach((quest) => {
-      this.updateLabelVisibility(quest.entityId, view === CameraView.Far);
-    });
+    // Update the label manager's camera view
+    this.labelManager.updateCameraView(view);
   };
 
   public destroy() {
@@ -80,46 +88,64 @@ export class QuestManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+
+    // Clean up the label manager
+    this.labelManager.destroy();
   }
 
-  private async loadModels(): Promise<void> {
+  public getVisibleCount(): number {
+    return this.visibleQuests.length;
+  }
+
+  private loadQuestModel(questType: QuestType): Promise<void> {
+    if (this.questModels.has(questType)) {
+      return Promise.resolve();
+    }
+
+    if (this.questModelPromises.has(questType)) {
+      return this.questModelPromises.get(questType)!;
+    }
+
+    const modelPath = QuestModelPaths[QuestType[questType] as keyof typeof QuestModelPaths];
+    if (!modelPath) {
+      return Promise.resolve();
+    }
+
     const loader = gltfLoader;
-    for (const [key, modelPath] of Object.entries(QuestModelPaths)) {
-      const questType = parseInt(key) as QuestType;
-
-      if (questType === undefined) continue;
-      if (!modelPath) continue;
-
-      const loadPromise = new Promise<InstancedModel>((resolve, reject) => {
-        loader.load(
-          modelPath,
-          (gltf) => {
-            const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest" + QuestType[questType]);
-            resolve(instancedModel);
-          },
-          undefined,
-          (error) => {
-            console.error(modelPath);
-            console.error(`An error occurred while loading the ${questType} model:`, error);
-            reject(error);
-          },
-        );
-      });
-
-      await loadPromise
-        .then((instancedModel) => {
+    const loadPromise = new Promise<void>((resolve, reject) => {
+      loader.load(
+        modelPath,
+        (gltf) => {
+          const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest" + QuestType[questType]);
           this.questModels.set(questType, [instancedModel]);
           this.scene.add(instancedModel.group);
-        })
-        .catch((error) => {
-          console.error(`Failed to load models for ${QuestType[questType]}:`, error);
-        });
-    }
+          const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+          const enableContactShadows = !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled);
+          instancedModel.setContactShadowsEnabled(enableContactShadows);
+          resolve();
+        },
+        undefined,
+        (error) => {
+          console.error(modelPath);
+          console.error(`An error occurred while loading the ${QuestType[questType]} model:`, error);
+          reject(error);
+        },
+      );
+    })
+      .catch(() => {
+        // Swallow error so callers can continue, but do not cache a failed load
+      })
+      .finally(() => {
+        this.questModelPromises.delete(questType);
+      });
+
+    this.questModelPromises.set(questType, loadPromise);
+    return loadPromise;
   }
 
   async onUpdate(update: QuestSystemUpdate) {
     const { entityId, occupierId, hexCoords } = update;
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     // Add the quest to the map with the complete owner info
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
     const questType = QuestType.DarkShuffle;
@@ -135,17 +161,53 @@ export class QuestManager {
 
     // SPAG Re-render if we have a current chunk
     if (this.currentChunkKey) {
-      this.renderVisibleQuests(this.currentChunkKey);
+      void this.renderVisibleQuests(this.currentChunkKey).catch((error) =>
+        console.error("[QuestManager] Failed to rerender quests after update", error),
+      );
     }
   }
 
-  async updateChunk(chunkKey: string) {
-    if (this.currentChunkKey === chunkKey) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+    const force = options?.force ?? false;
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
-    this.currentChunkKey = chunkKey;
-    this.renderVisibleQuests(chunkKey);
+    // Wait for any ongoing chunk switch to complete first
+    if (this.chunkSwitchPromise) {
+      // console.log(`[CHUNK SYNC] Waiting for previous quest chunk switch to complete before switching to ${chunkKey}`);
+      try {
+        await this.chunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous quest chunk switch failed:`, error);
+      }
+    }
+
+    // Check again if chunk key is still different (might have changed while waiting)
+    if (!force && this.currentChunkKey === chunkKey) {
+      return;
+    }
+
+    const previousChunk = this.currentChunkKey;
+    const isSwitch = previousChunk !== chunkKey;
+    if (isSwitch) {
+      // console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      this.currentChunkKey = chunkKey;
+    } else if (force) {
+      // console.log(`[CHUNK SYNC] Refreshing quest chunk ${chunkKey}`);
+    }
+
+    // Create and track the chunk switch promise
+    this.chunkSwitchPromise = this.renderVisibleQuests(chunkKey).catch((error) => {
+      // console.error(`[CHUNK SYNC] Quest chunk ${chunkKey} render failed`, error);
+    });
+
+    try {
+      await this.chunkSwitchPromise;
+      console.log(`[CHUNK SYNC] Quest chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
+    } finally {
+      this.chunkSwitchPromise = null;
+    }
   }
 
   private getQuestWorldPosition = (questEntityId: ID, hexCoords: Position) => {
@@ -154,14 +216,19 @@ export class QuestManager {
     return basePosition;
   };
 
-  private isQuestVisible(quest: { entityId: ID; hexCoords: Position }, startRow: number, startCol: number) {
+  private isQuestVisible(quest: QuestData, startRow: number, startCol: number) {
     const { x, y } = quest.hexCoords.getNormalized();
-    const isVisible =
-      x >= startCol - this.renderChunkSize.width / 2 &&
-      x <= startCol + this.renderChunkSize.width / 2 &&
-      y >= startRow - this.renderChunkSize.height / 2 &&
-      y <= startRow + this.renderChunkSize.height / 2;
-    return isVisible;
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
+
+    if (!insideChunk) {
+      return false;
+    }
+
+    // Skip frustum culling during chunk updates - bounds check is sufficient.
+    // Frustum culling can fail when the camera is still animating to the new chunk position,
+    // causing quests to not appear until the next frame/click.
+    return true;
   }
 
   private getVisibleQuestsForChunk(quests: Map<ID, QuestData>, startRow: number, startCol: number): QuestData[] {
@@ -180,185 +247,235 @@ export class QuestManager {
     return visibleQuests;
   }
 
-  private renderVisibleQuests(chunkKey: string) {
-    const _quests = this.quests.getQuests();
+  private async renderVisibleQuests(chunkKey: string) {
+    const questsByType = this.quests.getQuests();
     const visibleQuestIds = new Set<ID>();
+    const aggregatedVisible: QuestData[] = [];
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
 
-    for (const [questType, quests] of _quests) {
-      const [startRow, startCol] = chunkKey.split(",").map(Number);
-      this.visibleQuests = this.getVisibleQuestsForChunk(quests, startRow, startCol);
-      const models = this.questModels.get(questType);
-
-      if (models && models.length > 0) {
-        models.forEach((model) => {
-          model.setCount(0);
-        });
-
-        this.entityIdMaps.set(questType, new Map());
-
-        this.visibleQuests.forEach((quest) => {
-          visibleQuestIds.add(quest.entityId);
-          const position = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
-          position.y += 0.05;
-          const { x, y } = quest.hexCoords.getContract();
-
-          // Always recreate the label to ensure it matches current camera view
-          if (this.entityIdLabels.has(quest.entityId)) {
-            this.removeEntityIdLabel(quest.entityId);
-          }
-          this.addEntityIdLabel(quest, position);
-
-          this.dummy.position.copy(position);
-
-          const rotationSeed = hashCoordinates(x, y);
-          const rotationIndex = Math.floor(rotationSeed * 6);
-          const randomRotation = (rotationIndex * Math.PI) / 3;
-          this.dummy.rotation.y = randomRotation;
-          this.dummy.updateMatrix();
-
-          const model = models[0]; // Assuming you're using the first model
-          const currentCount = model.getCount();
-          model.setMatrixAt(currentCount, this.dummy.matrix);
-          model.setCount(currentCount + 1);
-          this.entityIdMaps.get(questType)!.set(currentCount, quest.entityId);
-        });
-
-        models.forEach((model) => model.needsUpdate());
-      }
-    }
-    // Remove labels for quests that are no longer visible
-    this.entityIdLabels.forEach((label, entityId) => {
-      if (!this.visibleQuests.find((quest) => quest.entityId === entityId)) {
-        this.removeEntityIdLabel(entityId);
+    const loadTasks: Promise<void>[] = [];
+    questsByType.forEach((_quests, questType) => {
+      if (!this.questModels.has(questType)) {
+        loadTasks.push(
+          this.loadQuestModel(questType).catch((error) => {
+            console.error(`[QuestManager] Failed to load quest model for ${QuestType[questType]}:`, error);
+          }),
+        );
       }
     });
+    if (loadTasks.length) {
+      await Promise.all(loadTasks);
+    }
 
-    // // Update all model instances
-    // this.questModel.updateAllInstances();
-    // this.questModel.computeBoundingSphere();
+    questsByType.forEach((quests, questType) => {
+      const visibleQuests = this.getVisibleQuestsForChunk(quests, startRow, startCol);
+      aggregatedVisible.push(...visibleQuests);
+      visibleQuests.forEach((quest) => visibleQuestIds.add(quest.entityId));
+      this.syncQuestInstancesForType(questType, visibleQuests);
+    });
+
+    this.visibleQuests = aggregatedVisible;
+
+    const questLabels = this.labelManager.getLabelsByType("quest");
+    questLabels.forEach((labelInstance) => {
+      if (!visibleQuestIds.has(labelInstance.data.entityId)) {
+        this.labelManager.removeLabel(labelInstance.data.entityId);
+      }
+    });
   }
 
-  private removeEntityIdLabel(entityId: number) {
-    const label = this.entityIdLabels.get(entityId);
-    if (label) {
-      this.labelsGroup.remove(label);
-      this.entityIdLabels.delete(entityId);
+  private syncQuestInstancesForType(questType: QuestType, visibleQuests: QuestData[]) {
+    const models = this.questModels.get(questType);
+    if (!models || models.length === 0) {
+      return;
+    }
+
+    this.ensureQuestTracking(questType);
+
+    const order = this.questInstanceOrder.get(questType)!;
+    const visibleSet = new Set(visibleQuests.map((quest) => quest.entityId));
+
+    for (let i = order.length - 1; i >= 0; i--) {
+      const entityId = order[i];
+      if (!visibleSet.has(entityId)) {
+        this.removeQuestInstance(questType, entityId);
+      }
+    }
+
+    visibleQuests.forEach((quest) => {
+      const binding = this.questInstanceIndices.get(quest.entityId);
+      if (!binding || binding.questType !== questType) {
+        this.addQuestInstance(questType, quest);
+      } else {
+        this.updateQuestInstance(questType, quest, binding.index);
+      }
+
+      this.updateActiveQuestLabel(quest);
+    });
+
+    const count = this.questInstanceOrder.get(questType)!.length;
+    models.forEach((model) => {
+      model.setCount(count);
+      model.needsUpdate();
+    });
+  }
+
+  private ensureQuestTracking(questType: QuestType) {
+    if (!this.questInstanceOrder.has(questType)) {
+      this.questInstanceOrder.set(questType, []);
+    }
+    if (!this.entityIdMaps.has(questType)) {
+      this.entityIdMaps.set(questType, new Map());
     }
   }
 
-  private addEntityIdLabel(quest: QuestData, position: THREE.Vector3) {
-    // Create label div using the shared base
-    const labelDiv = createLabelBase({
-      isMine: false, // Quests don't have ownership
-      textColor: "text-gold", // Use gold color for quests
-    });
+  private addQuestInstance(questType: QuestType, quest: QuestData) {
+    const models = this.questModels.get(questType);
+    if (!models || models.length === 0) {
+      return;
+    }
 
-    // Prevent right click
-    labelDiv.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    const img = document.createElement("img");
-    img.src = ICONS[QuestType.DarkShuffle];
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-    labelDiv.appendChild(img);
-
-    // Create text container with transition using shared utility
-    const textContainer = createContentContainer(this.currentCameraView);
-
-    const line1 = document.createElement("span");
-    line1.textContent = `Quest`;
-    line1.style.color = "inherit";
-
-    textContainer.appendChild(line1);
-    labelDiv.appendChild(textContainer);
-
-    const label = new CSS2DObject(labelDiv);
-    label.position.copy(position);
-    label.position.y += 1.5;
-
-    // Store original renderOrder
-    const originalRenderOrder = label.renderOrder;
-
-    // Set renderOrder to Infinity on hover
-    labelDiv.addEventListener("mouseenter", () => {
-      label.renderOrder = Infinity;
-    });
-
-    // Restore original renderOrder when mouse leaves
-    labelDiv.addEventListener("mouseleave", () => {
-      label.renderOrder = originalRenderOrder;
-    });
-
-    this.labelsGroup.add(label);
-    this.entityIdLabels.set(quest.entityId, label);
+    const order = this.questInstanceOrder.get(questType)!;
+    const index = order.length;
+    order.push(quest.entityId);
+    this.questInstanceIndices.set(quest.entityId, { questType, index });
+    this.entityIdMaps.get(questType)!.set(index, quest.entityId);
+    this.writeQuestInstance(models[0], quest, index);
   }
+
+  private updateQuestInstance(questType: QuestType, quest: QuestData, index: number) {
+    const models = this.questModels.get(questType);
+    if (!models || models.length === 0) {
+      return;
+    }
+
+    this.writeQuestInstance(models[0], quest, index);
+    this.entityIdMaps.get(questType)!.set(index, quest.entityId);
+  }
+
+  private removeQuestInstance(questType: QuestType, entityId: ID) {
+    const models = this.questModels.get(questType);
+    if (!models || models.length === 0) {
+      return;
+    }
+
+    const order = this.questInstanceOrder.get(questType);
+    const binding = this.questInstanceIndices.get(entityId);
+    if (!order || !binding || binding.questType !== questType) {
+      return;
+    }
+
+    const index = binding.index;
+    const lastIndex = order.length - 1;
+    const lastEntityId = order[lastIndex];
+
+    if (index !== lastIndex) {
+      order[index] = lastEntityId;
+      const swappedQuest = this.quests.getQuest(lastEntityId);
+      if (swappedQuest) {
+        this.writeQuestInstance(models[0], swappedQuest, index);
+      }
+      this.questInstanceIndices.set(lastEntityId, { questType, index });
+      this.entityIdMaps.get(questType)!.set(index, lastEntityId);
+    }
+
+    order.pop();
+    this.questInstanceIndices.delete(entityId);
+    this.entityIdMaps.get(questType)!.delete(lastIndex);
+    this.labelManager.removeLabel(Number(entityId));
+  }
+
+  private writeQuestInstance(model: InstancedModel, quest: QuestData, index: number) {
+    const position = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
+    position.y += 0.05;
+    const { x, y } = quest.hexCoords.getContract();
+
+    this.dummy.position.copy(position);
+    const rotationSeed = hashCoordinates(x, y);
+    const rotationIndex = Math.floor(rotationSeed * 6);
+    const randomRotation = (rotationIndex * Math.PI) / 3;
+    this.dummy.rotation.y = randomRotation;
+    this.dummy.updateMatrix();
+
+    model.setMatrixAt(index, this.dummy.matrix);
+  }
+
+  private updateActiveQuestLabel(quest: QuestData) {
+    const activeLabel = this.labelManager.getLabel(Number(quest.entityId));
+    if (!activeLabel) {
+      return;
+    }
+
+    const questLabelData: QuestLabelData = {
+      entityId: quest.entityId,
+      hexCoords: quest.hexCoords,
+      questType: quest.questType,
+      occupierId: quest.occupierId,
+    };
+
+    this.labelManager.createLabel("quest", questLabelData, {
+      cameraView: this.currentCameraView,
+    });
+  }
+
+  // Label management is now handled by LabelManager
 
   public removeLabelsFromScene(): void {
-    this.entityIdLabels.forEach((labelData) => {
-      this.labelsGroup.remove(labelData);
+    // Label visibility is managed by LabelManager
+    // If needed, we could call labelManager.removeAllLabels() here
+  }
+
+  public removeLabelsExcept(entityId?: ID): void {
+    // Remove all labels except the one with the specified entityId
+    const questLabels = this.labelManager.getLabelsByType("quest");
+    questLabels.forEach((label, labelEntityId) => {
+      if (labelEntityId !== entityId) {
+        this.labelManager.removeLabel(labelEntityId);
+      }
     });
   }
 
   public addLabelsToScene(): void {
-    this.entityIdLabels.forEach((labelData) => {
-      if (!this.labelsGroup.children.includes(labelData)) {
-        this.labelsGroup.add(labelData);
-      }
+    // Label visibility is managed by LabelManager
+    // Labels are automatically added when created
+  }
+
+  public showLabel(entityId: ID): void {
+    const quest = this.quests.getQuest(entityId);
+    if (!quest) {
+      return;
+    }
+
+    const questLabelData: QuestLabelData = {
+      entityId: quest.entityId,
+      hexCoords: quest.hexCoords,
+      questType: quest.questType,
+      occupierId: quest.occupierId,
+    };
+
+    this.labelManager.createLabel("quest", questLabelData, {
+      cameraView: this.currentCameraView,
     });
   }
 
-  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
-    const labelData = this.entityIdLabels.get(entityId);
-    if (labelData?.element) {
-      const textContainer = labelData.element.querySelector(".flex.flex-col");
-      if (textContainer) {
-        // Get the container's unique ID or generate one if it doesn't exist
-        let containerId = (textContainer as HTMLElement).dataset.containerId;
-        if (!containerId) {
-          containerId = `quest_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
-          (textContainer as HTMLElement).dataset.containerId = containerId;
-        }
+  public hideLabel(entityId: ID): void {
+    this.labelManager.removeLabel(Number(entityId));
+  }
 
-        if (isCompact) {
-          // For Far view (isCompact = true), always collapse immediately
-          textContainer.classList.add("max-w-0", "ml-0");
-          textContainer.classList.remove("max-w-[250px]", "ml-2");
-          // Clear any existing timeouts
-          transitionManager.clearTimeout(containerId);
-        } else {
-          // For Medium and Close views, expand immediately
-          textContainer.classList.remove("max-w-0", "ml-0");
-          textContainer.classList.add("max-w-[250px]", "ml-2");
+  public hideAllLabels(): void {
+    this.labelManager.removeAllLabels();
+  }
 
-          // If this is Medium view, add timeout to switch back to compact
-          if (this.currentCameraView === CameraView.Medium) {
-            // Store the current timestamp
-            transitionManager.setMediumViewTransition(containerId);
+  // Label visibility transitions are now handled automatically by LabelManager
 
-            // Use the managed timeout
-            transitionManager.setLabelTimeout(
-              () => {
-                // Only apply if the element is still connected to the DOM
-                if (textContainer.isConnected) {
-                  textContainer.classList.remove("max-w-[250px]", "ml-2");
-                  textContainer.classList.add("max-w-0", "ml-0");
-
-                  // Clear the transition state
-                  transitionManager.clearMediumViewTransition(containerId);
-                }
-              },
-              2000,
-              containerId,
-            );
-          } else if (this.currentCameraView === CameraView.Close) {
-            // For Close view, ensure we cancel any existing timeouts
-            transitionManager.clearTimeout(containerId);
-          }
-        }
-      }
-    }
+  // Getter for compatibility with worldmap hover functionality
+  get entityIdLabels(): Map<ID, CSS2DObject> {
+    const labelMap = new Map<ID, CSS2DObject>();
+    const questLabels = this.labelManager.getLabelsByType("quest");
+    questLabels.forEach((label) => {
+      labelMap.set(label.data.entityId, label.css2dObject);
+    });
+    return labelMap;
   }
 }
 
@@ -400,6 +517,17 @@ class Quests {
     });
 
     return removedQuest;
+  }
+
+  getQuest(entityId: ID): QuestData | undefined {
+    for (const quests of this.quests.values()) {
+      const quest = quests.get(entityId);
+      if (quest) {
+        return quest;
+      }
+    }
+
+    return undefined;
   }
 
   getQuests(): Map<QuestType, Map<ID, QuestData>> {

@@ -1,0 +1,204 @@
+import {
+  BiomeType,
+  BuildingType,
+  ContractAddress,
+  HexPosition,
+  ID,
+  QuestType,
+  RelicEffectWithEndTick,
+  ResourcesIds,
+  StructureType,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
+import type { ActiveProduction, GuardArmy } from "../stores/map-data-store";
+import { Position } from "./position";
+
+// data that you can get from the tile + mapdatastore
+export type ExplorerTroopsTileSystemUpdate = {
+  entityId: ID;
+  hexCoords: HexPosition;
+  troopType: TroopType;
+  troopTier: TroopTier;
+  isDaydreamsAgent: boolean;
+  removed?: boolean;
+  // Enhanced data from MapDataStore
+  ownerName: string;
+  guildName: string;
+  troopCount?: number | undefined;
+  ownerAddress: bigint;
+  ownerStructureId: ID | null;
+  currentStamina?: number | undefined;
+  maxStamina?: number | undefined;
+  onChainStamina?:
+    | {
+        amount: bigint;
+        updatedTick: number;
+      }
+    | undefined;
+
+  // Battle data
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+    latestAttackerCoordX: number | null;
+    latestAttackerCoordY: number | null;
+    latestDefenderCoordX: number | null;
+    latestDefenderCoordY: number | null;
+  };
+};
+
+// data that you can get only from the explorer troops
+export type ExplorerTroopsSystemUpdate = {
+  entityId: ID;
+  hexCoords: HexPosition;
+  troopCount: number;
+  onChainStamina: {
+    amount: bigint;
+    updatedTick: number;
+  };
+  ownerAddress: bigint;
+  ownerName: string;
+  ownerStructureId: ID | null;
+  battleCooldownEnd: number;
+};
+
+export type StructureTileSystemUpdate = {
+  entityId: ID;
+  structureName: string;
+  hexCoords: HexPosition;
+  structureType: StructureType;
+  stage: StructureProgress;
+  initialized: boolean;
+  level: number;
+  isAlly: boolean;
+  owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  hasWonder: boolean;
+  // Enhanced data from MapDataStore
+  guardArmies?: GuardArmy[];
+  activeProductions?: ActiveProduction[];
+  hyperstructureRealmCount?: number;
+  // Battle data
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+    latestAttackerCoordX: number | null;
+    latestAttackerCoordY: number | null;
+    latestDefenderCoordX: number | null;
+    latestDefenderCoordY: number | null;
+  };
+};
+
+export type StructureSystemUpdate = {
+  entityId: ID;
+  guardArmies: GuardArmy[];
+  owner: { address: bigint; ownerName: string; guildName: string };
+  hexCoords: HexPosition;
+  battleCooldownEnd: number;
+};
+
+export type TileSystemUpdate = {
+  hexCoords: HexPosition;
+  removeExplored: boolean;
+  biome: BiomeType;
+};
+
+export type BuildingSystemUpdate = {
+  buildingType: BuildingType;
+  innerCol: number;
+  innerRow: number;
+  paused: boolean;
+};
+
+export type ExplorerMoveSystemUpdate = {
+  explorerId: ID;
+  // resourceId: ResourcesIds | 0;
+  // amount: number;
+  // rawAmount: bigint | number | string;
+  timestamp: number;
+  exploreFind: string | null;
+};
+
+export type ExplorerRewardSystemUpdate = {
+  explorerId: ID;
+  explorerStructureId: ID;
+  explorerOwnerAddress: ContractAddress | null;
+  resourceId: ResourcesIds | 0;
+  amount: number;
+  rawAmount: bigint | number | string | null;
+  timestamp: number;
+};
+export type RealmSystemUpdate = {
+  level: number;
+  hexCoords: HexPosition;
+};
+
+export type QuestSystemUpdate = {
+  entityId: ID;
+  occupierId: ID;
+  hexCoords: HexPosition;
+};
+
+export type ChestSystemUpdate = {
+  occupierId: ID;
+  hexCoords: HexPosition;
+};
+
+export type RelicEffectSystemUpdate = {
+  entityId: ID;
+  relicEffects: RelicEffectWithEndTick[];
+};
+
+export interface QuestData {
+  entityId: ID;
+  questType: QuestType;
+  occupierId: ID;
+  hexCoords: Position;
+}
+
+export interface ChestData {
+  entityId: ID;
+  hexCoords: Position;
+}
+
+export interface SelectableArmy {
+  entityId: ID;
+  position: HexPosition;
+  name: string;
+}
+
+export type BattleEventSystemUpdate = {
+  entityId: ID;
+  battleData: {
+    attackerId: ID;
+    defenderId: ID;
+    attackerOwner: ID;
+    defenderOwner: ID;
+    winnerId: ID;
+    maxReward: Array<{ resourceType: number; amount: number }>;
+    timestamp: number;
+  };
+};
+
+export type StoryEventSystemUpdate = {
+  ownerAddress: string | null;
+  ownerName: string | null;
+  entityId: ID | null;
+  txHash: string;
+  timestamp: number;
+  storyType: string;
+  storyPayload: Record<string, unknown> | null;
+  rawStory: unknown;
+};
+
+export enum StructureProgress {
+  STAGE_1 = 0,
+  STAGE_2 = 1,
+  STAGE_3 = 2,
+}

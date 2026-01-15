@@ -6,12 +6,11 @@ pub trait INameSystems<T> {
 #[dojo::contract]
 pub mod name_systems {
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::SeasonConfigImpl;
-    use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::structure::StructureOwnerStats;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::SeasonConfigImpl;
+    use crate::models::name::AddressName;
+    use crate::models::structure::StructureOwnerStats;
 
     #[abi(embed_v0)]
     pub impl NameSystemsImpl of super::INameSystems<ContractState> {

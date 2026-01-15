@@ -1,17 +1,33 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { sqlApi } from "@/services/api";
+import { getGameModeConfig } from "@/config/game-modes";
+import type { GameModeConfig } from "@/config/game-modes";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
-import { Position } from "@/types/position";
-import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
+import { playerColorManager } from "@/three/systems/player-colors";
+import {
+  getExplorerInfoFromTileOccupier,
+  getStructureInfoFromTileOccupier,
+  Position,
+  tileOptToTile,
+} from "@bibliothecadao/eternum";
+
+import {
+  BiomeIdToType,
+  HexPosition,
+  ResourcesIds,
+  StructureType,
+  Tile,
+  TileOccupier,
+  TileOpt,
+} from "@bibliothecadao/types";
+import type { Clause, Entity as ToriiEntity, ToriiClient } from "@dojoengine/torii-wasm/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "../systems/system-manager";
-import { getHexForWorldPosition } from "../utils";
+import { HEX_SIZE } from "../constants/scene-constants";
 
-const LABELS = {
+const LABELS = (fragmentMineIcon: string) => ({
   ARMY: "/images/labels/enemy_army.png",
   MY_ARMY: "/images/labels/army.png",
   MY_REALM: "/images/labels/realm.png",
@@ -22,14 +38,14 @@ const LABELS = {
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
+    [StructureType.FragmentMine]: fragmentMineIcon,
   },
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   },
   QUEST: "/images/labels/quest.png",
-};
+});
 
 const MINIMAP_CONFIG = {
   MIN_ZOOM_RANGE: 75,
@@ -75,24 +91,31 @@ interface EntityCluster {
     row: number;
     isMine: boolean;
     type?: StructureType; // Only for structures
+    ownerId?: string; // Owner address for player color distinction
   }[];
   isMine: boolean;
   type?: StructureType; // Only for structures
+  ownerId?: string; // Owner address for player color distinction
 }
 
 // Keep ArmyCluster for backward compatibility
 interface ArmyCluster extends EntityCluster {}
 
 class Minimap {
+  private mode: GameModeConfig;
   private worldmapScene: WorldmapScene;
   private canvas!: HTMLCanvasElement;
   private context!: CanvasRenderingContext2D;
+  private staticLayerCanvas!: HTMLCanvasElement;
+  private staticLayerContext!: CanvasRenderingContext2D;
+  private needsStaticRedraw: boolean = true;
   private camera!: THREE.PerspectiveCamera;
   private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
   private mapSize: { width: number; height: number } = {
     width: MINIMAP_CONFIG.MAP_COLS_WIDTH,
     height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT,
   };
+  private worldBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
   private scaleX!: number;
   private scaleY!: number;
   private dragSpeed: number = 1;
@@ -111,9 +134,15 @@ class Minimap {
   private labelImages = new Map<string, HTMLImageElement>();
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
-  private tiles: Tile[] = []; // SQL-fetched tiles
+  private tiles: Tile[] = [];
+  private tileMap: Map<string, Tile> = new Map(); // Fast lookup for tiles by coordinate
   private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
   private isMinimized: boolean = false; // Add minimized state
+  private tilesRefreshIntervalId: number | null = null;
+  private isFetchingTiles: boolean = false;
+  private isVisible: boolean = true;
+  private toriiClient: ToriiClient;
+  private tileStreamSubscription: { cancel: () => void } | null = null;
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -129,29 +158,51 @@ class Minimap {
   private currentClusterRadius: number = MINIMAP_CONFIG.CLUSTER.MIN_RADIUS;
   private needsReclustering: boolean = true;
   private lastZoomRatio: number = 0;
+  private syncCameraToMinimapCenter!: () => void;
+  private lastCameraTarget: THREE.Vector3 | null = null;
+  private isSyncingCamera: boolean = false;
+  private readonly hexVertDist = HEX_SIZE * 2 * 0.75;
+  private readonly hexHorizDist = Math.sqrt(3) * HEX_SIZE;
 
-  constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera) {
+  constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera, toriiClient: ToriiClient) {
     this.worldmapScene = worldmapScene;
+    this.toriiClient = toriiClient;
+    this.mode = getGameModeConfig();
+    this.syncCameraToMinimapCenter = throttle(() => {
+      this.isSyncingCamera = true;
+      this.worldmapScene.moveCameraToColRow(this.mapCenter.col, this.mapCenter.row, 0.12);
+    }, 50);
 
     // Expose the minimap instance globally for UI access
     (window as any).minimapInstance = this;
 
-    this.waitForMinimapElement().then((canvas) => {
-      this.canvas = canvas;
-      this.loadLabelImages();
-      this.initializeCanvas(camera);
-      this.canvas.addEventListener("canvasResized", this.handleResize);
-      this.fetchTiles(); // Start fetching tiles
-    });
+    this.waitForMinimapElement()
+      .then((canvas) => {
+        this.canvas = canvas;
+        this.loadLabelImages();
+        this.initializeCanvas(camera);
+        this.canvas.addEventListener("canvasResized", this.handleResize);
+        void this.fetchTiles().then(() => this.startTileStream());
+      })
+      .catch((error) => {
+        console.warn("Minimap: Failed to initialize minimap:", error);
+      });
   }
 
   private async waitForMinimapElement(): Promise<HTMLCanvasElement> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const MAX_ATTEMPTS = 300; // ~5 seconds at 60fps
+      let attempts = 0;
+
       const checkElement = () => {
         const element = document.getElementById("minimap") as HTMLCanvasElement;
         if (element) {
           resolve(element);
+        } else if (attempts >= MAX_ATTEMPTS) {
+          console.error("Minimap: minimap element not found after max attempts");
+          reject(new Error("minimap element not found"));
         } else {
+          attempts++;
           requestAnimationFrame(checkElement);
         }
       };
@@ -161,6 +212,8 @@ class Minimap {
 
   private initializeCanvas(camera: THREE.PerspectiveCamera) {
     this.context = this.canvas.getContext("2d")!;
+    this.staticLayerCanvas = document.createElement("canvas");
+    this.staticLayerContext = this.staticLayerCanvas.getContext("2d", { alpha: false })!;
     this.camera = camera;
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
@@ -186,15 +239,20 @@ class Minimap {
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
     this.scaledCoords.clear();
-    const minCol = this.mapCenter.col - this.mapSize.width / 2;
-    const maxCol = this.mapCenter.col + this.mapSize.width / 2;
-    const minRow = this.mapCenter.row - this.mapSize.height / 2;
-    const maxRow = this.mapCenter.row + this.mapSize.height / 2;
+    const minColRaw = this.mapCenter.col - this.mapSize.width / 2;
+    const maxColRaw = this.mapCenter.col + this.mapSize.width / 2;
+    const minRowRaw = this.mapCenter.row - this.mapSize.height / 2;
+    const maxRowRaw = this.mapCenter.row + this.mapSize.height / 2;
+
+    const minCol = Math.floor(minColRaw);
+    const maxCol = Math.ceil(maxColRaw);
+    const minRow = Math.floor(minRowRaw);
+    const maxRow = Math.ceil(maxRowRaw);
 
     for (let col = minCol; col <= maxCol; col++) {
       for (let row = minRow; row <= maxRow; row++) {
-        const scaledCol = (col - minCol) * this.scaleX;
-        const scaledRow = (row - minRow) * this.scaleY;
+        const scaledCol = (col - minColRaw) * this.scaleX;
+        const scaledRow = (row - minRowRaw) * this.scaleY;
         this.scaledCoords.set(`${col},${row}`, { scaledCol, scaledRow });
       }
     }
@@ -241,6 +299,9 @@ class Minimap {
       height: MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY,
     };
 
+    this.resizeStaticLayer();
+    this.needsStaticRedraw = true;
+
     // Adjust clustering radius based on zoom level and check if reclustering is needed
     const newRadius = Math.max(
       MINIMAP_CONFIG.CLUSTER.MIN_RADIUS,
@@ -261,12 +322,28 @@ class Minimap {
     }
   }
 
+  private updateMapCenter(col: number, row: number, forceRecompute: boolean = false): boolean {
+    const previousCenter = { ...this.mapCenter };
+    this.mapCenter = { col, row };
+    this.clampMapCenter();
+
+    const centerChanged = previousCenter.col !== this.mapCenter.col || previousCenter.row !== this.mapCenter.row;
+
+    if (!forceRecompute && !centerChanged) {
+      return false;
+    }
+
+    this.recomputeScales();
+    this.needsStaticRedraw = true;
+    return centerChanged;
+  }
+
   private getMousePosition(event: MouseEvent) {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const col = Math.floor(x / this.scaleX) + (this.mapCenter.col - this.mapSize.width / 2);
-    const row = Math.floor(y / this.scaleY) + (this.mapCenter.row - this.mapSize.height / 2);
+    const col = Math.floor(x / this.scaleX + (this.mapCenter.col - this.mapSize.width / 2));
+    const row = Math.floor(y / this.scaleY + (this.mapCenter.row - this.mapSize.height / 2));
     return { col, row, x, y };
   }
 
@@ -288,33 +365,52 @@ class Minimap {
     this.drawHoveredCoordinates();
   }
 
-  private drawExploredTiles() {
-    if (!this.context) return;
+  private resizeStaticLayer() {
+    if (this.staticLayerCanvas.width !== this.canvas.width || this.staticLayerCanvas.height !== this.canvas.height) {
+      this.staticLayerCanvas.width = this.canvas.width;
+      this.staticLayerCanvas.height = this.canvas.height;
+    }
+  }
 
-    // Draw SQL-fetched tiles first
-    this.tiles.forEach((tile) => {
-      const cacheKey = `${tile.col},${tile.row}`;
-      let biomeColor;
+  private drawExploredTilesToStaticLayer() {
+    if (!this.staticLayerContext) return;
 
-      if (this.biomeCache.has(cacheKey)) {
-        biomeColor = this.biomeCache.get(cacheKey)!;
-      } else {
-        const biomeType = BiomeIdToType[tile.biome];
-        biomeColor = BIOME_COLORS[biomeType].getStyle();
-        this.biomeCache.set(cacheKey, biomeColor);
-      }
+    this.staticLayerContext.clearRect(0, 0, this.staticLayerCanvas.width, this.staticLayerCanvas.height);
 
-      if (this.scaledCoords.has(cacheKey)) {
-        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        this.context.fillStyle = biomeColor;
-        this.context.fillRect(
+    // OPTIMIZED: Iterate only visible coordinates instead of all tiles
+    for (const [cacheKey, { scaledCol, scaledRow }] of this.scaledCoords) {
+      const tile = this.tileMap.get(cacheKey);
+      if (tile) {
+        let biomeColor;
+
+        if (this.biomeCache.has(cacheKey)) {
+          biomeColor = this.biomeCache.get(cacheKey)!;
+        } else {
+          const biomeType = BiomeIdToType[tile.biome];
+          biomeColor = BIOME_COLORS[biomeType].getStyle();
+          this.biomeCache.set(cacheKey, biomeColor);
+        }
+
+        this.staticLayerContext.fillStyle = biomeColor;
+        this.staticLayerContext.fillRect(
           scaledCol - this.scaleX * (tile.row % 2 !== 0 ? 1 : 0.5),
           scaledRow - this.scaleY / 2,
           this.scaleX,
           this.scaleY,
         );
       }
-    });
+    }
+    this.needsStaticRedraw = false;
+  }
+
+  private drawExploredTiles() {
+    if (!this.context) return;
+
+    if (this.needsStaticRedraw) {
+      this.drawExploredTilesToStaticLayer();
+    }
+
+    this.context.drawImage(this.staticLayerCanvas, 0, 0);
   }
 
   private drawStructures() {
@@ -379,14 +475,33 @@ class Minimap {
         const labelImg = this.labelImages.get(cluster.isMine ? "MY_ARMY" : "ARMY");
         if (!labelImg) return;
 
+        const drawX = scaledCol - this.armySize.width * (cluster.centerRow % 2 !== 0 ? 1 : 0.5);
+        const drawY = scaledRow - this.armySize.height / 2;
+
+        // Draw player-colored indicator ring behind the icon for enemy armies
+        // This allows distinguishing different enemy players on the minimap
+        if (!cluster.isMine && cluster.ownerId) {
+          const profile = playerColorManager.getEnemyProfile(cluster.ownerId);
+          const ringColor = `#${profile.minimap.getHexString()}`;
+
+          // Draw colored ring/glow behind the icon
+          this.context.save();
+          this.context.beginPath();
+          this.context.arc(
+            drawX + this.armySize.width / 2,
+            drawY + this.armySize.height / 2,
+            this.armySize.width * 0.6,
+            0,
+            Math.PI * 2,
+          );
+          this.context.fillStyle = ringColor;
+          this.context.globalAlpha = 0.6;
+          this.context.fill();
+          this.context.restore();
+        }
+
         // Draw the army icon
-        this.context.drawImage(
-          labelImg,
-          scaledCol - this.armySize.width * (cluster.centerRow % 2 !== 0 ? 1 : 0.5),
-          scaledRow - this.armySize.height / 2,
-          this.armySize.width,
-          this.armySize.height,
-        );
+        this.context.drawImage(labelImg, drawX, drawY, this.armySize.width, this.armySize.height);
       }
     });
   }
@@ -452,20 +567,31 @@ class Minimap {
     // Reset army clusters
     this.armyClusters = [];
 
-    const allArmies: HexPosition[] = this.tiles
+    const playerAddress = useAccountStore.getState().account?.address;
+
+    // Extract army data with owner information for player color distinction
+    const allArmies = this.tiles
       .map((tile) => {
         const explorerInfo = getExplorerInfoFromTileOccupier(tile.occupier_type);
         if (!explorerInfo) return null;
+        const ownerId = tile.occupier_id?.toString();
+        const isMine = playerAddress ? ownerId === playerAddress : false;
         return {
           col: tile.col,
           row: tile.row,
+          isMine,
+          ownerId,
         };
       })
-      .filter((army) => army !== null);
+      .filter((army): army is NonNullable<typeof army> => army !== null);
+
     if (allArmies.length === 0) return;
 
     // Use grid-based spatial partitioning for efficient clustering
-    const grid = new Map<string, Array<{ index: number; col: number; row: number; isMine: boolean }>>();
+    const grid = new Map<
+      string,
+      Array<{ index: number; col: number; row: number; isMine: boolean; ownerId?: string }>
+    >();
 
     // Place armies in grid cells
     allArmies.forEach((army, index) => {
@@ -482,7 +608,8 @@ class Minimap {
         index,
         col: army.col,
         row: army.row,
-        isMine: false,
+        isMine: army.isMine,
+        ownerId: army.ownerId,
       });
     });
 
@@ -495,11 +622,13 @@ class Minimap {
         if (processedArmies.has(army.index)) continue;
 
         // Create a new cluster with this army
+        // Include ownerId for player-specific coloring on the minimap
         const cluster: EntityCluster = {
           centerCol: army.col,
           centerRow: army.row,
-          entities: [{ col: army.col, row: army.row, isMine: army.isMine }],
+          entities: [{ col: army.col, row: army.row, isMine: army.isMine, ownerId: army.ownerId }],
           isMine: army.isMine,
+          ownerId: army.ownerId,
         };
 
         processedArmies.add(army.index);
@@ -515,7 +644,8 @@ class Minimap {
             if (!neighborArmies) continue;
 
             for (const neighborArmy of neighborArmies) {
-              if (processedArmies.has(neighborArmy.index) || neighborArmy.isMine !== army.isMine) continue;
+              // Only cluster armies from the same owner for consistent coloring
+              if (processedArmies.has(neighborArmy.index) || neighborArmy.ownerId !== army.ownerId) continue;
 
               // Check actual distance
               const distance = this.hexDistance(army.col, army.row, neighborArmy.col, neighborArmy.row);
@@ -525,6 +655,7 @@ class Minimap {
                   col: neighborArmy.col,
                   row: neighborArmy.row,
                   isMine: neighborArmy.isMine,
+                  ownerId: neighborArmy.ownerId,
                 });
                 processedArmies.add(neighborArmy.index);
               }
@@ -589,45 +720,27 @@ class Minimap {
   }
 
   drawCamera() {
-    if (!this.context) return;
-
-    const cameraPosition = this.camera.position;
-    const currentCameraView: CameraView = this.worldmapScene.getCurrentCameraView();
-    const { col, row } = getHexForWorldPosition(cameraPosition);
-    const cacheKey = `${col},${row}`;
-    if (this.scaledCoords.has(cacheKey)) {
-      const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-
-      this.context.strokeStyle = MINIMAP_CONFIG.COLORS.CAMERA;
-      this.context.beginPath();
-      if (currentCameraView !== CameraView.Far) {
-        this.context.moveTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-        this.context.lineTo(scaledCol + this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-        this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth / 2, scaledRow);
-        this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth / 2, scaledRow);
-        this.context.lineTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-      }
-      if (currentCameraView === CameraView.Far) {
-        this.context.moveTo(scaledCol - this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
-        this.context.lineTo(scaledCol + this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
-        this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth, scaledRow - this.cameraSize.height * 0.5);
-        this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth, scaledRow - this.cameraSize.height * 0.5);
-        this.context.lineTo(scaledCol - this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
-      }
-      this.context.closePath();
-      this.context.lineWidth = 1;
-      this.context.stroke();
-    }
+    // Disabled camera footprint rendering per feedback
   }
 
   hideMinimap() {
-    this.canvas.style.display = "none";
+    if (this.canvas) {
+      this.canvas.style.display = "none";
+    }
     useUIStore.getState().setShowMinimap(false);
+    this.isVisible = false;
+    this.stopTilesRefreshLoop();
   }
 
   showMinimap() {
-    this.canvas.style.display = "block";
+    if (this.canvas) {
+      this.canvas.style.display = "block";
+    }
     useUIStore.getState().setShowMinimap(true);
+    this.isVisible = true;
+    if (this.tilesRefreshIntervalId === null) {
+      this.startTilesRefreshLoop();
+    }
   }
 
   minimizeMinimap() {
@@ -637,6 +750,11 @@ class Minimap {
   // Set minimized state
   setMinimized(minimized: boolean) {
     this.isMinimized = minimized;
+    if (this.isMinimized) {
+      this.stopTilesRefreshLoop();
+    } else if (this.isVisible && this.tilesRefreshIntervalId === null) {
+      this.startTilesRefreshLoop();
+    }
     if (this.context) {
       this.draw();
     }
@@ -651,8 +769,7 @@ class Minimap {
     const url = new URL(window.location.href);
     const col = parseInt(url.searchParams.get("col") || "0");
     const row = parseInt(url.searchParams.get("row") || "0");
-    this.mapCenter = { col, row };
-    this.recomputeScales();
+    this.updateMapCenter(col, row);
   }
 
   // Set the map to maximum distance for screenshots
@@ -662,20 +779,29 @@ class Minimap {
       width: MINIMAP_CONFIG.MAX_ZOOM_RANGE,
       height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT * 3,
     };
+    this.clampMapCenter();
     this.recomputeScales();
+    this.resizeStaticLayer();
+    this.needsStaticRedraw = true;
     this.draw();
   }
 
   // Center the map at the origin (0,0) for screenshots
   centerAtOrigin() {
     this.mapCenter = { col: 0, row: 0 };
+    this.clampMapCenter();
     this.recomputeScales();
+    this.needsStaticRedraw = true;
     this.draw();
   }
 
   update() {
     // Only call draw if we have completed initialization
     if (this.context) {
+      if (!this.isDragging && !this.isMinimized) {
+        // Keep the minimap centered on the current camera target when the world view moves
+        this.syncToCameraTarget();
+      }
       // Mark as needing reclustering on scene update, but not on every frame
       // This ensures armies that move will eventually get reclustered
       if (Math.random() < 0.1) {
@@ -712,15 +838,18 @@ class Minimap {
     if (this.isDragging && this.lastMousePosition && !this.isMinimized) {
       const colShift = Math.round((event.clientX - this.lastMousePosition.x) * this.dragSpeed);
       const rowShift = Math.round((event.clientY - this.lastMousePosition.y) * this.dragSpeed);
-      this.mapCenter.col -= colShift;
-      this.mapCenter.row -= rowShift;
+      const nextCol = this.mapCenter.col - colShift;
+      const nextRow = this.mapCenter.row - rowShift;
 
       this.lastMousePosition = {
         x: event.clientX,
         y: event.clientY,
       };
 
-      this.recomputeScales();
+      const centerChanged = this.updateMapCenter(nextCol, nextRow);
+      if (centerChanged) {
+        this.syncCameraToMinimapCenter();
+      }
       this.draw();
     } else if (!this.isMinimized) {
       // Redraw only when not dragging to show updated hover coordinates
@@ -740,6 +869,12 @@ class Minimap {
       if (distance < 3) {
         this.handleClick(event);
       }
+    }
+
+    // If dragging finished, we need to update static layer with new position
+    if (this.isDragging && !this.isMinimized) {
+      this.needsStaticRedraw = true;
+      this.draw();
     }
 
     this.isDragging = false;
@@ -767,15 +902,22 @@ class Minimap {
     this.mapSize.width -= 2 * deltaX;
     this.mapSize.height -= 2 * deltaY;
 
+    let nextCol = this.mapCenter.col;
+    let nextRow = this.mapCenter.row;
+
     if (!zoomOut && event) {
       const { col, row } = this.getMousePosition(event);
       const colShift = col - this.mapCenter.col;
       const rowShift = row - this.mapCenter.row;
-      this.mapCenter.col += Math.round(colShift * 0.15); // Adjust the factor as needed
-      this.mapCenter.row += Math.round(rowShift * 0.15); // Adjust the factor as needed
+      nextCol += Math.round(colShift * 0.15); // Adjust the factor as needed
+      nextRow += Math.round(rowShift * 0.15); // Adjust the factor as needed
     }
 
-    this.recomputeScales();
+    const centerChanged = this.updateMapCenter(nextCol, nextRow, true);
+    if (centerChanged) {
+      this.syncCameraToMinimapCenter();
+    }
+    this.draw();
     // The recomputeScales method will set needsReclustering if the zoom level changed enough
   }
 
@@ -800,20 +942,23 @@ class Minimap {
 
   private handleResize = () => {
     this.recomputeScales();
+    this.resizeStaticLayer();
+    this.needsStaticRedraw = true;
     this.needsReclustering = true; // Force reclustering on resize
     if (this.context) this.draw();
   };
 
   private loadLabelImages() {
+    const labels = LABELS(this.mode.assets.labels.fragmentMine);
     // Load army labels
-    this.loadImage("ARMY", LABELS.ARMY);
-    this.loadImage("MY_ARMY", LABELS.MY_ARMY);
-    this.loadImage("MY_REALM", LABELS.MY_REALM);
-    this.loadImage("MY_REALM_WONDER", LABELS.MY_REALM_WONDER);
-    this.loadImage("REALM_WONDER", LABELS.REALM_WONDER);
-    this.loadImage("QUEST", LABELS.QUEST);
+    this.loadImage("ARMY", labels.ARMY);
+    this.loadImage("MY_ARMY", labels.MY_ARMY);
+    this.loadImage("MY_REALM", labels.MY_REALM);
+    this.loadImage("MY_REALM_WONDER", labels.MY_REALM_WONDER);
+    this.loadImage("REALM_WONDER", labels.REALM_WONDER);
+    this.loadImage("QUEST", labels.QUEST);
     // Load structure labels
-    Object.entries(LABELS.STRUCTURES).forEach(([type, path]) => {
+    Object.entries(labels.STRUCTURES).forEach(([type, path]) => {
       this.loadImage(`STRUCTURE_${type}`, path);
     });
   }
@@ -901,23 +1046,284 @@ class Minimap {
     if (this.context) this.draw();
   }
 
+  private stopTilesRefreshLoop() {
+    if (this.tilesRefreshIntervalId !== null) {
+      window.clearInterval(this.tilesRefreshIntervalId);
+      this.tilesRefreshIntervalId = null;
+    }
+  }
+
+  private startTilesRefreshLoop() {
+    // Torii streams now provide tile deltas; polling is no longer required.
+    this.stopTilesRefreshLoop();
+  }
+
+  private shouldPollTiles() {
+    return false;
+  }
+
   private async fetchTiles() {
-    console.log("fetchTiles");
+    if (this.isFetchingTiles) return;
+    this.isFetchingTiles = true;
+    const getTimestamp = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const startTime = getTimestamp();
     try {
-      this.tiles = await sqlApi.fetchAllTiles().then((tiles) => {
-        return tiles.map((tile) => {
-          const position = new Position({ x: tile.col, y: tile.row });
-          const { x: col, y: row } = position.getNormalized();
-          return {
-            ...tile,
-            col,
-            row,
-          };
+      const tiles: Tile[] = [];
+      const limit = 40_000;
+      let cursor: string | undefined;
+      const clause: Clause = {
+        Keys: {
+          keys: [undefined, undefined, undefined],
+          pattern_matching: "FixedLen",
+          models: ["s1_eternum-TileOpt"],
+        },
+      };
+
+      while (true) {
+        const page = await this.toriiClient.getEntities({
+          pagination: { limit, cursor, direction: "Forward", order_by: [] },
+          clause,
+          no_hashed_keys: false,
+          models: ["s1_eternum-TileOpt"],
+          historical: false,
         });
+
+        page.items.forEach((entity) => {
+          const tile = this.extractTileFromToriiEntity(entity);
+          if (tile) tiles.push(tile);
+        });
+
+        if (page.items.length < limit || !page.next_cursor) {
+          break;
+        }
+        cursor = page.next_cursor;
+      }
+
+      const fetchEndTime = getTimestamp();
+      this.tiles = tiles;
+      this.tileMap.clear();
+      this.tiles.forEach((tile) => {
+        this.tileMap.set(`${tile.col},${tile.row}`, tile);
       });
+      this.updateWorldBounds();
+      this.clampMapCenter();
+      this.recomputeScales();
+      this.needsStaticRedraw = true; // New tiles, need redraw
       this.draw(); // Redraw the minimap with new data
+      const endTime = getTimestamp();
+      const fetchDuration = fetchEndTime - startTime;
+      const postProcessDuration = endTime - fetchEndTime;
+      const totalDuration = endTime - startTime;
+      void fetchDuration;
+      void postProcessDuration;
+      void totalDuration;
     } catch (error) {
       console.error("Failed to fetch tiles:", error);
+    } finally {
+      this.isFetchingTiles = false;
+    }
+  }
+
+  private startTileStream = async () => {
+    if (this.tileStreamSubscription) return;
+
+    const clause: Clause = {
+      Keys: {
+        keys: [undefined, undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: ["s1_eternum-TileOpt"],
+      },
+    };
+
+    try {
+      this.tileStreamSubscription = await this.toriiClient.onEntityUpdated(clause, (entity: ToriiEntity) => {
+        this.handleTileEntityUpdate(entity);
+      });
+    } catch (error) {
+      console.warn("[Minimap] Failed to subscribe to tile stream", error);
+    }
+  };
+
+  private handleTileEntityUpdate(entity: ToriiEntity) {
+    if (!entity?.models || Object.keys(entity.models).length === 0) {
+      return;
+    }
+
+    const tile = this.extractTileFromToriiEntity(entity);
+    if (!tile) return;
+
+    const key = `${tile.col},${tile.row}`;
+    const existing = this.tileMap.get(key);
+
+    if (existing) {
+      const biomeChanged = existing.biome !== tile.biome;
+      existing.biome = tile.biome;
+      existing.occupier_id = tile.occupier_id;
+      existing.occupier_type = tile.occupier_type;
+      existing.occupier_is_structure = tile.occupier_is_structure;
+      if (biomeChanged) {
+        this.needsStaticRedraw = true;
+      }
+    } else {
+      this.tileMap.set(key, tile);
+      this.tiles.push(tile);
+      this.updateWorldBoundsWithTile(tile);
+      this.clampMapCenter();
+      this.recomputeScales();
+      this.needsStaticRedraw = true;
+    }
+
+    this.needsReclustering = true;
+  }
+
+  private extractTileFromToriiEntity(entity: ToriiEntity): Tile | null {
+    const tileModel = entity.models?.["s1_eternum-TileOpt"];
+    if (!tileModel) return null;
+
+    const readNumber = (field: string) => {
+      const ty = (tileModel as any)[field];
+      if (!ty) return 0;
+      const value = (ty as any).value;
+      return typeof value === "number" ? value : Number(value);
+    };
+
+    const readBoolean = (field: string) => {
+      const ty = (tileModel as any)[field];
+      if (!ty) return false;
+      const value = (ty as any).value;
+      if (typeof value === "boolean") return value;
+      if (typeof value === "number") return value !== 0;
+      if (typeof value === "string") return value === "true" || value === "1";
+      return Boolean(value);
+    };
+
+    const readBigInt = (field: string) => {
+      const ty = (tileModel as any)[field];
+      if (!ty) return 0n;
+      const value = (ty as any).value;
+      return typeof value === "bigint" ? value : BigInt(value);
+    };
+
+    const colRaw = readNumber("col");
+    const rowRaw = readNumber("row");
+    const alt = readBoolean("alt");
+    const data = readBigInt("data");
+
+    const position = new Position({ x: colRaw, y: rowRaw });
+    const { x: col, y: row } = position.getNormalized();
+
+    const tileOpt: TileOpt = {
+      alt,
+      col: colRaw,
+      row: rowRaw,
+      data,
+    };
+
+    const tile = tileOptToTile(tileOpt);
+
+    return {
+      ...tile,
+      col,
+      row,
+    };
+  }
+
+  private updateWorldBoundsWithTile(tile: Tile) {
+    if (!this.worldBounds) {
+      this.worldBounds = {
+        minCol: tile.col,
+        maxCol: tile.col,
+        minRow: tile.row,
+        maxRow: tile.row,
+      };
+      return;
+    }
+
+    this.worldBounds.minCol = Math.min(this.worldBounds.minCol, tile.col);
+    this.worldBounds.maxCol = Math.max(this.worldBounds.maxCol, tile.col);
+    this.worldBounds.minRow = Math.min(this.worldBounds.minRow, tile.row);
+    this.worldBounds.maxRow = Math.max(this.worldBounds.maxRow, tile.row);
+  }
+
+  private updateWorldBounds() {
+    if (!this.tiles.length) {
+      this.worldBounds = null;
+      return;
+    }
+
+    let minCol = Infinity;
+    let maxCol = -Infinity;
+    let minRow = Infinity;
+    let maxRow = -Infinity;
+
+    this.tiles.forEach((tile) => {
+      if (tile.col < minCol) minCol = tile.col;
+      if (tile.col > maxCol) maxCol = tile.col;
+      if (tile.row < minRow) minRow = tile.row;
+      if (tile.row > maxRow) maxRow = tile.row;
+    });
+
+    this.worldBounds = { minCol, maxCol, minRow, maxRow };
+  }
+
+  private clampMapCenter() {
+    if (!this.worldBounds) return;
+
+    const halfWidth = Math.floor(this.mapSize.width / 2);
+    const halfHeight = Math.floor(this.mapSize.height / 2);
+    const { minCol, maxCol, minRow, maxRow } = this.worldBounds;
+
+    const minCenterCol = minCol + halfWidth;
+    const maxCenterCol = maxCol - halfWidth;
+    const minCenterRow = minRow + halfHeight;
+    const maxCenterRow = maxRow - halfHeight;
+
+    if (minCenterCol > maxCenterCol) {
+      this.mapCenter.col = Math.round((minCol + maxCol) / 2);
+    } else {
+      this.mapCenter.col = Math.min(Math.max(this.mapCenter.col, minCenterCol), maxCenterCol);
+    }
+
+    if (minCenterRow > maxCenterRow) {
+      this.mapCenter.row = Math.round((minRow + maxRow) / 2);
+    } else {
+      this.mapCenter.row = Math.min(Math.max(this.mapCenter.row, minCenterRow), maxCenterRow);
+    }
+  }
+
+  resetToCameraCenter() {
+    this.syncToCameraTarget();
+  }
+
+  syncToCameraTarget(forceRedraw: boolean = false) {
+    const cameraTarget = this.worldmapScene.getCameraTargetPosition();
+
+    if (this.isSyncingCamera) {
+      this.lastCameraTarget = cameraTarget.clone();
+      this.isSyncingCamera = false;
+      const { col, row } = this.worldmapScene.getCameraTargetHex();
+      this.updateMapCenter(col, row, true);
+      if (this.context) this.draw();
+      return;
+    }
+
+    if (!this.lastCameraTarget) {
+      this.lastCameraTarget = cameraTarget.clone();
+      const { col, row } = this.worldmapScene.getCameraTargetHex();
+      this.updateMapCenter(col, row, true);
+      if (this.context) this.draw();
+      return;
+    }
+
+    const deltaX = cameraTarget.x - this.lastCameraTarget.x;
+    const deltaZ = cameraTarget.z - this.lastCameraTarget.z;
+    this.lastCameraTarget.copy(cameraTarget);
+
+    const nextCol = this.mapCenter.col + deltaX / this.hexHorizDist;
+    const nextRow = this.mapCenter.row + deltaZ / this.hexVertDist;
+    const changed = this.updateMapCenter(nextCol, nextRow, forceRedraw);
+    if ((changed || forceRedraw) && this.context) {
+      this.draw();
     }
   }
 
@@ -957,6 +1363,59 @@ class Minimap {
       this.draw();
     }
   };
+
+  public dispose(): void {
+    // Remove all event listeners
+    if (this.canvas) {
+      this.canvas.removeEventListener("mousedown", this.handleMouseDown);
+      this.canvas.removeEventListener("mousemove", this.handleMouseMove);
+      this.canvas.removeEventListener("mouseup", this.handleMouseUp);
+      this.canvas.removeEventListener("wheel", this.handleWheel);
+      this.canvas.removeEventListener("mouseleave", this.handleMouseLeave);
+      this.canvas.removeEventListener("canvasResized", this.handleResize);
+    }
+
+    // Clear all cached data
+    this.scaledCoords.clear();
+
+    // Dispose label images
+    this.labelImages.forEach((image) => {
+      // Set src to empty to help with garbage collection
+      image.src = "";
+    });
+    this.labelImages.clear();
+
+    // Clear canvas context if exists
+    if (this.context) {
+      this.context.clearRect(0, 0, this.canvas?.width || 0, this.canvas?.height || 0);
+    }
+
+    if (this.staticLayerContext) {
+      this.staticLayerContext.clearRect(0, 0, this.staticLayerCanvas?.width || 0, this.staticLayerCanvas?.height || 0);
+    }
+
+    // Reset references
+    this.canvas = null as any;
+    this.context = null as any;
+    this.staticLayerCanvas = null as any;
+    this.staticLayerContext = null as any;
+    this.hoveredHexCoords = null;
+
+    if ((window as any).minimapInstance === this) {
+      (window as any).minimapInstance = undefined;
+    }
+
+    this.stopTilesRefreshLoop();
+
+    if (this.tileStreamSubscription) {
+      this.tileStreamSubscription.cancel();
+      this.tileStreamSubscription = null;
+    }
+  }
+
+  public isUserDragging(): boolean {
+    return this.isDragging;
+  }
 }
 
 export default Minimap;

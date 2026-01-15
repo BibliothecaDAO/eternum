@@ -1,5 +1,6 @@
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { ModalContainer } from "@/ui/shared";
+import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActorType, ID } from "@bibliothecadao/types";
 import { Suspense } from "react";
 import { HelpContainer } from "./help-container";
@@ -21,15 +22,18 @@ export const HelpModal = ({
   };
   allowBothDirections?: boolean;
 }) => {
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
   return (
-    <ModalContainer size="large">
-      <div className="production-modal-selector container mx-auto grid grid-cols-12  h-full row-span-12 rounded-2xl relative">
-        <div className="h-full col-span-12 overflow-y-auto">
+    <SecondaryPopup width="960" name="transfer-modal" containerClassName="absolute left-0 top-0">
+      <SecondaryPopup.Head onClose={() => toggleModal(null)}>Transfer Troops & Relics</SecondaryPopup.Head>
+      <SecondaryPopup.Body width="100%" height="auto">
+        <div className="p-4">
           <Suspense fallback={<LoadingAnimation />}>
             <HelpContainer selected={selected} target={target} allowBothDirections={allowBothDirections} />
           </Suspense>
         </div>
-      </div>
-    </ModalContainer>
+      </SecondaryPopup.Body>
+    </SecondaryPopup>
   );
 };

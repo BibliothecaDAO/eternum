@@ -1,8 +1,7 @@
 use cubit::f128::procgen::simplex3;
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use cubit::f128::types::vec3::{Vec3Trait};
-
-use s1_eternum::utils::map::constants::fixed_constants as fc;
+use cubit::f128::types::fixed::{Fixed,FixedTrait};
+use cubit::f128::types::vec3::Vec3Trait;
+use crate::utils::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
 pub enum Biome {
     None,
@@ -22,6 +21,7 @@ pub enum Biome {
     SubtropicalDesert,
     TropicalSeasonalForest,
     TropicalRainForest,
+    Underground,
 }
 
 impl BiomeIntoFelt252 of Into<Biome, felt252> {
@@ -44,6 +44,7 @@ impl BiomeIntoFelt252 of Into<Biome, felt252> {
             Biome::SubtropicalDesert => 'Subtropical Desert',
             Biome::TropicalSeasonalForest => 'Tropical Seasonal Forest',
             Biome::TropicalRainForest => 'Tropical Rain Forest',
+            Biome::Underground => 'Underground',
         }
     }
 }
@@ -69,6 +70,7 @@ impl BiomeIntoU8 of Into<Biome, u8> {
             Biome::SubtropicalDesert => 14,
             Biome::TropicalSeasonalForest => 15,
             Biome::TropicalRainForest => 16,
+            Biome::Underground => 17,
         }
     }
 }
@@ -94,6 +96,7 @@ impl U8IntoBiome of Into<u8, Biome> {
             14 => Biome::SubtropicalDesert,
             15 => Biome::TropicalSeasonalForest,
             16 => Biome::TropicalRainForest,
+            17 => Biome::Underground,
             _ => panic!("invalid biome"),
         }
     }
@@ -119,50 +122,55 @@ fn bdepth(biome: Biome) -> Fixed {
         Biome::SubtropicalDesert => fc::_0_3(),
         Biome::TropicalSeasonalForest => fc::_0_5(),
         Biome::TropicalRainForest => fc::_0_6(),
+        Biome::Underground => FixedTrait::ZERO(),
     }
 }
 
 mod LEVEL {
-    use cubit::f128::types::fixed::{Fixed};
-    use s1_eternum::utils::map::constants::fixed_constants as fc;
+    use cubit::f128::types::fixed::Fixed;
+    use crate::utils::fixed_constants as fc;
 
     pub fn DEEP_OCEAN() -> Fixed {
-        fc::_0_2()
+        fc::_0_17()
     }
 
     pub fn OCEAN() -> Fixed {
-        fc::_0_3()
+        fc::_0_26()
     }
 
     pub fn SAND() -> Fixed {
-        fc::_0_35()
+        fc::_0_31()
     }
 
     pub fn FOREST() -> Fixed {
-        fc::_0_45()
+        fc::_0_42()
     }
 
     pub fn DESERT() -> Fixed {
-        fc::_0_53()
+        fc::_0_5()
     }
 
     pub fn MOUNTAIN() -> Fixed {
-        fc::_0_6()
+        fc::_0_56()
     }
 }
 
 
 fn MAP_AMPLITUDE() -> Fixed {
-    FixedTrait::new_unscaled(60, false)
+    FixedTrait::new_unscaled(24, false)
 }
 
 
 fn MOISTURE_OCTAVE() -> Fixed {
-    fc::_2()
+    FixedTrait::new_unscaled(5, false)
 }
 
 fn ELEVATION_OCTAVES() -> Array<Fixed> {
-    array![fc::_1(), fc::_0_25(), fc::_0_1()]
+    array![
+        fc::_1(),
+        fc::_0_2(),
+        fc::_0_083333(),
+    ]
 }
 
 
@@ -174,12 +182,15 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
             Option::Some(octave) => { sum += octave; },
             Option::None => { break; },
         }
-    };
+    }
     sum
 }
 
 
-pub fn get_biome(col: u128, row: u128) -> Biome {
+pub fn get_biome(alt: bool, col: u128, row: u128) -> Biome {
+    if alt {
+        return Biome::Underground;
+    }
     let col_fixed = FixedTrait::new_unscaled(col, false);
     let row_fixed = FixedTrait::new_unscaled(row, false);
     let elevation = _elevation(col_fixed, row_fixed);
@@ -203,7 +214,7 @@ fn _elevation(col: Fixed, row: Fixed) -> Fixed {
             },
             Option::None => { break; },
         }
-    };
+    }
 
     elevation = elevation / ELEVATION_OCTAVES_SUM();
     elevation = elevation / fc::_100();
@@ -306,6 +317,6 @@ mod tests {
 
     #[test]
     fn test_noisy() {
-        get_biome(1128, 389);
+        get_biome(false, 1128, 389);
     }
 }

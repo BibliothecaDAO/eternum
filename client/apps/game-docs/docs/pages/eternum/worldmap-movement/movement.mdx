@@ -46,8 +46,14 @@ the known boundaries of the world.
 
 If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
 back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
-gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
-an army becomes overloaded, they will not be able to undertake further exploration, but can continue to travel on
+gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory.
+
+**Relic Chest Discovery**: Each exploration also triggers a global check for **Relic Chest** discovery. If enough time
+has passed since the last chest was discovered globally, a new chest will spawn at a calculated distance from the
+exploration point. This creates exciting opportunities for explorers to trigger discoveries that benefit the entire game
+world.
+
+If an army becomes overloaded, they will not be able to undertake further exploration, but can continue to travel on
 previously-explored hexes. Armies can return to a structure to offload the materials, or drop them to free up space.
 Note that any materials discarded in the field will be permanently lost (burned).
 

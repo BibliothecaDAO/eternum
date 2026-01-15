@@ -1,6 +1,6 @@
 [package]
-cairo-version = "=2.10.1"
-name = "s1_eternum"
+cairo-version = "2.13.1"
+name = "eternum"
 version = "1.0.0"
 edition = "2024_07"
 
@@ -8,18 +8,19 @@ edition = "2024_07"
 sierra-replace-ids = true
 
 [dependencies]
-starknet = "2.10.1"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.0" }
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
-alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
-achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "5268dc0" }
-cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2.9.2" }
-tournaments = { git = "https://github.com/Provable-Games/tournaments.git", rev = "9b867a3" }
+starknet = "2.13.1"
+dojo = "1.8.0"
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
+achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "817a0ef" }
+cubit = { git = "https://github.com/credence0x/cubit.git", branch = "feat/cairo-2.9.2" }
+#budokan = { git = "https://github.com/credence0x/tournaments.git", rev="0e58edb" }
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.5.0" }
-openzeppelin_token = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0" }
-openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0" }
+dojo_cairo_test = "1.8.0"
+cairo_test = "2.13.1"
+openzeppelin_token = "2.0.0"
+openzeppelin = "2.0.0"
 
 [[target.starknet-contract]]
 casm = true
@@ -27,16 +28,19 @@ build-external-contracts = [
 	"dojo::world::world_contract::world",
 	"achievement::events::index::e_TrophyCreation",
 	"achievement::events::index::e_TrophyProgression",
-	"tournaments::components::tests::mocks::game_mock::game_mock",
-	"tournaments::components::models::game::m_GameMetadata",
-	"tournaments::components::models::game::m_GameCounter",
-	"tournaments::components::models::game::m_TokenMetadata",
-	"tournaments::components::models::game::m_Score",
-	"tournaments::components::models::game::m_Settings",
-	"tournaments::components::models::game::m_SettingsCounter",
-	"tournaments::components::models::game::m_SettingsDetails",
+#	"budokan::components::tests::mocks::game_mock::game_mock",
+#	"budokan::components::models::game::m_GameMetadata",
+#	"budokan::components::models::game::m_GameCounter",
+#	"budokan::components::models::game::m_TokenMetadata",
+#	"budokan::components::models::game::m_Score",
+#	"budokan::components::models::game::m_Settings",
+#	"budokan::components::models::game::m_SettingsCounter",
+#	"budokan::components::models::game::m_SettingsDetails",
 
 ]
+
+[tool.scarb]
+allow-prebuilt-plugins = ["dojo_cairo_macros"]
 
 [tool.fmt]
 sort-module-level-items = true
@@ -49,3 +53,5 @@ max-line-length = 120
 [profile.sepolia]
 
 [profile.mainnet]
+
+[profile.slottest]

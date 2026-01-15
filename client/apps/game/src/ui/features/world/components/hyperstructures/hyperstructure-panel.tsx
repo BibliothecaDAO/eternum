@@ -4,7 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HyperstructureDetails, HyperstructureResourceChip } from "@/ui/features/world";
-import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  currencyIntlFormat,
+  formatStringNumber,
+  getEntityIdFromKeys,
+  getRealmCountPerHyperstructure,
+} from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
@@ -73,8 +78,13 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const hyperstructure = useComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
 
   const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(account.address), dojo.setup.components),
-    [],
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
+    [account.address, components],
+  );
+
+  const hyperstructureOwnerGuild = useMemo(
+    () => getGuildFromPlayerAddress(ContractAddress(entity?.owner ?? 0n), components),
+    [entity?.owner, components],
   );
 
   // Get the AncientFragment balance of the hyperstructure entity
@@ -142,18 +152,28 @@ export const HyperstructurePanel = ({ entity }: any) => {
   };
 
   const canContribute = useMemo(() => {
-    const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
-    return (
-      entity.isOwner ||
-      (hyperstructure?.access === Access[Access.GuildOnly] &&
-        playerGuild?.entityId !== undefined &&
-        playerGuild.entityId !== 0n &&
+    if (!hyperstructure) return false;
+
+    if (entity.isOwner) return true;
+
+    if (hyperstructure.access === Access[Access.Public]) {
+      return true;
+    }
+
+    if (hyperstructure.access === Access[Access.GuildOnly]) {
+      if (!playerGuild?.entityId || playerGuild.entityId === 0n) {
+        return false;
+      }
+
+      return (
         hyperstructureOwnerGuild?.entityId !== undefined &&
         hyperstructureOwnerGuild.entityId !== 0n &&
-        hyperstructureOwnerGuild.entityId === playerGuild.entityId) ||
-      hyperstructure?.access === Access[Access.Public]
-    );
-  }, [newContributions, structureEntityId]);
+        hyperstructureOwnerGuild.entityId === playerGuild.entityId
+      );
+    }
+
+    return false;
+  }, [entity.isOwner, hyperstructure, playerGuild?.entityId, hyperstructureOwnerGuild?.entityId]);
 
   // Function to get the specific reason why user can't contribute
   const getContributionRestrictionMessage = useMemo(() => {
@@ -169,8 +189,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     }
 
     if (!canContribute) {
-      const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
-
       if (hyperstructure?.access === Access[Access.Private]) {
         return {
           type: "error",
@@ -196,7 +214,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
     }
 
     return null;
-  }, [canContribute, hyperstructure, progresses.percentage, entity?.owner, playerGuild, components]);
+  }, [canContribute, hyperstructure, progresses.percentage, playerGuild?.entityId, hyperstructureOwnerGuild?.entityId]);
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
@@ -242,14 +260,18 @@ export const HyperstructurePanel = ({ entity }: any) => {
     canContribute,
     hyperstructure,
     resetContributions,
+    components,
+    entity.entity_id,
   ]);
 
   const myShares = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components).getPlayerShares(
-      ContractAddress(account.address),
-      entity.entity_id,
+    return (
+      LeaderboardManager.instance(components, getRealmCountPerHyperstructure()).getPlayerShares(
+        ContractAddress(account.address),
+        entity.entity_id,
+      ) || 0
     );
-  }, [updates, structureEntityId]);
+  }, [components, account.address, entity.entity_id, updates]);
 
   const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);
@@ -442,12 +464,16 @@ export const HyperstructurePanel = ({ entity }: any) => {
         <div className="flex justify-between px-3 items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-[10px]">Points/cycle</div>
           <div className="font-bold text-sm">
-            {currencyIntlFormat((myShares || 0) * configManager.getHyperstructureConfig().pointsPerCycle)}
+            {currencyIntlFormat(
+              (myShares || 0) *
+                configManager.getHyperstructureConfig().pointsPerCycle *
+                (hyperstructure?.points_multiplier || 1),
+            )}
           </div>
         </div>
       </div>
       <div className="overflow-y-auto no-scrollbar h-[40vh] bg-gold/10">
-        {progresses.percentage === 100 ? (
+        {hyperstructure?.completed ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (
           <div className="relative">
@@ -471,7 +497,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           </div>
         )}
       </div>
-      {progresses.percentage !== 100 && (
+      {!hyperstructure?.completed && (
         <div className="flex justify-end w-full mt-2">
           <div
             onMouseEnter={() => {

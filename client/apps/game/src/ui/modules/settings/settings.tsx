@@ -1,25 +1,29 @@
+import { ReactComponent as Next } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
-import { ReactComponent as Next } from "@/assets/icons/common/fast-forward.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-import { useMusicPlayer } from "@/hooks/helpers/use-music";
+import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { applyWorldSelection } from "@/runtime/world";
 import { ToriiSetting } from "@/types";
-import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
+import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
-import { settings, OSWindow } from "@/ui/features/world";
+import { OSWindow, settings } from "@/ui/features/world";
+import { openWorldSelectorModal } from "@/ui/features/world-selector";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
 import { getAddressName } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
+import type { Chain } from "@contracts";
 import * as platform from "platform";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { env as gameEnv } from "../../../../env";
 
 // Helper function to extract architecture from filename
 const extractArchitecture = (filename: string): string | null => {
@@ -59,30 +63,31 @@ const extractArchitecture = (filename: string): string | null => {
 export const SettingsWindow = () => {
   const {
     account: { account },
-    setup: { components },
+    setup,
   } = useDojo();
+  const { components, network } = setup;
+  const networkProvider = network.provider;
 
   const [download, setDownload] = useState<boolean>(false);
+  const [isResyncing, setIsResyncing] = useState(false);
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   const addressName = getAddressName(ContractAddress(account.address), components);
 
   const [showSettings, setShowSettings] = useState(false);
-  const musicLevel = useUIStore((state) => state.musicLevel);
-  const effectsLevel = useUIStore((state) => state.effectsLevel);
-  const setMusicLevel = useUIStore((state) => state.setMusicLevel);
-  const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
-  const isSoundOn = useUIStore((state) => state.isSoundOn);
-  const toggleSound = useUIStore((state) => state.toggleSound);
+
+  // Use full audio system for reactive state updates
+  const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
+  const { trackName, next: nextTrack } = useMusicPlayer();
+  const enableMapZoom = useUIStore((state) => state.enableMapZoom);
+  const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
 
   const initialToriiSetting = (localStorage.getItem("TORII_SETTING") as ToriiSetting) || DEFAULT_TORII_SETTING;
   const [toriiSetting, setToriiSetting] = useState<ToriiSetting>(initialToriiSetting);
-
-  const [isFlatMode, setIsFlatMode] = useState<boolean>(() => IS_FLAT_MODE);
 
   // State to hold download links with names and URLs
   const [eternumLoaderDownloadLinks, setEternumLoaderDownloadLinks] = useState<string[]>([]);
@@ -101,7 +106,7 @@ export const SettingsWindow = () => {
     toast("Copied address to clipboard!");
   };
 
-  const { trackName, next } = useMusicPlayer();
+  // Old music player system - replaced with new audio system
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
@@ -130,14 +135,7 @@ export const SettingsWindow = () => {
     toast("Guild whitelist cleared!");
   };
 
-  const toggleFlatMode = () => {
-    setIsFlatMode((prev) => {
-      const newFlatMode = !prev;
-      localStorage.setItem("FLAT_MODE", newFlatMode.toString());
-      window.location.reload(); // Reload the page to apply changes
-      return newFlatMode;
-    });
-  };
+  // Flat mode toggle removed - using new audio system
 
   useEffect(() => {
     (async () => {
@@ -195,6 +193,30 @@ export const SettingsWindow = () => {
 
         {/* Settings Sections */}
         <div className="flex flex-col space-y-6">
+          {/* World Selection */}
+          <section className="space-y-3">
+            <Headline>World</Headline>
+            <div className="flex items-center justify-between text-xs text-gray-gold">
+              <div>Switch Game</div>
+              <Button
+                size="xs"
+                onClick={async () => {
+                  try {
+                    const selection = await openWorldSelectorModal();
+                    await applyWorldSelection(selection, gameEnv.VITE_PUBLIC_CHAIN as Chain);
+                    toast(`World set to ${selection.name}. Reloading…`);
+                    setTimeout(() => {
+                      window.location.href = "/play";
+                    }, 600);
+                  } catch (e) {
+                    // cancelled
+                  }
+                }}
+              >
+                Change Game
+              </Button>
+            </div>
+          </section>
           {/* Torii Section */}
           <section className="space-y-3">
             <Headline>Torii Data source</Headline>
@@ -214,7 +236,7 @@ export const SettingsWindow = () => {
                 <Button size="xs" onClick={() => setDownload(true)}>
                   Download
                 </Button>{" "}
-                Eternum Loader for optimal loading times.
+                Realms Loader for optimal loading times.
               </div>
             )}
             <div className="flex justify-between items-center space-x-2 text-xs cursor-pointer text-gray-gold">
@@ -228,7 +250,7 @@ export const SettingsWindow = () => {
                   className="flex items-center space-x-2"
                 >
                   <Checkbox enabled={toriiSetting === ToriiSetting.Local} />
-                  <div>Eternum Loader</div>
+                  <div>Realms Loader</div>
                 </div>
                 <div
                   onClick={() => {
@@ -258,6 +280,7 @@ export const SettingsWindow = () => {
             </div>
             <div className="w-fit text-xs text-gray-gold mx-auto">Changing this setting will reload the page</div>
           </section>
+
           {/* Video Section */}
           <section className="space-y-3">
             <Headline>Video</Headline>
@@ -267,6 +290,13 @@ export const SettingsWindow = () => {
             >
               <Checkbox enabled={fullScreen} />
               <div>Fullscreen</div>
+            </div>
+            <div
+              className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold"
+              onClick={() => setEnableMapZoom(!enableMapZoom)}
+            >
+              <Checkbox enabled={enableMapZoom} />
+              <div>Enable Map Zoom</div>
             </div>
           </section>
 
@@ -335,23 +365,69 @@ export const SettingsWindow = () => {
           <section className="space-y-3">
             <Headline>Sound</Headline>
             <div className="flex space-x-2">
-              {isSoundOn ? (
-                <Button variant="outline" onClick={() => toggleSound()}>
+              {audioState && !audioState.muted ? (
+                <Button variant="outline" onClick={() => setMuted(true)}>
                   <Unmuted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               ) : (
-                <Button variant="outline" onClick={() => toggleSound()}>
+                <Button variant="outline" onClick={() => setMuted(false)}>
                   <Muted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               )}
-              <ScrollingTrackName trackName={trackName} />
-              <Button variant="outline" onClick={next}>
-                <Next className="h-4 cursor-pointer fill-gold stroke-gold" />
+              <ScrollingTrackName trackName={trackName || "Loading..."} />
+              <Button variant="outline" onClick={nextTrack}>
+                <Next className="w-2 cursor-pointer fill-gold" />
               </Button>
             </div>
             <div className="space-y-2">
-              <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
-              <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
+              <RangeInput
+                value={Math.round((audioState?.masterVolume || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setMasterVolume(value / 100)}
+                title="Master Volume"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.MUSIC, value / 100)}
+                title="Music"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.UI] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.UI, value / 100)}
+                title="UI Effects"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.COMBAT] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.COMBAT, value / 100)}
+                title="Combat Effects"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.RESOURCE] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.RESOURCE, value / 100)}
+                title="Resource Effects"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.BUILDING] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.BUILDING, value / 100)}
+                title="Building Effects"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.AMBIENT] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.AMBIENT, value / 100)}
+                title="Ambient"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.ENVIRONMENT] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.ENVIRONMENT, value / 100)}
+                title="Weather"
+              />
             </div>
           </section>
 
@@ -400,25 +476,4 @@ export const SettingsWindow = () => {
   );
 };
 
-const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
-  const trackNameRef = useRef<any>(null);
-
-  useEffect(() => {
-    const trackNameElement = trackNameRef.current;
-    const trackNameWidth = trackNameElement.offsetWidth;
-    const containerWidth = trackNameElement.parentElement.offsetWidth;
-
-    if (trackNameWidth > containerWidth) {
-      trackNameElement.style.animationDuration = `${trackNameWidth / 20}s`;
-      trackNameElement.classList.add("scrolling");
-    }
-  }, []);
-
-  return (
-    <div className="w-full p-1 overflow-hidden text-xs border border-gold">
-      <div className="track-name" ref={trackNameRef}>
-        {trackName} - Casey Wescot
-      </div>
-    </div>
-  );
-};
+// ScrollingTrackName moved to MusicPlayer component

@@ -6,13 +6,15 @@ import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { useSyncMarket } from "@/hooks/helpers/use-sync";
 import { useMarketStore } from "@/hooks/store/use-market-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+
 import { Select, Tabs } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { LoadingAnimation, ResourceIcon } from "@/ui/design-system/molecules";
 import { ModalContainer } from "@/ui/shared";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
-import { getStructureName } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -52,6 +54,7 @@ export const MarketModal = () => {
 
 const MarketContent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const mode = useGameModeConfig();
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
@@ -172,7 +175,7 @@ const MarketContent = () => {
               <SelectContent>
                 {playerStructures.map((structure, index) => (
                   <SelectItem key={index} value={structure.entityId.toString()}>
-                    {getStructureName(structure.structure).name}
+                    {mode.structure.getName(structure.structure).name}
                   </SelectItem>
                 ))}
               </SelectContent>

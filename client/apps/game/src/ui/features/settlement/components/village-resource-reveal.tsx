@@ -5,7 +5,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, unpackValue, getTileAt, DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { HexPosition, ResourcesIds } from "@bibliothecadao/types";
@@ -46,7 +46,7 @@ export const VillageResourceReveal = ({
   const {
     setup: {
       network: { toriiClient },
-      components: { Tile },
+      components,
       account: { account },
     },
   } = useDojo();
@@ -58,7 +58,7 @@ export const VillageResourceReveal = ({
   const spinTimeout = useRef<NodeJS.Timeout | null>(null);
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const tile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(villageCoords.col), BigInt(villageCoords.row)]));
+  const tile = getTileAt(components, DEFAULT_COORD_ALT, villageCoords.col, villageCoords.row);
 
   // Check if player is owner in case someone else settles at same time
   const [revealedResource, setRevealedResource] = useState<number | null>(null);

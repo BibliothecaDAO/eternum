@@ -1,0 +1,3 @@
+export const MAP_DATA_REFRESH_INTERVAL = 60 * 1000; // 1 minute
+export const PROGRESS_HALF_THRESHOLD = 50;
+export const PROGRESS_FINAL_THRESHOLD = 100;

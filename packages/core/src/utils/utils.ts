@@ -1,8 +1,10 @@
+import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ClientConfigManager } from "..";
-import { RESOURCE_PRECISION, ResourcesIds, Position, ResourceMiningTypes, TickIds } from "@bibliothecadao/types";
+import { ClientConfigManager, configManager } from "..";
 
 export { getEntityIdFromKeys };
+
+export const FELT_CENTER = () => configManager.getMapCenter();
 
 export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
@@ -25,7 +27,7 @@ export const formatTime = (seconds: number) => {
     days > 0 ? `${days}d ` : "",
     hours > 0 ? `${hours}h ` : "",
     minutes > 0 ? `${minutes}m ` : "",
-    `${remainingSeconds}s`,
+    remainingSeconds > 0 ? `${remainingSeconds}s` : "",
   ].join("");
 };
 
@@ -63,7 +65,7 @@ export const currentTickCount = (time: number) => {
   return Number(time / tickIntervalInSeconds);
 };
 
-export function calculateDistance(start: Position, destination: Position): number {
+export function calculateDistance(start: Pick<Position, "x" | "y">, destination: Pick<Position, "x" | "y">): number {
   // d = √((x2-x1)² + (y2-y1)²)
 
   // Calculate the difference in x and y coordinates
@@ -129,3 +131,5 @@ export function divideWithPrecision(
   // convert to decimal
   return Number(Number(a).toFixed(round));
 }
+
+export const getIsBlitz = () => !!configManager.getBlitzConfig()?.blitz_mode_on;

@@ -77,6 +77,84 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Wheat: { component: <img src={`/images/resources/${ResourcesIds.Wheat}.png`} />, name: "Wheat" },
   Fish: { component: <img src={`/images/resources/${ResourcesIds.Fish}.png`} />, name: "Fish" },
 
+  Essence: { component: <img src={`/images/resources/${ResourcesIds.Essence}.png`} />, name: "Essence" },
+
+  // Relics - Army Enhancement Items
+  StaminaRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.StaminaRelic1}.png`} />,
+    name: "Stamina Relic 1",
+  },
+  StaminaRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.StaminaRelic2}.png`} />,
+    name: "Stamina Relic 2",
+  },
+  DamageRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageRelic1}.png`} />,
+    name: "Damage Relic 1",
+  },
+  DamageRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageRelic2}.png`} />,
+    name: "Damage Relic 2",
+  },
+  DamageReductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageReductionRelic1}.png`} />,
+    name: "Damage Reduction Relic 1",
+  },
+  DamageReductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageReductionRelic2}.png`} />,
+    name: "Damage Reduction Relic 2",
+  },
+  ExplorationRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRelic1}.png`} />,
+    name: "Exploration Relic 1",
+  },
+  ExplorationRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRelic2}.png`} />,
+    name: "Exploration Relic 2",
+  },
+  ExplorationRewardRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRewardRelic1}.png`} />,
+    name: "Exploration Reward Relic 1",
+  },
+  ExplorationRewardRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRewardRelic2}.png`} />,
+    name: "Exploration Reward Relic 2",
+  },
+
+  // Relics - Structure Enhancement Items
+  StructureDamageReductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.StructureDamageReductionRelic1}.png`} />,
+    name: "Structure Defense Relic 1",
+  },
+  StructureDamageReductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.StructureDamageReductionRelic2}.png`} />,
+    name: "Structure Defense Relic 2",
+  },
+  ProductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.ProductionRelic1}.png`} />,
+    name: "Production Relic 1",
+  },
+  ProductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.ProductionRelic2}.png`} />,
+    name: "Production Relic 2",
+  },
+  LaborProductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.LaborProductionRelic1}.png`} />,
+    name: "Labor Production Relic 1",
+  },
+  LaborProductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.LaborProductionRelic2}.png`} />,
+    name: "Labor Production Relic 2",
+  },
+  TroopProductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.TroopProductionRelic1}.png`} />,
+    name: "Troop Production Relic 1",
+  },
+  TroopProductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.TroopProductionRelic2}.png`} />,
+    name: "Troop Production Relic 2",
+  },
+
   Donkey: { component: <img src={`/images/buildings/thumb/trade.png`} />, name: "Donkey" },
   House: { component: <img src={`/images/buildings/thumb/house.png`} />, name: "House" },
   Silo: { component: <img src={`/images/buildings/thumb/silo.png`} />, name: "Silo" },
@@ -107,11 +185,11 @@ export const ResourceIcon = ({ withTooltip = true, tooltipText, ...props }: Prop
         </span>
       )}
       {withTooltip && (
-        <div className="absolute -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-brown rounded-lg w-max group-hover:flex">
-          <span className="relative z-10 p-2 text-xs leading-none  whitespace-no-wrap rounded shadow-lg bg-gray-1000">
+        <div className="absolute -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-brown rounded-lg max-w-[380px] px-3 group-hover:flex z-[70]">
+          <span className="relative z-10 px-3 py-2 text-sm leading-snug whitespace-normal rounded shadow-lg bg-gray-1000 text-gold-100">
             {tooltipText || Components[props.resource.replace(" ", "").replace("'", "")]?.name}
           </span>
-          <div className="z-[100] w-3 h-3 bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 absolute rotate-45 bg-brown"></div>
+          <div className="z-[65] w-3 h-3 bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 absolute rotate-45 bg-brown" />
         </div>
       )}
     </div>

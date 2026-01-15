@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Account, RpcProvider, constants } from "starknet";
+import { Account, RpcProvider } from "starknet";
 
 const NETWORKS = {
   mainnet: {
@@ -30,6 +30,13 @@ const NETWORKS = {
     feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
     gateway_url: process.env.STARKNET_RPC + "/gateway",
   },
+  slottest: {
+    name: "slottest",
+    explorer_url: "https://slottest.voyager.online",
+    rpc_url: process.env.STARKNET_RPC,
+    feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
+    gateway_url: process.env.STARKNET_RPC + "/gateway",
+  },
 };
 
 export const getNetwork = (network) => {
@@ -48,5 +55,5 @@ export const getAccount = () => {
   const provider = getProvider();
   const accountAddress = process.env.STARKNET_ACCOUNT_ADDRESS;
   const privateKey = process.env.STARKNET_ACCOUNT_PRIVATE_KEY;
-  return new Account(provider, accountAddress, privateKey, undefined, constants.TRANSACTION_VERSION.V3);
+  return new Account({ provider, address: accountAddress, signer: privateKey });
 };

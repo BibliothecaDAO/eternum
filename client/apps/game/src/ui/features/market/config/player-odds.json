@@ -1,0 +1,9 @@
+{
+  "_comment": "Player odds weights for quick market creation. Lookup by player name (case-insensitive). Default weight is 1 if not found.",
+  "players": {
+    "djizus": 100,
+    "bal7hazar": 100,
+    "lgccharrmander": 100
+  },
+  "defaultWeight": 1
+}

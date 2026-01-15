@@ -4,6 +4,10 @@ import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/types";
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
   setNavigationTarget: (hex: HexPosition | null) => void;
+  cameraTargetHex: HexPosition | null;
+  setCameraTargetHex: (hex: HexPosition | null) => void;
+  cameraDistance: number | null;
+  setCameraDistance: (distance: number | null) => void;
   hoveredHex: HexPosition | null;
   setHoveredHex: (hex: HexPosition | null) => void;
   entityActions: EntityActions;
@@ -40,6 +44,10 @@ interface EntityActions {
 export const createThreeStoreSlice = (set: any, _get: any) => ({
   navigationTarget: null,
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
+  cameraTargetHex: null,
+  setCameraTargetHex: (hex: HexPosition | null) => set({ cameraTargetHex: hex }),
+  cameraDistance: null,
+  setCameraDistance: (distance: number | null) => set({ cameraDistance: distance }),
   hoveredHex: null,
   setHoveredHex: (hoveredHex: HexPosition | null) => set({ hoveredHex }),
   entityActions: {

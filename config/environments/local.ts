@@ -6,9 +6,9 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { BuildingType, type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
+import { RealmLevels, ResourcesIds, type Config } from "@bibliothecadao/types";
+import { getSeasonAddresses, type Chain } from "@contracts";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { getAllResourcesWithAmount } from "./utils/resource";
 
 /**
  * Configuration specific to the local development environment.
@@ -18,8 +18,6 @@ export const LocalEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
   tick: {
     ...CommonEternumGlobalConfig.tick,
-    // 5 minutes
-    armiesTickIntervalInSeconds: 300,
   },
   // no stamina cost
   troop: {
@@ -38,15 +36,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    shardsMinesWinProbability: 1_000,
-    shardsMinesFailProbability: 15_000,
-    hyperstructureWinProbAtCenter: 20_000,
-    hyperstructureFailProbAtCenter: 100_000,
-    // hyperstructureFailProbIncreasePerHexDistance: 20,
-    agentFindProbability: 3_000,
-    agentFindFailProbability: 10_000,
-    questFindProbability: 1_000,
-    questFindFailProbability: 10_000,
+    hyperstructureWinProbAtCenter: 0,
+    hyperstructureFailProbAtCenter: 1,
   },
   // cheap hyperstructures
   hyperstructures: {
@@ -55,7 +46,6 @@ export const LocalEternumGlobalConfig: Config = {
       resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
       amount: 500,
     },
-    hyperstructurePointsForWin: 100n,
     hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map(
       (cost) => ({
         ...cost,
@@ -71,27 +61,20 @@ export const LocalEternumGlobalConfig: Config = {
     graceTickCountHyp: 0,
     delaySeconds: 0,
   },
-  // starting resources x1000
-  // startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-  //   if (
-  //     resource.resource === ResourcesIds.Knight ||
-  //     resource.resource === ResourcesIds.Paladin ||
-  //     resource.resource === ResourcesIds.Crossbowman
-  //   ) {
-  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-  //   }
-  //   return resource;
-  // }),
-  // villageStartingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-  //   if (
-  //     resource.resource === ResourcesIds.Knight ||
-  //     resource.resource === ResourcesIds.Paladin ||
-  //     resource.resource === ResourcesIds.Crossbowman
-  //   ) {
-  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-  //   }
-  //   return resource;
-  // }),
+  startingResources: [
+    ...CommonEternumGlobalConfig.startingResources,
+    // { resource: ResourcesIds.Essence, amount: 1000 },
+    // { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
+    // { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
+    // { resource: ResourcesIds.DamageRelic1, amount: 1000 },
+  ],
+  villageStartingResources: [
+    ...CommonEternumGlobalConfig.villageStartingResources,
+    // { resource: ResourcesIds.Essence, amount: 1000 },
+    // { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
+    // { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
+    // { resource: ResourcesIds.DamageRelic1, amount: 1000 },
+  ],
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
@@ -101,41 +84,51 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
+    durationSeconds: 60 * 60 * 24 * 30, // 1 month
+    pointRegistrationCloseAfterEndSeconds: 60 * 10, // 10 minutes
   },
   realmUpgradeCosts: {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,
     [RealmLevels.Settlement]: [],
     [RealmLevels.City]: [
+      { resource: ResourcesIds.Labor, amount: 1 },
       { resource: ResourcesIds.Wheat, amount: 1 },
-      { resource: ResourcesIds.Fish, amount: 1 },
     ],
     [RealmLevels.Kingdom]: [
-      { resource: ResourcesIds.ColdIron, amount: 1 },
-      { resource: ResourcesIds.Hartwood, amount: 1 },
-      { resource: ResourcesIds.Diamonds, amount: 1 },
-      { resource: ResourcesIds.Sapphire, amount: 1 },
-      { resource: ResourcesIds.DeepCrystal, amount: 1 },
-      { resource: ResourcesIds.Wheat, amount: 1 },
-      { resource: ResourcesIds.Fish, amount: 1 },
+      { resource: ResourcesIds.Labor, amount: 2 },
+      { resource: ResourcesIds.Wheat, amount: 2 },
     ],
     [RealmLevels.Empire]: [
-      { resource: ResourcesIds.AlchemicalSilver, amount: 1 },
-      { resource: ResourcesIds.Adamantine, amount: 1 },
-      { resource: ResourcesIds.Mithral, amount: 1 },
-      { resource: ResourcesIds.Dragonhide, amount: 1 },
-      { resource: ResourcesIds.Wheat, amount: 1 },
-      { resource: ResourcesIds.Fish, amount: 1 },
+      { resource: ResourcesIds.Labor, amount: 3 },
+      { resource: ResourcesIds.Wheat, amount: 3 },
+      { resource: ResourcesIds.Wood, amount: 3 },
     ],
   },
   buildings: {
     ...CommonEternumGlobalConfig.buildings,
-    complexBuildingCosts: {
-      ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
-      [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+    // complexBuildingCosts: {
+    //   ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
+    //   [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+    // },
+    // buildingPopulation: {
+    //   ...CommonEternumGlobalConfig.buildings.buildingPopulation,
+    //   [BuildingType.ResourceWheat]: 0,
+    // },
+  },
+  dev: {
+    ...CommonEternumGlobalConfig.dev,
+    mode: {
+      ...CommonEternumGlobalConfig.dev.mode,
+      on: true,
     },
-    buildingPopulation: {
-      ...CommonEternumGlobalConfig.buildings.buildingPopulation,
-      [BuildingType.ResourceWheat]: 0,
+  },
+  blitz: {
+    ...CommonEternumGlobalConfig.blitz,
+    registration: {
+      ...CommonEternumGlobalConfig.blitz.registration,
+      registration_delay_seconds: 20,
+      registration_period_seconds: 60 * 2,
+      fee_token: getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.strk!,
     },
   },
 };

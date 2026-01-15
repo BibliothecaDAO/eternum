@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IStructureSystems<T> {
@@ -7,28 +7,31 @@ pub trait IStructureSystems<T> {
 
 #[dojo::contract]
 pub mod structure_systems {
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::resource::production::building::{BuildingImpl};
-    use s1_eternum::models::resource::production::production::{ProductionWonderBonus};
-    use s1_eternum::models::resource::resource::{ResourceList};
-    use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
+    use crate::models::events::{Story, StoryEvent, StructureLevelUpStory};
+    use crate::models::map::Tile;
+    use crate::models::map2::{TileOpt};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::Coord;
+    use crate::models::resource::production::building::BuildingImpl;
+    use crate::models::resource::production::production::ProductionBoostBonus;
+    use crate::models::resource::resource::{
+        ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::models::weight::Weight;
+    use crate::systems::utils::map::IMapImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
+
     #[abi(embed_v0)]
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {
         fn level_up(ref self: ContractState, structure_id: ID) {
@@ -79,7 +82,7 @@ pub mod structure_systems {
                 structure_resource.store(ref world);
 
                 index += 1;
-            };
+            }
 
             // update structure weight
             structure_weight.store(ref world, structure_id);
@@ -92,12 +95,14 @@ pub mod structure_systems {
 
             // update structure tile
             if structure_base.category == StructureCategory::Realm.into() {
-                let mut structure_tile: Tile = world.read_model((structure_base.coord_x, structure_base.coord_y));
+                let structure_coord = Coord { alt: false, x: structure_base.coord_x, y: structure_base.coord_y };
+                let structure_tile_opt: TileOpt = world.read_model((structure_coord.alt, structure_coord.x, structure_coord.y));
+                let mut structure_tile: Tile = structure_tile_opt.into();
                 let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                     ref world, structure_id,
                 );
-                let structure_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
-                let structure_has_wonder_bonus = structure_wonder_bonus.bonus_percent_num > 0;
+                let structure_production_boost_bonus: ProductionBoostBonus = world.read_model(structure_id);
+                let structure_has_wonder_bonus = structure_production_boost_bonus.wonder_incr_percent_num > 0;
                 let tile_occupier = IMapImpl::get_realm_occupier(
                     structure_metadata.has_wonder, structure_has_wonder_bonus, structure_base.level,
                 );
@@ -115,6 +120,18 @@ pub mod structure_systems {
                     world, structure_owner.into(), Tasks::UPGRADE_VILLAGE, 1, starknet::get_block_timestamp(),
                 );
             }
+
+            // emit event
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::StructureLevelUpStory(StructureLevelUpStory { new_level: next_level }),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
     }
 }

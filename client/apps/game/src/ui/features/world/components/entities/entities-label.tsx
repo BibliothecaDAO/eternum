@@ -1,20 +1,26 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position as PositionInterface } from "@/types/position";
 import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-three-tooltip";
-import { getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure } from "@bibliothecadao/eternum";
+import {
+  DEFAULT_COORD_ALT,
+  getTileAt,
+  isTileOccupierChest,
+  isTileOccupierQuest,
+  isTileOccupierStructure,
+  Position as PositionInterface,
+} from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ClientComponents } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import type { Tile } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 import { ArmyEntityDetail } from "./army-entity-detail";
 import { QuestEntityDetail } from "./quest-entity-detail";
+import { RelicCrateEntityDetail } from "./relic-crate-entity-detail";
 import { StructureEntityDetail } from "./structure-entity-detail";
 
 export const EntitiesLabel = memo(() => {
   const dojo = useDojo();
   const { isMapView } = useQuery();
   const hoveredHex = useUIStore((state) => state.hoveredHex);
-  const [tile, setTile] = useState<ComponentValue<ClientComponents["Tile"]["schema"]> | undefined>();
+  const [tile, setTile] = useState<Tile | undefined>();
 
   useEffect(() => {
     if (hoveredHex && isMapView) {
@@ -23,10 +29,7 @@ export const EntitiesLabel = memo(() => {
         y: hoveredHex.row || 0,
       }).getContract();
 
-      const tileValue = getComponentValue(
-        dojo.setup.components.Tile,
-        getEntityIdFromKeys([BigInt(hoveredHexContract.x), BigInt(hoveredHexContract.y)]),
-      );
+      const tileValue = getTileAt(dojo.setup.components, DEFAULT_COORD_ALT, hoveredHexContract.x, hoveredHexContract.y);
 
       setTile(tileValue);
     } else {
@@ -40,6 +43,10 @@ export const EntitiesLabel = memo(() => {
 
   const isQuest = useMemo(() => {
     return isTileOccupierQuest(tile?.occupier_type || 0);
+  }, [tile]);
+
+  const isChest = useMemo(() => {
+    return isTileOccupierChest(tile?.occupier_type || 0);
   }, [tile]);
 
   if (!tile?.occupier_id) {
@@ -57,6 +64,8 @@ export const EntitiesLabel = memo(() => {
         />
       ) : isQuest ? (
         <QuestEntityDetail questEntityId={tile.occupier_id} compact={true} />
+      ) : isChest ? (
+        <RelicCrateEntityDetail crateEntityId={tile.occupier_id} compact={true} />
       ) : (
         <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={true} />
       )}

@@ -8,14 +8,19 @@ import {
   COMPLEX_BUILDING_COSTS,
   SIMPLE_BUILDING_COSTS,
 } from "./utils/building";
+import { HYPERSTRUCTURE_COSTS, HYPERSTRUCTURE_SHARDS_COST } from "./utils/hyperstructure";
 import {
-  HYPERSTRUCTURE_COSTS,
-  HYPERSTRUCTURE_POINTS_FOR_WIN,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_SHARDS_COST,
-} from "./utils/hyperstructure";
+  AWARDED_POINTS_FOR_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+  AWARDED_POINTS_FOR_HYPERSTRUCTURE_HODL_PER_SECOND,
+  AWARDED_POINTS_FOR_NON_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+  AWARDED_POINTS_FOR_RELIC_CHEST_OPEN,
+  AWARDED_POINTS_FOR_TILE_EXPLORATION,
+  VICTORY_POINTS_FOR_WIN,
+} from "./utils/points";
+
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
+  DISCOVERABLE_VILLAGE_STARTING_RESOURCES,
   LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
@@ -44,9 +49,9 @@ import {
   TROOP_GUARD_RESURRECTION_DELAY,
   TROOP_MERCENARIES_TROOP_LOWER_BOUND,
   TROOP_MERCENARIES_TROOP_UPPER_BOUND,
-  TROOP_STAMINA_ATTACK_MAX,
   TROOP_STAMINA_ATTACK_REQ,
   TROOP_STAMINA_BIOME_BONUS_VALUE,
+  TROOP_STAMINA_DEFENSE_REQ,
   TROOP_STAMINA_GAIN_PER_TICK,
   TROOP_STAMINA_INITIAL,
   TROOP_STAMINA_MAX,
@@ -59,9 +64,16 @@ import {
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
+const START_SETTLING_AT = Number(process.env.CONFIG_START_SETTLING_AT) || 0;
+const START_MAIN_AT = Number(process.env.CONFIG_START_MAIN_AT) || 0;
+
+const ONE_MINUTE_IN_SECONDS = 60;
+const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
+const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
+
 // ----- Buildings ----- //
 // This scales the costs of the buildings
-export const BUILDING_FIXED_COST_SCALE_PERCENT = 5_000; // 5_000/10_000 = 50%
+export const BUILDING_FIXED_COST_SCALE_PERCENT = 1_000; // 1_000/10_000 = 10%
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;
@@ -78,18 +90,25 @@ export const BANK_OWNER_FEES_NUMERATOR = 15;
 export const BANK_OWNER_FEES_DENOMINATOR = 100;
 
 // ----- Population Capacity ----- //
-export const WORKER_HUTS_CAPACITY = 5;
-export const BASE_POPULATION_CAPACITY = 5;
+export const BASE_POPULATION_CAPACITY = 6;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_WIN_PROBABILITY = 1; // 1/200 = 0.5%
-export const SHARDS_MINES_FAIL_PROBABILITY = 199; // 199/200 = 99.5%
+export const SHARDS_MINES_WIN_PROBABILITY = 1_000; // 2/100 = 2% (1/50)
+export const SHARDS_MINES_FAIL_PROBABILITY = 49_000; // 98/100 = 98%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
-export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
-export const AGENT_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
+// ----- Relic Discovery ----- //
+export const RELIC_DISCOVERY_INTERVAL_SECONDS = 5 * ONE_MINUTE_IN_SECONDS; // 5 minutes
+export const RELIC_HEX_DISTANCE_FROM_CENTER = 10;
+export const RELIC_CHEST_RELICS_PER_CHEST = 3;
+
+export const AGENT_FIND_PROBABILITY = 0; // 0/100 = 0%
+export const AGENT_FIND_FAIL_PROBABILITY = 100; // 100/100 = 100%
+
+export const VILLAGE_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
+export const VILLAGE_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 2_000; // 2_000 / 100_000 = 2%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 98_000; // 98_000 / 100_000 = 98%
@@ -120,7 +139,8 @@ export const QUEST_GAME_LEVELS = [
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
-export const ARMIES_TICK_INTERVAL_SECONDS = 3600;
+export const ARMIES_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 1; // 1 minute
+export const DELIVERY_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 3; // 3 minutes
 
 // ----- Speed ----- //
 // @dev: Seconds per km
@@ -134,7 +154,7 @@ export const BATTLE_GRACE_TICK_COUNT = 24;
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_BASE_DISTANCE = 8;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
@@ -163,12 +183,9 @@ export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21
 export const SEASON_POOL_FEE_RECIPIENT = "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553";
 export const MAX_NUM_BANKS = 6;
 
-const ONE_MINUTE_IN_SECONDS = 60;
-const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
-const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
-
 export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
 export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12; // 1 and half day
+export const SEASON_DURATION_SECONDS = ONE_HOUR_IN_SECONDS * 2; // 2 hours
 
 // probably best if both these values are the same
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7; // 7 days
@@ -183,13 +200,38 @@ export const AGENT_MIN_SPAWN_LORDS_AMOUNT = 10;
 export const AGENT_MAX_SPAWN_LORDS_AMOUNT = 35;
 
 export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
-export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
+// export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
+export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 0;
 
 // catridge address should go here
 export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83";
 export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
   .villagePass!;
 
+const BLITZ_REGISTRATION_FEE_TOKEN = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords!;
+const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8";
+const BLITZ_REGISTRATION_FEE_AMOUNT = 10n * 10n ** 18n; // 10 LORDS/STRK
+const BLITZ_REGISTRATION_COUNT_MAX = 5_000;
+const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
+const BLITZ_REGISTRATION_PERIOD_SECONDS = 15 * ONE_HOUR_IN_SECONDS;
+
+const BLITZ_ENTRY_TOKEN_IPFS_CID = "Qm123idkmaybe";
+const BLITZ_ENTRY_TOKEN_CLASS_HASH = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
+  .collectiblesClassHash!;
+
+const BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS = 5;
+const BLITZ_COLLECTIBLE_COSMETICS_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
+  "Collectibles: Realms: Cosmetic Items"
+];
+const BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
+  "Collectibles: Timelock Maker"
+];
+const BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
+  "Collectibles: Realms: Loot Chest"
+];
+const BLITZ_COLLECTIBLE_ELITENFT_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
+  "Collectibles: Realms: Elite Invite"
+];
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -227,7 +269,6 @@ export const EternumGlobalConfig: Config = {
     lordsLiquidityPerResource: LORDS_LIQUIDITY_PER_RESOURCE,
   },
   populationCapacity: {
-    workerHuts: WORKER_HUTS_CAPACITY,
     basePopulation: BASE_POPULATION_CAPACITY,
   },
   exploration: {
@@ -236,6 +277,8 @@ export const EternumGlobalConfig: Config = {
     shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
     agentFindProbability: AGENT_FIND_PROBABILITY,
     agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
+    villageFindProbability: VILLAGE_FIND_PROBABILITY,
+    villageFindFailProbability: VILLAGE_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
     hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER,
@@ -244,22 +287,26 @@ export const EternumGlobalConfig: Config = {
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
     questFindProbability: QUEST_FIND_PROBABILITY,
     questFindFailProbability: QUEST_FIND_FAIL_PROBABILITY,
+    relicDiscoveryIntervalSeconds: RELIC_DISCOVERY_INTERVAL_SECONDS,
+    relicHexDistanceFromCenter: RELIC_HEX_DISTANCE_FROM_CENTER,
+    relicChestRelicsPerChest: RELIC_CHEST_RELICS_PER_CHEST,
   },
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
     armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
+    deliveryTickIntervalInSeconds: DELIVERY_TICK_INTERVAL_SECONDS,
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
-    [CapacityConfig.RealmStructure]: 1_000_000 * 1000, // 1m kg
-    [CapacityConfig.VillageStructure]: 1_000_000 * 1000, // 1m kg
-    [CapacityConfig.HyperstructureStructure]: 3_000_000 * 1000, // 3m kg
-    [CapacityConfig.BankStructure]: 2_000_000 * 1000, // 2m kg
-    [CapacityConfig.FragmentMineStructure]: 500_000 * 1000, // 500k kg
-    [CapacityConfig.Donkey]: 500 * 1000, // 500 kg per donkey
+    [CapacityConfig.RealmStructure]: 18446744073709551615n, // max
+    [CapacityConfig.VillageStructure]: 18446744073709551615n, // max
+    [CapacityConfig.HyperstructureStructure]: 18446744073709551615n, // max
+    [CapacityConfig.BankStructure]: 18446744073709551615n, // max
+    [CapacityConfig.FragmentMineStructure]: 18446744073709551615n, // max
+    [CapacityConfig.Donkey]: 50 * 1000, // 500 kg per donkey
     // 10_000 gr per army
     [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count
-    [CapacityConfig.Storehouse]: 1_000_000 * 1000, // 1m kg per storehouse
+    [CapacityConfig.Storehouse]: 0, // 0 kg per storehouse
   },
   speed: {
     donkey: DONKEY_SPEED,
@@ -291,7 +338,7 @@ export const EternumGlobalConfig: Config = {
       staminaPaladinMax: TROOP_STAMINA_MAX[ResourcesIds.Paladin],
       staminaCrossbowmanMax: TROOP_STAMINA_MAX[ResourcesIds.Crossbowman],
       staminaAttackReq: TROOP_STAMINA_ATTACK_REQ,
-      staminaAttackMax: TROOP_STAMINA_ATTACK_MAX,
+      staminaDefenseReq: TROOP_STAMINA_DEFENSE_REQ,
       staminaExploreWheatCost: TROOP_EXPLORE_WHEAT_COST,
       staminaExploreFishCost: TROOP_EXPLORE_FISH_COST,
       staminaExploreStaminaCost: TROOP_EXPLORE_STAMINA_COST,
@@ -313,6 +360,7 @@ export const EternumGlobalConfig: Config = {
     center: SETTLEMENT_CENTER,
     base_distance: SETTLEMENT_BASE_DISTANCE,
     subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
+    single_realm_mode: false,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,
@@ -325,12 +373,21 @@ export const EternumGlobalConfig: Config = {
   hyperstructures: {
     hyperstructureInitializationShardsCost: HYPERSTRUCTURE_SHARDS_COST,
     hyperstructureConstructionCost: HYPERSTRUCTURE_COSTS,
-    hyperstructurePointsPerCycle: HYPERSTRUCTURE_POINTS_PER_CYCLE,
-    hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
+  },
+  victoryPoints: {
+    pointsForWin: VICTORY_POINTS_FOR_WIN,
+    hyperstructurePointsPerCycle: AWARDED_POINTS_FOR_HYPERSTRUCTURE_HODL_PER_SECOND,
+    pointsForHyperstructureClaimAgainstBandits: AWARDED_POINTS_FOR_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+    pointsForNonHyperstructureClaimAgainstBandits: AWARDED_POINTS_FOR_NON_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+    pointsForTileExploration: AWARDED_POINTS_FOR_TILE_EXPLORATION,
+    pointsForRelicDiscovery: AWARDED_POINTS_FOR_RELIC_CHEST_OPEN,
   },
   season: {
     startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,
+    startSettlingAt: START_SETTLING_AT,
     startMainAfterSeconds: SEASON_START_AFTER_SECONDS,
+    startMainAt: START_MAIN_AT,
+    durationSeconds: SEASON_DURATION_SECONDS,
     bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
     pointRegistrationCloseAfterEndSeconds: SEASON_POINT_REGISTRATION_CLOSE_AFTER_END_SECONDS,
   },
@@ -355,10 +412,36 @@ export const EternumGlobalConfig: Config = {
   },
   startingResources: STARTING_RESOURCES,
   villageStartingResources: VILLAGE_STARTING_RESOURCES,
+  discoverableVillageStartingResources: DISCOVERABLE_VILLAGE_STARTING_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,
   questGames: QUEST_GAME_LEVELS,
+  dev: {
+    mode: {
+      on: false,
+    },
+  },
+  blitz: {
+    mode: {
+      on: true,
+    },
+    registration: {
+      fee_token: BLITZ_REGISTRATION_FEE_TOKEN,
+      fee_recipient: BLITZ_REGISTRATION_FEE_RECIPIENT,
+      fee_amount: BigInt(BLITZ_REGISTRATION_FEE_AMOUNT),
+      registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
+      registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
+      registration_period_seconds: BLITZ_REGISTRATION_PERIOD_SECONDS,
+      entry_token_class_hash: BLITZ_ENTRY_TOKEN_CLASS_HASH,
+      entry_token_ipfs_cid: BLITZ_ENTRY_TOKEN_IPFS_CID,
+      collectible_cosmetics_max_items: BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS,
+      collectible_cosmetics_address: BLITZ_COLLECTIBLE_COSMETICS_ADDRESS,
+      collectible_timelock_address: BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS,
+      collectibles_lootchest_address: BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS,
+      collectibles_elitenft_address: BLITZ_COLLECTIBLE_ELITENFT_ADDRESS,
+    },
+  },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),

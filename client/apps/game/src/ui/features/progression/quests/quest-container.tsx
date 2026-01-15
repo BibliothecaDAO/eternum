@@ -159,7 +159,7 @@ export const QuestContainer = ({
     () =>
       settingsMetadataForGame
         ?.find((setting) => setting.settings_id === questLevel?.value?.settings_id?.value)
-        ?.name.split("Eternum Quest -")[1],
+        ?.name.split("Realms Quest -")[1],
     [settingsMetadataForGame, questLevel],
   );
 

@@ -1,13 +1,15 @@
-use alexandria_math::{BitShift};
+use alexandria_math::BitShift;
 use core::num::traits::zero::Zero;
 use core::traits::Into;
-use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::{BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickConfig, WorldConfigUtilImpl};
-use s1_eternum::models::config::{TickTrait};
-use s1_eternum::models::position::{Coord, Direction};
-use s1_eternum::models::stamina::Stamina;
-use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
+use dojo::model::{Model, ModelStorage};
+use dojo::world::WorldStorage;
+use crate::alias::ID;
+use crate::models::config::{
+    BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickInterval, TickTrait, WorldConfigUtilImpl,
+};
+use crate::models::position::{Coord, Direction};
+use crate::models::stamina::Stamina;
+use crate::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -17,6 +19,14 @@ pub struct Wonder {
     pub structure_id: ID,
     pub coord: Coord,
     pub realm_id: u16,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StructureReservation {
+    #[key]
+    pub coord: Coord,
+    pub reserved: bool,
 }
 
 
@@ -93,7 +103,7 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct StructureBase {
     pub troop_guard_count: u8,
     pub troop_explorer_count: u16,
@@ -106,7 +116,7 @@ pub struct StructureBase {
     pub level: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default, DojoStore)]
 pub struct StructureMetadata {
     // associated with realm
     pub realm_id: u16,
@@ -124,14 +134,14 @@ pub impl StructureBaseImpl of StructureBaseTrait {
     }
 
     fn assert_not_cloaked(
-        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickInterval, season_config: SeasonConfig,
     ) {
         let (is_cloaked, reason) = self.is_cloaked(battle_config, tick_config, season_config);
         assert!(!is_cloaked, "{}", reason);
     }
 
     fn coord(self: StructureBase) -> Coord {
-        return Coord { x: self.coord_x, y: self.coord_y };
+        return Coord { alt: false, x: self.coord_x, y: self.coord_y };
     }
 
     fn exists(self: StructureBase) -> bool {
@@ -139,14 +149,14 @@ pub impl StructureBaseImpl of StructureBaseTrait {
     }
 
     fn is_not_cloaked(
-        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickInterval, season_config: SeasonConfig,
     ) -> bool {
         let (is_cloaked, _) = self.is_cloaked(battle_config, tick_config, season_config);
         return !is_cloaked;
     }
 
     fn is_cloaked(
-        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickInterval, season_config: SeasonConfig,
     ) -> (bool, ByteArray) {
         let current_tick = tick_config.current();
         let mut allow_attack_tick: u64 = tick_config.at(season_config.start_main_at)
@@ -239,7 +249,21 @@ pub impl StructureMetadataStoreImpl of StructureMetadataStoreTrait {
 pub impl StructureDefaultImpl of Default<Structure> {
     fn default() -> Structure {
         let troops: Troops = Troops {
-            category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Stamina { amount: 0, updated_tick: 0 },
+            category: TroopType::Knight,
+            tier: TroopTier::T1,
+            count: 0,
+            stamina: Stamina { amount: 0, updated_tick: 0 },
+            battle_cooldown_end: 0,
+            boosts: TroopBoosts {
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+            },
         };
         Structure {
             entity_id: 0,
@@ -390,7 +414,7 @@ pub impl StructureResourcesImpl of StructureResourcesTrait {
 
             // update the packed value
             produced_resources = new_produced_resources;
-        };
+        }
         produced_resources
     }
 
@@ -405,7 +429,7 @@ pub impl StructureResourcesImpl of StructureResourcesTrait {
 
             // shift right by 8 bits
             produced_resources = BitShift::shr(produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
-        };
+        }
 
         resource_types.span()
     }
@@ -421,7 +445,7 @@ pub impl StructureResourcesImpl of StructureResourcesTrait {
             }
             // shift right by 8 bits
             packed = BitShift::shr(packed, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
-        };
+        }
         contains_resource
     }
 }

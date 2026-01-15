@@ -1,19 +1,21 @@
-import { TileOccupier, type Tile } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { Has, HasValue } from "@dojoengine/recs";
 import { useDojo } from "../context";
 
-export const useQuests = () => {
-  const {
-    setup: { components },
-  } = useDojo();
+// export const useQuests = () => {
+//   const {
+//     setup: { components },
+//   } = useDojo();
 
-  const tileEntitiesForQuests = useEntityQuery([HasValue(components.Tile, { occupier_type: TileOccupier.Quest })]).map(
-    (entityId) => getComponentValue(components.Tile, entityId),
-  ) as Tile[];
+//   const tileEntitiesForQuests = useEntityQuery([HasValue(components.TileOpt, { occupier_type: TileOccupier.Quest })]).map(
+//     (entityId) => {
+//       const tileOpt = getComponentValue(components.TileOpt, entityId);
+//       return tileOpt ? tileOptToTile(tileOpt) : undefined;
+//     },
+//   ).filter(Boolean) as Tile[];
 
-  return tileEntitiesForQuests;
-};
+//   return tileEntitiesForQuests;
+// };
 
 export const useGetQuestForExplorer = (explorerId: number, questTileId: number) => {
   const {

@@ -16,7 +16,9 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { gramToKg } from "../utils";
+import { getTotalResourceWeightKg, gramToKg } from "../utils";
+
+const MAP_CENTER = 2147483646;
 
 type LaborConfig = {
   laborProductionPerResource: number;
@@ -48,6 +50,7 @@ export class ClientConfigManager {
   simpleBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceWeightsKg: Record<number, number> = {};
+  mapCenter: number = MAP_CENTER;
 
   public setDojo(components: ContractComponents, config: Config) {
     this.components = components;
@@ -59,6 +62,7 @@ export class ClientConfigManager {
     this.initializeBuildingCosts();
     this.initializeStructureCosts();
     this.initializeResourceWeights();
+    this.initializeMapCenter();
   }
 
   public static instance(): ClientConfigManager {
@@ -69,8 +73,25 @@ export class ClientConfigManager {
     return ClientConfigManager._instance;
   }
 
-  private getValueOrDefault<T>(callback: () => T, defaultValue: T): T {
-    return callback();
+  private getValueOrDefault<T>(callback: () => T | undefined | null, defaultValue: T): T {
+    if (!this.components || !this.config) {
+      return defaultValue;
+    }
+
+    try {
+      const value = callback();
+      return value ?? defaultValue;
+    } catch (error) {
+      console.warn("ClientConfigManager fallback due to error", error);
+      return defaultValue;
+    }
+  }
+
+  private initializeMapCenter() {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    if (worldConfig) {
+      this.mapCenter = MAP_CENTER - Number(worldConfig.map_center_offset ?? 0);
+    }
   }
 
   private initializeResourceWeights() {
@@ -154,7 +175,7 @@ export class ClientConfigManager {
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
-        this.components.HyperstructureConstructConfig,
+        this.components.HyperstrtConstructConfig,
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
       if (!hyperstructureResourceConfig) continue;
@@ -254,6 +275,10 @@ export class ClientConfigManager {
 
   private initializeStructureCosts() {
     this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
+  }
+
+  public getResourceProductionResourceInputs(resourceId: ResourcesIds) {
+    return this.complexSystemResourceInputs[resourceId] ?? this.simpleSystemResourceInputs[resourceId] ?? [];
   }
 
   public getRefillPerTick() {
@@ -450,14 +475,29 @@ export class ClientConfigManager {
   }
 
   getExploreReward() {
-    return this.getValueOrDefault(() => {
-      const exploreConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.map_config;
+    return this.getValueOrDefault(
+      () => {
+        const exploreConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.map_config;
 
-      return Number(exploreConfig?.reward_resource_amount ?? 0);
-    }, 0);
+        const blitzModeOn = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.blitz_mode_on;
+
+        let reward_resource = ResourcesIds.AncientFragment;
+        if (blitzModeOn) {
+          reward_resource = ResourcesIds.Essence;
+        }
+        let resource_amount = Number(exploreConfig?.reward_resource_amount ?? 0);
+        let resource_weight = getTotalResourceWeightKg([{ resourceId: reward_resource, amount: resource_amount }]);
+
+        return { reward_resource, resource_amount, resource_weight };
+      },
+      { reward_resource: ResourcesIds.AncientFragment, resource_amount: 0, resource_weight: 0 },
+    );
   }
 
   getTroopConfig() {
@@ -493,7 +533,7 @@ export class ClientConfigManager {
         stamina_paladin_max: 0,
         stamina_crossbowman_max: 0,
         stamina_attack_req: 0,
-        stamina_attack_max: 0,
+        stamina_defense_req: 0,
         stamina_explore_wheat_cost: 0,
         stamina_explore_fish_cost: 0,
         stamina_explore_stamina_cost: 0,
@@ -539,7 +579,7 @@ export class ClientConfigManager {
         return {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
           stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
-          stamina_attack_max: troopStaminaConfig?.stamina_attack_max ?? 0,
+          stamina_defense_req: troopStaminaConfig?.stamina_defense_req ?? 0,
           damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
           damage_raid_percent_num: combatConfig?.damage_raid_percent_num ?? 0,
           damage_beta_small: combatConfig?.damage_beta_small ?? 0n,
@@ -550,12 +590,13 @@ export class ClientConfigManager {
           t1_damage_value: combatConfig?.t1_damage_value ?? 0n,
           t2_damage_multiplier: combatConfig?.t2_damage_multiplier ?? 0n,
           t3_damage_multiplier: combatConfig?.t3_damage_multiplier ?? 0n,
+          tick_interval_seconds: 60,
         };
       },
       {
         stamina_bonus_value: 0,
         stamina_attack_req: 0,
-        stamina_attack_max: 0,
+        stamina_defense_req: 0,
         damage_biome_bonus_num: 0,
         damage_raid_percent_num: 0,
         damage_beta_small: 0n,
@@ -566,6 +607,7 @@ export class ClientConfigManager {
         t1_damage_value: 0n,
         t2_damage_multiplier: 0n,
         t3_damage_multiplier: 0n,
+        tick_interval_seconds: 60,
       },
     );
   }
@@ -646,6 +688,8 @@ export class ClientConfigManager {
         return Number(tickConfig?.armies_tick_in_seconds ?? 0);
       } else if (tickId === TickIds.Default) {
         return 1;
+      } else if (tickId === TickIds.Delivery) {
+        return Number(tickConfig?.delivery_tick_in_seconds ?? 0);
       } else {
         throw new Error("Undefined tick id in getTick");
       }
@@ -762,19 +806,122 @@ export class ClientConfigManager {
     );
   }
 
+  getBlitzConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        if (!config) return;
+
+        const blitzSettlementConfig = config.blitz_settlement_config;
+        const blitzRegistrationConfig = config.blitz_registration_config;
+        const blitzHypersSettlementConfig = config.blitz_hypers_settlement_config;
+        const blitzHyperStructureCount =
+          getComponentValue(this.components.HyperstructureGlobals, getEntityIdFromKeys([BigInt(WORLD_CONFIG_ID)]))
+            ?.created_count || 0;
+
+        // get number of hyperstructures left to create
+        let numHyperStructuresLeft = 1;
+        for (let i = 1; i <= blitzHypersSettlementConfig.max_ring_count; i++) {
+          numHyperStructuresLeft += 6 * i;
+        }
+        numHyperStructuresLeft -= blitzHyperStructureCount;
+
+        return {
+          blitz_mode_on: config?.blitz_mode_on ?? false,
+          blitz_settlement_config: {
+            base_distance: Number(blitzSettlementConfig.base_distance),
+            side: Number(blitzSettlementConfig.side),
+            step: Number(blitzSettlementConfig.step),
+            point: Number(blitzSettlementConfig.point),
+            single_realm_mode: Boolean(blitzSettlementConfig.single_realm_mode),
+          },
+          blitz_registration_config: {
+            fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
+            fee_token: BigInt(blitzRegistrationConfig.fee_token),
+            fee_recipient: BigInt(blitzRegistrationConfig.fee_recipient),
+            entry_token_address: BigInt(blitzRegistrationConfig.entry_token_address || 0),
+            collectibles_cosmetics_max: BigInt(blitzRegistrationConfig.collectibles_cosmetics_max || 0),
+            collectibles_cosmetics_address: BigInt(blitzRegistrationConfig.collectibles_cosmetics_address || 0),
+            collectibles_timelock_address: BigInt(blitzRegistrationConfig.collectibles_timelock_address || 0),
+            collectibles_lootchest_address: BigInt(blitzRegistrationConfig.collectibles_lootchest_address || 0),
+            collectibles_elitenft_address: BigInt(blitzRegistrationConfig.collectibles_elitenft_address || 0),
+            registration_count: Number(blitzRegistrationConfig.registration_count),
+            registration_count_max: Number(blitzRegistrationConfig.registration_count_max),
+            registration_start_at: Number(blitzRegistrationConfig.registration_start_at),
+            registration_end_at: Number(config.season_config.start_main_at),
+            creation_start_at: Number(config.season_config.start_main_at + 1),
+            creation_end_at: Number(config.season_config.end_at),
+            assigned_positions_count: Number(blitzRegistrationConfig.assigned_positions_count),
+          },
+          blitz_num_hyperstructures_left: Math.max(numHyperStructuresLeft, 0),
+        };
+      },
+      {
+        blitz_mode_on: false,
+        blitz_settlement_config: {
+          base_distance: 0,
+          side: 0,
+          step: 0,
+          point: 0,
+          single_realm_mode: false,
+        },
+        blitz_registration_config: {
+          fee_amount: BigInt(0),
+          fee_token: BigInt(0),
+          fee_recipient: BigInt(0),
+          entry_token_address: BigInt(0),
+          collectibles_cosmetics_max: BigInt(0),
+          collectibles_cosmetics_address: BigInt(0),
+          collectibles_timelock_address: BigInt(0),
+          collectibles_lootchest_address: BigInt(0),
+          collectibles_elitenft_address: BigInt(0),
+          registration_count: 0,
+          registration_count_max: 0,
+          registration_start_at: 0,
+          registration_end_at: 0,
+          creation_start_at: 0,
+          creation_end_at: 0,
+          assigned_positions_count: 0,
+        },
+        blitz_num_hyperstructures_left: 0,
+      },
+    );
+  }
+
+  getDevModeConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        if (!config) return;
+
+        return {
+          dev_mode_on: config?.season_config.dev_mode_on ?? false,
+        };
+      },
+      {
+        dev_mode_on: false,
+      },
+    );
+  }
+
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
-        const hyperstructureConfig = getComponentValue(
+        const victoryPointsGrantConfig = getComponentValue(
           this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.hyperstructure_config;
+        )?.victory_points_grant_config;
+
+        const victoryPointsWinConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.victory_points_win_config;
 
         return {
           // todo: need to fix this
           timeBetweenSharesChange: 0,
-          pointsPerCycle: (Number(hyperstructureConfig?.points_per_second) ?? 0) / 1_000_000,
-          pointsForWin: (Number(hyperstructureConfig?.points_for_win) ?? 0) / 1_000_000,
+          pointsPerCycle: (Number(victoryPointsGrantConfig?.hyp_points_per_second) ?? 0) / 1_000_000,
+          pointsForWin: (Number(victoryPointsWinConfig?.points_for_win) ?? 0) / 1_000_000,
         };
       },
       {
@@ -833,10 +980,22 @@ export class ClientConfigManager {
         )?.troop_stamina_config;
 
         return {
-          exploreWheatBurnAmount: Number(travelFoodCostConfig?.stamina_explore_wheat_cost) ?? 0,
-          exploreFishBurnAmount: Number(travelFoodCostConfig?.stamina_explore_fish_cost) ?? 0,
-          travelWheatBurnAmount: Number(travelFoodCostConfig?.stamina_travel_wheat_cost) ?? 0,
-          travelFishBurnAmount: Number(travelFoodCostConfig?.stamina_travel_fish_cost) ?? 0,
+          exploreWheatBurnAmount:
+            travelFoodCostConfig?.stamina_explore_wheat_cost !== undefined
+              ? Number(travelFoodCostConfig.stamina_explore_wheat_cost) / Number(RESOURCE_PRECISION)
+              : 0,
+          exploreFishBurnAmount:
+            travelFoodCostConfig?.stamina_explore_fish_cost !== undefined
+              ? Number(travelFoodCostConfig.stamina_explore_fish_cost) / Number(RESOURCE_PRECISION)
+              : 0,
+          travelWheatBurnAmount:
+            travelFoodCostConfig?.stamina_travel_wheat_cost !== undefined
+              ? Number(travelFoodCostConfig.stamina_travel_wheat_cost) / Number(RESOURCE_PRECISION)
+              : 0,
+          travelFishBurnAmount:
+            travelFoodCostConfig?.stamina_travel_fish_cost !== undefined
+              ? Number(travelFoodCostConfig.stamina_travel_fish_cost) / Number(RESOURCE_PRECISION)
+              : 0,
         };
       },
       {
@@ -977,14 +1136,7 @@ export class ClientConfigManager {
   getWonderBonusConfig = () => {
     return this.getValueOrDefault(
       () => {
-        const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-        if (!worldConfig) return { withinTileDistance: 0, bonusPercentNum: 0 };
-
-        const wonderBonusConfig = (worldConfig as any).wonder_production_bonus_config;
-        return {
-          withinTileDistance: Number(wonderBonusConfig?.within_tile_distance ?? 0),
-          bonusPercentNum: Number(wonderBonusConfig?.bonus_percent_num ?? 0),
-        };
+        return { withinTileDistance: 0, bonusPercentNum: 0 };
       },
       {
         withinTileDistance: 0,
@@ -992,6 +1144,16 @@ export class ClientConfigManager {
       },
     );
   };
+
+  isLaborProductionEnabled() {
+    return this.getValueOrDefault(() => {
+      return Object.values(configManager.laborOutputPerResource).some((x) => x.amount > 0);
+    }, false);
+  }
+
+  getMapCenter() {
+    return this.mapCenter;
+  }
 }
 
 export const configManager = ClientConfigManager.instance();

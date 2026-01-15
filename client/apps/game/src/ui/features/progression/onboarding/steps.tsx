@@ -1,22 +1,28 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position, Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
-import { MintVillagePassModal, SettlementLocation, SettlementMinimapModal } from "@/ui/features/settlement";
-import { getUnusedSeasonPasses, queryRealmCount, SeasonPassRealm } from "@/ui/features/settlement";
+import {
+  getUnusedSeasonPasses,
+  MintVillagePassModal,
+  queryRealmCount,
+  SeasonPassRealm,
+  SettlementLocation,
+  SettlementMinimapModal,
+} from "@/ui/features/settlement";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
+import { Position, Position as PositionInterface } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../env";
+import { SpectateButton } from "./spectate-button";
 
 export const LocalStepOne = () => {
   const {
@@ -134,7 +140,8 @@ export const LocalStepOne = () => {
               <Button
                 onClick={handleSelectLocationClick}
                 disabled={loading}
-                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-gold !bg-gold/20 !normal-case rounded-md"
+                forceUppercase={false}
+                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-gold !bg-gold/20 rounded-md"
               >
                 <div className="flex items-center">
                   <BackArrow className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
@@ -144,7 +151,8 @@ export const LocalStepOne = () => {
               <Button
                 onClick={handleSettleRealm}
                 disabled={loading}
-                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md"
+                forceUppercase={false}
+                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold rounded-md"
               >
                 <div className="flex items-center justify-center">
                   {loading ? (
@@ -162,7 +170,8 @@ export const LocalStepOne = () => {
         <Button
           onClick={handleMintAndPrepare}
           disabled={loading}
-          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${loading ? "" : "animate-pulse"}`}
+          forceUppercase={false}
+          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold rounded-md hover:scale-105 hover:-translate-y-1 ${loading ? "" : "animate-pulse"}`}
         >
           <div className="flex items-center">
             {loading ? (
@@ -176,7 +185,8 @@ export const LocalStepOne = () => {
       )}
       <Button
         onClick={handleVillagePassClick}
-        className={`${loading ? "" : "animate-pulse"} mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1`}
+        forceUppercase={false}
+        className={`${loading ? "" : "animate-pulse"} mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold rounded-md hover:scale-105 hover:-translate-y-1`}
       >
         <div className="flex items-center gap-2">
           <TreasureChest className="!w-4 !h-4 fill-brown text-brown" />
@@ -196,6 +206,8 @@ export const StepOne = () => {
   const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
   const setShowToS = useUIStore((state) => state.setShowToS);
   const { connector } = useAccount();
+
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   const realmEntities = usePlayerOwnedRealmEntities();
 
@@ -238,8 +250,7 @@ export const StepOne = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const onSpectatorModeClick = useSpectatorModeClick(components);
-  const goToStructure = useGoToStructure();
+  const goToStructure = useGoToStructure(setup);
 
   const onPlayModeClick = () => {
     const randomRealmEntityOrVillageEntity =
@@ -250,7 +261,11 @@ export const StepOne = () => {
       : undefined;
 
     if (!structure) return;
-    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
+    void goToStructure(
+      structure.entity_id,
+      new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+      false,
+    );
   };
 
   return (
@@ -264,25 +279,15 @@ export const StepOne = () => {
           onClick={onPlayModeClick}
         >
           <Sword className="w-6 fill-current mr-2" />
-          <div className="text-black flex-grow text-center">{isSeasonActive ? "Play Eternum" : timeRemaining}</div>
+          <div className="text-black flex-grow text-center">{isSeasonActive ? "Play Realms" : timeRemaining}</div>
         </Button>
       ) : (
         <Button size="lg" className="!bg-gold border-none w-full" onClick={() => setShowToS(true)}>
           <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
-      <SpectateButton onClick={hasRealmsOrVillages ? onPlayModeClick : onSpectatorModeClick} />
+      <SpectateButton onClick={onSpectatorModeClick} />
     </div>
-  );
-};
-
-export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
-  return (
-    <Button className="w-full" onClick={onClick} size="lg">
-      <div className="flex items-center justify-start w-full">
-        <Eye className="w-6 fill-current mr-2" /> <div className="flex-grow text-center">Spectate</div>
-      </div>
-    </Button>
   );
 };
 
@@ -386,7 +391,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       {seasonPassRealms.length === 0 && !loading ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-gold">No Realms</h3>
-          <p className="text-gray-400">You need to have at least one realm to settle a season pass.</p>
+          <p className="">You need to have at least one realm to settle a season pass.</p>
           <Button size="lg" onClick={onPrevious}>
             Go Back
           </Button>

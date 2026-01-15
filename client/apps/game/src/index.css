@@ -3,27 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .btn {
-    @apply px-4 py-2 rounded-md font-bold text-white transition-all duration-200 ease-in-out;
-  }
-  .btn-primary {
-    @apply bg-blue-500 hover:bg-blue-600;
-  }
-  .btn-secondary {
-    @apply bg-gray-500 hover:bg-gray-600;
-  }
-}
-
-@keyframes scroll {
-  0% {
-    transform: translateX(100%);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
-}
-
 .animate-scroll {
   animation: scroll 30s linear infinite;
 }
@@ -55,6 +34,15 @@ body {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gold/50;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .clip-angled {
@@ -337,142 +325,103 @@ canvas {
   pointer-events: none;
 }
 
-/* Tutorial popup styling */
-.shepherd-element {
-  @apply bg-light-pink;
-}
-
-.shepherd-has-title .shepherd-content .shepherd-header {
-  @apply bg-gray-gold;
-}
-.shepherd-element.shepherd-warning .shepherd-header {
-  @apply bg-enemy;
-}
-
-.shepherd-title {
-  @apply text-brown text-2xl;
-}
-
-.shepherd-element.shepherd-warning .shepherd-title {
-  @apply text-gold text-2xl;
-}
-
-.shepherd-text {
-  @apply text-light-brown;
-}
-
-.shepherd-button {
-  @apply cursor-fancy bg-gray-gold text-brown;
-}
-
-.shepherd-button:not(:disabled):hover {
-  @apply bg-gray-gold/50 text-brown;
-}
-
-.shepherd-has-title .shepherd-content .shepherd-cancel-icon {
-  @apply text-brown cursor-fancy;
-}
-
-.shepherd-has-title .shepherd-content .shepherd-cancel-icon:hover {
-  @apply text-brown/50;
-}
-
-/* Arrow styling */
-.shepherd-arrow {
-  @apply bg-transparent !important;
-}
-
-.shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
-  @apply bg-gray-gold !important;
-}
-
-.shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
-.shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.shepherd-element[data-popper-placement$="-start"] .shepherd-arrow:before {
-  @apply bg-gray-gold !important;
-}
-
-.shepherd-element.shepherd-warning[data-popper-placement$="-start"] .shepherd-arrow:before {
-  @apply bg-enemy !important;
-}
-
-.panel-rope {
-  border: 12px solid transparent;
-  border-image: url("/borders/rope.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
-}
 .panel-wood {
-  border: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
+  /* Modern style matching entity-detail-primitives.tsx */
+  background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  /* Subtle gradient borders on top and bottom */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(243, 201, 159, 0.4), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 .panel-wood-small {
-  border: 4px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
+  /* Modern style matching entity-detail-primitives.tsx - compact variant */
+  background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
+  border-radius: 0.375rem; /* rounded-md (6px) - smaller than regular */
+  box-shadow:
+    0 2px 4px -1px rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1); /* shadow-sm */
+  /* Subtle gradient borders on top and bottom */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(243, 201, 159, 0.3), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 .panel-wood-top {
-  border-top: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 12 0 0 0;
+  /* Modern style - top border only */
+  border-top: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .panel-wood-right {
-  border-right: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 0 12 0 0;
+  /* Modern style - right border only */
+  border-right: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .panel-wood-bottom {
-  border-bottom: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 0 0 12 0;
+  /* Modern style - bottom border only */
+  border-bottom: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .panel-wood-left {
-  border-left: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 0 0 0 12;
+  /* Modern style - left border only */
+  border-left: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .button-wood {
-  /* padding: 6px 14px; */
-  border: 3px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  /* background: #14100d url("/images/straight-wood.png"); */
-  border-radius: 6px;
+  /* Modern button border/shadow style - backgrounds controlled by variants */
+  border: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 - default */
+  border-radius: 0.375rem; /* rounded-md (6px) */
   box-shadow:
-    inset 0 0 4px #00000066,
-    0 1px 2px #000000aa;
-
-  transition: all 0.2s ease;
+    0 2px 4px -1px rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1); /* shadow-sm */
+  transition: all 0.15s ease;
+  /* NOTE: No background - variants control that */
 }
-.button-wood:hover {
-  background-color: #4a3015;
-  box-shadow: 0 0 6px #d4aa7044;
+
+/* Hover state - brighter border and enhanced shadow */
+.button-wood:hover:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.45); /* border-gold/45 - brighter */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.2),
+    0 2px 4px -2px rgb(0 0 0 / 0.15); /* shadow-md - stronger */
   cursor: pointer;
+  /* Brightness filter to enhance whatever background the variant set */
+  filter: brightness(1.1);
 }
 
-/* Wood ornate corner classes */
+/* Active/Pressed state - brightest border with press effect */
+.button-wood:active:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.6); /* border-gold/60 - very bright */
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.3) inset,
+    0 1px 2px 0 rgb(0 0 0 / 0.2); /* inset shadow for pressed feel */
+  transform: translateY(1px); /* Slight press effect */
+  filter: brightness(1.15); /* Slightly brighter when pressed */
+}
+
+/* Focus state - visible outline for accessibility */
+.button-wood:focus-visible {
+  outline: 2px solid rgba(223, 170, 84, 0.6);
+  outline-offset: 2px;
+}
+
+/* Disabled state - grayed out and reduced opacity */
+.button-wood:disabled {
+  border-color: rgba(119, 103, 86, 0.3) !important; /* gray-gold with low opacity */
+  color: rgba(119, 103, 86, 0.6) !important; /* gray-gold text */
+  cursor: not-allowed !important;
+  opacity: 0.4;
+  box-shadow: none !important;
+  filter: grayscale(0.5) !important; /* Desaturate disabled buttons */
+  /* NOTE: Background stays as variant defines it, just grayed out */
+}
+
+/* Wood ornate corner classes - KEPT for decorative purposes */
 .panel-wood-corner-tl {
   position: relative;
 }
@@ -560,6 +509,7 @@ canvas {
   background-size: contain;
   background-repeat: no-repeat;
   pointer-events: none;
+  z-index: 100;
 }
 .panel-wood-corners::before {
   top: -14px;
@@ -590,28 +540,74 @@ button {
 }
 
 .button-gold {
-  /* padding: 6px 14px; */
-  border: 3px solid transparent;
-  border-image: url("/borders/gold-border.png") 12 round;
-  background: #d4b61e;
-  border-radius: 6px;
+  /* Modern gold button border/shadow style - backgrounds controlled by variants */
+  border: 1px solid rgba(223, 170, 84, 0.55); /* border-gold/55 - brighter than wood */
+  border-radius: 0.375rem; /* rounded-md (6px) */
   box-shadow:
-    inset 0 0 4px #00000066,
-    0 1px 2px #000000aa;
-  transition: all 0.2s ease;
+    0 2px 4px -1px rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1); /* shadow-sm */
+  transition: all 0.15s ease;
+  /* NOTE: No background override - variant bg-gold controls that */
 }
-.button-gold:hover {
-  background-color: #4a3015;
-  box-shadow: 0 0 6px #d4aa7044;
+
+/* Hover state - brighter border and enhanced shadow */
+.button-gold:hover:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.75); /* border-gold/75 - bright */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.2),
+    0 2px 4px -2px rgb(0 0 0 / 0.15); /* shadow-md - stronger */
   cursor: pointer;
+  /* Brightness filter to enhance the gold background */
+  filter: brightness(1.1);
+}
+
+/* Active/Pressed state - brightest border with press effect */
+.button-gold:active:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.9); /* border-gold/90 - very bright */
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.3) inset,
+    0 1px 2px 0 rgb(0 0 0 / 0.2); /* inset shadow for pressed feel */
+  transform: translateY(1px); /* Slight press effect */
+  filter: brightness(1.2); /* Brighter when pressed */
+}
+
+/* Focus state - visible outline for accessibility */
+.button-gold:focus-visible {
+  outline: 2px solid rgba(223, 170, 84, 0.8);
+  outline-offset: 2px;
+}
+
+/* Disabled state - grayed out */
+.button-gold:disabled {
+  border-color: rgba(119, 103, 86, 0.3) !important; /* gray-gold with low opacity */
+  color: rgba(119, 103, 86, 0.6) !important; /* gray-gold text */
+  cursor: not-allowed !important;
+  opacity: 0.4;
+  box-shadow: none !important;
+  filter: grayscale(0.5) !important; /* Desaturate disabled buttons */
+  /* NOTE: Background stays as variant defines it, just grayed out */
 }
 
 .panel-gold {
-  border: 3px solid transparent;
-  border-image: url("/borders/gold-border.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
+  /* Modern gold panel style with highlight tone (matching entity-detail-primitives.tsx) */
+  background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
+  border-radius: 0.5rem; /* rounded-lg (8px) */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  /* Subtle gradient borders on top and bottom - slightly brighter for gold variant */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(
+      to right,
+      transparent,
+      rgba(223, 170, 84, 0.5),
+      rgba(243, 201, 159, 0.5),
+      rgba(223, 170, 84, 0.5),
+      transparent
+    )
+    1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 /* Battle Logs Component Styles */
@@ -705,4 +701,104 @@ button {
 /* Loading Styles */
 .loading-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Context Menu Animations */
+@keyframes segmentFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes radialLabelFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+body.urgency-border-warning::before,
+body.urgency-border-critical::before,
+body.urgency-border-final::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  border: 6px solid transparent;
+  border-radius: 14px;
+  box-sizing: border-box;
+  z-index: 9999;
+  mix-blend-mode: screen;
+}
+
+body.urgency-border-warning::before {
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.45);
+  animation: urgency-border-pulse-warning 1.2s ease-in-out infinite;
+}
+
+body.urgency-border-critical::before {
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 48px rgba(239, 68, 68, 0.5);
+  animation: urgency-border-pulse-critical 0.8s ease-in-out infinite;
+}
+
+body.urgency-border-final::before {
+  border-color: rgba(200, 68, 68, 0.5);
+  box-shadow: 0 0 60px rgba(200, 68, 68, 0.65);
+  animation: urgency-border-pulse-final 0.4s ease-in-out infinite;
+}
+
+@keyframes urgency-border-pulse-warning {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes urgency-border-pulse-critical {
+  0%,
+  100% {
+    opacity: 0.55;
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.45);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 64px rgba(239, 68, 68, 0.6);
+  }
+}
+
+@keyframes urgency-border-pulse-final {
+  0%,
+  100% {
+    opacity: 0.5;
+    box-shadow: 0 0 50px rgba(200, 68, 68, 0.6);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 80px rgba(239, 68, 68, 0.85);
+  }
 }

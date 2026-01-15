@@ -1,28 +1,23 @@
-import {
-  getAddressName,
-  getGuardsByStructure,
-  getGuildFromPlayerAddress,
-  getHyperstructureProgress,
-  getStructureName,
-  getStructureTypeName,
-  unpackValue,
-} from "@bibliothecadao/eternum";
+import { Eye, Loader, RefreshCw } from "lucide-react";
+import { memo } from "react";
 
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { Position } from "@/types/position";
-import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { useChatStore } from "@/ui/features/social";
-import { displayAddress } from "@/ui/utils/utils";
-import { useDojo } from "@bibliothecadao/react";
-import { getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
-import { useQuery } from "@tanstack/react-query";
-import { Loader, MessageCircle } from "lucide-react";
-import { memo, useMemo } from "react";
+import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
+import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
+import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ImmunityTimer } from "../structures/immunity-timer";
+import { ActiveRelicEffects } from "./active-relic-effects";
+import { EntityInventoryTabs } from "./entity-inventory-tabs";
+import { StructureProductionPanel } from "./structure-production-panel";
 
-interface StructureEntityDetailProps {
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { Position } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { useStructureEntityDetail } from "./hooks/use-structure-entity-detail";
+
+export interface StructureEntityDetailProps {
   structureEntityId: ID;
   className?: string;
   compact?: boolean;
@@ -38,108 +33,38 @@ export const StructureEntityDetail = memo(
     maxInventory = Infinity,
     showButtons = false,
   }: StructureEntityDetailProps) => {
+    const { setup } = useDojo();
+    const mode = useGameModeConfig();
     const {
-      network: { toriiClient },
-      account,
-      setup: { components },
-    } = useDojo();
-
-    const userAddress = ContractAddress(account.account.address);
-
-    const {
-      data: structureDetails,
-      isLoading: isLoadingStructure,
-      // error: structureError, // Can be used for error UI
-    } = useQuery({
-      queryKey: ["structureDetails", String(structureEntityId), String(userAddress)],
-      queryFn: async () => {
-        if (!toriiClient || !structureEntityId || !components || !userAddress) return null;
-
-        const { structure, resources } = await getStructureFromToriiClient(toriiClient, structureEntityId);
-        if (!structure)
-          return {
-            structure: null,
-            resources: null,
-            playerGuild: undefined,
-            guards: [],
-            isAlly: false,
-            addressName: MERCENARIES,
-            isMine: false,
-          };
-
-        const isMine = structure.owner === userAddress;
-        const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
-        const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
-        const userGuild = getGuildFromPlayerAddress(userAddress, components);
-        const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
-        const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
-
-        return {
-          structure,
-          resources,
-          playerGuild: guild,
-          guards,
-          isAlly,
-          addressName,
-          isMine,
-        };
-      },
-      staleTime: 30000, // 30 seconds
-    });
-
-    const structure = structureDetails?.structure;
-    const resources = structureDetails?.resources;
-    const playerGuild = structureDetails?.playerGuild;
-    const guards = structureDetails?.guards || [];
-    const isAlly = structureDetails?.isAlly || false;
-    const addressName = structureDetails?.addressName;
-    const isMine = structureDetails?.isMine || false;
-
-    const isRealmOrVillage =
-      structure?.base.category === StructureType.Realm || structure?.base.category === StructureType.Village;
-    const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
-    const structureTypeName = structure ? getStructureTypeName(structure?.category) : undefined;
-
-    const goToStructure = useGoToStructure();
-
-    const progress = useMemo(() => {
-      return isHyperstructure ? getHyperstructureProgress(structure?.entity_id, components) : undefined;
-    }, [isHyperstructure, structure?.entity_id, components]);
-
-    // Precompute common class strings for consistency with ArmyEntityDetail
-    const smallTextClass = compact ? "text-xxs" : "text-xs";
-
-    const openChat = useChatStore((state) => state.actions.openChat);
-    const addTab = useChatStore((state) => state.actions.addTab);
-    const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
-
-    const handleChatClick = () => {
-      if (isMine) {
-        openChat();
-      } else {
-        const userId = getUserIdByUsername(addressName || "");
-
-        if (userId) {
-          addTab({
-            type: "direct",
-            name: addressName || "",
-            recipientId: userId,
-          });
-        }
-      }
-    };
-
-    const structureName = useMemo(() => {
-      return structure ? getStructureName(structure).name : undefined;
-    }, [structure]);
-
-    const resourcesProduced = useMemo(() => {
-      return unpackValue(structure?.resources_packed || 0n);
-    }, [structure]);
+      structure,
+      structureDetails,
+      resources,
+      relicEffects,
+      playerGuild,
+      guards,
+      guardSlotsUsed,
+      guardSlotsMax,
+      ownerDisplayName,
+      isMine,
+      hyperstructureRealmCount,
+      isHyperstructure,
+      typeLabel,
+      backgroundImage,
+      alignmentBadge,
+      progress,
+      structureName,
+      isLoadingStructure,
+      isRefreshing,
+      handleRefresh,
+      lastRefresh,
+      handleViewStructure,
+      structureEntityIdNumber,
+    } = useStructureEntityDetail({ structureEntityId });
+    const goToStructure = useGoToStructure(setup);
 
     if (isLoadingStructure) {
       return (
-        <div className="flex items-center justify-center h-full mt-2 ">
+        <div className="mt-2 flex h-full items-center justify-center">
           <Loader className="animate-spin" />
         </div>
       );
@@ -147,127 +72,191 @@ export const StructureEntityDetail = memo(
 
     if (!structure || !structureDetails) return null;
 
+    const smallTextClass = compact ? "text-xxs" : "text-xs";
+    const sectionTitleClass = `${smallTextClass} font-semibold uppercase tracking-[0.2em] text-gold/80`;
+    const headerCardClass = cn(
+      "relative overflow-hidden rounded-xl border border-gold/25 bg-gradient-to-br from-dark-brown/90 via-brown/75 to-dark/80",
+      compact ? "px-3 py-3" : "px-4 py-4",
+    );
+    const panelClasses = (...extras: Array<string | false | undefined>) =>
+      cn("rounded-lg border border-gold/20 bg-dark-brown/70 shadow-md", compact ? "px-3 py-2" : "px-4 py-3", ...extras);
+    const sectionsLayoutClass = `flex flex-col ${compact ? "gap-2" : "gap-3"} w-full`;
+    const actionButtonBase =
+      "inline-flex min-w-[104px] items-center justify-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60";
+    const standardActionClasses = `${actionButtonBase} border border-gold/60 bg-gold/10 text-gold hover:bg-gold/20`;
+
     return (
-      <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
-        {/* Header with owner and guild info */}
-        <div className="flex items-center justify-between border-b border-gold/30 pb-2 gap-2">
-          <div className="flex flex-col">
-            <h4 className={`${compact ? "text-base" : "text-2xl"}`}>
-              {addressName || displayAddress("0x0" + structure?.owner.toString(16) || "0x0")}
-            </h4>
-            {playerGuild && (
-              <div className="text-xs text-gold/80">
-                {"< "}
-                {playerGuild.name}
-                {" >"}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
+      <div className={cn("flex flex-col", compact ? "gap-1" : "gap-3", className)}>
+        <div className={headerCardClass}>
+          {backgroundImage && (
             <div
-              className={`px-2 py-1 rounded text-xs h6 ${isAlly ? "bg-green/30 border-green/50 border" : "bg-red/30 border-red/50 border"}`}
-            >
-              {isAlly ? "Ally" : "Enemy"}
-            </div>
-            {addressName !== undefined && showButtons && (
-              <>
-                {isMine && (
-                  <button
-                    onClick={() =>
-                      goToStructure(
-                        structureEntityId,
-                        new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
-                        false,
-                      )
-                    }
-                    className="px-2 py-1 rounded text-xs bg-gold/20 hover:bg-gold/30 transition"
-                  >
-                    VIEW
-                  </button>
+              className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-25"
+              style={{ backgroundImage: `url(${backgroundImage})` }}
+              aria-hidden="true"
+            />
+          )}
+          <div className="relative z-10 flex flex-col gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex flex-1 flex-col gap-1">
+                {typeLabel && (
+                  <span className={`${smallTextClass} uppercase tracking-[0.22em] text-gold/70`}>{typeLabel}</span>
                 )}
-                <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
-                  <MessageCircle />
-                </button>
-              </>
-            )}
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h4 className={`${compact ? "text-xl" : "text-2xl"} font-bold text-gold`}>{structureName}</h4>
+                  <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">#{structure.entity_id}</span>
+                </div>
+                <div className={`${smallTextClass} text-gold/70`}>Owner · {ownerDisplayName}</div>
+                {playerGuild && <div className={`${smallTextClass} text-gold/60`}>Guild · {playerGuild.name}</div>}
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                {alignmentBadge && (
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xxs font-semibold uppercase tracking-[0.25em] ${alignmentBadge.className}`}
+                    >
+                      {alignmentBadge.label}
+                    </span>
+                  </div>
+                )}
+                {showButtons && (
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex items-center gap-1 rounded-md border border-gold/30 bg-dark/60 px-1.5 py-1 shadow-sm">
+                      <button
+                        onClick={handleRefresh}
+                        disabled={isRefreshing || Date.now() - lastRefresh < 10000}
+                        className={standardActionClasses}
+                        title="Refresh data"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          void goToStructure(
+                            structureEntityId,
+                            new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+                            false,
+                            { spectator: !isMine },
+                          )
+                        }
+                        className={standardActionClasses}
+                        title={isMine ? "View structure" : "Spectate structure"}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {structureEntityIdNumber > 0 && (
+                      <StructureUpgradeButton
+                        structureEntityId={structureEntityIdNumber}
+                        className="min-w-[110px] justify-center px-3 py-1"
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 w-full">
-          <div className="flex flex-col w-full gap-2">
-            {/* Structure name and type */}
-            <div className="flex flex-col gap-0.5">
-              <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
-              </div>
-              <div className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}>
-                {structureTypeName}
-              </div>
+        <div className={sectionsLayoutClass}>
+          {isHyperstructure && hyperstructureRealmCount !== undefined && (
+            <div className={panelClasses()}>
+              <div className={`${sectionTitleClass} mb-2`}>Hyperstructure Status</div>
+              <HyperstructureVPDisplay
+                realmCount={hyperstructureRealmCount}
+                isOwned={structure?.owner !== undefined && structure?.owner !== null && structure?.owner !== 0n}
+                className="mt-0"
+              />
             </div>
+          )}
 
-            {/* Progress bar for hyperstructures */}
-            {isHyperstructure && (
-              <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
-                <div className="flex justify-between items-center">
-                  <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Construction Progress</div>
-                  <div className="text-xs font-semibold bg-gold/20 px-2 py-0.5 rounded-full">
-                    {progress?.percentage ?? 0}%
-                  </div>
+          {isHyperstructure && mode.ui.showHyperstructureProgress && (
+            <div className={panelClasses()}>
+              <div className="flex items-center justify-between gap-2">
+                <div className={sectionTitleClass}>Construction Progress</div>
+                <div className="rounded-full bg-gold/20 px-2 py-1 text-xs font-semibold">
+                  {progress?.percentage ?? 0}%
                 </div>
-                <div className="w-full bg-gray-700/70 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-gold/80 to-gold h-full rounded-full transition-all duration-500 shadow-glow-sm"
-                    style={{ width: `${progress?.percentage ?? 0}%` }}
-                  />
-                </div>
-                {progress?.percentage !== 100 && (
-                  <div className="text-xxs text-gold/60 italic text-center mt-0.5">
-                    {progress?.percentage === 0 ? "Construction not started" : "Construction in progress"}
-                  </div>
-                )}
               </div>
-            )}
-
-            {/* Realm resources input/output display */}
-            {isRealmOrVillage && (
-              <div className="mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
-                <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Resource Production</div>
-                <RealmResourcesIO resourcesProduced={resourcesProduced} compact={true} size="xs" />
-              </div>
-            )}
-
-            {/* Guards/Defense section */}
-            {guards.length > 0 && (
-              <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
-                <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Defense</div>
-                <CompactDefenseDisplay
-                  troops={guards.map((army) => ({
-                    slot: army.slot,
-                    troops: army.troops,
-                  }))}
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-dark/50">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-gold via-brilliance to-lightest transition-all duration-500"
+                  style={{ width: `${progress?.percentage ?? 0}%` }}
                 />
               </div>
-            )}
-          </div>
+              {progress?.percentage !== 100 && (
+                <div className="mt-1 text-center text-xxs italic text-gold/60">
+                  {progress?.percentage === 0 ? "Construction not started" : "Construction in progress"}
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Resources section */}
-          <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
-            <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
-            {resources && (
-              <InventoryResources
-                max={maxInventory}
-                resources={resources}
-                className="flex flex-wrap gap-1 w-full no-scrollbar"
-                resourcesIconSize={compact ? "xs" : "sm"}
-                textSize={compact ? "xxs" : "xs"}
+          <div className={panelClasses()}>
+            <div className={`${sectionTitleClass} mb-2`}>Defenses</div>
+            {guards.length > 0 ? (
+              <CompactDefenseDisplay
+                troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
+                slotsUsed={guardSlotsUsed}
+                slotsMax={guardSlotsMax}
+                structureId={Number(structure.entity_id ?? 0)}
+                canManageDefense={isMine}
+                variant={compact ? "banner" : "default"}
               />
+            ) : (
+              <p className={`${smallTextClass} text-gold/60 italic`}>No defenders stationed.</p>
             )}
           </div>
-        </div>
 
-        {/* Immunity timer */}
-        <div className="mt-1 border-t border-gold/20 pt-1">
-          <ImmunityTimer structure={structure} />
+          {resources ? (
+            <div className={panelClasses()}>
+              <div className={`${sectionTitleClass} mb-2`}>Buildings & Production</div>
+              <StructureProductionPanel
+                structure={structure}
+                resources={resources}
+                compact={compact}
+                smallTextClass={smallTextClass}
+              />
+            </div>
+          ) : (
+            <div className={panelClasses()}>
+              <div className={`${sectionTitleClass} mb-1`}>Buildings & Production</div>
+              <p className={`${smallTextClass} text-gold/60 italic`}>Buildings & Production data unavailable.</p>
+            </div>
+          )}
+
+          {resources ? (
+            <div className={panelClasses("flex flex-col")}>
+              <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
+              <div className="mt-2">
+                <EntityInventoryTabs
+                  resources={resources}
+                  activeRelicIds={relicEffects.map((effect) => effect.id)}
+                  entityId={structureEntityId}
+                  entityOwnerId={structureEntityId}
+                  recipientType={RelicRecipientType.Structure}
+                  maxItems={maxInventory}
+                  compact={compact}
+                  allowRelicActivation={showButtons && isMine}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className={panelClasses()}>
+              <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
+              <p className={`${smallTextClass} text-gold/60 italic`}>No resources stored.</p>
+            </div>
+          )}
+
+          {relicEffects.length > 0 && (
+            <div className={panelClasses()}>
+              <div className={`${sectionTitleClass} mb-2`}>Active Relic Effects</div>
+              <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact={compact} />
+            </div>
+          )}
+
+          <div className={panelClasses("mt-1")}>
+            <ImmunityTimer structure={structure} />
+          </div>
         </div>
       </div>
     );
