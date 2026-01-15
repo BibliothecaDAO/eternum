@@ -23,14 +23,14 @@ export const INDICATOR_SEGMENTS_HEIGHT = 6;
  */
 export const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
   // Knights - Standard humanoid height with armor
-  [ModelType.Knight1]: 2.5,
-  [ModelType.Knight2]: 2.7,
-  [ModelType.Knight3]: 2.9,
+  [ModelType.Knight1]: 3,
+  [ModelType.Knight2]: 3,
+  [ModelType.Knight3]: 3,
 
   // Crossbowmen - Slightly shorter stance
-  [ModelType.Crossbowman1]: 2.3,
-  [ModelType.Crossbowman2]: 2.5,
-  [ModelType.Crossbowman3]: 2.7,
+  [ModelType.Crossbowman1]: 3,
+  [ModelType.Crossbowman2]: 3,
+  [ModelType.Crossbowman3]: 3,
 
   // Paladins - Larger models with heavy armor
   [ModelType.Paladin1]: 2.8,
@@ -38,7 +38,7 @@ export const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
   [ModelType.Paladin3]: 3.2,
 
   // Boat - Low profile on water surface
-  [ModelType.Boat]: 2.0,
+  [ModelType.Boat]: 3.2,
 
   // Agent models - Standard AI agent height
   [ModelType.AgentApix]: 2.5,
