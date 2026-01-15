@@ -154,7 +154,7 @@ export async function generateWorldConfigCalldata(p: Params) {
   await C.setWorldConfig(ctx);
   await C.setVRFConfig(ctx);
   await C.setGameModeConfig(ctx);
-  await C.setBlitzPreviousGame(ctx);
+  await C.setFactoryAddress(ctx);
   await C.setVictoryPointsConfig(ctx);
   await C.setDiscoverableVillageSpawnResourcesConfig(ctx);
   await C.setBlitzRegistrationConfig(ctx);

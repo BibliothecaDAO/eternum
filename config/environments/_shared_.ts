@@ -442,6 +442,9 @@ export const EternumGlobalConfig: Config = {
       collectibles_elitenft_address: BLITZ_COLLECTIBLE_ELITENFT_ADDRESS,
     },
   },
+  factory: {
+    address: "0"
+  },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),
