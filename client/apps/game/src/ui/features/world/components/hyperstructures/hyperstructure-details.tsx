@@ -1,4 +1,5 @@
 import { Tabs } from "@/ui/design-system/atoms/tab";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
@@ -10,9 +11,10 @@ export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructu
   const dojo = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const latestChangeEvent = LeaderboardManager.instance(dojo.setup.components).getCurrentCoOwners(
-    hyperstructureEntityId,
-  );
+  const latestChangeEvent = LeaderboardManager.instance(
+    dojo.setup.components,
+    getRealmCountPerHyperstructure(),
+  ).getCurrentCoOwners(hyperstructureEntityId);
 
   const coOwners = latestChangeEvent?.coOwners || [];
   const timestamp = latestChangeEvent?.timestamp || 0;

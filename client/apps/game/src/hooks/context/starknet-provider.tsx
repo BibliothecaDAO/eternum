@@ -1,46 +1,102 @@
+import { getActiveWorld, normalizeRpcUrl } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
-import { Chain, mainnet, sepolia } from "@starknet-react/chains";
-import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
+import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
+import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
+import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
+import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { constants, shortString } from "starknet";
+import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
-import { policies } from "./policies";
+import { bootstrapGame } from "../../init/bootstrap";
+import { useAccountStore } from "../store/use-account-store";
+import { buildPolicies } from "./policies";
+import { useControllerAccount } from "./use-controller-account";
+
+const slot: string = env.VITE_PUBLIC_SLOT;
+const namespace: string = "s1_eternum";
+
+// ==============================================
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
 const KATANA_RPC_URL = "http://localhost:5050";
-
-const preset: string = "eternum";
-const slot: string = env.VITE_PUBLIC_SLOT;
-const namespace: string = "s1_eternum";
-
 const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
-const chain_id = isLocal
-  ? KATANA_CHAIN_ID
-  : env.VITE_PUBLIC_CHAIN === "sepolia"
-    ? constants.StarknetChainId.SN_SEPOLIA
-    : constants.StarknetChainId.SN_MAIN;
+// ==============================================
 
-const nonLocalController = new ControllerConnector({
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
+
+const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
+
+const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
+const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
+
+// ==============================================
+
+type DerivedChain = {
+  kind: "slot" | "mainnet" | "sepolia";
+  chainId: string;
+};
+
+const deriveChainFromRpcUrl = (value: string): DerivedChain | null => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const path = url.pathname;
+    const lowerPath = path.toLowerCase();
+
+    if (lowerPath.includes("/starknet/mainnet")) {
+      return { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN };
+    }
+
+    if (lowerPath.includes("/starknet/sepolia")) {
+      return { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+    }
+
+    const match = path.match(/\/x\/([^/]+)\/katana/i);
+    if (!match) return null;
+
+    const slug = match[1];
+    const label = `WP_${slug.replace(/-/g, "_").toUpperCase()}`;
+    if (label.length > 31) return null;
+
+    return { kind: "slot", chainId: shortString.encodeShortString(label) };
+  } catch {
+    return null;
+  }
+};
+
+const baseRpcUrl = isLocal ? KATANA_RPC_URL : dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
+const rpcUrl = normalizeRpcUrl(baseRpcUrl);
+
+console.log("baseRpcUrl", baseRpcUrl);
+
+const derivedChain = isLocal ? null : deriveChainFromRpcUrl(rpcUrl);
+const fallbackChain: DerivedChain = isSlot
+  ? { kind: "slot", chainId: SLOT_CHAIN_ID }
+  : isSlottest
+    ? { kind: "slot", chainId: SLOT_CHAIN_ID_TEST }
+    : env.VITE_PUBLIC_CHAIN === "mainnet"
+      ? { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN }
+      : { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+const resolvedChain = derivedChain ?? fallbackChain;
+const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
+const chain_id = resolvedChainId;
+
+const controller = new ControllerConnector({
+  errorDisplayMode: "notification",
+  propagateSessionErrors: true,
+  // chain_id,
   chains: [
     {
-      rpcUrl: isLocal
-        ? KATANA_RPC_URL
-        : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
-          ? env.VITE_PUBLIC_NODE_URL
-          : "https://api.cartridge.gg/x/starknet/sepolia",
+      rpcUrl,
     },
   ],
-  defaultChainId: isLocal
-    ? KATANA_CHAIN_ID
-    : env.VITE_PUBLIC_CHAIN === "mainnet"
-      ? constants.StarknetChainId.SN_MAIN
-      : constants.StarknetChainId.SN_SEPOLIA,
-  preset,
-  policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : policies,
+  defaultChainId: resolvedChainId,
+  policies: buildPolicies(dojoConfig.manifest),
   slot,
   namespace,
 });
@@ -55,7 +111,6 @@ const katanaLocalChain = {
     symbol: "ETH",
     decimals: 18,
   },
-
   rpcUrls: {
     default: {
       http: [KATANA_RPC_URL],
@@ -64,22 +119,110 @@ const katanaLocalChain = {
       http: [KATANA_RPC_URL],
     },
   },
+  paymasterRpcUrls: {
+    default: {
+      http: [],
+    },
+    public: {
+      http: [],
+    },
+  },
 } as const satisfies Chain;
+
+// Custom QueryClient with game-appropriate defaults
+// - Disable refetchOnWindowFocus to prevent surprise refetch storms when alt-tabbing
+// - Disable refetchOnReconnect for similar reasons in a real-time game
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: 1,
+      staleTime: 5000, // 5 seconds default stale time
+    },
+  },
+});
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
-    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
+    return { nodeUrl: rpcUrl };
+  }, []);
+
+  const { connectors: predeployedConnectors } = usePredeployedAccounts({
+    rpc: rpcUrl,
+    id: "katana",
+    name: "Katana",
+  });
+
+  const paymasterRpc = useCallback(() => {
+    return { nodeUrl: rpcUrl };
   }, []);
 
   return (
     <StarknetConfig
-      chains={isLocal ? [katanaLocalChain] : [mainnet, sepolia]}
+      chains={
+        isLocal
+          ? [katanaLocalChain]
+          : resolvedChain.kind === "slot"
+            ? [getSlotChain(resolvedChain.chainId)]
+            : resolvedChain.kind === "mainnet"
+              ? [mainnet]
+              : [sepolia]
+      }
       provider={jsonRpcProvider({ rpc })}
-      connectors={[nonLocalController as unknown as Connector]}
+      paymasterProvider={isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
+      connectors={isLocal ? predeployedConnectors : [controller as unknown as Connector]}
       explorer={voyager}
       autoConnect
+      queryClient={queryClient}
     >
-      {children}
+      <StarknetAccountSync>{children}</StarknetAccountSync>
     </StarknetConfig>
   );
 }
+
+const StarknetAccountSync = ({ children }: { children: React.ReactNode }) => {
+  useControllerAccount();
+  useBootstrapPrefetch();
+
+  return <>{children}</>;
+};
+
+const useBootstrapPrefetch = () => {
+  const account = useAccountStore((state) => state.account);
+  const hasPrefetchedRef = useRef(false);
+
+  useEffect(() => {
+    // Skip bootstrap entirely on factory route so it can operate without sync
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/factory")) {
+      return;
+    }
+
+    if (!account || hasPrefetchedRef.current) {
+      return;
+    }
+
+    const pathWorld = (() => {
+      if (typeof window === "undefined") return null;
+      const match = window.location.pathname.match(/^\/play\/([^/]+)(?:\/|$)/);
+      if (!match || !match[1]) return null;
+      try {
+        return decodeURIComponent(match[1]);
+      } catch {
+        return null;
+      }
+    })();
+
+    const activeWorld = getActiveWorld();
+    if (!activeWorld && !pathWorld) {
+      return;
+    }
+
+    hasPrefetchedRef.current = true;
+
+    void bootstrapGame().catch((error) => {
+      console.error("[BOOTSTRAP PREFETCH FAILED]", error);
+      hasPrefetchedRef.current = false;
+    });
+  }, [account]);
+};

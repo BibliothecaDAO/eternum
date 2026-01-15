@@ -1,5 +1,5 @@
 use core::num::traits::zero::Zero;
-use s1_eternum::constants::ErrorMessages;
+use crate::constants::ErrorMessages;
 use starknet::ContractAddress;
 
 #[generate_trait]

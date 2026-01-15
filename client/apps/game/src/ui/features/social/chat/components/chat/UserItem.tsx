@@ -38,7 +38,7 @@ const UserItem: React.FC<UserItemProps> = ({
         >
           {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
         </div>
-        <span className={`text-sm truncate ${isOffline ? "text-gray-400" : ""}`}>{user.username || user.id}</span>
+        <span className={`text-sm truncate ${isOffline ? "" : ""}`}>{user.username || user.id}</span>
         {!isOffline && <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>}
         {unreadCount > 0 && (
           <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">

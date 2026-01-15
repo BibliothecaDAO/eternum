@@ -3,7 +3,7 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { sqlApi } from "@/services/api";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
-import { getEntityIdFromKeys, toHexString } from "@bibliothecadao/eternum";
+import { DEFAULT_COORD_ALT, getEntityIdFromKeys, getTileAt, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";
 import { ID } from "@bibliothecadao/types";
@@ -31,7 +31,8 @@ export const QuestModal = ({
     account: { account },
     setup,
     setup: {
-      components: { Tile, QuestLevels },
+      components,
+      components: { QuestLevels },
     },
     network: { toriiClient },
   } = useDojo();
@@ -44,7 +45,7 @@ export const QuestModal = ({
 
   useEffect(() => {
     const fetchQuest = async () => {
-      const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+      const targetEntity = getTileAt(components, DEFAULT_COORD_ALT, targetHex.x, targetHex.y);
       const result = await sqlApi.fetchQuest(targetEntity?.occupier_id || 0);
       if (result) {
         setQuestTileEntity(result);

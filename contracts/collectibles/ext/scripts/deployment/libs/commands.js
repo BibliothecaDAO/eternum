@@ -4,12 +4,45 @@ import * as path from "path";
 import { byteArray } from "starknet";
 import { fileURLToPath } from "url";
 import { promisify } from "util";
-import { declare, deploy, getContractPath } from "./common.js";
+import { declare, deploy, getCasualName, getContractPath } from "./common.js";
 import { getAccount, getNetwork } from "./network.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TARGET_PATH = path.join(__dirname, "..", "..", "..", "..", "target", "release");
+
+export const declareCollectibleTimelockMaker = async () => {
+  ////////////////////////////////////////////////
+  ////////   Collectible Timelock Maker Contract
+  /////////////////////////////////////////////////
+
+  // declare contract
+  let casualName = "Collectibles: Timelock Maker";
+  let projectName = "collectibles";
+  let contractName = "CollectibleTimeLockMaker";
+  const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
+  return class_hash;
+};
+
+export const deployTimelockMakerContract = async () => {
+  //////////////////////////////////////////////////////////
+  ////////  Deploy Collectible Timelock Maker Contract
+  ///////////////////////////////////////////////////////////
+
+  // declare contract
+  let casualName = getCasualName("Timelock Maker");
+  let projectName = "collectibles";
+  let contractName = "CollectibleTimeLockMaker";
+  const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
+
+  let constructorCalldata = [];
+  let address = await deploy(casualName, class_hash, constructorCalldata);
+  await saveContractAddressToCommonFolder(casualName, address);
+  console.log(
+    `\n\n 💾 Saved contract address to common folder (contracts/common/collectibles/addresses/${process.env.STARKNET_NETWORK}.json)`,
+  );
+  return address;
+};
 
 export const declareRealmsCollectibleContract = async () => {
   ///////////////////////////////////////////
@@ -41,7 +74,7 @@ export const deployRealmsCollectibleContract = async (
   ///////////////////////////////////////////
 
   // declare contract
-  let casualName = "collectibles";
+  let casualName = getCasualName(erc721Name);
   let projectName = "collectibles";
   let contractName = "RealmsCollectible";
   const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
@@ -73,7 +106,7 @@ export const deployRealmsCollectibleContract = async (
     COLLECTIBLE_FEE_NUMERATOR,
   ];
   let address = await deploy(casualName, class_hash, constructorCalldata);
-  await saveContractAddressToCommonFolder(erc721Name, address);
+  await saveContractAddressToCommonFolder(casualName, address);
   console.log(
     `\n\n 💾 Saved contract address to common folder (contracts/common/collectibles/addresses/${process.env.STARKNET_NETWORK}.json)`,
   );
@@ -230,43 +263,76 @@ export const createOrUpdateLockState = async (collectibleAddress, lockId, unlock
 
 export const saveContractAddressToCommonFolder = async (erc721Name, collectibleAddress) => {
   try {
-    const folderPath = path.join("..", "..", "..", "..", "..", "common", "collectibles", "addresses");
+    const folderPath = path.join("..", "..", "..", "..", "common", "addresses");
 
     const mkdirAsync = promisify(fs.mkdir);
     await mkdirAsync(folderPath, { recursive: true });
     const network = process.env.STARKNET_NETWORK;
     const fileName = path.join(folderPath, `${network}.json`);
 
-    // Try to read existing data
-    let existingData = {};
+    // Read existing file content as text to preserve formatting
+    let fileContent = "";
     try {
-      const fileContent = await fs.promises.readFile(fileName, "utf8");
-      existingData = JSON.parse(fileContent);
+      fileContent = await fs.promises.readFile(fileName, "utf8");
     } catch (error) {
-      // File doesn't exist or is invalid JSON, start with empty object
+      // File doesn't exist, start with empty object
+      fileContent = "{}";
     }
 
-    // Merge new addresses with existing data
-    const updatedData = {
-      ...existingData,
-      [erc721Name]: collectibleAddress,
-    };
+    // Parse to check if key exists
+    const existingData = JSON.parse(fileContent);
 
-    const jsonString = JSON.stringify(
-      updatedData,
-      (key, value) => {
-        if (typeof value === "bigint") {
-          return "0x" + value.toString(16);
-        }
-        return value;
-      },
-      2,
-    );
+    // Convert collectibleAddress to hex string if it's a bigint
+    const addressValue =
+      typeof collectibleAddress === "bigint" ? "0x" + collectibleAddress.toString(16) : collectibleAddress;
+
+    // Use regex to replace existing key or add new key
+    const keyPattern = new RegExp(`"${erc721Name}"\\s*:\\s*"[^"]*"`);
+
+    if (existingData.hasOwnProperty(erc721Name)) {
+      // Replace existing key-value pair, preserving indentation
+      fileContent = fileContent.replace(keyPattern, `"${erc721Name}": "${addressValue}"`);
+    } else {
+      // Add new key-value pair after the opening brace
+      const firstLineBreak = fileContent.indexOf("\n");
+      if (firstLineBreak > 0) {
+        // Insert after opening brace with proper formatting
+        fileContent = fileContent.replace(/^(\s*\{\s*\n)/, `$1  "${erc721Name}": "${addressValue}",\n`);
+      } else {
+        // Empty or single-line JSON, reformat as multi-line
+        fileContent = `{\n  "${erc721Name}": "${addressValue}"\n}`;
+      }
+    }
+
     const writeFileAsync = promisify(fs.writeFile);
-    await writeFileAsync(fileName, jsonString);
+    await writeFileAsync(fileName, fileContent);
     console.log(`"${fileName}" has been saved or overwritten`);
   } catch (err) {
     console.error("Error writing file", err);
     throw err;
+  }
+};
+
+export const getContractAddressFromCommonFolder = async (key) => {
+  const folderPath = path.join("..", "..", "..", "..", "common", "addresses");
+  const network = process.env.STARKNET_NETWORK;
+  if (!network) {
+    throw new Error("STARKNET_NETWORK env variable is not set");
+  }
+
+  const fileName = path.join(folderPath, `${network}.json`);
+  try {
+    const fileContent = await fs.promises.readFile(fileName, "utf8");
+    if (!fileContent.trim()) {
+      return null;
+    }
+
+    const data = JSON.parse(fileContent);
+    return data[key] ?? null;
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return null;
+    }
+    throw error;
   }
 };

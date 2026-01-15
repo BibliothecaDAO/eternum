@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -11,12 +11,12 @@ trait IOwnershipSystems<T> {
 mod ownership_systems {
     use core::num::traits::Zero;
     use dojo::model::ModelStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::agent::AgentOwner;
-    use s1_eternum::models::config::{AgentControllerConfig, SeasonConfigImpl, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::structure::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::agent::AgentOwner;
+    use crate::models::config::{AgentControllerConfig, SeasonConfigImpl, WorldConfigUtilImpl};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::structure::{
         StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
     use starknet::ContractAddress;
@@ -29,6 +29,10 @@ mod ownership_systems {
             SeasonConfigImpl::get(world).assert_started_and_not_over();
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, structure_id).assert_caller_owner();
+
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let season_mode_on = !blitz_mode_on;
+            assert!(season_mode_on, "Eternum: cannot transfer ownership of structure");
 
             // ensure new_owner is non zero
             assert!(new_owner.is_non_zero(), "new owner is zero");

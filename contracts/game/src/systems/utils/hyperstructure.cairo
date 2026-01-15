@@ -1,28 +1,31 @@
 use core::num::traits::zero::Zero;
-use cubit::f128::types::fixed::{FixedTrait};
-use dojo::model::{ModelStorage};
+use cubit::f128::types::fixed::FixedTrait;
+use dojo::model::{Model, ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::constants::{WORLD_CONFIG_ID};
-use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
-use s1_eternum::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
-use s1_eternum::models::map::{TileOccupier};
-use s1_eternum::models::position::{Coord, CoordImpl, TravelImpl};
-
-use s1_eternum::models::structure::{StructureCategory, StructureImpl};
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-use s1_eternum::systems::utils::structure::iStructureImpl;
-use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-use s1_eternum::utils::random;
-use s1_eternum::utils::random::{VRFImpl};
-
+use crate::constants::WORLD_CONFIG_ID;
+use crate::models::config::{
+    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+};
+use crate::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
+use crate::models::map::{Tile, TileOccupier};
+use crate::models::map2::{TileOpt};
+use crate::models::position::{Coord, CoordImpl, Direction, TravelImpl};
+use crate::models::structure::{Structure, StructureCategory, StructureImpl};
+use crate::models::troop::{GuardSlot, TroopTier, TroopType};
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
     fn lottery(world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
         // get hyperstructure foundation find probabilities
-        let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center());
+        let mut world = world;
+        let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center(ref world));
         let hyps_fail_prob_increase_p_hex: u128 = map_config.hyps_fail_prob_increase_p_hex.into();
         let mut hyps_win_prob: u128 = map_config.hyps_win_prob.into();
         let hyps_probs_original_sum: u128 = map_config.hyps_win_prob.into() + map_config.hyps_fail_prob.into();
@@ -70,14 +73,10 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
         // calculate final probabilities
         let hyps_fail_prob = hyps_probs_original_sum - hyps_win_prob;
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![hyps_win_prob, hyps_fail_prob].span(),
-            array![].span(),
-            1,
-            true,
-            hyps_vrf_seed,
-        )[0];
+
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(hyps_win_prob, hyps_fail_prob, hyps_vrf_seed);
 
         return success;
     }
@@ -90,22 +89,34 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
         vrf_seed: u256,
+        hyperstructure_initialized: bool,
+        hyperstructure_completed: bool,
     ) {
         // make hyper structure
+        let mut hyperstructure_tile_occupier: TileOccupier = TileOccupier::HyperstructureLevel1;
+        if hyperstructure_initialized {
+            hyperstructure_tile_occupier = TileOccupier::HyperstructureLevel2;
+        }
+        if hyperstructure_completed {
+            hyperstructure_tile_occupier = TileOccupier::HyperstructureLevel3;
+        }
         let structure_id = world.dispatcher.uuid();
-        iStructureImpl::create(
-            ref world,
-            coord,
-            Zero::zero(),
-            structure_id,
-            StructureCategory::Hyperstructure,
-            array![].span(),
-            Default::default(),
-            TileOccupier::HyperstructureLevel1,
-        );
+        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+        structure_creation_library
+            .make_structure(
+                world,
+                coord,
+                Zero::zero(),
+                structure_id,
+                StructureCategory::Hyperstructure,
+                array![].span(),
+                Default::default(),
+                hyperstructure_tile_occupier,
+                false,
+            );
 
         // add guards to structure
-        let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
         let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];
         let guard_troop_types_order = array![TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman];
         let mut count = 0;
@@ -120,23 +131,64 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                 tick_config,
             );
             count += 1;
-        };
+        }
 
         // create hyperstructure model
         world
             .write_model(
                 @Hyperstructure {
                     hyperstructure_id: structure_id,
-                    initialized: false,
-                    completed: false,
+                    initialized: hyperstructure_initialized,
+                    completed: hyperstructure_completed,
                     access: ConstructionAccess::Private,
                     randomness: vrf_seed.try_into().unwrap(),
+                    points_multiplier: 0,
                 },
             );
 
         // increment hyperstructures created count
         let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
         hyperstructure_globals.created_count += 1;
+        if hyperstructure_completed {
+            hyperstructure_globals.completed_count += 1;
+        }
         world.write_model(@hyperstructure_globals);
+    }
+}
+
+#[generate_trait]
+pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
+    fn realm_tile_distance() -> u32 {
+        8 // manually counted. must be divisible by 2
+    }
+
+    fn count_surrounding_realms(ref world: WorldStorage, hyperstructure_coord: Coord) -> u8 {
+        let mut start_coord: Coord = hyperstructure_coord;
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
+        ];
+
+        let mut count = 0;
+        for direction in start_directions {
+            let (start_direction, triangle_direction) = direction;
+            let potential_realm_coord = start_coord
+                .neighbor_after_distance(start_direction, Self::realm_tile_distance())
+                .neighbor_after_distance(triangle_direction, Self::realm_tile_distance() / 2);
+
+            let potential_realm_tile_opt: TileOpt = world.read_model((potential_realm_coord.alt, potential_realm_coord.x, potential_realm_coord.y));
+            let potential_realm_tile: Tile = potential_realm_tile_opt.into();
+            if potential_realm_tile.occupier_is_structure {
+                let structure_category: u8 = world
+                    .read_member(
+                        Model::<Structure>::ptr_from_keys(potential_realm_tile.occupier_id), selector!("category"),
+                    );
+                if structure_category == StructureCategory::Realm.into() {
+                    count += 1;
+                }
+            }
+        }
+        return count;
     }
 }

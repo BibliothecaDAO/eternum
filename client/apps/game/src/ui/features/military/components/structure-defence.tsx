@@ -1,8 +1,9 @@
 import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ArmyManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { DEFENSE_NAMES, ID, Troops } from "@bibliothecadao/types";
+import { GUARD_SLOT_NAMES, ID, Troops } from "@bibliothecadao/types";
 import { MinusIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
@@ -19,6 +20,8 @@ interface StructureDefenceProps {
   troops: DefenseTroop[];
   cooldownSlots?: { slot: number; timeLeft: number }[]; // Slots with active cooldown [1, 4]
   structureId: ID;
+  maxDefenseSlots?: number; // Total possible defense slots (e.g., 8)
+  onDefenseUpdated?: () => void;
 }
 
 interface CooldownTimerProps {
@@ -60,14 +63,22 @@ export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   );
 };
 
-export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structureId }: StructureDefenceProps) => {
+export const StructureDefence = ({
+  maxDefenses,
+  troops,
+  cooldownSlots,
+  structureId,
+  onDefenseUpdated,
+}: StructureDefenceProps) => {
   const [defenseTroops, setDefenseTroops] = useState(troops);
   const [originalOrder, setOriginalOrder] = useState<DefenseTroop[]>([]);
   const [isReordering, setIsReordering] = useState(false);
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
 
+  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
+
   const dojo = useDojo();
-  const armyManager = new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structureId);
+  const armyManager = new ArmyManager(dojo.setup.systemCalls, structureId as ID);
 
   useEffect(() => {
     setDefenseTroops(troops);
@@ -112,7 +123,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
             entityId: defense.slot,
             troops: defense.troops,
             isHome: true,
-            name: DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES],
+            name: GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES],
           }
         : undefined;
     },
@@ -149,7 +160,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                       key={slot || `empty-${index}`}
                       draggableId={`slot-${slot || `empty-${index}`}`}
                       index={index}
-                      isDragDisabled={!defense || cooldownSlots?.some((c) => c.slot === index) || isExpanded}
+                      isDragDisabled={!defense || cooldownSlots?.some((c) => c.slot === slot) || isExpanded}
                     >
                       {(provided, snapshot) => (
                         <div
@@ -167,21 +178,21 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                           <div className="w-28 flex items-center gap-1.5">
                             <div className="w-1 h-1 rounded-full bg-gold/40" />
                             <div className="text-xs text-gold/80 font-medium">
-                              {DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES]}
+                              {GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES]}
                             </div>
                           </div>
 
                           <div className="flex-1 relative">
-                            {cooldownSlots?.some((c) => c.slot === index) ? (
+                            {cooldownSlots?.some((c) => c.slot === slot) ? (
                               <CooldownTimer
                                 slot={index}
-                                time={cooldownSlots?.find((c) => c.slot === index)?.timeLeft || 0}
+                                time={cooldownSlots?.find((c) => c.slot === slot)?.timeLeft || 0}
                               />
                             ) : defense && defense.troops.count > 0n ? (
                               <div className="relative flex gap-4">
                                 <TroopChip
                                   troops={defense.troops}
-                                  iconSize="sm"
+                                  size="sm"
                                   className="flex-1 hover:border-gold/40 transition-colors"
                                 />
                                 <div className="flex items-center justify-center">
@@ -205,7 +216,15 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                             ) : (
                               <div
                                 className="flex-1 px-3 py-2 bg-brown-900/50 border border-gold/20 rounded-md text-gold/40 text-xs hover:border-gold/40 transition-colors flex justify-between items-center cursor-pointer"
-                                onClick={() => toggleDefenseExpansion(index)}
+                                onClick={() =>
+                                  defense
+                                    ? toggleDefenseExpansion(index)
+                                    : openArmyCreationPopup({
+                                        structureId,
+                                        isExplorer: false,
+                                        maxDefenseSlots: maxDefenses,
+                                      })
+                                }
                               >
                                 <span>Empty Defense Slot</span>
                                 <PlusIcon className="w-4 h-4 fill-gold" />
@@ -221,7 +240,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                         <div className="flex justify-between items-center mb-3">
                           <h3 className="text-gold font-bold text-sm">
                             {defense ? "Update Defense" : "Add Defense"}:{" "}
-                            {DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES]}
+                            {GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES]}
                           </h3>
                           <Button
                             variant="secondary"
@@ -234,12 +253,13 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
 
                         <ArmyCreate
                           owner_entity={structureId}
-                          army={getArmyInfoForSlot(index) as any}
+                          army={getArmyInfoForSlot(slot || 0) as any}
                           armyManager={armyManager}
                           isExplorer={false}
-                          guardSlot={index}
+                          guardSlot={slot}
                           onCancel={() => setExpandedSlot(null)}
                           onSuccess={() => {
+                            onDefenseUpdated?.();
                             setExpandedSlot(null);
                           }}
                         />

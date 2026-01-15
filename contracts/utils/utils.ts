@@ -2,16 +2,24 @@ import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
 import slotSeasonAddresses from "../../contracts/common/addresses/slot.json";
+import slottestSeasonAddresses from "../../contracts/common/addresses/slottest.json";
 import localGameManifest from "../../contracts/game/manifest_local.json";
 import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
 import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
 import slotGameManifest from "../../contracts/game/manifest_slot.json";
+import slottestGameManifest from "../../contracts/game/manifest_slottest.json";
 
 /**
  * Interface representing season contract addresses and resources
  * @interface SeasonAddresses
  */
 export interface SeasonAddresses {
+  "Collectibles: Realms: Loot Chest": string;
+  "Collectibles: Realms: Cosmetic Items": string;
+  "Collectibles: Timelock Maker": string;
+  "Collectibles: Realms: Elite Invite": string;
+  /** Class hash of the collectibles ERC721 contract */
+  collectiblesClassHash?: string;
   /** Address of the village pass contract */
   villagePass: string;
   /** Address of the season pass contract */
@@ -20,22 +28,20 @@ export interface SeasonAddresses {
   realms: string;
   /** Address of the LORDS token contract */
   lords: string;
-  /** Address of the loot chest contract */
-  lootChests: string;
+  /** Address of the STRK token contract */
+  strk: string;
   /** Map of resource name to [resourceId, contractAddress] */
   resources: {
     [key: string]: (string | number)[];
   };
   /** Address of the marketplace contract */
   marketplace: string;
-  /** Address of the cosmetics contract */
-  cosmetics: string;
   /** Address of the cosmetics claim contract */
   cosmeticsClaim: string;
 }
 
 /** Valid chain identifiers */
-export type Chain = "sepolia" | "mainnet" | "slot" | "local";
+export type Chain = "sepolia" | "mainnet" | "slot" | "slottest" | "local";
 
 /**
  * Retrieves the season addresses for a specific chain
@@ -52,8 +58,10 @@ export function getSeasonAddresses(chain: Chain): SeasonAddresses {
         return mainnetSeasonAddresses;
       case "slot":
         return slotSeasonAddresses;
+      case "slottest":
+        return slottestSeasonAddresses;
       case "local":
-        return localSeasonAddresses;
+        return localSeasonAddresses as any;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
@@ -85,6 +93,8 @@ export function getGameManifest(chain: Chain): GameManifest {
         return mainnetGameManifest;
       case "slot":
         return slotGameManifest;
+      case "slottest":
+        return slottestGameManifest;
       case "local":
         return localGameManifest;
       default:

@@ -18,7 +18,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
 gltfLoader.setMeshoptDecoder(MeshoptDecoder());
 
 export function isAddressEqualToAccount(address: bigint): boolean {
-  return BigInt(address) === BigInt(ContractAddress(useAccountStore.getState().account?.address || "0"));
+  return BigInt(address) === BigInt(useAccountStore.getState().account?.address || "0");
 }
 
 export function loggedInAccount(): ContractAddress {
@@ -27,8 +27,9 @@ export function loggedInAccount(): ContractAddress {
 
 import { calculateDistance } from "@bibliothecadao/eternum";
 import { HexPosition, Position } from "@bibliothecadao/types";
-import * as THREE from "three";
+import { InstancedMesh, Quaternion, Vector3 } from "three";
 import { HEX_SIZE } from "../constants";
+import { MatrixPool } from "./matrix-pool";
 
 export const hashCoordinates = (x: number, y: number): number => {
   // Simple hash function to generate a deterministic value between 0 and 1
@@ -36,16 +37,26 @@ export const hashCoordinates = (x: number, y: number): number => {
   return hash - Math.floor(hash);
 };
 
-export const getHexagonCoordinates = (
-  instancedMesh: THREE.InstancedMesh,
-  instanceId: number,
-): { hexCoords: HexPosition; position: THREE.Vector3 } => {
-  const matrix = new THREE.Matrix4();
-  instancedMesh.getMatrixAt(instanceId, matrix);
-  const position = new THREE.Vector3();
-  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+const _matrixDecomposePos = new Vector3();
+const _matrixDecomposeQuat = new Quaternion();
+const _matrixDecomposeScale = new Vector3();
 
+export const getHexagonCoordinates = (
+  instancedMesh: InstancedMesh,
+  instanceId: number,
+): { hexCoords: HexPosition; position: Vector3 } => {
+  const matrixPool = MatrixPool.getInstance();
+  const matrix = matrixPool.getMatrix();
+  instancedMesh.getMatrixAt(instanceId, matrix);
+
+  // Use shared objects for decomposition to avoid garbage creation
+  matrix.decompose(_matrixDecomposePos, _matrixDecomposeQuat, _matrixDecomposeScale);
+
+  const position = new Vector3().copy(_matrixDecomposePos);
   const hexCoords = getHexForWorldPosition(position);
+
+  // Release matrix back to pool
+  matrixPool.releaseMatrix(matrix);
 
   return { hexCoords, position };
 };
@@ -63,7 +74,28 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
   const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
-  return new THREE.Vector3(x, y, z);
+  return new Vector3(x, y, z);
+};
+
+export const getWorldPositionForHexCoordsInto = (
+  col: number,
+  row: number,
+  out: Vector3,
+  flat: boolean = true,
+): Vector3 => {
+  const hexRadius = HEX_SIZE;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
+
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const x = col * horizDist - rowOffset;
+  const z = row * vertDist;
+  const y = flat ? 0 : pseudoRandom(x, z) * 2;
+
+  out.set(x, y, z);
+  return out;
 };
 
 export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
@@ -84,7 +116,10 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   };
 };
 
-export const calculateDistanceInHexes = (start: Position, destination: Position): number | undefined => {
+export const calculateDistanceInHexes = (
+  start: Pick<Position, "x" | "y">,
+  destination: Pick<Position, "x" | "y">,
+): number | undefined => {
   const distance = calculateDistance(start, destination);
   if (distance) {
     return Math.round(distance / HEX_SIZE / 2);

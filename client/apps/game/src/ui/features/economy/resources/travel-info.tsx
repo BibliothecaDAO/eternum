@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
@@ -50,10 +51,14 @@ export const TravelInfo = ({
     );
 
     if (setCanCarry) {
+      // Calculate needed donkeys from totalWeight directly to avoid stale state
+      const donkeysNeeded = calculateDonkeysNeeded(totalWeight);
       // TODO: hacky way to set can carry to true if only donkeys and lords
-      onlyDonkeysAndLords ? setCanCarry(true) : setCanCarry(calculatedDonkeyBalance >= neededDonkeys);
+      onlyDonkeysAndLords ? setCanCarry(true) : setCanCarry(calculatedDonkeyBalance >= donkeysNeeded);
     }
-  }, [resources, entityId, resourceWeightKg, donkeyBalance, setCanCarry]);
+    // Note: resourceWeightKg and donkeyBalance are outputs of this effect, not inputs.
+    // They were removed from deps to fix the circular dependency that caused re-render storms.
+  }, [resources, entityId, currentDefaultTick, dojo.setup.components, isAmm, setCanCarry]);
 
   return (
     <>
@@ -121,7 +126,7 @@ export const ResourceWeight = ({ className }: { className?: string }) => {
           </div>
         </div>
 
-        {/* Standard resources */}
+        {/* Resource materials */}
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
           <div className="text-center text-gold/90 text-xs font-medium">1 kg/unit</div>
           <div className="flex items-center justify-center">

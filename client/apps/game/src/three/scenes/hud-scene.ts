@@ -1,22 +1,33 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { RainEffect } from "@/three/effects/rain-effect";
+import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { Navigator } from "@/three/managers/navigator";
+import { WeatherManager, WeatherType } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
+import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GUIManager } from "@/three/utils/";
-import * as THREE from "three";
+import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 export default class HUDScene {
-  private scene: THREE.Scene;
-  private camera: THREE.OrthographicCamera;
+  private scene: Scene;
+  private camera: OrthographicCamera;
   private sceneManager: SceneManager;
   private controls: MapControls;
   private GUIFolder: any;
   private navigator: Navigator;
-  private ambientLight!: THREE.AmbientLight;
-  private hemisphereLight!: THREE.HemisphereLight;
+  private ambientLight!: AmbientLight;
+  private hemisphereLight!: HemisphereLight;
+  private rainEffect!: RainEffect;
+  private weatherManager!: WeatherManager;
+  private ambienceManager!: AmbienceManager;
+  private ambientParticles!: AmbientParticleSystem;
+  private navigationTargetUnsubscribe: (() => void) | null = null;
+  private cycleProgress: number = 0;
+  private particleSpawnCenter: Vector3 = new Vector3();
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
-    this.scene = new THREE.Scene();
+    this.scene = new Scene();
     this.sceneManager = sceneManager;
     this.controls = controls;
     this.camera = this.createOrthographicCamera();
@@ -36,9 +47,22 @@ export default class HUDScene {
     this.GUIFolder.close();
 
     this.addAmbientLight();
-    this.addHemisphereLight(); // Add this line
+    this.addHemisphereLight();
+    this.rainEffect = new RainEffect(this.scene);
+    this.rainEffect.addGUIControls(this.GUIFolder);
 
-    useUIStore.subscribe(
+    // Initialize weather and ambience systems
+    this.weatherManager = new WeatherManager(this.scene, this.rainEffect);
+    this.weatherManager.addGUIControls(this.GUIFolder);
+
+    this.ambienceManager = new AmbienceManager();
+    this.ambienceManager.addGUIControls(this.GUIFolder);
+
+    // Initialize ambient particle system (dust motes, fireflies)
+    this.ambientParticles = new AmbientParticleSystem(this.scene);
+
+    // Store subscription reference for cleanup
+    this.navigationTargetUnsubscribe = useUIStore.subscribe(
       (state) => state.navigationTarget,
       (target) => {
         const currentTarget = this.navigator.getNavigationTarget();
@@ -51,10 +75,10 @@ export default class HUDScene {
     );
   }
 
-  private createOrthographicCamera(): THREE.OrthographicCamera {
+  private createOrthographicCamera(): OrthographicCamera {
     const aspect = window.innerWidth / window.innerHeight;
     const frustumSize = 10;
-    const camera = new THREE.OrthographicCamera(
+    const camera = new OrthographicCamera(
       (frustumSize * aspect) / -2,
       (frustumSize * aspect) / 2,
       frustumSize / 2,
@@ -76,14 +100,14 @@ export default class HUDScene {
   }
 
   private addAmbientLight() {
-    this.ambientLight = new THREE.AmbientLight(0xf3c99f, 3.5);
+    this.ambientLight = new AmbientLight(0xf3c99f, 3.5);
     this.scene.add(this.ambientLight);
 
     this.GUIFolder.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
   }
 
   private addHemisphereLight() {
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3c99f, 0xffffff, 0.5);
+    this.hemisphereLight = new HemisphereLight(0xf3c99f, 0xffffff, 0.5);
     this.hemisphereLight.position.set(0, 20, 0);
     this.scene.add(this.hemisphereLight);
 
@@ -93,16 +117,60 @@ export default class HUDScene {
     this.GUIFolder.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
   }
 
-  getScene(): THREE.Scene {
+  getScene(): Scene {
     return this.scene;
   }
 
-  getCamera(): THREE.OrthographicCamera {
+  getCamera(): OrthographicCamera {
     return this.camera;
   }
 
-  update(deltaTime: number) {
+  getWeatherManager(): WeatherManager {
+    return this.weatherManager;
+  }
+
+  public hasActiveLabelAnimations(): boolean {
+    return this.navigator?.hasActiveLabel() ?? false;
+  }
+
+  update(deltaTime: number, cycleProgress?: number) {
     this.navigator.update();
+
+    // Update weather system (handles rain, wind, transitions)
+    this.weatherManager.update(deltaTime, this.camera.position);
+
+    // Track cycle progress for ambience
+    if (cycleProgress !== undefined) {
+      this.cycleProgress = cycleProgress;
+    }
+
+    // Get current weather state
+    const weatherState = this.weatherManager.getState();
+    const currentWeatherType = this.weatherManager.getCurrentWeather();
+
+    // CRITICAL: Call ambienceManager.update() to drive time-of-day sounds and scheduling.
+    // Previously only updateFromWeather() was called, which doesn't start/stop sounds
+    // based on time of day - it only modulates volumes for weather intensity.
+    this.ambienceManager.update(this.cycleProgress, currentWeatherType, deltaTime);
+
+    // Additionally modulate ambience volumes based on weather intensity
+    this.ambienceManager.updateFromWeather(weatherState.intensity, weatherState.stormIntensity);
+
+    // Update ambient particles (dust motes, fireflies)
+    if (cycleProgress !== undefined) {
+      this.ambientParticles.setTimeProgress(cycleProgress);
+    }
+
+    // Pass wind to ambient particles
+    const windState = this.weatherManager.getWindState();
+    this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
+
+    // Fade out ambient particles during weather
+    this.ambientParticles.setWeatherIntensity(weatherState.intensity);
+
+    // Update particle positions (follow camera)
+    this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
+    this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
   }
 
   onWindowResize(width: number, height: number) {
@@ -117,5 +185,57 @@ export default class HUDScene {
 
   setNavigationTarget(col: number, row: number) {
     this.navigator.setNavigationTarget(col, row);
+  }
+
+  public destroy(): void {
+    // CRITICAL: Unsubscribe from store to prevent memory leaks
+    if (this.navigationTargetUnsubscribe) {
+      this.navigationTargetUnsubscribe();
+      this.navigationTargetUnsubscribe = null;
+      console.log("🧹 HUDScene: Unsubscribed from navigationTarget store");
+    }
+
+    // Clean up navigator (if it has a destroy method)
+    if (this.navigator && "destroy" in this.navigator && typeof (this.navigator as any).destroy === "function") {
+      (this.navigator as any).destroy();
+    }
+
+    // Clean up rain effect (if it has a destroy method)
+    if (this.rainEffect && "destroy" in this.rainEffect && typeof (this.rainEffect as any).destroy === "function") {
+      (this.rainEffect as any).destroy();
+    }
+
+    // Clean up weather manager
+    if (this.weatherManager) {
+      this.weatherManager.dispose();
+    }
+
+    // Clean up ambience manager
+    if (this.ambienceManager) {
+      this.ambienceManager.dispose();
+    }
+
+    // Clean up ambient particles
+    if (this.ambientParticles) {
+      this.ambientParticles.dispose();
+    }
+
+    // Clean up lights
+    if (this.ambientLight) {
+      this.scene.remove(this.ambientLight);
+    }
+    if (this.hemisphereLight) {
+      this.scene.remove(this.hemisphereLight);
+    }
+
+    // Clean up GUI folder (if it has a destroy method)
+    if (this.GUIFolder && "destroy" in this.GUIFolder && typeof this.GUIFolder.destroy === "function") {
+      this.GUIFolder.destroy();
+    }
+
+    // Clear scene
+    this.scene.clear();
+
+    console.log("HUDScene: Destroyed and cleaned up");
   }
 }

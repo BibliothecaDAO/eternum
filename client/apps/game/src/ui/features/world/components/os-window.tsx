@@ -15,7 +15,7 @@ export const OSWindow = ({
   return (
     <>
       {show && (
-        <div className="fixed inset-0 z-[100] ">
+        <div className="fixed inset-0 z-[100] pointer-events-none">
           <SecondaryPopup className={`pointer-events-auto  ${className || ""}`} name={title}>
             <SecondaryPopup.Head onClose={() => onClick()} hintSection={hintSection}>
               {title}

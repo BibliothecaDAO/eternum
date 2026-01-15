@@ -1,6 +1,6 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
 import { QuestReward } from "@/ui/features/economy/resources";
-import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";
 import { ArmyInfo, ClientComponents, Structure } from "@bibliothecadao/types";
@@ -33,6 +33,7 @@ export const QuestRealm = ({
     () => structureEntityId === armyInfo?.structure?.entity_id,
     [structureEntityId, armyInfo],
   );
+  const mode = useGameModeConfig();
   const explorers = useExplorersByStructure({ structureEntityId: structureInfo.entityId });
 
   const questEntitiesWithExplorers = useMemo(
@@ -82,7 +83,7 @@ export const QuestRealm = ({
       {!loadingQuests ? (
         <>
           <div className="flex flex-row items-center justify-between w-full">
-            <span className="font-semibold text-sm">{getStructureName(structureInfo.structure).name}</span>
+            <span className="font-semibold text-sm">{mode.structure.getName(structureInfo.structure).name}</span>
             <div className="flex flex-row items-center gap-2">
               <div className={`px-2 py-1 rounded text-xxs font-bold ${getBadgeClass()}`}>{questStatus}</div>
             </div>

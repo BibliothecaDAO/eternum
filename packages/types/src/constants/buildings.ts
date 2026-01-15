@@ -1,6 +1,5 @@
 import { BuildingType } from "./structures";
 
-export const FELT_CENTER = 2147483646;
 export const BUILDINGS_CENTER = [10, 10];
 export const DUMMY_HYPERSTRUCTURE_ENTITY_ID = 99999999n;
 

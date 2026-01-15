@@ -76,11 +76,9 @@ const MarketTradingHistoryContent = memo(() => {
       <div className="flex flex-row items-center justify-between mb-6">
         <div onClick={() => setShowOnlyYourSwaps((prev) => !prev)} className="flex items-center space-x-2">
           <Checkbox enabled={showOnlyYourSwaps} />
-          <div className="text-sm text-gray-300 hover:text-white transition-colors duration-200">
-            Show only your swaps
-          </div>
+          <div className="text-sm  hover:text-white transition-colors duration-200">Show only your swaps</div>
         </div>
-        <div className="text-sm text-gray-300">Total Swaps: {filteredAndSortedEvents.length}</div>
+        <div className="text-sm ">Total Swaps: {filteredAndSortedEvents.length}</div>
         <div className="w-1/3">
           <SelectResource onSelect={(resourceId) => setSelectedResourceId(resourceId)} className="w-full" />
         </div>

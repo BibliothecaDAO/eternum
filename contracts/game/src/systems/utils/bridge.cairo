@@ -1,28 +1,27 @@
 use core::num::traits::zero::Zero;
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION};
-use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-use s1_eternum::models::config::{
-    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+use crate::models::config::{
+    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, WorldConfigUtilImpl,
 };
-use s1_eternum::models::hyperstructure::{HyperstructureGlobals};
-use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
-use s1_eternum::models::resource::resource::{
+use crate::models::hyperstructure::HyperstructureGlobals;
+use crate::models::resource::arrivals::ResourceArrivalImpl;
+use crate::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{
+use crate::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
     StructureMetadataStoreImpl, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::weight::{Weight};
-use s1_eternum::systems::utils::erc20::{
+use crate::models::weight::Weight;
+use crate::systems::utils::erc20::{
     ERC20ABIDispatcher, ERC20ABIDispatcherTrait, ResourceERC20MintableABIDispatcher,
     ResourceERC20MintableABIDispatcherTrait,
 };
-use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl, pow};
+use crate::systems::utils::resource::iResourceTransferImpl;
+use crate::utils::math::{PercentageImpl, PercentageValueImpl, pow};
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
@@ -76,9 +75,7 @@ pub impl iBridgeImpl of iBridgeTrait {
         assert!(resource_bridge_config.withdraw_paused == false, "resource bridge withdrawal is paused");
     }
 
-    fn assert_resource_whitelisted(
-        world: WorldStorage, resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig,
-    ) {
+    fn assert_resource_whitelisted(world: WorldStorage, resource_bridge_token_whitelist: ResourceBridgeWtlConfig) {
         assert!(resource_bridge_token_whitelist.resource_type.is_non_zero(), "resource id not whitelisted");
     }
 
@@ -159,7 +156,7 @@ pub impl iBridgeImpl of iBridgeTrait {
                         false,
                     );
                 },
-            };
+            }
             return realm_fee_amount;
         }
         return 0;
@@ -189,7 +186,7 @@ pub impl iBridgeImpl of iBridgeTrait {
                         ref world, bank_structure_id, array![(resource_type, bank_fee_amount)].span(),
                     );
                 },
-            };
+            }
             return bank_fee_amount;
         }
         return 0;

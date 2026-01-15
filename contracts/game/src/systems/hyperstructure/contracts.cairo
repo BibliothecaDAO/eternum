@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::hyperstructure::ConstructionAccess;
+use crate::alias::ID;
+use crate::models::hyperstructure::ConstructionAccess;
 use starknet::ContractAddress;
 
 /// # Hyperstructure Systems Interface
@@ -144,36 +144,42 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 pub mod hyperstructure_systems {
+    use dojo::event::EventStorage;
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::owner::OwnerAddressImpl;
-    use s1_eternum::models::resource::resource::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+    use crate::models::config::{
+        HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
+    };
+    use crate::models::events::{Story, StoryEvent, PointsRegisteredStory, PointsActivity};
+
+    use crate::models::guild::GuildMember;
+    use crate::models::hyperstructure::{
+        ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
+        HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
+    };
+    use crate::models::map::Tile;
+    use crate::models::map2::{TileOpt};
+    use crate::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
+    use crate::models::position::Coord;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight, WeightImpl};
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::utils::random::VRFImpl;
-    use s1_eternum::{
-        alias::ID, constants::{RESOURCE_PRECISION, ResourceTypes},
-        models::{
-            config::{HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, WorldConfigUtilImpl},
-            guild::{GuildMember},
-            hyperstructure::{
-                ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
-                HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
-            },
-            owner::{OwnerAddressTrait}, resource::resource::{}, season::{SeasonPrize},
-            structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
-        },
-        utils::achievements::index::{AchievementTrait, Tasks}, utils::math::PercentageValueImpl,
+    use crate::models::season::SeasonPrize;
+    use crate::models::structure::{
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
-    use starknet::{ContractAddress};
+    use crate::models::weight::{Weight, WeightImpl};
+    use crate::systems::utils::hyperstructure::iHyperstructureBlitzImpl;
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::math::PercentageValueImpl;
+    use crate::utils::random::VRFImpl;
+    use starknet::ContractAddress;
 
 
     const HYPERSTRUCTURE_POINT_MULTIPLIER: u128 = 1_000_000;
@@ -228,7 +234,7 @@ pub mod hyperstructure_systems {
                 let resource_type = *hyperstructure_cost_config.construction_resources_ids.at(i);
                 construction_total_needed_amount +=
                     HyperstructureRequirementsImpl::get_amount_needed(ref world, hyperstructure, resource_type);
-            };
+            }
             HyperstructureRequirementsImpl::initialize(ref world, hyperstructure_id);
             HyperstructureRequirementsImpl::write_needed_resource_total(
                 ref world, hyperstructure_id, construction_total_needed_amount,
@@ -239,7 +245,9 @@ pub mod hyperstructure_systems {
             world.write_model(@hyperstructure);
 
             // update structure tile
-            let mut hyperstructure_tile: Tile = world.read_model((structure.coord_x, structure.coord_y));
+            let hyperstructure_coord = Coord { alt: false, x: structure.coord_x, y: structure.coord_y };
+            let hyperstructure_tile_opt: TileOpt = world.read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
+            let mut hyperstructure_tile: Tile = hyperstructure_tile_opt.into();
             let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(1);
             IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
         }
@@ -319,7 +327,7 @@ pub mod hyperstructure_systems {
 
                 world.write_model(@player_points);
                 world.write_model(@season_prize);
-            };
+            }
 
             // update structure weight
             from_structure_weight.store(ref world, from_structure_id);
@@ -364,7 +372,9 @@ pub mod hyperstructure_systems {
                     );
 
                 // update structure tile
-                let mut hyperstructure_tile: Tile = world.read_model((structure_base.coord_x, structure_base.coord_y));
+                let hyperstructure_coord = Coord { alt: false, x: structure_base.coord_x, y: structure_base.coord_y };
+                let hyperstructure_tile_opt: TileOpt = world.read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
+                let mut hyperstructure_tile: Tile = hyperstructure_tile_opt.into();
                 let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(2);
                 IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
             }
@@ -405,10 +415,6 @@ pub mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
-            // todo: test gas for 20 shareholders
-            // ensure there are never more than 20 shareholders at a time
-            assert!(shareholders.len() <= 20, "too many shareholders, maximum of 20");
-
             // ensure the structure is owned by caller
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, hyperstructure_id);
             structure_owner.assert_caller_owner();
@@ -421,6 +427,34 @@ pub mod hyperstructure_systems {
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
             assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
             assert!(hyperstructure.completed, "hyperstructure has not been completed");
+
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            match blitz_mode_on {
+                true => {
+                    assert!(shareholders.len() == 1, "too many shareholders, maximum of 1");
+                    let (address, percentage) = *shareholders.at(0);
+                    assert!(percentage.into() == PercentageValueImpl::_100(), "percentage must be 100%");
+                    assert!(address.is_non_zero(), "shareholder must be set");
+                    assert!(address == structure_owner, "shareholder must be the structure owner");
+
+                    // count surrounding realms and determine points per second multiplier
+                    let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
+                    let structure_coord: Coord = Coord { alt: false, x: structure.coord_x, y: structure.coord_y };
+                    let surrounding_realms_count: u8 = iHyperstructureBlitzImpl::count_surrounding_realms(
+                        ref world, structure_coord,
+                    );
+                    hyperstructure.points_multiplier = surrounding_realms_count;
+                    world.write_model(@hyperstructure);
+                },
+                false => {
+                    assert!( // 20 is the max for non-blitz mode
+                        shareholders.len() <= 20, "too many shareholders, maximum of 20",
+                    );
+
+                    hyperstructure.points_multiplier = 1;
+                    world.write_model(@hyperstructure);
+                },
+            }
 
             // ensure the allocated percentage does not exceed 100%
             let mut allocated_percentage: u16 = 0;
@@ -437,7 +471,7 @@ pub mod hyperstructure_systems {
                 // if not present
                 let player_points_initializer: PlayerRegisteredPoints = world.read_model(address);
                 world.write_model(@player_points_initializer);
-            };
+            }
             assert!(
                 allocated_percentage.into() == PercentageValueImpl::_100(),
                 "total allocated percentage must be {}",
@@ -482,15 +516,16 @@ pub mod hyperstructure_systems {
                 assert!(time_elapsed.is_non_zero(), "zero time elapsed");
 
                 let current_shareholders = hyperstructure_shareholders.shareholders;
-                let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
-                    world, selector!("hyperstructure_config"),
+                let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("victory_points_grant_config"),
                 );
                 for i in 0..current_shareholders.len() {
                     let (shareholder_address, shareholder_percentage) = current_shareholders.at(i);
                     if shareholder_address.is_non_zero() {
                         let mut shareholder_points: PlayerRegisteredPoints = world.read_model(*shareholder_address);
                         let generated_points: u256 = time_elapsed.into()
-                            * hyperstructure_config.points_per_second.into()
+                            * (victory_points_grant_config.hyp_points_per_second.into()
+                                * hyperstructure.points_multiplier.into())
                             * (*shareholder_percentage).into()
                             / PercentageValueImpl::_100().into();
                         let generated_points: u128 = generated_points.try_into().unwrap();
@@ -517,8 +552,24 @@ pub mod hyperstructure_systems {
                             victory_points_for_achievement_u32,
                             starknet::get_block_timestamp(),
                         );
-                    }
-                };
+
+                        let points_registered_story = PointsRegisteredStory {
+                            owner_address: *shareholder_address,
+                            activity: PointsActivity::HyperstructureSharePoints,
+                            points: victory_points_grant_config.hyp_points_per_second.into(),
+                        };
+                        world
+                            .emit_event(
+                                @StoryEvent {
+                                    owner: Option::Some(*shareholder_address),
+                                    entity_id: Option::Some(hyperstructure_id),
+                                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                                    story: Story::PointsRegisteredStory(points_registered_story),
+                                    timestamp: starknet::get_block_timestamp(),
+                                },
+                            );
+                        }
+                }
 
                 // update global total registered points
                 world.write_model(@season_prize);
@@ -527,7 +578,7 @@ pub mod hyperstructure_systems {
                 let mut start_at = ts;
                 if season_config.has_ended() {
                     start_at = season_config.end_at
-                };
+                }
                 hyperstructure_shareholders.start_at = start_at;
                 world.write_model(@hyperstructure_shareholders);
             }

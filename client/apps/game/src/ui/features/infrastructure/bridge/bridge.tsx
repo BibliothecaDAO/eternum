@@ -1,12 +1,14 @@
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+
 import { Button, cn, MaxButton, NumberInput, Select } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { divideByPrecision, getEntityIdFromKeys, getStructureName } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useBridgeAsset, useDojo, useResourceManager } from "@bibliothecadao/react";
 import {
   ID,
@@ -127,7 +129,7 @@ const EfficiencyInfo = ({
   };
 
   return (
-    <div className="mt-1 p-2 border border-gray-700 rounded-lg bg-gray-800/40 text-xs">
+    <div className="mt-1 p-2 border  rounded-lg bg-gray-800/40 text-xs">
       {/* Header with info icon and title */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
@@ -140,7 +142,7 @@ const EfficiencyInfo = ({
       </div>
 
       {/* Hyperstructure explanation */}
-      <div className="text-[10px] text-gray-400 mb-2 flex items-center justify-between">
+      <div className="text-[10px]  mb-2 flex items-center justify-between">
         <span>More hyperstructures = higher bridge efficiency</span>
         <button
           onClick={handleMoreInfoClick}
@@ -153,11 +155,11 @@ const EfficiencyInfo = ({
 
       {/* Efficiency rates table */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
-        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
           <span className="text-[10px]">Resource Loss:</span>
           <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.resourceEfficiency}%</span>
         </div>
-        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
           <span className="text-[10px]">Troop Loss:</span>
           <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.troopEfficiency}%</span>
         </div>
@@ -165,12 +167,12 @@ const EfficiencyInfo = ({
 
       {/* Fees section */}
       <div className="flex flex-col gap-1 mb-2">
-        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
           <span className="text-[10px]">Platform Fees:</span>
           <span className="font-medium text-[10px] text-red-400">-{PLATFORM_FEE_PERCENTAGE}%</span>
         </div>
         {isVillage && (
-          <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+          <div className="flex items-center justify-between /30 px-2 py-1 rounded">
             <span className="text-[10px]">Parent Realm Tax:</span>
             <span className="font-medium text-[10px] text-red-400">-{VILLAGE_PARENT_FEE_PERCENTAGE}%</span>
           </div>
@@ -201,7 +203,7 @@ const EfficiencyInfo = ({
 
       {/* Next tier information if available */}
       {nextTier && (
-        <div className="mt-2 pt-1 border-t border-gray-700 text-[10px] text-amber-400 flex items-center justify-center">
+        <div className="mt-2 pt-1 border-t  text-[10px] text-amber-400 flex items-center justify-center">
           Next tier: {nextTier.hyperstructures} hyperstructures completed (-
           {100 - nextTier.resourceEfficiency}% resource loss, -{100 - nextTier.troopEfficiency}% troop loss)
         </div>
@@ -299,6 +301,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
   };
 
   const { bridgeDepositIntoRealm, bridgeWithdrawFromRealm } = useBridgeAsset();
+  const mode = useGameModeConfig();
   const [isBridgePending, setIsBridgePending] = useState(false);
   const [bridgeError, setBridgeError] = useState<Error | null>(null);
 
@@ -320,14 +323,14 @@ export const Bridge = ({ structures }: BridgeProps) => {
       .map((structure) => ({
         ...structure,
         isFavorite: structure.entityId ? favorites.includes(structure.entityId) : false,
-        name: getStructureName(structure.structure).name,
+        name: mode.structure.getName(structure.structure).name,
       }))
       .sort((a, b) => {
         const aFav = a.entityId ? Number(a.isFavorite) : 0;
         const bFav = b.entityId ? Number(b.isFavorite) : 0;
         return bFav - aFav;
       });
-  }, [favorites, structures]);
+  }, [favorites, structures, mode]);
 
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
@@ -522,7 +525,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
         >
           {bridgeTitle}
         </h2>
-        <p className="text-sm text-gray-400 max-w-xs">
+        <p className="text-sm  max-w-xs">
           {bridgeDirection === "in" ? (
             <>
               Transfer resources into the game from your{" "}
@@ -582,7 +585,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
           >
             <SelectValue placeholder="Select Structure..." />
           </SelectTrigger>
-          <SelectContent className="bg-gray-700 border-gray-600 panel-wood bg-dark-wood">
+          <SelectContent className=" border-gray-600 panel-wood bg-dark-wood">
             {structuresWithFavorites.map((structure) =>
               structure.entityId ? (
                 <div key={structure.entityId} className="flex flex-row items-center pr-2 hover:bg-gray-600">
@@ -628,7 +631,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
               : "";
 
             return (
-              <div key={resource.key} className="border border-gray-700 rounded-lg p-3 relative">
+              <div key={resource.key} className="border  rounded-lg p-3 relative">
                 {/* Resource header with balance badge */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -684,7 +687,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
                 {/* Resource Selection */}
                 <div className="mb-3">
-                  {/* <label className="block text-xs text-gray-400 mb-1">Resource</label> */}
+                  {/* <label className="block text-xs  mb-1">Resource</label> */}
                   <Select
                     value={resource.resourceId?.toString() ?? ""}
                     onValueChange={(value) => handleResourceChange(resource.key, value)}
@@ -739,7 +742,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       </div>
 
       {/* Bridge Destination Indicator */}
-      <div className="flex flex-col items-center justify-center text-xs text-gray-400 mt-6">
+      <div className="flex flex-col items-center justify-center text-xs  mt-6">
         {selectedStructureId && bridgeDirection === "in" && (
           <>
             <ArrowDown className={cn("h-5 w-5 mb-1 transition-colors duration-300", "text-sky-500")} />

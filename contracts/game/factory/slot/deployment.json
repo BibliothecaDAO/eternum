@@ -1,0 +1,30 @@
+[
+  {
+    "name": "bltz-shark-soil-68",
+    "slotTimestamp": 1763112600,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-tor-valecrest-17",
+    "slotTimestamp": 1763134200,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-cobalt-field-77",
+    "slotTimestamp": 1763148600,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-kite-oceanreach-76",
+    "slotTimestamp": 1763166600,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  }
+]

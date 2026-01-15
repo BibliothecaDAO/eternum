@@ -2,25 +2,25 @@
 // use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
-// use s1_eternum::alias::ID;
-// use s1_eternum::constants::{ResourceTypes, get_hyperstructure_construction_resources};
-// use s1_eternum::models::hyperstructure::{Contribution, Hyperstructure, Progress};
-// use s1_eternum::models::owner::Owner;
-// use s1_eternum::models::position::{Coord, Position};
-// use s1_eternum::models::resource::resource::Resource;
-// use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+// use crate::alias::ID;
+// use crate::constants::{ResourceTypes, get_hyperstructure_construction_resources};
+// use crate::models::hyperstructure::{Contribution, Hyperstructure, Progress};
+// use crate::models::owner::Owner;
+// use crate::models::position::{Coord, Position};
+// use crate::models::resource::resource::Resource;
+// use crate::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
 
-// use s1_eternum::systems::config::contracts::{
+// use crate::systems::config::contracts::{
 //     IHyperstructureConfig, IHyperstructureConfigDispatcher, IHyperstructureConfigDispatcherTrait, config_systems,
 //     config_systems::HyperstructureConfigImpl,
 // };
 
-// use s1_eternum::systems::hyperstructure::contracts::{
+// use crate::systems::hyperstructure::contracts::{
 //     IHyperstructureSystems, IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait,
 //     hyperstructure_systems,
 // };
 
-// use s1_eternum::utils::testing::{
+// use crate::utils::testing::{
 //     config::{set_capacity_config, set_settlement_config},
 //     general::{get_default_hyperstructure_coord, get_default_realm_pos, spawn_hyperstructure, spawn_realm},
 //     systems::{deploy_hyperstructure_systems, deploy_realm_systems, deploy_system}, world::spawn_eternum,

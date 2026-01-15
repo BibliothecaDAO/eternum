@@ -1,4 +1,5 @@
-import { BiomeType, FELT_CENTER, HexPosition } from "@bibliothecadao/types";
+import { BiomeType, HexPosition } from "@bibliothecadao/types";
+import { FELT_CENTER } from "./utils";
 
 export type ActionPath = {
   hex: HexPosition;
@@ -14,13 +15,16 @@ export enum ActionType {
   Help = "help",
   Explore = "explore",
   Quest = "quest",
+  Chest = "chest",
+  CreateArmy = "create_army",
 }
 
 export class ActionPaths {
   private readonly paths: Map<string, ActionPath[]>;
-
+  private readonly FELT_CENTER: number;
   constructor() {
     this.paths = new Map();
+    this.FELT_CENTER = FELT_CENTER();
   }
 
   set(key: string, value: ActionPath[]): void {
@@ -50,8 +54,8 @@ export class ActionPaths {
       const remainingPath = path.slice(1);
       return remainingPath
         .map((hex) => {
-          const col = hex.hex.col - FELT_CENTER;
-          const row = hex.hex.row - FELT_CENTER;
+          const col = hex.hex.col - this.FELT_CENTER;
+          const row = hex.hex.row - this.FELT_CENTER;
           const key = `${col},${row}`;
           if (seen.has(key)) {
             return null;
@@ -67,7 +71,7 @@ export class ActionPaths {
   }
 
   isHighlighted(row: number, col: number): boolean {
-    return this.paths.has(ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER }));
+    return this.paths.has(ActionPaths.posKey({ col: col + this.FELT_CENTER, row: row + this.FELT_CENTER }));
   }
 
   getPaths(): Map<string, ActionPath[]> {
@@ -75,8 +79,8 @@ export class ActionPaths {
   }
 
   static posKey(pos: HexPosition, normalized = false): string {
-    const col = normalized ? pos.col + FELT_CENTER : pos.col;
-    const row = normalized ? pos.row + FELT_CENTER : pos.row;
+    const col = normalized ? pos.col + FELT_CENTER() : pos.col;
+    const row = normalized ? pos.row + FELT_CENTER() : pos.row;
     return `${col},${row}`;
   }
 

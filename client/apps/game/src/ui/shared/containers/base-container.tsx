@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { forwardRef, memo, ReactNode, useState } from "react";
 
 interface BaseContainerProps {
+  style?: React.CSSProperties;
   children?: ReactNode;
   className?: string;
   expandable?: boolean;

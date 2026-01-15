@@ -1,19 +1,20 @@
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::{MapConfig, QuestConfig, WorldConfigUtilImpl};
-use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
-use s1_eternum::systems::quest::constants::{
+use crate::alias::ID;
+use crate::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
+use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::position::Coord;
+use crate::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
+use crate::systems::quest::constants::{
     CAPACITY_SELECTOR_SALT, GAME_SELECTOR_SALT, LEVEL_SELECTOR_SALT, MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY,
     QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
 };
-use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::systems::utils::troop::{iExplorerImpl};
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
-use s1_eternum::utils::random;
+use crate::systems::utils::map::IMapImpl;
+use crate::systems::utils::troop::iExplorerImpl;
+use crate::utils::map::biomes::Biome;
 use starknet::ContractAddress;
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 #[starknet::interface]
 pub trait IQuestSystems<T> {
@@ -33,32 +34,45 @@ pub trait IQuestSystems<T> {
     fn is_quest_feature_enabled(self: @T) -> bool;
 }
 
+#[starknet::interface]
+pub trait IBudokanGame<T> {
+    fn score(self: @T, token_id: u64) -> u32;
+    // fn mint_game(
+//     self: @T,
+//     player_name: Option<felt252>,
+//     settings_id: Option<u32>,
+//     start: Option<u64>,
+//     end: Option<u64>,
+//     objective_ids: Option<Span<u32>>,
+//     context: Option<GameContextDetails>,
+//     client_url: Option<ByteArray>,
+//     renderer_address: Option<ContractAddress>,
+//     to: ContractAddress,
+//     soulbound: bool,
+// ) -> u64;
+}
+
 #[dojo::contract]
 pub mod quest_systems {
     use core::array::ArrayTrait;
-    use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::{TravelTrait};
-    use s1_eternum::models::quest::{
-        Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestRegistrations, QuestTile,
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
+    use crate::models::map::Tile;
+    use crate::models::position::TravelTrait;
+    use crate::models::quest::{
+        Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestTile,
     };
-    use s1_eternum::models::resource::resource::{
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{StructureMetadataStoreImpl, StructureOwnerStoreImpl};
-    use s1_eternum::models::troop::ExplorerTroops;
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::quest::constants::{VERSION};
+    use crate::models::structure::{StructureMetadataStoreImpl, StructureOwnerStoreImpl};
+    use crate::models::troop::ExplorerTroops;
+    use crate::models::weight::Weight;
+    use crate::systems::quest::constants::VERSION;
     use starknet::ContractAddress;
-    use super::iQuestDiscoveryImpl;
-    use tournaments::components::interfaces::{
-        IGameDetailsDispatcher, IGameDetailsDispatcherTrait, IGameTokenDispatcher, IGameTokenDispatcherTrait,
-    };
+    use super::{IBudokanGameDispatcher, IBudokanGameDispatcherTrait, iQuestDiscoveryImpl};
 
     fn dojo_init(self: @ContractState) {
         // initialize quest feature flag to enabled
@@ -142,7 +156,7 @@ pub mod quest_systems {
                     new_games.append(game_address);
                 }
                 i += 1;
-            };
+            }
 
             // Assert the game exists in the registry by checking if the length changed
             assert!(new_games.len() < original_length, "Game is not in registry");
@@ -176,75 +190,84 @@ pub mod quest_systems {
             player_name: felt252,
             to_address: ContractAddress,
         ) -> u64 {
-            let mut world = self.world(DEFAULT_NS());
+            // let mut world = self.world(DEFAULT_NS());
 
-            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
-            assert!(feature_toggle.enabled, "Quest feature is disabled");
+            // let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+            // assert!(feature_toggle.enabled, "Quest feature is disabled");
 
-            let mut quest_tile: QuestTile = world.read_model(quest_tile_id);
-            assert!(quest_tile.game_address.is_non_zero(), "Quest tile not found for id: {}", quest_tile_id);
-            assert!(
-                quest_tile.participant_count < quest_tile.capacity, "Quest is at capacity for id: {}", quest_tile_id,
-            );
+            // let mut quest_tile: QuestTile = world.read_model(quest_tile_id);
+            // assert!(quest_tile.game_address.is_non_zero(), "Quest tile not found for id: {}", quest_tile_id);
+            // assert!(
+            //     quest_tile.participant_count < quest_tile.capacity, "Quest is at capacity for id: {}", quest_tile_id,
+            // );
 
-            let explorer: ExplorerTroops = world.read_model(explorer_id);
-            assert!(explorer.coord.is_adjacent(quest_tile.coord), "Explorer is not adjacent to quest tile");
+            // let explorer: ExplorerTroops = world.read_model(explorer_id);
+            // assert!(explorer.coord.is_adjacent(quest_tile.coord), "Explorer is not adjacent to quest tile");
 
-            // verify caller is owner of explorer
-            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
+            // // verify caller is owner of explorer
+            // StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
 
-            // Get the realm ID from the explorer's owner structure
-            let structure_metadata = StructureMetadataStoreImpl::retrieve(ref world, explorer.owner);
+            // // Get the realm ID from the explorer's owner structure
+            // let structure_metadata = StructureMetadataStoreImpl::retrieve(ref world, explorer.owner);
 
-            // if the structure is a village
-            let realm_or_village_id = if structure_metadata.village_realm != 0 {
-                //  use the owner (structure id) of explorer
-                explorer.owner
-            } else {
-                // otherwise use realm id
-                structure_metadata.realm_id.into()
-            };
+            // // if the structure is a village
+            // let realm_or_village_id = if structure_metadata.village_realm != 0 {
+            //     //  use the owner (structure id) of explorer
+            //     explorer.owner
+            // } else {
+            //     // otherwise use realm id
+            //     structure_metadata.realm_id.into()
+            // };
 
-            // Check if this realm already has a participant in this quest
-            let realm_or_village_participant: QuestRegistrations = world
-                .read_model((quest_tile_id, realm_or_village_id));
-            assert!(
-                realm_or_village_participant.game_token_id == 0, "Realm or Village has already attempted this quest",
-            );
+            // // Check if this realm already has a participant in this quest
+            // let realm_or_village_participant: QuestRegistrations = world
+            //     .read_model((quest_tile_id, realm_or_village_id));
+            // assert!(
+            //     realm_or_village_participant.game_token_id == 0, "Realm or Village has already attempted this quest",
+            // );
 
-            // TODO: Consider scenario in which game has been removed from registry
-            let game: QuestLevels = world.read_model(quest_tile.game_address);
-            let config: Level = *game.levels.at(quest_tile.level.into());
+            // // TODO: Consider scenario in which game has been removed from registry
+            // let game: QuestLevels = world.read_model(quest_tile.game_address);
+            // let config: Level = *game.levels.at(quest_tile.level.into());
 
-            // we don't currently use start delay but could be used as part of future, multi-player
-            // raid feature
-            let game_start_delay: Option<u64> = Option::None;
+            // // we don't currently use start delay but could be used as part of future, multi-player
+            // // raid feature
+            // let game_start_delay: Option<u64> = Option::None;
 
-            // use optional expiration if set on level config
-            let game_expiration: Option<u64> = if config.time_limit > 0 {
-                Option::Some(starknet::get_block_timestamp() + config.time_limit)
-            } else {
-                Option::None
-            };
+            // // use optional expiration if set on level config
+            // let game_expiration: Option<u64> = if config.time_limit > 0 {
+            //     Option::Some(starknet::get_block_timestamp() + config.time_limit)
+            // } else {
+            //     Option::None
+            // };
 
-            let game_dispatcher = IGameTokenDispatcher { contract_address: quest_tile.game_address };
-            let game_token_id: u64 = game_dispatcher
-                .mint(player_name, config.settings_id, game_start_delay, game_expiration, to_address);
+            // let game_dispatcher = IBudokanGameDispatcher { contract_address: quest_tile.game_address };
+            // let game_token_id: u64 = game_dispatcher
+            //     .mint(
+            //         player_name,
+            //         config.settings_id,
+            //         game_start_delay,
+            //         game_expiration,
+            //         to_address
+            //     );
 
-            let quest = Quest {
-                game_token_id, game_address: quest_tile.game_address, quest_tile_id, explorer_id, completed: false,
-            };
-            world.write_model(@quest);
+            // let quest = Quest {
+            //     game_token_id, game_address: quest_tile.game_address, quest_tile_id, explorer_id, completed: false,
+            // };
+            // world.write_model(@quest);
 
-            // increment participant count
-            quest_tile.participant_count += 1;
-            world.write_model(@quest_tile);
+            // // increment participant count
+            // quest_tile.participant_count += 1;
+            // world.write_model(@quest_tile);
 
-            // Record realm participation with this quest
-            let realm_or_village_participant = QuestRegistrations { quest_tile_id, realm_or_village_id, game_token_id };
-            world.write_model(@realm_or_village_participant);
+            // // Record realm participation with this quest
+            // let realm_or_village_participant = QuestRegistrations { quest_tile_id, realm_or_village_id, game_token_id
+            // };
+            // world.write_model(@realm_or_village_participant);
 
-            game_token_id
+            // game_token_id
+
+            1
         }
 
         fn claim_reward(ref self: ContractState, game_token_id: u64, game_address: ContractAddress) {
@@ -266,7 +289,7 @@ pub mod quest_systems {
             let quest_levels: QuestLevels = world.read_model(quest_tile.game_address);
             let level: Level = *quest_levels.levels.at(quest_tile.level.into());
 
-            let game_dispatcher = IGameDetailsDispatcher { contract_address: quest_tile.game_address };
+            let game_dispatcher = IBudokanGameDispatcher { contract_address: quest_tile.game_address };
             let score: u32 = game_dispatcher.score(quest.game_token_id);
 
             // check if the score is greater than or equal to the target score
@@ -380,7 +403,8 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
-            let biome: Biome = get_biome(tile.col.into(), tile.row.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let biome: Biome = biome_library.get_biome(tile.alt, tile.col.into(), tile.row.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 
@@ -389,34 +413,40 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         let game_count: u128 = quest_game_registry.games.len().into();
 
         // select random game from game registry
-        let game_selector: u32 = random::random(seed.clone(), GAME_SELECTOR_SALT, game_count).try_into().unwrap();
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let game_selector: u32 = rng_library_dispatcher
+            .get_random_in_range(seed, GAME_SELECTOR_SALT, game_count)
+            .try_into()
+            .unwrap();
         let game_address: ContractAddress = *quest_game_registry.games.at(game_selector);
         let quest_levels: QuestLevels = world.read_model(game_address);
 
         // select random level for the selected game
-        let level: u8 = random::random(seed.clone(), LEVEL_SELECTOR_SALT, quest_levels.levels.len().into())
+        let level: u8 = rng_library_dispatcher
+            .get_random_in_range(seed, LEVEL_SELECTOR_SALT, quest_levels.levels.len().into())
             .try_into()
             .unwrap();
 
         // select random capacity for the quest
-        let capacity: u16 = (random::random(
-            seed.clone(), CAPACITY_SELECTOR_SALT, (MAXIMUM_QUEST_CAPACITY - MINIMUM_QUEST_CAPACITY).into(),
-        )
+        let capacity: u16 = (rng_library_dispatcher
+            .get_random_in_range(seed, CAPACITY_SELECTOR_SALT, (MAXIMUM_QUEST_CAPACITY - MINIMUM_QUEST_CAPACITY).into())
             + MINIMUM_QUEST_CAPACITY.into())
             .try_into()
             .unwrap();
 
         // use exploration reward system to get a random resource type and amount
         let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
         let (resource_type, base_reward_amount) = iExplorerImpl::exploration_reward(
-            ref world, map_config, seed.clone(),
+            ref world, Option::None, current_tick, map_config, seed, blitz_mode_on,
         );
 
         // apply quest reward multiplier and level multiplier to base exploration reward
         let amount: u128 = base_reward_amount * QUEST_REWARD_BASE_MULTIPLIER.into() * (level.into() + 1);
 
         let id = world.dispatcher.uuid();
-        let coord = Coord { x: tile.col, y: tile.row };
+        let coord = Coord { alt: false, x: tile.col, y: tile.row };
 
         let quest_tile = @QuestTile {
             id, game_address, coord, level, resource_type, amount, capacity, participant_count: 0,
@@ -430,21 +460,18 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
     }
 
 
-    fn lottery(quest_config: QuestConfig, vrf_seed: u256) -> bool {
+    fn lottery(quest_config: QuestConfig, vrf_seed: u256, world: WorldStorage) -> bool {
         let quest_vrf_seed = if vrf_seed > VRF_OFFSET {
             vrf_seed - VRF_OFFSET
         } else {
             vrf_seed + VRF_OFFSET
         };
 
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![quest_config.quest_discovery_prob.into(), quest_config.quest_discovery_fail_prob.into()].span(),
-            array![].span(),
-            1,
-            true,
-            quest_vrf_seed,
-        )[0];
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(
+                quest_config.quest_discovery_prob.into(), quest_config.quest_discovery_fail_prob.into(), quest_vrf_seed,
+            );
         return success;
     }
 }
@@ -452,67 +479,62 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 #[cfg(test)]
 mod tests {
     use achievement::events::index::{e_TrophyCreation, e_TrophyProgression};
+    use budokan::components::models::game::{
+        TokenMetadata, m_GameCounter, m_GameMetadata, m_Score, m_Settings, m_SettingsCounter, m_SettingsDetails,
+        m_TokenMetadata,
+    };
+    use budokan::components::tests::mocks::game_mock::{
+        IGameTokenMockDispatcher, IGameTokenMockDispatcherTrait, IGameTokenMockInitDispatcher,
+        IGameTokenMockInitDispatcherTrait, game_mock,
+    };
     use core::num::traits::Zero;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
-
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
-    use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::config::{CombatConfigImpl};
-    use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-    use s1_eternum::models::map::{m_BiomeDiscovered};
-    use s1_eternum::models::position::{Coord, Direction};
-    use s1_eternum::models::position::{TravelTrait};
-    use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
+    use crate::models::config::{CombatConfigImpl, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig};
+    use crate::models::map::{Tile, TileImpl, TileOccupier, m_BiomeDiscovered, m_Tile};
+    use crate::models::position::{Coord, Direction, TravelTrait};
+    use crate::models::quest::{
+        Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
+        m_QuestLevels, m_QuestRegistrations, m_QuestTile,
     };
-    use s1_eternum::models::stamina::{StaminaImpl};
-    use s1_eternum::models::structure::{
-        StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl,
-        m_StructureVillageSlots,
+    use crate::models::resource::production::building::{m_Building, m_StructureBuildings};
+    use crate::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, m_Resource,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
-    use s1_eternum::models::{
-        config::{m_WeightConfig, m_WorldConfig}, map::{m_Tile},
-        quest::{
-            Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
-            m_QuestLevels, m_QuestRegistrations, m_QuestTile,
-        },
-        resource::production::building::{m_Building, m_StructureBuildings}, resource::resource::{m_Resource},
-        structure::{m_Structure, m_StructureOwnerStats}, troop::{m_ExplorerTroops}, weight::{Weight},
+    use crate::models::map2::{TileOpt};
+    use crate::models::stamina::StaminaImpl;
+    use crate::models::structure::{
+        StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl, m_Structure,
+        m_StructureOwnerStats, m_StructureVillageSlots,
     };
-    use s1_eternum::systems::combat::contracts::troop_management::{
+    use crate::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType, m_ExplorerTroops};
+    use crate::models::weight::Weight;
+    use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
-    use s1_eternum::systems::combat::contracts::troop_movement::{
+    use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
         hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
-    use s1_eternum::systems::quest::constants::{
+    use crate::systems::quest::constants::{
         MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY, QUEST_REWARD_BASE_MULTIPLIER, VERSION,
     };
-    use s1_eternum::systems::quest::contracts::{
+    use crate::systems::quest::contracts::{
         IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl, quest_systems,
     };
-    use s1_eternum::systems::resources::contracts::resource_systems::{resource_systems};
-    use s1_eternum::systems::village::contracts::village_systems;
-    use s1_eternum::utils::map::biomes::{Biome};
-    use s1_eternum::utils::testing::helpers::{
+    use crate::systems::resources::contracts::resource_systems::resource_systems;
+    use crate::systems::village::contracts::village_systems;
+    use crate::utils::map::biomes::Biome;
+    use crate::utils::testing::helpers::{
         MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_LIMIT_CONFIG, init_config, tgrant_resources, tspawn_explorer,
         tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_village, tspawn_village_explorer,
         tspawn_world,
     };
     use starknet::ContractAddress;
-    use tournaments::components::models::game::{
-        TokenMetadata, m_GameCounter, m_GameMetadata, m_Score, m_Settings, m_SettingsCounter, m_SettingsDetails,
-        m_TokenMetadata,
-    };
-    use tournaments::components::tests::mocks::game_mock::{
-        IGameTokenMockDispatcher, IGameTokenMockDispatcherTrait, IGameTokenMockInitDispatcher,
-        IGameTokenMockInitDispatcherTrait, game_mock,
-    };
+
 
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {
@@ -607,7 +629,7 @@ mod tests {
 
         // create a realm
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
-        let realm_coord = Coord { x: 80, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord);
 
         // grant basic resources to the realm
@@ -640,7 +662,7 @@ mod tests {
         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
 
         let mut found_quest = false;
-        let mut quest_coord: Coord = Coord { x: 0, y: 0 };
+        let mut quest_coord: Coord = Coord { alt: false, x: 0, y: 0 };
         let mut tiles_explored = 0;
 
         let mut troop_movement_directions = array![Direction::East].span();
@@ -667,7 +689,7 @@ mod tests {
                     // if we find a quest tile, we're done
                     if tile.occupier_type == TileOccupier::Quest.into() {
                         found_quest = true;
-                        quest_coord = Coord { x: tile.col, y: tile.row };
+                        quest_coord = Coord { alt: false, x: tile.col, y: tile.row };
                     } else {
                         // if we find something else that occupies the tile, change direction
                         if *troop_movement_directions.at(0) == Direction::East {
@@ -686,14 +708,15 @@ mod tests {
             starknet::testing::set_block_timestamp(current_time + 100);
 
             tiles_explored += 1;
-        };
+        }
 
         // assert explorer is adjacent to the quest tile
         let explorer: ExplorerTroops = world.read_model(explorer_id);
         assert!(explorer.coord.is_adjacent(quest_coord), "Explorer is not adjacent to the quest tile");
 
         // get tile at quest coord
-        let tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
+        let tile_opt: TileOpt = world.read_model((quest_coord.alt, quest_coord.x, quest_coord.y));
+        let tile: Tile = tile_opt.into();
         assert!(tile.occupier_type == TileOccupier::Quest.into(), "Tile is not a quest tile");
         assert!(tile.occupier_id != 0, "Tile occupier id should not be 0");
         assert!(tile.occupier_is_structure == true, "Quest considered a structure");
@@ -966,13 +989,13 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at (80, 80)
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
 
         // Place explorer at (83, 83) - not adjacent to quest
-        let explorer_coord = Coord { x: 83, y: 83 };
+        let explorer_coord = Coord { alt: false, x: 83, y: 83 };
 
         // Create realm some distance away
-        let realm_coord = Coord { x: 85, y: 85 };
+        let realm_coord = Coord { alt: false, x: 85, y: 85 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_entity_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1011,9 +1034,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest at adjacent positions
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 };
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 };
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
 
         // Set up the realm owner
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
@@ -1058,7 +1081,7 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
 
         // Set up game parameters
         let level = 1;
@@ -1066,20 +1089,20 @@ mod tests {
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Create first realm and explorer
-        let realm1_coord = Coord { x: 79, y: 79 };
-        let explorer1_coord = Coord { x: 80, y: 79 }; // Adjacent to quest
+        let realm1_coord = Coord { alt: false, x: 79, y: 79 };
+        let explorer1_coord = Coord { alt: false, x: 80, y: 79 }; // Adjacent to quest
         let realm1_owner = starknet::contract_address_const::<'realm_owner1'>();
         let realm1_id = tspawn_realm_with_resources(ref world, 1, realm1_owner, realm1_coord);
 
         // Create second realm and explorer
-        let realm2_coord = Coord { x: 81, y: 81 };
-        let explorer2_coord = Coord { x: 81, y: 80 }; // Adjacent to quest
+        let realm2_coord = Coord { alt: false, x: 81, y: 81 };
+        let explorer2_coord = Coord { alt: false, x: 81, y: 80 }; // Adjacent to quest
         let realm2_owner = starknet::contract_address_const::<'realm_owner2'>();
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm2_owner, realm2_coord);
 
         // Create third realm and explorer (this will exceed capacity)
-        let realm3_coord = Coord { x: 78, y: 78 };
-        let explorer3_coord = Coord { x: 79, y: 80 }; // Adjacent to quest
+        let realm3_coord = Coord { alt: false, x: 78, y: 78 };
+        let explorer3_coord = Coord { alt: false, x: 79, y: 80 }; // Adjacent to quest
         let realm3_owner = starknet::contract_address_const::<'realm_owner3'>();
         let realm3_id = tspawn_realm_with_resources(ref world, 3, realm3_owner, realm3_coord);
 
@@ -1140,7 +1163,7 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
 
         // Set up game parameters
         let level = 1;
@@ -1148,7 +1171,7 @@ mod tests {
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Create realm with a single owner
-        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_coord = Coord { alt: false, x: 79, y: 79 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1158,10 +1181,10 @@ mod tests {
         starknet::testing::set_contract_address(realm_owner);
 
         // Create two explorers from the same realm, positioned adjacent to the quest
-        let explorer1_coord = Coord { x: 80, y: 79 }; // Adjacent to quest
+        let explorer1_coord = Coord { alt: false, x: 80, y: 79 }; // Adjacent to quest
         let explorer1_id = tspawn_explorer(ref world, realm_id, explorer1_coord);
 
-        let explorer2_coord = Coord { x: 79, y: 80 }; // Also adjacent to quest
+        let explorer2_coord = Coord { alt: false, x: 79, y: 80 }; // Also adjacent to quest
         let explorer2_id = tspawn_explorer(ref world, realm_id, explorer2_coord);
 
         // Verify both explorers are adjacent to quest
@@ -1201,7 +1224,7 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
 
         // Set up game parameters
         let level = 1;
@@ -1209,7 +1232,7 @@ mod tests {
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Create realm
-        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_coord = Coord { alt: false, x: 79, y: 79 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1219,7 +1242,7 @@ mod tests {
         starknet::testing::set_contract_address(realm_owner);
 
         // Create an explorer positioned adjacent to the quest
-        let explorer_coord = Coord { x: 80, y: 79 }; // Adjacent to quest
+        let explorer_coord = Coord { alt: false, x: 80, y: 79 }; // Adjacent to quest
         let explorer_id = tspawn_explorer(ref world, realm_id, explorer_coord);
 
         // Verify explorer is adjacent to quest
@@ -1255,8 +1278,8 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm and explorer
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1281,9 +1304,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 };
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 };
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1341,9 +1364,9 @@ mod tests {
         quest_systems.add_game(game_mock_addr, custom_levels, true);
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 };
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 };
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1388,9 +1411,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 };
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 };
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1428,9 +1451,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 };
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 };
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1478,9 +1501,9 @@ mod tests {
         let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: realm_coord.x + 1, y: realm_coord.y };
-        let quest_coord = Coord { x: realm_coord.x + 2, y: realm_coord.y };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: realm_coord.x + 1, y: realm_coord.y };
+        let quest_coord = Coord { alt: false, x: realm_coord.x + 2, y: realm_coord.y };
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
 
@@ -1524,9 +1547,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 }; // Adjacent to quest initially
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 }; // Adjacent to quest initially
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1552,7 +1575,7 @@ mod tests {
 
         // Move explorer away from quest tile (no longer adjacent)
         let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-        explorer.coord = Coord { x: 78, y: 78 }; // Not adjacent to quest
+        explorer.coord = Coord { alt: false, x: 78, y: 78 }; // Not adjacent to quest
         world.write_model_test(@explorer);
 
         // Verify explorer is no longer adjacent
@@ -1579,9 +1602,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 }; // Adjacent to quest
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 }; // Adjacent to quest
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1618,9 +1641,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 }; // Adjacent to quest
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 }; // Adjacent to quest
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1667,9 +1690,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 }; // Adjacent to quest
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 }; // Adjacent to quest
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1730,7 +1753,7 @@ mod tests {
 
         // --- Test get_quest_details ---
         let retrieved_details = quest_system.get_quest_details(game_token_id, game_mock_addr);
-        let expected_resource_name = s1_eternum::constants::resource_type_name(resource_type);
+        let expected_resource_name = crate::constants::resource_type_name(resource_type);
         assert!(retrieved_details.quest_tile_id == quest_tile_id, "Details: Quest tile ID mismatch");
         assert!(retrieved_details.game_address == game_mock_addr, "Details: Game address mismatch");
         assert!(retrieved_details.coord == quest_coord, "Details: Coordinate mismatch");
@@ -1808,7 +1831,7 @@ mod tests {
                 break;
             }
             i += 1;
-        };
+        }
 
         assert!(found, "Game should be in registry before removal");
 
@@ -1828,7 +1851,7 @@ mod tests {
                 break;
             }
             j += 1;
-        };
+        }
         assert!(!found_after, "Game should not be in registry after removal");
     }
 
@@ -1959,7 +1982,7 @@ mod tests {
                 found_game3 = true;
             }
             i += 1;
-        };
+        }
 
         assert!(found_game1, "Game1 should still be in registry");
         assert!(!found_game2, "Game2 should be removed from registry");
@@ -2058,7 +2081,7 @@ mod tests {
                 world.write_model_test(@quest_levels);
 
                 i += 1;
-            };
+            }
 
             // Remove all games from registry
             let mut j = 0;
@@ -2194,9 +2217,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest tile
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 }; // Adjacent to quest
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 }; // Adjacent to quest
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::get_caller_address();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -2239,9 +2262,9 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
-        let realm_coord = Coord { x: 80, y: 80 };
-        let explorer_coord = Coord { x: 81, y: 80 }; // Adjacent to quest
-        let quest_coord = Coord { x: 82, y: 80 };
+        let realm_coord = Coord { alt: false, x: 80, y: 80 };
+        let explorer_coord = Coord { alt: false, x: 81, y: 80 }; // Adjacent to quest
+        let quest_coord = Coord { alt: false, x: 82, y: 80 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -2292,7 +2315,7 @@ mod tests {
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
 
         // Create an unoccupied tile
-        let coord = Coord { x: 10, y: 10 };
+        let coord = Coord { alt: false, x: 10, y: 10 };
         let mut tile = Tile {
             col: coord.x,
             row: coord.y,
@@ -2345,7 +2368,7 @@ mod tests {
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
 
         // Create an unoccupied tile
-        let coord = Coord { x: 10, y: 10 };
+        let coord = Coord { alt: false, x: 10, y: 10 };
         let tile = Tile {
             col: coord.x,
             row: coord.y,
@@ -2379,7 +2402,7 @@ mod tests {
         let deployer_address = starknet::get_caller_address(); // Assuming deployer can disable
 
         // Create an unoccupied tile
-        let coord = Coord { x: 10, y: 10 };
+        let coord = Coord { alt: false, x: 10, y: 10 };
         let tile = Tile {
             col: coord.x,
             row: coord.y,
@@ -2412,7 +2435,7 @@ mod tests {
         init_config(ref world);
 
         // Create an already occupied tile
-        let coord = Coord { x: 10, y: 10 };
+        let coord = Coord { alt: false, x: 10, y: 10 };
         let mut tile = Tile {
             col: coord.x,
             row: coord.y,
@@ -2436,7 +2459,7 @@ mod tests {
         init_config(ref world);
 
         // Create a tile with Biome::None
-        let coord = Coord { x: 10, y: 10 };
+        let coord = Coord { alt: false, x: 10, y: 10 };
         let mut tile = Tile {
             col: coord.x,
             row: coord.y,
@@ -2484,18 +2507,18 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
         let level = 1;
         let capacity = 10;
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Create realm
-        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_coord = Coord { alt: false, x: 79, y: 79 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Create village associated with the realm
-        let village_coord = Coord { x: 78, y: 78 };
+        let village_coord = Coord { alt: false, x: 78, y: 78 };
         let village_owner = starknet::contract_address_const::<
             'village_owner',
         >(); // Use same owner for simplicity, could be different
@@ -2506,12 +2529,12 @@ mod tests {
         starknet::testing::set_block_timestamp(current_tick);
 
         // Create explorer for the realm
-        let realm_explorer_coord = Coord { x: 80, y: 79 }; // Adjacent to quest
+        let realm_explorer_coord = Coord { alt: false, x: 80, y: 79 }; // Adjacent to quest
         starknet::testing::set_contract_address(realm_owner);
         let realm_explorer_id = tspawn_explorer(ref world, realm_id, realm_explorer_coord);
 
         // Create explorer for the village
-        let village_explorer_coord = Coord { x: 79, y: 80 }; // Adjacent to quest
+        let village_explorer_coord = Coord { alt: false, x: 79, y: 80 }; // Adjacent to quest
         starknet::testing::set_contract_address(village_owner);
         let village_explorer_id = tspawn_village_explorer(ref world, village_id, village_explorer_coord);
 
@@ -2552,26 +2575,26 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
         let level = 1;
         let capacity = 10;
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Create realm and village
-        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_coord = Coord { alt: false, x: 79, y: 79 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let village_coord = Coord { x: 78, y: 78 };
+        let village_coord = Coord { alt: false, x: 78, y: 78 };
         let village_owner = starknet::contract_address_const::<'village_owner'>();
         let village_id = tspawn_village(ref world, realm_id, village_owner, village_coord);
 
         starknet::testing::set_block_timestamp(MOCK_TICK_CONFIG().armies_tick_in_seconds);
 
         // Create explorers
-        let realm_explorer_coord = Coord { x: 80, y: 79 };
+        let realm_explorer_coord = Coord { alt: false, x: 80, y: 79 };
         starknet::testing::set_contract_address(realm_owner);
         let realm_explorer_id = tspawn_explorer(ref world, realm_id, realm_explorer_coord);
-        let village_explorer_coord = Coord { x: 79, y: 80 };
+        let village_explorer_coord = Coord { alt: false, x: 79, y: 80 };
         starknet::testing::set_contract_address(village_owner);
         let village_explorer_id = tspawn_village_explorer(ref world, village_id, village_explorer_coord);
 
@@ -2609,35 +2632,35 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
         let level = 1;
         let capacity = 10;
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Create realm
-        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_coord = Coord { alt: false, x: 79, y: 79 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Create village 1
-        let village1_coord = Coord { x: 78, y: 78 };
+        let village1_coord = Coord { alt: false, x: 78, y: 78 };
         let village1_owner = starknet::contract_address_const::<'village_owner1'>();
         let village1_id = tspawn_village(ref world, realm_id, village1_owner, village1_coord);
 
         // Create village 2
-        let village2_coord = Coord { x: 77, y: 77 };
+        let village2_coord = Coord { alt: false, x: 77, y: 77 };
         let village2_owner = starknet::contract_address_const::<'village_owner2'>();
         let village2_id = tspawn_village(ref world, realm_id, village2_owner, village2_coord);
 
         starknet::testing::set_block_timestamp(MOCK_TICK_CONFIG().armies_tick_in_seconds);
 
         // Create explorer for village 1
-        let village1_explorer_coord = Coord { x: 80, y: 79 };
+        let village1_explorer_coord = Coord { alt: false, x: 80, y: 79 };
         starknet::testing::set_contract_address(village1_owner);
         let village1_explorer_id = tspawn_village_explorer(ref world, village1_id, village1_explorer_coord);
 
         // Create explorer for village 2
-        let village2_explorer_coord = Coord { x: 79, y: 80 };
+        let village2_explorer_coord = Coord { alt: false, x: 79, y: 80 };
         starknet::testing::set_contract_address(village2_owner);
         let village2_explorer_id = tspawn_village_explorer(ref world, village2_id, village2_explorer_coord);
 
@@ -2676,16 +2699,16 @@ mod tests {
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest
-        let quest_coord = Coord { x: 80, y: 80 };
+        let quest_coord = Coord { alt: false, x: 80, y: 80 };
         let level = 1;
         let capacity = 10;
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Create realm and village
-        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_coord = Coord { alt: false, x: 79, y: 79 };
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let village_coord = Coord { x: 78, y: 78 };
+        let village_coord = Coord { alt: false, x: 78, y: 78 };
         let village_owner = starknet::contract_address_const::<'village_owner'>();
         let village_id = tspawn_village(ref world, realm_id, village_owner, village_coord);
 
@@ -2693,9 +2716,9 @@ mod tests {
         starknet::testing::set_contract_address(village_owner);
 
         // Create two explorers for the same village
-        let explorer1_coord = Coord { x: 80, y: 79 };
+        let explorer1_coord = Coord { alt: false, x: 80, y: 79 };
         let explorer1_id = tspawn_village_explorer(ref world, village_id, explorer1_coord);
-        let explorer2_coord = Coord { x: 79, y: 80 };
+        let explorer2_coord = Coord { alt: false, x: 79, y: 80 };
         let explorer2_id = tspawn_village_explorer(ref world, village_id, explorer2_coord);
 
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();

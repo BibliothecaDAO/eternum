@@ -16,9 +16,15 @@ pub mod structure {
     mod tests;
 }
 pub mod realm {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
+    pub mod blitz {
+        pub mod contracts;
+    }
+    pub mod season {
+        pub mod contracts;
+    }
+    pub mod utils {
+        pub mod contracts;
+    }
 }
 pub mod trade {
     pub mod contracts;
@@ -91,14 +97,26 @@ pub mod utils {
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
+    pub mod prize;
     pub mod realm;
+    pub mod relic;
     pub mod resource;
     pub mod structure;
     pub mod troop;
     pub mod village;
+    pub mod series_chest_reward;
+
 }
 
 pub mod quest {
     pub mod constants;
+    pub mod contracts;
+}
+
+pub mod prize_distribution {
+    pub mod contracts;
+}
+
+pub mod relic {
     pub mod contracts;
 }

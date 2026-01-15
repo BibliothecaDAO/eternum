@@ -1,4 +1,13 @@
-import { Direction, HexPosition, ID } from "@bibliothecadao/types";
+import {
+  Tile as CoreTile,
+  TileDataInput,
+  Direction,
+  EntityType,
+  HexPosition,
+  ID,
+  Position,
+  StructureType,
+} from "@bibliothecadao/types";
 
 // API response types
 export interface StructureLocation {
@@ -22,14 +31,7 @@ export interface TradeEvent {
   };
 }
 
-export interface Tile {
-  col: number;
-  row: number;
-  biome: number;
-  occupier_id: number;
-  occupier_type: number;
-  occupier_is_structure: boolean;
-}
+export type Tile = CoreTile;
 
 type DirectionString = "East" | "NorthEast" | "NorthWest" | "West" | "SouthWest" | "SouthEast";
 
@@ -50,6 +52,209 @@ export interface TokenTransfer {
   from_address: string; // Added field
   name: string;
   symbol: string;
+}
+
+export interface RawPlayerLeaderboardRow {
+  player_address: string | null;
+  player_name: string | null;
+  prize_claimed: number | string | null;
+  registered_points: number | string | null;
+  exploration_points?: number | string | null;
+  exploration_count?: number | string | null;
+  open_relic_chest_points?: number | string | null;
+  open_relic_chest_count?: number | string | null;
+  hyperstructure_bandits_defeat_points?: number | string | null;
+  hyperstructure_bandits_defeat_count?: number | string | null;
+  other_structure_bandits_defeat_points?: number | string | null;
+  other_structure_bandits_defeat_count?: number | string | null;
+}
+
+export interface PlayerActivityStat {
+  points: number;
+  count: number;
+}
+
+export interface PlayerActivityBreakdown {
+  exploration: PlayerActivityStat;
+  openRelicChest: PlayerActivityStat;
+  hyperStructureBanditsDefeat: PlayerActivityStat;
+  otherStructureBanditsDefeat: PlayerActivityStat;
+  hyperstructureShare: PlayerActivityStat;
+}
+
+export interface PlayerLeaderboardRow {
+  playerAddress: string | null;
+  playerName: string | null;
+  prizeClaimed: boolean;
+  registeredPoints: number;
+  registeredPointsRegistered: number;
+  registeredPointsRaw: number;
+  totalPoints: number;
+  unregisteredPoints: number;
+  activityBreakdown: PlayerActivityBreakdown;
+  rank?: number | null;
+}
+
+export interface HyperstructureLeaderboardConfigRow {
+  points_per_second: string | number | bigint | null;
+  season_end: string | number | bigint | null;
+  realm_count: string | number | bigint | null;
+}
+
+export interface HyperstructureShareholderRow {
+  hyperstructure_id: number | string | bigint | null;
+  start_at: number | string | bigint | null;
+  shareholders: unknown;
+}
+
+export interface HyperstructureRow {
+  hyperstructure_id: number | string | bigint | null;
+  points_multiplier: number | string | bigint | null;
+}
+
+export interface StoryEventData {
+  owner: string | null;
+  entity_id: number | null;
+  tx_hash: string;
+  story: string; // The story type (e.g., "RealmCreatedStory", "ExplorerMoveStory", etc.)
+  timestamp: string;
+  event_id: string;
+
+  // RealmCreatedStory fields
+  realm_coord_x?: number;
+  realm_coord_y?: number;
+
+  // ExplorerMoveStory fields
+  explorer_id?: number;
+  explorer_structure_id?: number;
+  start_coord_x?: number;
+  start_coord_y?: number;
+  end_coord_x?: number;
+  end_coord_y?: number;
+  explorer_directions?: string;
+  explorer_explore?: boolean;
+  explore_find?: string;
+  // reward_resource_type?: number;
+  // reward_resource_amount?: string;
+
+  // ExplorerExtractRewardStory fields
+  extract_explorer_id?: number;
+  extract_explorer_structure_id?: number;
+  extract_coord_x?: number;
+  extract_coord_y?: number;
+  extract_reward_resource_type?: number;
+  extract_reward_resource_amount?: string;
+
+  // StructureLevelUpStory fields
+  structure_new_level?: number;
+
+  // BattleStory fields
+  battle_attacker_id?: number;
+  battle_defender_id?: number;
+  battle_winner_id?: number;
+  battle_type?: string;
+  battle_attacker_owner_address?: string;
+  battle_defender_owner_address?: string;
+  battle_attacker_owner_id?: number;
+  battle_defender_owner_id?: number;
+  battle_attacker_troops_type?: string;
+  battle_attacker_troops_tier?: string;
+  battle_attacker_troops_before?: string;
+  battle_attacker_troops_lost?: string;
+  battle_defender_troops_type?: string;
+  battle_defender_troops_tier?: string;
+  battle_defender_troops_before?: string;
+  battle_defender_troops_lost?: string;
+  battle_stolen_resources?: string;
+
+  // ProductionStory fields
+  production_resource_type?: number;
+  production_amount?: string;
+  production_cost?: string;
+
+  // BuildingPlacementStory fields
+  building_category?: number;
+  building_coord_x?: number;
+  building_coord_y?: number;
+  building_created?: boolean;
+  building_destroyed?: boolean;
+  building_paused?: boolean;
+  building_unpaused?: boolean;
+
+  // BuildingPaymentStory fields
+  building_payment_category?: number;
+  building_payment_coord_x?: number;
+  building_payment_coord_y?: number;
+  building_payment_cost?: string;
+
+  // ResourceTransferStory fields
+  resource_transfer_type?: string;
+  resource_transfer_from_entity_id?: number;
+  resource_transfer_from_owner_address?: string;
+  resource_transfer_to_entity_id?: number;
+  resource_transfer_to_owner_address?: string;
+  resource_transfer_resources?: string;
+  resource_transfer_is_mint?: boolean;
+  resource_transfer_travel_time?: string;
+
+  // ResourceBurnStory fields
+  resource_burn_resources?: string;
+
+  // ResourceReceiveArrivalStory fields
+  resource_receive_resources?: string;
+
+  // GuardAddStory fields
+  guard_add_structure_id?: number;
+  guard_add_slot?: string;
+  guard_add_category?: string;
+  guard_add_tier?: string;
+  guard_add_amount?: string;
+
+  // GuardDeleteStory fields
+  guard_delete_structure_id?: number;
+  guard_delete_slot?: string;
+
+  // ExplorerCreateStory fields
+  explorer_create_structure_id?: number;
+  explorer_create_explorer_id?: number;
+  explorer_create_category?: string;
+  explorer_create_tier?: string;
+  explorer_create_amount?: string;
+  explorer_create_spawn_direction?: string;
+
+  // ExplorerAddStory fields
+  explorer_add_explorer_id?: number;
+  explorer_add_amount?: string;
+  explorer_add_home_direction?: string;
+
+  // ExplorerDeleteStory fields
+  explorer_delete_explorer_id?: number;
+
+  // ExplorerExplorerSwapStory fields
+  explorer_swap_from_id?: number;
+  explorer_swap_to_id?: number;
+  explorer_swap_to_direction?: string;
+  explorer_swap_count?: string;
+
+  // ExplorerGuardSwapStory fields
+  explorer_guard_swap_from_explorer_id?: number;
+  explorer_guard_swap_to_structure_id?: number;
+  explorer_guard_swap_to_structure_direction?: string;
+  explorer_guard_swap_to_guard_slot?: string;
+  explorer_guard_swap_count?: string;
+
+  // GuardExplorerSwapStory fields
+  guard_explorer_swap_from_structure_id?: number;
+  guard_explorer_swap_from_guard_slot?: string;
+  guard_explorer_swap_to_explorer_id?: number;
+  guard_explorer_swap_to_explorer_direction?: string;
+  guard_explorer_swap_count?: string;
+
+  // PrizeDistribution fields
+  prize_to_player_address?: string;
+  prize_amount?: string;
+  prize_decimals?: number;
+  prize_trial_id?: string;
 }
 
 export interface PlayersData {
@@ -202,6 +407,93 @@ export interface SeasonEnded {
   timestamp: number;
 }
 
+export interface StructureMapDataRaw {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  structure_type: number;
+  level: number;
+  owner_address: string;
+  realm_id: number | null;
+  resources_packed: string;
+  owner_name: string | null;
+
+  // Guard army data
+  delta_category: string | null;
+  delta_tier: string | null;
+  delta_count: string | null; // hex string
+  delta_stamina_amount: string | null; // hex string
+  charlie_category: string | null;
+  charlie_tier: string | null;
+  charlie_count: string | null; // hex string
+  charlie_stamina_amount: string | null; // hex string
+  bravo_category: string | null;
+  bravo_tier: string | null;
+  bravo_count: string | null; // hex string
+  bravo_stamina_amount: string | null; // hex string
+  alpha_category: string | null;
+  alpha_tier: string | null;
+  alpha_count: string | null; // hex string
+  alpha_stamina_amount: string | null; // hex string
+  delta_battle_cooldown_end: number | null;
+  charlie_battle_cooldown_end: number | null;
+  bravo_battle_cooldown_end: number | null;
+  alpha_battle_cooldown_end: number | null;
+
+  // Building production data from StructureBuildings
+  packed_counts_1: string | null; // hex string
+  packed_counts_2: string | null; // hex string
+  packed_counts_3: string | null; // hex string
+
+  // Battle data
+  latest_attacker_id: number | null;
+  latest_attack_timestamp: string | null; // hex string
+  latest_defender_id: number | null;
+  latest_defense_timestamp: string | null; // hex string
+  latest_attacker_coord_x: number | null;
+  latest_attacker_coord_y: number | null;
+  latest_defender_coord_x: number | null;
+  latest_defender_coord_y: number | null;
+}
+
+export interface ArmyMapDataRaw {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  owner_structure_id: number | null;
+  category: string | null;
+  tier: string | null;
+  count: string; // hex string
+  stamina_amount: string | null; // hex string
+  stamina_updated_tick: string | null; // hex string
+  owner_address: string | null;
+  owner_name: string | null;
+  battle_cooldown_end: number | null;
+
+  // Battle data
+  latest_attacker_id: number | null;
+  latest_attack_timestamp: string | null; // hex string
+  latest_attacker_coord_x: number | null;
+  latest_attacker_coord_y: number | null;
+  latest_defender_id: number | null;
+  latest_defense_timestamp: string | null; // hex string
+  latest_defender_coord_x: number | null;
+  latest_defender_coord_y: number | null;
+}
+
+export interface HyperstructureRealmCountDataRaw {
+  hyperstructure_entity_id: number;
+  hyperstructure_coord_x: number;
+  hyperstructure_coord_y: number;
+  realm_count_within_radius: number;
+
+  // Battle data
+  latest_attacker_id: number | null;
+  latest_attack_timestamp: string | null; // hex string
+  latest_defender_id: number | null;
+  latest_defense_timestamp: string | null; // hex string
+}
+
 // Raw response types for queries that need transformation
 export interface RawRealmVillageSlot {
   "connected_realm_coord.x": number;
@@ -257,4 +549,86 @@ export interface Guard {
 export enum EventType {
   SWAP = "AMM Swap",
   ORDERBOOK = "Orderbook",
+}
+
+export interface ChestTile {
+  data: TileDataInput;
+}
+
+export interface StructureRelicsData {
+  entity_id: number;
+  entity_type: number; // StructureType enum
+  coord_x: number;
+  coord_y: number;
+  realm_id?: number;
+  // Relic balances from Resource table
+  RELIC_E1_BALANCE?: string;
+  RELIC_E2_BALANCE?: string;
+  RELIC_E3_BALANCE?: string;
+  RELIC_E4_BALANCE?: string;
+  RELIC_E5_BALANCE?: string;
+  RELIC_E6_BALANCE?: string;
+  RELIC_E7_BALANCE?: string;
+  RELIC_E8_BALANCE?: string;
+  RELIC_E9_BALANCE?: string;
+  RELIC_E10_BALANCE?: string;
+  RELIC_E11_BALANCE?: string;
+  RELIC_E12_BALANCE?: string;
+  RELIC_E13_BALANCE?: string;
+  RELIC_E14_BALANCE?: string;
+  RELIC_E15_BALANCE?: string;
+  RELIC_E16_BALANCE?: string;
+  RELIC_E17_BALANCE?: string;
+  RELIC_E18_BALANCE?: string;
+}
+
+export interface ArmyRelicsData {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  troop_category?: number;
+  troop_tier?: number;
+  // Relic balances from Resource table
+  RELIC_E1_BALANCE?: string;
+  RELIC_E2_BALANCE?: string;
+  RELIC_E3_BALANCE?: string;
+  RELIC_E4_BALANCE?: string;
+  RELIC_E5_BALANCE?: string;
+  RELIC_E6_BALANCE?: string;
+  RELIC_E7_BALANCE?: string;
+  RELIC_E8_BALANCE?: string;
+  RELIC_E9_BALANCE?: string;
+  RELIC_E10_BALANCE?: string;
+  RELIC_E11_BALANCE?: string;
+  RELIC_E12_BALANCE?: string;
+  RELIC_E13_BALANCE?: string;
+  RELIC_E14_BALANCE?: string;
+  RELIC_E15_BALANCE?: string;
+  RELIC_E16_BALANCE?: string;
+  RELIC_E17_BALANCE?: string;
+  RELIC_E18_BALANCE?: string;
+}
+
+export interface ChestInfo {
+  entityId: ID;
+  position: Position;
+  distance: number;
+}
+
+export interface RelicInventory {
+  resourceId: ID;
+  amount: number;
+}
+
+export interface EntityWithRelics {
+  entityId: ID;
+  position: Position;
+  structureType?: StructureType | undefined;
+  type: EntityType;
+  relics: RelicInventory[];
+}
+
+export interface PlayerRelicsData {
+  structures: EntityWithRelics[];
+  armies: EntityWithRelics[];
 }

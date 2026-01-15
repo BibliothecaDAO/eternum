@@ -20,7 +20,7 @@ export function CountdownTimer() {
       <div className="relative flex flex-col items-center">
         <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
 
-        <TypeH1 className="tracking-wider">Eternum is Launching in</TypeH1>
+        <TypeH1 className="tracking-wider">Realms is Launching in</TypeH1>
         <div className="flex gap-4 text-center mt-4 mx-auto">
           <TimeUnit value={days} label="Days" />
           <TimeUnit value={hours} label="Hours" />
@@ -41,7 +41,7 @@ function TimeUnit({ value, label }: TimeUnitProps) {
   return (
     <div className="flex flex-col">
       <span className="text-4xl font-bold">{value.toString().padStart(2, "0")}</span>
-      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm ">{label}</span>
     </div>
   );
 }

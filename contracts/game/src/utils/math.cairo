@@ -1,6 +1,32 @@
-use alexandria_math::U256BitShift;
-use alexandria_math::U32BitShift;
-use alexandria_math::U64BitShift;
+use alexandria_math::{U256BitShift, U32BitShift, U64BitShift};
+
+
+/// Performs division with rounding to the nearest integer.
+///
+/// Uses the "add half and divide" technique: adding half the divisor before
+/// dividing causes proper rounding instead of truncation. This prevents
+/// systematic bias towards lower values in repeated calculations.
+///
+/// # Arguments
+/// * `n` - The numerator (dividend)
+/// * `d` - The denominator (divisor)
+///
+/// # Returns
+/// * `u128` - The result of n/d rounded to the nearest integer.
+///           Returns 0 if divisor is 0 (division-by-zero safe).
+///
+/// # Examples
+/// * `div_round(10, 3)` returns `3` (10/3 = 3.33... → 3)
+/// * `div_round(11, 3)` returns `4` (11/3 = 3.67... → 4)
+/// * `div_round(5, 2)` returns `3` (5/2 = 2.5 → 3, rounds up at .5)
+/// * `div_round(9, 5)` returns `2` (9/5 = 1.8 → 2)
+/// * `div_round(10, 0)` returns `0` (safe guard)
+pub fn div_round(n: u128, d: u128) -> u128 {
+    if d == 0_u128 { return 0_u128; }
+    let half = d / 2_u128;
+    (n + half) / d
+}
+
 
 // Raise a number to a power.
 /// * `base` - The number to raise.
@@ -126,6 +152,15 @@ pub impl PercentageValueImpl of PercentageValueTrait {
 
     fn _10() -> u64 {
         1_000
+    }
+
+
+    fn _15() -> u64 {
+        1_500
+    }
+    
+    fn _20() -> u64 {
+        2_000
     }
 
     fn _50() -> u64 {

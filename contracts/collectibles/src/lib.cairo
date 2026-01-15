@@ -6,3 +6,6 @@ pub mod tests {
     }
     mod test_collectibles;
 }
+pub mod peripheral {
+    mod time_lock_maker;
+}

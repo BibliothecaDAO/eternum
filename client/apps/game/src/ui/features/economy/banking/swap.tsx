@@ -1,11 +1,14 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
-import { ConfirmationPopup, ResourceBar } from "@/ui/features/economy/banking";
+import { ConfirmationPopup } from "@/ui/features/economy/banking";
+import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { setup } from "@bibliothecadao/dojo";
 import {
   computeTravelTime,
@@ -19,19 +22,12 @@ import {
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  ContractAddress,
-  ID,
-  RESOURCE_TIERS,
-  Resources,
-  resources,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
+  const mode = useGameModeConfig();
   const {
     account: { account },
     setup: { components, systemCalls },
@@ -39,7 +35,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+  const playLordsSound = useUISound("resources.lords.add");
 
   const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -165,7 +161,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   };
 
   const orderedResources = useMemo(() => {
-    return Object.values(RESOURCE_TIERS)
+    return Object.values(mode.resources.getTiers())
       .flat()
       .map((id) => resources.find((r) => r.id === id))
       .filter((r): r is Resources => !!r)

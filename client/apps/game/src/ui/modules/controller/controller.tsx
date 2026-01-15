@@ -1,19 +1,31 @@
+import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/design-system/atoms/button";
 import { useConnect } from "@starknet-react/core";
-import { useCallback, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useCallback, useEffect } from "react";
 
-export const Controller = () => {
-  const [userName, setUserName] = useState<string>();
+interface ControllerProps {
+  className?: string;
+}
 
-  const { connect, connectors } = useConnect();
-  const { connector, account } = useAccountStore((state) => state);
+export const Controller = ({ className = "" }: ControllerProps) => {
+  const { connect, connectors, isPending } = useConnect();
+  const { connector, account, accountName, setAccountName } = useAccountStore((state) => state);
 
   const connectWallet = () => {
     try {
       console.log("Attempting to connect wallet...");
-      connect({ connector: connectors[0] });
+      const connectorToUse = connectors[0];
+      if (!connectorToUse) {
+        console.error("No Starknet connectors available for Cartridge login");
+        return;
+      }
+      connect({ connector: connectorToUse });
       console.log("Wallet connected successfully.");
+      if (connector) {
+        connector.controller.username()?.then((name) => setAccountName(name));
+      }
     } catch (error) {
       console.error("Failed to connect wallet:", error);
     }
@@ -29,12 +41,11 @@ export const Controller = () => {
     if (!connector || !connector!.controller) return;
 
     try {
-      connector.controller.username()?.then((name) => setUserName(name));
+      connector.controller.username()?.then((name) => setAccountName(name));
     } catch (error) {
-      // controller in local
-      setUserName("adventurer");
+      console.error("Failed to get username:", error);
     }
-  }, [connector]);
+  }, [connector, account]);
 
   const handleInventoryClick = useCallback(() => {
     if (!connector?.controller) {
@@ -45,13 +56,42 @@ export const Controller = () => {
     connector.controller.openProfile("inventory");
   }, [connector]);
 
+  if (isPending) {
+    return (
+      <Button
+        className={`bg-dark-wood !pb-0 !pt-0 h-9 px-4 min-w-[96px] ${className}`}
+        variant="default"
+        onClick={handleConnect}
+      >
+        <div className="flex items-center gap-2">
+          <CartridgeSmall className="w-4 h-4 fill-current" />
+          <Loader2 className="w-4 h-4 fill-current" />
+        </div>
+      </Button>
+    );
+  }
+
   return account ? (
-    <Button variant="default" className="bg-dark-wood !pb-0 !pt-0" onClick={handleInventoryClick}>
-      {userName && userName.length > 8 ? `${userName.substring(0, 8)}...` : userName}
+    <Button
+      // variant="default"
+      className={`h-9 px-4 min-w-[96px] ${className}`}
+      onClick={handleInventoryClick}
+    >
+      <div className="flex items-center gap-2">
+        <CartridgeSmall className="w-4 h-4 fill-current" />
+        {accountName && accountName.length > 8 ? `${accountName.substring(0, 8)}...` : accountName}
+      </div>
     </Button>
   ) : (
-    <Button className="bg-dark-wood !pb-0 !pt-0" variant="default" onClick={handleConnect}>
-      Login
+    <Button
+      className={`h-9 px-4 min-w-[96px] ${className}`}
+      // variant="default"
+      onClick={handleConnect}
+    >
+      <div className="flex items-center gap-2">
+        <CartridgeSmall className="w-4 h-4 fill-current" />
+        Login
+      </div>
     </Button>
   );
 };

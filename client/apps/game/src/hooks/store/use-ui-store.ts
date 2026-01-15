@@ -1,30 +1,113 @@
-import { BattleViewInfo, LeftView, RightView } from "@/types";
-import { ContractAddress, ID } from "@bibliothecadao/types";
+import { BattleViewInfo, LeftView } from "@/types";
+import { ContextMenuState } from "@/types/context-menu";
+import { SelectableArmy } from "@bibliothecadao/eternum";
+import { BiomeType, ContractAddress, Direction } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { tracks } from "../helpers/use-music";
+
 import { BuildModeStore, createBuildModeStoreSlice } from "./use-build-mode-store";
 import { createPopupsSlice, PopupsStore } from "./use-popups-store";
 import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
 import { createThreeStoreSlice, ThreeStore } from "./use-three-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
+type TooltipPlacement = "top" | "left" | "right" | "bottom";
+
+export type BottomPanelTabId = "tile" | "minimap";
+
+let lastResolvedAnchor: HTMLElement | null = null;
+
+const isInDocument = (element: HTMLElement | null) => {
+  if (!element) {
+    return false;
+  }
+
+  return document.contains(element);
+};
+
+const INTERACTIVE_SELECTOR = "[data-tooltip-anchor], button, [role='button'], a, [data-radix-collection-item]";
+
+const getFallbackAnchor = (existing?: HTMLElement | null): HTMLElement | null => {
+  if (existing) {
+    lastResolvedAnchor = existing;
+    return existing;
+  }
+
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const hovered = document.querySelectorAll(":hover");
+  const lastHovered = hovered.length ? (hovered[hovered.length - 1] as HTMLElement) : null;
+  const tooltipElement = document.getElementById("tooltip-root");
+
+  if (lastHovered && tooltipElement && tooltipElement.contains(lastHovered)) {
+    return null;
+  }
+
+  if (lastHovered) {
+    const interactiveAncestor = lastHovered.closest(INTERACTIVE_SELECTOR) as HTMLElement | null;
+
+    if (interactiveAncestor) {
+      lastResolvedAnchor = interactiveAncestor;
+      return interactiveAncestor;
+    }
+
+    lastResolvedAnchor = lastHovered;
+    return lastHovered;
+  }
+
+  const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+  if (active) {
+    const anchorCandidate = active.closest(INTERACTIVE_SELECTOR) as HTMLElement | null;
+    if (anchorCandidate) {
+      lastResolvedAnchor = anchorCandidate;
+      return anchorCandidate;
+    }
+    lastResolvedAnchor = active;
+    return active;
+  }
+
+  if (isInDocument(lastResolvedAnchor)) {
+    return lastResolvedAnchor;
+  }
+
+  lastResolvedAnchor = null;
+
+  return null;
+};
+
 type TooltipType = {
   content: React.ReactNode;
-  position?: "top" | "left" | "right" | "bottom";
+  position?: TooltipPlacement;
+  anchorElement?: HTMLElement | null;
   fixed?: {
     x: number;
     y: number;
   };
 } | null;
 
+type ArmyCreationPopupConfig = {
+  structureId?: number;
+  maxDefenseSlots?: number;
+  isExplorer?: boolean;
+  direction?: Direction;
+  initialGuardSlot?: number;
+  followSelectedStructure?: boolean;
+};
+
+type ArmyCreationPopupState = (ArmyCreationPopupConfig & { openId: number }) | null;
+
 interface UIStore {
   disableButtons: boolean;
   setDisableButtons: (disable: boolean) => void;
-  seasonWinner: { address: ContractAddress; name: string; guildName: string } | null;
-  setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
-  spectatorRealmEntityId: ID | null;
-  setSpectatorRealmEntityId: (entityId: ID | null) => void;
+  gameWinner: { address: ContractAddress; name: string; guildName: string } | null;
+  setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
+  gameEndAt: number | null;
+  setGameEndAt: (seasonEndAt: number | null) => void;
+  gameStartMainAt: number | null;
+  setGameStartMainAt: (seasonStartMainAt: number | null) => void;
   theme: string;
   setTheme: (theme: string) => void;
   showBlurOverlay: boolean;
@@ -34,10 +117,7 @@ interface UIStore {
   isSideMenuOpened: boolean;
   toggleSideMenu: () => void;
   isSoundOn: boolean;
-  trackName: string;
-  setTrackName: (name: string) => void;
-  trackIndex: number;
-  setTrackIndex: (index: number) => void;
+
   toggleSound: () => void;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
@@ -49,6 +129,12 @@ interface UIStore {
   setCompassDirection: (direction: number) => void;
   tooltip: TooltipType;
   setTooltip: (tooltip: TooltipType) => void;
+  contextMenu: ContextMenuState | null;
+  contextMenuStack: ContextMenuState[];
+  openContextMenu: (menu: ContextMenuState) => void;
+  pushContextMenu: (menu: ContextMenuState) => void;
+  popContextMenu: () => void;
+  closeContextMenu: () => void;
   showRealmsFlags: boolean;
   setShowRealmsFlags: (show: boolean) => void;
   isLoadingScreenEnabled: boolean;
@@ -56,12 +142,14 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
+  combatSimulationBiome: BiomeType | null;
+  setCombatSimulationBiome: (biome: BiomeType | null) => void;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
   setLeftNavigationView: (view: LeftView) => void;
-  rightNavigationView: RightView;
-  setRightNavigationView: (view: RightView) => void;
+  activeBottomPanelTab: BottomPanelTabId | null;
+  setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => void;
   showMinimap: boolean;
   setShowMinimap: (show: boolean) => void;
   selectedPlayer: ContractAddress | null;
@@ -71,24 +159,49 @@ interface UIStore {
   showToS: boolean;
   setShowToS: (show: boolean) => void;
   setModal: (content: React.ReactNode | null, show: boolean) => void;
+  transferPanelSourceId: number | null;
+  setTransferPanelSourceId: (entityId: number | null) => void;
+  armyCreationPopup: ArmyCreationPopupState;
+  openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
+  closeArmyCreationPopup: () => void;
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
+  // camera follow
+  followArmyMoves: boolean;
+  setFollowArmyMoves: (follow: boolean) => void;
+  followArmyCombats: boolean;
+  setFollowArmyCombats: (follow: boolean) => void;
+  isFollowingArmy: boolean;
+  setIsFollowingArmy: (following: boolean) => void;
+  followingArmyMessage: string | null;
+  setFollowingArmyMessage: (message: string | null) => void;
+  // shortcut navigation
+  selectableArmies: SelectableArmy[];
+  setSelectableArmies: (armies: SelectableArmy[]) => void;
+  // cycle timing for storm effects
+  cycleProgress: number;
+  setCycleProgress: (progress: number) => void;
+  cycleTime: number;
+  setCycleTime: (time: number) => void;
+  // map zoom controls
+  enableMapZoom: boolean;
+  setEnableMapZoom: (enable: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
-
-const initialTrackIndex = Math.floor(Math.random() * tracks.length);
 
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     disableButtons: false,
     setDisableButtons: (disable: boolean) => set({ disableButtons: disable }),
-    seasonWinner: null,
-    setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
-      set({ seasonWinner: winner }),
-    spectatorRealmEntityId: null,
-    setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
+    gameWinner: null,
+    setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
+      set({ gameWinner: winner }),
+    gameEndAt: null,
+    setGameEndAt: (seasonEndAt: number | null) => set({ gameEndAt: seasonEndAt }),
+    gameStartMainAt: null,
+    setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
     theme: "light",
     setTheme: (theme) => set({ theme }),
     showBlurOverlay: false,
@@ -100,10 +213,6 @@ export const useUIStore = create(
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
-    trackName: tracks[initialTrackIndex].name,
-    setTrackName: (name) => set({ trackName: name }),
-    trackIndex: initialTrackIndex,
-    setTrackIndex: (index) => set({ trackIndex: index }),
     toggleSound: () =>
       set((state) => {
         localStorage.setItem("soundEnabled", String(!state.isSoundOn));
@@ -124,22 +233,48 @@ export const useUIStore = create(
     compassDirection: 0,
     setCompassDirection: (direction) => set({ compassDirection: direction }),
     tooltip: null,
-    setTooltip: (tooltip) => set({ tooltip }),
+    setTooltip: (tooltip) =>
+      set({
+        tooltip:
+          tooltip && !tooltip.fixed
+            ? {
+                ...tooltip,
+                anchorElement: getFallbackAnchor(tooltip.anchorElement ?? undefined),
+              }
+            : tooltip,
+      }),
+    contextMenu: null,
+    contextMenuStack: [],
+    openContextMenu: (menu: ContextMenuState) => set({ contextMenu: menu, contextMenuStack: [] }),
+    pushContextMenu: (menu: ContextMenuState) =>
+      set((state) => {
+        const stack = state.contextMenu ? [...state.contextMenuStack, state.contextMenu] : state.contextMenuStack;
+        return { contextMenu: menu, contextMenuStack: stack };
+      }),
+    popContextMenu: () =>
+      set((state) => {
+        const stack = [...state.contextMenuStack];
+        const previous = stack.pop() ?? null;
+        return { contextMenu: previous, contextMenuStack: stack };
+      }),
+    closeContextMenu: () => set({ contextMenu: null, contextMenuStack: [] }),
     showRealmsFlags: true,
     setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
     isLoadingScreenEnabled: true,
     setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
     modalContent: null,
     toggleModal: (content) => {
-      set({ modalContent: content, showModal: !!content });
+      set({ modalContent: content, showModal: !!content, tooltip: null });
     },
     showModal: false,
+    combatSimulationBiome: null,
+    setCombatSimulationBiome: (biome: BiomeType | null) => set({ combatSimulationBiome: biome }),
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
-    leftNavigationView: LeftView.None,
-    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
-    rightNavigationView: RightView.None,
-    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+    leftNavigationView: LeftView.EntityView,
+    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
+    activeBottomPanelTab: "tile",
+    setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => set({ activeBottomPanelTab: tab }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
@@ -151,14 +286,60 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    setModal: (content: React.ReactNode | null, show: boolean) => set({ modalContent: content, showModal: show }),
+    setModal: (content: React.ReactNode | null, show: boolean) =>
+      set({ modalContent: content, showModal: show, tooltip: null }),
+    transferPanelSourceId: null,
+    setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
+    armyCreationPopup: null,
+    openArmyCreationPopup: (config: ArmyCreationPopupConfig) =>
+      set((state: AppStore) => ({
+        armyCreationPopup: {
+          ...config,
+          openId: (state.armyCreationPopup?.openId ?? 0) + 1,
+        },
+      })),
+    closeArmyCreationPopup: () => set({ armyCreationPopup: null }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),
     ...createWorldStoreSlice(set),
     // labor
-    useSimpleCost: true,
-    setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
+    useSimpleCost: localStorage.getItem("useSimpleCost") ? localStorage.getItem("useSimpleCost") === "true" : true,
+    setUseSimpleCost: (useSimpleCost: boolean) => {
+      set({ useSimpleCost });
+      localStorage.setItem("useSimpleCost", String(useSimpleCost));
+    },
+    // camera follow
+    followArmyMoves: false,
+    setFollowArmyMoves: (follow: boolean) => {
+      set({ followArmyMoves: follow });
+    },
+    followArmyCombats: false,
+    setFollowArmyCombats: (follow: boolean) => {
+      set({ followArmyCombats: follow });
+    },
+    isFollowingArmy: false,
+    setIsFollowingArmy: (following: boolean) => {
+      set({ isFollowingArmy: following });
+    },
+    followingArmyMessage: null,
+    setFollowingArmyMessage: (message: string | null) => {
+      set({ followingArmyMessage: message });
+    },
+    // shortcut navigation - dummy data for now
+    selectableArmies: [],
+    setSelectableArmies: (armies: SelectableArmy[]) => set({ selectableArmies: armies }),
+    // cycle timing for storm effects
+    cycleProgress: 0,
+    setCycleProgress: (progress: number) => set({ cycleProgress: progress }),
+    cycleTime: 0,
+    setCycleTime: (time: number) => set({ cycleTime: time }),
+    // map zoom controls - disabled by default for better UX
+    enableMapZoom: localStorage.getItem("enableMapZoom") ? localStorage.getItem("enableMapZoom") === "true" : false,
+    setEnableMapZoom: (enable: boolean) => {
+      set({ enableMapZoom: enable });
+      localStorage.setItem("enableMapZoom", String(enable));
+    },
   })),
 );

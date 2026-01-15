@@ -1,6 +1,7 @@
 // Economy Resources - Resource management, transfers, deposits
 // This subdirectory handles all resource-related functionality
 
+export { ActiveResourceProductions } from "./active-resource-productions";
 export { DepositResources } from "./deposit-resources";
 export { EntityResourceTable } from "./entity-resource-table";
 export { InventoryResources } from "./inventory-resources";

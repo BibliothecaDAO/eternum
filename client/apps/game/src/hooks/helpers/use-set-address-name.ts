@@ -17,8 +17,18 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
   const setAddressName = useAddressStore((state) => state.setAddressName);
   const [isAddressNameSet, setIsAddressNameSet] = useState(false);
   const hasSetUsername = useRef(false);
+  const lastAddressRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const currentAddress = controllerAccount?.address ?? null;
+    if (currentAddress !== lastAddressRef.current) {
+      hasSetUsername.current = false;
+      setIsAddressNameSet(false);
+      lastAddressRef.current = currentAddress;
+    }
+
+    if (!controllerAccount || hasSetUsername.current || isAddressNameSet) return;
+
     // set usser name for the controller account
     const setUserName = async () => {
       if (hasSetUsername.current) return;
@@ -26,6 +36,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
       let username;
       try {
         username = await (connector as unknown as ControllerConnector)?.username();
+        console.log({ username });
       } catch (error) {
         console.log("No username found in controller account");
       }
@@ -50,8 +61,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
         const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([address]))?.name;
         const decodedAddressName = addressName ? shortString.decodeShortString(addressName.toString()) : undefined;
 
-        // fix to rename adventurer to controller account
-        if (!decodedAddressName || decodedAddressName === "adventurer") {
+        if (!decodedAddressName || decodedAddressName === "0") {
           await setUserName();
         } else {
           setAddressName(decodedAddressName);
@@ -62,7 +72,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
     };
 
     handleAddressName();
-  }, [controllerAccount, connector, value, setAddressName]);
+  }, [controllerAccount, connector, isAddressNameSet, setAddressName, value]);
 
   return isAddressNameSet;
 };

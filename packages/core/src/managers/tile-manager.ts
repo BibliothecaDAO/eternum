@@ -4,7 +4,6 @@ import {
   BuildingType,
   ClientComponents,
   Direction,
-  FELT_CENTER,
   HexPosition,
   ID,
   RealmLevels,
@@ -17,12 +16,25 @@ import {
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount } from "..";
+import {
+  FELT_CENTER,
+  ResourceManager,
+  getBuildingCosts,
+  getBuildingCount,
+  setBuildingCount,
+  getTileAt,
+  DEFAULT_COORD_ALT,
+} from "..";
 import { configManager } from "./config-manager";
+
+// Module-level Set to track pending builds across TileManager instances
+// This prevents race conditions between optimistic updates and Torii sync
+const pendingBuilds = new Set<string>();
 
 export class TileManager {
   private col: number;
   private row: number;
+  private FELT_CENTER: number;
 
   constructor(
     private readonly components: ClientComponents,
@@ -31,6 +43,7 @@ export class TileManager {
   ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
+    this.FELT_CENTER = FELT_CENTER();
   }
 
   getHexCoords = () => {
@@ -38,8 +51,8 @@ export class TileManager {
   };
 
   setTile(hexCoords: HexPosition) {
-    this.col = hexCoords.col + FELT_CENTER;
-    this.row = hexCoords.row + FELT_CENTER;
+    this.col = hexCoords.col + this.FELT_CENTER;
+    this.row = hexCoords.row + this.FELT_CENTER;
   }
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {
@@ -87,15 +100,23 @@ export class TileManager {
   };
 
   isHexOccupied = (hexCoords: HexPosition) => {
+    const { col, row } = hexCoords;
+
+    // Check pending builds first to prevent race conditions
+    const buildKey = `${this.col},${this.row},${col},${row}`;
+    if (pendingBuilds.has(buildKey)) {
+      return true;
+    }
+
     const building = getComponentValue(
       this.components.Building,
-      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(col), BigInt(row)]),
     );
     return building !== undefined && building.category !== BuildingType.None;
   };
 
   structureType = () => {
-    const tile = getComponentValue(this.components.Tile, getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]));
+    const tile = getTileAt(this.components, DEFAULT_COORD_ALT, this.col, this.row);
 
     if (tile?.occupier_is_structure) {
       const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(tile?.occupier_id)]));
@@ -153,9 +174,10 @@ export class TileManager {
     // because the resource cost increase when adding more buildings
     const resourceChange = getBuildingCosts(entityId, this.components, buildingType, useSimpleCost);
 
-    let removeResourceOverride: () => void;
+    const removeResourceOverrides: Array<() => void> = [];
     resourceChange?.forEach((resource) => {
-      removeResourceOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
+      const removeOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
+      removeResourceOverrides.push(removeOverride);
     });
 
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
@@ -202,7 +224,7 @@ export class TileManager {
     return () => {
       this.components.Building.removeOverride(buildingOverrideId);
       this.components.StructureBuildings.removeOverride(quantityOverrideId);
-      removeResourceOverride();
+      removeResourceOverrides.forEach((removeOverride) => removeOverride());
     };
   };
 
@@ -346,6 +368,10 @@ export class TileManager {
   ) => {
     const { col, row } = hexCoords;
 
+    // Track this build as pending to prevent race conditions
+    const buildKey = `${this.col},${this.row},${col},${row}`;
+    pendingBuilds.add(buildKey);
+
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
@@ -354,18 +380,28 @@ export class TileManager {
     const removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
 
     try {
-      return await this.systemCalls.create_building({
+      const result = await this.systemCalls.create_building({
         signer,
         entity_id: structureEntityId,
         directions: directions,
         building_category: buildingType,
         use_simple: useSimpleCost,
       });
+
+      // On success, delay override removal to allow Torii sync
+      // The pendingBuilds Set ensures isHexOccupied returns true during this window
+      setTimeout(() => {
+        removeBuildingOverride();
+        pendingBuilds.delete(buildKey);
+      }, 500);
+
+      return result;
     } catch (error) {
+      // On error, remove immediately
+      removeBuildingOverride();
+      pendingBuilds.delete(buildKey);
       console.error(error);
       throw error;
-    } finally {
-      removeBuildingOverride();
     }
   };
 
@@ -378,6 +414,7 @@ export class TileManager {
         signer,
         entity_id: structureEntityId,
         building_coord: {
+          alt: DEFAULT_COORD_ALT,
           x: col,
           y: row,
         },
@@ -397,14 +434,16 @@ export class TileManager {
         signer,
         entity_id: structureEntityId,
         building_coord: {
+          alt: DEFAULT_COORD_ALT,
           x: col,
           y: row,
         },
       });
     } catch (error) {
-      this.components.Building.removeOverride(overrideId);
       console.error(error);
       throw error;
+    } finally {
+      this.components.Building.removeOverride(overrideId);
     }
   };
 
@@ -416,14 +455,16 @@ export class TileManager {
         signer,
         entity_id: structureEntityId,
         building_coord: {
+          alt: DEFAULT_COORD_ALT,
           x: col,
           y: row,
         },
       });
     } catch (error) {
-      this.components.Building.removeOverride(overrideId);
       console.error(error);
       throw error;
+    } finally {
+      this.components.Building.removeOverride(overrideId);
     }
   };
 }

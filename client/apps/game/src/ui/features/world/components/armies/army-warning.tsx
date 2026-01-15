@@ -1,13 +1,12 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { formatNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   Biome,
   computeExploreFoodCosts,
   configManager,
   divideByPrecision,
-  getArmyTotalCapacityInKg,
-  getRemainingCapacityInKg,
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -22,17 +21,6 @@ interface ArmyWarningProps {
 }
 
 export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
-  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(explorerResources), [explorerResources]);
-  const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(explorerResources), [explorerResources]);
-
-  const hasNoRemainingCapacityToExplore = useMemo(() => {
-    return remainingCapacity < configManager.getExploreReward();
-  }, [totalCapacity, remainingCapacity]);
-
-  const hasNoTotalCapacityToExplore = useMemo(() => {
-    return totalCapacity < configManager.getExploreReward();
-  }, [totalCapacity]);
-
   const food = useMemo(() => {
     // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
     const { balance: wheat } = ResourceManager.balanceWithProduction(
@@ -81,42 +69,31 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
     return configManager.getExploreStaminaCost();
   }, []);
 
+  const hasTravelStaminaWarning = stamina.amount < minStaminaNeeded;
+  const hasExploreStaminaWarning = stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded;
+
+  const hasWarnings = hasTravelStaminaWarning || hasExploreStaminaWarning || notEnoughFood;
+
   return (
     <div className="flex flex-col gap-0.5 mt-1 mb-1">
-      {stamina.amount < minStaminaNeeded && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+      {hasTravelStaminaWarning && (
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Not enough stamina to explore/travel</span>
           </div>
         </div>
       )}
-      {stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+      {hasExploreStaminaWarning && (
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Not enough stamina to explore (min {minStaminaNeededExplore})</span>
           </div>
         </div>
       )}
-      {hasNoTotalCapacityToExplore && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
-          <div className="flex">
-            <span className="w-5">⚠️</span>
-            <span>Need more troops to explore (min 75)</span>
-          </div>
-        </div>
-      )}
-      {!hasNoTotalCapacityToExplore && hasNoRemainingCapacityToExplore && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
-          <div className="flex">
-            <span className="w-5">⚠️</span>
-            <span>Too heavy to explore</span>
-          </div>
-        </div>
-      )}
       {notEnoughFood && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>
@@ -127,6 +104,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
           </div>
         </div>
       )}
+      {!hasWarnings && <div className="min-h-0 text-xs font-medium text-gold/60 italic">✓ Enough food and stamina</div>}
     </div>
   );
 };

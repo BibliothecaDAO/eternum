@@ -3,9 +3,10 @@ import localConfig from "../environments/data/local.json";
 import mainnetConfig from "../environments/data/mainnet.json";
 import sepoliaConfig from "../environments/data/sepolia.json";
 import slotConfig from "../environments/data/slot.json";
+import slottestConfig from "../environments/data/slottest.json";
 
 /** Valid chain identifiers */
-export type Chain = "sepolia" | "mainnet" | "slot" | "local";
+export type Chain = "sepolia" | "mainnet" | "slot" | "slottest" | "local";
 
 /**
  * Loads the environment-specific configuration based on the network type.
@@ -32,6 +33,8 @@ export function getConfigFromNetwork(chain: Chain): Config {
         return mainnetConfig.configuration as any;
       case "slot":
         return slotConfig.configuration as any;
+      case "slottest":
+        return slottestConfig.configuration as any;
       case "local":
         return localConfig.configuration as any;
       default:

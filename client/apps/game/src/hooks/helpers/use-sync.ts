@@ -1,26 +1,17 @@
 import { getGuildsFromTorii, getHyperstructureFromTorii, getMarketFromTorii, getQuestsFromTorii } from "@/dojo/queries";
 import { sqlApi } from "@/services/api";
-import { useDojo } from "@bibliothecadao/react";
-import { useEffect, useState } from "react";
+import { ToriiClient } from "@dojoengine/torii-wasm";
+import { useCallback } from "react";
 import { Subscription, useSyncStore } from "../store/use-sync-store";
-import { useUIStore } from "../store/use-ui-store";
 import { LoadingStateKey } from "../store/use-world-loading";
+import { useToriiSync } from "./use-torii-sync";
 
 export const useSyncLeaderboard = () => {
-  const {
-    network: { toriiClient, contractComponents },
-  } = useDojo();
-
-  const [isSyncing, setIsSyncing] = useState(true);
-  const subscriptions = useSyncStore((state) => state.subscriptions);
-  const setSubscription = useSyncStore((state) => state.setSubscription);
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  useEffect(() => {
-    const syncState = async () => {
-      setLoading(LoadingStateKey.Leaderboard, true);
-
+  const syncLeaderboard = useCallback(
+    async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const hyperstructureIds = await sqlApi.fetchHyperstructures();
+
+      const { subscriptions, setSubscription } = useSyncStore.getState();
 
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
@@ -40,112 +31,94 @@ export const useSyncLeaderboard = () => {
 
       setSubscription(Subscription.Hyperstructure, true);
       setSubscription(Subscription.Guild, true);
-      setLoading(LoadingStateKey.Leaderboard, false);
-      setIsSyncing(false);
-    };
-    syncState();
-  }, [contractComponents]);
+    },
+    [],
+  );
 
-  return { isSyncing };
+  const { isSyncing, sync } = useToriiSync({
+    subscriptionKey: Subscription.Guild,
+    loadingKey: LoadingStateKey.Leaderboard,
+    fetch: syncLeaderboard,
+  });
+
+  return { isSyncing, sync };
 };
 
 export const useSyncHyperstructure = () => {
-  const {
-    network: { toriiClient, contractComponents },
-  } = useDojo();
-
-  const [isSyncing, setIsSyncing] = useState(true);
-  const subscriptions = useSyncStore((state) => state.subscriptions);
-  const setSubscription = useSyncStore((state) => state.setSubscription);
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  useEffect(() => {
-    const syncState = async () => {
-      setLoading(LoadingStateKey.Hyperstructure, true);
+  const syncHyperstructure = useCallback(
+    async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const hyperstructureIds = await sqlApi.fetchHyperstructures();
-      const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
-        ? Promise.resolve()
-        : getHyperstructureFromTorii(
-            hyperstructureIds.map((h) => h.hyperstructure_id),
-            toriiClient,
-            contractComponents as any,
-          );
-
       const start = performance.now();
-      await Promise.all([hyperstructurePromise]);
+
+      const { subscriptions, setSubscription } = useSyncStore.getState();
+
+      if (!subscriptions[Subscription.Hyperstructure]) {
+        await getHyperstructureFromTorii(
+          hyperstructureIds.map((h) => h.hyperstructure_id),
+          toriiClient,
+          contractComponents as any,
+        );
+        setSubscription(Subscription.Hyperstructure, true);
+      }
+
       const end = performance.now();
       console.log("[sync] hyperstructure query", end - start);
+    },
+    [],
+  );
 
-      setSubscription(Subscription.Hyperstructure, true);
-      setLoading(LoadingStateKey.Hyperstructure, false);
-      setIsSyncing(false);
-    };
-    syncState();
-  }, [contractComponents]);
+  const { isSyncing, sync } = useToriiSync({
+    subscriptionKey: Subscription.Hyperstructure,
+    loadingKey: LoadingStateKey.Hyperstructure,
+    fetch: syncHyperstructure,
+  });
 
-  return { isSyncing };
+  return { isSyncing, sync };
 };
 
 export const useSyncMarket = () => {
-  const {
-    network: { toriiClient, contractComponents },
-  } = useDojo();
-
-  const [isSyncing, setIsSyncing] = useState(true);
-  const subscriptions = useSyncStore((state) => state.subscriptions);
-  const setSubscription = useSyncStore((state) => state.setSubscription);
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  useEffect(() => {
-    const syncState = async () => {
-      setLoading(LoadingStateKey.Market, true);
-      const marketPromise = subscriptions[Subscription.Market]
-        ? Promise.resolve()
-        : getMarketFromTorii(toriiClient, contractComponents as any);
-
+  const syncMarket = useCallback(
+    async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const start = performance.now();
-      await Promise.all([marketPromise]);
+      await getMarketFromTorii(toriiClient, contractComponents as any);
       const end = performance.now();
       console.log("[sync] market query", end - start);
+    },
+    [],
+  );
 
-      setSubscription(Subscription.Market, true);
-      setIsSyncing(false);
-      setLoading(LoadingStateKey.Market, false);
-    };
-    syncState();
-  }, [contractComponents]);
+  const { isSyncing } = useToriiSync({
+    subscriptionKey: Subscription.Market,
+    loadingKey: LoadingStateKey.Market,
+    fetch: syncMarket,
+  });
 
   return { isSyncing };
 };
 
 export const useSyncQuest = () => {
-  const {
-    network: { toriiClient, contractComponents },
-  } = useDojo();
-
-  const [isSyncing, setIsSyncing] = useState(true);
-  const subscriptions = useSyncStore((state) => state.subscriptions);
-  const setSubscription = useSyncStore((state) => state.setSubscription);
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  useEffect(() => {
-    const syncState = async () => {
-      setLoading(LoadingStateKey.Quest, true);
-      const questPromise = subscriptions[Subscription.Quest]
-        ? Promise.resolve()
-        : getQuestsFromTorii(toriiClient, contractComponents as any);
-
+  const syncQuest = useCallback(
+    async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const start = performance.now();
-      await Promise.all([questPromise]);
+
+      const { subscriptions, setSubscription } = useSyncStore.getState();
+
+      if (!subscriptions[Subscription.Quest]) {
+        await getQuestsFromTorii(toriiClient, contractComponents as any);
+        setSubscription(Subscription.Quest, true);
+      }
+
       const end = performance.now();
       console.log("[sync] quest query", end - start);
+    },
+    [],
+  );
 
-      setSubscription(Subscription.Quest, true);
-      setLoading(LoadingStateKey.Quest, false);
-      setIsSyncing(false);
-    };
-    syncState();
-  }, [contractComponents]);
+  const { isSyncing, sync } = useToriiSync({
+    subscriptionKey: Subscription.Quest,
+    loadingKey: LoadingStateKey.Quest,
+    fetch: syncQuest,
+  });
 
-  return { isSyncing };
+  return { isSyncing, sync };
 };

@@ -66,10 +66,18 @@ minimum of 10 troops are required in an army to explore a hex.
 ## Troop Transfers
 
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
-the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer Troops tab. Troops can be
-transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle timers.
-However, in all instances of a troop transfer, the army that has received troops:
+the same tier. Field armies are bound to the Realm or Camp that created them, so transfers are limited by structure
+ownership:
+
+- Field armies can only merge with field armies from the same Realm or Camp.
+- Field armies can only transfer into guard slots of their own structure.
+- Guard armies can only transfer into field armies from the same structure (guard armies on Realms, Camps, Essence
+  Rifts, or Hyperstructures cannot reinforce field armies from other structures).
+
+To transfer troops from one army to another, or to a structure, the player first needs to select its army on the
+worldmap using left-click, then right-click on the target and select the Transfer Troops tab. Troops can be transferred
+between armies and guard slots at any time, and transfers are not impacted by battle timers. However, in all instances
+of a troop transfer, the army that has received troops:
 
 - adopts the **lower** of the two armies' stamina values, and
 - adopts the **higher** of the two armies' battle timers.

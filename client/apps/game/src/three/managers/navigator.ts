@@ -71,6 +71,10 @@ export class Navigator {
     return this.target;
   }
 
+  public hasActiveLabel(): boolean {
+    return this.target !== null;
+  }
+
   private updateArrowRotation() {
     if (!this.arrowModel || !this.target) return;
 
@@ -108,5 +112,53 @@ export class Navigator {
   update() {
     this.updateArrowRotation();
     this.calculateDistance();
+  }
+
+  public dispose(): void {
+    console.log("🧹 Navigator: Starting disposal");
+
+    // Clear navigation target
+    this.clearNavigationTarget();
+
+    // Remove and dispose arrow model
+    if (this.arrowModel) {
+      if (this.arrowModel.parent) {
+        this.arrowModel.parent.remove(this.arrowModel);
+      }
+
+      // Dispose all geometries and materials in the arrow model
+      this.arrowModel.traverse((child: any) => {
+        if (child.isMesh) {
+          if (child.geometry) {
+            child.geometry.dispose();
+          }
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((mat: any) => mat.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      });
+
+      this.arrowModel = null;
+    }
+
+    // Remove label from scene
+    if (this.label && this.label.parent) {
+      this.label.parent.remove(this.label);
+    }
+
+    // Clean up DOM element
+    if (this.distanceDiv && this.distanceDiv.parentNode) {
+      this.distanceDiv.parentNode.removeChild(this.distanceDiv);
+      this.distanceDiv = null;
+    }
+
+    // Clear label reference
+    this.label = null;
+
+    console.log("🧹 Navigator: Disposed arrow model, label, and DOM elements");
   }
 }

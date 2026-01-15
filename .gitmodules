@@ -1,0 +1,3 @@
+[submodule "contracts/ticket-master"]
+	path = contracts/ticket-master
+	url = https://github.com/Provable-Games/ticket-master.git

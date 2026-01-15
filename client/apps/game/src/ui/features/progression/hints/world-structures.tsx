@@ -77,8 +77,9 @@ const HyperstructureCreationTable = () => {
       </table>
       <div className="p-4 bg-gold/5 border-t border-gold/20 text-gray-200 leading-relaxed">
         Hyperstructures are key to victory and can be constructed collaboratively. Once built, Hyperstructures generate{" "}
-        {configManager.getHyperstructureConfig().pointsPerCycle} points per tick. Once completed, the Hyperstructure
-        owner can distribute shares to others, allowing shareholders to earn a portion of the generated points.
+        {configManager.getHyperstructureConfig().pointsPerCycle} base points per tick (multiplied by surrounding
+        realms). Once completed, the Hyperstructure owner can distribute shares to others, allowing shareholders to earn
+        a portion of the generated points.
         <br />
         <br />
         Defending your Hyperstructure is crucial. If captured by another player, they can redistribute the shares,

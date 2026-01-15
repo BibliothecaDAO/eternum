@@ -26,7 +26,6 @@ pub mod EternumVillagePassMock {
     use openzeppelin::upgrades::interface::IUpgradeable;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
-
     use super::{DISTRIBUTOR_ROLE, MINTER_ROLE, UPGRADER_ROLE};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);

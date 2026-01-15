@@ -1,7 +1,8 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { MarketResource } from "@/ui/features/economy/trading";
 import { MarketManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ID, MarketInterface, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/types";
+import { ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export const MarketResourceSidebar = ({
@@ -20,12 +21,13 @@ export const MarketResourceSidebar = ({
   resourceBidOffers: MarketInterface[];
 }) => {
   const dojo = useDojo();
+  const mode = useGameModeConfig();
 
   const filteredResources = useMemo(() => {
-    return Object.entries(RESOURCE_TIERS).flatMap(([_, resourceIds]) => {
+    return Object.entries(mode.resources.getTiers()).flatMap(([_, resourceIds]) => {
       return resourceIds;
     });
-  }, []);
+  }, [mode.resources]);
 
   const resourceList = useMemo(() => {
     return filteredResources

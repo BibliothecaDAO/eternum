@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { Tab } from "@/ui/design-system/atoms/tab/tab";
 import { TabList } from "@/ui/design-system/atoms/tab/tab-list";
 import { TabPanel } from "@/ui/design-system/atoms/tab/tab-panel";
@@ -33,6 +33,22 @@ export const VARIANTS: any = {
     },
     tabList: "flex p-1 space-x-2 panel-wood border-2 border-yellow-700 rounded-lg",
   },
+  inventory: {
+    tab: {
+      base: "group relative flex cursor-pointer items-center gap-2 border-b-[3px] border-transparent px-0 py-1 text-gold/70 !outline-none transition-colors duration-75",
+      active: "border-gold text-gold",
+      inactive: "hover:text-gold/90",
+    },
+    tabList: "flex w-full justify-start gap-4",
+  },
+  selection: {
+    tab: {
+      base: "flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-gold/30 bg-black/30 px-2 py-2 text-gold/60 transition duration-150 !outline-none",
+      active: "border-[#f4c24d] text-[#f4c24d] bg-black/55",
+      inactive: "hover:border-gold/50 hover:text-gold/90",
+    },
+    tabList: "flex w-full gap-2",
+  },
 };
 
 interface TabsProps {
@@ -52,7 +68,7 @@ export const Tabs = ({
   selectedIndex = 0,
   onChange,
 }: TabsProps) => {
-  const { play: playClick } = useUiSounds(soundSelector.click);
+  const playClick = useUISound("ui.click");
 
   return (
     <TabProvider variant={variant}>

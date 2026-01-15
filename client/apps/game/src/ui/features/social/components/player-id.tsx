@@ -1,21 +1,24 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { sqlApi } from "@/services/api";
-import { Position as PositionType } from "@/types/position";
+import { Position as PositionType } from "@bibliothecadao/eternum";
+
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
-import { RealmResourcesIO } from "@/ui/features/economy/resources";
-import { NavigateToPositionIcon } from "@/ui/features/military";
+import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
-  LeaderboardManager,
+  configManager,
   getAddressName,
   getRealmNameById,
-  getStructureTypeName,
+  LeaderboardManager,
   toHexString,
   unpackValue,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { PlayerStructure } from "@bibliothecadao/torii";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -35,12 +38,26 @@ export const PlayerId = ({
   const [playerStructures, setPlayerStructures] = useState<PlayerStructure[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mode = useGameModeConfig();
 
   const playerName = useMemo(() => {
     if (!selectedPlayer) return;
 
     const playerName = getAddressName(selectedPlayer, components);
     return playerName;
+  }, [selectedPlayer]);
+
+  const hyperstructuresPointsGivenPerSecondMap = useMemo(() => {
+    const hyperstructureEntities = runQuery([Has(components.Hyperstructure)]);
+    const hyperstructureConfig = configManager.getHyperstructureConfig();
+    const hyps: Map<string, number> = new Map();
+    hyperstructureEntities.forEach((e) => {
+      const hyp = getComponentValue(components.Hyperstructure, e);
+      if (hyp) {
+        hyps.set(hyp.hyperstructure_id.toString(), hyperstructureConfig.pointsPerCycle * hyp.points_multiplier);
+      }
+    });
+    return hyps;
   }, [selectedPlayer]);
 
   // Fetch player structures from API
@@ -65,6 +82,7 @@ export const PlayerId = ({
     fetchStructures();
   }, [selectedPlayer]);
 
+  // getHyperstructureConfig
   // Count structure types
   const structureCounts = useMemo(() => {
     if (!playerStructures) return { realms: 0, mines: 0, hyperstructures: 0, banks: 0, villages: 0 };
@@ -92,7 +110,10 @@ export const PlayerId = ({
   // Get hyperstructure shareholder points breakdown
   const unregisteredShareholderPointsBreakdown = useMemo(() => {
     if (!selectedPlayer) return [];
-    return LeaderboardManager.instance(components).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
+    return LeaderboardManager.instance(
+      components,
+      getRealmCountPerHyperstructure(),
+    ).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
   }, [selectedPlayer, components]);
 
   // Helper function to get structure name
@@ -103,7 +124,7 @@ export const PlayerId = ({
     }
 
     // For other structure types, use the type name with entity ID
-    return `${getStructureTypeName(structure.category as StructureType)} ${structure.entity_id}`;
+    return `${mode.structure.getTypeName(structure.category as StructureType) ?? "Structure"} ${structure.entity_id}`;
   };
 
   // Helper function to get resources for a specific structure
@@ -141,11 +162,11 @@ export const PlayerId = ({
           <div className="grid grid-cols-2 gap-2 my-2">
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.realms}</span>
-              <span className="text-xs text-gold/80 h6">Realms</span>
+              <span className="text-xs text-gold/80 h6">{mode.labels.realms}</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.villages}</span>
-              <span className="text-xs text-gold/80 h6">Villages</span>
+              <span className="text-xs text-gold/80 h6">{mode.labels.villages}</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.hyperstructures}</span>
@@ -153,7 +174,7 @@ export const PlayerId = ({
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-xs text-gold/80 h6">Mines</span>
+              <span className="text-xs text-gold/80 h6">{mode.labels.fragmentMines}</span>
             </div>
             {structureCounts.banks > 0 && (
               <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
@@ -170,7 +191,9 @@ export const PlayerId = ({
             <h5 className="text-sm font-semibold text-gold mb-3 px-1">Hyperstructure Shareholdings</h5>
             <div className="space-y-2">
               {unregisteredShareholderPointsBreakdown.map((breakdown) => {
-                const pointsPerSecond = (breakdown.shareholderPercentage * 7).toFixed(2);
+                const hyperstructurePointsPerSecond =
+                  hyperstructuresPointsGivenPerSecondMap.get(breakdown.hyperstructureId.toString()) ?? 0;
+                const pointsPerSecond = (breakdown.shareholderPercentage * hyperstructurePointsPerSecond).toFixed(2);
                 return (
                   <div
                     key={breakdown.hyperstructureId}
@@ -182,7 +205,7 @@ export const PlayerId = ({
                       </span>
                       <span className="text-xs text-blue-300/80"></span>
                     </div>
-                    <p className="text-sm text-gray-300 flex items-center">
+                    <p className="text-sm  flex items-center">
                       <span role="img" aria-label="sparkle" className="mr-1.5 text-base">
                         ✨
                       </span>
@@ -192,7 +215,7 @@ export const PlayerId = ({
                           {(breakdown.shareholderPercentage * 100).toFixed(1)}%
                         </strong>
                       </span>
-                      <span className="mx-1.5 text-gray-400">|</span>
+                      <span className="mx-1.5 ">|</span>
                       <span>
                         Yield: <strong className="font-medium text-lime-400">{pointsPerSecond}</strong> pts/sec
                       </span>
@@ -223,22 +246,6 @@ export const PlayerId = ({
                 playerStructures.map((structure) => {
                   const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
                   const structureName = getStructureName(structure);
-                  const structureResources = getStructureResources(structure);
-
-                  let structureSpecificElement: JSX.Element | null;
-                  if (structure.category === StructureType.Realm || structure.category === StructureType.Village) {
-                    structureSpecificElement = (
-                      <div key={`resources-${structure.entity_id}`}>
-                        <RealmResourcesIO
-                          className="w-full font-normal"
-                          titleClassName="font-normal text-sm"
-                          resourcesProduced={structureResources}
-                        />
-                      </div>
-                    );
-                  } else {
-                    structureSpecificElement = null;
-                  }
 
                   return (
                     <div
@@ -259,8 +266,6 @@ export const PlayerId = ({
                           Position: {position.getNormalized().x}, {position.getNormalized().y}
                         </span>
                       </div>
-
-                      {structureSpecificElement}
                     </div>
                   );
                 })}

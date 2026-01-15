@@ -1,6 +1,7 @@
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position as PositionInterface } from "@/types/position";
+import { Position as PositionInterface } from "@bibliothecadao/eternum";
+
 import clsx from "clsx";
 import CircleButton from "./circle-button";
 export const ViewOnMapIcon = ({

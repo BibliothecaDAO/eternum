@@ -16,8 +16,6 @@ class ResourceFXInstance {
   public group: THREE.Group;
   public sprite: THREE.Sprite;
   public material: THREE.SpriteMaterial;
-  public clock: THREE.Clock;
-  public animationFrameId?: number;
   public isDestroyed = false;
   public initialY: number;
   public baseSize: number;
@@ -31,6 +29,7 @@ class ResourceFXInstance {
   private endDuration: number = 0.5; // Duration of fade out in seconds
   private floatHeight: number;
   private duration: number;
+  private elapsedTime: number = 0;
 
   constructor(
     scene: THREE.Scene,
@@ -46,7 +45,6 @@ class ResourceFXInstance {
     duration: number = 3.0,
     fadeOutDuration: number = 0.5,
   ) {
-    this.clock = new THREE.Clock();
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
@@ -100,7 +98,6 @@ class ResourceFXInstance {
     }
 
     scene.add(this.group);
-    this.animate();
   }
 
   public onComplete(resolve: () => void) {
@@ -110,14 +107,15 @@ class ResourceFXInstance {
   public startEnding() {
     if (!this.isEnding) {
       this.isEnding = true;
-      this.endStartTime = this.clock.getElapsedTime();
+      this.endStartTime = this.elapsedTime;
     }
   }
 
-  private animate = () => {
+  public update(deltaTime: number): void {
     if (this.isDestroyed) return;
 
-    const elapsed = this.clock.getElapsedTime();
+    this.elapsedTime += deltaTime;
+    const elapsed = this.elapsedTime;
 
     // Handle ending animation
     if (this.isEnding) {
@@ -130,16 +128,13 @@ class ResourceFXInstance {
         // Move up during fade out
         const moveUp = fadeProgress * 0.5;
         this.group.position.y = this.initialY + this.floatHeight + moveUp;
-
-        // Continue animation
-        this.animationFrameId = requestAnimationFrame(this.animate);
-        return;
-      } else {
-        // End animation complete, destroy the instance
-        this.resolvePromise?.();
-        this.destroy();
         return;
       }
+
+      // End animation complete, destroy the instance
+      this.resolvePromise?.();
+      this.destroy();
+      return;
     }
 
     // Determine if animation should continue based on time elapsed
@@ -161,22 +156,16 @@ class ResourceFXInstance {
       // Slight sway for visual interest
       const sway = Math.sin(elapsed * 2) * 0.05;
       this.group.position.x += sway * 0.01;
-
-      this.animationFrameId = requestAnimationFrame(this.animate);
-    } else {
-      // Start ending automatically when duration is reached
-      this.startEnding();
-      this.animationFrameId = requestAnimationFrame(this.animate);
+      return;
     }
-  };
+
+    // Start ending automatically when duration is reached
+    this.startEnding();
+  }
 
   public destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
-
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
 
     // Clean up labels
     if (this.label && this.label.element) {
@@ -201,6 +190,7 @@ class ResourceFXInstance {
 export class ResourceFXManager {
   private scene: THREE.Scene;
   private resourceTextures: Map<number, THREE.Texture> = new Map();
+  private inflightLoads: Map<number, Promise<THREE.Texture>> = new Map();
   private activeResourceFX: Set<ResourceFXInstance> = new Set();
   private baseFXManager: FXManager;
   private defaultSize: number;
@@ -211,73 +201,55 @@ export class ResourceFXManager {
     this.defaultSize = defaultSize;
     this.textureLoader = new THREE.TextureLoader();
     this.baseFXManager = new FXManager(scene, defaultSize);
-
-    // Automatically preload all resource textures on initialization
-    this.preloadResourceTextures();
   }
 
-  /**
-   * Preloads textures for all resources
-   * @private
-   */
-  private preloadResourceTextures() {
-    // Build an array with all resource IDs
-    const resourceIds = [
-      // Basic resources
-      ResourcesIds.Wood,
-      ResourcesIds.Stone,
-      ResourcesIds.Coal,
-      ResourcesIds.Copper,
-      ResourcesIds.Obsidian,
-      ResourcesIds.Silver,
-      ResourcesIds.Ironwood,
-      ResourcesIds.ColdIron,
-      ResourcesIds.Gold,
-      ResourcesIds.Hartwood,
-      ResourcesIds.Diamonds,
-      ResourcesIds.Sapphire,
-      ResourcesIds.Ruby,
-      ResourcesIds.DeepCrystal,
-      ResourcesIds.Ignium,
-      ResourcesIds.EtherealSilica,
-      ResourcesIds.TrueIce,
-      ResourcesIds.TwilightQuartz,
-      ResourcesIds.AlchemicalSilver,
-      ResourcesIds.Adamantine,
-      ResourcesIds.Mithral,
-      ResourcesIds.Dragonhide,
-      ResourcesIds.Labor,
-      ResourcesIds.AncientFragment,
-
-      ResourcesIds.Lords,
-
-      // Food resources
-      ResourcesIds.Wheat,
-      ResourcesIds.Fish,
-    ];
-
-    // Preload all resources
-    for (const resourceId of resourceIds) {
-      this.getOrLoadTexture(resourceId);
-    }
-
-    console.log(`[ResourceFXManager] Preloaded ${resourceIds.length} resource textures`);
+  public hasActiveFx(): boolean {
+    return this.activeResourceFX.size > 0;
   }
 
-  private getOrLoadTexture(resourceId: number): THREE.Texture {
-    if (this.resourceTextures.has(resourceId)) {
-      return this.resourceTextures.get(resourceId)!;
+  public update(deltaTime: number): void {
+    if (this.activeResourceFX.size === 0) {
+      return;
     }
 
-    // Load the texture
-    const texture = this.textureLoader.load(`/images/resources/${resourceId}.png`, (t) => {
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.minFilter = THREE.LinearFilter;
-      t.magFilter = THREE.LinearFilter;
+    this.activeResourceFX.forEach((fx) => {
+      fx.update(deltaTime);
+    });
+  }
+
+  private getOrLoadTexture(resourceId: number): Promise<THREE.Texture> {
+    const cached = this.resourceTextures.get(resourceId);
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+
+    const inflight = this.inflightLoads.get(resourceId);
+    if (inflight) {
+      return inflight;
+    }
+
+    const loadPromise = new Promise<THREE.Texture>((resolve, reject) => {
+      this.textureLoader.load(
+        `/images/resources/${resourceId}.png`,
+        (loadedTexture) => {
+          loadedTexture.colorSpace = THREE.SRGBColorSpace;
+          loadedTexture.minFilter = THREE.LinearFilter;
+          loadedTexture.magFilter = THREE.LinearFilter;
+          this.resourceTextures.set(resourceId, loadedTexture);
+          this.inflightLoads.delete(resourceId);
+          resolve(loadedTexture);
+        },
+        undefined,
+        (error) => {
+          console.error(`Failed to load texture for resource ${resourceId}:`, error);
+          this.inflightLoads.delete(resourceId);
+          reject(error);
+        },
+      );
     });
 
-    this.resourceTextures.set(resourceId, texture);
-    return texture;
+    this.inflightLoads.set(resourceId, loadPromise);
+    return loadPromise;
   }
 
   /**
@@ -291,7 +263,7 @@ export class ResourceFXManager {
    * @param options Additional options for the effect
    * @returns Promise that resolves when animation completes
    */
-  playResourceFxAtCoords(
+  async playResourceFxAtCoords(
     resourceId: number,
     amount: number,
     x: number,
@@ -299,11 +271,12 @@ export class ResourceFXManager {
     z: number,
     options: ResourceFXOptions = {},
   ): Promise<void> {
-    const texture = this.getOrLoadTexture(resourceId);
-
-    if (!texture || !texture.image) {
-      console.warn("Resource texture not loaded yet, skipping FX", resourceId);
-      return Promise.reject("Resource texture not loaded");
+    let texture: THREE.Texture;
+    try {
+      texture = await this.getOrLoadTexture(resourceId);
+    } catch (error) {
+      console.warn("Failed to load resource texture, skipping FX", resourceId, error);
+      return Promise.reject(error);
     }
 
     let fxInstance: ResourceFXInstance | null = null;
@@ -351,7 +324,7 @@ export class ResourceFXManager {
    * @param options Additional options for the effect
    * @returns Promise that resolves when animation completes
    */
-  playResourceFx(
+  async playResourceFx(
     resourceId: number,
     amount: number,
     col: number,

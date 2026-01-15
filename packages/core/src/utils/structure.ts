@@ -1,6 +1,8 @@
 import {
+  BlitzStructureTypeToNameMapping,
   ClientComponents,
   ContractAddress,
+  EternumStructureTypeToNameMapping,
   ID,
   MERCENARIES,
   Position,
@@ -11,6 +13,7 @@ import {
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import { getTileAt, DEFAULT_COORD_ALT } from "./tile";
 import { configManager } from "../managers";
 import { currentTickCount } from "./utils";
 
@@ -19,7 +22,7 @@ export const getStructureAtPosition = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): Structure | undefined => {
-  const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(x), BigInt(y)]));
+  const tile = getTileAt(components, DEFAULT_COORD_ALT, x, y);
   const structureEntity = getEntityIdFromKeys([BigInt(tile?.occupier_id || 0n)]);
 
   if (!structureEntity) return;
@@ -51,7 +54,7 @@ const getStructureInfo = (
     entityId: structure.entity_id,
     structure,
     owner: structure.owner,
-    position: { x: structure.base.coord_x, y: structure.base.coord_y },
+    position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
     isMine: ContractAddress(structure.owner) === playerAddress,
     isMercenary: structure.owner === 0n,
     ownerName,
@@ -83,19 +86,6 @@ export const getStructureImmunityTimer = (
   return immunityEndTimestamp - currentBlockTimestamp!;
 };
 
-export const getStructureTypeName = (structureType: StructureType) => {
-  switch (structureType) {
-    case StructureType.Bank:
-      return "Bank";
-    case StructureType.Hyperstructure:
-      return "Hyperstructure";
-    case StructureType.FragmentMine:
-      return "Fragment Mine";
-    case StructureType.Village:
-      return "Village";
-    case StructureType.Realm:
-      return "Realm";
-    default:
-      return "Unknown";
-  }
+export const getStructureTypeName = (structureType: StructureType, isBlitz: boolean) => {
+  return isBlitz ? BlitzStructureTypeToNameMapping[structureType] : EternumStructureTypeToNameMapping[structureType];
 };

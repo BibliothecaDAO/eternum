@@ -1,10 +1,17 @@
 import {
+  DEFAULT_COORD_ALT,
   getAddressNameFromEntity,
   getHyperstructureCurrentAmounts,
   getHyperstructureProgress,
   toInteger,
 } from "@bibliothecadao/eternum";
-import { ContractAddress, type HyperstructureInfo, type ID, type ResourcesIds } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  StructureType,
+  type HyperstructureInfo,
+  type ID,
+  type ResourcesIds,
+} from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -16,6 +23,24 @@ export type ProgressWithPercentage = {
   hyperstructure_entity_id: ID;
   resource_type: ResourcesIds;
   amount: number;
+};
+
+export const useOwnedHyperstructuresEntityIds = (): ID[] => {
+  const {
+    account: { account },
+    setup: {
+      components: { Structure },
+    },
+  } = useDojo();
+
+  const hyperstructures = useEntityQuery([
+    HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Hyperstructure }),
+  ]);
+
+  return hyperstructures.map((hyperstructureEntityId) => {
+    const hyperstructure = getComponentValue(Structure, hyperstructureEntityId);
+    return hyperstructure!.entity_id;
+  });
 };
 
 export const useHyperstructures = (): HyperstructureInfo[] => {
@@ -39,7 +64,7 @@ export const useHyperstructures = (): HyperstructureInfo[] => {
       entity_id: hyperstructure.hyperstructure_id,
       hyperstructure,
       structure,
-      position: { x: structure.base.coord_x, y: structure.base.coord_y },
+      position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
       owner,
       isOwner,
       ownerName,

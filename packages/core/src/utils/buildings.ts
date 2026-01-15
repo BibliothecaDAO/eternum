@@ -1,6 +1,6 @@
+import { BuildingType, ClientComponents, ID, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { configManager, getBuildingCount, getEntityIdFromKeys } from "..";
-import { BuildingType, ClientComponents, ID, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
   const structureBuildings = getComponentValue(components.StructureBuildings, getEntityIdFromKeys([BigInt(entityId)]));
@@ -32,7 +32,7 @@ export const getBuildingCosts = (
   buildingCategory: BuildingType,
   useSimpleCost: boolean,
 ) => {
-  const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease();
+  const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease() / 10000;
 
   const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, components);
 
@@ -46,7 +46,7 @@ export const getBuildingCosts = (
 
   costs.forEach((cost) => {
     const baseCost = cost.amount;
-    const percentageAdditionalCost = (baseCost * (buildingBaseCostPercentIncrease / 100)) / 100;
+    const percentageAdditionalCost = baseCost * buildingBaseCostPercentIncrease;
     const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
     const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
     updatedCosts.push({ resource: cost.resource, amount: totalCost });

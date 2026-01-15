@@ -1,7 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+
 import { LiquidityResourceRow } from "@/ui/features/economy/banking";
-import { useDojo } from "@bibliothecadao/react";
-import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/types";
+import { ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type LiquidityTableProps = {
@@ -20,13 +21,10 @@ export const LiquidityTableHeader = () => (
 );
 
 export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
-  const {
-    account: { account },
-  } = useDojo();
-
   const [searchTerm, setSearchTerm] = useState("");
+  const mode = useGameModeConfig();
 
-  const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
+  const filteredResources = Object.entries(mode.resources.getTiers()).flatMap(([tier, resourceIds]) => {
     return resourceIds.filter(
       (resourceId) =>
         resourceId !== ResourcesIds.Lords &&

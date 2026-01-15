@@ -99,7 +99,12 @@ export const getTradeResourcesFromEntityViewpoint = (
   return { resourcesGet, resourcesGive };
 };
 
-export const computeTrades = (entityIds: Entity[], currentBlockTimestamp: number, components: ContractComponents) => {
+export const computeTrades = (
+  entityIds: Entity[],
+  currentBlockTimestamp: number,
+  components: ContractComponents,
+  isBlitz: boolean,
+) => {
   const trades = entityIds
     .map((id) => {
       let trade = getComponentValue(components.Trade, id);
@@ -115,7 +120,7 @@ export const computeTrades = (entityIds: Entity[], currentBlockTimestamp: number
         if (trade.expires_at > currentBlockTimestamp) {
           return {
             makerName: shortString.decodeShortString(makerName?.toString() || ""),
-            originName: makerStructure ? getStructureName(makerStructure).name : "",
+            originName: makerStructure ? getStructureName(makerStructure, isBlitz).name : "",
             tradeId: trade.trade_id,
             makerId: trade.maker_id,
             takerId: trade.taker_id,

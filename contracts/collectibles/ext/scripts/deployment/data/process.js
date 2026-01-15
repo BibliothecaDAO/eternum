@@ -51,7 +51,7 @@ import { byteArray } from "starknet";
  *   - setAttrsRawToIPFSCIDCalldata: Array of calldata for mapping trait combinations to IPFS CIDs
  * @throws {Error} When file cannot be read or JSON is invalid
  */
-export function processData(fileName) {
+export function processData(fileName, isUpdate) {
   // log the present directory
   console.log("Current directory:", process.cwd());
   console.log("Processing file:", fileName);
@@ -60,7 +60,6 @@ export function processData(fileName) {
     name,
     symbol,
     description,
-    updateContractAddress,
     defaultIpfsCid,
     defaultIpfsCidOverwrite,
     traits,
@@ -68,9 +67,8 @@ export function processData(fileName) {
     mintCData,
   } = data;
 
-  let onlyProcessOverwriten = false;
-  if (updateContractAddress) {
-    onlyProcessOverwriten = true;
+  let onlyProcessOverwriten = isUpdate;
+  if (onlyProcessOverwriten) {
     console.log("Only processing overwriten data");
   }
 
@@ -128,7 +126,7 @@ export function processData(fileName) {
     name,
     symbol,
     description,
-    updateContractAddress,
+    isUpdate,
     setMintCalldata,
     setDefaultIpfsCidCalldata,
     setTraitTypesNameCalldata,
@@ -634,7 +632,7 @@ function validateTraitsCombination(traitsString, traitsTypeNameToIdMap, traitsVa
  */
 function getAttrsRawFromTraitsString(traitsString, traitsTypeNameToIdMap, traitsValuesNameToIdMap) {
   const traits = traitsString.split(",");
-  let attrsRaw = 0;
+  let attrsRaw = 0n; // Use BigInt
   traits.forEach((trait) => {
     const [traitTypeName, traitValueName] = trait.split(":");
     const traitTypeId = traitsTypeNameToIdMap.get(traitTypeName);
@@ -647,7 +645,7 @@ function getAttrsRawFromTraitsString(traitsString, traitsTypeNameToIdMap, traits
 
     // Bit shift the trait value ID to the appropriate position
     // Each trait type gets 8 bits, so type N uses bits N*8 to (N*8)+7
-    attrsRaw |= traitValueId << (8 * traitTypeId);
+    attrsRaw |= BigInt(traitValueId) << (BigInt(8) * BigInt(traitTypeId));
   });
   return "0x" + attrsRaw.toString(16);
 }
@@ -668,7 +666,7 @@ function logProcessedData(data, fileName, onlyProcessOverwriten) {
     name,
     symbol,
     description,
-    updateContractAddress,
+    isUpdate,
     setMintCalldata,
     setDefaultIpfsCidCalldata,
     setTraitTypesNameCalldata,
@@ -676,10 +674,9 @@ function logProcessedData(data, fileName, onlyProcessOverwriten) {
     setAttrsRawToIPFSCIDCalldata,
   } = data;
 
-  if (updateContractAddress) {
+  if (isUpdate) {
     console.log("\n🔄 UPDATE MODE DETECTED:");
     console.log("┌─────────────────────────────────────────────────────────────────────────────┐");
-    console.log(`│ Contract Address: ${updateContractAddress.padEnd(58)} │`);
     console.log(`│ Process Mode:    ${"Overwrite Only".padEnd(58)} │`);
     console.log("└─────────────────────────────────────────────────────────────────────────────┘");
   }

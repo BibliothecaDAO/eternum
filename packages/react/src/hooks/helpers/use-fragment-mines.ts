@@ -1,3 +1,4 @@
+import { DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -32,7 +33,7 @@ export const useFragmentMines = () => {
 
     return {
       ...fragmentMine,
-      position: { x: fragmentMine.base.coord_x, y: fragmentMine.base.coord_y },
+      position: { alt: DEFAULT_COORD_ALT, x: fragmentMine.base.coord_x, y: fragmentMine.base.coord_y },
       owner: fragmentMine.owner,
       ...building,
       name: entityName

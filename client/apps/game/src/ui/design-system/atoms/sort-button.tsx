@@ -12,6 +12,8 @@ type SortButtonProps = {
   onChange: (_sortKey: string, _sort: "asc" | "desc" | "none") => void;
   className?: string;
   classNameCaret?: string;
+  activeClassName?: string;
+  inactiveClassName?: string;
 };
 
 export type SortInterface = {
@@ -26,6 +28,8 @@ export const SortButton = ({
   onChange,
   className,
   classNameCaret,
+  activeClassName = "text-white",
+  inactiveClassName = "text-gold",
   ...props
 }: SortButtonProps) => {
   const isActive = activeSort.sortKey == sortKey;
@@ -45,7 +49,7 @@ export const SortButton = ({
   return (
     <button
       className={clsx(
-        isActive && sort !== "none" ? "text-white" : "text-gold",
+        isActive && sort !== "none" ? activeClassName : inactiveClassName,
         "flex items-center cursor-pointer text-xxs",
         className,
       )}
@@ -55,11 +59,11 @@ export const SortButton = ({
       <div className="flex flex-col items-center justify-center ml-1">
         <CaretUp
           onClick={() => onChange(sortKey, sort !== "asc" ? "asc" : "none")}
-          className={clsx(classNameCaret, sort == "asc" ? "stroke-white" : "stroke-gold/50")}
+          className={clsx(classNameCaret, sort == "asc" ? "stroke-gold" : "stroke-gold/50")}
         />
         <CaretDown
           onClick={() => onChange(sortKey, sort !== "desc" ? "desc" : "none")}
-          className={clsx(classNameCaret, sort == "desc" ? "stroke-white" : "stroke-gold/50")}
+          className={clsx(classNameCaret, sort == "desc" ? "stroke-gold" : "stroke-gold/50")}
         />
       </div>
     </button>

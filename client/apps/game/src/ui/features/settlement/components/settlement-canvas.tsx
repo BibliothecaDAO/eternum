@@ -1,4 +1,4 @@
-import { FELT_CENTER as SETTLEMENT_CENTER } from "@bibliothecadao/types";
+import { FELT_CENTER as SETTLEMENT_CENTER } from "@/ui/config";
 import { useEffect, useRef, useState } from "react";
 import { BANK_ICON_PATH, COLORS, LEGEND_ITEMS, PI } from "../constants";
 import { SettlementLocation } from "../utils/settlement-types";
@@ -179,7 +179,7 @@ export const SettlementCanvas = ({
     ctx.lineWidth = 0.5;
 
     // Draw center point - Fix: Use SETTLEMENT_CENTER instead of mapCenter
-    const centerPos = worldToCanvas(SETTLEMENT_CENTER, SETTLEMENT_CENTER);
+    const centerPos = worldToCanvas(SETTLEMENT_CENTER(), SETTLEMENT_CENTER());
     ctx.fillStyle = COLORS.CENTER;
     ctx.beginPath();
     ctx.arc(centerPos.x, centerPos.y, 5, 0, PI * 2);

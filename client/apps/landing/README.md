@@ -1,6 +1,6 @@
 # Landing Page & NFT Marketplace
 
-The official landing page and NFT marketplace for Eternum, featuring realm NFTs, season passes, and game entry points.
+The official landing page and NFT marketplace for Realms, featuring realm NFTs, season passes, and game entry points.
 
 ## Getting Started
 

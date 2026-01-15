@@ -1,11 +1,13 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
+import { useSocialStore } from "./use-social-store";
 
 interface RegisterPointsButtonProps {
   className?: string;
@@ -22,11 +24,12 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
 
   const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
 
   const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
 
   const { registeredPoints, unregisteredShareholderPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(components);
+    const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
     return {
       registeredPoints: leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address)),
       unregisteredShareholderPoints: leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
@@ -55,6 +58,18 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
         signer: account,
         hyperstructure_ids: hyperstructuresEntityIds,
       });
+
+      // Hard refresh leaderboard after 3 seconds
+      console.log("Hard refreshing leaderboard data...");
+      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+
+      // Force complete re-initialization
+      leaderboardManager.initialize();
+
+      // Update UI store
+      setPlayersByRank(leaderboardManager.playersByRank);
+
+      console.log("Leaderboard hard refresh complete");
     } catch (error) {
       console.error(error);
     } finally {
@@ -80,7 +95,7 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
               </span>
               <span className="flex justify-between gap-4">
                 <span>Unregistered:</span>
-                <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : "text-gray-400"}>
+                <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : ""}>
                   {unregisteredShareholderPoints.toLocaleString()}
                 </span>
               </span>
@@ -90,7 +105,7 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
                   <span className="text-gold">{totalPoints.toLocaleString()}</span>
                 </span>
               </div>
-              {!hasUnregisteredPoints && <span className="text-gray-400 text-xs mt-1">No points to register</span>}
+              {!hasUnregisteredPoints && <span className=" text-xs mt-1">No points to register</span>}
               {hasUnregisteredPoints && (
                 <span className="text-yellow-400 text-xs mt-1">Click to register unregistered points</span>
               )}
@@ -106,13 +121,13 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
       <div className="flex items-center gap-2">
         <span className="text-sm">
           <span className="text-green-400">{registeredPoints.toLocaleString()}</span>
-          <span className="text-gray-500 mx-1">|</span>
-          <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : "text-gray-400"}>
+          <span className=" mx-1">|</span>
+          <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : ""}>
             {unregisteredShareholderPoints.toLocaleString()}
           </span>
         </span>
         {hasUnregisteredPoints && <span className="text-yellow-400 text-sm animate-pulse">Register</span>}
-        {!hasUnregisteredPoints && <span className="text-gray-400 text-sm">Points</span>}
+        {!hasUnregisteredPoints && <span className=" text-sm">Points</span>}
       </div>
     </Button>
   );

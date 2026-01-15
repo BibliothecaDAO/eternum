@@ -3,22 +3,22 @@ import { Fixed, FixedTrait } from "./fixed-point";
 import { noise as snoise } from "./simplex-noise";
 import { Vec3 } from "./vec3";
 
-const MAP_AMPLITUDE = FixedTrait.fromInt(60n);
-const MOISTURE_OCTAVE = FixedTrait.fromInt(2n);
+const MAP_AMPLITUDE = FixedTrait.fromInt(24n);
+const MOISTURE_OCTAVE = FixedTrait.fromInt(5n);
 const ELEVATION_OCTAVES = [
   FixedTrait.fromInt(1n), // 1
-  FixedTrait.fromRatio(1n, 4n), // 0.25
-  FixedTrait.fromRatio(1n, 10n), // 0.1
+  FixedTrait.fromRatio(1n, 5n), // 0.2
+  FixedTrait.fromRatio(1n, 12n), // 0.083333... (1/12)
 ];
 const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a.add(b), FixedTrait.ZERO);
 
 const LEVEL = {
-  DEEP_OCEAN: FixedTrait.fromRatio(20n, 100n), // 0.2
-  OCEAN: FixedTrait.fromRatio(30n, 100n), // 0.3
-  SAND: FixedTrait.fromRatio(35n, 100n), // 0.35
-  FOREST: FixedTrait.fromRatio(45n, 100n), // 0.45
-  DESERT: FixedTrait.fromRatio(53n, 100n), // 0.53
-  MOUNTAIN: FixedTrait.fromRatio(60n, 100n), // 0.6
+  DEEP_OCEAN: FixedTrait.fromRatio(17n, 100n), // 0.17
+  OCEAN: FixedTrait.fromRatio(26n, 100n), // 0.26
+  SAND: FixedTrait.fromRatio(31n, 100n), // 0.31
+  FOREST: FixedTrait.fromRatio(42n, 100n), // 0.42
+  DESERT: FixedTrait.fromRatio(50n, 100n), // 0.5
+  MOUNTAIN: FixedTrait.fromRatio(56n, 100n), // 0.56
 };
 
 export class Biome {

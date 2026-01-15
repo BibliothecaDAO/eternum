@@ -12,51 +12,65 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 
+export interface RelicEffect {
+  end_tick: number;
+  usage_left: number;
+}
+
 export enum ActorType {
   Explorer = "explorer",
   Structure = "structure",
 }
 
+export interface SelectedEntity {
+  name: string;
+  entityId: ID;
+}
+
 export enum TileOccupier {
   None = 0,
+  //
   RealmRegularLevel1 = 1,
-  RealmWonderLevel1 = 2,
-  HyperstructureLevel1 = 3,
-  FragmentMine = 4,
-  Village = 5,
-  Bank = 6,
-  ExplorerKnightT1Regular = 7,
-  ExplorerKnightT2Regular = 8,
-  ExplorerKnightT3Regular = 9,
-  ExplorerPaladinT1Regular = 10,
-  ExplorerPaladinT2Regular = 11,
-  ExplorerPaladinT3Regular = 12,
-  ExplorerCrossbowmanT1Regular = 13,
-  ExplorerCrossbowmanT2Regular = 14,
-  ExplorerCrossbowmanT3Regular = 15,
-  ExplorerKnightT1Daydreams = 16,
-  ExplorerKnightT2Daydreams = 17,
-  ExplorerKnightT3Daydreams = 18,
-  ExplorerPaladinT1Daydreams = 19,
-  ExplorerPaladinT2Daydreams = 20,
-  ExplorerPaladinT3Daydreams = 21,
-  ExplorerCrossbowmanT1Daydreams = 22,
-  ExplorerCrossbowmanT2Daydreams = 23,
-  ExplorerCrossbowmanT3Daydreams = 24,
-  RealmRegularLevel2 = 25,
-  RealmRegularLevel3 = 26,
-  RealmRegularLevel4 = 27,
-  RealmWonderLevel2 = 28,
-  RealmWonderLevel3 = 29,
-  RealmWonderLevel4 = 30,
-  HyperstructureLevel2 = 31,
-  HyperstructureLevel3 = 32,
-  RealmRegularLevel1WonderBonus = 33,
-  RealmRegularLevel2WonderBonus = 34,
-  RealmRegularLevel3WonderBonus = 35,
-  RealmRegularLevel4WonderBonus = 36,
-  VillageWonderBonus = 37,
-  Quest = 38,
+  RealmRegularLevel2 = 2,
+  RealmRegularLevel3 = 3,
+  RealmRegularLevel4 = 4,
+  //
+  RealmWonderLevel1 = 5,
+  RealmWonderLevel2 = 6,
+  RealmWonderLevel3 = 7,
+  RealmWonderLevel4 = 8,
+  //
+  HyperstructureLevel1 = 9,
+  HyperstructureLevel2 = 10,
+  HyperstructureLevel3 = 11,
+  //
+  FragmentMine = 12,
+  Village = 13,
+  Bank = 14,
+  //
+  ExplorerKnightT1Regular = 15,
+  ExplorerKnightT2Regular = 16,
+  ExplorerKnightT3Regular = 17,
+  ExplorerPaladinT1Regular = 18,
+  ExplorerPaladinT2Regular = 19,
+  ExplorerPaladinT3Regular = 20,
+  ExplorerCrossbowmanT1Regular = 21,
+  ExplorerCrossbowmanT2Regular = 22,
+  ExplorerCrossbowmanT3Regular = 23,
+  //
+  ExplorerKnightT1Daydreams = 24,
+  ExplorerKnightT2Daydreams = 25,
+  ExplorerKnightT3Daydreams = 26,
+  ExplorerPaladinT1Daydreams = 27,
+  ExplorerPaladinT2Daydreams = 28,
+  ExplorerPaladinT3Daydreams = 29,
+  ExplorerCrossbowmanT1Daydreams = 30,
+  ExplorerCrossbowmanT2Daydreams = 31,
+  ExplorerCrossbowmanT3Daydreams = 32,
+  //
+  Quest = 33,
+  Chest = 34,
+  Spire = 35,
 }
 
 /**
@@ -88,7 +102,7 @@ export type HyperstructureInfo = {
   entity_id: ID;
   hyperstructure: ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
-  position: { x: number; y: number };
+  position: Position;
   owner: bigint;
   ownerName: string;
   isOwner: boolean;
@@ -116,6 +130,7 @@ export type ArmyInfo = {
   explorer: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
   hasAdjacentStructure: boolean;
+  relicEffects: ResourcesIds[];
 };
 
 export type Structure = {
@@ -130,12 +145,21 @@ export type Structure = {
 };
 
 export type Tile = {
+  alt: boolean;
   col: number;
   row: number;
   biome: number;
   occupier_id: ID;
   occupier_type: number;
   occupier_is_structure: boolean;
+  reward_extracted: boolean;
+};
+
+export type TileOpt = {
+  alt: boolean;
+  col: number;
+  row: number;
+  data: bigint;
 };
 
 export type Quest = {
@@ -150,6 +174,7 @@ export type QuestTile = {
   id: number;
   game_address: ContractAddress;
   coord: {
+    alt: boolean;
     x: number;
     y: number;
   };
@@ -226,12 +251,13 @@ export type HexTileInfo = {
 export enum TickIds {
   Default,
   Armies,
+  Delivery,
 }
 
 export enum EntityType {
   DONKEY,
-  TROOP,
-  UNKNOWN,
+  ARMY,
+  STRUCTURE,
 }
 
 export enum Access {
@@ -245,6 +271,19 @@ export enum TravelTypes {
   Travel,
 }
 
+export type RelicEffectWithEndTick = { id: ResourcesIds; endTick: number };
+
+export interface TroopBoosts {
+  incr_damage_dealt_percent_num: number;
+  incr_damage_dealt_end_tick: number;
+  decr_damage_gotten_percent_num: number;
+  decr_damage_gotten_end_tick: number;
+  incr_stamina_regen_percent_num: number;
+  incr_stamina_regen_tick_count: number;
+  incr_explore_reward_percent_num: number;
+  incr_explore_reward_end_tick: number;
+}
+
 export interface Troops {
   category: string;
   tier: string;
@@ -253,6 +292,8 @@ export interface Troops {
     amount: bigint;
     updated_tick: bigint;
   };
+  boosts: TroopBoosts;
+  battle_cooldown_end: number;
 }
 
 export enum TroopTier {
@@ -334,6 +375,7 @@ export interface RealmInterface {
 }
 
 export interface Position {
+  alt: boolean;
   x: number;
   y: number;
 }
@@ -362,6 +404,12 @@ export interface ResourceCost {
 }
 export interface ResourceCostMinMax {
   resource_tier: ResourceTier;
+  min_amount: number;
+  max_amount: number;
+}
+
+export interface ResourceMinMax {
+  resource: ResourcesIds;
   min_amount: number;
   max_amount: number;
 }
@@ -418,7 +466,6 @@ export interface Config {
     lordsLiquidityPerResource: number;
   };
   populationCapacity: {
-    workerHuts: number;
     basePopulation: number;
   };
   exploration: {
@@ -427,6 +474,8 @@ export interface Config {
     shardsMinesWinProbability: number;
     agentFindProbability: number;
     agentFindFailProbability: number;
+    villageFindProbability: number;
+    villageFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
@@ -435,10 +484,14 @@ export interface Config {
     shardsMineInitialFishBalance: number;
     questFindProbability: number;
     questFindFailProbability: number;
+    relicDiscoveryIntervalSeconds: number;
+    relicHexDistanceFromCenter: number;
+    relicChestRelicsPerChest: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
+    deliveryTickIntervalInSeconds: number;
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
@@ -471,7 +524,7 @@ export interface Config {
       staminaPaladinMax: number;
       staminaCrossbowmanMax: number;
       staminaAttackReq: number;
-      staminaAttackMax: number;
+      staminaDefenseReq: number;
       staminaExploreWheatCost: number;
       staminaExploreFishCost: number;
       staminaExploreStaminaCost: number;
@@ -493,10 +546,20 @@ export interface Config {
     center: number;
     base_distance: number;
     subsequent_distance: number;
+    single_realm_mode: boolean;
   };
   season: {
+    // we expect one or the other. The
+    // startSettlingAt takes precedence
     startSettlingAfterSeconds: number;
+    startSettlingAt: number;
+    durationSeconds: number;
+
+    // we expect one or the other. The
+    // startMainAt takes precedence
     startMainAfterSeconds: number;
+    startMainAt: number;
+
     bridgeCloseAfterEndSeconds: number;
     pointRegistrationCloseAfterEndSeconds: number;
   };
@@ -527,8 +590,14 @@ export interface Config {
   hyperstructures: {
     hyperstructureInitializationShardsCost: ResourceCost;
     hyperstructureConstructionCost: HyperstructureResourceCostMinMax[];
-    hyperstructurePointsPerCycle: number;
-    hyperstructurePointsForWin: bigint;
+  };
+  victoryPoints: {
+    pointsForWin: bigint;
+    hyperstructurePointsPerCycle: bigint;
+    pointsForHyperstructureClaimAgainstBandits: bigint;
+    pointsForNonHyperstructureClaimAgainstBandits: bigint;
+    pointsForTileExploration: bigint;
+    pointsForRelicDiscovery: bigint;
   };
   wonderProductionBonus: {
     within_tile_distance: number;
@@ -536,6 +605,7 @@ export interface Config {
   };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
+  discoverableVillageStartingResources: ResourceMinMax[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;
@@ -544,6 +614,32 @@ export interface Config {
     levels: Level[];
     overwrite: boolean;
   }[];
+  dev: {
+    mode: {
+      on: boolean;
+    };
+  };
+  blitz: {
+    mode: {
+      on: boolean;
+    };
+    registration: {
+      fee_token: string;
+      fee_recipient: string;
+      fee_amount: bigint;
+      registration_count_max: number;
+      registration_delay_seconds: number;
+      registration_period_seconds: number;
+      entry_token_class_hash: string;
+      entry_token_ipfs_cid: string;
+
+      collectible_cosmetics_max_items: number;
+      collectible_cosmetics_address: string;
+      collectible_timelock_address: string;
+      collectibles_lootchest_address: string;
+      collectibles_elitenft_address: string;
+    };
+  };
 
   // Config for calling the setup function
   setup?: {
@@ -551,6 +647,9 @@ export interface Config {
     addresses: SeasonAddresses;
     manifest: any;
   };
+
+  // Previous prize distribution systems address (carried between runs)
+  prev_prize_distribution_address?: string | null;
 }
 
 export interface RealmInfo {

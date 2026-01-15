@@ -3,7 +3,8 @@ import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { findResourceById, ID } from "@bibliothecadao/types";
