@@ -1,5 +1,6 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/constants";
+import { getGameModeConfig } from "@/config/game-modes";
+import type { GameModeConfig } from "@/config/game-modes";
+import { BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/constants";
 import { HoverSound } from "@/three/sound/hover-sound";
 import { gltfLoader } from "@/three/utils/utils";
 import { ResourceIdToMiningType } from "@bibliothecadao/eternum";
@@ -12,8 +13,10 @@ export class BuildingPreview {
   private buildingModels: Map<BUILDINGS_GROUPS, Map<string, THREE.Group>> = new Map();
   private currentHexHovered: THREE.Vector3 | null = null;
   private hoverSound: HoverSound;
+  private mode: GameModeConfig;
 
   constructor(private scene: THREE.Scene) {
+    this.mode = getGameModeConfig();
     this.loadBuildingModels();
     this.hoverSound = new HoverSound();
   }
@@ -21,7 +24,7 @@ export class BuildingPreview {
   private loadBuildingModels() {
     const loader = gltfLoader;
     for (const group of Object.values(BUILDINGS_GROUPS)) {
-      const groupPaths = buildingModelPaths[group];
+      const groupPaths = this.mode.assets.buildingModelPaths[group];
       if (!this.buildingModels.has(group)) {
         this.buildingModels.set(group, new Map());
       }
@@ -110,10 +113,14 @@ export class BuildingPreview {
 
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
-      if (!this.currentHexHovered || !this.currentHexHovered.equals(position)) {
-        const { isSoundOn, effectsLevel } = useUIStore.getState();
-        this.hoverSound.play(isSoundOn, effectsLevel);
-        this.currentHexHovered = position;
+      if (!this.currentHexHovered) {
+        this.currentHexHovered = new THREE.Vector3().copy(position);
+        // AudioManager handles muted state internally
+        this.hoverSound.play();
+      } else if (!this.currentHexHovered.equals(position)) {
+        // AudioManager handles muted state internally
+        this.hoverSound.play();
+        this.currentHexHovered.copy(position);
       }
       const { buildingGroup, buildingType } = this.getBuildingType();
       const model = this.getBuildingModel(buildingGroup, buildingType as BuildingType | ResourceMiningTypes);
@@ -140,5 +147,61 @@ export class BuildingPreview {
 
   public resetBuildingColor() {
     this.setBuildingColor(new THREE.Color(PREVIEW_BUILD_COLOR_VALID));
+  }
+
+  public dispose(): void {
+    console.log("🧹 BuildingPreview: Starting disposal");
+
+    // Clear any active preview building first
+    this.clearPreviewBuilding();
+
+    // Dispose all loaded building models
+    let modelsDisposed = 0;
+    this.buildingModels.forEach((categoryMap, group) => {
+      categoryMap.forEach((model, category) => {
+        // Remove from scene if it's still there
+        if (model.parent) {
+          model.parent.remove(model);
+        }
+
+        // Dispose all geometries and materials in the model
+        model.traverse((child: any) => {
+          if (child.isMesh) {
+            // Dispose geometry
+            if (child.geometry) {
+              child.geometry.dispose();
+            }
+
+            // Dispose materials
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat: any) => mat.dispose());
+              } else {
+                child.material.dispose();
+              }
+            }
+          }
+        });
+
+        modelsDisposed++;
+      });
+
+      // Clear the category map
+      categoryMap.clear();
+    });
+
+    // Clear the main building models map
+    this.buildingModels.clear();
+
+    // Dispose hover sound if it has a dispose method
+    if (this.hoverSound && typeof (this.hoverSound as any).dispose === "function") {
+      (this.hoverSound as any).dispose();
+    }
+
+    // Reset state
+    this.previewBuilding = null;
+    this.currentHexHovered = null;
+
+    console.log(`🧹 BuildingPreview: Disposed ${modelsDisposed} models and cleaned up`);
   }
 }

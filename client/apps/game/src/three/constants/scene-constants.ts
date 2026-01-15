@@ -1,4 +1,5 @@
 import { IS_FLAT_MODE } from "@/ui/config";
+import { StructureProgress } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   BuildingType,
@@ -9,8 +10,8 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { HyperstructureTypesNames, StructureProgress } from "../types";
+import { Color } from "three";
+import { HyperstructureTypesNames } from "../types";
 
 export const HEX_SIZE = 1;
 
@@ -25,23 +26,26 @@ const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
 const QUEST_MODELS_PATH = "/models/quests/";
 
 enum BiomeFilenames {
-  Bare = "bare.glb",
+  Bare = "bare_2_0_baked.glb",
   Beach = "beach.glb",
-  TemperateDeciduousForest = "deciduousForest.glb",
+  TemperateDeciduousForest = "deciduousForest_alt.glb",
+  TemperateDeciduousForestAlt = "deciduousForest.glb",
   DeepOcean = "deepOcean.glb",
-  Grassland = "grassland.glb",
+  Grassland = "grassland_alt.glb",
+  GrasslandAlt = "grassland.glb",
   Ocean = "ocean.glb",
   Outline = "outline.glb",
-  Scorched = "scorched.glb",
-  Tundra = "tundra.glb",
-  TemperateDesert = "temperateDesert.glb",
-  Shrubland = "shrubland.glb",
+  Scorched = "scorched_2_0_baked.glb",
+  Tundra = "tundra_2_0_no_light_baked.glb",
+  TemperateDesert = "temperate_desert_2_0_baked.glb",
+  Shrubland = "shrubland_alt.glb",
+  ShrublandAlt = "shrubland.glb",
   Snow = "snow.glb",
   Taiga = "taiga.glb",
-  TemperateRainForest = "temperateRainforest.glb",
+  TemperateRainForest = "temperate_rainforest_2_0.glb",
   SubtropicalDesert = "subtropicalDesert.glb",
   TropicalRainForest = "tropicalRainforest.glb",
-  TropicalSeasonalForest = "tropicalSeasonalForest.glb",
+  TropicalSeasonalForest = "tropical_seasonal_forest_2_0_no_light_baked.glb",
   Empty = "empty.glb",
 }
 
@@ -53,6 +57,8 @@ enum BuildingFilenames {
   Farm = "farm.glb",
   FishingVillage = "fishery.glb",
   FragmentMine = "mine.glb",
+  Camp = "camp.glb",
+  EssenceRift = "essence_rift.glb",
   Market = "market.glb",
   Resource = "mine.glb",
   Stable = "stable.glb",
@@ -77,6 +83,12 @@ enum BuildingFilenames {
 enum QuestFilenames {
   DarkShuffle = "quest_tile_high.glb",
 }
+
+enum ChestFilenames {
+  Chest = "chest_model.glb",
+}
+
+export const ChestModelPath = "/models/new-buildings-opt/" + ChestFilenames.Chest;
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
@@ -118,65 +130,94 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | typeof WONDER_REALM
   | StructureType.Village;
 
-export const buildingModelPaths = {
-  [BUILDINGS_GROUPS.BUILDINGS]: {
-    [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
-    [BuildingType.ResourceCrossbowmanT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ResourceCrossbowmanT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ResourceCrossbowmanT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ResourceKnightT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.ResourceKnightT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.ResourceKnightT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.ResourcePaladinT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.ResourcePaladinT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.ResourcePaladinT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.ResourceLabor]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
-    [BuildingType.ResourceWheat]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
-    [BuildingType.ResourceFish]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
-    [BuildingType.ResourceAncientFragment]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
-    [BuildingType.ResourceDonkey]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
-    [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
-    [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
-    [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
-  },
-  [BUILDINGS_GROUPS.RESOURCES_MINING]: {
-    [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
-    [ResourceMiningTypes.Mine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Mine,
-    [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
-    [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
-  },
-  [BUILDINGS_GROUPS.REALMS]: {
-    [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
-    [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
-    [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
-    [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
-  },
-  [BUILDINGS_GROUPS.VILLAGE]: {
-    [StructureType.Village]: BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
-  },
-  [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
-    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
-    [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-  },
-  [BUILDINGS_GROUPS.WONDER]: {
-    [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
-  },
+export const buildingModelPaths = (isBlitz: boolean) => {
+  return {
+    [BUILDINGS_GROUPS.BUILDINGS]: {
+      [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+      [BuildingType.ResourceCrossbowmanT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.ResourceCrossbowmanT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.ResourceCrossbowmanT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.ResourceKnightT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+      [BuildingType.ResourceKnightT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+      [BuildingType.ResourceKnightT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+      [BuildingType.ResourcePaladinT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+      [BuildingType.ResourcePaladinT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+      [BuildingType.ResourcePaladinT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+      [BuildingType.ResourceLabor]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
+      [BuildingType.ResourceWheat]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+      [BuildingType.ResourceFish]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
+      [BuildingType.ResourceAncientFragment]: isBlitz
+        ? BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift
+        : BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
+      [BuildingType.ResourceEssence]: BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift,
+      [BuildingType.ResourceDonkey]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
+      [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
+      [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
+      [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
+    },
+    [BUILDINGS_GROUPS.RESOURCES_MINING]: {
+      [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
+      [ResourceMiningTypes.Mine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Mine,
+      [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
+      [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
+    },
+    [BUILDINGS_GROUPS.REALMS]: {
+      [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
+      [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
+      [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
+      [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+    },
+    [BUILDINGS_GROUPS.VILLAGE]: {
+      [StructureType.Village]: isBlitz
+        ? BUILDINGS_MODELS_PATH + BuildingFilenames.Camp
+        : BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
+    },
+    [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
+      [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+      [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+      [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    },
+    [BUILDINGS_GROUPS.WONDER]: {
+      [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
+    },
+  };
 };
 
-export const biomeModelPaths: Record<BiomeType | "Outline" | "Empty", string> = {
+const biomesWithAltVersions: Set<BiomeType> = new Set([
+  BiomeType.TemperateDeciduousForest,
+  BiomeType.Grassland,
+  BiomeType.Shrubland,
+]);
+
+export function getBiomeVariant(biome: BiomeType | "Outline" | "Empty", col: number, row: number): string {
+  if (biome !== "Outline" && biome !== "Empty" && biomesWithAltVersions.has(biome as BiomeType)) {
+    const hash = Math.sin(col * 12.9898 + row * 78.233) * 43758.5453;
+    const random = hash - Math.floor(hash);
+
+    if (random < 0.5) {
+      return `${biome}Alt`;
+    }
+  }
+
+  return biome as string;
+}
+
+export const biomeModelPaths: Record<string, string> = {
   None: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Bare: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Beach: BIOMES_MODELS_PATH + BiomeFilenames.Beach,
   TemperateDeciduousForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  TemperateDeciduousForestAlt: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDeciduousForestAlt,
   DeepOcean: BIOMES_MODELS_PATH + BiomeFilenames.DeepOcean,
   Grassland: BIOMES_MODELS_PATH + BiomeFilenames.Grassland,
+  GrasslandAlt: BIOMES_MODELS_PATH + BiomeFilenames.GrasslandAlt,
   Ocean: BIOMES_MODELS_PATH + BiomeFilenames.Ocean,
   Outline: BIOMES_BASE_PATH + BiomeFilenames.Outline,
   Scorched: BIOMES_MODELS_PATH + BiomeFilenames.Scorched,
   Tundra: BIOMES_MODELS_PATH + BiomeFilenames.Tundra,
   TemperateDesert: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDesert,
   Shrubland: BIOMES_MODELS_PATH + BiomeFilenames.Shrubland,
+  ShrublandAlt: BIOMES_MODELS_PATH + BiomeFilenames.ShrublandAlt,
   Snow: BIOMES_MODELS_PATH + BiomeFilenames.Snow,
   Taiga: BIOMES_MODELS_PATH + BiomeFilenames.Taiga,
   TemperateRainForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateRainForest,
@@ -189,116 +230,119 @@ export const biomeModelPaths: Record<BiomeType | "Outline" | "Empty", string> = 
 export const PROGRESS_HALF_THRESHOLD = 50;
 export const PROGRESS_FINAL_THRESHOLD = 100;
 
-export const StructureModelPaths: Record<StructureType, string[]> = {
-  [StructureType.Realm]: [
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
-  ],
-  [StructureType.Hyperstructure]: [
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-  ],
-  [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
-  [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
-  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
-};
+export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, string[]> {
+  return {
+    [StructureType.Realm]: [
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
+    ],
+    [StructureType.Hyperstructure]: [
+      BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    ],
+    [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
+    [StructureType.FragmentMine]: isBlitz
+      ? [BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift]
+      : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
+    [StructureType.Village]: isBlitz
+      ? [BUILDINGS_MODELS_PATH + BuildingFilenames.Camp]
+      : [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
+  };
+}
 
-export const MinesMaterialsParams: Record<
-  number,
-  { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number }
-> = {
+export const MinesMaterialsParams: Record<number, { color: Color; emissive: Color; emissiveIntensity: number }> = {
   [ResourcesIds.Copper]: {
-    color: new THREE.Color(0.86, 0.26, 0.0),
-    emissive: new THREE.Color(6.71, 0.25, 0.08),
+    color: new Color(0.86, 0.26, 0.0),
+    emissive: new Color(6.71, 0.25, 0.08),
     emissiveIntensity: 5.9,
   },
   [ResourcesIds.ColdIron]: {
-    color: new THREE.Color(0.69, 0.63, 0.99),
-    emissive: new THREE.Color(0.76, 1.63, 6.82),
+    color: new Color(0.69, 0.63, 0.99),
+    emissive: new Color(0.76, 1.63, 6.82),
     emissiveIntensity: 5.9,
   },
   [ResourcesIds.Ignium]: {
-    color: new THREE.Color(0.97, 0.03, 0.03),
-    emissive: new THREE.Color(6.31, 0.13, 0.04),
+    color: new Color(0.97, 0.03, 0.03),
+    emissive: new Color(6.31, 0.13, 0.04),
     emissiveIntensity: 8.6,
   },
   [ResourcesIds.Gold]: {
-    color: new THREE.Color(0.99, 0.83, 0.3),
-    emissive: new THREE.Color(9.88, 6.79, 3.02),
+    color: new Color(0.99, 0.83, 0.3),
+    emissive: new Color(9.88, 6.79, 3.02),
     emissiveIntensity: 4.9,
   },
   [ResourcesIds.Silver]: {
-    color: new THREE.Color(0.93, 0.93, 0.93),
-    emissive: new THREE.Color(3.55, 3.73, 5.51),
+    color: new Color(0.93, 0.93, 0.93),
+    emissive: new Color(3.55, 3.73, 5.51),
     emissiveIntensity: 8.6,
   },
   [ResourcesIds.AlchemicalSilver]: {
-    color: new THREE.Color(0.93, 0.93, 0.93),
-    emissive: new THREE.Color(1.87, 4.57, 9.33),
+    color: new Color(0.93, 0.93, 0.93),
+    emissive: new Color(1.87, 4.57, 9.33),
     emissiveIntensity: 8.4,
   },
   [ResourcesIds.Adamantine]: {
-    color: new THREE.Color(0.0, 0.27, 1.0),
-    emissive: new THREE.Color(1.39, 0.52, 8.16),
+    color: new Color(0.0, 0.27, 1.0),
+    emissive: new Color(1.39, 0.52, 8.16),
     emissiveIntensity: 10,
   },
   [ResourcesIds.Diamonds]: {
-    color: new THREE.Color(1.6, 1.47, 1.96),
-    emissive: new THREE.Color(0.8, 0.73, 5.93),
+    color: new Color(1.6, 1.47, 1.96),
+    emissive: new Color(0.8, 0.73, 5.93),
     emissiveIntensity: 0.2,
   },
   [ResourcesIds.Sapphire]: {
-    color: new THREE.Color(0.23, 0.5, 0.96),
-    emissive: new THREE.Color(0, 0, 5.01),
+    color: new Color(0.23, 0.5, 0.96),
+    emissive: new Color(0, 0, 5.01),
     emissiveIntensity: 2.5,
   },
   [ResourcesIds.Ruby]: {
-    color: new THREE.Color(0.86, 0.15, 0.15),
-    emissive: new THREE.Color(2.59, 0.0, 0.0),
+    color: new Color(0.86, 0.15, 0.15),
+    emissive: new Color(2.59, 0.0, 0.0),
     emissiveIntensity: 4,
   },
   [ResourcesIds.DeepCrystal]: {
-    color: new THREE.Color(1.21, 2.7, 3.27),
-    emissive: new THREE.Color(0.58, 0.77, 3),
+    color: new Color(1.21, 2.7, 3.27),
+    emissive: new Color(0.58, 0.77, 3),
     emissiveIntensity: 5,
   },
   [ResourcesIds.TwilightQuartz]: {
-    color: new THREE.Color(0.43, 0.16, 0.85),
-    emissive: new THREE.Color(0.0, 0.03, 4.25),
+    color: new Color(0.43, 0.16, 0.85),
+    emissive: new Color(0.0, 0.03, 4.25),
     emissiveIntensity: 5.7,
   },
   [ResourcesIds.EtherealSilica]: {
-    color: new THREE.Color(0.06, 0.73, 0.51),
-    emissive: new THREE.Color(0.0, 0.12, 0.0),
+    color: new Color(0.06, 0.73, 0.51),
+    emissive: new Color(0.0, 0.12, 0.0),
     emissiveIntensity: 2,
   },
   [ResourcesIds.Stone]: {
-    color: new THREE.Color(0.38, 0.38, 0.38),
-    emissive: new THREE.Color(0, 0, 0),
+    color: new Color(0.38, 0.38, 0.38),
+    emissive: new Color(0, 0, 0),
     emissiveIntensity: 0,
   },
   [ResourcesIds.Coal]: {
-    color: new THREE.Color(0.18, 0.18, 0.18),
-    emissive: new THREE.Color(0, 0, 0),
+    color: new Color(0.18, 0.18, 0.18),
+    emissive: new Color(0, 0, 0),
     emissiveIntensity: 0,
   },
   [ResourcesIds.Obsidian]: {
-    color: new THREE.Color(0.06, 0.06, 0.06),
-    emissive: new THREE.Color(0, 0, 0),
+    color: new Color(0.06, 0.06, 0.06),
+    emissive: new Color(0, 0, 0),
     emissiveIntensity: 1,
   },
   [ResourcesIds.TrueIce]: {
-    color: new THREE.Color(3.0, 3.0, 3.8),
-    emissive: new THREE.Color(1.0, 1.0, 1),
+    color: new Color(3.0, 3.0, 3.8),
+    emissive: new Color(1.0, 1.0, 1),
     emissiveIntensity: 4,
   },
   [ResourcesIds.AncientFragment]: {
-    color: new THREE.Color(0.25, 0.45, 0.15),
-    emissive: new THREE.Color(0.0, 0.5, 0.03),
+    color: new Color(0.25, 0.45, 0.15),
+    emissive: new Color(0.0, 0.5, 0.03),
     emissiveIntensity: 0.8,
   },
 };

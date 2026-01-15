@@ -1,102 +1,96 @@
-import { BuildingThumbs } from "@/ui/config";
-import { AutomationTable } from "@/ui/features/infrastructure";
-import { configManager, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
+import { configManager, getEntityIdFromKeys, getStructureRelicEffects } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { getProducedResource, RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
+import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { SparklesIcon } from "lucide-react";
-import { useMemo, useState } from "react";
-import { BuildingsList } from "./buildings-list";
-import { ProductionControls } from "./production-controls";
-import { RealmInfo } from "./realm-info";
+import { useMemo } from "react";
+import { ProductionWorkflows } from "./production-workflows";
 
 export const ProductionBody = ({
   realm,
-  preSelectedResource,
+  selectedResource,
+  onSelectResource,
 }: {
   realm: RealmInfoType;
-  preSelectedResource?: ResourcesIds | null;
+  selectedResource: ResourcesIds | null;
+  onSelectResource: (resource: ResourcesIds | null) => void;
 }) => {
-  const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource || null);
-
+  const mode = useGameModeConfig();
   const {
     setup: {
-      components: { ProductionWonderBonus },
+      components: { ProductionBoostBonus },
     },
   } = useDojo();
 
-  const { bonus, hasActivatedWonderBonus } = useMemo(() => {
-    const productionWonderBonus = getComponentValue(
-      ProductionWonderBonus,
-      getEntityIdFromKeys([BigInt(realm.entityId)]),
-    );
+  const productionBoostBonus = getComponentValue(ProductionBoostBonus, getEntityIdFromKeys([BigInt(realm.entityId)]));
+
+  const { wonderBonus, hasActivatedWonderBonus } = useMemo(() => {
     const wonderBonusConfig = configManager.getWonderBonusConfig();
-    const hasActivatedWonderBonus = !!productionWonderBonus;
+    const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
     return {
-      bonus: hasActivatedWonderBonus ? 1 + wonderBonusConfig.bonusPercentNum / 10000 : 1,
+      wonderBonus: hasActivatedWonderBonus ? 1 + wonderBonusConfig.bonusPercentNum / 10000 : 1,
       hasActivatedWonderBonus,
     };
-  }, [realm.entityId]);
+  }, [realm.entityId, productionBoostBonus]);
+
+  const activeRelics = useMemo(() => {
+    if (!productionBoostBonus) return [];
+    return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
+  }, [productionBoostBonus]);
+
+  const troopsBonus = useMemo(() => {
+    if (activeRelics.find((relic) => relic.id === ResourcesIds.TroopProductionRelic1)) {
+      return Number(RELICS.find((relic) => relic.id === ResourcesIds.TroopProductionRelic1)?.bonus) || 1;
+    } else if (activeRelics.find((relic) => relic.id === ResourcesIds.TroopProductionRelic2)) {
+      return Number(RELICS.find((relic) => relic.id === ResourcesIds.TroopProductionRelic2)?.bonus) || 1;
+    } else {
+      return 1;
+    }
+  }, [activeRelics]);
+
+  const productionBonus = useMemo(() => {
+    let bonus = 1;
+    if (activeRelics.find((relic) => relic.id === ResourcesIds.ProductionRelic1)) {
+      bonus = Number(RELICS.find((relic) => relic.id === ResourcesIds.ProductionRelic1)?.bonus) || 1;
+    }
+    if (activeRelics.find((relic) => relic.id === ResourcesIds.ProductionRelic2)) {
+      bonus = Number(RELICS.find((relic) => relic.id === ResourcesIds.ProductionRelic2)?.bonus) || 1;
+    }
+    return bonus;
+  }, [activeRelics]);
 
   const buildings = useBuildings(realm.position.x, realm.position.y);
   const productionBuildings = buildings.filter((building) => building && getProducedResource(building.category));
-  const producedResources = Array.from(
-    new Set(
-      productionBuildings
-        .filter((building) => building.produced && building.produced.resource)
-        .map((building) => building.produced.resource),
-    ),
+  const producedResources = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productionBuildings
+            .filter((building) => building.produced && building.produced.resource)
+            .map((building) => building.produced.resource as ResourcesIds),
+        ),
+      ),
+    [productionBuildings],
   );
 
+  const realmDisplayName = useMemo(() => {
+    return mode.structure.getName(realm.structure).name;
+  }, [mode.structure, realm.structure]);
+
   return (
-    <>
-      <div className="space-y-2">
-        <RealmInfo realm={realm} />
-        {hasActivatedWonderBonus && (
-          <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('/images/patterns/gold-pattern.png')] opacity-5"></div>
-            <div className="relative">
-              <div className="flex items-center gap-4">
-                <div className="bg-gold/20 p-3 rounded-lg">
-                  <SparklesIcon className="w-7 h-7 text-gold" />
-                </div>
-                <div>
-                  <h6 className="text-gold font-bold text-lg mb-1">Wonder Bonus Active</h6>
-                  <p className="text-gold/90 text-sm">
-                    ✨ Currently receiving +{((bonus - 1) * 100).toFixed(2)}% production bonus
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div className="mb-4 p-3  rounded-md text-sm opacity-80 flex gap-2">
-          <img src={BuildingThumbs.question} alt="hint" className="w-14 h-14" />
-          <div className="flex flex-col">
-            <h4 className=" font-semibold mb-1">Greetings, noble Lord!</h4>
-            <p className="text-lg">
-              Resources can be produced in two ways in your land - by spending labor or by consuming raw materials.
-              Using raw resources could be cheaper, but requires careful management of your supply chains. Labor can be
-              generated by spending any resource you desire and food.
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <AutomationTable
-            realmInfo={realm}
-            availableResources={producedResources}
-            realmEntityId={realm.entityId.toString()}
-          />
-        </div>
-        <BuildingsList
-          realm={realm}
-          onSelectProduction={setSelectedResource}
-          selectedResource={selectedResource}
-          producedResources={producedResources}
-          productionBuildings={productionBuildings}
-        />
-        {selectedResource && <ProductionControls selectedResource={selectedResource} realm={realm} bonus={bonus} />}
-      </div>
-    </>
+    <ProductionWorkflows
+      realm={realm}
+      realmDisplayName={realmDisplayName}
+      producedResources={producedResources}
+      productionBuildings={productionBuildings}
+      selectedResource={selectedResource}
+      onSelectResource={onSelectResource}
+      wonderBonus={wonderBonus}
+      productionBonus={productionBonus}
+      troopsBonus={troopsBonus}
+      realmEntityId={realm.entityId.toString()}
+    />
   );
 };

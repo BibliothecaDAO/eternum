@@ -4,10 +4,17 @@ default = "s1_eternum"
 [env]
 account_address = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
 private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e60"
-rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+rpc_url = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9"
+
+[lib_versions]
+"s1_eternum-combat_library" = "0_1_6"
+"s1_eternum-rng_library" = "0_1_6"
+"s1_eternum-biome_library" = "0_1_6"
+"s1_eternum-structure_creation_library" = "0_1_6"
+
 
 [world]
-seed = "eternum-sepolia.454545456"
+seed = "sepoliaseed.123"
 name = "Eternum Sepolia"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
@@ -38,8 +45,12 @@ website = "https://eternum.realms.world/"
     "s1_eternum-troop_movement_util_systems",
     "s1_eternum-agent_discovery_systems",
     "s1_eternum-hyperstructure_discovery_systems",
+    "s1_eternum-relic_chest_discovery_systems",
     "s1_eternum-mine_discovery_systems",
+    "s1_eternum-village_discovery_systems",
 	"s1_eternum-season_systems",
 	"s1_eternum-village_systems",
-	"s1_eternum-quest_systems"
+    "s1_eternum-quest_systems",
+    "s1_eternum-relic_systems",
+    "s1_eternum-blitz_realm_systems",
 ]

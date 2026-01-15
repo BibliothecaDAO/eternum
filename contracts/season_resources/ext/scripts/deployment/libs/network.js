@@ -48,6 +48,5 @@ export const getAccount = () => {
   const provider = getProvider();
   const accountAddress = process.env.STARKNET_ACCOUNT_ADDRESS;
   const privateKey = process.env.STARKNET_ACCOUNT_PRIVATE_KEY;
-  const cairoVersion = "1";
-  return new Account(provider, accountAddress, privateKey, cairoVersion);
+  return new Account({ provider, address: accountAddress, signer: privateKey });
 };

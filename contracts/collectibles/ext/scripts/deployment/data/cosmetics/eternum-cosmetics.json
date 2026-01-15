@@ -1,0 +1,412 @@
+{
+    "name": "Realms: Cosmetic Items",
+    "symbol": "RCI",
+    "description": "Cosmetic Items for Realms",
+    "defaultIpfsCid": "bafybeield35i6xi7vpwuq2qklnrt7blaiugeyqiuvox3km6xdnlrpmvv3q",
+    "defaultIpfsCidOverwrite": false,
+    "traits": [
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 0,
+            "traitTypeName": "Epoch",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Season 1",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 1,
+            "traitTypeName": "Epoch Item",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "1",
+                    "traitValueNameOverwrite": false
+                }, 
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "2",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 3,
+                    "traitValueName": "3",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 4,
+                    "traitValueName": "4",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 5,
+                    "traitValueName": "5",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 6,
+                    "traitValueName": "6",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 7,
+                    "traitValueName": "7",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 8,
+                    "traitValueName": "8",
+                    "traitValueNameOverwrite": false
+                },  
+                {
+                    "traitValueId": 9,
+                    "traitValueName": "9",
+                    "traitValueNameOverwrite": false
+                },                  {
+                    "traitValueId": 10,
+                    "traitValueName": "10",
+                    "traitValueNameOverwrite": false
+                },                  
+                {
+                    "traitValueId": 11,
+                    "traitValueName": "11",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 12,
+                    "traitValueName": "12",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 13,
+                    "traitValueName": "13",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 14,
+                    "traitValueName": "14",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 15,
+                    "traitValueName": "15",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 16,
+                    "traitValueName": "16",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 17,
+                    "traitValueName": "17",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 18,
+                    "traitValueName": "18",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 19,
+                    "traitValueName": "19",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 20,
+                    "traitValueName": "20",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 21,
+                    "traitValueName": "21",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 22,
+                    "traitValueName": "22",
+                    "traitValueNameOverwrite": true
+                }
+            ]        
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 2,
+            "traitTypeName": "Rarity",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Common",
+                    "traitValueNameOverwrite": false
+                }, 
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Uncommon",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 3,
+                    "traitValueName": "Rare",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 4,
+                    "traitValueName": "Epic",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 5,
+                    "traitValueName": "Legendary",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 6,
+                    "traitValueName": "Mythic",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 3,
+            "traitTypeName": "Type",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Realm Title",
+                    "traitValueNameOverwrite": false
+                }, 
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Realm Aura",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 3,
+                    "traitValueName": "Realm Skin",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 4,
+                    "traitValueName": "Troop Aura",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 5,
+                    "traitValueName": "Troop Primary",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 6,
+                    "traitValueName": "Troop Secondary",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 7,
+                    "traitValueName": "Troop Armor",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 8,
+                    "traitValueName": "Troop Base",
+                    "traitValueNameOverwrite": false
+                }
+            ]        
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 4,
+            "traitTypeName": "Troop Type",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Knight",
+                    "traitValueNameOverwrite": false
+                }, 
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Crossbowman",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 3,
+                    "traitValueName": "Paladin",
+                    "traitValueNameOverwrite": false
+                }
+            ]        
+        }
+    ],
+    "traitsCombinedIpfsCid": [
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:1,Rarity:Epic,Type:Realm Skin", 
+            "ipfsCid": "bafybeifhxkjcyepmn2io6xs6a25d2yend3mvl2acorptgb3fqzweolmuyy", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:2,Rarity:Legendary,Type:Troop Armor,Troop Type:Knight", 
+            "ipfsCid": "bafybeih2qvpsnwqaj36poj7a4smwngda3eovkkio6csrapeb2m24fliona", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:3,Rarity:Legendary,Type:Troop Aura", 
+            "ipfsCid": "bafybeidtfplezzaqil2txiuuukre4ul3drkdgtcrt4l4yhxhc66xaz35mu", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:4,Rarity:Epic,Type:Realm Aura", 
+            "ipfsCid": "bafybeid4dgwragrxvoqfmwop6ny5staifpkfklo3yn5m42ghypp5n5vb6m", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:5,Rarity:Rare,Type:Realm Skin", 
+            "ipfsCid": "bafybeielcgftzfjoawycb4gvw6om5ij4xbc5qfvxu4t2yriidqcdslv5cq", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:6,Rarity:Rare,Type:Realm Aura", 
+            "ipfsCid": "bafybeigyzdu3t5zruttd5s6uhb7rdrbdpzu2kvvfjnp5m2davhp64osim4", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:7,Rarity:Uncommon,Type:Troop Primary,Troop Type:Paladin", 
+            "ipfsCid": "bafybeigvb3vspqr6veqrxq72pb7tdw2lduubgrfrhk4klodf5uq6vezdty", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:8,Rarity:Uncommon,Type:Troop Secondary,Troop Type:Paladin", 
+            "ipfsCid": "bafybeibeubgezsjnhewhqjqzhnsdfhzakgolqpvkyisq4ac6rci7iccrze", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:9,Rarity:Common,Type:Troop Primary,Troop Type:Crossbowman", 
+            "ipfsCid": "bafybeib6agbyv47bymhz3aw2hzt25kqrjnca7rrjhgvtrfvtn62vi4dlrq", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:10,Rarity:Common,Type:Troop Secondary,Troop Type:Crossbowman", 
+            "ipfsCid": "bafybeif5dts3wmed4hun6n2zoqlenqyybvjvfadhvuaromlmeiavnxhrpi", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:11,Rarity:Common,Type:Troop Base", 
+            "ipfsCid": "bafybeield35i6xi7vpwuq2qklnrt7blaiugeyqiuvox3km6xdnlrpmvv3q", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:12,Rarity:Legendary,Type:Troop Armor,Troop Type:Crossbowman", 
+            "ipfsCid": "bafybeidh2ft7gd7f5tq57pvkdxhmmmxmamb4djhb6bhzffwkfigkihgjwy", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:13,Rarity:Epic,Type:Troop Aura", 
+            "ipfsCid": "bafybeicvo6v37qw56rjzwmirxeo6cnqks6whd3bjbs6rdtxvrb3qtg6fyu", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:14,Rarity:Epic,Type:Troop Base", 
+            "ipfsCid": "bafybeiaskp74zuu7ozoalzwn45asqsiqrvpbj7sg7ue67rb7soqe735tqi", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:15,Rarity:Rare,Type:Troop Aura", 
+            "ipfsCid": "bafybeihtlpf5lxj3ayvru7kjknhqhny4shakowvydrpjlfeg4qsvksn2ay", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:16,Rarity:Rare,Type:Troop Base", 
+            "ipfsCid": "bafybeihfdqzatf5qhz4vcck7emrd3g6qf2rrtmpprdkc3ixfrwv6fkbjzq", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:17,Rarity:Uncommon,Type:Realm Skin", 
+            "ipfsCid": "bafybeiam2lsfkkdj4hn5ubva52lt5spoqh3a6gsdgqf5qfwuh3f4vlmn2m", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:18,Rarity:Uncommon,Type:Troop Primary,Troop Type:Knight", 
+            "ipfsCid": "bafybeibed6y4o55m43atofexwpw5wi2ta24uvdz7wo2nigefdgkrhxngnq", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:19,Rarity:Uncommon,Type:Troop Secondary,Troop Type:Knight", 
+            "ipfsCid": "bafybeifdrpmlmkyq2ojjk3nksir62impkkeswlhey2u3wxiftr6e5js62a", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:20,Rarity:Common,Type:Realm Title", 
+            "ipfsCid": "bafybeieojvjz4pf5xsyrxybbilbyvensrh235ncyie4mogxgxldacgtkna", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:21,Rarity:Common,Type:Troop Primary,Troop Type:Paladin", 
+            "ipfsCid": "bafybeiak2h7oo6fyiuvsx4u2wlgd47rokikz6wdjac4oy2bxanabpwy6qm", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:22,Rarity:Common,Type:Troop Secondary,Troop Type:Paladin", 
+            "ipfsCid": "bafybeifzlfccebwoljp3arwip5bbfe4wt4jqkxkgtascjehzyo6lldjuvu", 
+            "overwrite": true 
+        }
+    ],
+    "mintCData": [
+        {
+            "traits": "Epoch:Season 1,Epoch Item:1,Rarity:Epic,Type:Realm Skin",
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:2,Rarity:Legendary,Type:Troop Armor,Troop Type:Knight", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:3,Rarity:Legendary,Type:Troop Aura", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:4,Rarity:Epic,Type:Realm Aura", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:5,Rarity:Rare,Type:Realm Skin", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:6,Rarity:Rare,Type:Realm Aura", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:7,Rarity:Uncommon,Type:Troop Primary,Troop Type:Paladin", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+                {
+            "traits": "Epoch:Season 1,Epoch Item:8,Rarity:Uncommon,Type:Troop Secondary,Troop Type:Paladin", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:9,Rarity:Common,Type:Troop Primary,Troop Type:Crossbowman", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:10,Rarity:Common,Type:Troop Secondary,Troop Type:Crossbowman", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        },
+        {
+            "traits": "Epoch:Season 1,Epoch Item:11,Rarity:Common,Type:Troop Base", 
+            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+            "count": 1
+        }
+    ]
+}

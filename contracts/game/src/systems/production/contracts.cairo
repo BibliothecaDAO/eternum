@@ -1,7 +1,7 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Coord, Direction};
-use s1_eternum::models::resource::production::building::BuildingCategory;
-use s1_eternum::models::resource::production::production::{ProductionStrategyImpl};
+use crate::alias::ID;
+use crate::models::position::{Coord, Direction};
+use crate::models::resource::production::building::BuildingCategory;
+use crate::models::resource::production::production::ProductionStrategyImpl;
 
 #[starknet::interface]
 trait IProductionContract<TContractState> {
@@ -37,29 +37,24 @@ trait IProductionContract<TContractState> {
         production_cycles: Span<u128>,
     );
 
-    fn claim_wonder_production_bonus(ref self: TContractState, structure_id: ID, wonder_structure_id: ID);
 }
 
 #[dojo::contract]
 mod production_systems {
-    use core::num::traits::zero::Zero;
-    use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SeasonConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::map::{Tile, TileOccupier};
-    use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, WorldConfigUtilImpl};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::{Coord, CoordTrait, TravelImpl};
+    use crate::models::resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl};
+    use crate::models::resource::production::production::{ ProductionStrategyImpl};
+    use crate::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
     };
-    use s1_eternum::models::{
-        owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, TravelImpl},
-        resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
-        resource::production::production::{ProductionStrategyImpl, ProductionWonderBonus},
-    };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::systems::utils::map::IMapImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
     #[abi(embed_v0)]
@@ -67,7 +62,7 @@ mod production_systems {
         fn create_building(
             ref self: ContractState,
             structure_id: ID,
-            mut directions: Span<s1_eternum::models::position::Direction>,
+            mut directions: Span<crate::models::position::Direction>,
             building_category: BuildingCategory,
             use_simple: bool,
         ) {
@@ -102,10 +97,12 @@ mod production_systems {
                     Option::Some(direction) => { building_coord = building_coord.neighbor(*direction); },
                     Option::None => { break; },
                 }
-            };
+            }
 
+            let caller: ContractAddress = starknet::get_caller_address();
             let (building, building_count) = BuildingImpl::create(
                 ref world,
+                caller,
                 structure_id,
                 structure_base.category,
                 structure_base.coord(),
@@ -126,7 +123,7 @@ mod production_systems {
             }
 
             // pay one time cost of the building
-            building.make_payment(building_count, ref world, use_simple);
+            building.make_payment(caller, building_count, ref world, use_simple);
 
             // give achievement
             if use_simple {
@@ -157,8 +154,9 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
+            let caller: ContractAddress = starknet::get_caller_address();
             BuildingImpl::destroy(
-                ref world, structure_id, structure_base.category, structure_base.coord(), building_coord,
+                ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord,
             );
         }
 
@@ -178,7 +176,10 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::pause_production(ref world, structure_base.category, structure_base.coord(), building_coord);
+            let caller: ContractAddress = starknet::get_caller_address();
+            BuildingImpl::pause_production(
+                ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord,
+            );
         }
 
         fn resume_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
@@ -197,7 +198,10 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::resume_production(ref world, structure_base.category, structure_base.coord(), building_coord);
+            let caller: ContractAddress = starknet::get_caller_address();
+            BuildingImpl::resume_production(
+                ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord,
+            );
         }
 
         /// Burn other resource for production of labor
@@ -299,65 +303,6 @@ mod production_systems {
                     ref world, from_structure_id, *produced_resource_types.at(i), *production_cycles.at(i),
                 );
             }
-        }
-
-
-        // Note: this can be called by anyone
-        fn claim_wonder_production_bonus(ref self: ContractState, structure_id: ID, wonder_structure_id: ID) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
-
-            // ensure structure is a realm or village
-
-            //todo: check other system to be sure we dont assume structure category is non zero
-            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
-            assert!(
-                structure_base.category == StructureCategory::Realm.into()
-                    || structure_base.category == StructureCategory::Village.into(),
-                "structure is not a realm or village",
-            );
-
-            // ensure wonder structure is a wonder
-            let wonder_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                ref world, wonder_structure_id,
-            );
-            assert!(wonder_structure_metadata.has_wonder, "wonder structure is not a wonder");
-
-            // ensure wonder structure is within tile distance
-            let wonder_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, wonder_structure_id);
-            let wonder_structure_coord: Coord = wonder_structure_base.coord();
-            let structure_coord: Coord = structure_base.coord();
-            let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("wonder_production_bonus_config"),
-            );
-            assert!(
-                wonder_structure_coord
-                    .tile_distance(structure_coord) <= wonder_production_bonus_config
-                    .within_tile_distance
-                    .into(),
-                "wonder structure is not within tile distance",
-            );
-
-            // set wonder production bonus
-            let mut structure_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
-            assert!(structure_wonder_bonus.bonus_percent_num.is_zero(), "wonder production bonus is already set");
-            structure_wonder_bonus.bonus_percent_num = wonder_production_bonus_config.bonus_percent_num;
-            world.write_model(@structure_wonder_bonus);
-
-            // update tile model
-            let mut structure_tile: Tile = world.read_model((structure_coord.x, structure_coord.y));
-            if structure_base.category == StructureCategory::Village.into() {
-                structure_tile.occupier_type = TileOccupier::VillageWonderBonus.into();
-            } else {
-                let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                    ref world, structure_id,
-                );
-                if !structure_metadata.has_wonder {
-                    let tile_occupier = IMapImpl::get_realm_occupier(false, true, structure_base.level);
-                    structure_tile.occupier_type = tile_occupier.into();
-                }
-            }
-            world.write_model(@structure_tile);
         }
     }
 }

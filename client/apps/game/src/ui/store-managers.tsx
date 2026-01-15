@@ -1,22 +1,101 @@
-import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
+import { POLLING_INTERVALS } from "@/config/polling";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getAllArrivals, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
+import {
+  formatArmies,
+  getAddressName,
+  getAllArrivals,
+  getEntityIdFromKeys,
+  getGuildFromPlayerAddress,
+  LeaderboardManager,
+  ResourceArrivalManager,
+  SelectableArmy,
+} from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
-import { ContractAddress } from "@bibliothecadao/types";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
+import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
+
+const getArrivalKey = (arrival: ResourceArrivalInfo) =>
+  `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
 
 const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
   const setPendingArrivalsNumber = useUIStore((state) => state.setPendingArrivalsNumber);
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const gameWinner = useUIStore((state) => state.gameWinner);
+  const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
   const {
-    setup: { components },
+    account: { account },
+    setup: { components, systemCalls },
   } = useDojo();
+  const autoClaimedArrivals = useRef<Set<string>>(new Set());
+  const lastFailureRef = useRef<Map<string, number>>(new Map());
+  const isAutoClaimingRef = useRef(false);
+  const autoClaimTimeoutIdRef = useRef<number | null>(null);
+  const processAutoClaimRef = useRef<() => Promise<void>>(async () => {});
+
+  const stopAutoClaim = useCallback(() => {
+    if (autoClaimTimeoutIdRef.current !== null) {
+      window.clearTimeout(autoClaimTimeoutIdRef.current);
+      autoClaimTimeoutIdRef.current = null;
+    }
+    isAutoClaimingRef.current = false;
+  }, []);
+
+  const isSeasonOver = useCallback(
+    (nowSeconds?: number) => {
+      if (gameWinner) return true;
+      if (typeof gameEndAt !== "number") return false;
+      const timestamp = typeof nowSeconds === "number" ? nowSeconds : getChainNowSeconds();
+      return timestamp >= gameEndAt;
+    },
+    [gameEndAt, gameWinner, getChainNowSeconds],
+  );
+
+  const updateArrivalIndicators = useCallback(
+    (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
+      const now = nowOverride ?? getChainNowSeconds();
+      const filteredArrivals = arrivals.filter((arrival) => !autoClaimedArrivals.current.has(getArrivalKey(arrival)));
+      const arrived = filteredArrivals.filter(
+        (arrival) => now >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS,
+      );
+      const pending = Math.max(filteredArrivals.length - arrived.length, 0);
+
+      setArrivedArrivalsNumber(arrived.length);
+      setPendingArrivalsNumber(pending);
+    },
+    [getChainNowSeconds, setArrivedArrivalsNumber, setPendingArrivalsNumber],
+  );
+
+  const scheduleNextAutoClaim = useCallback(() => {
+    if (isSeasonOver()) {
+      stopAutoClaim();
+      return;
+    }
+    if (autoClaimTimeoutIdRef.current !== null) {
+      window.clearTimeout(autoClaimTimeoutIdRef.current);
+    }
+
+    const now = Date.now();
+    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
+    const delay = Math.max(250, nextBlockMs - now);
+
+    autoClaimTimeoutIdRef.current = window.setTimeout(() => {
+      void processAutoClaimRef.current();
+    }, delay);
+  }, [isSeasonOver, stopAutoClaim]);
 
   useEffect(() => {
     const updateArrivals = () => {
@@ -24,20 +103,336 @@ const ResourceArrivalsStoreManager = () => {
         playerStructures.map((structure) => structure.entityId),
         components,
       );
-      const arrived = arrivals.filter((arrival) => arrival.arrivesAt <= getBlockTimestamp().currentBlockTimestamp);
-      setArrivedArrivalsNumber(arrived.length);
-      setPendingArrivalsNumber(arrivals.length - arrived.length);
+      updateArrivalIndicators(arrivals);
     };
 
     // Initial update
     updateArrivals();
 
-    // Set up interval to run every 20 seconds
-    const intervalId = setInterval(updateArrivals, 20000);
+    // Set up interval to run periodically (configurable)
+    const intervalId = setInterval(updateArrivals, POLLING_INTERVALS.resourceArrivalsMs);
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
-  }, [playerStructures, components, setArrivedArrivalsNumber, setPendingArrivalsNumber]);
+  }, [playerStructures, components, updateArrivalIndicators]);
+
+  useEffect(() => {
+    processAutoClaimRef.current = async () => {
+      const seasonNow = getChainNowSeconds();
+      if (isSeasonOver(seasonNow)) {
+        stopAutoClaim();
+        return;
+      }
+      if (isAutoClaimingRef.current) {
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      if (!account || !account.address || account.address === "0x0") {
+        autoClaimedArrivals.current.clear();
+        lastFailureRef.current.clear();
+        updateArrivalIndicators([]);
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      if (playerStructures.length === 0) {
+        autoClaimedArrivals.current.clear();
+        lastFailureRef.current.clear();
+        updateArrivalIndicators([]);
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      const structureIds = playerStructures.map((structure) => structure.entityId);
+      const arrivals = getAllArrivals(structureIds, components);
+
+      if (arrivals.length === 0) {
+        autoClaimedArrivals.current.clear();
+        lastFailureRef.current.clear();
+        updateArrivalIndicators([]);
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      const activeArrivalKeys = new Set(arrivals.map((arrival) => getArrivalKey(arrival)));
+      const staleClaimedKeys: string[] = [];
+      autoClaimedArrivals.current.forEach((key) => {
+        if (!activeArrivalKeys.has(key)) {
+          staleClaimedKeys.push(key);
+        }
+      });
+      staleClaimedKeys.forEach((key) => autoClaimedArrivals.current.delete(key));
+
+      const staleFailureKeys: string[] = [];
+      lastFailureRef.current.forEach((_, key) => {
+        if (!activeArrivalKeys.has(key)) {
+          staleFailureKeys.push(key);
+        }
+      });
+      staleFailureKeys.forEach((key) => lastFailureRef.current.delete(key));
+
+      const retryDelaySeconds = RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS;
+      const now = seasonNow;
+      updateArrivalIndicators(arrivals, now);
+      const readyArrivals = arrivals
+        .filter((arrival) => arrival.resources.length > 0)
+        .filter((arrival) => now >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS);
+
+      if (readyArrivals.length === 0) {
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      isAutoClaimingRef.current = true;
+
+      try {
+        readyArrivals.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
+
+        for (const arrival of readyArrivals) {
+          const arrivalKey = getArrivalKey(arrival);
+
+          if (autoClaimedArrivals.current.has(arrivalKey)) {
+            continue;
+          }
+
+          const lastFailure = lastFailureRef.current.get(arrivalKey);
+          if (lastFailure && now - lastFailure < retryDelaySeconds) {
+            continue;
+          }
+
+          try {
+            const resourceArrivalManager = new ResourceArrivalManager(components, systemCalls, arrival);
+            await resourceArrivalManager.offload(account, arrival.resources.length);
+            autoClaimedArrivals.current.add(arrivalKey);
+            lastFailureRef.current.delete(arrivalKey);
+          } catch (error) {
+            console.error("Auto-claim arrival failed", { arrival, error });
+            lastFailureRef.current.set(arrivalKey, now);
+          }
+        }
+      } finally {
+        isAutoClaimingRef.current = false;
+        updateArrivalIndicators(arrivals, now);
+        scheduleNextAutoClaim();
+      }
+    };
+
+    scheduleNextAutoClaim();
+
+    return () => {
+      if (autoClaimTimeoutIdRef.current !== null) {
+        window.clearTimeout(autoClaimTimeoutIdRef.current);
+      }
+      isAutoClaimingRef.current = false;
+    };
+  }, [
+    account,
+    components,
+    getChainNowSeconds,
+    isSeasonOver,
+    playerStructures,
+    scheduleNextAutoClaim,
+    stopAutoClaim,
+    systemCalls,
+    updateArrivalIndicators,
+  ]);
+
+  return null;
+};
+
+const RelicsStoreManager = () => {
+  const {
+    account: { account },
+  } = useDojo();
+
+  const setPlayerRelics = useUIStore((state) => state.setPlayerRelics);
+  const setPlayerRelicsLoading = useUIStore((state) => state.setPlayerRelicsLoading);
+  const relicsRefreshNonce = useUIStore((state) => state.relicsRefreshNonce);
+
+  const isMountedRef = useRef(true);
+  const lastHandledRefresh = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const fetchPlayerRelics = useCallback(
+    async (showLoading = true) => {
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      if (!account.address || account.address === "0x0") {
+        setPlayerRelics(null);
+        setPlayerRelicsLoading(false);
+        return;
+      }
+
+      if (showLoading) {
+        setPlayerRelicsLoading(true);
+      }
+
+      try {
+        const relicsData = await sqlApi.fetchAllPlayerRelics(account.address);
+
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        setPlayerRelics(relicsData);
+      } catch (error) {
+        if (isMountedRef.current) {
+          console.error("Failed to update available relics:", error);
+        }
+      } finally {
+        if (showLoading && isMountedRef.current) {
+          setPlayerRelicsLoading(false);
+        }
+      }
+    },
+    [account.address, setPlayerRelics, setPlayerRelicsLoading],
+  );
+
+  useEffect(() => {
+    if (!account.address || account.address === "0x0") {
+      if (isMountedRef.current) {
+        setPlayerRelics(null);
+        setPlayerRelicsLoading(false);
+      }
+      return;
+    }
+
+    fetchPlayerRelics(true);
+
+    const intervalId = setInterval(() => {
+      fetchPlayerRelics(false);
+    }, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [account.address, fetchPlayerRelics, setPlayerRelics, setPlayerRelicsLoading]);
+
+  useEffect(() => {
+    if (!account.address || account.address === "0x0") {
+      lastHandledRefresh.current = relicsRefreshNonce;
+      return;
+    }
+
+    if (relicsRefreshNonce === lastHandledRefresh.current) {
+      return;
+    }
+
+    lastHandledRefresh.current = relicsRefreshNonce;
+
+    if (relicsRefreshNonce === 0) {
+      return;
+    }
+
+    fetchPlayerRelics(true);
+  }, [account.address, fetchPlayerRelics, relicsRefreshNonce]);
+
+  return null;
+};
+
+const AUTO_REGISTER_POINTS_DEBUG = true;
+
+const AutoRegisterPointsStoreManager = () => {
+  const {
+    account: { account },
+    setup: {
+      components,
+      systemCalls: { claim_share_points },
+    },
+  } = useDojo();
+
+  const isProcessingRef = useRef(false);
+  const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
+
+  useEffect(() => {
+    const log = (...args: unknown[]) => {
+      if (AUTO_REGISTER_POINTS_DEBUG) {
+        console.log("[AutoRegisterPoints]", ...args);
+      }
+    };
+
+    const checkAndRegisterPoints = async () => {
+      log("Checking points...");
+
+      // Guard: skip if already processing or no account
+      if (isProcessingRef.current) {
+        log("Skipped: already processing");
+        return;
+      }
+      if (!account?.address || account.address === "0x0") {
+        log("Skipped: no account");
+        return;
+      }
+
+      // Get current points
+      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
+      const unregisteredPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+        ContractAddress(account.address),
+      );
+
+      log(`Registered: ${registeredPoints}, Unregistered: ${unregisteredPoints}`);
+
+      // Check condition: unregistered > registered
+      if (unregisteredPoints <= registeredPoints) {
+        log("Skipped: unregistered <= registered");
+        return;
+      }
+
+      // Get completed hyperstructure IDs
+      const hyperstructureIds = hyperstructure_entities
+        .map((entity) => getComponentValue(components.Hyperstructure, entity))
+        .filter((hs) => hs?.completed)
+        .map((hs) => hs?.hyperstructure_id)
+        .filter((id) => id !== undefined);
+
+      if (hyperstructureIds.length === 0) {
+        log("Skipped: no completed hyperstructures");
+        return;
+      }
+
+      log(`Registering points for ${hyperstructureIds.length} hyperstructures...`);
+
+      // Execute registration
+      isProcessingRef.current = true;
+      try {
+        await claim_share_points({
+          signer: account,
+          hyperstructure_ids: hyperstructureIds,
+        });
+
+        log("Points registered successfully");
+
+        // Refresh leaderboard
+        leaderboardManager.initialize();
+        log("Leaderboard refreshed");
+      } catch (error) {
+        console.error("[AutoRegisterPoints] Failed:", error);
+      } finally {
+        isProcessingRef.current = false;
+      }
+    };
+
+    // Run immediately on mount
+    checkAndRegisterPoints();
+
+    // Set up interval
+    log(`Interval set: ${POLLING_INTERVALS.autoRegisterPointsMs}ms`);
+    const intervalId = setInterval(checkAndRegisterPoints, POLLING_INTERVALS.autoRegisterPointsMs);
+
+    return () => clearInterval(intervalId);
+  }, [account, components, claim_share_points, hyperstructure_entities]);
+
   return null;
 };
 
@@ -57,13 +452,14 @@ const ButtonStateStoreManager = () => {
     account: { account },
     setup: { components },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   const setDisableButtons = useUIStore((state) => state.setDisableButtons);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
-    [structureEntityId, account.address, components],
+    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components),
+    [structureEntityId, account.address, components, mode],
   );
 
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
@@ -104,71 +500,11 @@ const PlayerDataStoreManager = () => {
   return null;
 };
 
-const BattleLogsStoreManager = () => {
-  const fetchInitialBattleLogs = useBattleLogsStore((state) => state.fetchInitialBattleLogs);
-  const fetchNewBattleLogs = useBattleLogsStore((state) => state.fetchNewBattleLogs);
-  const battleLogs = useBattleLogsStore((state) => state.battleLogs);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Initialize battle logs on mount
-  useEffect(() => {
-    // Fetch initial data only if we don't have any logs
-    if (battleLogs.length === 0) {
-      fetchInitialBattleLogs();
-    }
-  }, [fetchInitialBattleLogs, battleLogs.length]);
-
-  // Set up periodic refresh for new battle logs
-  useEffect(() => {
-    const startPeriodicRefresh = () => {
-      // Clear any existing interval
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-
-      // Set up new interval to fetch new logs every minute
-      refreshIntervalRef.current = setInterval(() => {
-        fetchNewBattleLogs();
-      }, 60 * 1000);
-    };
-
-    // Start periodic refresh after initial load
-    if (battleLogs.length > 0) {
-      startPeriodicRefresh();
-    }
-
-    // Clean up interval on unmount
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [fetchNewBattleLogs, battleLogs.length]);
-
-  // Handle page visibility change to refresh when page becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && battleLogs.length > 0) {
-        // Fetch new logs when page becomes visible
-        fetchNewBattleLogs();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [fetchNewBattleLogs, battleLogs.length]);
-
-  return null;
-};
-
 const SeasonWinnerStoreManager = () => {
   const {
     setup: { components },
   } = useDojo();
-  const setSeasonWinner = useUIStore((state) => state.setSeasonWinner);
+  const setSeasonWinner = useUIStore((state) => state.setGameWinner);
   const [seasonEnded, setSeasonEnded] = useState<SeasonEnded | null>(null);
 
   useEffect(() => {
@@ -194,15 +530,96 @@ const SeasonWinnerStoreManager = () => {
   return null;
 };
 
+const SeasonTimerStoreManager = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+  const setGameEndAt = useUIStore((state) => state.setGameEndAt);
+  const setSeasonStartMainAt = useUIStore((state) => state.setGameStartMainAt);
+
+  useEffect(() => {
+    // Try to get season_config.end_at from WorldConfig
+    const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const endAt = worldConfig?.season_config?.end_at;
+    if (endAt && typeof endAt === "number") {
+      setGameEndAt(endAt);
+    }
+    const startMainAt = worldConfig?.season_config?.start_main_at;
+    if (startMainAt && typeof startMainAt === "number") {
+      setSeasonStartMainAt(startMainAt);
+    }
+  }, [components, setGameEndAt, setSeasonStartMainAt]);
+  return null;
+};
+
+const MinigameStoreManager = () => {
+  const minigameStore = useMinigameStore.getState();
+
+  const { data: minigames } = useMiniGames({});
+
+  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
+
+  const { data: settingsMetadata } = useGameSettingsMetadata({
+    gameAddresses: minigameAddresses,
+  });
+
+  useEffect(() => {
+    if (minigames) {
+      minigameStore.setMinigames(minigames);
+    }
+
+    if (settingsMetadata) {
+      minigameStore.setSettingsMetadata(settingsMetadata);
+    }
+  }, [minigames, settingsMetadata, minigameStore]);
+
+  return null;
+};
+
+/**
+ * Manager component that syncs army and structure data with scene-specific shortcut managers
+ * This replaces the old centralized ShortcutManager approach
+ */
+const SelectableArmiesStoreManager = () => {
+  const setSelectableArmies = useUIStore((state) => state.setSelectableArmies);
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
+
+  const explorers = useEntityQuery([Has(components.ExplorerTroops)]);
+
+  useEffect(() => {
+    const playerAddress = ContractAddress(account.address || "0x0");
+    const formattedArmies = formatArmies(explorers, playerAddress, components);
+
+    const selectableArmies: SelectableArmy[] = formattedArmies
+      .filter((army) => army.isMine)
+      .map((army) => ({
+        entityId: army.entityId,
+        position: { col: army.position.x ?? 0, row: army.position.y ?? 0 },
+        name: army.name,
+      }));
+
+    setSelectableArmies(selectableArmies);
+  }, [account.address, components, explorers, setSelectableArmies]);
+
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
+      <MinigameStoreManager />
       <ResourceArrivalsStoreManager />
+      <RelicsStoreManager />
+      <AutoRegisterPointsStoreManager />
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
-      <BattleLogsStoreManager />
       <SeasonWinnerStoreManager />
+      <SeasonTimerStoreManager />
+      <SelectableArmiesStoreManager />
     </>
   );
 };

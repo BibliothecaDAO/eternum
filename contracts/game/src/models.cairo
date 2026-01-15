@@ -1,9 +1,10 @@
 pub mod agent;
 pub mod config;
-pub mod event;
+pub mod events;
 pub mod guild;
 pub mod hyperstructure;
 pub mod map;
+pub mod map2;
 pub mod message;
 pub mod name;
 pub mod owner;
@@ -20,6 +21,9 @@ pub mod bank {
     pub mod liquidity;
     pub mod market;
 }
+pub mod record;
+pub mod relic;
+pub mod series_chest_reward;
 
 pub mod resource {
     pub mod arrivals;
@@ -30,3 +34,5 @@ pub mod resource {
     }
 }
 pub mod quest;
+pub mod rank;
+pub mod rng;

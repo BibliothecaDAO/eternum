@@ -1,24 +1,26 @@
 use alexandria_math::U128BitShift;
 use core::num::traits::zero::Zero;
-use dojo::model::{ModelStorage};
-use dojo::world::WorldStorage;
-use dojo::world::{IWorldDispatcherTrait};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{
+use dojo::event::EventStorage;
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{
     BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
-use s1_eternum::models::position::{Coord};
-use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
-use s1_eternum::models::resource::resource::{ResourceList};
-use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
+use crate::models::events::{BuildingPaymentStory, BuildingPlacementStory, Story, StoryEvent};
+use crate::models::position::Coord;
+use crate::models::resource::production::production::{Production, ProductionTrait};
+use crate::models::resource::resource::{
+    ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+    WeightStoreImpl,
 };
-use s1_eternum::models::structure::{
+use crate::models::structure::{
     StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::models::weight::{Weight, WeightImpl, WeightTrait};
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
+use starknet::ContractAddress;
 
 
 #[derive(PartialEq, Copy, Drop, Serde)]
@@ -55,7 +57,7 @@ pub struct StructureBuildings {
     pub population: Population,
 }
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Default)]
+#[derive(Copy, Drop, Serde, Introspect, Default, DojoStore)]
 pub struct Population {
     pub current: u32,
     pub max: u32,
@@ -116,7 +118,7 @@ pub impl StructureBuildingCategoryCountImpl of StructureBuildingCategoryCountTra
             let shift_amount = relative_category * 8;
             count = U128BitShift::shr(packed_value, shift_amount.into()) & mask;
             break;
-        };
+        }
 
         count.try_into().unwrap()
     }
@@ -143,7 +145,7 @@ pub impl StructureBuildingCategoryCountImpl of StructureBuildingCategoryCountTra
             let shifted_count: u128 = U128BitShift::shl(count.into(), shift_amount.into());
             let new_packed_value: u128 = (packed_value & ~mask) | shifted_count;
             new_packed.append(new_packed_value);
-        };
+        }
         self.packed_counts_1 = *new_packed.at(0);
         self.packed_counts_2 = *new_packed.at(1);
         self.packed_counts_3 = *new_packed.at(2);
@@ -193,9 +195,10 @@ pub enum BuildingCategory {
     ResourcePaladinT3,
     ResourceWheat,
     ResourceFish,
+    ResourceEssence,
 }
 
-const LAST_RESOURCE_BUILDING: u8 = 38;
+const LAST_RESOURCE_BUILDING: u8 = 39;
 pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     fn into(self: BuildingCategory) -> felt252 {
         match self {
@@ -239,7 +242,8 @@ pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::ResourcePaladinT2 => 35,
             BuildingCategory::ResourcePaladinT3 => 36,
             BuildingCategory::ResourceWheat => 37,
-            BuildingCategory::ResourceFish => LAST_RESOURCE_BUILDING.into(),
+            BuildingCategory::ResourceFish => 38,
+            BuildingCategory::ResourceEssence => LAST_RESOURCE_BUILDING.into(),
         }
     }
 }
@@ -296,6 +300,7 @@ pub impl BuildingCategoryFromU8 of Into<u8, BuildingCategory> {
             36 => BuildingCategory::ResourcePaladinT3,
             37 => BuildingCategory::ResourceWheat,
             38 => BuildingCategory::ResourceFish,
+            39 => BuildingCategory::ResourceEssence,
             _ => BuildingCategory::None,
         }
     }
@@ -414,6 +419,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::ResourcePaladinT3 => true,
             BuildingCategory::ResourceWheat => true,
             BuildingCategory::ResourceFish => true,
+            BuildingCategory::ResourceEssence => true,
             //  NEVER ALLOW LORDS TO BE BUILT
         }
     }
@@ -460,6 +466,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::ResourcePaladinT3 => ResourceTypes::PALADIN_T3,
             BuildingCategory::ResourceWheat => ResourceTypes::WHEAT,
             BuildingCategory::ResourceFish => ResourceTypes::FISH,
+            BuildingCategory::ResourceEssence => ResourceTypes::ESSENCE,
             //  NEVER ALLOW LORDS TO BE BUILT
         }
     }
@@ -562,13 +569,14 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
 #[generate_trait]
 pub impl BuildingImpl of BuildingTrait {
     fn center() -> Coord {
-        Coord { x: 10, y: 10 }
+        Coord { alt: false, x: 10, y: 10 }
     }
 
     /// Create a new building on a structure
     ///
     fn create(
         ref world: WorldStorage,
+        outer_entity_owner_address: ContractAddress,
         outer_entity_id: ID,
         outer_structure_category: u8,
         outer_entity_coord: Coord,
@@ -616,6 +624,27 @@ pub impl BuildingImpl of BuildingTrait {
         structure_buildings.population = population;
         world.write_model(@structure_buildings);
 
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: category.into(),
+                            created: true,
+                            paused: false,
+                            unpaused: false,
+                            destroyed: false,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
+
         (building, building_category_count)
     }
 
@@ -626,7 +655,12 @@ pub impl BuildingImpl of BuildingTrait {
     /// and stops receiving bonuses from adjacent buildings.
     ///
     fn pause_production(
-        ref world: WorldStorage, outer_structure_category: u8, outer_entity_coord: Coord, inner_coord: Coord,
+        ref world: WorldStorage,
+        outer_entity_owner_address: ContractAddress,
+        outer_entity_id: ID,
+        outer_structure_category: u8,
+        outer_entity_coord: Coord,
+        inner_coord: Coord,
     ) {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
@@ -638,6 +672,27 @@ pub impl BuildingImpl of BuildingTrait {
         building.stop_production(ref world, outer_structure_category);
         building.paused = true;
         world.write_model(@building);
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: building.category.into(),
+                            created: false,
+                            paused: true,
+                            unpaused: false,
+                            destroyed: false,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     /// Restart building production without removing the building
@@ -646,7 +701,12 @@ pub impl BuildingImpl of BuildingTrait {
     /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
     ///
     fn resume_production(
-        ref world: WorldStorage, outer_structure_category: u8, outer_entity_coord: Coord, inner_coord: Coord,
+        ref world: WorldStorage,
+        outer_entity_owner_address: ContractAddress,
+        outer_entity_id: ID,
+        outer_structure_category: u8,
+        outer_entity_coord: Coord,
+        inner_coord: Coord,
     ) {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
@@ -660,12 +720,34 @@ pub impl BuildingImpl of BuildingTrait {
         building.start_production(ref world, outer_structure_category);
         building.paused = false;
         world.write_model(@building);
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: building.category.into(),
+                            created: false,
+                            paused: false,
+                            unpaused: true,
+                            destroyed: false,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     /// Destroy building and remove it from the structure
     ///
     fn destroy(
         ref world: WorldStorage,
+        outer_entity_owner_address: ContractAddress,
         outer_entity_id: ID,
         outer_structure_category: u8,
         outer_entity_coord: Coord,
@@ -709,10 +791,37 @@ pub impl BuildingImpl of BuildingTrait {
         // remove building
         world.erase_model(@building);
 
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: destroyed_building_category,
+                            created: false,
+                            paused: false,
+                            unpaused: false,
+                            destroyed: true,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
+
         destroyed_building_category.into()
     }
 
-    fn make_payment(self: Building, building_count: u8, ref world: WorldStorage, use_simple: bool) {
+    fn make_payment(
+        self: Building,
+        building_owner_address: ContractAddress,
+        building_count: u8,
+        ref world: WorldStorage,
+        use_simple: bool,
+    ) {
         let building_category_config: BuildingCategoryConfig = world.read_model(self.category);
         let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
         let mut index = 0;
@@ -724,6 +833,8 @@ pub impl BuildingImpl of BuildingTrait {
             erection_cost_count = building_category_config.simple_erection_cost_count;
         }
         assert!(erection_cost_count.is_non_zero(), "no cost set for creating building");
+
+        let mut tcost = array![];
         loop {
             if index == erection_cost_count {
                 break;
@@ -747,11 +858,30 @@ pub impl BuildingImpl of BuildingTrait {
             resource.spend(resource_amount, ref structure_weight, resource_weight_grams);
             resource.store(ref world);
 
+            tcost.append((erection_cost.resource_type, resource_amount));
             index += 1;
-        };
+        }
 
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(building_owner_address),
+                    entity_id: Option::Some(self.outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPaymentStory(
+                        BuildingPaymentStory {
+                            inner_coord: Coord { alt: false, x: self.inner_col, y: self.inner_row },
+                            category: self.category,
+                            cost: tcost.span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     fn _erection_cost_scaled(building_count: u8, erection_cost: ResourceList, base_cost_percent_increase: u64) -> u128 {

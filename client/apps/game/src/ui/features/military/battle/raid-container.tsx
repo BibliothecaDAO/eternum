@@ -1,9 +1,11 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
+import { Panel } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { BiomeInfoPanel } from "@/ui/features";
 import { formatStringNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   Biome,
   CombatSimulator,
@@ -21,14 +23,17 @@ import {
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RelicEffectWithEndTick,
   RESOURCE_PRECISION,
   resources,
+  ResourcesIds,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { AttackTarget, TargetType } from "./attack-container";
+import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
+import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
 
@@ -42,10 +47,14 @@ export const RaidContainer = ({
   attackerEntityId,
   target,
   targetResources,
+  attackerActiveRelicEffects = [],
+  targetActiveRelicEffects = [],
 }: {
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
+  attackerActiveRelicEffects: RelicEffectWithEndTick[];
+  targetActiveRelicEffects: RelicEffectWithEndTick[];
 }) => {
   const {
     account: { account },
@@ -73,6 +82,10 @@ export const RaidContainer = ({
   const attackerArmyData = useMemo(() => {
     const army = getArmy(attackerEntityId, ContractAddress(account.address), components);
     const { currentArmiesTick } = getBlockTimestamp();
+
+    // Convert attacker relic effects to resource IDs for StaminaManager
+    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
+
     return {
       capacity: army?.totalCapacity,
       troops: {
@@ -80,9 +93,10 @@ export const RaidContainer = ({
         category: army?.troops.category as TroopType,
         tier: army?.troops.tier as TroopTier,
         stamina: army ? StaminaManager.getStamina(army?.troops, currentArmiesTick) : { amount: 0n, updated_tick: 0n },
+        battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
       },
     };
-  }, [attackerEntityId]);
+  }, [attackerEntityId, attackerActiveRelicEffects]);
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
@@ -92,6 +106,8 @@ export const RaidContainer = ({
   const raidSimulation = useMemo(() => {
     if (!attackerArmyData) return null;
 
+    const { currentArmiesTick } = getBlockTimestamp();
+
     // Convert game armies to simulator armies
     const attackerArmy = {
       entity_id: attackerEntityId,
@@ -99,6 +115,7 @@ export const RaidContainer = ({
       troopCount: divideByPrecision(Number(attackerArmyData.troops.count)),
       troopType: attackerArmyData.troops.category as TroopType,
       tier: attackerArmyData.troops.tier as TroopTier,
+      battle_cooldown_end: attackerArmyData.troops.battle_cooldown_end,
     };
 
     // Convert all defender troops into simulator armies
@@ -108,10 +125,23 @@ export const RaidContainer = ({
       troopCount: divideByPrecision(Number(troop.count)),
       troopType: troop.category as TroopType,
       tier: troop.tier as TroopTier,
+      battle_cooldown_end: troop.battle_cooldown_end || 0,
     }));
 
     // Use the raid simulator to predict the outcome
-    const result = raidSimulator.simulateRaid(attackerArmy, defenders, biome);
+    // Convert attacker relic effects to resource IDs for RaidSimulator
+    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
+
+    // For defenders, we aggregate all target relic effects
+    const targetRelicResourceIds = targetActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
+
+    const result = raidSimulator.simulateRaid(
+      attackerArmy,
+      defenders,
+      biome,
+      attackerRelicResourceIds,
+      targetRelicResourceIds,
+    );
 
     // Calculate total defender troops for percentages
     const totalDefenderTroops = defenders.reduce((total, troop) => total + troop.troopCount, 0);
@@ -121,13 +151,24 @@ export const RaidContainer = ({
       attackerTroopsLeft: attackerArmy.troopCount - result.raiderDamageTaken,
       defenderTroopsLeft: defenders.map((troop) => troop.troopCount - result.defenderDamageTaken),
       newAttackerStamina: Math.max(
-        Number(attackerArmyData.troops.stamina.amount) - Number(combatConfig.stamina_attack_max),
+        Number(attackerArmyData.troops.stamina.amount) - Number(combatConfig.stamina_attack_req),
         0,
       ),
       newDefendersStamina: defenders.map((troop) => troop.stamina - result.defenderDamageTaken),
       totalDefenderTroops,
     };
-  }, [attackerEntityId, target, account, components, attackerArmyData, biome, combatConfig, raidSimulator]);
+  }, [
+    attackerEntityId,
+    target,
+    account,
+    components,
+    attackerArmyData,
+    biome,
+    combatConfig,
+    raidSimulator,
+    attackerActiveRelicEffects,
+    targetActiveRelicEffects,
+  ]);
 
   const remainingCapacity = useMemo(() => {
     // you can use getcomponentvalue because it's your own entity so synced
@@ -231,7 +272,7 @@ export const RaidContainer = ({
     <div className="flex flex-col gap-6 p-4 sm:p-6 mx-auto max-w-full overflow-hidden">
       {/* Unable to Raid Message */}
       {target?.targetType !== TargetType.Structure ? (
-        <div className="mt-2 p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+        <Panel padding="lg" blur shadow="lg" className="mt-2 overflow-hidden">
           <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
             <span className="mr-2">⚠️</span> Unable to Raid
           </h3>
@@ -242,11 +283,11 @@ export const RaidContainer = ({
               You can only raid structures owned by other players that contain resources.
             </p>
           </div>
-        </div>
+        </Panel>
       ) : (
         <>
           {showRaidResult ? (
-            <div className="p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+            <Panel padding="md" blur shadow="lg" className="sm:p-6">
               <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
                 <span className="mr-2">⚔️</span> Raid in Progress
               </h3>
@@ -256,14 +297,14 @@ export const RaidContainer = ({
                 successRate={raidSimulation?.successChance || 50}
                 stolenResources={stealableResources}
               />
-            </div>
+            </Panel>
           ) : (
             <>
               {/* Biome Info Panel */}
               <BiomeInfoPanel biome={biome} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Attacker Panel */}
-                <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
+                <Panel padding="md" blur className="flex flex-col gap-3">
                   <h4 className="text-xl font-semibold text-gold">Raider Forces (You)</h4>
                   {attackerArmyData && (
                     <div className="mt-4 space-y-4">
@@ -319,6 +360,13 @@ export const RaidContainer = ({
                             <span className="text-gold font-medium">{Number(remainingCapacity.beforeRaid)} kg</span>
                           </div>
                         </div>
+
+                        {/* Active Relic Effects */}
+                        <ActiveRelicEffects
+                          relicEffects={attackerActiveRelicEffects}
+                          entityId={attackerEntityId}
+                          compact={true}
+                        />
                       </div>
 
                       {/* Raid Simulation Results */}
@@ -355,10 +403,10 @@ export const RaidContainer = ({
                       )}
                     </div>
                   )}
-                </div>
+                </Panel>
 
                 {/* Defender Panel */}
-                <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
+                <Panel padding="md" blur className="flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <h4 className="text-xl font-semibold text-gold">Defender Forces</h4>
                     {target.info.length > 0 && (
@@ -432,6 +480,9 @@ export const RaidContainer = ({
                         ))}
                       </div>
 
+                      {/* Active Relic Effects for Defenders */}
+                      <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} compact={true} />
+
                       {/* Raid Simulation Results */}
                       {raidSimulation && (
                         <div className="p-3 border border-gold/10 rounded bg-brown-900/50">
@@ -466,12 +517,12 @@ export const RaidContainer = ({
                       </div>
                     </div>
                   )}
-                </div>
+                </Panel>
               </div>
 
               {/* Raid Results Panel */}
               {target?.targetType === TargetType.Structure && (
-                <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg overflow-hidden">
+                <Panel padding="md" blur shadow="lg" className="mt-2 sm:p-6 overflow-hidden">
                   <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
                     <span className="mr-2">📜</span> Raid Prediction
                   </h3>
@@ -628,7 +679,7 @@ export const RaidContainer = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </Panel>
               )}
 
               {/* Raid Button */}

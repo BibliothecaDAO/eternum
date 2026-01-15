@@ -1,5 +1,6 @@
-import { ClientComponents, ID, Resource, ResourceArrivalInfo, ResourcesIds } from "@bibliothecadao/types";
+import { ClientComponents, ID, Resource, ResourceArrivalInfo, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { configManager } from "../managers";
 
 export const getAllArrivals = (structureEntityIds: ID[], components: ClientComponents) => {
   const arrivals: ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[] = [];
@@ -16,14 +17,17 @@ export const getAllArrivals = (structureEntityIds: ID[], components: ClientCompo
 
   return formatArrivals(arrivals);
 };
+
 export const formatArrivals = (arrivals: ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[]) => {
+  const deliveryTickSeconds = configManager.getTick(TickIds.Delivery);
   const arrivalsInfo: ResourceArrivalInfo[] = [];
+  const lastSlotNumber = 48;
 
   arrivals.forEach((arrival) => {
     const structureEntityId = arrival.structure_id;
     const day = arrival.day;
 
-    for (let slotNumber = 1; slotNumber <= 24; slotNumber++) {
+    for (let slotNumber = 1; slotNumber <= lastSlotNumber; slotNumber++) {
       const slotKey = `slot_${slotNumber}` as keyof typeof arrival;
 
       const rawSlotResources = arrival[slotKey];
@@ -53,7 +57,7 @@ export const formatArrivals = (arrivals: ComponentValue<ClientComponents["Resour
               }
             }
 
-            if (amount > 0) {
+            if (amount >= 0) {
               resources.push({
                 resourceId: resourceId as ResourcesIds,
                 amount,
@@ -67,24 +71,9 @@ export const formatArrivals = (arrivals: ComponentValue<ClientComponents["Resour
         continue;
       }
 
-      // Calculate arrivesAt based on day and slot
-      // Based on the Cairo implementation:
-      // - day is days since Unix epoch (day = timestamp / 86400)
-      // - slot is 1-indexed hour of the day (1-24), where:
-      //   - slot 1 = 00:00:00 to 00:59:59
-      //   - slot 2 = 01:00:00 to 01:59:59
-      //   - ...
-      //   - slot 24 = 23:00:00 to 23:59:59
-
-      // Convert day to seconds (86400 seconds per day)
-      const dayInSeconds = BigInt(day) * 86400n;
-
-      // Calculate the hour timestamp for this slot
-      // Slot 1 = hour 0 (00:00:00), Slot 2 = hour 1 (01:00:00), etc.
-      const hourInSeconds = BigInt(slotNumber) * 3600n;
-
-      // Calculate the timestamp (exact hour boundary)
-      const arrivesAt = dayInSeconds + hourInSeconds;
+      let dayInSeconds = BigInt(day) * BigInt(deliveryTickSeconds) * BigInt(lastSlotNumber);
+      let slotInSeconds = BigInt(slotNumber) * BigInt(deliveryTickSeconds);
+      let arrivesAt = dayInSeconds + slotInSeconds;
 
       arrivalsInfo.push({
         structureEntityId,

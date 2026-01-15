@@ -1,0 +1,34 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9"
+
+world_address = "0x04202585a4a0911cb80312d7a58175217564e2ebe9d1140ddc4b7291e7f169e2"
+
+db_dir = "torii-slot"
+
+[indexing]
+events_chunk_size = 1024  # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+
+pending = true # Enable indexing pending blocks
+
+polling_interval = 500 # Polling interval in milliseconds
+
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+
+transactions = true
+
+contracts = []
+
+namespaces = ["wf"]
+
+world_block = 0
+
+[sql]
+all_model_indices = false
+
+[server]
+http_cors_origins = ["*"]
+
+[events]
+raw = false

@@ -190,9 +190,11 @@ if [ "$KILL_MODE" = true ]; then
   DISPLAY_TITLE="Stopping Torii Indexer"
 fi
 
+TORII_VERSION=$(torii --version)
+
 echo -e ""
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                $DISPLAY_TITLE                 ║${NC}"
+echo -e "${BLUE}║                $DISPLAY_TITLE $TORII_VERSION                 ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e ""
 

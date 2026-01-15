@@ -2,7 +2,6 @@
     "name": "Realms: Loot Chest",
     "symbol": "RLC",
     "description": "Loot Chest for Realms",
-    "updateContractAddress": "0x572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
     "defaultIpfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW",
     "defaultIpfsCidOverwrite": false,
     "traits": [
@@ -27,6 +26,11 @@
                     "traitValueId": 1,
                     "traitValueName": "Eternum Rewards Chest",
                     "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Blitz Rewards (S0)",
+                    "traitValueNameOverwrite": true
                 }
             ]
         }
@@ -36,6 +40,11 @@
             "traits": "Epoch:Season 1,ID:Eternum Rewards Chest", 
             "ipfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW", 
             "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,ID:Blitz Rewards (S0)", 
+            "ipfsCid": "bafybeifc5ecqvn3hdct3azcnzxp6ckq7lau2agcpfcyrv374y24smv2jiy", 
+            "overwrite": true 
         }
     ],
     "mintCData": [

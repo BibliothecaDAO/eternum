@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Direction};
+use crate::alias::ID;
+use crate::models::position::Direction;
 
 #[starknet::interface]
 pub trait IVillageSystems<T> {
@@ -10,26 +10,25 @@ pub trait IVillageSystems<T> {
 pub mod village_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcherTrait};
-
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
-
-    use s1_eternum::models::map::{TileOccupier};
-    use s1_eternum::models::position::{Coord};
-    use s1_eternum::models::position::{Direction, NUM_DIRECTIONS};
-    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-    use s1_eternum::models::structure::{
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
+    use crate::models::map::TileOccupier;
+    use crate::models::position::{Coord, Direction, NUM_DIRECTIONS};
+    use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots,
     };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+    use crate::system_libraries::structure_libraries::structure_creation_library::{
+        IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+    };
     use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]
@@ -80,7 +79,7 @@ pub mod village_systems {
                 } else {
                     new_directions_left.append(*slot_direction);
                 }
-            };
+            }
             assert!(slot_available, "the chosen slot is not available");
 
             // remove the used village slot from available slots
@@ -96,7 +95,7 @@ pub mod village_systems {
             let mut village_coord: Coord = connected_structure.coord();
             for _ in 0..iVillageImpl::village_realm_distance() {
                 village_coord = village_coord.neighbor(direction);
-            };
+            }
 
             let village_resources: Span<u8> = array![iVillageResourceImpl::random(caller, world)].span();
 
@@ -105,23 +104,27 @@ pub mod village_systems {
             villiage_metadata.village_realm = connected_realm_entity_id;
 
             // create village
-            iStructureImpl::create(
-                ref world,
-                village_coord,
-                caller,
-                village_id,
-                StructureCategory::Village,
-                village_resources,
-                villiage_metadata,
-                TileOccupier::Village,
-            );
+            let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+            structure_creation_library
+                .make_structure(
+                    world,
+                    village_coord,
+                    caller,
+                    village_id,
+                    StructureCategory::Village,
+                    village_resources,
+                    villiage_metadata,
+                    TileOccupier::Village,
+                    false,
+                );
 
             // grant starting resources
-            iStructureImpl::grant_starting_resources(ref world, village_id, village_coord);
+            structure_creation_library.grant_starting_resources(world, village_id, village_coord);
 
             // place castle building
             BuildingImpl::create(
                 ref world,
+                caller,
                 village_id,
                 StructureCategory::Village.into(),
                 village_coord,

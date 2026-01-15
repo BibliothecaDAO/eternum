@@ -1,7 +1,9 @@
-import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { usePlayResourceSound } from "@/audio";
 import { Button, ListSelect, NumberInput } from "@/ui/design-system/atoms";
 import { ResourceCost } from "@/ui/design-system/molecules";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   canTransferMilitaryResources,
   divideByPrecision,
@@ -9,7 +11,7 @@ import {
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/types";
+import { ID, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export const SelectResources = ({
@@ -28,6 +30,7 @@ export const SelectResources = ({
   toEntityId: ID;
 }) => {
   const dojo = useDojo();
+  const mode = useGameModeConfig();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const { playResourceSound } = usePlayResourceSound();
 
@@ -36,7 +39,7 @@ export const SelectResources = ({
   }, [entity_id, toEntityId, dojo.setup.components]);
 
   const orderedResources = useMemo(() => {
-    return Object.values(RESOURCE_TIERS)
+    return Object.values(mode.resources.getTiers())
       .flat()
       .map((resourceId) => ({
         id: resourceId,
@@ -45,7 +48,7 @@ export const SelectResources = ({
       .filter((res) => {
         return canTransferMilitary || !isMilitaryResource(res.id);
       });
-  }, [canTransferMilitary]);
+  }, [canTransferMilitary, mode.resources]);
 
   const unselectedResources = useMemo(
     () => orderedResources.filter((res) => !selectedResourceIds.includes(res.id)),

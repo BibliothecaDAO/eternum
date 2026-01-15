@@ -66,8 +66,7 @@ source "$(dirname "$0")/colors.sh"
 #==============================================================================
 
 KATANA_MAX_INVOKE_STEPS=25000000 # 25,000,000
-KATANA_BLOCK_TIME=2500 # 2.5 seconds
-PROJECT_FILE=".slot-project"
+KATANA_BLOCK_TIME=1000 # 1 seconds
 SN_NETWORK="slot"
 # Default RPC URL will now be set based on network selection
 RPC_URL=""

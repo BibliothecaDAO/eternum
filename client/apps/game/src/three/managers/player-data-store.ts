@@ -1,5 +1,6 @@
 import { sqlApi } from "@/services/api";
-import { getStructureTypeName } from "@bibliothecadao/eternum";
+import { getGameModeConfig } from "@/config/game-modes";
+import { StructureType } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";
 
@@ -60,6 +61,7 @@ export class PlayerDataStore {
   }
 
   private async fetchAndStoreData(): Promise<void> {
+    const mode = getGameModeConfig();
     const result = await sqlApi.fetchGlobalStructureExplorerAndGuildDetails();
     let realmsData = realms as Record<string, { name: string }>;
     await Promise.all(
@@ -70,7 +72,11 @@ export class PlayerDataStore {
           guildId: item.guild_id || "",
           guildName: item.guild_name ? shortString.decodeShortString(BigInt(item.guild_name).toString()) : "",
           ownerAddress: BigInt(item.owner_address).toString() || "",
-          ownerName: item.player_name ? shortString.decodeShortString(BigInt(item.player_name).toString()) : "",
+          ownerName: item.player_name
+            ? BigInt(item.player_name) === 0n
+              ? ""
+              : shortString.decodeShortString(BigInt(item.player_name).toString())
+            : "",
           realmsCount: item.realms_count,
           hyperstructuresCount: item.hyperstructures_count,
           bankCount: item.bank_count,
@@ -91,7 +97,9 @@ export class PlayerDataStore {
           let actualCategory = structureId.split(":")[2];
           this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
           const realmName =
-            actualRealmId === "0" ? getStructureTypeName(Number(actualCategory)) : realmsData[actualRealmId].name;
+            actualRealmId === "0"
+              ? (mode.structure.getTypeName(Number(actualCategory) as StructureType) ?? "Structure")
+              : realmsData[actualRealmId].name;
           this.structureToNameMap.set(actualStructureId, realmName);
         });
 
@@ -111,7 +119,9 @@ export class PlayerDataStore {
 
   public async getPlayerDataFromAddress(address: string): Promise<PlayerDataTransformed | undefined> {
     this._checkRefresh();
-    return this.addressToPlayerDataMap.get(BigInt(address).toString());
+    const playerData = this.addressToPlayerDataMap.get(BigInt(address).toString());
+    console.log({ playerData, address });
+    return playerData;
   }
 
   public async getPlayerDataFromStructureId(structureId: string): Promise<PlayerDataTransformed | undefined> {

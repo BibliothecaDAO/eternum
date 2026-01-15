@@ -18,7 +18,7 @@ export const Checkbox = ({ enabled, onClick, text }: CheckboxProps) => (
       {enabled && <Checkmark className="fill-gold" />}
     </div>
     {text && (
-      <div onClick={onClick} className="text-sm text-gray-300 hover:text-white transition-colors duration-200">
+      <div onClick={onClick} className="text-sm  hover:text-white transition-colors duration-200">
         {text}
       </div>
     )}

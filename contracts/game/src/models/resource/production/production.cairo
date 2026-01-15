@@ -1,43 +1,104 @@
 use core::num::traits::Bounded;
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
+use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{ResourceFactoryConfig};
-
-use s1_eternum::models::resource::resource::{ResourceList};
-use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    TroopResourceImpl, WeightStoreImpl,
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
+use crate::models::events::{ProductionStory, Story, StoryEvent};
+use crate::models::resource::resource::{
+    ResourceList, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+    StructureSingleResourceFoodImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureImpl, StructureOwnerStoreImpl};
-use s1_eternum::models::weight::{Weight};
-use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-use s1_eternum::utils::math::{PercentageValueImpl};
-use s1_eternum::utils::math::{min};
+use crate::models::structure::{StructureImpl, StructureOwnerStoreImpl};
+use crate::models::weight::Weight;
+use crate::utils::achievements::index::{AchievementTrait, Tasks};
+use crate::utils::math::{PercentageValueImpl, min};
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct ProductionWonderBonus {
+pub struct ProductionBoostBonus {
     #[key]
     pub structure_id: ID,
-    pub bonus_percent_num: u128,
+    pub wonder_incr_percent_num: u16,
+    pub incr_resource_rate_percent_num: u16,
+    pub incr_labor_rate_percent_num: u16,
+    pub incr_troop_rate_percent_num: u16,
+    pub incr_resource_rate_end_tick: u32,
+    pub incr_labor_rate_end_tick: u32,
+    pub incr_troop_rate_end_tick: u32,
 }
 
+
+pub impl ProductionBoostBonusZeroable of Zero<ProductionBoostBonus> {
+    fn is_zero(self: @ProductionBoostBonus) -> bool {
+        self.wonder_incr_percent_num == @0
+            && self.incr_resource_rate_percent_num == @0
+            && self.incr_labor_rate_percent_num == @0
+            && self.incr_troop_rate_percent_num == @0
+            && self.incr_resource_rate_end_tick == @0
+            && self.incr_labor_rate_end_tick == @0
+            && self.incr_troop_rate_end_tick == @0
+            && self.structure_id == @0
+    }
+
+    fn is_non_zero(self: @ProductionBoostBonus) -> bool {
+        !self.is_zero()
+    }
+
+    fn zero() -> ProductionBoostBonus {
+        ProductionBoostBonus {
+            structure_id: 0,
+            wonder_incr_percent_num: 0,
+            incr_resource_rate_percent_num: 0,
+            incr_labor_rate_percent_num: 0,
+            incr_troop_rate_percent_num: 0,
+            incr_resource_rate_end_tick: 0,
+            incr_labor_rate_end_tick: 0,
+            incr_troop_rate_end_tick: 0,
+        }
+    }
+}
 #[generate_trait]
-pub impl ProductionWonderBonusImpl of ProductionWonderBonusTrait {
-    fn include_wonder_bonus(ref world: WorldStorage, structure_id: ID, original_produced_amount: u128) -> u128 {
-        let production_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
-        let production_output_bonus_amount: u128 = (original_produced_amount
-            * production_wonder_bonus.bonus_percent_num)
+pub impl ProductionBoostBonusImpl of ProductionBoostBonusTrait {
+    fn include_bonuses(
+        ref world: WorldStorage, structure_id: ID, resource_type: u8, original_produced_amount: u128, current_tick: u32,
+    ) -> u128 {
+        let mut total_amount: u128 = original_produced_amount;
+        let mut production_boost_bonus: ProductionBoostBonus = world.read_model(structure_id);
+        total_amount += (original_produced_amount * production_boost_bonus.wonder_incr_percent_num.into())
             / PercentageValueImpl::_100().into();
-        original_produced_amount + production_output_bonus_amount
+
+        // ensure bonus is not applied after the end of bonus tick
+        if current_tick > production_boost_bonus.incr_resource_rate_end_tick {
+            production_boost_bonus.incr_resource_rate_percent_num = 0;
+        }
+        if current_tick > production_boost_bonus.incr_labor_rate_end_tick {
+            production_boost_bonus.incr_labor_rate_percent_num = 0;
+        }
+        if current_tick > production_boost_bonus.incr_resource_rate_end_tick {
+            production_boost_bonus.incr_resource_rate_percent_num = 0;
+        }
+
+        // get bonus percent num for resource type
+        let rate_bonus_percent_num = if resource_type == ResourceTypes::LABOR {
+            production_boost_bonus.incr_labor_rate_percent_num
+        } else if TroopResourceImpl::is_troop(resource_type) {
+            production_boost_bonus.incr_troop_rate_percent_num
+        } else {
+            production_boost_bonus.incr_resource_rate_percent_num
+        };
+
+        // apply production bonus for resource rate
+        total_amount += (original_produced_amount * rate_bonus_percent_num.into()) / PercentageValueImpl::_100().into();
+
+        return total_amount;
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default, PartialEq)]
+#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq, DojoStore)]
 pub struct Production {
     // active building count
     pub building_count: u8,
@@ -224,8 +285,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
         );
         let mut from_labor_resource_production: Production = from_labor_resource.production;
-        let produced_labor_amount = ProductionWonderBonusImpl::include_wonder_bonus(
-            ref world, from_entity_id, produced_labor_amount,
+        let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
+        let produced_labor_amount = ProductionBoostBonusImpl::include_bonuses(
+            ref world, from_entity_id, ResourceTypes::LABOR, produced_labor_amount, current_tick,
         );
         from_labor_resource_production.increase_output_amout_left(produced_labor_amount);
         from_labor_resource.production = from_labor_resource_production;
@@ -237,7 +299,24 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         // grant achievement
         let from_entity_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
         Self::_grant_producer_achievement(ref world, from_entity_owner, ResourceTypes::LABOR, produced_labor_amount);
-        // todo add event here
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_entity_owner),
+                    entity_id: Option::Some(from_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ProductionStory(
+                        ProductionStory {
+                            received_resource_type: ResourceTypes::LABOR,
+                            received_amount: produced_labor_amount,
+                            cost: array![(from_resource_type, from_resource_amount)].span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     // burn labor for production of some other resource
@@ -258,6 +337,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let payment_resources_count = produced_resource_factory_config.simple_input_list_count;
         assert!(payment_resources_count.is_non_zero(), "labor can't be produced from specified resource");
 
+        let mut paid_costs = array![];
         let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
         for i in 0..payment_resources_count {
             let payment_resource_cost: ResourceList = world.read_model((payment_resources_id, i));
@@ -272,7 +352,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             );
             payment_resource.spend(payment_resource_amount * cycles, ref from_entity_weight, resource_weight_grams);
             payment_resource.store(ref world);
-        };
+
+            paid_costs.append((payment_resource_type, payment_resource_amount * cycles));
+        }
 
         // add produceable resource amount to factory
         let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
@@ -280,8 +362,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, true,
         );
         let mut produced_resource_production: Production = produced_resource.production;
-        let produced_resource_amount = ProductionWonderBonusImpl::include_wonder_bonus(
-            ref world, from_entity_id, produced_resource_amount,
+        let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
+        let produced_resource_amount = ProductionBoostBonusImpl::include_bonuses(
+            ref world, from_entity_id, produced_resource_type, produced_resource_amount, current_tick,
         );
         produced_resource_production.increase_output_amout_left(produced_resource_amount);
         produced_resource.production = produced_resource_production;
@@ -295,7 +378,24 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         Self::_grant_producer_achievement(
             ref world, from_entity_owner, produced_resource_type, produced_resource_amount,
         );
-        // todo add event here
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_entity_owner),
+                    entity_id: Option::Some(from_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ProductionStory(
+                        ProductionStory {
+                            received_resource_type: produced_resource_type,
+                            received_amount: produced_resource_amount,
+                            cost: paid_costs.span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
 
@@ -315,6 +415,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(payment_resources_count.is_non_zero(), "specified resource can't be produced from non labor resources");
 
         let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
+        let mut paid_costs = array![];
         for i in 0..payment_resources_count {
             let payment_resource_cost: ResourceList = world.read_model((payment_resources_id, i));
             let payment_resource_type = payment_resource_cost.resource_type;
@@ -328,7 +429,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             );
             payment_resource.spend(payment_resource_amount * cycles, ref from_entity_weight, resource_weight_grams);
             payment_resource.store(ref world);
-        };
+
+            paid_costs.append((payment_resource_type, payment_resource_amount * cycles));
+        }
 
         // add produced resource amount to factory
         let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
@@ -344,8 +447,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let produceable_amount = cycles * produced_resource_factory_config.output_per_complex_input.into();
         assert!(produceable_amount.is_non_zero(), "can't produce this resource in standard mode");
 
-        let produceable_amount = ProductionWonderBonusImpl::include_wonder_bonus(
-            ref world, from_entity_id, produceable_amount,
+        // apply production boost bonus
+        let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
+        let produceable_amount = ProductionBoostBonusImpl::include_bonuses(
+            ref world, from_entity_id, produced_resource_type, produceable_amount, current_tick,
         );
         produced_resource_production.increase_output_amout_left(produceable_amount);
         produced_resource.production = produced_resource_production;
@@ -357,6 +462,23 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         // grant achievement
         let from_entity_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
         Self::_grant_producer_achievement(ref world, from_entity_owner, produced_resource_type, produceable_amount);
-        // todo add event here
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_entity_owner),
+                    entity_id: Option::Some(from_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ProductionStory(
+                        ProductionStory {
+                            received_resource_type: produced_resource_type,
+                            received_amount: produceable_amount,
+                            cost: paid_costs.span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 }

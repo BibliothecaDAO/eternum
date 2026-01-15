@@ -1,4 +1,4 @@
-use s1_eternum::utils::tasks::interface::TaskTrait;
+use crate::utils::tasks::interface::TaskTrait;
 
 pub impl Ruler of TaskTrait {
     #[inline]

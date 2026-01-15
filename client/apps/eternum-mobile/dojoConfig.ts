@@ -6,7 +6,7 @@ import { ETERNUM_CONFIG } from "./src/app/config/config";
 const {
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_TORII,
-  VITE_PUBLIC_TORII_RELAY,
+  //VITE_PUBLIC_TORII_RELAY,
   VITE_PUBLIC_MASTER_ADDRESS,
   VITE_PUBLIC_MASTER_PRIVATE_KEY,
   VITE_PUBLIC_ACCOUNT_CLASS_HASH,
@@ -19,7 +19,7 @@ const manifest = getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
   toriiUrl: VITE_PUBLIC_TORII,
-  relayUrl: VITE_PUBLIC_TORII_RELAY,
+  // relayUrl: VITE_PUBLIC_TORII_RELAY,
   masterAddress: VITE_PUBLIC_MASTER_ADDRESS,
   masterPrivateKey: VITE_PUBLIC_MASTER_PRIVATE_KEY,
   accountClassHash:

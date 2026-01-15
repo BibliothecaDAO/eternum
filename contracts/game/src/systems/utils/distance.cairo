@@ -1,5 +1,5 @@
 use dojo::world::WorldStorage;
-use s1_eternum::models::position::{Coord, TravelTrait};
+use crate::models::position::{Coord, TravelTrait};
 
 
 #[generate_trait]
@@ -10,7 +10,7 @@ pub impl iDistanceKmImpl of iDistanceKmTrait {
         let mut travel_time = start_coord.km_travel_time(destination_coord, sec_per_km);
         if round_trip {
             travel_time *= 2;
-        };
+        }
 
         travel_time
     }

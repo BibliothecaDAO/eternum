@@ -1,10 +1,17 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, ClientComponents, ID, Resource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, ID, Resource, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
+import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
+
+export interface ResourceProductionData {
+  productionPerSecond: number;
+  isProducing: boolean;
+  outputRemaining: number;
+  timeRemainingSeconds: number;
+}
 
 export class ResourceManager {
   entityId: ID;
@@ -31,9 +38,19 @@ export class ResourceManager {
   public isActive(resourceId: ResourcesIds): boolean {
     const resource = this._getResource();
     if (!resource) return false;
+    return ResourceManager.isActiveStatic(resource, resourceId);
+  }
+
+  public static isActiveStatic(
+    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
+    resourceId: ResourcesIds,
+  ): boolean {
+    if (!resource) return false;
     const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production) return false;
-    if (this.isFood(resourceId)) {
+
+    const isFood = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
+    if (isFood) {
       return production.production_rate !== 0n;
     }
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
@@ -586,8 +603,8 @@ export class ResourceManager {
     const quantity = structureBuildings ? getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0 : 0;
 
     return {
-      capacityKg: gramToKg(Number(resource?.weight.capacity || 0) / RESOURCE_PRECISION),
-      capacityUsedKg: gramToKg(Number(resource?.weight.weight || 0) / RESOURCE_PRECISION),
+      capacityKg: gramToKg(divideByPrecision(Number(resource?.weight.capacity || 0))),
+      capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(resource?.weight.weight || 0)))),
       quantity,
     };
   }
@@ -600,7 +617,7 @@ export class ResourceManager {
 
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
     const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg();
-    const capacityLeft = capacityKg - capacityUsedKg;
+    const capacityLeft = Math.max(0, capacityKg - capacityUsedKg);
 
     const maxAmountStorable = multiplyByPrecision(capacityLeft / (configManager.getResourceWeightKg(resourceId) || 1));
 
@@ -650,6 +667,12 @@ export class ResourceManager {
       last_updated_at: number;
     };
   } {
+    const noProduction = {
+      building_count: 0,
+      production_rate: 0n,
+      output_amount_left: 0n,
+      last_updated_at: 0,
+    };
     switch (resourceId) {
       case ResourcesIds.Stone:
         return { balance: resource.STONE_BALANCE, production: resource.STONE_PRODUCTION };
@@ -725,6 +748,98 @@ export class ResourceManager {
         return { balance: resource.FISH_BALANCE, production: resource.FISH_PRODUCTION };
       case ResourcesIds.Lords:
         return { balance: resource.LORDS_BALANCE, production: resource.LORDS_PRODUCTION };
+      case ResourcesIds.Essence:
+        return { balance: resource.ESSENCE_BALANCE, production: resource.ESSENCE_PRODUCTION };
+      case ResourcesIds.StaminaRelic1:
+        return {
+          balance: resource.RELIC_E1_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StaminaRelic2:
+        return {
+          balance: resource.RELIC_E2_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageRelic1:
+        return {
+          balance: resource.RELIC_E3_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageRelic2:
+        return {
+          balance: resource.RELIC_E4_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageReductionRelic1:
+        return {
+          balance: resource.RELIC_E5_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageReductionRelic2:
+        return {
+          balance: resource.RELIC_E6_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRelic1:
+        return {
+          balance: resource.RELIC_E7_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRelic2:
+        return {
+          balance: resource.RELIC_E8_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRewardRelic1:
+        return {
+          balance: resource.RELIC_E9_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRewardRelic2:
+        return {
+          balance: resource.RELIC_E10_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StructureDamageReductionRelic1:
+        return {
+          balance: resource.RELIC_E11_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StructureDamageReductionRelic2:
+        return {
+          balance: resource.RELIC_E12_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ProductionRelic1:
+        return {
+          balance: resource.RELIC_E13_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ProductionRelic2:
+        return {
+          balance: resource.RELIC_E14_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.LaborProductionRelic1:
+        return {
+          balance: resource.RELIC_E15_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.LaborProductionRelic2:
+        return {
+          balance: resource.RELIC_E16_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.TroopProductionRelic1:
+        return {
+          balance: resource.RELIC_E17_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.TroopProductionRelic2:
+        return {
+          balance: resource.RELIC_E18_BALANCE,
+          production: noProduction,
+        };
       default:
         return {
           balance: 0n,
@@ -779,6 +894,25 @@ export class ResourceManager {
       ["WHEAT_BALANCE", ResourcesIds.Wheat],
       ["FISH_BALANCE", ResourcesIds.Fish],
       ["LORDS_BALANCE", ResourcesIds.Lords],
+      ["ESSENCE_BALANCE", ResourcesIds.Essence],
+      ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic1],
+      ["RELIC_E2_BALANCE", ResourcesIds.StaminaRelic2],
+      ["RELIC_E3_BALANCE", ResourcesIds.DamageRelic1],
+      ["RELIC_E4_BALANCE", ResourcesIds.DamageRelic2],
+      ["RELIC_E5_BALANCE", ResourcesIds.DamageReductionRelic1],
+      ["RELIC_E6_BALANCE", ResourcesIds.DamageReductionRelic2],
+      ["RELIC_E7_BALANCE", ResourcesIds.ExplorationRelic1],
+      ["RELIC_E8_BALANCE", ResourcesIds.ExplorationRelic2],
+      ["RELIC_E9_BALANCE", ResourcesIds.ExplorationRewardRelic1],
+      ["RELIC_E10_BALANCE", ResourcesIds.ExplorationRewardRelic2],
+      ["RELIC_E11_BALANCE", ResourcesIds.StructureDamageReductionRelic1],
+      ["RELIC_E12_BALANCE", ResourcesIds.StructureDamageReductionRelic2],
+      ["RELIC_E13_BALANCE", ResourcesIds.ProductionRelic1],
+      ["RELIC_E14_BALANCE", ResourcesIds.ProductionRelic2],
+      ["RELIC_E15_BALANCE", ResourcesIds.LaborProductionRelic1],
+      ["RELIC_E16_BALANCE", ResourcesIds.LaborProductionRelic2],
+      ["RELIC_E17_BALANCE", ResourcesIds.TroopProductionRelic1],
+      ["RELIC_E18_BALANCE", ResourcesIds.TroopProductionRelic2],
     ];
   }
 
@@ -797,7 +931,7 @@ export class ResourceManager {
     currentTick: number,
   ): Resource[] {
     const resourceMapping = ResourceManager.getResourceMapping(resource);
-    return resourceMapping.map(([key, resourceId]) => {
+    return resourceMapping.map(([_, resourceId]) => {
       const { balance } = ResourceManager.balanceWithProduction(resource, currentTick, resourceId);
       return {
         resourceId,
@@ -866,5 +1000,134 @@ export class ResourceManager {
       return BigInt(maxAmountStorable);
     }
     return amountProduced;
+  }
+
+  public getActiveProductions(): Array<{
+    resourceId: ResourcesIds;
+    productionRate: bigint;
+    buildingCount: number;
+    outputAmountLeft: bigint;
+    lastUpdatedAt: number;
+  }> {
+    const resource = this._getResource();
+    if (!resource) return [];
+
+    return ResourceManager.getActiveProductions(resource);
+  }
+
+  /**
+   * Static version of getActiveProductions for use without instantiating ResourceManager
+   */
+  public static getActiveProductions(resource: ComponentValue<ClientComponents["Resource"]["schema"]>): Array<{
+    resourceId: ResourcesIds;
+    productionRate: bigint;
+    buildingCount: number;
+    outputAmountLeft: bigint;
+    lastUpdatedAt: number;
+  }> {
+    if (!resource) return [];
+
+    const activeProductions: Array<{
+      resourceId: ResourcesIds;
+      productionRate: bigint;
+      buildingCount: number;
+      outputAmountLeft: bigint;
+      lastUpdatedAt: number;
+    }> = [];
+
+    // Define production fields and their corresponding resource IDs
+    const productionFields: Array<[keyof typeof resource, ResourcesIds]> = [
+      ["STONE_PRODUCTION", ResourcesIds.Stone],
+      ["COAL_PRODUCTION", ResourcesIds.Coal],
+      ["WOOD_PRODUCTION", ResourcesIds.Wood],
+      ["COPPER_PRODUCTION", ResourcesIds.Copper],
+      ["IRONWOOD_PRODUCTION", ResourcesIds.Ironwood],
+      ["OBSIDIAN_PRODUCTION", ResourcesIds.Obsidian],
+      ["GOLD_PRODUCTION", ResourcesIds.Gold],
+      ["SILVER_PRODUCTION", ResourcesIds.Silver],
+      ["MITHRAL_PRODUCTION", ResourcesIds.Mithral],
+      ["ALCHEMICAL_SILVER_PRODUCTION", ResourcesIds.AlchemicalSilver],
+      ["COLD_IRON_PRODUCTION", ResourcesIds.ColdIron],
+      ["DEEP_CRYSTAL_PRODUCTION", ResourcesIds.DeepCrystal],
+      ["RUBY_PRODUCTION", ResourcesIds.Ruby],
+      ["DIAMONDS_PRODUCTION", ResourcesIds.Diamonds],
+      ["HARTWOOD_PRODUCTION", ResourcesIds.Hartwood],
+      ["IGNIUM_PRODUCTION", ResourcesIds.Ignium],
+      ["TWILIGHT_QUARTZ_PRODUCTION", ResourcesIds.TwilightQuartz],
+      ["TRUE_ICE_PRODUCTION", ResourcesIds.TrueIce],
+      ["ADAMANTINE_PRODUCTION", ResourcesIds.Adamantine],
+      ["SAPPHIRE_PRODUCTION", ResourcesIds.Sapphire],
+      ["ETHEREAL_SILICA_PRODUCTION", ResourcesIds.EtherealSilica],
+      ["DRAGONHIDE_PRODUCTION", ResourcesIds.Dragonhide],
+      ["LABOR_PRODUCTION", ResourcesIds.Labor],
+      ["EARTHEN_SHARD_PRODUCTION", ResourcesIds.AncientFragment],
+      ["DONKEY_PRODUCTION", ResourcesIds.Donkey],
+      ["KNIGHT_T1_PRODUCTION", ResourcesIds.Knight],
+      ["KNIGHT_T2_PRODUCTION", ResourcesIds.KnightT2],
+      ["KNIGHT_T3_PRODUCTION", ResourcesIds.KnightT3],
+      ["CROSSBOWMAN_T1_PRODUCTION", ResourcesIds.Crossbowman],
+      ["CROSSBOWMAN_T2_PRODUCTION", ResourcesIds.CrossbowmanT2],
+      ["CROSSBOWMAN_T3_PRODUCTION", ResourcesIds.CrossbowmanT3],
+      ["PALADIN_T1_PRODUCTION", ResourcesIds.Paladin],
+      ["PALADIN_T2_PRODUCTION", ResourcesIds.PaladinT2],
+      ["PALADIN_T3_PRODUCTION", ResourcesIds.PaladinT3],
+      ["WHEAT_PRODUCTION", ResourcesIds.Wheat],
+      ["FISH_PRODUCTION", ResourcesIds.Fish],
+      ["LORDS_PRODUCTION", ResourcesIds.Lords],
+      ["ESSENCE_PRODUCTION", ResourcesIds.Essence],
+    ];
+
+    // Check each production field directly
+    for (const [fieldName, resourceId] of productionFields) {
+      const production = resource[fieldName] as {
+        building_count: number;
+        production_rate: bigint;
+        output_amount_left: bigint;
+        last_updated_at: number;
+      };
+
+      // Check if production is active
+      if (ResourceManager.isActiveStatic(resource, resourceId)) {
+        activeProductions.push({
+          resourceId,
+          productionRate: production.production_rate,
+          buildingCount: production.building_count,
+          outputAmountLeft: production.output_amount_left,
+          lastUpdatedAt: production.last_updated_at,
+        });
+      }
+    }
+
+    return activeProductions;
+  }
+
+  public static calculateResourceProductionData(
+    resourceId: ResourcesIds,
+    productionInfo: ReturnType<typeof ResourceManager.balanceAndProduction>,
+    currentTick: number,
+  ): ResourceProductionData {
+    const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
+
+    const ticksSinceLastUpdate = currentTick - productionInfo.production.last_updated_at;
+    const totalAmountProduced = BigInt(ticksSinceLastUpdate) * productionInfo.production.production_rate;
+    const isFoodResource = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
+    const remainingOutput = isFoodResource
+      ? productionInfo.production.output_amount_left
+      : productionInfo.production.output_amount_left - totalAmountProduced;
+
+    const isProducing =
+      productionInfo.production.building_count > 0 &&
+      productionInfo.production.production_rate !== 0n &&
+      (isFoodResource || remainingOutput > 0n);
+
+    const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
+    const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;
+
+    return {
+      productionPerSecond,
+      isProducing,
+      outputRemaining: outputRemainingNumber,
+      timeRemainingSeconds,
+    };
   }
 }

@@ -59,6 +59,7 @@ export const RawResourcesPanel = ({
   return (
     <div className={`cursor-pointer`} onClick={onSelect}>
       <div className="">
+        <h4 className="text-sm font-semibold text-gold/80 mb-2">Resources Required:</h4>
         {rawInputResources?.map((input) => {
           const balance = resourceBalances[input.resource] || 0;
           return (

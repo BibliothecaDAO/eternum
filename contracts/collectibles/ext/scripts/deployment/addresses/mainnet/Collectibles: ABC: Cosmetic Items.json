@@ -1,0 +1,34 @@
+{
+  "address": "0x1943078d36c49d9830444188fcac8ad3bc2f045946f7b557b1a48082eac3b1d",
+  "calldata": [
+    {
+      "data": [],
+      "pending_word": "0x4142433a20436f736d65746963204974656d73",
+      "pending_word_len": 19
+    },
+    {
+      "data": [],
+      "pending_word": "0x414243",
+      "pending_word_len": 3
+    },
+    {
+      "data": [],
+      "pending_word": "0x00",
+      "pending_word_len": 0
+    },
+    {
+      "data": [],
+      "pending_word": "0x436f736d65746963204974656d7320666f7220414243",
+      "pending_word_len": 22
+    },
+    "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+    "0x70e7aea02752d5e57e78fd455caf9b6a412730ad604a2037d17118d93733711",
+    "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+    "0x70e7aea02752d5e57e78fd455caf9b6a412730ad604a2037d17118d93733711",
+    "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+    "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+    "0x1f4"
+  ],
+  "deployed_at": 1764082221478,
+  "deployed_at_readable": "Tue, 25 Nov 2025 14:50:21 GMT"
+}

@@ -1,12 +1,27 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
-import { BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { AnimationMixer } from "three";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  AnimationAction,
+  AnimationMixer,
+  Box3,
+  Color,
+  Euler,
+  Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  Object3D,
+  Raycaster,
+  Scene,
+  Vector3,
+} from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
@@ -15,33 +30,65 @@ import {
   TROOP_TO_MODEL,
 } from "../constants";
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
+import type { AnimationVisibilityContext } from "../types/animation";
 import { getHexForWorldPosition } from "../utils";
-import { transitionManager } from "../utils/";
+import { applyEasing, EasingType } from "../utils/easing";
+import { getContactShadowResources } from "../utils/contact-shadow";
+import { MaterialPool } from "../utils/material-pool";
+import { MemoryMonitor } from "../utils/memory-monitor";
+
+const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const CONTACT_SHADOW_Y_OFFSET = 0.02;
 
 export class ArmyModel {
   // Core properties
-  private readonly scene: THREE.Scene;
-  private readonly dummyObject: THREE.Object3D;
+  private readonly scene: Scene;
+  private readonly dummyObject: Object3D;
   public readonly loadPromise: Promise<void>;
 
   // Model and instance management
   private readonly models: Map<ModelType, ModelData> = new Map();
+  private readonly pendingModelLoads: Map<ModelType, Promise<ModelData>> = new Map();
   private readonly entityModelMap: Map<number, ModelType> = new Map();
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
+  private readonly matrixIndexOwners: Map<number, number> = new Map();
   private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
-  private readonly labelsGroup: THREE.Group;
+  private readonly labelsGroup: Group;
   private currentCameraView: CameraView = CameraView.Medium;
+  private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
-  // Reusable objects for matrix operations
-  private readonly dummyMatrix: THREE.Matrix4 = new THREE.Matrix4();
-  private readonly dummyEuler: THREE.Euler = new THREE.Euler();
+  // Cosmetic model management
+  private readonly cosmeticModels: Map<string, ModelData> = new Map();
+  private readonly pendingCosmeticModelLoads: Map<string, Promise<ModelData>> = new Map();
+  private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
+  private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
+  private readonly activeCosmeticByEntity: Map<number, string | null> = new Map();
+
+  // Reusable objects for matrix operations and memory optimization
+  private readonly dummyMatrix: Matrix4 = new Matrix4();
+  private readonly contactShadowMatrix: Matrix4 = new Matrix4();
+  private readonly dummyEuler: Euler = new Euler();
+  private readonly tempVector1: Vector3 = new Vector3();
+  private readonly tempVector2: Vector3 = new Vector3();
+  private readonly tempVector3: Vector3 = new Vector3();
 
   // Animation and state management
   private readonly animationStates: Float32Array;
-  private readonly timeOffsets: Float32Array;
+  private readonly animationBuckets: Uint8Array;
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
+  private readonly ANIMATION_BUCKETS = 10;
+  private animationFrameOffset = 0;
+  private lastBucketStride = 1;
+  private idleWeightsBuffer: Float32Array | null = null;
+  private movingWeightsBuffer: Float32Array | null = null;
+  private bucketToIndices: Map<number, Uint16Array> = new Map();
+  private bucketIndicesBuilt = false;
+  private bucketIndicesMaxCount = 0;
+  private readonly freeSlots: number[] = [];
+  private readonly freeSlotSet: Set<number> = new Set();
+  private nextInstanceIndex = 0;
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
@@ -49,23 +96,53 @@ export class ArmyModel {
   private readonly FLOAT_HEIGHT = 0.5;
   private readonly FLOAT_TRANSITION_SPEED = 3.0;
   private readonly ROTATION_SPEED = 5.0;
-  private readonly zeroScale = new THREE.Vector3(0, 0, 0);
-  private readonly normalScale = new THREE.Vector3(1, 1, 1);
-  private readonly boatScale = new THREE.Vector3(1, 1, 1);
-  private readonly agentScale = new THREE.Vector3(2, 2, 2);
+  private readonly zeroScale = new Vector3(0, 0, 0);
+  private readonly normalScale = new Vector3(1, 1, 1);
+  private readonly boatScale = new Vector3(1, 1, 1);
+  private readonly agentScale = new Vector3(2, 2, 2);
+  private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
+  private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
+  private readonly INITIAL_INSTANCE_CAPACITY = 64;
 
   // agent
   private isAgent: boolean = false;
+  private contactShadowsEnabled = true;
 
-  constructor(scene: THREE.Scene, labelsGroup?: THREE.Group, cameraView?: CameraView) {
+  // Memory monitoring
+  private memoryMonitor?: MemoryMonitor;
+
+  // Material sharing
+  private static materialPool = MaterialPool.getInstance();
+
+  // Movement easing configuration
+  private defaultEasingType: EasingType = EasingType.EaseOut;
+  private tierEasingMap: Map<TroopTier, EasingType> = new Map([
+    ["T1" as TroopTier, EasingType.EaseOut],
+    ["T2" as TroopTier, EasingType.EaseOutCubic],
+    ["T3" as TroopTier, EasingType.EaseOutQuart],
+  ]);
+
+  constructor(scene: Scene, labelsGroup?: Group, cameraView?: CameraView) {
     this.scene = scene;
-    this.dummyObject = new THREE.Object3D();
-    this.loadPromise = this.loadModels();
-    this.labelsGroup = labelsGroup || new THREE.Group();
+    this.dummyObject = new Object3D();
+    this.loadPromise = Promise.resolve();
+    this.labelsGroup = labelsGroup || new Group();
     this.currentCameraView = cameraView || CameraView.Medium;
+    this.contactShadowsEnabled = this.currentCameraView !== CameraView.Close;
+
+    // Initialize memory monitor for army model operations
+    if (MEMORY_MONITORING_ENABLED) {
+      this.memoryMonitor = new MemoryMonitor({
+        spikeThresholdMB: 20, // Lower threshold for model operations
+        onMemorySpike: (spike) => {
+          console.warn(`🪖  Army Model Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+        },
+      });
+    }
 
     // Initialize animation arrays
-    this.timeOffsets = new Float32Array(MAX_INSTANCES);
+    // this.timeOffsets = new Float32Array(0); // Unused, keep for API compatibility if referenced elsewhere, otherwise can be removed
+    this.animationBuckets = new Uint8Array(MAX_INSTANCES);
     this.animationStates = new Float32Array(MAX_INSTANCES);
     this.initializeAnimationArrays();
   }
@@ -73,41 +150,151 @@ export class ArmyModel {
   // Initialization methods
   private initializeAnimationArrays(): void {
     for (let i = 0; i < MAX_INSTANCES; i++) {
-      this.timeOffsets[i] = Math.random() * 3;
+      this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
       this.animationStates[i] = ANIMATION_STATE_IDLE;
     }
   }
 
-  private async loadModels(): Promise<void> {
-    const modelTypes = Object.entries(MODEL_TYPE_TO_FILE);
-    const loadPromises = modelTypes.map(([type, fileName]) => this.loadSingleModel(type as ModelType, fileName));
-    await Promise.all(loadPromises);
-  }
+  private async ensureModel(modelType: ModelType): Promise<ModelData> {
+    if (this.models.has(modelType)) {
+      return this.models.get(modelType)!;
+    }
 
-  private async loadSingleModel(modelType: ModelType, fileName: string): Promise<void> {
-    return new Promise((resolve, reject) => {
+    let pending = this.pendingModelLoads.get(modelType);
+    if (pending) {
+      return pending;
+    }
+
+    const fileName = MODEL_TYPE_TO_FILE[modelType];
+    if (!fileName) {
+      throw new Error(`Missing model file for ${modelType}`);
+    }
+
+    pending = new Promise<ModelData>((resolve, reject) => {
       gltfLoader.load(
         `models/${fileName}`,
         (gltf) => {
-          // if (modelType === ModelType.Paladin2) {
-          //   console.log("Paladin", gltf.scene);
-          // }
-          const modelData = this.createModelData(gltf);
-          this.models.set(modelType, modelData);
-          resolve();
+          try {
+            const modelData = this.createModelData(gltf);
+            this.models.set(modelType, modelData);
+            this.reapplyInstancesForModel(modelType, modelData);
+            resolve(modelData);
+          } catch (error) {
+            reject(error as Error);
+          }
         },
         undefined,
-        reject,
+        (error) => reject(error),
       );
+    }).finally(() => {
+      this.pendingModelLoads.delete(modelType);
+    });
+
+    this.pendingModelLoads.set(modelType, pending);
+    return pending;
+  }
+
+  /**
+   * Ensures a cosmetic model is loaded by cosmeticId and asset path.
+   */
+  private async ensureCosmeticModel(cosmeticId: string, assetPath: string): Promise<ModelData> {
+    if (this.cosmeticModels.has(cosmeticId)) {
+      return this.cosmeticModels.get(cosmeticId)!;
+    }
+
+    let pending = this.pendingCosmeticModelLoads.get(cosmeticId);
+    if (pending) {
+      return pending;
+    }
+
+    pending = new Promise<ModelData>((resolve, reject) => {
+      gltfLoader.load(
+        assetPath,
+        (gltf) => {
+          try {
+            const modelData = this.createModelData(gltf);
+            this.cosmeticModels.set(cosmeticId, modelData);
+            this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
+            resolve(modelData);
+          } catch (error) {
+            reject(error as Error);
+          }
+        },
+        undefined,
+        (error) => {
+          console.error(`[ArmyModel] Failed to load cosmetic model ${cosmeticId} from ${assetPath}:`, error);
+          reject(error);
+        },
+      );
+    }).finally(() => {
+      this.pendingCosmeticModelLoads.delete(cosmeticId);
+    });
+
+    this.pendingCosmeticModelLoads.set(cosmeticId, pending);
+    return pending;
+  }
+
+  private reapplyInstancesForCosmeticModel(cosmeticId: string, modelData: ModelData): void {
+    this.instanceData.forEach((instance, entityId) => {
+      if (this.entityCosmeticMap.get(entityId) !== cosmeticId) {
+        return;
+      }
+      if (instance.matrixIndex === undefined) {
+        return;
+      }
+      const position = instance.position;
+      const scale = instance.scale;
+      const rotation = instance.rotation;
+      const color = instance.color;
+
+      if (!position || !scale) {
+        return;
+      }
+
+      this.updateInstance(entityId, instance.matrixIndex, position, scale, rotation, color);
+    });
+  }
+
+  private reapplyInstancesForModel(modelType: ModelType, modelData: ModelData): void {
+    this.instanceData.forEach((instance, entityId) => {
+      if (this.entityModelMap.get(entityId) !== modelType) {
+        return;
+      }
+      if (instance.matrixIndex === undefined) {
+        return;
+      }
+      const position = instance.position;
+      const scale = instance.scale;
+      const rotation = instance.rotation;
+      const color = instance.color;
+
+      if (!position || !scale) {
+        return;
+      }
+
+      this.updateInstance(entityId, instance.matrixIndex, position, scale, rotation, color);
     });
   }
 
   private createModelData(gltf: any): ModelData {
-    const group = new THREE.Group();
+    const group = new Group();
     const instancedMeshes: AnimatedInstancedMesh[] = [];
-    const baseMeshes: THREE.Mesh[] = [];
+    const baseMeshes: Mesh[] = [];
 
     this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes);
+
+    const contactShadowScale = this.computeContactShadowScale(gltf);
+    const { geometry, material } = getContactShadowResources();
+    const contactShadowMesh = new InstancedMesh(geometry, material, this.INITIAL_INSTANCE_CAPACITY);
+    contactShadowMesh.frustumCulled = true;
+    contactShadowMesh.castShadow = false;
+    contactShadowMesh.receiveShadow = false;
+    contactShadowMesh.renderOrder = 9;
+    contactShadowMesh.count = 0;
+    contactShadowMesh.raycast = () => {};
+    contactShadowMesh.visible = this.contactShadowsEnabled;
+    group.add(contactShadowMesh);
+
     this.scene.add(group);
 
     const mixer = new AnimationMixer(gltf.scene);
@@ -115,6 +302,8 @@ export class ArmyModel {
     return {
       group,
       instancedMeshes,
+      contactShadowMesh,
+      contactShadowScale,
       baseMeshes,
       mixer,
       animations: {
@@ -125,19 +314,34 @@ export class ArmyModel {
       activeInstances: new Set(),
       targetScales: new Map(),
       currentScales: new Map(),
+      lastAnimationUpdate: 0,
+      animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
     };
+  }
+
+  private computeContactShadowScale(gltf: any): number {
+    try {
+      gltf.scene.updateMatrixWorld(true);
+      const bounds = new Box3().setFromObject(gltf.scene);
+      bounds.getSize(this.tempVector1);
+      const footprint = Math.max(this.tempVector1.x, this.tempVector1.z);
+      return Math.max(0.6, footprint * 1.1);
+    } catch (error) {
+      console.warn("[ArmyModel] Failed to compute contact shadow bounds", error);
+      return 1;
+    }
   }
 
   private processGLTFScene(
     gltf: any,
-    group: THREE.Group,
+    group: Group,
     instancedMeshes: AnimatedInstancedMesh[],
-    baseMeshes: THREE.Mesh[],
+    baseMeshes: Mesh[],
   ): void {
     let meshIndex = 0;
 
-    gltf.scene.traverse((child: THREE.Object3D) => {
-      if (child instanceof THREE.Mesh) {
+    gltf.scene.traverse((child: Object3D) => {
+      if (child instanceof Mesh) {
         const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex);
         group.add(instancedMesh);
         instancedMeshes.push(instancedMesh);
@@ -147,19 +351,18 @@ export class ArmyModel {
     });
   }
 
-  private createInstancedMesh(mesh: THREE.Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
-    const geometry = mesh.geometry.clone();
-    const material = new THREE.MeshBasicMaterial({
-      map: (mesh.material as THREE.MeshStandardMaterial).map,
-      transparent: (mesh.material as THREE.MeshStandardMaterial).transparent,
-      side: (mesh.material as THREE.MeshStandardMaterial).side,
-    });
-    // @ts-ignore
-    if (mesh.material.name.includes("stand")) {
-      // @ts-ignore
-      material.opacity = 0.9;
-    }
-    const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
+  private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
+    const geometry = mesh.geometry;
+
+    // Handle both single material and material array cases
+    const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+    const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
+    const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
+    const instancedMesh = new InstancedMesh(
+      geometry,
+      material,
+      this.INITIAL_INSTANCE_CAPACITY,
+    ) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
@@ -167,7 +370,10 @@ export class ArmyModel {
     instancedMesh.renderOrder = 10 + meshIndex;
     // @ts-ignore
     if (mesh.material.name.includes("stand")) {
-      instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
+      instancedMesh.instanceColor = new InstancedBufferAttribute(
+        new Float32Array(this.INITIAL_INSTANCE_CAPACITY * 3),
+        3,
+      );
     }
 
     if (animations.length > 0) {
@@ -178,59 +384,396 @@ export class ArmyModel {
     return instancedMesh;
   }
 
-  private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: THREE.Mesh, animations: any[]): void {
+  private ensureModelCapacity(modelData: ModelData, requiredCount: number): void {
+    modelData.instancedMeshes.forEach((mesh, meshIndex) => {
+      const capacity = mesh.instanceMatrix.count;
+      if (requiredCount <= capacity) {
+        return;
+      }
+
+      let newCapacity = capacity || 1;
+      while (newCapacity < requiredCount) {
+        newCapacity *= 2;
+      }
+
+      const matrixArray = mesh.instanceMatrix.array as Float32Array;
+      const resizedMatrixArray = new Float32Array(newCapacity * 16);
+      resizedMatrixArray.set(matrixArray.subarray(0, capacity * 16));
+      mesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
+      mesh.instanceMatrix.needsUpdate = true;
+
+      if (mesh.instanceColor) {
+        const colorArray = mesh.instanceColor.array as Float32Array;
+        const resizedColorArray = new Float32Array(newCapacity * 3);
+        resizedColorArray.set(colorArray.subarray(0, capacity * 3));
+        mesh.instanceColor = new InstancedBufferAttribute(resizedColorArray, 3);
+        mesh.instanceColor.needsUpdate = true;
+      }
+
+      const baseMesh = modelData.baseMeshes[meshIndex];
+      for (let i = capacity; i < newCapacity; i++) {
+        mesh.setMatrixAt(i, this.zeroInstanceMatrix);
+        if (mesh.morphTexture) {
+          mesh.setMorphAt(i, baseMesh as any);
+        }
+      }
+
+      if (mesh.morphTexture) {
+        mesh.morphTexture.needsUpdate = true;
+      }
+    });
+
+    if (modelData.contactShadowMesh) {
+      const mesh = modelData.contactShadowMesh;
+      const capacity = mesh.instanceMatrix.count;
+      if (requiredCount > capacity) {
+        let newCapacity = capacity || 1;
+        while (newCapacity < requiredCount) {
+          newCapacity *= 2;
+        }
+
+        const matrixArray = mesh.instanceMatrix.array as Float32Array;
+        const resizedMatrixArray = new Float32Array(newCapacity * 16);
+        resizedMatrixArray.set(matrixArray.subarray(0, capacity * 16));
+        mesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.count = Math.min(mesh.count, newCapacity);
+
+        for (let i = capacity; i < newCapacity; i++) {
+          mesh.setMatrixAt(i, this.zeroInstanceMatrix);
+        }
+      }
+    }
+  }
+
+  private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: Mesh, animations: any[]): void {
     const hasAnimation = animations[0].tracks.find((track: any) => track.name.split(".")[0] === mesh.name);
 
     if (hasAnimation) {
       instancedMesh.animated = true;
-      for (let i = 0; i < MAX_INSTANCES; i++) {
+      for (let i = 0; i < this.INITIAL_INSTANCE_CAPACITY; i++) {
         instancedMesh.setMorphAt(i, mesh as any);
       }
       instancedMesh.morphTexture!.needsUpdate = true;
     }
   }
 
+  private clearInstanceSlot(matrixIndex: number): void {
+    // O(1) slot clearing: only clear the specific model(s) that own this slot
+    const entityId = this.matrixIndexOwners.get(matrixIndex);
+
+    if (entityId !== undefined) {
+      // Clear from the active base model (if any)
+      const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+      if (activeBaseModel) {
+        const modelData = this.models.get(activeBaseModel);
+        if (modelData) {
+          modelData.activeInstances.delete(matrixIndex);
+          this.clearModelSlot(modelData, matrixIndex);
+        }
+      }
+
+      // Clear from the active cosmetic model (if any)
+      const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+      if (activeCosmetic) {
+        const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+        if (cosmeticData) {
+          cosmeticData.activeInstances.delete(matrixIndex);
+          this.clearModelSlot(cosmeticData, matrixIndex);
+        }
+      }
+    } else {
+      // Fallback: if we don't know the owner, clear all models (legacy behavior)
+      // This should rarely happen in practice
+      this.models.forEach((modelData) => {
+        this.clearModelSlot(modelData, matrixIndex);
+      });
+      this.cosmeticModels.forEach((modelData) => {
+        this.clearModelSlot(modelData, matrixIndex);
+      });
+    }
+
+    this.setAnimationState(matrixIndex, false);
+  }
+
+  /**
+   * Helper to clear a single slot from a model's meshes
+   */
+  private clearModelSlot(modelData: ModelData, matrixIndex: number): void {
+    this.ensureModelCapacity(modelData, matrixIndex + 1);
+    modelData.instancedMeshes.forEach((mesh) => {
+      mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.userData.entityIdMap?.delete(matrixIndex);
+    });
+    if (modelData.contactShadowMesh) {
+      modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
   // Instance Management Methods
+  public async preloadModels(modelTypes: Iterable<ModelType>): Promise<void> {
+    const loads: Promise<ModelData>[] = [];
+    for (const type of modelTypes) {
+      loads.push(this.ensureModel(type));
+    }
+    if (loads.length === 0) {
+      return;
+    }
+    try {
+      await Promise.all(loads);
+    } catch (error) {
+      console.error("Failed to preload army models", error);
+    }
+  }
+
   public assignModelToEntity(entityId: number, modelType: ModelType): void {
     const oldModelType = this.entityModelMap.get(entityId);
     if (oldModelType === modelType) return;
     this.entityModelMap.set(entityId, modelType);
+    void this.ensureModel(modelType).catch((error) => {
+      console.error(`Failed to load model for ${modelType}`, error);
+    });
+  }
+
+  /**
+   * Preloads a cosmetic model by ID and asset path.
+   */
+  public async preloadCosmeticModel(cosmeticId: string, assetPath: string): Promise<void> {
+    try {
+      await this.ensureCosmeticModel(cosmeticId, assetPath);
+    } catch (error) {
+      console.error(`Failed to preload cosmetic model ${cosmeticId}`, error);
+    }
+  }
+
+  /**
+   * Assigns a cosmetic model to an entity. This takes precedence over the base ModelType.
+   */
+  public assignCosmeticToEntity(entityId: number, cosmeticId: string, assetPath: string): void {
+    const oldCosmeticId = this.entityCosmeticMap.get(entityId);
+    if (oldCosmeticId === cosmeticId) return;
+    this.entityCosmeticMap.set(entityId, cosmeticId);
+    void this.ensureCosmeticModel(cosmeticId, assetPath).catch((error) => {
+      console.error(`Failed to load cosmetic model ${cosmeticId}`, error);
+    });
+  }
+
+  /**
+   * Clears cosmetic assignment for an entity, falling back to base ModelType.
+   */
+  public clearCosmeticForEntity(entityId: number): void {
+    this.entityCosmeticMap.delete(entityId);
+  }
+
+  /**
+   * Checks if an entity has a cosmetic model assigned.
+   */
+  public hasCosmeticModel(entityId: number): boolean {
+    const cosmeticId = this.entityCosmeticMap.get(entityId);
+    return cosmeticId !== undefined && this.cosmeticModels.has(cosmeticId);
   }
 
   public getModelForEntity(entityId: number): ModelData | undefined {
+    // Check for cosmetic model first
+    const cosmeticId = this.entityCosmeticMap.get(entityId);
+    if (cosmeticId) {
+      const cosmeticModel = this.cosmeticModels.get(cosmeticId);
+      if (cosmeticModel) {
+        return cosmeticModel;
+      }
+    }
+    // Fall back to base model
     const modelType = this.entityModelMap.get(entityId);
     if (!modelType) return undefined;
     return this.models.get(modelType);
   }
 
+  public allocateInstanceSlot(entityId: number): number {
+    const existingSlot = this.instanceData.get(entityId)?.matrixIndex;
+    if (existingSlot !== undefined) {
+      this.matrixIndexOwners.set(existingSlot, entityId);
+      return existingSlot;
+    }
+
+    const reusedSlot = this.freeSlots.pop();
+    const slot = reusedSlot !== undefined ? reusedSlot : this.nextInstanceIndex++;
+    if (reusedSlot !== undefined) {
+      this.freeSlotSet.delete(reusedSlot);
+    }
+    this.matrixIndexOwners.set(slot, entityId);
+    return slot;
+  }
+
+  public freeInstanceSlot(entityId: number, slot?: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    const resolvedSlot = slot ?? instanceData?.matrixIndex;
+    if (resolvedSlot === undefined) {
+      return;
+    }
+
+    this.clearMovementState(entityId);
+    this.clearInstanceSlot(resolvedSlot);
+    this.matrixIndexOwners.delete(resolvedSlot);
+
+    if (this.freeSlotSet.has(resolvedSlot)) return;
+
+    this.freeSlotSet.add(resolvedSlot);
+    this.freeSlots.push(resolvedSlot);
+
+    if (instanceData) {
+      instanceData.matrixIndex = undefined;
+    }
+  }
+
+  public rebindInstanceSlot(entityId: number, newSlot: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.matrixIndex = newSlot;
+    }
+    this.matrixIndexOwners.set(newSlot, entityId);
+    this.rebindMovementMatrixIndex(entityId, newSlot);
+  }
+
+  private getScaleForModelType(modelType: ModelType): Vector3 {
+    if (modelType === ModelType.Boat) {
+      return this.boatScale;
+    }
+    if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
+      return this.agentScale;
+    }
+    return this.normalScale;
+  }
+
   public updateInstance(
     entityId: number,
     index: number,
-    position: THREE.Vector3,
-    scale: THREE.Vector3,
-    rotation?: THREE.Euler,
-    color?: THREE.Color,
+    position: Vector3,
+    scale: Vector3,
+    rotation?: Euler,
+    color?: Color,
   ): void {
-    this.models.forEach((modelData, modelType) => {
-      const isActiveModel = modelType === this.entityModelMap.get(entityId);
-      let targetScale = this.zeroScale;
+    const previousOwner = this.matrixIndexOwners.get(index);
+    if (import.meta.env?.DEV && previousOwner !== undefined && previousOwner !== entityId) {
+      console.warn(`[ArmyModel] Matrix slot ${index} reassigned from entity ${previousOwner} to ${entityId}.`);
+    }
+    this.matrixIndexOwners.set(index, entityId);
 
-      if (isActiveModel) {
-        if (modelType === ModelType.Boat) {
-          targetScale = this.boatScale;
-        } else if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
-          targetScale = this.agentScale;
-        } else {
-          targetScale = this.normalScale;
+    const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
+
+    const desiredModelType = this.entityModelMap.get(entityId) ?? null;
+    const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
+    const hasActiveCosmetic = desiredCosmeticId !== undefined && this.cosmeticModels.has(desiredCosmeticId);
+
+    const activeBaseModel = hasActiveCosmetic ? null : desiredModelType;
+    const activeCosmetic = hasActiveCosmetic ? desiredCosmeticId! : null;
+
+    const prevActiveBaseModel = this.activeBaseModelByEntity.get(entityId) ?? null;
+    const prevActiveCosmetic = this.activeCosmeticByEntity.get(entityId) ?? null;
+
+    if (prevActiveBaseModel !== activeBaseModel) {
+      if (prevActiveBaseModel) {
+        const prevModelData = this.models.get(prevActiveBaseModel);
+        if (prevModelData) {
+          // Remove from previous model's active instances
+          prevModelData.activeInstances.delete(index);
+          this.ensureModelCapacity(prevModelData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevModelData, index, entityId, state.position, state.color);
         }
       }
+      this.activeBaseModelByEntity.set(entityId, activeBaseModel);
+    }
 
-      this.updateInstanceTransform(position, targetScale, rotation);
-      this.updateInstanceMeshes(modelData, index, color);
-    });
+    if (prevActiveCosmetic !== activeCosmetic) {
+      if (prevActiveCosmetic) {
+        const prevCosmeticData = this.cosmeticModels.get(prevActiveCosmetic);
+        if (prevCosmeticData) {
+          // Remove from previous cosmetic's active instances
+          prevCosmeticData.activeInstances.delete(index);
+          this.ensureModelCapacity(prevCosmeticData, index + 1);
+          this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
+          this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.position, state.color);
+        }
+      }
+      this.activeCosmeticByEntity.set(entityId, activeCosmetic);
+    }
+
+    if (activeBaseModel) {
+      const modelData = this.models.get(activeBaseModel);
+      if (modelData) {
+        // Add to model's active instances
+        modelData.activeInstances.add(index);
+        const targetScale = this.getScaleForModelType(activeBaseModel);
+        this.ensureModelCapacity(modelData, index + 1);
+        this.updateInstanceTransform(state.position, targetScale, state.rotation);
+        this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+      }
+    }
+
+    if (activeCosmetic) {
+      const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+      if (cosmeticData) {
+        // Add to cosmetic's active instances
+        cosmeticData.activeInstances.add(index);
+        this.ensureModelCapacity(cosmeticData, index + 1);
+        this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
+        this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
+      }
+    }
   }
 
-  private updateInstanceTransform(position: THREE.Vector3, scale: THREE.Vector3, rotation?: THREE.Euler): void {
+  public releaseEntity(entityId: number, freedSlot?: number): void {
+    this.freeInstanceSlot(entityId, freedSlot);
+    this.instanceData.delete(entityId);
+    this.entityModelMap.delete(entityId);
+    this.entityCosmeticMap.delete(entityId);
+    this.activeBaseModelByEntity.delete(entityId);
+    this.activeCosmeticByEntity.delete(entityId);
+    this.movementCompleteCallbacks.delete(entityId);
+    this.removeLabel(entityId);
+  }
+
+  private storeInstanceState(
+    entityId: number,
+    matrixIndex: number,
+    position: Vector3,
+    scale: Vector3,
+    rotation?: Euler,
+    color?: Color,
+  ): ArmyInstanceData {
+    let state = this.instanceData.get(entityId);
+    if (!state) {
+      state = {
+        entityId,
+        position: position.clone(),
+        scale: scale.clone(),
+        isMoving: false,
+        matrixIndex,
+      };
+      this.instanceData.set(entityId, state);
+    } else {
+      state.position.copy(position);
+      state.scale.copy(scale);
+      state.matrixIndex = matrixIndex;
+    }
+
+    if (rotation) {
+      state.rotation = state.rotation ? state.rotation.copy(rotation) : rotation.clone();
+    } else {
+      state.rotation = undefined;
+    }
+
+    if (color) {
+      state.color = state.color ? state.color.copy(color) : color.clone();
+    }
+
+    state.matrixIndex = matrixIndex;
+    return state;
+  }
+
+  private updateInstanceTransform(position: Vector3, scale: Vector3, rotation?: Euler): void {
     this.dummyObject.position.copy(position);
     this.dummyObject.position.y += 0.15;
     this.dummyObject.scale.copy(scale);
@@ -240,7 +783,13 @@ export class ArmyModel {
     this.dummyObject.updateMatrix();
   }
 
-  private updateInstanceMeshes(modelData: ModelData, index: number, color?: THREE.Color): void {
+  private updateInstanceMeshes(
+    modelData: ModelData,
+    index: number,
+    entityId: number,
+    position: Vector3,
+    color?: Color,
+  ): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(index, this.dummyObject.matrix);
       mesh.instanceMatrix.needsUpdate = true;
@@ -250,59 +799,290 @@ export class ArmyModel {
         mesh.instanceColor.needsUpdate = true;
       }
 
-      mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map();
-      mesh.userData.entityIdMap.set(index, index);
+      mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map<number, number>();
+      mesh.userData.entityIdMap.set(index, entityId);
     });
+
+    if (modelData.contactShadowMesh) {
+      const isHidden =
+        this.dummyObject.scale.x === 0 && this.dummyObject.scale.y === 0 && this.dummyObject.scale.z === 0;
+      if (isHidden) {
+        modelData.contactShadowMesh.setMatrixAt(index, this.zeroInstanceMatrix);
+      } else {
+        const baseScale = modelData.contactShadowScale ?? 1;
+        const instanceScale = Math.max(this.dummyObject.scale.x, this.dummyObject.scale.z);
+        const finalScale = baseScale * instanceScale;
+
+        // Keep contact shadows grounded while units "float" during movement.
+        const movement = this.movingInstances.get(entityId);
+        const baseY = movement ? position.y - movement.floatingHeight : position.y;
+
+        this.contactShadowMatrix.makeScale(finalScale, finalScale, finalScale);
+        this.contactShadowMatrix.setPosition(position.x, baseY + CONTACT_SHADOW_Y_OFFSET, position.z);
+        modelData.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
+      }
+      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   // Animation Methods
-  public updateAnimations(deltaTime: number): void {
+  public updateAnimations(_deltaTime: number, _visibility?: AnimationVisibilityContext): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 
-    const time = performance.now() * 0.001;
+    const now = performance.now();
+    const time = now * 0.001;
 
     this.models.forEach((modelData) => {
-      this.updateModelAnimations(modelData, time);
+      this.updateModelAnimations(modelData, time, now);
+    });
+
+    // Also update cosmetic model animations
+    this.cosmeticModels.forEach((modelData) => {
+      this.updateModelAnimations(modelData, time, now);
     });
   }
 
-  private updateModelAnimations(modelData: ModelData, time: number): void {
+  private updateModelAnimations(modelData: ModelData, time: number, now: number): void {
+    // OPTIMIZATION: Early exit if no instanced meshes or no visible instances
+    // This prevents unnecessary animation work for loaded but invisible models
+    if (modelData.instancedMeshes.length === 0) {
+      return;
+    }
+
+    const primaryMesh = modelData.instancedMeshes[0];
+    if (!primaryMesh || primaryMesh.count === 0) {
+      return;
+    }
+
+    // Throttling: Calculate update frequency based on instance count
+    // More instances = more aggressive throttling to maintain FPS
+    const totalInstances = primaryMesh.count;
+    const updateFrequency = this.getAnimationUpdateFrequency(totalInstances);
+
+    // Skip update if throttled
+    // Use a deterministic frame counter simulation based on time
+    const frameCounter = Math.floor(now / 16.66); // Approx 60fps frames
+    if (frameCounter % updateFrequency !== 0) {
+      return;
+    }
+
+    const updateInterval = this.getAnimationUpdateIntervalMs(modelData.animationUpdateInterval);
+    if (now - modelData.lastAnimationUpdate < updateInterval) {
+      return;
+    }
+
+    const bucketStride = this.getAnimationBucketStride(totalInstances);
+    if (bucketStride !== this.lastBucketStride) {
+      this.animationFrameOffset = 0;
+      this.lastBucketStride = bucketStride;
+    }
+    const bucketOffset = this.animationFrameOffset;
+    this.animationFrameOffset = (this.animationFrameOffset + 1) % bucketStride;
+
+    this.buildBucketIndices(totalInstances);
+
+    let performedUpdate = false;
+    let hasAnimatedInstances = false;
+
     modelData.instancedMeshes.forEach((mesh, meshIndex) => {
       if (!mesh.animated) return;
+      if (mesh.count === 0) return;
+      hasAnimatedInstances = true;
 
-      for (let i = 0; i < mesh.count; i++) {
-        this.updateInstanceAnimation(modelData, mesh, meshIndex, i, time);
+      const instanceCount = mesh.count;
+
+      // Determine which animation states are actually needed by scanning instances
+      let needsIdleWeights = false;
+      let needsMovingWeights = false;
+      for (let i = 0; i < instanceCount; i++) {
+        const state = this.animationStates[i];
+        if (this.shouldSkipAnimation(state)) continue;
+        if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
+        else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
+        if (needsIdleWeights && needsMovingWeights) break;
       }
 
-      if (mesh.morphTexture) {
-        mesh.morphTexture.needsUpdate = true;
+      // Early exit if no animations needed
+      if (!needsIdleWeights && !needsMovingWeights) return;
+
+      const actions = this.getOrCreateAnimationActions(modelData, 0); // Shared actions
+
+      const baseMesh = modelData.baseMeshes[meshIndex];
+      const morphInfluences = baseMesh.morphTargetInfluences;
+      if (!morphInfluences || morphInfluences.length === 0) {
+        return;
+      }
+
+      const morphCount = morphInfluences.length;
+      const requiredSize = this.ANIMATION_BUCKETS * morphCount;
+
+      if (needsIdleWeights) {
+        if (!this.idleWeightsBuffer || this.idleWeightsBuffer.length < requiredSize) {
+          this.idleWeightsBuffer = new Float32Array(requiredSize);
+        }
+
+        this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
+        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.idleWeightsBuffer[offset + m] = morphInfluences[m];
+          }
+        }
+      }
+
+      if (needsMovingWeights) {
+        if (!this.movingWeightsBuffer || this.movingWeightsBuffer.length < requiredSize) {
+          this.movingWeightsBuffer = new Float32Array(requiredSize);
+        }
+
+        this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
+        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.movingWeightsBuffer[offset + m] = morphInfluences[m];
+          }
+        }
+      }
+
+      const morphTexture = mesh.morphTexture;
+      if (morphTexture && morphTexture.image && morphTexture.image.data) {
+        const textureData = morphTexture.image.data as unknown as Float32Array;
+        const textureWidth = morphTexture.image.width;
+
+        for (let bucket = bucketOffset; bucket < this.ANIMATION_BUCKETS; bucket += bucketStride) {
+          const indices = this.bucketToIndices.get(bucket);
+          if (!indices || indices.length === 0) continue;
+
+          const idleOffset = bucket * morphCount;
+          const movingOffset = bucket * morphCount;
+          const idleWeights =
+            needsIdleWeights && this.idleWeightsBuffer
+              ? this.idleWeightsBuffer.subarray(idleOffset, idleOffset + morphCount)
+              : null;
+          const movingWeights =
+            needsMovingWeights && this.movingWeightsBuffer
+              ? this.movingWeightsBuffer.subarray(movingOffset, movingOffset + morphCount)
+              : null;
+
+          for (let idx = 0; idx < indices.length; idx++) {
+            const i = indices[idx];
+            if (i >= instanceCount) continue;
+            const state = this.animationStates[i];
+            if (this.shouldSkipAnimation(state)) continue;
+
+            const dstOffset = i * textureWidth;
+            if (state === ANIMATION_STATE_MOVING) {
+              if (!movingWeights) continue;
+              if (morphCount <= 8) {
+                textureData.set(movingWeights, dstOffset);
+              } else {
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = this.movingWeightsBuffer![movingOffset + m];
+                }
+              }
+            } else {
+              if (!idleWeights) continue;
+              if (morphCount <= 8) {
+                textureData.set(idleWeights, dstOffset);
+              } else {
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = this.idleWeightsBuffer![idleOffset + m];
+                }
+              }
+            }
+          }
+        }
+
+        morphTexture.needsUpdate = true;
+        performedUpdate = true;
       }
     });
-  }
 
-  private updateInstanceAnimation(
-    modelData: ModelData,
-    mesh: AnimatedInstancedMesh,
-    meshIndex: number,
-    instanceIndex: number,
-    time: number,
-  ): void {
-    const animationState = this.animationStates[instanceIndex];
-
-    if (this.shouldSkipAnimation(animationState)) return;
-
-    const actions = this.getOrCreateAnimationActions(modelData, instanceIndex);
-    this.updateAnimationState(actions, animationState);
-
-    modelData.mixer.setTime(time + this.timeOffsets[instanceIndex]);
-    mesh.setMorphAt(instanceIndex, modelData.baseMeshes[meshIndex] as any);
+    if (performedUpdate || !hasAnimatedInstances) {
+      modelData.lastAnimationUpdate = now;
+    }
   }
 
   private shouldSkipAnimation(animationState: number): boolean {
     return (
       (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-      GRAPHICS_SETTING === GraphicsSettings.LOW
+      GRAPHICS_SETTING === GraphicsSettings.LOW ||
+      (this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE)
     );
+  }
+
+  private getAnimationUpdateFrequency(instanceCount: number): number {
+    let updateFrequency = 1;
+
+    if (instanceCount > 15) updateFrequency = 2;
+    if (instanceCount > 40) updateFrequency = 3;
+    if (instanceCount > 80) updateFrequency = 4;
+    if (instanceCount > 150) updateFrequency = 5;
+
+    if (this.currentCameraView === CameraView.Medium) {
+      updateFrequency = Math.min(updateFrequency + 1, 10);
+    } else if (this.currentCameraView === CameraView.Far) {
+      updateFrequency = Math.min(updateFrequency + 2, 10);
+    }
+
+    return updateFrequency;
+  }
+
+  private getAnimationUpdateIntervalMs(baseInterval: number): number {
+    if (this.currentCameraView === CameraView.Medium) {
+      return baseInterval * 1.25;
+    }
+    if (this.currentCameraView === CameraView.Far) {
+      return baseInterval * 1.6;
+    }
+    return baseInterval;
+  }
+
+  private getAnimationBucketStride(instanceCount: number): number {
+    let stride = 1;
+    if (instanceCount > 150) stride = 2;
+    if (instanceCount > 300) stride = 4;
+
+    if (this.currentCameraView === CameraView.Far) {
+      stride = Math.min(stride * 2, this.ANIMATION_BUCKETS);
+    }
+
+    return stride;
+  }
+
+  private buildBucketIndices(instanceCount: number): void {
+    if (this.bucketIndicesBuilt && instanceCount <= this.bucketIndicesMaxCount) {
+      return;
+    }
+
+    const bucketCounts = new Uint16Array(this.ANIMATION_BUCKETS);
+    for (let i = 0; i < instanceCount; i++) {
+      bucketCounts[this.animationBuckets[i]]++;
+    }
+
+    this.bucketToIndices.clear();
+    const bucketCurrentIndex = new Uint16Array(this.ANIMATION_BUCKETS);
+
+    for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+      if (bucketCounts[b] > 0) {
+        this.bucketToIndices.set(b, new Uint16Array(bucketCounts[b]));
+      }
+    }
+
+    for (let i = 0; i < instanceCount; i++) {
+      const bucket = this.animationBuckets[i];
+      const indices = this.bucketToIndices.get(bucket);
+      if (indices) {
+        indices[bucketCurrentIndex[bucket]++] = i;
+      }
+    }
+
+    this.bucketIndicesBuilt = true;
+    this.bucketIndicesMaxCount = instanceCount;
   }
 
   private getOrCreateAnimationActions(modelData: ModelData, instanceIndex: number) {
@@ -314,10 +1094,7 @@ export class ArmyModel {
     return modelData.animationActions.get(instanceIndex)!;
   }
 
-  private updateAnimationState(
-    actions: { idle: THREE.AnimationAction; moving: THREE.AnimationAction },
-    state: number,
-  ): void {
+  private updateAnimationState(actions: { idle: AnimationAction; moving: AnimationAction }, state: number): void {
     if (state === ANIMATION_STATE_IDLE) {
       actions.idle.setEffectiveTimeScale(1);
       actions.moving.setEffectiveTimeScale(0);
@@ -332,12 +1109,20 @@ export class ArmyModel {
   // Movement Methods
   public startMovement(
     entityId: number,
-    path: THREE.Vector3[],
+    path: Vector3[],
     matrixIndex: number,
     category: TroopType,
     tier: TroopTier,
   ): void {
     if (path.length < 2) return;
+
+    // Monitor memory usage before starting movement
+    this.memoryMonitor?.getCurrentStats(`startMovement-${entityId}`);
+
+    // Log material sharing stats periodically (every 10th movement)
+    if (entityId % 10 === 0) {
+      ArmyModel.materialPool.logSharingStats();
+    }
 
     this.stopMovement(entityId);
     const [currentPos, nextPos] = [path[0], path[1]];
@@ -349,18 +1134,19 @@ export class ArmyModel {
 
   private initializeMovement(
     entityId: number,
-    currentPos: THREE.Vector3,
-    nextPos: THREE.Vector3,
-    path: THREE.Vector3[],
+    currentPos: Vector3,
+    nextPos: Vector3,
+    path: Vector3[],
     matrixIndex: number,
     category: TroopType,
     tier: TroopTier,
   ): void {
     this.instanceData.set(entityId, {
       entityId,
-      position: currentPos.clone(),
-      scale: this.normalScale.clone(),
+      position: new Vector3().copy(currentPos), // Create once per army
+      scale: new Vector3().copy(this.normalScale), // Create once per army
       isMoving: true,
+      matrixIndex,
       path,
       category,
       tier,
@@ -373,8 +1159,8 @@ export class ArmyModel {
       this.dummyEuler.setFromRotationMatrix(this.dummyMatrix);
 
       this.movingInstances.set(entityId, {
-        startPos: currentPos.clone(),
-        endPos: nextPos.clone(),
+        startPos: new Vector3().copy(currentPos), // Create once per movement
+        endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -384,8 +1170,8 @@ export class ArmyModel {
       });
     } else {
       this.movingInstances.set(entityId, {
-        startPos: currentPos.clone(),
-        endPos: nextPos.clone(),
+        startPos: new Vector3().copy(currentPos), // Create once per movement
+        endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -397,6 +1183,11 @@ export class ArmyModel {
   }
 
   public updateMovements(deltaTime: number): void {
+    // Monitor memory usage when processing multiple army movements
+    if (this.movingInstances.size > 5) {
+      this.memoryMonitor?.getCurrentStats(`updateMovements-bulk-${this.movingInstances.size}`);
+    }
+
     this.movingInstances.forEach((movement, entityId) => {
       const instanceData = this.instanceData.get(entityId);
       if (!instanceData) {
@@ -426,22 +1217,23 @@ export class ArmyModel {
       movement.floatingHeight = Math.max(0, movement.floatingHeight - deltaTime * this.FLOAT_TRANSITION_SPEED);
     }
 
-    const displayPosition = movement.startPos.clone();
+    // Use reusable vector instead of cloning
+    this.tempVector1.copy(movement.startPos);
     if (!isBoat) {
-      displayPosition.y += movement.floatingHeight;
+      this.tempVector1.y += movement.floatingHeight;
     }
 
     this.updateRotation(movement, deltaTime);
     this.updateInstance(
       entityId,
       movement.matrixIndex,
-      displayPosition,
+      this.tempVector1,
       instanceData.scale,
       this.dummyObject.rotation,
       instanceData.color,
     );
 
-    this.updateLabelPosition(entityId, displayPosition);
+    this.updateLabelPosition(entityId, this.tempVector1);
 
     if (movement.floatingHeight <= 0 || isBoat) {
       this.movingInstances.delete(entityId);
@@ -471,21 +1263,22 @@ export class ArmyModel {
       this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
     }
 
-    const displayPosition = instanceData.position.clone();
+    // Use reusable vector instead of cloning
+    this.tempVector2.copy(instanceData.position);
     if (!isBoat) {
-      displayPosition.y += movement.floatingHeight;
+      this.tempVector2.y += movement.floatingHeight;
     }
 
     this.updateInstance(
       entityId,
       movement.matrixIndex,
-      displayPosition,
+      this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
       instanceData.color,
     );
 
-    this.updateLabelPosition(entityId, displayPosition);
+    this.updateLabelPosition(entityId, this.tempVector2);
   }
 
   private updateRotation(movement: MovementData, deltaTime: number): void {
@@ -503,7 +1296,10 @@ export class ArmyModel {
     if (movement.progress >= 1) {
       this.handlePathCompletion(movement, instanceData);
     } else {
-      instanceData.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
+      // Apply dynamic easing based on army type for juicy movement
+      const easingType = this.getEasingTypeForMovement(instanceData.entityId, instanceData);
+      const easedProgress = applyEasing(movement.progress, easingType);
+      instanceData.position.copy(movement.startPos).lerp(movement.endPos, easedProgress);
     }
   }
 
@@ -528,12 +1324,13 @@ export class ArmyModel {
     this.updateInstanceDirection(instanceData.entityId, movement.startPos, movement.endPos);
   }
 
-  private updateInstanceDirection(entityId: number, fromPos: THREE.Vector3, toPos: THREE.Vector3): void {
+  private updateInstanceDirection(entityId: number, fromPos: Vector3, toPos: Vector3): void {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
-    const baseAngle = Math.atan2(direction.x, direction.z);
+    // Use pre-allocated vector to avoid GC pressure
+    this.tempVector3.subVectors(toPos, fromPos).normalize();
+    const baseAngle = Math.atan2(this.tempVector3.x, this.tempVector3.z);
 
     movement.targetRotation = baseAngle;
     if (movement.currentRotation === 0) {
@@ -541,14 +1338,9 @@ export class ArmyModel {
     }
   }
 
-  private updateModelTypeForPosition(
-    entityId: number,
-    position: THREE.Vector3,
-    category: TroopType,
-    tier: TroopTier,
-  ): void {
+  private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
-    const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (this.entityModelMap.get(entityId) !== modelType) {
@@ -581,8 +1373,41 @@ export class ArmyModel {
       }
     }
 
-    // For land biomes, return the appropriate model based on troop type and tier
-    return TROOP_TO_MODEL[troopType][troopTier];
+    const troopModels = TROOP_TO_MODEL[troopType];
+    if (!troopModels) {
+      console.warn(
+        `[ArmyModel] Unknown troop type "${troopType}" for entity ${entityId}; falling back to ${ModelType.Knight1}.`,
+      );
+      return ModelType.Knight1;
+    }
+
+    const modelForTier = troopModels[troopTier];
+    if (modelForTier) {
+      return modelForTier;
+    }
+
+    const fallbackModel =
+      troopModels[TroopTier.T1] ?? troopModels[TroopTier.T2] ?? troopModels[TroopTier.T3] ?? ModelType.Knight1;
+
+    console.warn(
+      `[ArmyModel] Unknown troop tier "${troopTier}" for type ${troopType} on entity ${entityId}; using ${fallbackModel}.`,
+    );
+    return fallbackModel;
+  }
+
+  private clearMovementState(entityId: number): void {
+    const movement = this.movingInstances.get(entityId);
+    if (movement) {
+      this.setAnimationState(movement.matrixIndex, false);
+      this.movingInstances.delete(entityId);
+    }
+
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.isMoving = false;
+      instanceData.path = undefined;
+    }
+    this.movementCompleteCallbacks.delete(entityId);
   }
 
   private stopMovement(entityId: number): void {
@@ -602,6 +1427,8 @@ export class ArmyModel {
       instanceData.isMoving = false;
       instanceData.path = undefined;
     }
+
+    this.invokeMovementComplete(entityId);
   }
 
   private initializeDescentAnimation(entityId: number, movement: MovementData): void {
@@ -612,8 +1439,8 @@ export class ArmyModel {
     }
 
     this.movingInstances.set(entityId, {
-      startPos: instanceData.position.clone(),
-      endPos: instanceData.position.clone(),
+      startPos: new Vector3().copy(instanceData.position), // Create once for descent
+      endPos: new Vector3().copy(instanceData.position), // Create once for descent
       progress: 0,
       matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
@@ -632,11 +1459,185 @@ export class ArmyModel {
   }
 
   /**
+   * Get material sharing statistics for debugging
+   */
+  public getMaterialSharingStats(): {
+    loadedModels: number;
+    totalMeshes: number;
+    materialPoolStats: any;
+  } {
+    let totalMeshes = 0;
+    this.models.forEach((model) => {
+      totalMeshes += model.instancedMeshes.length;
+    });
+
+    return {
+      loadedModels: this.models.size,
+      totalMeshes,
+      materialPoolStats: ArmyModel.materialPool.getStats(),
+    };
+  }
+
+  /**
    * Updates the current camera view
    * @param view - The new camera view
    */
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
+  }
+
+  public hasMovingInstances(): boolean {
+    return this.movingInstances.size > 0;
+  }
+
+  public setShadowsEnabled(enabled: boolean): void {
+    this.models.forEach((model) => {
+      model.instancedMeshes.forEach((mesh) => {
+        mesh.castShadow = enabled;
+      });
+    });
+    this.cosmeticModels.forEach((model) => {
+      model.instancedMeshes.forEach((mesh) => {
+        mesh.castShadow = enabled;
+      });
+    });
+  }
+
+  public setContactShadowsEnabled(enabled: boolean): void {
+    this.contactShadowsEnabled = enabled;
+    this.models.forEach((model) => {
+      if (model.contactShadowMesh) {
+        model.contactShadowMesh.visible = enabled;
+      }
+    });
+    this.cosmeticModels.forEach((model) => {
+      if (model.contactShadowMesh) {
+        model.contactShadowMesh.visible = enabled;
+      }
+    });
+  }
+
+  public setMovementCompleteCallback(entityId: number, callback?: () => void): void {
+    if (!callback) {
+      this.movementCompleteCallbacks.delete(entityId);
+      return;
+    }
+    this.movementCompleteCallbacks.set(entityId, callback);
+  }
+
+  public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return;
+
+    const previousIndex = movement.matrixIndex;
+    if (previousIndex === newMatrixIndex) {
+      return;
+    }
+
+    // Reset animation state for the old slot so it no longer appears active
+    this.setAnimationState(previousIndex, false);
+
+    movement.matrixIndex = newMatrixIndex;
+
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.matrixIndex = newMatrixIndex;
+    }
+
+    const isMoving = movement.currentPathIndex !== -1 || movement.floatingHeight > 0;
+    this.setAnimationState(newMatrixIndex, isMoving);
+  }
+
+  public isEntityMoving(entityId: number): boolean {
+    return this.movingInstances.has(entityId);
+  }
+
+  /**
+   * Get the movement progress for an entity (0-1 across entire path)
+   * @param entityId - The entity ID
+   * @returns Progress value 0-1, or undefined if not moving
+   */
+  public getMovementProgress(entityId: number): number | undefined {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return undefined;
+
+    const instanceData = this.instanceData.get(entityId);
+    if (!instanceData?.path || instanceData.path.length < 2) return undefined;
+
+    // Calculate overall progress across all path segments
+    const totalSegments = instanceData.path.length - 1;
+    const completedSegments = movement.currentPathIndex;
+    const currentSegmentProgress = movement.progress;
+
+    // During descent (currentPathIndex === -1), return 1 (complete)
+    if (completedSegments === -1) return 1;
+
+    return (completedSegments + currentSegmentProgress) / totalSegments;
+  }
+
+  public getEntityWorldPosition(entityId: number): Vector3 | undefined {
+    const instanceData = this.instanceData.get(entityId);
+    if (!instanceData) {
+      return undefined;
+    }
+
+    return instanceData.position.clone();
+  }
+
+  /**
+   * Get instance data for an entity (avoids type casting in consumers)
+   * @param entityId - The entity ID
+   * @returns The instance data or undefined if not found
+   */
+  public getInstanceData(entityId: number): ArmyInstanceData | undefined {
+    return this.instanceData.get(entityId);
+  }
+
+  /**
+   * Gets the appropriate easing type for an army's movement
+   * @param _entityId - The entity ID (unused, kept for future extensibility)
+   * @param instanceData - The army instance data
+   * @returns The easing type to use
+   */
+  private getEasingTypeForMovement(_entityId: number, instanceData: ArmyInstanceData): EasingType {
+    // Use tier-specific easing if available
+    if (instanceData.tier && this.tierEasingMap.has(instanceData.tier)) {
+      return this.tierEasingMap.get(instanceData.tier)!;
+    }
+    return this.defaultEasingType;
+  }
+
+  /**
+   * Sets the default easing type for army movement
+   * @param easingType - The easing type to use as default
+   */
+  public setDefaultEasingType(easingType: EasingType): void {
+    this.defaultEasingType = easingType;
+  }
+
+  /**
+   * Sets easing type for a specific troop tier
+   * @param tier - The troop tier
+   * @param easingType - The easing type for this tier
+   */
+  public setTierEasingType(tier: TroopTier, easingType: EasingType): void {
+    this.tierEasingMap.set(tier, easingType);
+  }
+
+  /**
+   * Gets current easing configuration for debugging
+   */
+  public getEasingConfig(): {
+    defaultEasing: EasingType;
+    tierEasing: Array<{ tier: TroopTier; easing: EasingType }>;
+  } {
+    return {
+      defaultEasing: this.defaultEasingType,
+      tierEasing: Array.from(this.tierEasingMap.entries()).map(([tier, easing]) => ({
+        tier,
+        easing,
+      })),
+    };
   }
 
   // Label Management Methods
@@ -657,58 +1658,7 @@ export class ArmyModel {
     }
   }
 
-  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
-    const labelData = this.labels.get(entityId);
-    if (labelData?.label.element) {
-      const textContainer = labelData.label.element.querySelector(".flex.flex-col");
-      if (textContainer) {
-        // Get the container's unique ID or generate one if it doesn't exist
-        let containerId = (textContainer as HTMLElement).dataset.containerId;
-        if (!containerId) {
-          containerId = `army_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
-          (textContainer as HTMLElement).dataset.containerId = containerId;
-        }
-
-        if (isCompact) {
-          // For Far view (isCompact = true), always collapse immediately
-          textContainer.classList.add("max-w-0", "ml-0");
-          textContainer.classList.remove("max-w-[250px]", "ml-2");
-          // Clear any existing timeouts
-          transitionManager.clearTimeout(containerId);
-        } else {
-          // For Medium and Close views, expand immediately
-          textContainer.classList.remove("max-w-0", "ml-0");
-          textContainer.classList.add("max-w-[250px]", "ml-2");
-
-          // Only add timeout for Medium view, not for Close view
-          if (this.currentCameraView === CameraView.Medium) {
-            // Store timestamp for Medium view transition
-            transitionManager.setMediumViewTransition(containerId);
-
-            // Use the managed timeout
-            transitionManager.setLabelTimeout(
-              () => {
-                // Only apply the transition if the element is still in the DOM
-                if (textContainer.isConnected) {
-                  textContainer.classList.remove("max-w-[250px]", "ml-2");
-                  textContainer.classList.add("max-w-0", "ml-0");
-                  // Clear the transition state
-                  transitionManager.clearMediumViewTransition(containerId);
-                }
-              },
-              2000,
-              containerId,
-            );
-          } else if (this.currentCameraView === CameraView.Close) {
-            // For Close view, ensure we cancel any existing timeouts
-            transitionManager.clearTimeout(containerId);
-          }
-        }
-      }
-    }
-  }
-
-  private updateLabelPosition(entityId: number, position: THREE.Vector3): void {
+  private updateLabelPosition(entityId: number, position: Vector3): void {
     const labelData = this.labels.get(entityId);
     if (labelData) {
       labelData.label.position.copy(position);
@@ -719,6 +1669,14 @@ export class ArmyModel {
   public removeLabelsFromScene(): void {
     this.labels.forEach((labelData) => {
       this.labelsGroup.remove(labelData.label);
+    });
+  }
+
+  public removeLabelsExcept(entityId?: number): void {
+    this.labels.forEach((labelData) => {
+      if (labelData.entityId !== entityId) {
+        this.labelsGroup.remove(labelData.label);
+      }
     });
   }
 
@@ -737,6 +1695,19 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = 0;
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = 0;
+      }
+      modelData.activeInstances.clear();
+    });
+
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = 0;
+      });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = 0;
+      }
       modelData.activeInstances.clear();
     });
   }
@@ -749,18 +1720,94 @@ export class ArmyModel {
           mesh.instanceColor.needsUpdate = true;
         }
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      }
+    });
+
+    // Also update cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
+      });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      }
     });
   }
 
-  public setVisibleCount(count: number): void {
-    if (count === this.currentVisibleCount) return;
+  public setVisibleSlots(slots: Iterable<number>): void {
+    let maxIndex = -1;
+    let activeCount = 0;
 
-    this.currentVisibleCount = count;
+    for (const slot of slots) {
+      if (slot === undefined || slot === null) continue;
+      activeCount++;
+      if (slot > maxIndex) {
+        maxIndex = slot;
+      }
+    }
+
+    this.currentVisibleCount = activeCount;
+    const globalDrawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
+
+    // Set per-model draw counts based on their active instances
+    // Models with no active instances get mesh.count = 0 (skip rendering/raycasting/animation)
     this.models.forEach((modelData) => {
+      this.ensureModelCapacity(modelData, globalDrawCount);
+      const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = count;
+        mesh.count = modelDrawCount;
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = modelDrawCount;
+      }
     });
+
+    // Also update cosmetic models with per-model counts
+    this.cosmeticModels.forEach((modelData) => {
+      this.ensureModelCapacity(modelData, globalDrawCount);
+      const modelDrawCount = this.getModelDrawCount(modelData);
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = modelDrawCount;
+      });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.count = modelDrawCount;
+      }
+    });
+  }
+
+  /**
+   * Calculate the draw count for a specific model based on its active instances.
+   * Returns 0 if no active instances (model won't render/raycast/animate).
+   * Returns maxSlotIndex + 1 if there are active instances.
+   */
+  private getModelDrawCount(modelData: ModelData): number {
+    if (modelData.activeInstances.size === 0) {
+      return 0;
+    }
+
+    // Find the max slot index among active instances
+    let maxSlot = -1;
+    for (const slot of modelData.activeInstances) {
+      if (slot > maxSlot) {
+        maxSlot = slot;
+      }
+    }
+
+    return maxSlot + 1;
+  }
+
+  public setVisibleCount(count: number): void {
+    if (count < 0) return;
+    const slots: number[] = [];
+    for (let i = 0; i < count; i++) {
+      slots.push(i);
+    }
+    this.setVisibleSlots(slots);
   }
 
   public setAnimationState(index: number, isWalking: boolean): void {
@@ -772,11 +1819,20 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.computeBoundingSphere();
       });
+      modelData.contactShadowMesh?.computeBoundingSphere();
+    });
+
+    // Also compute for cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.computeBoundingSphere();
+      });
+      modelData.contactShadowMesh?.computeBoundingSphere();
     });
   }
 
-  public raycastAll(raycaster: THREE.Raycaster): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
-    const results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> = [];
+  public raycastAll(raycaster: Raycaster): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
+    const results: Array<{ instanceId: number | undefined; mesh: InstancedMesh; distance: number }> = [];
 
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
@@ -785,22 +1841,93 @@ export class ArmyModel {
           results.push({
             instanceId: intersects[0].instanceId,
             mesh: mesh,
+            distance: intersects[0].distance,
           });
         }
       });
     });
 
-    return this.sortRaycastResults(results, raycaster);
+    // Sort by cached distance (avoids repeated raycast calls in comparator)
+    results.sort((a, b) => a.distance - b.distance);
+
+    return results;
   }
 
-  private sortRaycastResults(
-    results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }>,
-    raycaster: THREE.Raycaster,
-  ): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
-    return results.sort((a, b) => {
-      const intersectsA = raycaster.intersectObject(a.mesh);
-      const intersectsB = raycaster.intersectObject(b.mesh);
-      return intersectsA[0].distance - intersectsB[0].distance;
+  /**
+   * Dispose of all resources including shared materials
+   */
+  public dispose(): void {
+    // Dispose geometries and release materials from pool
+    this.models.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        // Release material from pool (handle both single and array materials)
+        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+        ArmyModel.materialPool.releaseMaterial(material);
+
+        // Dispose geometry
+        mesh.geometry.dispose();
+
+        // Remove from scene
+        this.scene.remove(mesh);
+      });
+
+      // Dispose animations
+      modelData.mixer.stopAllAction();
+
+      // Remove group from scene
+      this.scene.remove(modelData.group);
     });
+
+    // Dispose cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+        ArmyModel.materialPool.releaseMaterial(material);
+        mesh.geometry.dispose();
+        this.scene.remove(mesh);
+      });
+      modelData.mixer.stopAllAction();
+      this.scene.remove(modelData.group);
+    });
+
+    // Clear all data structures
+    this.models.clear();
+    this.cosmeticModels.clear();
+    this.entityModelMap.clear();
+    this.entityCosmeticMap.clear();
+    this.movingInstances.clear();
+    this.instanceData.clear();
+    this.matrixIndexOwners.clear();
+    this.labels.clear();
+    this.movementCompleteCallbacks.clear();
+    this.idleWeightsBuffer = null;
+    this.movingWeightsBuffer = null;
+    this.bucketToIndices.clear();
+    this.bucketIndicesBuilt = false;
+    this.bucketIndicesMaxCount = 0;
+
+    console.log("ArmyModel: Disposed all resources");
+  }
+
+  private invokeMovementComplete(entityId: number) {
+    const callback = this.movementCompleteCallbacks.get(entityId);
+    if (callback) {
+      try {
+        callback();
+      } finally {
+        this.movementCompleteCallbacks.delete(entityId);
+      }
+    }
   }
 }
+
+// Global debug functions for testing easing in armies
+(window as any).setArmyEasing = (easingType: EasingType) => {
+  console.log(`🎮 Setting army default easing to: ${easingType}`);
+  // Note: This requires access to ArmyModel instance - implement in army manager if needed
+};
+
+(window as any).setTierEasing = (tier: TroopTier, easingType: EasingType) => {
+  console.log(`🎮 Setting tier ${tier} easing to: ${easingType}`);
+  // Note: This requires access to ArmyModel instance - implement in army manager if needed
+};

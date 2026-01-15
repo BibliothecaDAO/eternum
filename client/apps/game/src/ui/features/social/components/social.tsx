@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -5,16 +6,35 @@ import { PlayerDataTransformed } from "@/three/managers/player-data-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { HintSection } from "@/ui/features/progression";
+import { PrizePanel } from "@/ui/features/prize";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
-import { social, ExpandableOSWindow } from "@/ui/features/world";
+import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Shapes, Users } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
+
+interface SocialTabConfig {
+  key: string;
+  label: ReactNode;
+  component: ReactNode;
+  expandedContent: ReactNode;
+}
+
+type PlayerStructureCounts = {
+  banks: number;
+  mines: number;
+  realms: number;
+  hyperstructures: number;
+  villages: number;
+};
+
+const PLAYER_STRUCTURE_REFRESH_INTERVAL_MS = 60_000;
 
 export const Social = () => {
   const {
@@ -36,13 +56,25 @@ export const Social = () => {
   const setPlayerInfo = useSocialStore((state) => state.setPlayerInfo);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
-  const isOpen = useUIStore((state) => state.isPopupOpen(social));
+  const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
+  const mode = useGameModeConfig();
 
   const players = usePlayers();
 
+  const refreshPlayerData = usePlayerStore((state) => state.refreshPlayerData);
+  const lastPlayerDataRefreshTime = usePlayerStore((state) => state.lastRefreshTime);
+
+  const [playerStructureCountsMap, setPlayerStructureCountsMap] = useState<Map<bigint, PlayerStructureCounts>>(
+    () => new Map(),
+  );
+
   useEffect(() => {
     // update first time - initialize with interval on first call
-    const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
+    const manager = LeaderboardManager.instance(
+      components,
+      getRealmCountPerHyperstructure(),
+      LEADERBOARD_UPDATE_INTERVAL,
+    );
     manager.initialize();
     setPlayersByRank(manager.playersByRank);
   }, [components, setPlayersByRank]);
@@ -50,7 +82,7 @@ export const Social = () => {
   // Add periodic updates every 1 minute to refresh unregistered shareholder points
   useEffect(() => {
     const interval = setInterval(() => {
-      const manager = LeaderboardManager.instance(components);
+      const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
       manager.updatePoints();
       setPlayersByRank(manager.playersByRank);
     }, LEADERBOARD_UPDATE_INTERVAL);
@@ -59,41 +91,54 @@ export const Social = () => {
   }, [components, setPlayersByRank]);
 
   useEffect(() => {
-    const loadPlayerData = async () => {
-      // Create a Map to store address -> structure counts mapping (using bigint keys)
-      const playerStructureCountsMap = new Map<
-        bigint,
-        {
-          banks: number;
-          mines: number;
-          realms: number;
-          hyperstructures: number;
-          villages: number;
-        }
-      >();
+    void refreshPlayerData();
+    const intervalId = window.setInterval(() => {
+      void refreshPlayerData();
+    }, PLAYER_STRUCTURE_REFRESH_INTERVAL_MS);
 
+    return () => window.clearInterval(intervalId);
+  }, [refreshPlayerData]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStructureCounts = async () => {
       const playerStore = usePlayerStore.getState();
       const allPlayersData = await playerStore.getAllPlayersData();
 
-      if (allPlayersData) {
-        allPlayersData.forEach((playerData: PlayerDataTransformed) => {
-          playerStructureCountsMap.set(BigInt(playerData.ownerAddress), {
+      if (cancelled) return;
+
+      const nextCounts = new Map<bigint, PlayerStructureCounts>();
+
+      allPlayersData.forEach((playerData: PlayerDataTransformed) => {
+        try {
+          nextCounts.set(BigInt(playerData.ownerAddress), {
             banks: playerData.bankCount ?? 0,
             mines: playerData.mineCount ?? 0,
             realms: playerData.realmsCount ?? 0,
             hyperstructures: playerData.hyperstructuresCount ?? 0,
             villages: playerData.villageCount ?? 0,
           });
-        });
-      }
+        } catch {
+          // ignore invalid owner addresses
+        }
+      });
 
-      setPlayerInfo(
-        getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
-      );
+      setPlayerStructureCountsMap(nextCounts);
     };
 
-    loadPlayerData();
-  }, [players, account.address, playersByRank, components, setPlayerInfo]);
+    void loadStructureCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lastPlayerDataRefreshTime]);
+
+  useEffect(() => {
+    setPlayerInfo(
+      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
+    );
+  }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
 
   const viewGuildMembers = (guildEntityId: ContractAddress) => {
     if (selectedGuild === guildEntityId) {
@@ -114,8 +159,8 @@ export const Social = () => {
     }
   };
 
-  const tabs = useMemo(
-    () => [
+  const tabs = useMemo<SocialTabConfig[]>(() => {
+    const baseTabs: SocialTabConfig[] = [
       {
         key: "Players",
         label: (
@@ -127,7 +172,10 @@ export const Social = () => {
         component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
         expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
       },
-      {
+    ];
+
+    if (mode.ui.showGuildsTab) {
+      baseTabs.push({
         key: "Tribes",
         label: (
           <div className="flex items-center gap-2">
@@ -141,19 +189,31 @@ export const Social = () => {
         ) : (
           <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
         ),
-      },
-    ],
-    [
-      selectedTab,
-      isExpanded,
-      selectedGuild,
-      selectedPlayer,
-      playerInfo,
-      viewPlayerInfo,
-      viewGuildMembers,
-      setIsExpanded,
-    ],
-  );
+      });
+    }
+
+    baseTabs.push({
+      key: "Blitz Prize",
+      label: (
+        <div className="flex items-center gap-2">
+          <span>Blitz Prize</span>
+        </div>
+      ),
+      component: <PrizePanel />,
+      expandedContent: null,
+    });
+
+    return baseTabs;
+  }, [mode, isExpanded, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded]);
+
+  const tabsLength = tabs.length;
+  const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
+
+  useEffect(() => {
+    if (tabsLength > 0 && activeTabIndex !== selectedTab) {
+      setSelectedTab(activeTabIndex);
+    }
+  }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
   const SocialContent = () => {
     const { isSyncing } = useSyncLeaderboard();
@@ -162,7 +222,7 @@ export const Social = () => {
     ) : (
       <Tabs
         size="small"
-        selectedIndex={selectedTab}
+        selectedIndex={activeTabIndex}
         onChange={(index: number) => {
           setSelectedTab(index);
           setIsExpanded(false);
@@ -193,13 +253,13 @@ export const Social = () => {
 
   return (
     <ExpandableOSWindow
-      width="900px"
+      width="1100px"
       widthExpanded="400px"
-      onClick={() => togglePopup(social)}
+      onClick={() => togglePopup(leaderboard)}
       show={isOpen}
-      title={social}
-      hintSection={HintSection.Tribes}
-      childrenExpanded={tabs[selectedTab].expandedContent}
+      title={leaderboard}
+      hintSection={mode.ui.showGuildsTab ? HintSection.Tribes : HintSection.Points}
+      childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
       isExpanded={isExpanded}
     >
       {isOpen ? <SocialContent /> : null}

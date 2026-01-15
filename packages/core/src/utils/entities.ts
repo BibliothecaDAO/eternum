@@ -1,9 +1,9 @@
 import {
+  BlitzStructureTypeToNameMapping,
   CapacityConfig,
   ClientComponents,
   ContractAddress,
   DirectionName,
-  EntityType,
   getDirectionBetweenAdjacentHexes,
   ID,
   StructureType,
@@ -13,11 +13,17 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
+import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
-export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {
+export const getEntityInfo = (
+  entityId: ID,
+  playerAccount: ContractAddress,
+  components: ClientComponents,
+  isBlitz: boolean,
+) => {
   const { Structure, ExplorerTroops } = components;
   const entityIdBigInt = BigInt(entityId);
 
@@ -26,10 +32,14 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
 
   let name = undefined;
   if (explorer) {
-    name = `Army ${explorer.explorer_id}`;
+    const armyName = getArmyName(explorer.explorer_id);
+    name = {
+      name: armyName,
+      originalName: armyName,
+    };
   } else {
     if (structure) {
-      name = getStructureName(structure);
+      name = getStructureName(structure, isBlitz);
     }
   }
 
@@ -64,11 +74,15 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
         : undefined,
     owner,
     isMine: ContractAddress(owner || 0n) === playerAccount,
-    entityType: explorer ? EntityType.TROOP : EntityType.DONKEY,
     structureCategory: structure?.base.category,
     structure,
+    explorer,
     name,
   };
+};
+
+export const getArmyName = (armyEntityId: ID) => {
+  return `Army ${armyEntityId}`;
 };
 
 const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
@@ -78,6 +92,7 @@ const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["s
 
 export const getStructureName = (
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
+  isBlitz: boolean,
   parentRealmContractPosition?: { col: number; row: number },
 ) => {
   const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
@@ -87,8 +102,14 @@ export const getStructureName = (
     originalName = getRealmName(structure);
   } else if (structure.base.category === StructureType.Village && parentRealmContractPosition) {
     originalName = getVillageName(structure, parentRealmContractPosition);
+  } else if (structure.base.category === StructureType.Hyperstructure) {
+    originalName = getHyperstructureName(structure);
   } else {
-    originalName = `${StructureType[structure.base.category]} ${structure.entity_id}`;
+    if (isBlitz) {
+      originalName = `${BlitzStructureTypeToNameMapping[structure.base.category as StructureType]} ${structure.entity_id}`;
+    } else {
+      originalName = `${StructureType[structure.base.category]} ${structure.entity_id}`;
+    }
   }
 
   return { name: cachedName || originalName, originalName };

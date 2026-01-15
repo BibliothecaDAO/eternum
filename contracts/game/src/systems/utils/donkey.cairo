@@ -1,11 +1,10 @@
 use dojo::event::EventStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
-use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl};
-use s1_eternum::models::weight::{Weight};
-
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{CapacityConfig, WorldConfigUtilImpl};
+use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl};
+use crate::models::weight::Weight;
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
@@ -50,7 +49,7 @@ pub impl iDonkeyImpl of iDonkeyTrait {
         let mut donkeys = resources_weight / (donkey_capacity_grams * RESOURCE_PRECISION);
         if resources_weight % (donkey_capacity_grams * RESOURCE_PRECISION) != 0 {
             donkeys += 1;
-        };
+        }
         donkeys * RESOURCE_PRECISION
     }
 

@@ -9,7 +9,7 @@ export const Trading = () => {
         <h4>Marketplace</h4>
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
-            Trading in Eternum is primarily conducted at the marketplace. This is where players can buy and sell the
+            Trading in Realms is primarily conducted at the marketplace. This is where players can buy and sell the
             resources they generate. Just like transfers, these will require donkeys.
           </p>
         </div>

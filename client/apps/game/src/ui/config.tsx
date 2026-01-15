@@ -1,6 +1,7 @@
-import { BuildingType, FELT_CENTER, ResourceMiningTypes } from "@bibliothecadao/types";
+import { FELT_CENTER as FELT_CENTER_IMPORT } from "@bibliothecadao/eternum";
+import { BuildingType, ResourceMiningTypes } from "@bibliothecadao/types";
 
-export { FELT_CENTER };
+export const FELT_CENTER = FELT_CENTER_IMPORT;
 
 export enum GraphicsSettings {
   LOW = "LOW",
@@ -27,13 +28,13 @@ const checkGraphicsSettings = async () => {
         // It's likely a desktop
         localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
       } else {
-        // It's likely a laptop or mobile device
-        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
+        // Default to high even on portable devices; users can dial it down if needed
+        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
       }
     } catch (error) {
       console.error("Error calling getBattery():", error);
-      // Set default values if getBattery() is not supported
-      localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
+      // Default to high when getBattery() is not supported
+      localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
     } finally {
       localStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
     }
@@ -51,6 +52,17 @@ export const GRAPHICS_SETTING = await checkGraphicsSettings();
 export const IS_FLAT_MODE = getFlatMode();
 
 export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+export const CONTEXT_MENU_CONFIG = {
+  radial: {
+    maxActions: 8,
+    radius: 112,
+    innerRadius: 28,
+    selectRadius: 72,
+    gapDegrees: 4,
+  },
+  clampPadding: 12,
+};
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 
@@ -109,30 +121,35 @@ export const BuildingThumbs = {
   resources: `${prefix}resources.png`,
   banks: `${prefix}banks.png`,
   worldStructures: `${prefix}world.png`,
+  hyperstructures: `${prefix}hyperstructure.png`,
   leaderboard: `${prefix}leaderboard.png`,
   worldMap: `${prefix}world.png`,
   squire: `${prefix}squire.png`,
-  question: `${prefix}question.png`,
+  question: `${prefix}shortcuts.png`,
   scale: `${prefix}trade.png`,
-  settings: `${prefix}support.png`,
+  settings: `${prefix}settings.png`,
   guild: `${prefix}guild.png`,
   trophy: `${prefix}trophy.png`,
   discord: `${prefix}discord.png`,
   rewards: `${prefix}rewards.png`,
   production: `${prefix}production.png`,
+  house: `${prefix}house.png`,
   home: `${prefix}home.png`,
   time: `${prefix}time.png`,
   leave: `${prefix}leave.png`,
   bridge: `${prefix}portal.png`,
   automation: `${prefix}robot.png`,
-  logs: `${prefix}hourglass.png`,
   transfer: `${prefix}transfer.png`,
+  relics: `${prefix}relics.png`,
+  latestUpdates: `${prefix}latest-updates.png`,
+  storyEvents: `${prefix}chronicles.png`,
+  predictionMarket: `${prefix}trade.png`,
 };
 
 export enum MenuEnum {
   military = "military",
   construction = "construction",
-  worldStructures = "worldStructures",
+  hyperstructures = "hyperstructures",
   entityDetails = "entityDetails",
   resourceArrivals = "resourceArrivals",
   trade = "trade",
@@ -140,6 +157,9 @@ export enum MenuEnum {
   production = "production",
   bridge = "bridge",
   automation = "automation",
-  logs = "logs",
   transfer = "transfer",
+  relics = "relics",
+  chat = "chat",
+  storyEvents = "storyEvents",
+  predictionMarket = "predictionMarket",
 }

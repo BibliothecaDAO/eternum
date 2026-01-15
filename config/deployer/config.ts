@@ -1,27 +1,60 @@
+// @ts-nocheck - Allow this file to work in both Node.js deployment and browser admin UI contexts
 import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
   BuildingType,
   CapacityConfig,
-  type Config as EternumConfig,
   HexGrid,
-  type ResourceInputs,
-  type ResourceOutputs,
-  type ResourceWhitelistConfig,
+  RESOURCE_PRECISION,
   ResourcesIds,
   scaleResourceInputs,
   scaleResourceOutputs,
   scaleResources,
+  type Config as EternumConfig,
+  type ResourceInputs,
+  type ResourceOutputs,
+  type ResourceWhitelistConfig,
 } from "@bibliothecadao/types";
 
-import chalk from "chalk";
+// Browser-compatible: Make chalk optional for browser environments
+let chalk: any;
+try {
+  // Support both ESM (chalk@5) and CJS resolution
+  // If require returns a namespace with .default, unwrap it
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require("chalk");
+  chalk = (mod && typeof mod === "object" && "default" in mod ? mod.default : mod) as any;
+} catch {
+  // Fallback for browser/ESM environments where require is unavailable
+  const noop = (str: string) => str;
+  chalk = {
+    cyan: noop,
+    yellow: noop,
+    white: noop,
+    gray: noop,
+    green: noop,
+    red: noop,
+    blue: noop,
+  };
+}
 
-import type { EternumProvider } from "@bibliothecadao/provider";
-import fs from "fs";
-import type { Account } from "starknet";
+import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
+import { byteArray, type Account } from "starknet";
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
+
+// Browser-compatible: Make fs optional for browser environments
+let fs: any;
+try {
+  fs = require("fs");
+} catch {
+  // Fallback for browser - fs not available
+  fs = null;
+}
+
+// Type compatibility for browser & Node environments
+type AnyAccount = any; // Use any to avoid version conflicts between environments
 
 interface Config {
   account: Account;
@@ -32,6 +65,7 @@ interface Config {
 export class GameConfigDeployer {
   public globalConfig: EternumConfig;
   public network: NetworkType;
+  public skipSleeps: boolean = false;
 
   constructor(config: EternumConfig, network: NetworkType) {
     this.globalConfig = config;
@@ -39,6 +73,7 @@ export class GameConfigDeployer {
   }
 
   async sleepNonLocal() {
+    if (this.skipSleeps) return;
     if (this.network.toLowerCase() === "mainnet" || this.network.toLowerCase() === "sepolia") {
       let sleepSeconds = 1;
       console.log(chalk.gray(`Sleeping for ${sleepSeconds} seconds...`));
@@ -48,7 +83,7 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    await this.setupBank(account, provider);
+    // await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
@@ -56,7 +91,25 @@ export class GameConfigDeployer {
     await setWorldConfig(config);
     await this.sleepNonLocal();
 
-    await setWonderBonusConfig(config);
+    await setGameModeConfig(config);
+    await this.sleepNonLocal();
+
+    await setBlitzPreviousGame(config);
+    await this.sleepNonLocal();
+
+    await setVictoryPointsConfig(config);
+    await this.sleepNonLocal();
+
+    await setDiscoverableVillageSpawnResourcesConfig(config);
+    await this.sleepNonLocal();
+
+    await setBlitzRegistrationConfig(config);
+    await this.sleepNonLocal();
+
+    await grantCollectibleLootChestMinterRole(config);
+    await this.sleepNonLocal();
+
+    await grantCollectibleEliteNftMinterRole(config);
     await this.sleepNonLocal();
 
     await setAgentConfig(config);
@@ -68,7 +121,7 @@ export class GameConfigDeployer {
     await SetResourceFactoryConfig(config);
     await this.sleepNonLocal();
 
-    await setResourceBridgeWhitelistConfig(config);
+    await setResourceBridgeWtlConfig(config);
     await this.sleepNonLocal();
 
     await setTradeConfig(config);
@@ -363,7 +416,7 @@ export const SetResourceFactoryConfig = async (config: Config) => {
   );
 };
 
-export const setResourceBridgeWhitelistConfig = async (config: Config) => {
+export const setResourceBridgeWtlConfig = async (config: Config) => {
   console.log(chalk.cyan("\n⚡ BRIDGE WHITELIST CONFIGURATION"));
   console.log(chalk.gray("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
 
@@ -693,7 +746,7 @@ export const setTroopConfig = async (config: Config) => {
       staminaPaladinMax: stamina_paladin_max,
       staminaCrossbowmanMax: stamina_crossbowman_max,
       staminaAttackReq: stamina_attack_req,
-      staminaAttackMax: stamina_attack_max,
+      staminaDefenseReq: stamina_defense_req,
       staminaExploreWheatCost: stamina_explore_wheat_cost,
       staminaExploreFishCost: stamina_explore_fish_cost,
       staminaExploreStaminaCost: stamina_explore_stamina_cost,
@@ -734,12 +787,12 @@ export const setTroopConfig = async (config: Config) => {
       stamina_paladin_max: stamina_paladin_max,
       stamina_crossbowman_max: stamina_crossbowman_max,
       stamina_attack_req: stamina_attack_req,
-      stamina_attack_max: stamina_attack_max,
-      stamina_explore_wheat_cost: stamina_explore_wheat_cost,
-      stamina_explore_fish_cost: stamina_explore_fish_cost,
+      stamina_defense_req: stamina_defense_req,
+      stamina_explore_wheat_cost: stamina_explore_wheat_cost * config.config.resources.resourcePrecision,
+      stamina_explore_fish_cost: stamina_explore_fish_cost * config.config.resources.resourcePrecision,
       stamina_explore_stamina_cost: stamina_explore_stamina_cost,
-      stamina_travel_wheat_cost: stamina_travel_wheat_cost,
-      stamina_travel_fish_cost: stamina_travel_fish_cost,
+      stamina_travel_wheat_cost: stamina_travel_wheat_cost * config.config.resources.resourcePrecision,
+      stamina_travel_fish_cost: stamina_travel_fish_cost * config.config.resources.resourcePrecision,
       stamina_travel_stamina_cost: stamina_travel_stamina_cost,
     },
     limit_config: {
@@ -775,12 +828,12 @@ export const setTroopConfig = async (config: Config) => {
     │  ${chalk.gray("Paladin Max Stamina:")}     ${chalk.white(calldata.stamina_config.stamina_paladin_max)}
     │  ${chalk.gray("Crossbow Max Stamina:")}    ${chalk.white(calldata.stamina_config.stamina_crossbowman_max)}
     │  ${chalk.gray("Attack Requirement:")}       ${chalk.white(calldata.stamina_config.stamina_attack_req)}
-    │  ${chalk.gray("Attack Max:")}              ${chalk.white(calldata.stamina_config.stamina_attack_max)}
-    │  ${chalk.gray("Explore Wheat Cost:")}     ${chalk.white(calldata.stamina_config.stamina_explore_wheat_cost)}
-    │  ${chalk.gray("Explore Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_explore_fish_cost)}
+    │  ${chalk.gray("Defense Requirement:")}              ${chalk.white(calldata.stamina_config.stamina_defense_req)}
+    │  ${chalk.gray("Explore Wheat Cost:")}     ${chalk.white(calldata.stamina_config.stamina_explore_wheat_cost / config.config.resources.resourcePrecision)}
+    │  ${chalk.gray("Explore Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_explore_fish_cost / config.config.resources.resourcePrecision)}
     │  ${chalk.gray("Explore Stamina Cost:")}    ${chalk.white(calldata.stamina_config.stamina_explore_stamina_cost)}
-    │  ${chalk.gray("Travel Wheat Cost:")}       ${chalk.white(calldata.stamina_config.stamina_travel_wheat_cost)}
-    │  ${chalk.gray("Travel Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_travel_fish_cost)}
+    │  ${chalk.gray("Travel Wheat Cost:")}       ${chalk.white(calldata.stamina_config.stamina_travel_wheat_cost / config.config.resources.resourcePrecision)}
+    │  ${chalk.gray("Travel Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_travel_fish_cost / config.config.resources.resourcePrecision)}
     │  ${chalk.gray("Travel Stamina Cost:")}     ${chalk.white(calldata.stamina_config.stamina_travel_stamina_cost)}
     │
     │  ${chalk.yellow("Limit Configuration")}
@@ -827,20 +880,22 @@ export const setupGlobals = async (config: Config) => {
 
   // Tick Configs
 
-  const armiesTickCalldata = {
+  const tickConfigCalldata = {
     signer: config.account,
     tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
+    delivery_tick_interval_in_seconds: config.config.tick.deliveryTickIntervalInSeconds,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Tick Intervals")}
-    │  ${chalk.gray("Armies:")}            ${chalk.white(hourMinutesSeconds(armiesTickCalldata.tick_interval_in_seconds))}
+    │  ${chalk.gray("World Tick:")}            ${chalk.white(hourMinutesSeconds(tickConfigCalldata.tick_interval_in_seconds))}
+    │  ${chalk.gray("Delivery Tick:")}            ${chalk.white(hourMinutesSeconds(tickConfigCalldata.delivery_tick_interval_in_seconds))}
     └────────────────────────────────`),
   );
 
-  const txArmiesTick = await config.provider.set_tick_config(armiesTickCalldata);
-  console.log(chalk.green(`    ✔ Armies tick configured `) + chalk.gray(txArmiesTick.statusReceipt));
+  const txTick = await config.provider.set_tick_config(tickConfigCalldata);
+  console.log(chalk.green(`    ✔ Tick configured `) + chalk.gray(txTick.statusReceipt));
 
   // Map Config
   const mapCalldata = {
@@ -850,17 +905,28 @@ export const setupGlobals = async (config: Config) => {
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
     agent_find_probability: config.config.exploration.agentFindProbability,
     agent_find_fail_probability: config.config.exploration.agentFindFailProbability,
+    village_find_probability: config.config.exploration.villageFindProbability,
+    village_find_fail_probability: config.config.exploration.villageFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
     hyps_fail_prob_increase_p_fnd: config.config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
-    mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
-    mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
+    relic_discovery_interval_sec: config.config.exploration.relicDiscoveryIntervalSeconds,
+    relic_hex_dist_from_center: config.config.exploration.relicHexDistanceFromCenter,
+    relic_chest_relics_per_chest: config.config.exploration.relicChestRelicsPerChest,
   };
 
   const shardsMinesFailRate =
     (mapCalldata.shards_mines_fail_probability /
       (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
+    100;
+  const villageFindFailRate =
+    (mapCalldata.village_find_fail_probability /
+      (mapCalldata.village_find_fail_probability + mapCalldata.village_find_probability)) *
+    100;
+  const agentFindFailRate =
+    (mapCalldata.agent_find_fail_probability /
+      (mapCalldata.agent_find_fail_probability + mapCalldata.agent_find_probability)) *
     100;
   const hyperstructureFailRateAtTheCenter =
     (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
@@ -872,12 +938,15 @@ export const setupGlobals = async (config: Config) => {
     ┌─ ${chalk.yellow("Map Parameters")}
     │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount)}
     │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
+    │  ${chalk.gray("Village Find Fail Probability:")} ${chalk.white(villageFindFailRate) + "%"}
+    │  ${chalk.gray("Agent Find Fail Probability:")} ${chalk.white(agentFindFailRate) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hyperstructure Found:")} ${chalk.white(hyperstructureFailRateIncreasePerHyperstructureFound) + "%"}
     │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100).toFixed(2) + "%")}
-    │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
-    │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}
+    │  ${chalk.gray("Relic Discovery Interval:")} ${chalk.white(mapCalldata.relic_discovery_interval_sec + " seconds")}
+    │  ${chalk.gray("Relic Hex Distance from Center:")} ${chalk.white(mapCalldata.relic_hex_dist_from_center)}
+    │  ${chalk.gray("Relic Chest Relics per Chest:")} ${chalk.white(mapCalldata.relic_chest_relics_per_chest)}
     └────────────────────────────────`),
   );
 
@@ -900,31 +969,6 @@ export const setupGlobals = async (config: Config) => {
 
   const txQuest = await config.provider.set_quest_config(questCalldata);
   console.log(chalk.green(`    ✔ Quest configured `) + chalk.gray(txQuest.statusReceipt));
-};
-
-export const setWonderBonusConfig = async (config: Config) => {
-  const calldata = {
-    signer: config.account,
-    within_tile_distance: config.config.wonderProductionBonus.within_tile_distance,
-    bonus_percent_num: config.config.wonderProductionBonus.bonus_percent_num,
-  };
-
-  console.log(
-    chalk.cyan(`
-  🏰 Wonder Bonus Configuration
-  ═══════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Wonder Bonus")}
-    │  ${chalk.gray("Within Tile Distance:")} ${chalk.white(calldata.within_tile_distance)}
-    │  ${chalk.gray("Bonus Percent Num:")} ${chalk.white((calldata.bonus_percent_num / 10_000) * 100)}%
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_wonder_bonus_config(calldata);
-  console.log(chalk.green(`    ✔ Wonder Bonus configured `) + chalk.gray(tx.statusReceipt));
 };
 
 export const setAgentConfig = async (config: Config) => {
@@ -1050,6 +1094,11 @@ export const setTradeConfig = async (config: Config) => {
 };
 
 export const setSeasonConfig = async (config: Config) => {
+  if (config.config.blitz.mode.on) {
+    console.log(chalk.yellow("Blitz mode is on, skipping season configuration \n"));
+    return;
+  }
+
   console.log(
     chalk.cyan(`
   🎮 Season Configuration
@@ -1057,16 +1106,30 @@ export const setSeasonConfig = async (config: Config) => {
   );
 
   const now = Math.floor(new Date().getTime() / 1000);
-  const startMainAt = now + config.config.season.startMainAfterSeconds;
-  const startSettlingAt = now + config.config.season.startSettlingAfterSeconds;
+  let startMainAt = 0;
+  let startSettlingAt = 0;
+
+  if (config.config.season.startMainAt && config.config.season.startMainAt > 0) {
+    startMainAt = config.config.season.startMainAt;
+  } else {
+    startMainAt = now + config.config.season.startMainAfterSeconds;
+  }
+
+  if (config.config.season.startSettlingAt && config.config.season.startSettlingAt > 0) {
+    startSettlingAt = config.config.season.startSettlingAt;
+  } else {
+    startSettlingAt = now + config.config.season.startSettlingAfterSeconds;
+  }
 
   const seasonCalldata = {
     signer: config.account,
+    dev_mode_on: config.config.dev.mode.on,
     season_pass_address: config.config.setup!.addresses.seasonPass,
     realms_address: config.config.setup!.addresses.realms,
     lords_address: config.config.setup!.addresses.lords,
-    start_settling_at: 1746795600,
-    start_main_at: 1747227600,
+    start_settling_at: startSettlingAt,
+    start_main_at: startMainAt,
+    end_at: 0,
     bridge_close_end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
     point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
   };
@@ -1074,6 +1137,7 @@ export const setSeasonConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Season Parameters")}
+    │  ${chalk.gray("Dev Mode On:")}   ${chalk.white(config.config.dev.mode.on)}
     │  ${chalk.gray("Start Setting Time:")}   ${chalk.white(
       new Date(seasonCalldata.start_settling_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
@@ -1103,8 +1167,12 @@ export const setSeasonConfig = async (config: Config) => {
 };
 
 export const setVRFConfig = async (config: Config) => {
-  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
-    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for slot or local environment"));
+  if (
+    config.config.setup?.chain !== "mainnet" &&
+    config.config.setup?.chain !== "sepolia" &&
+    config.config.setup?.chain !== "slot"
+  ) {
+    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for local environment"));
     return;
   }
 
@@ -1234,28 +1302,18 @@ export const setHyperstructureConfig = async (config: Config) => {
   ═══════════════════════════════`),
   );
 
-  const {
-    hyperstructurePointsPerCycle,
-    hyperstructureConstructionCost,
-    hyperstructurePointsForWin,
-    hyperstructureInitializationShardsCost,
-  } = config.config.hyperstructures;
+  const { hyperstructureConstructionCost, hyperstructureInitializationShardsCost } = config.config.hyperstructures;
 
   const initializationShardsAmount = hyperstructureInitializationShardsCost.amount;
   const hyperstructureCalldata = {
     signer: config.account,
     initialize_shards_amount: initializationShardsAmount * config.config.resources.resourcePrecision,
     construction_resources: hyperstructureConstructionCost,
-    points_per_second: hyperstructurePointsPerCycle,
-    points_for_win: hyperstructurePointsForWin,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Hyperstructure Points System")}
-    │  ${chalk.gray("Per Second:")}        ${chalk.white(addCommas(hyperstructureCalldata.points_per_second))}
-    │  ${chalk.gray("For Win:")}          ${chalk.white(addCommas(hyperstructureCalldata.points_for_win))}
-    │
     │  ${chalk.gray("Initialization Shards:")}     ${chalk.white(inGameAmount(hyperstructureCalldata.initialize_shards_amount, config.config))}
     │
     │  ${chalk.gray("Construction Cost")}${hyperstructureCalldata.construction_resources
@@ -1278,13 +1336,14 @@ export const setSettlementConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-  const { center, base_distance, subsequent_distance } = config.config.settlement;
+  const { center, base_distance, subsequent_distance, single_realm_mode } = config.config.settlement;
 
   const calldata = {
     signer: config.account,
     center,
     base_distance,
     subsequent_distance,
+    single_realm_mode,
   };
 
   console.log(
@@ -1293,6 +1352,7 @@ export const setSettlementConfig = async (config: Config) => {
     │  ${chalk.gray("Center:")}            ${chalk.white(`(${calldata.center}, ${calldata.center})`)}
     │  ${chalk.gray("Base Distance:")}     ${chalk.white(calldata.base_distance)}
     │  ${chalk.gray("Subsequent Distance:")}   ${chalk.white(calldata.subsequent_distance)}
+    │  ${chalk.gray("Single Realm Mode:")}   ${chalk.white(calldata.single_realm_mode)}
     │
     └────────────────────────────────`),
   );
@@ -1300,6 +1360,349 @@ export const setSettlementConfig = async (config: Config) => {
   const tx = await config.provider.set_settlement_config(calldata);
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setGameModeConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏘️  Game Mode Configuration
+  ═══════════════════════════`),
+  );
+
+  const gameModeTx = await config.provider.set_game_mode_config({
+    signer: config.account,
+    blitz_mode_on: config.config.blitz.mode.on,
+  });
+  console.log(chalk.green(`\n    ✔ Game mode configured `) + chalk.gray(gameModeTx.statusReceipt) + "\n");
+};
+
+export const setBlitzPreviousGame = async (config: Config) => {
+  // Read previously saved address from configuration
+  const prevAddress = (config.config as any)?.prev_prize_distribution_address as string | undefined;
+  // obtain current prize_distribution_systems from the current manifest
+  let currentAddress: string | undefined = undefined;
+  try {
+    const tag = `${NAMESPACE}-prize_distribution_systems`;
+    currentAddress = getContractByName((config.config.setup as any)?.manifest, tag);
+  } catch {
+    currentAddress = undefined;
+  }
+
+  // Validate previous address exists and is different from current
+  const isNonZero = (addr?: string) => !!addr && addr !== "0x0" && addr !== "0x";
+  if (!isNonZero(prevAddress)) {
+    console.log(chalk.gray("    ↪ No previous prize_distribution_systems found; skipping blitz previous game config"));
+    return;
+  }
+  if (currentAddress && prevAddress?.toLowerCase() === currentAddress.toLowerCase()) {
+    console.log(
+      chalk.gray("    ↪ Previous prize_distribution_systems equals current; skipping blitz previous game config"),
+    );
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  ⚡ Blitz Previous Game
+  ═════════════════════`),
+  );
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Previous Prize Distribution Systems")}
+    │  ${chalk.gray("Address:")} ${chalk.white(prevAddress)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_blitz_previous_game({
+    signer: config.account,
+    prev_prize_distribution_systems: prevAddress!,
+  });
+  console.log(chalk.green(`\n    ✔ Blitz previous game set `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setVictoryPointsConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏆  Victory Points Configuration
+  ═══════════════════════════`),
+  );
+
+  const victoryPointsTx = await config.provider.set_victory_points_config({
+    signer: config.account,
+    points_for_win: config.config.victoryPoints.pointsForWin,
+    hyperstructure_points_per_second: config.config.victoryPoints.hyperstructurePointsPerCycle,
+    points_for_hyperstructure_claim_against_bandits:
+      config.config.victoryPoints.pointsForHyperstructureClaimAgainstBandits,
+    points_for_non_hyperstructure_claim_against_bandits:
+      config.config.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits,
+    points_for_tile_exploration: config.config.victoryPoints.pointsForTileExploration,
+    points_for_relic_open: config.config.victoryPoints.pointsForRelicDiscovery,
+  });
+  console.log(chalk.green(`\n    ✔ Victory points configured `) + chalk.gray(victoryPointsTx.statusReceipt) + "\n");
+};
+
+export const setDiscoverableVillageSpawnResourcesConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏘️  Discoverable Village Spawn Resources Configuration
+  ═══════════════════════════`),
+  );
+
+  // log the resources
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Discoverable Village Spawn Resources")}
+    │  ${chalk.gray("Resources:")} ${chalk.white(config.config.discoverableVillageStartingResources.map((resource) => `${resource.resource}: ${resource.min_amount} - ${resource.max_amount}`).join(", "))}
+    └────────────────────────────────`),
+  );
+
+  const discoverableVillageSpawnResourcesTx = await config.provider.set_discoverable_village_starting_resources_config({
+    signer: config.account,
+    resources: config.config.discoverableVillageStartingResources.map((resource) => ({
+      resource: resource.resource,
+      min_amount: resource.min_amount * RESOURCE_PRECISION,
+      max_amount: resource.max_amount * RESOURCE_PRECISION,
+    })),
+  });
+  console.log(
+    chalk.green(`\n    ✔ Discoverable village spawn resources configured `) +
+      chalk.gray(discoverableVillageSpawnResourcesTx.statusReceipt) +
+      "\n",
+  );
+};
+
+export const setBlitzRegistrationConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏘️  Blitz Registration Configuration
+  ═══════════════════════════`),
+  );
+  if (!config.config.blitz.mode.on) {
+    console.log(chalk.yellow("Blitz mode is off, skipping blitz registration configuration \n"));
+    return;
+  }
+
+  let registration_delay_seconds = config.config.blitz.registration.registration_delay_seconds;
+  let registration_period_seconds = config.config.blitz.registration.registration_period_seconds;
+
+  let registration_start_at = Math.floor(new Date().getTime() / 1000) + registration_delay_seconds;
+  let registration_end_at = registration_start_at + registration_period_seconds;
+
+  let startMainAt = config.config.season.startMainAt;
+  if (startMainAt && startMainAt > 0) {
+    registration_end_at = startMainAt - 1;
+    registration_start_at = registration_end_at - registration_period_seconds;
+  }
+
+  const entryTokenClassHash = config.config.blitz.registration.entry_token_class_hash;
+  const entryTokenIpfsCid = byteArray.byteArrayFromString(config.config.blitz.registration.entry_token_ipfs_cid);
+  const entryTokenDeployCalldata = [
+    "0x0",
+    "0x5265616c6d733a204c6f6f74204368657374",
+    "0x12",
+    "0x0",
+    "0x524c43",
+    "0x3",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x4c6f6f7420436865737420666f72205265616c6d73",
+    "0x15",
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    getContractByName(config.provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
+    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    "0x1f4",
+  ];
+
+  const collectibles_cosmetics_max = config.config.blitz.registration.collectible_cosmetics_max_items;
+  const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
+  const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
+  const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
+  const collectibles_elitenft_address = config.config.blitz.registration.collectibles_elitenft_address;
+
+  const registrationCalldata = {
+    signer: config.account,
+    fee_token: config.config.blitz.registration.fee_token,
+    fee_recipient: config.config.blitz.registration.fee_recipient,
+    fee_amount: config.config.blitz.registration.fee_amount,
+    registration_count_max: config.config.blitz.registration.registration_count_max,
+    registration_start_at: registration_start_at,
+    entry_token_class_hash: entryTokenClassHash,
+    entry_token_ipfs_cid: entryTokenIpfsCid,
+    entry_token_deploy_calldata: entryTokenDeployCalldata,
+
+    collectibles_cosmetics_max,
+    collectibles_cosmetics_address,
+    collectibles_timelock_address,
+    collectibles_lootchest_address,
+    collectibles_elitenft_address,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Blitz Registration Configuration")}
+    │  ${chalk.gray("Fee Token:")} ${chalk.white(registrationCalldata.fee_token)}
+    │  ${chalk.gray("Fee Recipient:")} ${chalk.white(registrationCalldata.fee_recipient)}
+    │  ${chalk.gray("Fee Amount:")} ${chalk.white(registrationCalldata.fee_amount)}
+    │  ${chalk.gray("Registration Count Max:")} ${chalk.white(registrationCalldata.registration_count_max)}
+    │  ${chalk.gray("Registration Start At:")} ${chalk.white(
+      new Date(registrationCalldata.registration_start_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Entry Token IPFS CID:")} ${chalk.white(byteArray.stringFromByteArray(registrationCalldata.entry_token_ipfs_cid))}
+    │  ${chalk.gray("Entry Token Class Hash:")} ${chalk.white(registrationCalldata.entry_token_class_hash)}
+    │  ${chalk.gray("Entry Token Deploy Calldata:")} ${chalk.white(
+      `[${registrationCalldata.entry_token_deploy_calldata.slice(0, 3).join(", ")}, ..., ${registrationCalldata.entry_token_deploy_calldata.slice(-3).join(", ")}]`,
+    )}
+    │  ${chalk.gray("Collectible Cosmetics Max Items:")} ${chalk.white(registrationCalldata.collectibles_cosmetics_max)}
+    │  ${chalk.gray("Collectible Cosmetics Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_cosmetics_address))}
+    │  ${chalk.gray("Collectible Timelock Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_timelock_address))}
+    │  ${chalk.gray("Collectible LootChest Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_lootchest_address))}
+    │  ${chalk.gray("Collectible EliteNFT Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_elitenft_address))}
+    │
+    └────────────────────────────────`),
+  );
+
+  // Grant MINTER_ROLE to prize_distribution_systems for loot chest minting
+  const blitzRegistrationTx = await config.provider.set_blitz_registration_config(registrationCalldata);
+  console.log(
+    chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n",
+  );
+
+  console.log(
+    chalk.cyan(`\n\n
+  🎮 Blitz Season Configuration
+  ═══════════════════════`),
+  );
+
+  const seasonCalldata = {
+    signer: config.account,
+    dev_mode_on: config.config.dev.mode.on,
+    season_pass_address: "0x0",
+    realms_address: "0x0",
+    lords_address: config.config.setup!.addresses.lords,
+    start_settling_at: registration_start_at,
+    start_main_at: registration_end_at,
+    end_at: registration_end_at + config.config.season.durationSeconds,
+    bridge_close_end_grace_seconds: 0,
+    point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Season Parameters")}
+    │  ${chalk.gray("Dev Mode On:")}   ${chalk.white(config.config.dev.mode.on)}
+    │  ${chalk.gray("Start Setting Time:")}   ${chalk.white(
+      new Date(seasonCalldata.start_settling_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Start Main Game Time:")}   ${chalk.white(
+      new Date(seasonCalldata.start_main_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.bridge_close_end_grace_seconds))} after game ends
+    │  ${chalk.gray("Point Registration Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.point_registration_grace_seconds))} after game ends
+    │
+    │  ${chalk.yellow("Contract Addresses")}
+    │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
+    │  ${chalk.gray("Realms:")}            ${chalk.white(shortHexAddress(seasonCalldata.realms_address))}
+    │  ${chalk.gray("LORDS:")}             ${chalk.white(shortHexAddress(seasonCalldata.lords_address))}
+    └────────────────────────────────`),
+  );
+
+  const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
+  console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
+};
+
+export const grantCollectibleLootChestMinterRole = async (config: Config) => {
+  if (!config.config.blitz?.mode?.on) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
+    return;
+  }
+
+  if (!config.config.blitz?.registration?.collectibles_lootchest_address) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (No loot chest address configured)"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`\n
+  🎫 Grant Collectible Minter Role For Loot Chest
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Granting Minter Role")}
+    │  ${chalk.gray("Granting minter role for Loot Chest Contract to prize_distribution_systems...")}
+    └────────────────────────────────`),
+  );
+
+  const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
+  const prizeDistributionSystemsAddr = getContractByName(
+    config.provider.manifest,
+    `${NAMESPACE}-prize_distribution_systems`,
+  );
+
+  const grantRoleTx = await config.provider.grant_collectible_minter_role({
+    signer: config.account,
+    collectible_address: collectibles_lootchest_address,
+    minter_address: prizeDistributionSystemsAddr,
+  });
+
+  console.log(chalk.green(`    ✔ Minter role granted `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
+};
+
+export const grantCollectibleEliteNftMinterRole = async (config: Config) => {
+  if (!config.config.blitz?.mode?.on) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
+    return;
+  }
+
+  if (!config.config.blitz?.registration?.collectibles_elitenft_address) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (No elite NFT address configured)"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`\n
+  🎫 Grant Collectible Minter Role For Elite NFT
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Granting Minter Role")}
+    │  ${chalk.gray("Granting minter role for Elite NFT Contract to prize_distribution_systems...")}
+    └────────────────────────────────`),
+  );
+
+  const collectibles_elitenft_address = config.config.blitz.registration.collectibles_elitenft_address;
+  const prizeDistributionSystemsAddr = getContractByName(
+    config.provider.manifest,
+    `${NAMESPACE}-prize_distribution_systems`,
+  );
+
+  const grantRoleTx = await config.provider.grant_collectible_minter_role({
+    signer: config.account,
+    collectible_address: collectibles_elitenft_address,
+    minter_address: prizeDistributionSystemsAddr,
+  });
+
+  console.log(chalk.green(`    ✔ Minter role granted for Elite NFT `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
 };
 
 export const createBanks = async (config: Config) => {
@@ -1315,7 +1718,7 @@ export const createBanks = async (config: Config) => {
   const stepsFromCenter = 220;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
   for (const [_, coord] of Object.entries(distantCoordinates)) {
-    bank_coords.push({ x: coord.x, y: coord.y });
+    bank_coords.push({ alt: false, x: coord.x, y: coord.y });
   }
 
   for (let i = 0; i < config.config.banks.maxNumBanks; i++) {
@@ -1447,6 +1850,10 @@ export const addLiquidity = async (config: Config) => {
 };
 
 export const nodeReadConfig = async (chain: Chain) => {
+  if (!fs) {
+    throw new Error("nodeReadConfig is only available in Node.js environment");
+  }
+
   try {
     let path = "./environments/data";
     switch (chain) {
@@ -1458,6 +1865,9 @@ export const nodeReadConfig = async (chain: Chain) => {
         break;
       case "slot":
         path += "/slot.json";
+        break;
+      case "slottest":
+        path += "/slottest.json";
         break;
       case "local":
         path += "/local.json";

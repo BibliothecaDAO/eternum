@@ -143,7 +143,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       >
         <div
           className={`absolute inset-0 opacity-5 
-          ${hasSeasonPassMinted ? "bg-dark-green" : isOwner ? "bg-blue-900" : "bg-gray-700"} 
+          ${hasSeasonPassMinted ? "bg-dark-green" : isOwner ? "bg-blue-900" : ""} 
           pointer-events-none`}
         />
 

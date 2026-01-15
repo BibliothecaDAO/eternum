@@ -325,7 +325,7 @@ function CollectionPage() {
       {isSeasonPassEndSeason ? (
         <div className="text-lg border px-4 py-2 flex items-center gap-2 mt-2 mx-6">
           <AlertTriangle className="w-4 h-4" />
-          <p>The current season has ended and Season 1 Passes can no longer be used in Eternum.</p>
+          <p>The current season has ended and Season 1 Passes can no longer be used in Realms.</p>
         </div>
       ) : (
         <>

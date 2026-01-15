@@ -4,6 +4,7 @@ import {
   type ContractAddress,
   type Direction,
   getNeighborHexes,
+  GuardSlot,
   type ID,
   ResourcesIds,
   TickIds,
@@ -12,8 +13,16 @@ import {
 } from "@bibliothecadao/types";
 import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
-import { configManager, divideByPrecision, getAddressNameFromEntity, gramToKg, nanogramToKg } from "..";
+import {
+  configManager,
+  divideByPrecision,
+  getAddressNameFromEntity,
+  getArmyName,
+  gramToKg,
+  nanogramToKg,
+  getTileAt,
+  DEFAULT_COORD_ALT,
+} from "..";
 
 export const formatArmies = (
   armies: Entity[],
@@ -32,7 +41,6 @@ export const formatArmies = (
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
       const stamina = explorerTroops.troops.stamina.amount;
-      const name = getComponentValue(components.AddressName, armyEntity);
       const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
 
       const isMine = (structure?.owner || 0n) === playerAddress;
@@ -58,7 +66,7 @@ export const formatArmies = (
         isMine,
         isMercenary,
         isHome,
-        name: `${name ? shortString.decodeShortString(name.name.toString()) : `Army`} ${explorerTroops.explorer_id}`,
+        name: getArmyName(explorerTroops.explorer_id),
         hasAdjacentStructure,
       };
     })
@@ -158,26 +166,25 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
   // Extract guard troops from the structure
   const guards = [
     {
-      slot: 0,
+      slot: GuardSlot.Delta,
       troops: structure.troop_guards.delta,
       destroyedTick: structure.troop_guards.delta_destroyed_tick,
-      // timestamp
       cooldownEnd: structure.troop_guards.delta_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
-      slot: 1,
+      slot: GuardSlot.Charlie,
       troops: structure.troop_guards.charlie,
       destroyedTick: structure.troop_guards.charlie_destroyed_tick,
       cooldownEnd: structure.troop_guards.charlie_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
-      slot: 2,
+      slot: GuardSlot.Bravo,
       troops: structure.troop_guards.bravo,
       destroyedTick: structure.troop_guards.bravo_destroyed_tick,
       cooldownEnd: structure.troop_guards.bravo_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
-      slot: 3,
+      slot: GuardSlot.Alpha,
       troops: structure.troop_guards.alpha,
       destroyedTick: structure.troop_guards.alpha_destroyed_tick,
       cooldownEnd: structure.troop_guards.alpha_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
@@ -195,7 +202,7 @@ export const hasAdjacentOwnedStructure = (
 ) => {
   const neighborHexes = getNeighborHexes(position.x, position.y);
   for (const hex of neighborHexes) {
-    const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(hex.col), BigInt(hex.row)]));
+    const tile = getTileAt(components, DEFAULT_COORD_ALT, hex.col, hex.row);
     if (!tile?.occupier_is_structure) continue;
     const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(tile.occupier_id)]));
     if (!structure) continue;
@@ -225,7 +232,7 @@ export const getFreeDirectionsAroundStructure = (structureEntityId: ID, componen
   const adjacentHexes = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
 
   adjacentHexes.forEach((hex) => {
-    const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(hex.col), BigInt(hex.row)]));
+    const tile = getTileAt(components, DEFAULT_COORD_ALT, hex.col, hex.row);
 
     if (tile?.occupier_id === 0) {
       freeDirections.push(hex.direction);

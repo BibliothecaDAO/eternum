@@ -1,9 +1,11 @@
 use core::num::traits::Zero;
-use dojo::model::ModelStorage;
-use dojo::model::{Model};
+use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
-use s1_eternum::constants::RESOURCE_PRECISION;
-use s1_eternum::{alias::ID, models::{config::HyperstructureConstructConfig, guild::{GuildMember}}};
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, WORLD_CONFIG_ID};
+use crate::models::config::HyperstrtConstructConfig;
+use crate::models::guild::GuildMember;
+use crate::models::season::SeasonPrize;
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -24,6 +26,7 @@ pub struct Hyperstructure {
     pub completed: bool,
     pub access: ConstructionAccess,
     pub randomness: felt252,
+    pub points_multiplier: u8,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, Default)]
@@ -69,13 +72,13 @@ pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
     }
 
     fn get_resource_points(ref world: WorldStorage, resource_type: u8) -> u128 {
-        let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
+        let construction_cost_config: HyperstrtConstructConfig = world.read_model(resource_type);
         construction_cost_config.resource_contribution_points.into()
     }
 
     // Formula for each resource is = randomness / resource_type % (max - min)
     fn get_amount_needed(ref world: WorldStorage, hyperstructure: Hyperstructure, resource_type: u8) -> u128 {
-        let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
+        let construction_cost_config: HyperstrtConstructConfig = world.read_model(resource_type);
         let min_amount = construction_cost_config.min_amount;
         let max_amount = construction_cost_config.max_amount;
         let needed_amount = if min_amount == max_amount {
@@ -205,9 +208,26 @@ pub struct PlayerRegisteredPoints {
     pub prize_claimed: bool,
 }
 
+#[generate_trait]
+pub impl PlayerRegisteredPointsImpl of PlayerRegisteredPointsTrait {
+    fn register_points(ref world: WorldStorage, address: ContractAddress, points: u128) {
+        if points.is_non_zero() {
+            let mut player_registered_points: PlayerRegisteredPoints = world.read_model(address);
+            player_registered_points.registered_points += points;
+            world.write_model(@player_registered_points);
 
-#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked)]
+            // increase global total registered points
+            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
+            season_prize.total_registered_points += points;
+            world.write_model(@season_prize);
+        }
+    }
+}
+
+
+#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked, Default, DojoStore)]
 pub enum ConstructionAccess {
+    #[default]
     Public,
     Private,
     GuildOnly,

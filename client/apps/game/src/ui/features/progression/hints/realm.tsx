@@ -89,7 +89,7 @@ const LevelTable = () => {
                   </div>
                   <div className="space-y-2 text-center">
                     <span className="text-2xl font-medium text-light-pink block">{resource.level}</span>
-                    <span className="text-gray-300 block leading-relaxed">
+                    <span className=" block leading-relaxed">
                       {
                         LEVEL_DESCRIPTIONS[
                           RealmLevels[
@@ -110,7 +110,7 @@ const LevelTable = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-gray-300">Starting Level</div>
+                    <div className="">Starting Level</div>
                   )}
                 </div>
               </td>

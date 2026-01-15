@@ -408,6 +408,183 @@ export const resources: Array<Resources> = [
     img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/261.png?raw=true",
     ticker: "$LORDS",
   },
+
+  {
+    trait: "Essence",
+    value: 38,
+    colour: "#ec4899",
+    id: ResourcesIds.Essence,
+    description: "Essence.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/262.png?raw=true",
+    ticker: "$ESSENCE",
+  },
+
+  // Relics - Army Enhancement Items
+  {
+    trait: "Stamina Relic 1",
+    value: 39,
+    colour: "#4ade80",
+    id: ResourcesIds.StaminaRelic1,
+    description: "A mystical artifact that enhances stamina regeneration for armies by 50% for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/39.png?raw=true",
+    ticker: "$STAM1",
+  },
+  {
+    trait: "Stamina Relic 2",
+    value: 40,
+    colour: "#22c55e",
+    id: ResourcesIds.StaminaRelic2,
+    description: "A powerful artifact that doubles stamina regeneration for armies for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/40.png?raw=true",
+    ticker: "$STAM2",
+  },
+  {
+    trait: "Damage Relic 1",
+    value: 41,
+    colour: "#f87171",
+    id: ResourcesIds.DamageRelic1,
+    description: "An ancient weapon enhancement that increases army damage by 20% for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/41.png?raw=true",
+    ticker: "$DMG1",
+  },
+  {
+    trait: "Damage Relic 2",
+    value: 42,
+    colour: "#ef4444",
+    id: ResourcesIds.DamageRelic2,
+    description: "A legendary weapon enhancement that increases army damage by 40% for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/42.png?raw=true",
+    ticker: "$DMG2",
+  },
+  {
+    trait: "Damage Reduction Relic 1",
+    value: 43,
+    colour: "#60a5fa",
+    id: ResourcesIds.DamageReductionRelic1,
+    description: "A protective ward that reduces damage taken by armies by 20% for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/43.png?raw=true",
+    ticker: "$DEF1",
+  },
+  {
+    trait: "Damage Reduction Relic 2",
+    value: 44,
+    colour: "#3b82f6",
+    id: ResourcesIds.DamageReductionRelic2,
+    description: "A powerful protective ward that reduces damage taken by armies by 40% for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/44.png?raw=true",
+    ticker: "$DEF2",
+  },
+  {
+    trait: "Exploration Relic 1",
+    value: 45,
+    colour: "#a78bfa",
+    id: ResourcesIds.ExplorationRelic1,
+    description: "A mystical compass that instantly reveals terrain in a one-tile radius.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/45.png?raw=true",
+    ticker: "$EXP1",
+  },
+  {
+    trait: "Exploration Relic 2",
+    value: 46,
+    colour: "#8b5cf6",
+    id: ResourcesIds.ExplorationRelic2,
+    description: "A powerful mystical compass that instantly reveals terrain in a two-tile radius.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/46.png?raw=true",
+    ticker: "$EXP2",
+  },
+  {
+    trait: "Exploration Reward Relic 1",
+    value: 47,
+    colour: "#fbbf24",
+    id: ResourcesIds.ExplorationRewardRelic1,
+    description: "A treasure hunter's charm that doubles all exploration rewards for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/47.png?raw=true",
+    ticker: "$EXPR1",
+  },
+  {
+    trait: "Exploration Reward Relic 2",
+    value: 48,
+    colour: "#f59e0b",
+    id: ResourcesIds.ExplorationRewardRelic2,
+    description: "A legendary treasure hunter's charm that triples all exploration rewards for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/48.png?raw=true",
+    ticker: "$EXPR2",
+  },
+
+  // Relics - Structure Enhancement Items
+  {
+    trait: "Damage Reduction Relic 1",
+    value: 49,
+    colour: "#94a3b8",
+    id: ResourcesIds.StructureDamageReductionRelic1,
+    description: "A fortress ward that reduces damage taken by all guard armies by 15% for 30 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/49.png?raw=true",
+    ticker: "$SDEF1",
+  },
+  {
+    trait: "Damage Reduction Relic 2",
+    value: 50,
+    colour: "#64748b",
+    id: ResourcesIds.StructureDamageReductionRelic2,
+    description: "A powerful fortress ward that reduces damage taken by all guard armies by 30% for 30 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/50.png?raw=true",
+    ticker: "$SDEF2",
+  },
+  {
+    trait: "Production Relic 1",
+    value: 51,
+    colour: "#10b981",
+    id: ResourcesIds.ProductionRelic1,
+    description: "An efficiency enhancement that increases resource production rate by 20% for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/51.png?raw=true",
+    ticker: "$PROD1",
+  },
+  {
+    trait: "Production Relic 2",
+    value: 52,
+    colour: "#059669",
+    id: ResourcesIds.ProductionRelic2,
+    description:
+      "A powerful efficiency enhancement that increases resource production rate by 40% for 15 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/52.png?raw=true",
+    ticker: "$PROD2",
+  },
+  {
+    trait: "Labor Production Relic 1",
+    value: 53,
+    colour: "#f472b6",
+    id: ResourcesIds.LaborProductionRelic1,
+    description: "A workforce motivator that increases labor production rate by 20% for 30 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/53.png?raw=true",
+    ticker: "$LAB1",
+  },
+  {
+    trait: "Labor Production Relic 2",
+    value: 54,
+    colour: "#ec4899",
+    id: ResourcesIds.LaborProductionRelic2,
+    description: "A powerful workforce motivator that increases labor production rate by 20% for 60 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/54.png?raw=true",
+    ticker: "$LAB2",
+  },
+  {
+    trait: "Troop Production Relic 1",
+    value: 55,
+    colour: "#fb923c",
+    id: ResourcesIds.TroopProductionRelic1,
+    description: "A military accelerator that increases troop production rate by 20% for 30 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/55.png?raw=true",
+    ticker: "$TROOP1",
+  },
+  {
+    trait: "Troop Production Relic 2",
+    value: 56,
+    colour: "#ea580c",
+    id: ResourcesIds.TroopProductionRelic2,
+    description: "A powerful military accelerator that increases troop production rate by 20% for 60 Eternum Days.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/56.png?raw=true",
+    ticker: "$TROOP2",
+  },
 ];
 
 export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
@@ -455,75 +632,90 @@ export enum ResourceTier {
   Mythic,
 }
 
-export const GET_HYPERSTRUCTURE_RESOURCES_PER_TIER = (
-  tier: ResourceTier,
-  hyperstructure: boolean = false,
-): ResourcesIds[] => {
-  switch (tier) {
-    case ResourceTier.Lords:
-      return RESOURCE_TIERS.lords.filter((resource) => (hyperstructure ? resource !== ResourcesIds.Lords : true));
-    case ResourceTier.Military:
-      return [];
-    case ResourceTier.Transport:
-      return [];
-    case ResourceTier.Food:
-      return [];
-    case ResourceTier.Common:
-      return RESOURCE_TIERS.common;
-    case ResourceTier.Uncommon:
-      return RESOURCE_TIERS.uncommon;
-    case ResourceTier.Rare:
-      return RESOURCE_TIERS.rare;
-    case ResourceTier.Unique:
-      return RESOURCE_TIERS.unique;
-    case ResourceTier.Mythic:
-      return RESOURCE_TIERS.mythic;
-    default:
-      throw new Error(`Invalid resource tier: ${tier}`);
+export const getResourceTiers = (isBlitz: boolean) => {
+  if (isBlitz) {
+    return BLITZ_RESOURCE_TIERS;
   }
+  return ETERNUM_RESOURCE_TIERS;
 };
 
-export const GET_RESOURCES_PER_TIER = (tier: ResourceTier, hyperstructure: boolean = false): ResourcesIds[] => {
-  switch (tier) {
-    case ResourceTier.Lords:
-      return RESOURCE_TIERS.lords;
-    case ResourceTier.Military:
-      return RESOURCE_TIERS.military;
-    case ResourceTier.Transport:
-      return RESOURCE_TIERS.transport;
-    case ResourceTier.Food:
-      return RESOURCE_TIERS.food;
-    case ResourceTier.Common:
-      return RESOURCE_TIERS.common;
-    case ResourceTier.Uncommon:
-      return RESOURCE_TIERS.uncommon;
-    case ResourceTier.Rare:
-      return RESOURCE_TIERS.rare;
-    case ResourceTier.Unique:
-      return RESOURCE_TIERS.unique;
-    case ResourceTier.Mythic:
-      return RESOURCE_TIERS.mythic;
-    default:
-      throw new Error(`Invalid resource tier: ${tier}`);
-  }
+export const BLITZ_RESOURCE_TIERS = {
+  lords: [ResourcesIds.Lords],
+  relics: [
+    // Army Enhancement Relics
+    ResourcesIds.StaminaRelic1,
+    ResourcesIds.StaminaRelic2,
+    ResourcesIds.DamageRelic1,
+    ResourcesIds.DamageRelic2,
+    ResourcesIds.DamageReductionRelic1,
+    ResourcesIds.DamageReductionRelic2,
+    ResourcesIds.ExplorationRelic1,
+    ResourcesIds.ExplorationRelic2,
+    ResourcesIds.ExplorationRewardRelic1,
+    ResourcesIds.ExplorationRewardRelic2,
+    // Structure Enhancement Relics
+    ResourcesIds.StructureDamageReductionRelic1,
+    ResourcesIds.StructureDamageReductionRelic2,
+    ResourcesIds.ProductionRelic1,
+    ResourcesIds.ProductionRelic2,
+    ResourcesIds.LaborProductionRelic1,
+    ResourcesIds.LaborProductionRelic2,
+    ResourcesIds.TroopProductionRelic1,
+    ResourcesIds.TroopProductionRelic2,
+  ],
+  essence: [ResourcesIds.Essence],
+  labor: [ResourcesIds.Labor],
+  military: [
+    ResourcesIds.Knight,
+    ResourcesIds.KnightT2,
+    ResourcesIds.KnightT3,
+    ResourcesIds.Crossbowman,
+    ResourcesIds.CrossbowmanT2,
+    ResourcesIds.CrossbowmanT3,
+    ResourcesIds.Paladin,
+    ResourcesIds.PaladinT2,
+    ResourcesIds.PaladinT3,
+  ],
+  transport: [ResourcesIds.Donkey],
+  food: [ResourcesIds.Wheat],
+  materials: [
+    ResourcesIds.Wood,
+    ResourcesIds.Coal,
+    ResourcesIds.Copper,
+    ResourcesIds.Ironwood,
+    ResourcesIds.ColdIron,
+    ResourcesIds.Gold,
+    ResourcesIds.Adamantine,
+    ResourcesIds.Mithral,
+    ResourcesIds.Dragonhide,
+  ],
 };
 
-export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
-  if (RESOURCE_TIERS.lords.includes(resource)) return ResourceTier.Lords;
-  if (RESOURCE_TIERS.military.includes(resource)) return ResourceTier.Military;
-  if (RESOURCE_TIERS.transport.includes(resource)) return ResourceTier.Transport;
-  if (RESOURCE_TIERS.food.includes(resource)) return ResourceTier.Food;
-  if (RESOURCE_TIERS.common.includes(resource)) return ResourceTier.Common;
-  if (RESOURCE_TIERS.uncommon.includes(resource)) return ResourceTier.Uncommon;
-  if (RESOURCE_TIERS.rare.includes(resource)) return ResourceTier.Rare;
-  if (RESOURCE_TIERS.unique.includes(resource)) return ResourceTier.Unique;
-  if (RESOURCE_TIERS.mythic.includes(resource)) return ResourceTier.Mythic;
-
-  throw new Error(`Resource ${resource} not found in any tier`);
-};
-
-export const RESOURCE_TIERS = {
+export const ETERNUM_RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
+  relics: [
+    // Army Enhancement Relics
+    ResourcesIds.StaminaRelic1,
+    ResourcesIds.StaminaRelic2,
+    ResourcesIds.DamageRelic1,
+    ResourcesIds.DamageRelic2,
+    ResourcesIds.DamageReductionRelic1,
+    ResourcesIds.DamageReductionRelic2,
+    ResourcesIds.ExplorationRelic1,
+    ResourcesIds.ExplorationRelic2,
+    ResourcesIds.ExplorationRewardRelic1,
+    ResourcesIds.ExplorationRewardRelic2,
+    // Structure Enhancement Relics
+    ResourcesIds.StructureDamageReductionRelic1,
+    ResourcesIds.StructureDamageReductionRelic2,
+    ResourcesIds.ProductionRelic1,
+    ResourcesIds.ProductionRelic2,
+    ResourcesIds.LaborProductionRelic1,
+    ResourcesIds.LaborProductionRelic2,
+    ResourcesIds.TroopProductionRelic1,
+    ResourcesIds.TroopProductionRelic2,
+  ],
+  essence: [ResourcesIds.Essence],
   labor: [ResourcesIds.Labor],
   military: [
     ResourcesIds.Knight,

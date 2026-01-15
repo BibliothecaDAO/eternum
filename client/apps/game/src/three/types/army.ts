@@ -1,10 +1,19 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { AnimationMixer } from "three";
+import {
+  Vector3,
+  Euler,
+  Color,
+  InstancedMesh,
+  Group,
+  Mesh,
+  AnimationMixer,
+  AnimationClip,
+  AnimationAction,
+} from "three";
 
 export interface MovementData {
-  startPos: THREE.Vector3;
-  endPos: THREE.Vector3;
+  startPos: Vector3;
+  endPos: Vector3;
   progress: number;
   matrixIndex: number;
   currentPathIndex: number;
@@ -15,12 +24,13 @@ export interface MovementData {
 
 export interface ArmyInstanceData {
   entityId: number;
-  position: THREE.Vector3;
-  scale: THREE.Vector3;
-  rotation?: THREE.Euler;
-  color?: THREE.Color;
+  position: Vector3;
+  scale: Vector3;
+  rotation?: Euler;
+  color?: Color;
   isMoving: boolean;
-  path?: THREE.Vector3[];
+  matrixIndex?: number;
+  path?: Vector3[];
   category?: TroopType;
   tier?: TroopTier;
 }
@@ -42,27 +52,31 @@ export enum ModelType {
   AgentYP = "ypanther",
 }
 
-export interface AnimatedInstancedMesh extends THREE.InstancedMesh {
+export interface AnimatedInstancedMesh extends InstancedMesh {
   animated?: boolean;
 }
 
 export interface ModelData {
-  group: THREE.Group;
+  group: Group;
   instancedMeshes: AnimatedInstancedMesh[];
-  baseMeshes: THREE.Mesh[];
+  contactShadowMesh?: InstancedMesh;
+  contactShadowScale?: number;
+  baseMeshes: Mesh[];
   mixer: AnimationMixer;
   animations: {
-    idle: THREE.AnimationClip;
-    moving: THREE.AnimationClip;
+    idle: AnimationClip;
+    moving: AnimationClip;
   };
   animationActions: Map<
     number,
     {
-      idle: THREE.AnimationAction;
-      moving: THREE.AnimationAction;
+      idle: AnimationAction;
+      moving: AnimationAction;
     }
   >;
   activeInstances: Set<number>;
-  targetScales: Map<number, THREE.Vector3>;
-  currentScales: Map<number, THREE.Vector3>;
+  targetScales: Map<number, Vector3>;
+  currentScales: Map<number, Vector3>;
+  lastAnimationUpdate: number;
+  animationUpdateInterval: number;
 }

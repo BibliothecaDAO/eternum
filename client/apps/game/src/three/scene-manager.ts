@@ -25,20 +25,27 @@ export class SceneManager {
 
   switchScene(sceneName: SceneName) {
     const scene = this.scenes.get(sceneName);
-    if (scene) {
-      const previousScene = this.scenes.get(this.currentScene!);
-      if (previousScene) {
-        previousScene.onSwitchOff();
-      }
-      this.transitionManager.fadeOut(() => {
-        this._updateCurrentScene(sceneName);
-        if (scene.setup) {
-          scene.setup();
-        }
-        this.transitionManager.fadeIn();
-      });
+    if (!scene) {
+      return;
     }
-    this.moveCameraForScene();
+
+    const previousScene = this.scenes.get(this.currentScene!);
+    previousScene?.onSwitchOff();
+
+    this.transitionManager.fadeOut(async () => {
+      this._updateCurrentScene(sceneName);
+
+      try {
+        if (scene.setup) {
+          await scene.setup();
+        }
+      } catch (error) {
+        console.error(`[SceneManager] Failed to set up scene ${sceneName}`, error);
+      } finally {
+        this.moveCameraForScene();
+        this.transitionManager.fadeIn();
+      }
+    });
   }
 
   moveCameraForScene() {

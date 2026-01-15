@@ -1,6 +1,6 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Direction;
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+use crate::alias::ID;
+use crate::models::position::Direction;
+use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 
 
 #[starknet::interface]
@@ -59,34 +59,39 @@ pub trait ITroopManagementSystems<TContractState> {
 #[dojo::contract]
 pub mod troop_management_systems {
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait};
-    use dojo::world::{WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::constants::{RESOURCE_PRECISION};
-    use s1_eternum::models::{
-        config::{
-            CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
-            WorldConfigUtilImpl,
-        },
-        map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction},
-        resource::{
-            resource::{
-                ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
-                StructureSingleResourceFoodImpl, WeightStoreImpl,
-            },
-        },
-        stamina::{StaminaTrait},
-        structure::{
-            StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
-            StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
-        },
-        troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops},
+    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION};
+    use crate::models::config::{
+        CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
     };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
-
+    use crate::models::events::{
+        ExplorerAddStory, ExplorerCreateStory, ExplorerDeleteStory, ExplorerExplorerSwapStory, ExplorerGuardSwapStory,
+        GuardAddStory, GuardDeleteStory, GuardExplorerSwapStory, Story, StoryEvent,
+    };
+    use crate::models::map::{Tile, TileImpl};
+    use crate::models::map2::{TileOpt};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::resource::resource::{
+        ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+        WeightStoreImpl,
+    };
+    use crate::models::stamina::{StaminaImpl, StaminaTrait};
+    use crate::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
+        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+    };
+    use crate::models::troop::{
+        ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops,
+    };
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use starknet::ContractAddress;
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
@@ -123,7 +128,7 @@ pub mod troop_management_systems {
             }
 
             let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             iGuardImpl::add(
@@ -140,10 +145,32 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
+                true
             );
 
             StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
             StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(for_structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::GuardAddStory(
+                            GuardAddStory {
+                                structure_id: for_structure_id,
+                                slot: slot.into(),
+                                category: category.into(),
+                                tier: tier.into(),
+                                amount,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -155,7 +182,7 @@ pub mod troop_management_systems {
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // delete guard
@@ -175,6 +202,21 @@ pub mod troop_management_systems {
                     slot,
                     current_tick,
                 );
+
+                // emit event
+                let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+                world
+                    .emit_event(
+                        @StoryEvent {
+                            owner: Option::Some(structure_owner),
+                            entity_id: Option::Some(for_structure_id),
+                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                            story: Story::GuardDeleteStory(
+                                GuardDeleteStory { structure_id: for_structure_id, slot: slot.into() },
+                            ),
+                            timestamp: starknet::get_block_timestamp(),
+                        },
+                    );
             } else {
                 panic!("guard_delete: No troops in specified slot");
             }
@@ -226,12 +268,13 @@ pub mod troop_management_systems {
 
             // ensure spawn location is not occupied
             let spawn_coord: Coord = structure.coord().neighbor(spawn_direction);
-            let mut tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
+            let tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+            let mut tile: Tile = tile_opt.into();
             assert!(tile.not_occupied(), "explorer spawn location is occupied");
 
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             iExplorerImpl::create(
                 ref world,
@@ -245,6 +288,29 @@ pub mod troop_management_systems {
                 troop_limit_config,
                 current_tick,
             );
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerCreateStory(
+                            ExplorerCreateStory {
+                                structure_id: for_structure_id,
+                                explorer_id,
+                                category: category.into(),
+                                tier: tier.into(),
+                                amount,
+                                spawn_direction: spawn_direction.into(),
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
             explorer_id
         }
 
@@ -272,6 +338,25 @@ pub mod troop_management_systems {
 
             // add troops to explorer
             explorer.troops.count += amount;
+
+            // reintialize troop stamina
+            let tick = TickImpl::get_tick_interval(ref world);
+            let current_tick: u64 = tick.current();
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            explorer
+                .troops
+                .stamina
+                .refill(
+                    ref explorer.troops.boosts,
+                    explorer.troops.category,
+                    explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
+
+            explorer.troops.stamina.revert_initial_amount(troop_stamina_config, current_tick);
+
+            // update explorer model
             world.write_model(@explorer);
 
             // update troop capacity
@@ -283,6 +368,23 @@ pub mod troop_management_systems {
                 explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
                 "reached limit of explorers amount per army",
             );
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(to_explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerAddStory(
+                            ExplorerAddStory {
+                                explorer_id: to_explorer_id, amount, home_direction: home_direction.into(),
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -317,6 +419,19 @@ pub mod troop_management_systems {
                 ref explorer_owner_structure,
                 explorer.owner,
             );
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerDeleteStory(ExplorerDeleteStory { explorer_id }),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -390,7 +505,7 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
@@ -398,14 +513,31 @@ pub mod troop_management_systems {
             from_explorer
                 .troops
                 .stamina
-                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref from_explorer.troops.boosts,
+                    from_explorer.troops.category,
+                    from_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             to_explorer
                 .troops
                 .stamina
-                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref to_explorer.troops.boosts,
+                    to_explorer.troops.category,
+                    to_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
+            }
+
+            // ensure there is no battle timer gain by swapping
+            if from_explorer.troops.battle_cooldown_end > to_explorer.troops.battle_cooldown_end {
+                to_explorer.troops.battle_cooldown_end = from_explorer.troops.battle_cooldown_end;
             }
 
             // update from_explorer model
@@ -432,6 +564,26 @@ pub mod troop_management_systems {
 
             // update to_explorer model
             world.write_model(@to_explorer);
+
+            // emit event
+            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(from_owner),
+                        entity_id: Option::Some(from_explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerExplorerSwapStory(
+                            ExplorerExplorerSwapStory {
+                                from_explorer_id,
+                                to_explorer_id,
+                                to_explorer_direction: to_explorer_direction.into(),
+                                count,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -500,13 +652,19 @@ pub mod troop_management_systems {
             iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
 
             // update explorer stamina
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             from_explorer
                 .troops
                 .stamina
-                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref from_explorer.troops.boosts,
+                    from_explorer.troops.category,
+                    from_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
 
             // update explorer model
             if from_explorer.troops.count.is_zero() {
@@ -536,10 +694,21 @@ pub mod troop_management_systems {
             // ensure there is no stamina advantage gained by swapping
             to_structure_troops
                 .stamina
-                .refill(to_structure_troops.category, to_structure_troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref to_structure_troops.boosts,
+                    to_structure_troops.category,
+                    to_structure_troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
                 to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_structure_troops.stamina.updated_tick = current_tick;
+            }
+
+            // ensure there is no battle timer gain by swapping
+            if from_explorer.troops.battle_cooldown_end > to_structure_troops.battle_cooldown_end {
+                to_structure_troops.battle_cooldown_end = from_explorer.troops.battle_cooldown_end;
             }
 
             // add troops to structure guard
@@ -558,9 +727,31 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
+                false
             );
             StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
             StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);
+
+            // emit event
+            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(from_owner),
+                        entity_id: Option::Some(from_explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerGuardSwapStory(
+                            ExplorerGuardSwapStory {
+                                from_explorer_id,
+                                to_structure_id,
+                                to_structure_direction: to_structure_direction.into(),
+                                to_guard_slot: to_guard_slot.into(),
+                                count,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -632,7 +823,7 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
@@ -640,13 +831,30 @@ pub mod troop_management_systems {
             to_explorer
                 .troops
                 .stamina
-                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref to_explorer.troops.boosts,
+                    to_explorer.troops.category,
+                    to_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             from_structure_troops
                 .stamina
-                .refill(from_structure_troops.category, from_structure_troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref from_structure_troops.boosts,
+                    from_structure_troops.category,
+                    from_structure_troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
+            }
+
+            // ensure there is no battle timer gain by swapping
+            if from_structure_troops.battle_cooldown_end > to_explorer.troops.battle_cooldown_end {
+                to_explorer.troops.battle_cooldown_end = from_structure_troops.battle_cooldown_end;
             }
 
             // update to_explorer model
@@ -674,6 +882,27 @@ pub mod troop_management_systems {
                     );
                 StructureTroopGuardStoreImpl::store(ref from_structure_guards, ref world, from_structure_id);
             }
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(from_structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::GuardExplorerSwapStory(
+                            GuardExplorerSwapStory {
+                                from_structure_id,
+                                from_guard_slot: from_guard_slot.into(),
+                                to_explorer_id,
+                                to_explorer_direction: to_explorer_direction.into(),
+                                count,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
     }
 }
@@ -682,43 +911,40 @@ pub mod troop_management_systems {
 mod tests {
     use achievement::events::index::e_TrophyProgression;
     use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use dojo_cairo_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
-
-    use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::{
-        config::{CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig},
-        map::{Tile, TileTrait, m_Tile}, position::{Coord, CoordTrait, Direction},
-        resource::production::building::{m_Building, m_StructureBuildings},
-        resource::resource::{ResourceImpl, m_Resource},
-        structure::{
-            StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, m_Structure,
-            m_StructureOwnerStats, m_StructureVillageSlots,
-        },
-        troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops},
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
+    use crate::models::config::{
+        CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig,
     };
+    use crate::models::map::{Tile, TileTrait, m_Tile};
+    use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::resource::production::building::{m_Building, m_StructureBuildings};
+    use crate::models::resource::resource::{ResourceImpl, m_Resource};
+    use crate::models::structure::{
+        StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, m_Structure,
+        m_StructureOwnerStats, m_StructureVillageSlots,
+    };
+    use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops};
 
-    // use s1_eternum::models::weight::m_Weight; // Removed: Weight is not a model
-    use s1_eternum::systems::combat::contracts::troop_management::{
+    // use crate::models::weight::m_Weight; // Removed: Weight is not a model
+    use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
-    use s1_eternum::systems::combat::contracts::troop_movement::{
-        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
+    use crate::systems::combat::contracts::troop_movement::{
+        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
+        hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
-    use s1_eternum::systems::combat::contracts::troop_movement::{
-        agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems,
-        troop_movement_util_systems,
-    };
-    use s1_eternum::systems::realm::contracts::realm_internal_systems;
-    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems;
-    use s1_eternum::systems::village::contracts::village_systems;
-    use s1_eternum::utils::testing::helpers::{
+    use crate::systems::realm::utils::contracts::realm_internal_systems;
+    use crate::systems::resources::contracts::resource_systems::resource_systems;
+    use crate::systems::village::contracts::village_systems;
+    use crate::utils::testing::helpers::{
         init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
     };
-
-    use starknet::{ContractAddress, testing::{set_account_contract_address, set_contract_address}};
+    use starknet::ContractAddress;
+    use starknet::testing::{set_account_contract_address, set_contract_address};
 
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {
@@ -944,6 +1170,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -1280,6 +1507,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -1487,6 +1715,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -1873,6 +2102,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -1952,8 +2182,7 @@ mod tests {
             ref world,
             realm_id,
             array![
-                (ResourceTypes::KNIGHT_T1, starting_knight_t1_amount),
-                (ResourceTypes::WHEAT, wheat_amount),
+                (ResourceTypes::KNIGHT_T1, starting_knight_t1_amount), (ResourceTypes::WHEAT, wheat_amount),
                 (ResourceTypes::FISH, fish_amount),
             ]
                 .span(),
@@ -2200,6 +2429,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -2527,6 +2757,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 

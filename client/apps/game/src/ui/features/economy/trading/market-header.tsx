@@ -1,15 +1,18 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
-import { CooldownTimer, DefenseTroop, NavigateToPositionIcon, TroopChip } from "@/ui/features/military";
+import { CooldownTimer, DefenseTroop, TroopChip } from "@/ui/features/military";
+import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { getGuardsByStructure } from "@bibliothecadao/eternum";
 import { useBank, useResourceManager } from "@bibliothecadao/react";
 import {
   ADMIN_BANK_ENTITY_ID,
-  DEFENSE_NAMES,
+  GUARD_SLOT_NAMES,
   ID,
   REGIONAL_BANK_FIVE_ID,
   REGIONAL_BANK_FOUR_ID,
@@ -74,7 +77,7 @@ const BankInformationHeader = () => {
       <span className="text-sm uppercase tracking-wider">Owner</span>
       <span className="text-sm uppercase tracking-wider">Treasury</span>
       <div className="col-span-5 grid grid-cols-4 gap-2">
-        {Object.values(DEFENSE_NAMES).map((name, index) => (
+        {Object.values(GUARD_SLOT_NAMES).map((name: string, index: number) => (
           <div key={index} className="flex flex-row items-center justify-center gap-1 text-sm uppercase tracking-wider">
             <div className="w-2 h-2 rounded-full bg-gold/60" />
             {name}
@@ -160,7 +163,7 @@ const BankDefense = ({ maxDefenses, troops, cooldownSlots = [] }: BankDefensePro
                 <CooldownTimer slot={index} time={24 * 60 * 60} />
               ) : defense ? (
                 <div className="relative w-full flex items-center justify-center border border-gold/40 rounded-md bg-brown-900/40 p-1 shadow-sm">
-                  <TroopChip troops={defense.troops} iconSize="lg" />
+                  <TroopChip troops={defense.troops} size="lg" />
                 </div>
               ) : (
                 <div

@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Coord};
+use crate::alias::ID;
+use crate::models::position::Coord;
 
 #[derive(Copy, Drop, Serde)]
 struct BankCreateParams {
@@ -15,25 +15,26 @@ pub trait IBankSystems<T> {
 #[dojo::contract]
 pub mod bank_systems {
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{
+    use crate::alias::ID;
+    use crate::constants::{
         DEFAULT_NS, REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_FOUR_ID, REGIONAL_BANK_ONE_ID, REGIONAL_BANK_SIX_ID,
         REGIONAL_BANK_THREE_ID, REGIONAL_BANK_TWO_ID,
     };
-    use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
-    use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{TileOccupier};
-    use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::resource::resource::{
+    use crate::models::config::{CombatConfigImpl, TickImpl, WorldConfigUtilImpl};
+    use crate::models::map::TileOccupier;
+    use crate::models::name::AddressName;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
-    use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-    use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
-    use s1_eternum::systems::utils::structure::{iStructureImpl};
-    use s1_eternum::systems::utils::troop::iMercenariesImpl;
+    use crate::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
+    use crate::models::troop::{GuardSlot, TroopTier, TroopType};
+    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::troop::iMercenariesImpl;
+    use crate::system_libraries::structure_libraries::structure_creation_library::{
+        IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+    };
 
     const MAX_BANK_COUNT: u8 = 6;
 
@@ -50,26 +51,25 @@ pub mod bank_systems {
 
             let caller = starknet::get_caller_address();
             let mut bank_ids = array![
-                REGIONAL_BANK_ONE_ID,
-                REGIONAL_BANK_TWO_ID,
-                REGIONAL_BANK_THREE_ID,
-                REGIONAL_BANK_FOUR_ID,
-                REGIONAL_BANK_FIVE_ID,
-                REGIONAL_BANK_SIX_ID,
+                REGIONAL_BANK_ONE_ID, REGIONAL_BANK_TWO_ID, REGIONAL_BANK_THREE_ID, REGIONAL_BANK_FOUR_ID,
+                REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_SIX_ID,
             ];
+            let structure_creation_library = structure_creation_library::get_dispatcher(@world);
             for bank in banks {
                 // create the bank structure
                 let bank_entity_id = bank_ids.pop_front().unwrap();
-                iStructureImpl::create(
-                    ref world,
-                    *bank.coord,
-                    caller,
-                    bank_entity_id,
-                    StructureCategory::Bank,
-                    array![].span(),
-                    Default::default(),
-                    TileOccupier::Bank,
-                );
+                structure_creation_library
+                    .make_structure(
+                        world,
+                        *bank.coord,
+                        caller,
+                        bank_entity_id,
+                        StructureCategory::Bank,
+                        array![].span(),
+                        Default::default(),
+                        TileOccupier::Bank,
+                        false,
+                    );
 
                 // save bank name model
                 world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });
@@ -77,7 +77,7 @@ pub mod bank_systems {
                 // add guards to all 4 slots of the structure
                 let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
                 let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world);
-                let tick = TickImpl::get_tick_config(ref world);
+                let tick = TickImpl::get_tick_interval(ref world);
                 let seed = 'what could possibly go wrong'.into() - bank_entity_id.into();
 
                 let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];
@@ -94,10 +94,10 @@ pub mod bank_systems {
                         tick,
                     );
                     count += 1;
-                };
+                }
 
                 bank_ids.append(bank_entity_id);
-            };
+            }
 
             bank_ids.span()
         }

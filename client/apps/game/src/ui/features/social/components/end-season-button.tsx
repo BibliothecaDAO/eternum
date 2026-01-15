@@ -1,7 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { OSWindow } from "@/ui/features/world";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -23,14 +25,14 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
-  const seasonWinner = useUIStore((state) => state.seasonWinner);
+  const seasonWinner = useUIStore((state) => state.gameWinner);
 
   const isSeasonOver = Boolean(seasonWinner);
 
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
   const { registeredPoints, percentageOfPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(setup.components);
+    const leaderboardManager = LeaderboardManager.instance(setup.components, getRealmCountPerHyperstructure());
     const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
 
     return { registeredPoints, percentageOfPoints: Math.min((registeredPoints / pointsForWin) * 100, 100) };

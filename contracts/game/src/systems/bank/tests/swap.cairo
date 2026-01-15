@@ -5,25 +5,25 @@
 // use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
-// use s1_eternum::alias::ID;
-// use s1_eternum::constants::{DONKEY_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
+// use crate::alias::ID;
+// use crate::constants::{DONKEY_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
 
-// use s1_eternum::models::bank::liquidity::{Liquidity};
-// use s1_eternum::models::bank::market::{Market};
+// use crate::models::bank::liquidity::{Liquidity};
+// use crate::models::bank::market::{Market};
 
-// use s1_eternum::models::config::{CapacityCategory, CapacityConfig};
-// use s1_eternum::models::position::{Coord};
-// use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
-// use s1_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
-// use s1_eternum::systems::bank::contracts::bank::{bank_systems, bank_systems::InternalBankSystemsImpl};
+// use crate::models::config::{CapacityCategory, CapacityConfig};
+// use crate::models::position::{Coord};
+// use crate::models::resource::resource::{Resource, ResourceImpl};
+// use crate::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
+// use crate::systems::bank::contracts::bank::{bank_systems, bank_systems::InternalBankSystemsImpl};
 
-// use s1_eternum::systems::bank::contracts::liquidity::liquidity_systems;
-// use s1_eternum::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait};
-// use s1_eternum::systems::bank::contracts::swap::swap_systems;
-// use s1_eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
-// use s1_eternum::systems::config::contracts::config_systems;
-// use s1_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait};
-// use s1_eternum::utils::testing::{config::set_capacity_config, systems::deploy_system, world::spawn_eternum};
+// use crate::systems::bank::contracts::liquidity::liquidity_systems;
+// use crate::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait};
+// use crate::systems::bank::contracts::swap::swap_systems;
+// use crate::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
+// use crate::systems::config::contracts::config_systems;
+// use crate::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait};
+// use crate::utils::testing::{config::set_capacity_config, systems::deploy_system, world::spawn_eternum};
 
 // use starknet::contract_address_const;
 
@@ -64,7 +64,7 @@
 //     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
 //     let bank_entity_id = InternalBankSystemsImpl::create_bank(
-//         ref world, BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0,
+//         ref world, BANK_ID, Coord { alt: false, x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0,
 //     );
 
 //     let liquidity_systems_address = deploy_system(ref world, "liquidity_systems");

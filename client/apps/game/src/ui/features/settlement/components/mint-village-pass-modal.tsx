@@ -422,9 +422,9 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   {/* Added md:order-1 */}
                   <div>
                     <h5 className="text-xl font-semibold text-gold mb-3">Information</h5>
-                    <p className="text-lg text-gray-300 leading-relaxed mt-4">
+                    <p className="text-lg  leading-relaxed mt-4">
                       <span className="font-semibold text-xl text-gold">Villages</span> offer a unique way to expand
-                      your presence in Eternum. They are smaller settlements, perfect for a more casual playstyle, and
+                      your presence in Realms. They are smaller settlements, perfect for a more casual playstyle, and
                       cannot be captured by others.
                     </p>
                     <ul className="list-disc list-inside ml-4 space-y-1  mb-4">
@@ -441,7 +441,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     >
                       {isPurchasingPass ? "Processing Purchase..." : "Purchase Village Pass ($5)"}
                     </Button>
-                    <p className="text-xs text-gray-500 mt-1 text-center">(Credit Card or Crypto Accepted)</p>
+                    <p className="text-xs  mt-1 text-center">(Credit Card or Crypto Accepted)</p>
                   </div>
                   {purchasedVillagePass.length > 0 && (
                     <div className="pt-4 border-t border-gold/20 mt-6">
@@ -479,7 +479,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     </div>
                   )}
                   {!purchasedVillagePass.length && !isPurchasingPass && (
-                    <p className="text-center text-gray-500 mt-6 text-sm">
+                    <p className="text-center  mt-6 text-sm">
                       You currently have no Village Passes. Purchase one to continue.
                     </p>
                   )}
@@ -500,7 +500,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
               {/* Resource Probability Section - Clearer Separation */}
               <div className="my-10 pt-8 border-t-2 border-gold/20">
                 <h3 className="text-2xl font-bold text-gold mb-6 text-center">Possible Village Resources &amp; Odds</h3>
-                <p className="text-center text-gray-300 mb-6 text-sm italic">
+                <p className="text-center  mb-6 text-sm italic">
                   Each Village Pass, when settled, will reveal one of the following resources based on these odds. There
                   is a ~90% chance of rolling a Common or Uncommon resource, and a ~10% chance for Rare or rarer.
                 </p>
@@ -515,11 +515,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         )}
                       >
                         <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
-                          <span className="text-gray-400 text-sm mr-1.5">
+                          <span className=" text-sm mr-1.5">
                             {ResourceTierEmojis[tier.name as keyof typeof ResourceTierEmojis]}
                           </span>
-                          {tier.name}{" "}
-                          <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
+                          {tier.name} <span className=" text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
                         <ul className="space-y-1.5">
                           {tier.resources.map((resource) => (
@@ -528,7 +527,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                                 <ResourceIcon resource={resource.name} size="sm" />
                                 {resource.name}
                               </span>
-                              <span className="text-gray-400">{resource.chance.toFixed(2)}%</span>
+                              <span className="">{resource.chance.toFixed(2)}%</span>
                             </li>
                           ))}
                         </ul>
@@ -546,11 +545,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         )}
                       >
                         <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
-                          <span className="text-gray-400 text-sm mr-1.5">
+                          <span className=" text-sm mr-1.5">
                             {ResourceTierEmojis[tier.name as keyof typeof ResourceTierEmojis]}
                           </span>
-                          {tier.name}{" "}
-                          <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
+                          {tier.name} <span className=" text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
                         <ul className="space-y-1.5">
                           {tier.resources.map((resource) => (
@@ -559,7 +557,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                                 <ResourceIcon resource={resource.name} size="sm" />
                                 {resource.name}
                               </span>
-                              <span className="text-gray-400">{resource.chance.toFixed(2)}%</span>
+                              <span className="">{resource.chance.toFixed(2)}%</span>
                             </li>
                           ))}
                         </ul>
@@ -567,7 +565,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     ))}
                   </div>
                 </div>
-                <p className="text-center text-gray-400 mt-6 text-xs italic">
+                <p className="text-center  mt-6 text-xs italic">
                   Note: Percentages are approximate and subject to minor variations.
                 </p>
               </div>

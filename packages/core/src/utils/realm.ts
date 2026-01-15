@@ -1,6 +1,6 @@
 import { ClientComponents, findResourceIdByTrait, ID, orders, RealmInfo, RealmInterface } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
-import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
+import { configManager, getAddressNameFromEntity, ResourceManager, DEFAULT_COORD_ALT } from "..";
 import realmsJson from "../data/realms.json";
 import { packValues, unpackValue } from "./packed-data";
 
@@ -50,7 +50,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       resources,
       order,
       storehouses: resourceManager.getStoreCapacityKg(),
-      position: { x: structure.base.coord_x, y: structure.base.coord_y },
+      position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
       hasCapacity:

@@ -1,15 +1,21 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ProductionModal } from "@/ui/features/settlement";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
   formatTime,
   getTotalResourceWeightKg,
+  isRelic as isResourceRelic,
+  relicsArmiesTicksLeft,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { findResourceById, ID, TickIds } from "@bibliothecadao/types";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { ID, RelicEffectWithEndTick, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { Factory, Sparkles } from "lucide-react";
+import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
@@ -20,6 +26,10 @@ export const ResourceChip = ({
   showTransfer = true,
   storageCapacity = 0,
   storageCapacityUsed = 0,
+  activeRelicEffects,
+  canOpenProduction = false,
+  disableButtons = false,
+  onManageProduction,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
@@ -28,8 +38,14 @@ export const ResourceChip = ({
   showTransfer?: boolean;
   storageCapacity?: number;
   storageCapacityUsed?: number;
+  activeRelicEffects: RelicEffectWithEndTick[];
+  canOpenProduction?: boolean;
+  disableButtons?: boolean;
+  onManageProduction?: (resourceId: ResourcesIds) => void;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
   const [amountProduced, setAmountProduced] = useState(0n);
@@ -38,69 +54,71 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { currentDefaultTick: currentTick } = useBlockTimestamp();
+  const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const currentTick = currentDefaultTick || 0;
+  const resourceEnumId = resourceId as ResourcesIds;
 
   const actualBalance = useMemo(() => {
     return resourceManager.balance(resourceId);
-  }, [resourceManager, currentTick]);
+  }, [resourceManager, resourceId, currentTick]);
+
+  // Always show actual + produced (was previously only on hover)
+  useEffect(() => {
+    setDisplayBalance(Number(actualBalance || 0) + Number(amountProduced || 0n));
+  }, [actualBalance, amountProduced]);
 
   useEffect(() => {
-    setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
-  }, [actualBalance]);
+    if (currentTick === 0) return;
 
-  const production = useMemo(() => {
-    if (currentTick === 0) return null;
     const { balance, hasReachedMaxCapacity, amountProduced, amountProducedLimited } =
-      resourceManager.balanceWithProduction(currentTick, resourceId);
+      resourceManager.balanceWithProduction(currentTick, resourceEnumId);
+
     setBalance(balance);
     setHasReachedMaxCap(hasReachedMaxCapacity);
     setAmountProduced(amountProduced);
     setAmountProducedLimited(amountProducedLimited);
-    const resource = resourceManager.getResource();
-    if (!resource) return null;
-    return ResourceManager.balanceAndProduction(resource, resourceId).production;
-  }, [resourceManager, currentTick, resourceId, hasReachedMaxCap, amountProducedLimited, amountProduced, balance]);
+  }, [resourceManager, resourceEnumId, currentTick]);
+
+  const productionInfo = useMemo(() => {
+    const resourceComponent = resourceManager.getResource();
+    if (!resourceComponent) return null;
+
+    return ResourceManager.balanceAndProduction(resourceComponent, resourceEnumId);
+  }, [resourceManager, resourceEnumId, currentTick]);
+
+  const productionData = useMemo(() => {
+    if (!productionInfo) return null;
+
+    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, currentTick);
+  }, [productionInfo, resourceEnumId, currentTick]);
+
+  const productionRate = productionData?.productionPerSecond ?? 0;
+  const isProducing = productionData?.isProducing ?? false;
 
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(currentTick, resourceId);
   }, [resourceManager, currentTick]);
 
-  const productionRate = useMemo(() => {
-    return Number(divideByPrecision(Number(production?.production_rate || 0), false));
-  }, [production]);
-
-  const productionEndsAt = useMemo(() => {
-    return resourceManager.getProductionEndsAt(resourceId);
-  }, [resourceManager]);
-
-  const productionAmountRemaining = useMemo(() => {
-    return Number(divideByPrecision(Number(production?.output_amount_left || 0), false));
-  }, [production]);
-
-  const isActive = useMemo(() => {
-    return resourceManager.isActive(resourceId);
-  }, [resourceManager]);
-
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    if (isActive && !hasReachedMaxCap) {
+    if (isProducing && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
-        const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
+        const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceEnumId);
 
         setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
       return () => clearInterval(interval);
     }
-  }, [resourceManager, currentTick, isActive, hasReachedMaxCap]);
+  }, [resourceManager, resourceEnumId, currentTick, isProducing, hasReachedMaxCap]);
 
   const icon = useMemo(() => {
     return (
       <ResourceIcon
         withTooltip={false}
-        resource={findResourceById(resourceId)?.trait as string}
+        resource={ResourcesIds[resourceId]}
         size={size === "large" ? "md" : "sm"}
         className=" self-center"
       />
@@ -111,107 +129,151 @@ export const ResourceChip = ({
     return getTotalResourceWeightKg([{ resourceId, amount: Number(amountProduced) }]);
   }, [amountProduced, resourceId]);
 
-  const storageRemaining = useMemo(() => {
-    return storageCapacity - storageCapacityUsed;
-  }, [storageCapacity, storageCapacityUsed]);
+  const handleMouseEnter = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      setIsHovered(true);
+      // const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
+      // setDisplayBalance(newDisplayBalance);
 
-  const isStorageFull = useMemo(() => {
-    return storageRemaining <= 0;
-  }, [storageRemaining]);
-
-  const handleMouseEnter = useCallback(() => {
-    setIsHovered(true);
-    const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
-    setDisplayBalance(newDisplayBalance);
-
-    setTooltip({
-      position: "left",
-      content: (
-        <div className="space-y-1 max-w-72">
-          <div>
-            <span className="text-gold font-bold">Total available:</span>{" "}
-            <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
-            {findResourceById(resourceId)?.trait}
-          </div>
-          {Number(amountProduced || 0n) > 0 && (
-            <>
-              <p>
-                You have{" "}
-                <span className={!isStorageFull ? "text-green" : "text-red"}>
-                  {currencyFormat(Number(amountProduced || 0n), 2)}
-                </span>{" "}
-                {findResourceById(resourceId)?.trait} waiting to be stored.
-              </p>
-              <p>
-                Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
-                moved into storage.
-                <br />
-                Only the portion that fits within your remaining capacity&nbsp;(
-                <span className="text-green">
-                  {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
-                </span>
-                ) will be saved; any excess&nbsp;(
-                <span className="text-red">
-                  of {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  kg
-                </span>
-                ) will be permanently burned.
-              </p>
-              <p>
-                {
-                  // Calculate the net result of claiming all produced weight against remaining storage.
-                  storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
-                    <span className="text-green">All will fit if used right now.</span>
-                  ) : (
-                    <>
-                      <span className="text-red">
-                        {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
-                          undefined,
-                          { maximumFractionDigits: 0 },
-                        )}
-                        kg&nbsp;
-                      </span>
-                      will be burnt if you claim it all.
-                    </>
-                  )
-                }
-              </p>
-            </>
-          )}
-        </div>
-      ),
-    });
-  }, [
-    actualBalance,
-    amountProduced,
-    resourceId,
-    setTooltip,
-    isStorageFull,
-    storageRemaining,
-    producedWeight,
-    setIsHovered,
-    setDisplayBalance,
-  ]);
+      // setTooltip({
+      //   anchorElement: event.currentTarget,
+      //   position: "left",
+      //   content: (
+      //     <div className="space-y-1 max-w-72">
+      //       <div>
+      //         <span className="text-gold font-bold">Total available:</span>{" "}
+      //         <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
+      //         {findResourceById(resourceId)?.trait}
+      //       </div>
+      //       {Number(amountProduced || 0n) > 0 && (
+      //         <>
+      //           <p>
+      //             You have{" "}
+      //             <span className={!isStorageFull ? "text-green" : "text-red"}>
+      //               {currencyFormat(Number(amountProduced || 0n), 2)}
+      //             </span>{" "}
+      //             {findResourceById(resourceId)?.trait} waiting to be stored.
+      //           </p>
+      //           <p>
+      //             Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is
+      //             first moved into storage.
+      //             <br />
+      //             Only the portion that fits within your remaining capacity&nbsp;(
+      //             <span className="text-green">
+      //               {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+      //             </span>
+      //             ) will be saved; any excess&nbsp;(
+      //             <span className="text-red">
+      //               of{" "}
+      //               {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+      //               kg
+      //             </span>
+      //             ) will be permanently burned.
+      //           </p>
+      //           <p>
+      //             {
+      //               // Calculate the net result of claiming all produced weight against remaining storage.
+      //               storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
+      //                 <span className="text-green">All will fit if used right now.</span>
+      //               ) : (
+      //                 <>
+      //                   <span className="text-red">
+      //                     {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
+      //                       undefined,
+      //                       { maximumFractionDigits: 0 },
+      //                     )}
+      //                     kg&nbsp;
+      //                   </span>
+      //                   will be burnt if you claim it all.
+      //                 </>
+      //               )
+      //             }
+      //           </p>
+      //         </>
+      //       )}
+      //     </div>
+      //   ),
+      // });
+    },
+    [actualBalance, amountProduced, resourceId, setTooltip, producedWeight, setIsHovered, setDisplayBalance],
+  );
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
     setTooltip(null);
     setShowPerHour(true);
-    setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
+    // setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
   }, [setTooltip, actualBalance, setShowPerHour, setIsHovered, setDisplayBalance]);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
+  const mode = useGameModeConfig();
+
+  const canShowProductionShortcut = useMemo(() => {
+    if (!canOpenProduction) return false;
+    if (!resourceId && resourceId !== 0) return false;
+    return mode.resources.canShowProductionShortcut(resourceId as ResourcesIds);
+  }, [canOpenProduction, mode.resources, resourceId]);
+
+  const handleOpenProduction = useCallback(() => {
+    if (!canShowProductionShortcut) return;
+
+    if (onManageProduction) {
+      onManageProduction(resourceId as ResourcesIds);
+      return;
+    }
+
+    if (!resourceManager?.entityId) return;
+    setStructureEntityId(resourceManager.entityId);
+    toggleModal(<ProductionModal preSelectedResource={resourceId as ResourcesIds} />);
+  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, setStructureEntityId, toggleModal]);
+
+  // Check if this resource is a relic
+  const isRelic = useMemo(() => {
+    // Using type assertion until the build system picks up the new method
+    return isResourceRelic(resourceId);
+  }, [resourceManager, resourceId]);
+
+  // todo: check relic effect active
+  const relicEffectActivated = useMemo(() => {
+    return activeRelicEffects.some(
+      (relicEffect) => relicEffect.id === resourceId && relicEffect.endTick > currentArmiesTick,
+    );
+  }, [resourceManager, resourceId, currentArmiesTick]);
+
+  // Calculate time remaining for active relic with real-time countdown
+  const relicTimeRemaining = useMemo(() => {
+    if (!isRelic || !relicEffectActivated) return 0;
+
+    // Get the relic effect data to access end_tick
+    const relicEffect = activeRelicEffects.find((relicEffect) => relicEffect.id === resourceId);
+    if (!relicEffect) return 0;
+
+    // Calculate remaining ticks until effect ends
+    const remainingTicks = relicsArmiesTicksLeft(relicEffect.endTick, currentArmiesTick);
+
+    // Get tick interval for armies (relics use army ticks)
+    const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;
+
+    // Calculate total remaining time: (full remaining ticks * tick duration) + time left in current tick
+    // Only add current tick time remaining if there are remaining ticks
+    const remainingSeconds = remainingTicks > 0 ? remainingTicks * armyTickInterval + armiesTickTimeRemaining : 0;
+
+    return Math.max(0, remainingSeconds);
+  }, [isRelic, relicEffectActivated, resourceManager, resourceId, currentArmiesTick, armiesTickTimeRemaining]);
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
-  if (hideZeroBalance && balance <= 0) {
+  // Show relics with active effects even if balance is 0
+  if (hideZeroBalance && balance <= 0 && !(isRelic && relicEffectActivated)) {
     return null;
   }
-
   return (
     <div
+      data-tooltip-anchor
       className={`flex relative group items-center ${
         size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
-      } hover:bg-gold/5`}
+      } hover:bg-gold/5 ${
+        relicEffectActivated ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
+      }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -219,23 +281,49 @@ export const ResourceChip = ({
         <div className={`self-center flex flex-wrap w-full gap-2 ${size === "large" ? "text-lg" : ""}`}>
           <div className="flex items-center gap-2">
             {icon}
-            <span className={`${isHovered ? "font-bold animate-pulse" : ""}`}>
+            <span
+              className={`${isHovered ? "font-bold animate-pulse" : ""} ${
+                relicEffectActivated ? "text-relic font-semibold" : ""
+              }`}
+            >
               {currencyFormat(displayBalance, 2)}
             </span>{" "}
+            {relicEffectActivated && (
+              <div className="flex items-center ml-1 gap-1">
+                <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
+                <span
+                  className="text-xs text-relic2 font-medium"
+                  onMouseEnter={(e) => {
+                    e.stopPropagation();
+                    setTooltip({
+                      anchorElement: e.currentTarget,
+                      position: "top",
+                      content: (
+                        <span className="text-sm">Relic effect expires in {formatTime(relicTimeRemaining)}</span>
+                      ),
+                    });
+                  }}
+                  onMouseLeave={(e) => {
+                    e.stopPropagation();
+                    setTooltip(null);
+                  }}
+                >
+                  {formatTime(relicTimeRemaining)}
+                </span>
+              </div>
+            )}
           </div>
 
           {amountProduced > 0n && (
             <div className={` flex  gap-2 self-start text-xs text-gold/50`}>
               [
-              <span className={!isStorageFull ? "text-green" : "text-red"}>
+              {/* <span className={!isStorageFull ? "text-green" : "text-red"}>
                 {currencyFormat(Number(amountProduced || 0n), 2)}
-              </span>
+              </span> */}
               <div className="flex  gap-4 w-full col-span-12">
-                {isActive &&
-                !hasReachedMaxCap &&
-                (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
+                {isProducing && !hasReachedMaxCap ? (
                   <div className={`self-center flex ${size === "large" ? "text-base" : "text-xs"} justify-end`}>
-                    <div className={!isStorageFull ? "text-green" : "text-red"}>
+                    <div className="text-green">
                       +
                       {showPerHour
                         ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
@@ -255,21 +343,54 @@ export const ResourceChip = ({
           )}
         </div>
 
-        {producedWeight > 0 && (
+        {/* {producedWeight > 0 && (
           <div className="text-xs text-gold/40 col-span-12 flex items-center">
             {divideByPrecision(Number(producedWeight || 0n), false).toLocaleString(undefined, {
               maximumFractionDigits: 0,
             })}{" "}
             kg produced
           </div>
-        )}
+        )} */}
 
         <div className={`ml-2 text-xs text-gold/40  ${size === "large" ? "" : ""}`}>
-          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
+          {timeUntilValueReached > 1000000000
+            ? "∞"
+            : timeUntilValueReached !== 0
+              ? formatTime(timeUntilValueReached)
+              : ""}
         </div>
       </div>
+      {canShowProductionShortcut && (
+        <button
+          data-tooltip-anchor
+          onClick={(event) => {
+            event.stopPropagation();
+            handleOpenProduction();
+          }}
+          onMouseEnter={(event) =>
+            setTooltip({
+              anchorElement: event.currentTarget,
+              content: "Manage Production",
+              position: "bottom",
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          disabled={disableButtons}
+          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Factory className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
+        </button>
+      )}
       {showTransfer && (
-        <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
+        <button
+          data-tooltip-anchor
+          onClick={(event) => {
+            event.stopPropagation();
+            togglePopup(resourceId.toString());
+          }}
+          disabled={disableButtons}
+          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
@@ -284,6 +405,38 @@ export const ResourceChip = ({
               d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
             />
           </svg>
+        </button>
+      )}
+      {isRelic && balance > 0 && (
+        <button
+          data-tooltip-anchor
+          onClick={(event) => {
+            event.stopPropagation();
+            import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
+              toggleModal(
+                <RelicActivationPopup
+                  entityId={resourceManager.entityId}
+                  entityOwnerId={resourceManager.entityId}
+                  recipientType={RelicRecipientType.Structure}
+                  relicId={resourceId}
+                  relicBalance={divideByPrecision(balance)}
+                  onClose={() => toggleModal(null)}
+                />,
+              );
+            });
+          }}
+          disabled={disableButtons || relicTimeRemaining > 0}
+          onMouseEnter={(event) =>
+            setTooltip({
+              anchorElement: event.currentTarget,
+              content: "Activate Relic",
+              position: "bottom",
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Sparkles className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
         </button>
       )}
     </div>

@@ -1,613 +1,513 @@
-import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
+import {
+  buildExecutionSummary,
+  buildRealmProductionPlan,
+  buildRealmResourceSnapshot,
+  planHasExecutableCalls,
+  PROCESS_INTERVAL_MS,
+  type RealmProductionPlan,
+  type RealmResourceSnapshot,
+} from "@/ui/features/infrastructure/automation/model/automation-processor";
+import {
+  useAutomationStore,
+  DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
+  DONKEY_DEFAULT_RESOURCE_PERCENT,
+  type ResourceAutomationPercentages,
+  type RealmAutomationExecutionSummary,
+} from "./store/use-automation-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { getBlockTimestamp, getConservativeBlockTimestamp, configManager } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Account as StarknetAccount } from "starknet";
-import { useBlockTimestamp } from "./helpers/use-block-timestamp";
 
-// --- Helper: Get all numeric enum values for ResourcesIds ---
-const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((value) => typeof value === "number") as ResourcesIds[];
+const resolveResourceLabel = (resourceId: number): string => {
+  const label = ResourcesIds[resourceId as ResourcesIds];
+  return typeof label === "string" ? label : `Resource ${resourceId}`;
+};
 
-/**
- * Fetches the current resource balances for a given realm entity ID.
- */
-async function fetchBalances(
-  tick: number,
-  realmEntityId: string,
-  dojoComponents: ClientComponents,
-): Promise<Record<number, number>> {
-  // console.log(`Fetching balances for realm ${realmEntityId} using ResourceManager.`);
-  const balances: Record<number, number> = {};
-  try {
-    const realmIdNumber = Number(realmEntityId);
-    if (isNaN(realmIdNumber)) {
-      console.error(`Invalid realmEntityId for fetchBalances: ${realmEntityId}`);
-      return {};
-    }
-    const manager = new ResourceManager(dojoComponents, realmIdNumber);
+const labelResourceRecord = (record: Record<number, number>) =>
+  Object.entries(record).map(([resourceId, amount]) => ({
+    resourceId: Number(resourceId),
+    resource: resolveResourceLabel(Number(resourceId)),
+    amount,
+  }));
 
-    for (const resourceId of ALL_RESOURCE_IDS) {
-      const balanceComponent = manager.balanceWithProduction(tick, resourceId);
-      balances[resourceId] = Number(balanceComponent.balance);
-    }
-  } catch (error) {
-    console.error(`Error fetching balances for realm ${realmEntityId}:`, error);
-  }
-  return balances;
-}
+const labelExecutionEntries = (entries: RealmAutomationExecutionSummary["resourceToResource"]) =>
+  entries.map((entry) => ({
+    ...entry,
+    resource: resolveResourceLabel(entry.resourceId),
+    inputs: entry.inputs.map((input) => ({
+      ...input,
+      resource: resolveResourceLabel(input.resourceId),
+    })),
+  }));
 
-/**
- * Fetches the projected resource balance including pending production.
- * This is crucial for MaintainBalance mode to avoid overproduction.
- */
-async function getProjectedBalance(
-  tick: number,
-  realmEntityId: string,
-  resourceId: ResourcesIds,
-  dojoComponents: ClientComponents,
-): Promise<number> {
-  try {
-    const realmIdNumber = Number(realmEntityId);
-    if (isNaN(realmIdNumber)) {
-      console.error(`Invalid realmEntityId for getProjectedBalance: ${realmEntityId}`);
-      return 0;
-    }
-    const manager = new ResourceManager(dojoComponents, realmIdNumber);
+const labelPlanCallset = (plan: RealmProductionPlan) => ({
+  resourceToResource: plan.callset.resourceToResource.map((call) => ({
+    ...call,
+    resource: resolveResourceLabel(call.resourceId),
+  })),
+  laborToResource: plan.callset.laborToResource.map((call) => ({
+    ...call,
+    resource: resolveResourceLabel(call.resourceId),
+  })),
+});
 
-    // Get the time until current production ends
-    const ticksUntilProductionEnds = manager.timeUntilValueReached(tick, resourceId);
+const formatSnapshotLog = (
+  snapshot: RealmResourceSnapshot,
+  customPercentages: Record<number, ResourceAutomationPercentages>,
+) =>
+  Array.from(snapshot.values())
+    .filter((entry) => entry.hasActiveProduction || customPercentages[entry.resourceId])
+    .map((entry) => ({
+      resourceId: entry.resourceId,
+      resource: resolveResourceLabel(entry.resourceId),
+      balanceHuman: entry.balanceHuman,
+      productionPerSecond: entry.productionPerSecond,
+      hasActiveProduction: entry.hasActiveProduction,
+    }));
 
-    // If no pending production, return current balance
-    if (ticksUntilProductionEnds === 0) {
-      const currentBalance = manager.balanceWithProduction(tick, resourceId);
-      return currentBalance.balance;
-    }
-
-    // Calculate the balance after all pending production completes
-    const futureBalance = manager.balanceWithProduction(tick + ticksUntilProductionEnds, resourceId);
-
-    console.log(
-      `Automation: Projected balance for ${ResourcesIds[resourceId]} after ${ticksUntilProductionEnds} ticks: ${futureBalance.balance} (current production will complete)`,
-    );
-
-    return futureBalance.balance;
-  } catch (error) {
-    console.error(`Error getting projected balance for resource ${resourceId}:`, error);
-    return 0;
-  }
-}
-
-/**
- * Gets the production recipe for a given resource.
- * Replace with your actual game config/data.
- */
-function getProductionRecipe(
-  resourceToUse: ResourcesIds,
-  productionType: ProductionType,
-): { inputs: { resourceId: ResourcesIds; amount: number }[]; outputAmount: number } | undefined {
-  const eternumConfig = ETERNUM_CONFIG();
-
-  if (productionType === ProductionType.ResourceToResource) {
-    const recipeInputs = eternumConfig.resources.productionByComplexRecipe[resourceToUse];
-    const outputAmount = eternumConfig.resources.productionByComplexRecipeOutputs[resourceToUse];
-    if (recipeInputs && typeof outputAmount === "number") {
-      return { inputs: recipeInputs.map(({ resource, amount }) => ({ resourceId: resource, amount })), outputAmount };
-    }
-  } else if (productionType === ProductionType.LaborToResource) {
-    const recipeInputs = eternumConfig.resources.productionBySimpleRecipe[resourceToUse];
-    const outputAmount = eternumConfig.resources.productionBySimpleRecipeOutputs[resourceToUse];
-    if (recipeInputs && typeof outputAmount === "number") {
-      return { inputs: recipeInputs.map(({ resource, amount }) => ({ resourceId: resource, amount })), outputAmount };
-    }
-  } else if (productionType === ProductionType.ResourceToLabor) {
-    // For resource to labor, the input is the selected resource, output is labor
-    const laborConfig = configManager.getLaborConfig(resourceToUse);
-    if (laborConfig && laborConfig.laborProductionPerResource) {
-      return {
-        inputs: [{ resourceId: resourceToUse, amount: 1 }],
-        outputAmount: laborConfig.laborProductionPerResource,
-      };
-    }
-  }
-  return undefined;
-}
-
-const PROCESS_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
-const CYCLE_BUFFER = 150;
+const formatCustomPercentagesLog = (percentages: Record<number, ResourceAutomationPercentages>) =>
+  Object.entries(percentages ?? {}).map(([resourceId, value]) => ({
+    resourceId: Number(resourceId),
+    resource: resolveResourceLabel(Number(resourceId)),
+    percentages: value,
+  }));
 
 export const useAutomation = () => {
   const {
     setup: {
-      systemCalls: {
-        burn_resource_for_resource_production,
-        burn_labor_for_resource_production,
-        burn_resource_for_labor_production,
-        send_resources,
-      },
+      systemCalls: { execute_realm_production_plan },
       components,
     },
     account: { account: starknetSignerAccount },
   } = useDojo();
-  const { currentDefaultTick } = useBlockTimestamp();
 
-  const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
-  const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
-  const updateTransferTimestamp = useAutomationStore((state) => state.updateTransferTimestamp);
-  const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
-  const isGloballyPaused = useAutomationStore((state) => state.isGloballyPaused);
-  const processingRef = useRef(false);
-  const ordersByRealmRef = useRef(ordersByRealm);
+  const realms = useAutomationStore((state) => state.realms);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
+  const recordExecution = useAutomationStore((state) => state.recordExecution);
+  const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
+  const upsertRealm = useAutomationStore((state) => state.upsertRealm);
+  const removeRealm = useAutomationStore((state) => state.removeRealm);
+  const pruneForGame = useAutomationStore((state) => state.pruneForGame);
+  const hydrated = useAutomationStore((state) => state.hydrated);
+  const processingRef = useRef(false);
+  const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
+  const setNextRunTimestampRef = useRef(setNextRunTimestamp);
+  const playerRealms = usePlayerOwnedRealmsInfo();
+  const playerVillages = usePlayerOwnedVillagesInfo();
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const mode = useGameModeConfig();
+  const realmResourcesSignatureRef = useRef<string>("");
+  const initialBlockTimestampMsRef = useRef<number | null>(null);
+  if (initialBlockTimestampMsRef.current === null) {
+    initialBlockTimestampMsRef.current = getBlockTimestamp().currentBlockTimestamp * 1000;
+  }
+  const initialBlockTimestampMs = initialBlockTimestampMsRef.current!;
+  const automationEnabledAtRef = useRef<number>(initialBlockTimestampMs + PROCESS_INTERVAL_MS);
+  const lastRunBlockTimestampRef = useRef<number>(initialBlockTimestampMs);
+  const nextRunBlockTimestampRef = useRef<number>(automationEnabledAtRef.current);
+  const scheduleNextCheckRef = useRef<() => void>();
+  const automationTimeoutIdRef = useRef<number | null>(null);
+  const syncedRealmIdsRef = useRef<Set<string>>(new Set());
 
-  // ---- Keep the latest block tick in a ref so that callbacks remain stable ---
-  const currentTickRef = useRef(currentDefaultTick);
+  const stopAutomation = useCallback(() => {
+    if (automationTimeoutIdRef.current !== null) {
+      window.clearTimeout(automationTimeoutIdRef.current);
+      automationTimeoutIdRef.current = null;
+    }
+    setNextRunTimestampRef.current(null);
+  }, []);
+
+  const isGameOver = useCallback(
+    (blockTimestampSeconds?: number) => {
+      if (typeof gameEndAt !== "number") {
+        return false;
+      }
+      const timestamp =
+        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
+      return timestamp >= gameEndAt;
+    },
+    [gameEndAt],
+  );
+
   useEffect(() => {
-    currentTickRef.current = currentDefaultTick;
-  }, [currentDefaultTick]);
+    if (isGameOver()) {
+      stopAutomation();
+    }
+  }, [isGameOver, stopAutomation]);
 
   useEffect(() => {
-    ordersByRealmRef.current = ordersByRealm;
-  }, [ordersByRealm]);
+    if (!components) {
+      return;
+    }
+    const season = configManager.getSeasonConfig();
+    const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
+    pruneForGame(gameId);
+  }, [components, pruneForGame]);
 
-  const processOrders = useCallback(async () => {
-    if (processingRef.current) return;
-    if (
-      !starknetSignerAccount ||
-      !starknetSignerAccount.address ||
-      starknetSignerAccount.address === "0x0" ||
-      !components ||
-      currentTickRef.current === 0
-    ) {
-      console.warn("Automation: Conditions not met (signer/components/currentDefaultTick). Skipping.");
+  useEffect(() => {
+    if (!hydrated) {
+      syncedRealmIdsRef.current.clear();
+      return;
+    }
+    const managedStructures = [...playerRealms, ...playerVillages];
+    const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
+
+    if (managedStructures.length === 0) {
       return;
     }
 
-    // Check for global pause - exit early if all automation is paused
-    if (isGloballyPaused) {
-      console.log("Automation: Globally paused. Skipping all processing.");
-      return;
+    managedStructures.forEach((structure) => {
+      const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
+      const name = mode.structure.getName(structure.structure).name;
+      const realmId = String(structure.entityId);
+      syncedRealmIdsRef.current.add(realmId);
+
+      upsertRealm(realmId, {
+        realmName: name,
+        entityType,
+      });
+    });
+
+    Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
+      const supportedType = config.entityType === "realm" || config.entityType === "village";
+      const hasSyncedThisSession = syncedRealmIdsRef.current.has(realmId);
+      if (!hasSyncedThisSession) {
+        return;
+      }
+      if (!supportedType || !activeIds.has(realmId)) {
+        removeRealm(realmId);
+      }
+    });
+  }, [hydrated, playerRealms, playerVillages, removeRealm, upsertRealm, mode]);
+
+  const processRealms = useCallback(async (): Promise<boolean> => {
+    if (processingRef.current) return false;
+
+    if (isGameOver()) {
+      console.log("Automation: Game has ended. Skipping automation pass.");
+      return false;
+    }
+
+    if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
+      console.log("Automation: Missing Starknet signer. Skipping automation pass.");
+      return false;
+    }
+
+    if (!components) {
+      console.log("Automation: Missing Dojo components. Skipping automation pass.");
+      return false;
+    }
+
+    const realmList = Object.values(realms).filter(
+      (realm) => realm.entityType === "realm" || realm.entityType === "village",
+    );
+    if (realmList.length === 0) {
+      return false;
     }
 
     processingRef.current = true;
+    let anyExecuted = false;
 
-    const currentOrdersByRealm = ordersByRealmRef.current;
+    try {
+      // Use conservative tick for resource validation to prevent tx failures from clock desync
+      const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
 
-    for (const realmEntityId in currentOrdersByRealm) {
-      // Check if realm is paused
-      if (isRealmPaused(realmEntityId)) {
-        console.log(`Automation: Realm ${realmEntityId} is paused. Skipping all orders.`);
-        continue;
-      }
+      for (const realmConfig of realmList) {
+        let activeRealmConfig = realmConfig;
+        const realmIdNum = Number(activeRealmConfig.realmId);
+        const realmLabel = activeRealmConfig.realmName ?? `Realm ${activeRealmConfig.realmId}`;
 
-      const realmOrders = currentOrdersByRealm[realmEntityId].sort((a, b) => a.priority - b.priority);
-      if (!realmOrders || realmOrders.length === 0) continue;
+        const snapshot =
+          Number.isFinite(realmIdNum) && realmIdNum > 0
+            ? buildRealmResourceSnapshot({
+                components,
+                realmId: realmIdNum,
+                currentTick: conservativeTick,
+              })
+            : new Map();
 
-      console.log(
-        `Automation: Processing orders for realm ${realmEntityId}, ${JSON.stringify(realmOrders, null, 2)} orders found.`,
-      );
+        console.log("[Automation] Prepared realm snapshot", {
+          realmId: activeRealmConfig.realmId,
+          realmName: realmLabel,
+          blockTick: conservativeTick,
+          balances: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
+        });
 
-      for (const order of realmOrders) {
-        // For ProduceOnce mode, check if we've already produced enough
-        if (
-          order.mode === OrderMode.ProduceOnce &&
-          order.maxAmount !== "infinite" &&
-          order.producedAmount >= order.maxAmount &&
-          order.productionType !== ProductionType.Transfer // Transfer orders don't use producedAmount
-        ) {
-          console.log(
-            `Automation: Order ${order.id} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId} has already produced ${order.producedAmount} of ${order.maxAmount}. Skipping.`,
-          );
+        const producedResourceIds: ResourcesIds[] = [];
+        snapshot.forEach((entry) => {
+          if (entry.hasActiveProduction) {
+            producedResourceIds.push(entry.resourceId);
+          }
+        });
+
+        if (activeRealmConfig.presetId === "idle") {
+          console.log("[Automation] Skipping automation run due to idle preset", {
+            realmId: activeRealmConfig.realmId,
+            realmName: realmLabel,
+          });
           continue;
         }
 
-        // Handle transfer orders separately
-        if (order.productionType === ProductionType.Transfer) {
+        if (activeRealmConfig.presetId === "custom" && activeRealmConfig.autoBalance) {
           try {
-            // Check if it's time to transfer based on the mode
-            let shouldTransfer = false;
+            const resourceIdsForCheck =
+              producedResourceIds.length > 0
+                ? producedResourceIds
+                : Object.keys(activeRealmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds);
 
-            if (order.transferMode === TransferMode.Recurring) {
-              // Check if enough time has passed since last transfer
-              const now = Date.now();
-              const lastTransfer = order.lastTransferTimestamp || 0;
-              const intervalMs = (order.transferInterval || 60) * 60 * 1000; // Convert minutes to ms
-              shouldTransfer = now - lastTransfer >= intervalMs;
-
-              if (!shouldTransfer) {
-                console.log(
-                  `Automation: Transfer order ${order.id} not due yet. Next transfer in ${Math.ceil((intervalMs - (now - lastTransfer)) / 1000 / 60)} minutes.`,
-                );
-                continue;
-              }
-            } else if (
-              order.transferMode === TransferMode.MaintainStock ||
-              order.transferMode === TransferMode.DepletionTransfer
-            ) {
-              // For threshold-based transfers, we need to check balances
-              const targetBalances = await fetchBalances(currentTickRef.current, order.targetEntityId!, components);
-              const sourceBalances = await fetchBalances(currentTickRef.current, order.realmEntityId, components);
-
-              // Check the first resource in the transfer list as the trigger
-              const triggerResource = order.transferResources?.[0];
-              if (triggerResource) {
-                if (order.transferMode === TransferMode.MaintainStock) {
-                  // Transfer if destination is below threshold
-                  const targetBalance = targetBalances[triggerResource.resourceId] || 0;
-                  shouldTransfer = targetBalance < multiplyByPrecision(order.transferThreshold || 0);
-                } else {
-                  // Transfer if source is above threshold
-                  const sourceBalance = sourceBalances[triggerResource.resourceId] || 0;
-                  shouldTransfer = sourceBalance > multiplyByPrecision(order.transferThreshold || 0);
-                }
-              }
-            }
-
-            if (!shouldTransfer) continue;
-
-            // Check if source has enough resources
-            const sourceBalances = await fetchBalances(currentTickRef.current, order.realmEntityId, components);
-            const resourcesToTransfer: { resource: ResourcesIds; amount: number }[] = [];
-            let hasEnoughResources = true;
-
-            for (const resource of order.transferResources || []) {
-              const requiredAmount = multiplyByPrecision(resource.amount);
-              const availableAmount = sourceBalances[resource.resourceId] || 0;
-
-              if (availableAmount < requiredAmount) {
-                console.warn(
-                  `Automation: Not enough ${ResourcesIds[resource.resourceId]} for transfer. Required: ${requiredAmount}, Available: ${availableAmount}`,
-                );
-                hasEnoughResources = false;
-                break;
-              }
-
-              resourcesToTransfer.push({
-                resource: resource.resourceId,
-                amount: requiredAmount,
-              });
-            }
-
-            if (!hasEnoughResources) continue;
-
-            // Execute the transfer
-            console.log(
-              `Automation: Executing transfer from ${order.realmName} to ${order.targetEntityName}`,
-              resourcesToTransfer,
+            const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
+            const smartDefaults = calculatePresetAllocations(
+              resourceIdsForCheck,
+              "smart",
+              activeRealmConfig.entityType,
             );
-
-            await send_resources({
-              signer: starknetSignerAccount as StarknetAccount,
-              sender_entity_id: Number(order.realmEntityId),
-              recipient_entity_id: Number(order.targetEntityId),
-              resources: resourcesToTransfer,
+            resourceIdsForCheck.forEach((resourceId) => {
+              const stored = activeRealmConfig.customPercentages?.[resourceId];
+              const smartDefault = smartDefaults.get(resourceId);
+              const baseline =
+                resourceId === ResourcesIds.Donkey
+                  ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+                  : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+              effectivePercentages[resourceId] = stored ?? smartDefault ?? baseline;
             });
 
-            console.log(
-              `Automation: MOCK TRANSFER from ${order.realmName} to ${order.targetEntityName}`,
-              resourcesToTransfer,
+            const { resourceOver, laborOver } = getAutomationOverallocation(
+              effectivePercentages,
+              activeRealmConfig.entityType,
             );
 
-            // Update last transfer timestamp for recurring transfers
-            if (order.transferMode === TransferMode.Recurring) {
-              updateTransferTimestamp(order.realmEntityId, order.id);
-              console.log(`Automation: Updated last transfer timestamp for order ${order.id}`);
+            if (resourceOver || laborOver) {
+              console.log("[Automation] Auto-switching to smart preset due to over-allocation", {
+                realmId: activeRealmConfig.realmId,
+                realmName: realmLabel,
+                producedResourceIds,
+                resourceOver,
+                laborOver,
+              });
+
+              setRealmPreset(activeRealmConfig.realmId, "smart");
+              const refreshed = getRealmConfig(activeRealmConfig.realmId);
+              if (refreshed) {
+                activeRealmConfig = refreshed;
+              }
             }
-
-            toast.success(
-              <div className="flex flex-col">
-                <span className="font-bold">Automation: Transfer Completed</span>
-                <span className="text-sm">
-                  From {order.realmName} to {order.targetEntityName}
-                </span>
-                <div className="flex gap-2 mt-1">
-                  {order.transferResources?.map((res, idx) => (
-                    <div key={idx} className="flex items-center">
-                      <ResourceIcon resource={ResourcesIds[res.resourceId]} size="xs" className="mr-1" />
-                      <span className="text-xs">{res.amount}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>,
-            );
           } catch (error) {
-            console.error(`Automation: Error processing transfer order ${order.id}:`, error);
+            console.error("[Automation] Failed to auto-balance custom allocations", activeRealmConfig.realmId, error);
           }
-          continue; // Skip to next order after handling transfer
+        }
+
+        const plan = buildRealmProductionPlan({
+          realmConfig: activeRealmConfig,
+          snapshot,
+        });
+
+        const planLogPayload = {
+          realmId: plan.realmId,
+          realmName: realmLabel,
+          presetId: activeRealmConfig.presetId,
+          autoBalance: activeRealmConfig.autoBalance,
+          evaluatedResources: plan.evaluatedResourceIds.map((resourceId) => ({
+            resourceId,
+            resource: resolveResourceLabel(resourceId),
+          })),
+          configuredResources: formatCustomPercentagesLog(activeRealmConfig.customPercentages),
+          snapshot: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
+          callset: labelPlanCallset(plan),
+          consumption: labelResourceRecord(plan.consumptionByResource),
+          outputs: labelResourceRecord(plan.outputsByResource),
+          skipped: plan.skipped.map((entry) => ({
+            ...entry,
+            resource: resolveResourceLabel(entry.resourceId),
+          })),
+        };
+
+        console.log("[Automation] Planned production run", planLogPayload);
+
+        if (!planHasExecutableCalls(plan)) {
+          console.log("[Automation] No executable automation calls detected", planLogPayload);
+          continue;
         }
 
         try {
-          const currentBalances = await fetchBalances(currentTickRef.current, order.realmEntityId, components);
-          const recipe = getProductionRecipe(order.resourceToUse, order.productionType);
-
-          console.log(
-            `Automation: Recipe for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
-            recipe,
-          );
-
-          if (!recipe || recipe.outputAmount === 0) {
-            console.warn(
-              `Automation: No valid recipe or zero output for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}.`,
-            );
-            continue;
-          }
-
-          // For MaintainBalance mode, check if we need to produce
-          if (order.mode === OrderMode.MaintainBalance) {
-            const targetBalance = order.maxAmount as number;
-
-            // Determine which resource we're trying to maintain
-            let resourceToMaintain: ResourcesIds;
-            if (order.productionType === ProductionType.ResourceToLabor) {
-              // For ResourceToLabor, we're maintaining Labor balance
-              resourceToMaintain = ResourcesIds.Labor;
-            } else {
-              // For other production types, we're maintaining the output resource balance
-              resourceToMaintain = order.resourceToUse;
-            }
-
-            const currentBalance = currentBalances[resourceToMaintain] || 0;
-            const projectedBalance = await getProjectedBalance(
-              currentTickRef.current,
-              order.realmEntityId,
-              resourceToMaintain,
-              components,
-            );
-
-            const targetBalanceInPrecision = multiplyByPrecision(targetBalance);
-            const bufferPercentage = order.bufferPercentage || 10; // Default 10% buffer
-            const bufferAmount = targetBalanceInPrecision * (bufferPercentage / 100);
-            const triggerBalance = targetBalanceInPrecision - bufferAmount;
-
-            console.log(
-              `Automation: MaintainBalance mode for ${ResourcesIds[resourceToMaintain]} - Current: ${currentBalance}, Projected: ${projectedBalance}, Target: ${targetBalanceInPrecision}, Trigger: ${triggerBalance}`,
-            );
-
-            // If projected balance (after pending production) is above trigger threshold, skip
-            if (projectedBalance >= triggerBalance) {
-              console.log(
-                `Automation: Projected balance for ${ResourcesIds[resourceToMaintain]} is sufficient (${projectedBalance} >= ${triggerBalance}). Skipping.`,
-              );
-              continue;
-            }
-          }
-
-          let maxPossibleCycles = Infinity;
-          let insufficientBalance = false;
-          if (recipe.inputs.length > 0) {
-            for (const input of recipe.inputs) {
-              if (input.amount <= 0) continue;
-              const balance = currentBalances[input.resourceId] || 0;
-              console.log(
-                `Automation: Balance for ${ResourcesIds[input.resourceId]} in realm ${order.realmEntityId}, order ${order.id}:`,
-                balance,
-              );
-              if (balance < multiplyByPrecision(input.amount)) {
-                console.warn(
-                  `Automation: Insufficient balance for ${ResourcesIds[input.resourceId]} in realm ${order.realmEntityId}, order ${order.id}: required ${multiplyByPrecision(input.amount)}, available ${balance}. Skipping order.`,
-                );
-                insufficientBalance = true;
-                break;
-              }
-              maxPossibleCycles = Math.min(maxPossibleCycles, Math.floor(balance / multiplyByPrecision(input.amount)));
-            }
-          } else {
-            maxPossibleCycles = 10000;
-          }
-
-          if (insufficientBalance) continue;
-
-          // Apply cycle buffer to reduce risk of race condition
-          maxPossibleCycles = Math.max(1, maxPossibleCycles - CYCLE_BUFFER);
-
-          console.log(
-            `Automation: Max possible cycles for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
-            maxPossibleCycles,
-          );
-
-          if (maxPossibleCycles === 0 || maxPossibleCycles === Infinity) {
-            continue;
-          }
-
-          let cyclesToRun = maxPossibleCycles;
-
-          if (order.mode === OrderMode.ProduceOnce && order.maxAmount !== "infinite") {
-            const remainingAmountToProduce = order.maxAmount - order.producedAmount;
-
-            console.log(
-              `Automation: Remaining amount to produce for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
-              remainingAmountToProduce,
-            );
-            if (remainingAmountToProduce <= 0) continue;
-
-            const cyclesForRemainingAmount = Math.ceil(remainingAmountToProduce / recipe.outputAmount);
-            cyclesToRun = Math.min(cyclesToRun, cyclesForRemainingAmount);
-
-            console.log(
-              `Automation: Cycles to run for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
-              cyclesToRun,
-            );
-          } else if (order.mode === OrderMode.MaintainBalance) {
-            // Calculate how much we need to produce to reach target
-            const targetBalance = order.maxAmount as number;
-
-            // Determine which resource we're trying to maintain
-            let resourceToMaintain: ResourcesIds;
-            if (order.productionType === ProductionType.ResourceToLabor) {
-              // For ResourceToLabor, we're maintaining Labor balance
-              resourceToMaintain = ResourcesIds.Labor;
-            } else {
-              // For other production types, we're maintaining the output resource balance
-              resourceToMaintain = order.resourceToUse;
-            }
-
-            const currentBalance = currentBalances[resourceToMaintain] || 0;
-            const projectedBalance = await getProjectedBalance(
-              currentTickRef.current,
-              order.realmEntityId,
-              resourceToMaintain,
-              components,
-            );
-            const targetBalanceInPrecision = multiplyByPrecision(targetBalance);
-            const amountNeeded = targetBalanceInPrecision - projectedBalance;
-
-            if (amountNeeded <= 0) continue;
-
-            // Convert output amount to precision units for correct calculation
-            const outputAmountInPrecision = multiplyByPrecision(recipe.outputAmount);
-            const cyclesForTargetAmount = Math.ceil(amountNeeded / outputAmountInPrecision);
-            cyclesToRun = Math.min(cyclesToRun, cyclesForTargetAmount);
-
-            console.log(
-              `Automation: MaintainBalance - Current: ${currentBalance}, Projected: ${projectedBalance}, Need ${amountNeeded} ${ResourcesIds[resourceToMaintain]} (precision units) to reach target. Output per cycle: ${outputAmountInPrecision} (precision units). Cycles to run: ${cyclesToRun}`,
-            );
-          }
-
-          if (cyclesToRun <= 0) continue;
-
-          const realmIdNumberForSyscall = Number(order.realmEntityId);
-          if (isNaN(realmIdNumberForSyscall)) {
-            console.error(`Automation: Invalid realmEntityId for syscall in order ${order.id}: ${order.realmEntityId}`);
-            continue;
-          }
-
-          const baseCalldata = {
+          console.log("[Automation] Executing production plan", planLogPayload);
+          const callset = plan.callset;
+          await execute_realm_production_plan({
             signer: starknetSignerAccount as StarknetAccount,
-            from_entity_id: realmIdNumberForSyscall,
-          };
+            realm_entity_id: plan.realmId,
+            resource_to_resource: callset.resourceToResource.map((item) => ({
+              resource_id: item.resourceId,
+              cycles: item.cycles,
+            })),
+            labor_to_resource: callset.laborToResource.map((item) => ({
+              resource_id: item.resourceId,
+              cycles: item.cycles,
+            })),
+          });
 
-          let producedThisCycle = 0;
-          let systemCallToMake = null;
+          const summary = buildExecutionSummary(plan, Date.now());
+          recordExecution(activeRealmConfig.realmId, summary);
+          console.log("[Automation] Automation execution complete", {
+            realmId: plan.realmId,
+            realmName: realmLabel,
+            outputs: planLogPayload.outputs,
+            consumption: planLogPayload.consumption,
+            resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
+            laborExecutions: labelExecutionEntries(plan.laborExecutions),
+            skipped: planLogPayload.skipped,
+          });
+          anyExecuted = true;
 
-          if (order.productionType === ProductionType.ResourceToResource) {
-            const calldata = {
-              ...baseCalldata,
-              production_cycles: [cyclesToRun],
-              produced_resource_types: [order.resourceToUse],
-            };
-            console.log(
-              `Automation: Calldata for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
-              calldata,
+          const producedResources = Object.entries(plan.outputsByResource);
+          if (producedResources.length > 0) {
+            const detail = producedResources
+              .map(([resId, amount]) => {
+                const label = resolveResourceLabel(Number(resId));
+                return `${Math.round(amount).toLocaleString()} ${label}`;
+              })
+              .join(", ");
+            toast.success(
+              `Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
             );
-            systemCallToMake = () => burn_resource_for_resource_production(calldata);
-            producedThisCycle = cyclesToRun * recipe.outputAmount;
-          } else if (order.productionType === ProductionType.LaborToResource) {
-            const calldata = {
-              ...baseCalldata,
-              production_cycles: [cyclesToRun],
-              produced_resource_types: [order.resourceToUse],
-            };
-            console.log(
-              `Automation: Calldata for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
-              calldata,
-            );
-            systemCallToMake = () => burn_labor_for_resource_production(calldata);
-            producedThisCycle = cyclesToRun * recipe.outputAmount;
-          } else if (order.productionType === ProductionType.ResourceToLabor) {
-            const inputAmount = recipe.inputs[0].amount;
-            const totalToSpend = cyclesToRun * inputAmount;
-            const calldata = {
-              signer: starknetSignerAccount as StarknetAccount,
-              resource_types: [order.resourceToUse],
-              resource_amounts: [multiplyByPrecision(totalToSpend)],
-              entity_id: realmIdNumberForSyscall,
-            };
-            console.log(
-              `Automation: Calldata for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
-              calldata,
-            );
-            systemCallToMake = () => burn_resource_for_labor_production(calldata);
-            producedThisCycle = cyclesToRun * recipe.outputAmount;
-          }
-
-          if (systemCallToMake) {
-            console.log(
-              `Automation: Plan to execute ${order.productionType} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id} (${cyclesToRun} cycles, producing ${producedThisCycle}). Calldata `,
-            );
-            await systemCallToMake(); // UNCOMMENT FOR REAL TRANSACTION
-            const producedResourceName =
-              order.productionType === ProductionType.ResourceToLabor ? "Labor" : ResourcesIds[order.resourceToUse];
-            console.log(
-              `Automation: MOCK CALL for ${order.productionType}. Would produce ${producedThisCycle} of ${producedResourceName}.`,
-            );
-            updateOrderProducedAmount(order.realmEntityId, order.id, producedThisCycle);
-            if (order.productionType === ProductionType.ResourceToLabor) {
-              toast.success(
-                <div className="flex">
-                  <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
-                  <span className="ml-2">
-                    Automation: Resource To Labor. Produced {producedThisCycle.toLocaleString()} labor from{" "}
-                    {ResourcesIds[order.resourceToUse]} on realm {order?.realmName}.
-                  </span>
-                </div>,
-              );
-            } else {
-              toast.success(
-                <div className="flex">
-                  <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
-                  <span className="ml-2">
-                    Automation:{" "}
-                    {order.productionType === ProductionType.ResourceToResource
-                      ? "Resource To Resource"
-                      : order.productionType === ProductionType.LaborToResource
-                        ? "Labor To Resource"
-                        : order.productionType}
-                    . Produced {producedThisCycle.toLocaleString()} of {ResourcesIds[order.resourceToUse]} on{" "}
-                    {order?.realmName}.
-                  </span>
-                </div>,
-              );
-            }
           } else {
-            console.warn(
-              `Automation: No system call for order ${order.id} (type ${order.productionType}) in realm ${order?.realmName}.`,
-            );
+            toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
           }
         } catch (error) {
-          console.error(
-            `Automation: Error processing order ${order.id} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}:`,
-            error,
+          console.error(`Automation: Failed to execute plan for realm ${activeRealmConfig.realmId}`, error);
+          toast.error(
+            `Automation failed for ${activeRealmConfig.realmName ?? activeRealmConfig.realmId}. Check console for details.`,
           );
         }
       }
+    } finally {
+      processingRef.current = false;
     }
-    processingRef.current = false;
+
+    return anyExecuted;
   }, [
-    starknetSignerAccount,
     components,
-    currentTickRef,
-    burn_resource_for_resource_production,
-    burn_labor_for_resource_production,
-    burn_resource_for_labor_production,
-    updateOrderProducedAmount,
-    isRealmPaused,
-    isGloballyPaused,
-    updateTransferTimestamp,
+    realms,
+    execute_realm_production_plan,
+    recordExecution,
+    starknetSignerAccount,
+    setRealmPreset,
+    getRealmConfig,
+    isGameOver,
   ]);
 
-  // Setup the automation interval as soon as the hook mounts. The `processOrders` function
-  // contains its own early-exit checks, so we don't need to guard here – this ensures the
-  // interval is created immediately and will start working as soon as the required data is
-  // available.
+  const runAutomationIfDue = useCallback(async () => {
+    const { currentBlockTimestamp } = getBlockTimestamp();
+    const blockTimestampMs = currentBlockTimestamp * 1000;
+
+    if (isGameOver(currentBlockTimestamp)) {
+      stopAutomation();
+      return;
+    }
+
+    const lastRunMs = lastRunBlockTimestampRef.current ?? blockTimestampMs;
+    const nextEligibleMs = Math.max(lastRunMs + PROCESS_INTERVAL_MS, automationEnabledAtRef.current);
+
+    nextRunBlockTimestampRef.current = nextEligibleMs;
+    setNextRunTimestampRef.current(nextEligibleMs);
+
+    if (blockTimestampMs < nextEligibleMs) {
+      scheduleNextCheckRef.current?.();
+      return;
+    }
+
+    try {
+      await processRealmsRef.current();
+    } finally {
+      lastRunBlockTimestampRef.current = blockTimestampMs;
+      automationEnabledAtRef.current = blockTimestampMs + PROCESS_INTERVAL_MS;
+      nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
+      setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+      scheduleNextCheckRef.current?.();
+    }
+  }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
+
+  const scheduleNextCheck = useCallback(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return;
+    }
+    if (automationTimeoutIdRef.current !== null) {
+      window.clearTimeout(automationTimeoutIdRef.current);
+    }
+    const now = Date.now();
+    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
+    const delay = Math.max(250, nextBlockMs - now);
+    automationTimeoutIdRef.current = window.setTimeout(() => {
+      void runAutomationIfDue();
+    }, delay);
+  }, [isGameOver, runAutomationIfDue, stopAutomation]);
+
   useEffect(() => {
-    const runAndSchedule = async () => {
-      await processOrders();
-      setNextRunTimestamp(Date.now() + PROCESS_INTERVAL_MS);
-    };
+    processRealmsRef.current = processRealms;
+  }, [processRealms]);
 
-    runAndSchedule(); // Initial run and schedule
-    const intervalId = setInterval(runAndSchedule, PROCESS_INTERVAL_MS);
+  useEffect(() => {
+    scheduleNextCheckRef.current = scheduleNextCheck;
+  }, [scheduleNextCheck]);
+
+  useEffect(() => {
+    setNextRunTimestampRef.current = setNextRunTimestamp;
+  }, [setNextRunTimestamp]);
+
+  useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return;
+    }
+
+    const signature = Object.entries(realms)
+      .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
+      .map(([realmId, realm]) => {
+        const customKeys = Object.keys(realm.customPercentages ?? {})
+          .sort()
+          .join(",");
+        const presetId = realm.presetId ?? "smart";
+        return `${realmId}:${presetId}:${customKeys}`;
+      })
+      .sort()
+      .join("|");
+
+    if (signature !== realmResourcesSignatureRef.current) {
+      realmResourcesSignatureRef.current = signature;
+      const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
+      if (currentBlockMs >= automationEnabledAtRef.current) {
+        lastRunBlockTimestampRef.current = currentBlockMs;
+        automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
+        nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
+        setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+        void processRealmsRef.current();
+      }
+      scheduleNextCheckRef.current?.();
+    }
+  }, [realms, isGameOver, stopAutomation]);
+
+  useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return () => {
+        if (automationTimeoutIdRef.current !== null) {
+          window.clearTimeout(automationTimeoutIdRef.current);
+        }
+      };
+    }
+
+    setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+    scheduleNextCheck();
     return () => {
-      clearInterval(intervalId);
-      processingRef.current = false;
+      if (automationTimeoutIdRef.current !== null) {
+        window.clearTimeout(automationTimeoutIdRef.current);
+      }
     };
-    // `processOrders` is a stable callback (its deps are managed in its own definition) so we
-    // can safely depend only on it here.
-    // Add setNextRunTimestamp to dependency array, it's stable from Zustand though.
-  }, [processOrders, setNextRunTimestamp]);
-
-  return {};
+  }, [isGameOver, scheduleNextCheck, stopAutomation]);
 };
