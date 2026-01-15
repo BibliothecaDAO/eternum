@@ -197,13 +197,7 @@ export function OpeningStage({ active, videoSrc, onComplete, onSkip }: OpeningSt
         style={{ willChange: "transform, opacity" }}
       >
         {/* Video element - fills container, cropped to fit */}
-        <video
-          ref={videoRef}
-          src={videoSrc}
-          playsInline
-          preload="auto"
-          className="w-full h-full object-cover"
-        />
+        <video ref={videoRef} src={videoSrc} playsInline preload="auto" className="w-full h-full object-cover" />
 
         {/* Skip button */}
         {onSkip && (

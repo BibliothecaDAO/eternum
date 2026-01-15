@@ -115,9 +115,7 @@ const reorderWithRarestInMiddle = (assets: ChestAsset[]): ChestAsset[] => {
 
 // Helper to resolve and preload all asset images
 // Uses local images as primary, falls back to IPFS metadata if local fails
-const resolveAndPreloadAssetImages = async (
-  assets: ChestAsset[],
-): Promise<Map<string, string>> => {
+const resolveAndPreloadAssetImages = async (assets: ChestAsset[]): Promise<Map<string, string>> => {
   const imageMap = new Map<string, string>();
 
   await Promise.all(

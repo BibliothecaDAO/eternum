@@ -136,9 +136,7 @@ export function PendingOverlay({
   if (!active) return null;
 
   // Truncate tx hash for display
-  const truncatedHash = txHash
-    ? `${txHash.slice(0, 6)}...${txHash.slice(-4)}`
-    : null;
+  const truncatedHash = txHash ? `${txHash.slice(0, 6)}...${txHash.slice(-4)}` : null;
 
   return (
     <ChestStageContainer>
@@ -157,19 +155,13 @@ export function PendingOverlay({
           {/* Content */}
           <div className="relative z-10 flex flex-col items-center gap-6">
             {/* Eternum loader */}
-            <img
-              src="/images/logos/eternum-loader.png"
-              alt="Loading"
-              className="w-14 animate-pulse"
-            />
+            <img src="/images/logos/eternum-loader.png" alt="Loading" className="w-14 animate-pulse" />
 
             {/* Title with animated dots */}
             {error ? (
               <div className="flex flex-col items-center gap-2">
                 <AlertCircle className="w-8 h-8 text-red-500" />
-                <h2 className="text-xl font-bold text-red-500">
-                  Failed to Open
-                </h2>
+                <h2 className="text-xl font-bold text-red-500">Failed to Open</h2>
                 <p className="text-sm text-white/60 max-w-xs">
                   {error.message || "Something went wrong. Please try again."}
                 </p>
@@ -191,11 +183,7 @@ export function PendingOverlay({
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors text-xs text-white/50 hover:text-white/70"
               >
                 <span className="font-mono">{truncatedHash}</span>
-                {copied ? (
-                  <Check className="w-3 h-3 text-green-500" />
-                ) : (
-                  <Copy className="w-3 h-3" />
-                )}
+                {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
               </button>
             )}
 
@@ -203,23 +191,13 @@ export function PendingOverlay({
             {error && (
               <div className="flex gap-3 mt-2">
                 {onClose && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onClose}
-                    className="gap-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={onClose} className="gap-2">
                     <X className="w-4 h-4" />
                     Close
                   </Button>
                 )}
                 {onRetry && (
-                  <Button
-                    variant="cta"
-                    size="sm"
-                    onClick={onRetry}
-                    className="gap-2"
-                  >
+                  <Button variant="cta" size="sm" onClick={onRetry} className="gap-2">
                     <RotateCcw className="w-4 h-4" />
                     Try Again
                   </Button>
@@ -230,8 +208,7 @@ export function PendingOverlay({
             {/* Safety message */}
             {!error && (
               <p className="text-xs text-white/40 mt-4 max-w-xs">
-                Please don&apos;t close this window while the transaction is
-                being confirmed.
+                Please don&apos;t close this window while the transaction is being confirmed.
               </p>
             )}
           </div>

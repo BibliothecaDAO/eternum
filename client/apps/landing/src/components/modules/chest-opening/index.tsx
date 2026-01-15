@@ -146,11 +146,7 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
 
       {/* Pending State - Waiting for blockchain confirmation */}
       {flowState.state === "pending" && (
-        <PendingOverlay
-          active={true}
-          title="Opening chest"
-          subtitle="Waiting for confirmation"
-        />
+        <PendingOverlay active={true} title="Opening chest" subtitle="Waiting for confirmation" />
       )}
 
       {/* Opening Stage (Video) - Video based on highest item rarity and chest epoch */}
