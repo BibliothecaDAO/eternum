@@ -1935,6 +1935,25 @@ export function defineContractComponents(world: World) {
 const eventsComponents = (world: World) => {
   return {
     events: {
+      CollectibleClaimed: (() => {
+        return defineComponent(
+          world,
+          {
+            token_address: RecsType.BigInt,
+            attributes_raw: RecsType.BigInt,
+            token_recipient: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "CollectibleClaimed",
+              types: ["ContractAddress", "u128", "ContractAddress", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
       SeasonEnded: (() => {
         return defineComponent(
           world,

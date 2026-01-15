@@ -19,6 +19,12 @@ export const trimAddress = (addr?: string): string => {
   return "0x" + addr.slice(2).replace(/^0+/, "");
 };
 
+export const padAddress = (addr?: string): string => {
+  if (!addr) return "";
+  const hex = addr.startsWith("0x") ? addr.slice(2) : addr;
+  return "0x" + hex.padStart(64, "0");
+};
+
 // Format relative time (e.g. "5 minutes ago", "2 hours ago", etc.)
 export function formatRelativeTime(timestamp: number | string | null | undefined): string {
   if (!timestamp) return "N/A";

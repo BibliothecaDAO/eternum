@@ -3,66 +3,70 @@ import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
+import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { TokenDetailModal } from "./token-detail-modal";
+
+export enum CollectionType {
+  LootChest = "Loot Chest",
+  Cosmetics = "Cosmetics",
+  Other = "Other",
+}
 
 interface TokenCardProps {
   token: MergedNftData;
   isSelected?: boolean;
   onToggleSelection?: () => void;
   toggleNftSelection?: () => void;
+  totalOwnedChests?: number;
 }
 
-export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggleNftSelection }: TokenCardProps) => {
+export const TokenCard = ({
+  token,
+  isSelected = false,
+  onToggleSelection,
+  toggleNftSelection,
+  totalOwnedChests = 0,
+}: TokenCardProps) => {
   const { token_id, metadata, contract_address } = token;
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
-  const isOwner = token.account_address === trimAddress(accountAddress);
+  const normalizedAccountAddress = accountAddress ? trimAddress(accountAddress)?.toLowerCase() : undefined;
+  const normalizedTokenOwner = token.token_owner ? trimAddress(token.token_owner)?.toLowerCase() : undefined;
+  const normalizedOrderOwner = token.order_owner ? trimAddress(token.order_owner)?.toLowerCase() : undefined;
+  const isOwner = normalizedTokenOwner ? normalizedTokenOwner === normalizedAccountAddress : true;
+  const listingActive = token.expiration !== null && token.best_price_hex !== null;
+  const listingOwnerMismatch =
+    listingActive && normalizedOrderOwner && normalizedTokenOwner && normalizedOrderOwner !== normalizedTokenOwner;
+  const isActuallyListed = listingActive && !listingOwnerMismatch;
+  const isDisabledCard = listingOwnerMismatch;
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
-  // Calculate time remaining for auctions about to expire
-  useEffect(() => {
-    if (!token.expiration) return;
 
-    const expirationTime = Number(token.expiration) * 1000;
-    const updateCountdown = () => {
-      const now = Date.now();
-      const diff = expirationTime - now;
+  // Determine collection type based on collection name
+  const getCollectionType = (name?: string): CollectionType => {
+    if (name === "Loot Chest") return CollectionType.LootChest;
+    if (name === "Cosmetics") return CollectionType.Cosmetics;
+    return CollectionType.Other;
+  };
 
-      if (diff <= 0) {
-        setTimeRemaining("Expired");
-        return;
-      }
-
-      // Only show countdown if less than an hour remains
-      if (diff < 60 * 60 * 1000) {
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-        setTimeRemaining(`${minutes}m ${seconds}s remaining`);
-      } else {
-        setTimeRemaining(null);
-      }
-    };
-
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [token.expiration]);
+  const collectionType = getCollectionType(collectionName);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsModalOpen(true);
   };
-  const handleTransferClick = () => {
+  const handleTransferClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (toggleNftSelection) {
       toggleNftSelection();
     }
@@ -75,20 +79,37 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
     ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
     : originalImage;
 
-  const listingActive = useMemo(() => {
-    if (token.expiration !== null && token.best_price_hex !== null) {
-      return true;
+  // Determine display name for cosmetics based on attributes
+  const getDisplayName = () => {
+    if (collectionType === CollectionType.Cosmetics && attributes) {
+      const epochAttr = attributes.find((attr) => attr.trait_type === "Epoch");
+      const idAttr = attributes.find((attr) => attr.trait_type === "Epoch Item");
+      if (epochAttr && idAttr) {
+        const cosmetic = COSMETIC_NAMES.find((c) => c.id === idAttr.value && c.epoch === epochAttr.value);
+        return cosmetic ? cosmetic.name : name || "N/A";
+      }
     }
-    return false;
-  }, [token.expiration, token.best_price_hex]);
+    return `${name} #${parseInt(token_id?.toString())}` || "N/A";
+  };
+
+  const displayName = getDisplayName();
+
+  const canToggleSelection = Boolean(onToggleSelection && (isOwner || isActuallyListed));
+
+  const handleToggleSelection = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleSelection?.();
+  };
 
   return (
     <>
       <Card
-        onClick={onToggleSelection}
-        className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
-          ${isSelected ? "ring-1  ring-gold scale-[1.01] bg-gold/5" : "hover:ring-1 hover:ring-gold hover:bg-gold/5"} 
-          cursor-pointer group`}
+        onClick={canToggleSelection ? handleToggleSelection : undefined}
+        className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl
+          ${isSelected ? "ring-1 ring-gold scale-[1.01] bg-gold/5" : canToggleSelection ? "hover:ring-1 hover:ring-gold hover:bg-gold/5" : ""}
+          ${isDisabledCard ? "ring-2 ring-orange-500/40 bg-orange-500/[0.08]" : ""}
+          ${canToggleSelection ? "cursor-pointer" : "cursor-default"} group`}
       >
         <div className="relative">
           {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
@@ -103,38 +124,60 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           <img
             src={image}
             alt={name ?? "Token Image"}
-            className={`w-full object-contain transition-all duration-200
-              ${isSelected ? "opacity-100" : "opacity-90 group-hover:opacity-100"}`}
+            className={`w-full object-contain transition-all duration-200 ${
+              isDisabledCard
+                ? "opacity-60 saturate-50 contrast-90 brightness-95"
+                : isSelected
+                  ? "opacity-100"
+                  : "opacity-90 group-hover:opacity-100"
+            }`}
           />
 
-          {/* Selection Overlay */}
-          <div
-            className={`absolute inset-0 bg-black/50 flex items-start justify-end transition-opacity duration-200
-            ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-          >
-            <div className="bg-gold text-background rounded-full font-bold m-2">
-              {isSelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          {/* Selection overlay appears when this card can be toggled */}
+          {canToggleSelection && (
+            <div
+              className={`absolute inset-0 bg-black/50 flex items-start justify-end transition-opacity duration-200
+              ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+            >
+              <div className="bg-gold text-background rounded-full font-bold m-2">
+                {isSelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Listing Indicator */}
-          {listingActive && (
-            <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20">
+          {isActuallyListed && (
+            <div className="absolute top-2 left-2 bg-green-600 border border-green-700 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20 opacity-100 shadow-md">
               Listed
             </div>
           )}
-        </div>
 
+          {/* Invalid Listing Indicator */}
+          {listingOwnerMismatch && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute top-2 left-2 bg-orange-500 border border-orange-500/80 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20 opacity-100 shadow-md cursor-help">
+                    Invalid Listing
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>This listing is no longer valid. The token owner has changed since the listing was created.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         <CardHeader className={`p-4 pb-2 ${isSelected ? "bg-gold/5" : ""}`}>
           <CardTitle className="items-center gap-2">
-            <div className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
-              {collectionName}
+            <div className="flex flex-col gap-2">
+              <div className="text-muted-foreground text-xs">{collectionName}</div>
             </div>
-            <div className="flex justify-between gap-2">
-              <h4 className="text-xl truncate">{name || `#${token_id}`}</h4>
+            <div className="flex flex-col gap-1">
+              <h4 className="text-xl truncate">{displayName}</h4>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {attributes
                 ?.filter((attribute) => attribute.trait_type === "Resource")
                 .sort((a, b) => {
@@ -161,23 +204,29 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           <div className="flex justify-between">
             <div className="flex flex-col">
               {listingActive ? (
-                <div className="text-xl flex items-center gap-2 font-mono">
-                  {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
-                  <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
-                </div>
+                listingOwnerMismatch ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="text-xl flex items-center gap-2 font-mono cursor-help opacity-60">
+                          {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
+                          <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>This listing price is no longer valid. The token owner has changed.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <div className="text-xl flex items-center gap-2 font-mono">
+                    {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
+                    <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
+                  </div>
+                )
               ) : (
                 <div className="text-xl text-muted-foreground">Not Listed</div>
               )}
-
-              {/*listingActive && (
-                <div className="text-sm text-muted-foreground mt-1">
-                  {timeRemaining ? (
-                    <span className="text-red-500 font-medium">{timeRemaining}</span>
-                  ) : (
-                    `Expires ${new Date(Number(pass.expiration) * 1000).toLocaleString()}`
-                  )}
-                </div>
-              )}*/}
             </div>
           </div>
         </CardContent>
@@ -187,14 +236,22 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           ${isSelected ? "bg-gold/5" : ""}`}
         >
           <div className="flex w-full gap-4">
-            <Button
-              disabled={isSelected}
-              variant={isOwner ? "outline" : "default"}
-              className="w-full"
-              onClick={handleCardClick}
-            >
-              {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
-            </Button>
+            {isOwner && collectionType === CollectionType.LootChest ? (
+              <>
+                <Button disabled={isSelected} variant="outline" className="w-full" onClick={handleCardClick}>
+                  Manage
+                </Button>
+              </>
+            ) : (
+              <Button
+                disabled={isSelected}
+                variant={isOwner ? "outline" : isActuallyListed ? "default" : "ghost"}
+                className="w-full"
+                onClick={handleCardClick}
+              >
+                {isOwner ? "Manage" : isSelected ? "Selected" : !isActuallyListed ? "Show Details" : "Buy Now"}
+              </Button>
+            )}
 
             {isOwner && (
               <Button variant="default" size="icon" onClick={handleTransferClick} title="Transfer Pass">
@@ -205,10 +262,11 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
         </CardFooter>
       </Card>
 
-      {collection?.id && (
+      {collection?.id && isModalOpen && (
         <TokenDetailModal
-          isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
+          isOpen={isModalOpen}
+          collectionType={collectionType}
           tokenData={token}
           isOwner={isOwner}
           marketplaceActions={marketplaceActions}
@@ -216,6 +274,7 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           orderId={token.order_id?.toString() ?? undefined}
           isListed={token.expiration !== null}
           expiration={token.expiration ? Number(token.expiration) : undefined}
+          displayName={displayName}
         />
       )}
     </>

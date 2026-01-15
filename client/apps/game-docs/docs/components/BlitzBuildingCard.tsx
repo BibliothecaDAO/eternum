@@ -3,6 +3,8 @@ import { colors, formatAmount } from "@/components/styles";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resources } from "@/utils/constants";
 
+type Cost = { resource: number | "essence"; amount: number };
+
 export const BlitzBuildingCard = ({
   title,
   image,
@@ -10,7 +12,19 @@ export const BlitzBuildingCard = ({
   description = [],
   simpleCosts = [],
   standardCosts = [],
+  laborCosts = [],
+  resourceCosts = [],
   standardOnly = false,
+}: {
+  title: string;
+  image: string;
+  buildingType: number;
+  description?: string[];
+  simpleCosts?: Cost[];
+  standardCosts?: Cost[];
+  laborCosts?: Cost[];
+  resourceCosts?: Cost[];
+  standardOnly?: boolean;
 }) => {
   const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
 
@@ -150,9 +164,9 @@ export const BlitzBuildingCard = ({
 
         {standardOnly ? (
           <div>
-            <div style={styles.modeHeader}>Standard Only</div>
+            <div style={styles.modeHeader}>Resource Only</div>
             <div style={styles.costsRow}>
-              {standardCosts.map((cost, index) => (
+              {(resourceCosts.length ? resourceCosts : standardCosts).map((cost, index) => (
                 <div key={index} style={styles.costItem}>
                   {cost.resource === "essence" ? (
                     <div
@@ -176,9 +190,9 @@ export const BlitzBuildingCard = ({
         ) : (
           <>
             <div>
-              <div style={styles.modeHeader}>Simple</div>
+              <div style={styles.modeHeader}>Labor</div>
               <div style={styles.costsRow}>
-                {simpleCosts.map((cost, index) => (
+                {(laborCosts.length ? laborCosts : simpleCosts).map((cost, index) => (
                   <div key={index} style={styles.costItem}>
                     <ResourceIcon id={cost.resource} name="" size="md" />
                     {formatAmount(cost.amount)}
@@ -188,9 +202,9 @@ export const BlitzBuildingCard = ({
             </div>
 
             <div>
-              <div style={styles.modeHeader}>Standard</div>
+              <div style={styles.modeHeader}>Resource</div>
               <div style={styles.costsRow}>
-                {standardCosts.map((cost, index) => (
+                {(resourceCosts.length ? resourceCosts : standardCosts).map((cost, index) => (
                   <div key={index} style={styles.costItem}>
                     {cost.resource === "essence" ? (
                       <div

@@ -1,4 +1,5 @@
 import { importantNote } from "@/components/styles";
+import { BlitzWeightTable } from "@/components/WeightTable";
 
 # 📜 Transfers
 
@@ -7,14 +8,18 @@ such, there are no Banks, no P2P transfers, and no AMM or Orderbook through whic
 
 ## Transferring Materials
 
-Throughout the game, Lords will face the need to transfer materials from place to place around the world map, whether it
-be to their own Realms, or other structures like Hyperstructures, Essence Rifts and Camps. Lords have two primary
+Throughout the game, Lords may face the need to transfer materials from place to place around the world map, whether it
+be to their own Realms or other structures like Hyperstructures, Essence Rifts, and Camps. Lords have two primary
 options for initiating transfers:
 
-- **Detailed Transfer**: Players can use the comprehensive transfer menu accessible from the Trade tab. This allows
-  transfers of multiple types of materials simultaneously, to any structure on the map.
+- **Detailed Transfer**: Players can use the comprehensive transfer panel accessible from the right side navigation
+  menu. This allows transfers of multiple types of materials simultaneously to any structure on the map.
 
-![Detailed Transfer](/gifs/transfer-all.gif)
+![Detailed Transfer](/gifs/transfer-panel.gif)
+
+Players can choose to do one off shipments or repeat them on a schedule through automation (transfers can be repeated
+every 1-30min). To manage scheduled transfers, you can click on the advanced button of the transfer panel. From there
+you'll be able to force a new run, pause/resume or delete the transfer automations.
 
 - **Quick Transfer**: Alternatively, Lords can swiftly transfer resources between their own structures using the
   resources sidebar, ideal for managing internal logistics and maintaining supply chains.
@@ -29,12 +34,23 @@ When a transfer is initiated, donkeys travel through the invisible and immutable
 infrastructure upon which all material transport takes place. One donkey is capable of carrying up to **50 kg** of
 materials, so the number of donkeys required for a transfer depends on the total weight of the materials being moved.
 Once a transfer is initiated, it cannot be canceled, and the journey will take some time depending on the distance to
-the destination structure. Upon arrival, transferred materials and donkeys must be manually claimed via the 'Resource
-Arrivals' tab before they become available for use.
+the destination structure. You can check the 'Resource Arrivals' tab to follow your shipments.
+
+Upon arrival, transferred resources are now automatically claimed :
+
+![Autoclaim transfers](/gifs/transfer-autoclaim.gif)
+
+### Material Weights
+
+Materials have different weights that affect transportation:
+
+<BlitzWeightTable />
 
 ### Blitz Restrictions
 
-While troops can be transferred between Realms as normal, donkeys cannot be used to transport troops between Realms and
-Hyperstructures, Essence Rifts or Camps. This is to reduce the defensive advantage that a player can leverage by being
-able to move troops quickly into guard armies on these structures once claimed. All players must therefore deploy armies
-from Realms and move them across the map to contest these critical points.
+Troops can be transferred by donkey between any structures owned by the same player, including Realms, Camps, Essence
+Rifts, and Hyperstructures.
+
+If a structure is captured, any troops stored in that structure or in transit to it are destroyed. This prevents capture
+handoffs from being used to move troops farther or faster than intended. Deployed armies still become owned by the new
+structure owner.

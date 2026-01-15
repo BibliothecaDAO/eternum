@@ -46,4 +46,4 @@ page_size = 32_768
 http_cors_origins = ["*"]
 
 [events]
-raw = false
+raw = true
