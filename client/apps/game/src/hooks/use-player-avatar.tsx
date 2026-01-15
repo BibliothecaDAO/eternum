@@ -55,9 +55,7 @@ export const normalizeAvatarUsername = (value?: string | null): string | null =>
   return trimmed.length > 0 ? trimmed.toLowerCase() : null;
 };
 
-export const normalizeAvatarAddress = (
-  value?: string | bigint | number | null,
-): string | null => {
+export const normalizeAvatarAddress = (value?: string | bigint | number | null): string | null => {
   if (value === null || value === undefined) return null;
 
   const normalizeString = (raw: string): string | null => {
@@ -125,9 +123,7 @@ export function usePlayerAvatar(playerAddress?: string | bigint | number | null)
       if (!normalizedAddress) return null;
 
       try {
-        const response = await fetch(
-          `${REALTIME_SERVER_URL}/api/avatars/profile-by-address/${normalizedAddress}`,
-        );
+        const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/profile-by-address/${normalizedAddress}`);
 
         if (response.status === 404) {
           return null;
@@ -319,12 +315,7 @@ export function useSelectAvatar(playerId: string, walletAddress: string, display
   });
 }
 
-export function useAvatarHistory(
-  playerId: string,
-  walletAddress: string,
-  displayName: string,
-  limit = 5,
-) {
+export function useAvatarHistory(playerId: string, walletAddress: string, displayName: string, limit = 5) {
   return useQuery({
     queryKey: ["avatar-history", playerId, displayName, limit],
     queryFn: async (): Promise<AvatarGenerationLog[]> => {
@@ -338,10 +329,9 @@ export function useAvatarHistory(
         headers["x-wallet-address"] = walletAddress;
       }
 
-      const response = await fetch(
-        `${REALTIME_SERVER_URL}/api/avatars/history?limit=${encodeURIComponent(limit)}`,
-        { headers },
-      );
+      const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/history?limit=${encodeURIComponent(limit)}`, {
+        headers,
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch avatar history");
@@ -359,9 +349,7 @@ export function useAvatarGallery(limit = 40) {
   return useQuery({
     queryKey: ["avatar-gallery", limit],
     queryFn: async (): Promise<AvatarGalleryItem[]> => {
-      const response = await fetch(
-        `${REALTIME_SERVER_URL}/api/avatars/gallery?limit=${encodeURIComponent(limit)}`,
-      );
+      const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/gallery?limit=${encodeURIComponent(limit)}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch avatar gallery");

@@ -220,9 +220,7 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
           )}
 
           {!hasDisplayName && (
-            <p className="text-xs text-yellow-400/80 text-center">
-              Connect with Cartridge to create a custom avatar.
-            </p>
+            <p className="text-xs text-yellow-400/80 text-center">Connect with Cartridge to create a custom avatar.</p>
           )}
 
           {/* Info Text */}

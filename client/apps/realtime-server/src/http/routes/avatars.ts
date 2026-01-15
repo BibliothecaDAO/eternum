@@ -13,9 +13,7 @@ export const avatarRoutes = new Hono<AppEnv>();
 
 const GENERATION_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_GENERATIONS_PER_WEEK =
-  Number(process.env.AVATAR_MAX_GENERATIONS_PER_DAY) ||
-  Number(process.env.AVATAR_MAX_GENERATIONS_PER_WEEK) ||
-  1;
+  Number(process.env.AVATAR_MAX_GENERATIONS_PER_DAY) || Number(process.env.AVATAR_MAX_GENERATIONS_PER_WEEK) || 1;
 const MAX_PROFILE_BATCH = 100;
 
 avatarRoutes.post("/generate", requirePlayerSession, avatarRateLimit, async (c) => {
@@ -466,9 +464,7 @@ avatarRoutes.get("/history", requirePlayerSession, async (c) => {
 
     return c.json({
       logs: logs.map((log) => {
-        const imageUrls =
-          (log.imageUrls as string[] | null | undefined) ??
-          (log.imageUrl ? [log.imageUrl] : []);
+        const imageUrls = (log.imageUrls as string[] | null | undefined) ?? (log.imageUrl ? [log.imageUrl] : []);
         return {
           ...log,
           imageUrls,
@@ -499,9 +495,7 @@ avatarRoutes.get("/gallery", async (c) => {
       .limit(Math.min(clampedLimit, 100));
 
     const images = logs.flatMap((log) => {
-      const imageUrls =
-        (log.imageUrls as string[] | null | undefined) ??
-        (log.imageUrl ? [log.imageUrl] : []);
+      const imageUrls = (log.imageUrls as string[] | null | undefined) ?? (log.imageUrl ? [log.imageUrl] : []);
 
       return imageUrls.map((url) => ({
         imageUrl: url,

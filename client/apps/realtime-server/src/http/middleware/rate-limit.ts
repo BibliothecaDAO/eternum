@@ -10,9 +10,7 @@ const rateLimitStore = new Map<string, RateLimitStore>();
 
 const RATE_LIMIT_WINDOW = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_GENERATIONS_PER_WEEK =
-  Number(process.env.AVATAR_MAX_GENERATIONS_PER_DAY) ||
-  Number(process.env.AVATAR_MAX_GENERATIONS_PER_WEEK) ||
-  1;
+  Number(process.env.AVATAR_MAX_GENERATIONS_PER_DAY) || Number(process.env.AVATAR_MAX_GENERATIONS_PER_WEEK) || 1;
 
 export const avatarRateLimit: MiddlewareHandler<AppEnv> = async (c, next) => {
   const session = c.get("playerSession");
@@ -59,11 +57,14 @@ export function incrementRateLimit(username: string): void {
   }
 }
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, limitInfo] of rateLimitStore.entries()) {
-    if (now >= limitInfo.resetAt) {
-      rateLimitStore.delete(key);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, limitInfo] of rateLimitStore.entries()) {
+      if (now >= limitInfo.resetAt) {
+        rateLimitStore.delete(key);
+      }
     }
-  }
-}, 60 * 60 * 1000);
+  },
+  60 * 60 * 1000,
+);

@@ -219,16 +219,15 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   const displayLabel = isOwn ? "You" : truncateIdentifier(message.senderId);
                   const normalized = normalizeAvatarUsername(message.senderId);
                   const avatarUrl =
-                    isOwn && identity?.avatarUrl ? identity.avatarUrl : normalized ? avatarMap.get(normalized) : undefined;
+                    isOwn && identity?.avatarUrl
+                      ? identity.avatarUrl
+                      : normalized
+                        ? avatarMap.get(normalized)
+                        : undefined;
                   return (
                     <li key={message.id} className="text-[13px] leading-tight text-white/90">
                       <div className="flex items-start gap-2">
-                        <UserAvatar
-                          name={displayLabel}
-                          avatarUrl={avatarUrl}
-                          size="sm"
-                          className="mt-0.5 shrink-0"
-                        />
+                        <UserAvatar name={displayLabel} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
                         <div>
                           <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
                           <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}

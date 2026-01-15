@@ -263,17 +263,11 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                   const senderName = formatSenderName(message);
                   const messageParts = processMessage(message.content);
                   const normalized = normalizeAvatarUsername(message.sender.displayName ?? message.sender.playerId);
-                  const avatarUrl =
-                    message.sender.avatarUrl ?? (normalized ? avatarMap.get(normalized) : undefined);
+                  const avatarUrl = message.sender.avatarUrl ?? (normalized ? avatarMap.get(normalized) : undefined);
                   return (
                     <li key={message.id} className="text-[13px] leading-tight text-white/90">
                       <div className="flex items-start gap-2">
-                        <UserAvatar
-                          name={senderName}
-                          avatarUrl={avatarUrl}
-                          size="sm"
-                          className="mt-0.5 shrink-0"
-                        />
+                        <UserAvatar name={senderName} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
                         <div>
                           <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>{" "}
                           <span

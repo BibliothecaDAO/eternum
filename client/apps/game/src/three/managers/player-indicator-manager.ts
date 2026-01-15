@@ -167,11 +167,7 @@ export class PlayerIndicatorManager {
     this.indicatorMesh.geometry.dispose();
 
     // Create new geometry with updated size
-    const newGeometry = new THREE.SphereGeometry(
-      size / 2,
-      INDICATOR_SEGMENTS_WIDTH,
-      INDICATOR_SEGMENTS_HEIGHT,
-    );
+    const newGeometry = new THREE.SphereGeometry(size / 2, INDICATOR_SEGMENTS_WIDTH, INDICATOR_SEGMENTS_HEIGHT);
 
     this.indicatorMesh.geometry = newGeometry;
   }

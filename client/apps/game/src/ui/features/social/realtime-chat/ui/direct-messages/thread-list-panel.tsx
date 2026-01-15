@@ -40,10 +40,7 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
   const identityId = identity?.playerId ?? null;
   const identityWallet = identity?.walletAddress ?? null;
   const presence = useRealtimePresence();
-  const presenceUsernames = useMemo(
-    () => presence.map((player) => player.displayName ?? player.playerId),
-    [presence],
-  );
+  const presenceUsernames = useMemo(() => presence.map((player) => player.displayName ?? player.playerId), [presence]);
   const { data: avatarProfiles } = useAvatarProfilesByUsernames(presenceUsernames);
   const avatarMap = useMemo(() => {
     const map = new Map<string, string>();

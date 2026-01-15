@@ -27,7 +27,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     lg: "h-10 w-10 text-lg",
   };
 
-  const resolvedAvatarUrl = address ? getAvatarUrl(address, avatarUrl ?? undefined) : avatarUrl ?? null;
+  const resolvedAvatarUrl = address ? getAvatarUrl(address, avatarUrl ?? undefined) : (avatarUrl ?? null);
 
   return (
     <div

@@ -40,10 +40,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
     return { usersWithUnread: withUnread, onlineUsers: online, offlineUsers: offline };
   }, [filteredUsers, threadsWithUnread]);
 
-  const usernames = useMemo(
-    () => filteredUsers.map((user) => user.displayName ?? user.playerId),
-    [filteredUsers],
-  );
+  const usernames = useMemo(() => filteredUsers.map((user) => user.displayName ?? user.playerId), [filteredUsers]);
   const { data: avatarProfiles } = useAvatarProfilesByUsernames(usernames);
   const avatarMap = useMemo(() => {
     const map = new Map<string, string>();
