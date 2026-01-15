@@ -114,7 +114,7 @@ Generate a new avatar using Fal AI.
 
 **Logic:**
 1. Validate authentication (require `x-player-name`)
-2. Check rate limits (max 1 generation per week per user)
+2. Check rate limits (max 1 generation per 24 hours per user)
 3. Call Fal AI API with prompt
 4. Store job in `avatar_generation_logs`
 5. Return job ID for polling
@@ -147,10 +147,52 @@ Get player profile with avatar.
 ### 4. **GET /avatars/profile-by-address/:address**
 Get player profile by wallet address.
 
-### 5. **GET /avatars/me**
+### 5. **POST /avatars/profiles**
+Batch fetch profiles by address list (public).
+
+**Request:**
+```typescript
+{
+  addresses: string[];
+}
+```
+
+**Response:**
+```typescript
+{
+  profiles: Array<{
+    playerAddress: string;
+    cartridgeUsername: string | null;
+    avatarUrl: string | null;
+  }>;
+}
+```
+
+### 6. **POST /avatars/profiles-by-username**
+Batch fetch profiles by username list (public).
+
+**Request:**
+```typescript
+{
+  usernames: string[];
+}
+```
+
+**Response:**
+```typescript
+{
+  profiles: Array<{
+    playerAddress: string;
+    cartridgeUsername: string | null;
+    avatarUrl: string | null;
+  }>;
+}
+```
+
+### 7. **GET /avatars/me**
 Get current user's profile (uses auth headers).
 
-### 6. **PATCH /avatars/me**
+### 8. **PATCH /avatars/me**
 Set which avatar to use.
 
 **Request:**
@@ -160,10 +202,10 @@ Set which avatar to use.
 }
 ```
 
-### 7. **DELETE /avatars/me**
+### 9. **DELETE /avatars/me**
 Remove avatar and revert to default.
 
-### 8. **GET /avatars/gallery**
+### 10. **GET /avatars/gallery**
 Fetch a public gallery of generated avatars.
 
 ---
@@ -382,7 +424,7 @@ VITE_PUBLIC_REALTIME_SERVER_URL=http://localhost:3001
 - Consider JWT tokens for stronger auth
 
 ### 2. **Rate Limiting**
-- Max 1 generation per user per week
+- Max 1 generation per user per 24 hours
 - Implement IP-based rate limiting as backup
 - Track in `player_profiles.generationCount`
 

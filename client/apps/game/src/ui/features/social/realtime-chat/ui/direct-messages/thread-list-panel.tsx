@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useRealtimeChatActions, useRealtimeChatSelector, useRealtimePresence } from "../../hooks/use-realtime-chat";
 import type { DirectMessageThreadState } from "../../model/types";
 import { UserAvatar } from "../shared/user-avatar";
+import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
 
 const truncateIdentifier = (value: string, visibleChars = 4) => {
   if (!value) return value;
@@ -39,6 +40,22 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
   const identityId = identity?.playerId ?? null;
   const identityWallet = identity?.walletAddress ?? null;
   const presence = useRealtimePresence();
+  const presenceUsernames = useMemo(
+    () => presence.map((player) => player.displayName ?? player.playerId),
+    [presence],
+  );
+  const { data: avatarProfiles } = useAvatarProfilesByUsernames(presenceUsernames);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarUsername(profile.cartridgeUsername ?? undefined);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
 
   const selfAliases = useMemo(() => {
     const aliases: string[] = [];
@@ -142,13 +159,16 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
     const displayLabel = truncateIdentifier(player.displayName ?? player.playerId, 6);
     const isPinned = pinnedUsers.has(player.playerId);
 
+    const normalized = normalizeAvatarUsername(player.displayName ?? player.playerId);
+    const avatarUrl = normalized ? avatarMap.get(normalized) : undefined;
+
     return (
       <li
         key={player.playerId}
         className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${isActive ? "bg-gold/30" : ""} ${isOffline ? "opacity-60" : ""}`}
       >
         <button onClick={() => handleSelectPlayer(player.playerId)} className="flex items-center flex-1">
-          <UserAvatar name={displayLabel} isOnline={!isOffline} size="sm" className="mr-2" />
+          <UserAvatar name={displayLabel} avatarUrl={avatarUrl} isOnline={!isOffline} size="sm" className="mr-2" />
           <span className="text-sm truncate text-white">{displayLabel}</span>
           {!isOffline && <div className="ml-auto w-2 h-2 bg-green-500 rounded-full" />}
           {unreadCount > 0 && (

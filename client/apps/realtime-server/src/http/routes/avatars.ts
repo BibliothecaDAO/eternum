@@ -11,7 +11,12 @@ import { avatarRateLimit, incrementRateLimit } from "../middleware/rate-limit";
 
 export const avatarRoutes = new Hono<AppEnv>();
 
-const GENERATION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const GENERATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_GENERATIONS_PER_WEEK =
+  Number(process.env.AVATAR_MAX_GENERATIONS_PER_DAY) ||
+  Number(process.env.AVATAR_MAX_GENERATIONS_PER_WEEK) ||
+  1;
+const MAX_PROFILE_BATCH = 100;
 
 avatarRoutes.post("/generate", requirePlayerSession, avatarRateLimit, async (c) => {
   const player = c.get("playerSession")!;
@@ -32,6 +37,34 @@ avatarRoutes.post("/generate", requirePlayerSession, avatarRateLimit, async (c) 
   }
 
   const sanitizedPrompt = prompt.trim();
+  const now = new Date();
+  const generationCutoff = new Date(now.getTime() - GENERATION_WINDOW_MS);
+
+  const [limitProfile] = await db
+    .select({
+      generationCount: playerProfiles.generationCount,
+      lastGenerationAt: playerProfiles.lastGenerationAt,
+    })
+    .from(playerProfiles)
+    .where(eq(playerProfiles.cartridgeUsername, player.displayName))
+    .limit(1);
+
+  if (limitProfile?.lastGenerationAt && limitProfile.lastGenerationAt >= generationCutoff) {
+    const usedCount = limitProfile.generationCount ?? 0;
+    if (usedCount >= MAX_GENERATIONS_PER_WEEK) {
+      const resetAtMs = limitProfile.lastGenerationAt.getTime() + GENERATION_WINDOW_MS;
+      const resetInHours = Math.max(1, Math.ceil((resetAtMs - now.getTime()) / (60 * 60 * 1000)));
+      return c.json(
+        {
+          error: "Rate limit exceeded",
+          message: `You have reached the maximum of ${MAX_GENERATIONS_PER_WEEK} avatar generations per 24 hours`,
+          resetInHours,
+          resetAt: new Date(resetAtMs).toISOString(),
+        },
+        429,
+      );
+    }
+  }
 
   const logId = randomUUID();
 
@@ -67,8 +100,6 @@ avatarRoutes.post("/generate", requirePlayerSession, avatarRateLimit, async (c) 
       })
       .where(eq(avatarGenerationLogs.id, logId));
 
-    const now = new Date();
-    const generationCutoff = new Date(now.getTime() - GENERATION_WINDOW_MS);
     const [profile] = await db
       .insert(playerProfiles)
       .values({
@@ -143,12 +174,16 @@ avatarRoutes.get("/profile/:username", async (c) => {
   if (!username) {
     return c.json({ error: "Username is required" }, 400);
   }
+  const normalizedUsername = username.trim().toLowerCase();
+  if (!normalizedUsername) {
+    return c.json({ error: "Username is required" }, 400);
+  }
 
   try {
     const [profile] = await db
       .select()
       .from(playerProfiles)
-      .where(eq(playerProfiles.cartridgeUsername, username))
+      .where(sql`lower(${playerProfiles.cartridgeUsername}) = ${normalizedUsername}`)
       .limit(1);
 
     if (!profile) {
@@ -167,10 +202,57 @@ avatarRoutes.get("/profile/:username", async (c) => {
   }
 });
 
+avatarRoutes.post("/profiles-by-username", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { usernames } = body;
+
+  if (!Array.isArray(usernames)) {
+    return c.json({ error: "usernames must be an array" }, 400);
+  }
+
+  const normalizedUsernames = Array.from(
+    new Set(
+      usernames
+        .filter((username: unknown): username is string => typeof username === "string")
+        .map((username) => username.trim().toLowerCase())
+        .filter((username) => username.length > 0),
+    ),
+  ).slice(0, MAX_PROFILE_BATCH);
+
+  if (normalizedUsernames.length === 0) {
+    return c.json({ profiles: [] });
+  }
+
+  try {
+    const rows = await db
+      .select({
+        cartridgeUsername: playerProfiles.cartridgeUsername,
+        playerAddress: playerProfiles.playerAddress,
+        avatarUrl: playerProfiles.avatarUrl,
+      })
+      .from(playerProfiles)
+      .where(
+        sql`lower(${playerProfiles.cartridgeUsername}) in (${sql.join(
+          normalizedUsernames.map((username) => sql`${username}`),
+          sql`, `,
+        )})`,
+      );
+
+    return c.json({ profiles: rows });
+  } catch (error) {
+    console.error("Failed to fetch avatar profiles by username:", error);
+    return c.json({ error: "Failed to fetch avatar profiles" }, 500);
+  }
+});
+
 avatarRoutes.get("/profile-by-address/:address", async (c) => {
   const address = c.req.param("address");
 
   if (!address) {
+    return c.json({ error: "Address is required" }, 400);
+  }
+  const normalizedAddress = address.trim().toLowerCase();
+  if (!normalizedAddress) {
     return c.json({ error: "Address is required" }, 400);
   }
 
@@ -178,7 +260,7 @@ avatarRoutes.get("/profile-by-address/:address", async (c) => {
     const [profile] = await db
       .select()
       .from(playerProfiles)
-      .where(eq(playerProfiles.playerAddress, address))
+      .where(sql`lower(${playerProfiles.playerAddress}) = ${normalizedAddress}`)
       .limit(1);
 
     if (!profile) {
@@ -194,6 +276,49 @@ avatarRoutes.get("/profile-by-address/:address", async (c) => {
   } catch (error) {
     console.error("Failed to fetch profile:", error);
     return c.json({ error: "Failed to fetch profile" }, 500);
+  }
+});
+
+avatarRoutes.post("/profiles", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { addresses } = body;
+
+  if (!Array.isArray(addresses)) {
+    return c.json({ error: "addresses must be an array" }, 400);
+  }
+
+  const normalizedAddresses = Array.from(
+    new Set(
+      addresses
+        .filter((address: unknown): address is string => typeof address === "string")
+        .map((address) => address.trim().toLowerCase())
+        .filter((address) => address.length > 0),
+    ),
+  ).slice(0, MAX_PROFILE_BATCH);
+
+  if (normalizedAddresses.length === 0) {
+    return c.json({ profiles: [] });
+  }
+
+  try {
+    const rows = await db
+      .select({
+        cartridgeUsername: playerProfiles.cartridgeUsername,
+        playerAddress: playerProfiles.playerAddress,
+        avatarUrl: playerProfiles.avatarUrl,
+      })
+      .from(playerProfiles)
+      .where(
+        sql`lower(${playerProfiles.playerAddress}) in (${sql.join(
+          normalizedAddresses.map((address) => sql`${address}`),
+          sql`, `,
+        )})`,
+      );
+
+    return c.json({ profiles: rows });
+  } catch (error) {
+    console.error("Failed to fetch avatar profiles:", error);
+    return c.json({ error: "Failed to fetch avatar profiles" }, 500);
   }
 });
 
@@ -225,8 +350,11 @@ avatarRoutes.get("/me", requirePlayerSession, async (c) => {
 
     const now = Date.now();
     const lastGenerationAt = profile.lastGenerationAt;
-    const generationCount =
-      lastGenerationAt && now - lastGenerationAt.getTime() < GENERATION_WINDOW_MS ? profile.generationCount : 0;
+    const isWithinWindow = lastGenerationAt && now - lastGenerationAt.getTime() < GENERATION_WINDOW_MS;
+    const generationCount = isWithinWindow ? profile.generationCount : 0;
+    const nextResetAt = isWithinWindow
+      ? new Date(lastGenerationAt.getTime() + GENERATION_WINDOW_MS).toISOString()
+      : null;
 
     return c.json({
       cartridgeUsername: profile.cartridgeUsername,
@@ -234,6 +362,7 @@ avatarRoutes.get("/me", requirePlayerSession, async (c) => {
       avatarUrl: profile.avatarUrl,
       createdAt: profile.createdAt.toISOString(),
       generationCount,
+      nextResetAt,
     });
   } catch (error) {
     console.error("Failed to fetch profile:", error);

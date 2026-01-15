@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 
 import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
@@ -253,6 +254,26 @@ export const LandingLeaderboard = () => {
   );
 
   const entries = useLandingLeaderboardStore((state) => state.entries);
+  const { data: avatarProfiles } = useAvatarProfiles(entries.map((entry) => entry.address));
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
+  const getEntryAvatarUrl = useCallback(
+    (entry: LandingLeaderboardEntry) => {
+      const normalized = normalizeAvatarAddress(entry.address);
+      const avatarUrl = normalized ? avatarMap.get(normalized) : undefined;
+      return getAvatarUrl(entry.address, avatarUrl);
+    },
+    [avatarMap],
+  );
 
   const isFetching = useLandingLeaderboardStore((state) => state.isFetching);
   const error = useLandingLeaderboardStore((state) => state.error);
@@ -858,6 +879,7 @@ export const LandingLeaderboard = () => {
             <div className="grid gap-4 md:grid-cols-3">
               {podiumEntries.map((entry, index) => {
                 const addressLabel = displayAddress(entry.address);
+                const avatarUrl = getEntryAvatarUrl(entry);
                 const isExpanded = expandedEntryAddress === entry.address;
                 const panelId = getActivityPanelId(entry.address);
                 const handleToggle = () => toggleEntryExpansion(entry.address);
@@ -882,13 +904,20 @@ export const LandingLeaderboard = () => {
                         <span className="text-2xl font-semibold text-gold">#{entry.rank}</span>
                       </div>
 
-                      <div className="mt-4 space-y-1">
-                        <p className="text-lg font-semibold text-white" title={entry.displayName ?? addressLabel}>
-                          {entry.displayName ?? addressLabel}
-                        </p>
-                        <p className="text-xs text-white/60" title={entry.address}>
-                          {entry.displayName ? addressLabel : entry.address}
-                        </p>
+                      <div className="mt-4 flex items-center gap-3">
+                        <img
+                          className="h-12 w-12 rounded-full border border-white/20 object-cover"
+                          src={avatarUrl}
+                          alt={`${entry.displayName ?? addressLabel} avatar`}
+                        />
+                        <div className="space-y-1">
+                          <p className="text-lg font-semibold text-white" title={entry.displayName ?? addressLabel}>
+                            {entry.displayName ?? addressLabel}
+                          </p>
+                          <p className="text-xs text-white/60" title={entry.address}>
+                            {entry.displayName ? addressLabel : entry.address}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="mt-4 space-y-1">
@@ -962,6 +991,7 @@ export const LandingLeaderboard = () => {
                 <tbody className="divide-y divide-white/5 text-sm">
                   {remainingEntries.map((entry) => {
                     const addressLabel = displayAddress(entry.address);
+                    const avatarUrl = getEntryAvatarUrl(entry);
                     const isExpanded = expandedEntryAddress === entry.address;
                     const panelId = getActivityPanelId(entry.address);
                     const handleToggle = () => toggleEntryExpansion(entry.address);
@@ -981,13 +1011,20 @@ export const LandingLeaderboard = () => {
                         >
                           <td className="px-4 py-3 text-white/70">#{entry.rank}</td>
                           <td className="px-4 py-3">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-white" title={entry.displayName ?? addressLabel}>
-                                {entry.displayName ?? addressLabel}
-                              </span>
-                              <span className="text-xs text-white/50" title={entry.address}>
-                                {entry.displayName ? addressLabel : entry.address}
-                              </span>
+                            <div className="flex items-center gap-3">
+                              <img
+                                className="h-9 w-9 rounded-full border border-white/15 object-cover"
+                                src={avatarUrl}
+                                alt={`${entry.displayName ?? addressLabel} avatar`}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium text-white" title={entry.displayName ?? addressLabel}>
+                                  {entry.displayName ?? addressLabel}
+                                </span>
+                                <span className="text-xs text-white/50" title={entry.address}>
+                                  {entry.displayName ? addressLabel : entry.address}
+                                </span>
+                              </div>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right text-white">

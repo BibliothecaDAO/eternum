@@ -8,6 +8,8 @@ import {
 } from "../../hooks/use-realtime-chat";
 import type { DirectMessage } from "../../model/types";
 import { MessageComposer } from "../shared/message-composer";
+import { UserAvatar } from "../shared/user-avatar";
+import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
 
 interface DirectMessagesPanelProps {
   threadId?: string;
@@ -138,6 +140,23 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     );
   }, [resolvedThreadId, typingIndicators]);
 
+  const messageSenderIds = useMemo(
+    () => (thread?.messages ?? []).map((message) => message.senderId),
+    [thread?.messages],
+  );
+  const { data: avatarProfiles } = useAvatarProfilesByUsernames(messageSenderIds);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarUsername(profile.cartridgeUsername ?? undefined);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
+
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -198,11 +217,24 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                 {thread.messages.map((message) => {
                   const isOwn = selfAliases.includes(message.senderId);
                   const displayLabel = isOwn ? "You" : truncateIdentifier(message.senderId);
+                  const normalized = normalizeAvatarUsername(message.senderId);
+                  const avatarUrl =
+                    isOwn && identity?.avatarUrl ? identity.avatarUrl : normalized ? avatarMap.get(normalized) : undefined;
                   return (
                     <li key={message.id} className="text-[13px] leading-tight text-white/90">
-                      <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
-                      <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}
-                      <span className="break-words">{message.content}</span>
+                      <div className="flex items-start gap-2">
+                        <UserAvatar
+                          name={displayLabel}
+                          avatarUrl={avatarUrl}
+                          size="sm"
+                          className="mt-0.5 shrink-0"
+                        />
+                        <div>
+                          <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
+                          <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}
+                          <span className="break-words">{message.content}</span>
+                        </div>
+                      </div>
                     </li>
                   );
                 })}

@@ -9,7 +9,7 @@ import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
 import { Loader2, SkipForward, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 interface AvatarCreationPanelProps {
@@ -28,9 +28,23 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
   const generateAvatar = useGenerateAvatar(playerId, walletAddress, displayName);
   const selectAvatar = useSelectAvatar(playerId, walletAddress, displayName);
   const hasDisplayName = Boolean(displayName);
+  const dailyGenerationLimit = 1;
+  const hasReachedDailyLimit = (myAvatar?.generationCount ?? 0) >= dailyGenerationLimit;
+  const resetCountdownLabel = useMemo(() => {
+    if (!myAvatar?.nextResetAt) return null;
+    const resetAt = new Date(myAvatar.nextResetAt);
+    if (Number.isNaN(resetAt.getTime())) return null;
+    const diffMs = resetAt.getTime() - Date.now();
+    if (diffMs <= 0) return null;
+    const totalMinutes = Math.ceil(diffMs / (60 * 1000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours <= 0) return `${minutes}m`;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }, [myAvatar?.nextResetAt]);
 
   const handleGenerate = async () => {
-    if (!prompt.trim() || !hasDisplayName) return;
+    if (!prompt.trim() || !hasDisplayName || hasReachedDailyLimit) return;
 
     try {
       const result = await generateAvatar.mutateAsync({ prompt: prompt.trim() });
@@ -135,7 +149,13 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
           {/* Generation Limit Info */}
           {myAvatar && myAvatar.generationCount !== undefined && (
             <div className="text-xs text-gold/40 text-center">
-              {myAvatar.generationCount} / 1 weekly generation used
+              {myAvatar.generationCount} / {dailyGenerationLimit} daily generation used
+            </div>
+          )}
+          {hasReachedDailyLimit && (
+            <div className="text-xs text-amber-300/80 text-center">
+              Daily generation limit reached.
+              {resetCountdownLabel ? ` Next reset in ${resetCountdownLabel}.` : ""}
             </div>
           )}
 
@@ -154,7 +174,7 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
               forceUppercase={false}
               variant="gold"
               onClick={handleGenerate}
-              disabled={!prompt.trim() || generateAvatar.isPending || !hasDisplayName}
+              disabled={!prompt.trim() || generateAvatar.isPending || !hasDisplayName || hasReachedDailyLimit}
             >
               <div className="flex items-center justify-center w-full">
                 {generateAvatar.isPending ? (
@@ -207,7 +227,7 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
 
           {/* Info Text */}
           <p className="text-xs text-gold/40 text-center">
-            You can generate one set of avatars per week. Skip to use a default avatar.
+            You can generate one set of avatars every 24 hours. Skip to use a default avatar.
           </p>
         </div>
       </div>

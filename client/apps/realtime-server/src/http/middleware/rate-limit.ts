@@ -8,10 +8,10 @@ interface RateLimitStore {
 
 const rateLimitStore = new Map<string, RateLimitStore>();
 
-const RATE_LIMIT_WINDOW = 7 * 24 * 60 * 60 * 1000; // 7 days
+const RATE_LIMIT_WINDOW = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_GENERATIONS_PER_WEEK =
-  Number(process.env.AVATAR_MAX_GENERATIONS_PER_WEEK) ||
   Number(process.env.AVATAR_MAX_GENERATIONS_PER_DAY) ||
+  Number(process.env.AVATAR_MAX_GENERATIONS_PER_WEEK) ||
   1;
 
 export const avatarRateLimit: MiddlewareHandler<AppEnv> = async (c, next) => {
@@ -35,12 +35,13 @@ export const avatarRateLimit: MiddlewareHandler<AppEnv> = async (c, next) => {
   }
 
   if (limitInfo.count >= MAX_GENERATIONS_PER_WEEK) {
-    const resetIn = Math.ceil((limitInfo.resetAt - now) / 1000 / 60 / 60 / 24);
+    const resetInHours = Math.max(1, Math.ceil((limitInfo.resetAt - now) / 1000 / 60 / 60));
     return c.json(
       {
         error: "Rate limit exceeded",
-        message: `You have reached the maximum of ${MAX_GENERATIONS_PER_WEEK} avatar generations per week`,
-        resetInDays: resetIn,
+        message: `You have reached the maximum of ${MAX_GENERATIONS_PER_WEEK} avatar generations per 24 hours`,
+        resetInHours,
+        resetAt: new Date(limitInfo.resetAt).toISOString(),
       },
       429,
     );

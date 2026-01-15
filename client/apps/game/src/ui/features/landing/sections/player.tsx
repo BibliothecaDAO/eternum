@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import {
   getAvatarUrl,
   useAvatarGallery,
@@ -84,6 +84,20 @@ export const LandingPlayer = () => {
   const generateAvatar = useGenerateAvatar(playerId, playerId, displayName);
   const deleteAvatar = useDeleteAvatar(playerId, playerId, displayName);
   const selectAvatar = useSelectAvatar(playerId, playerId, displayName);
+  const dailyGenerationLimit = 1;
+  const hasReachedDailyLimit = (myAvatar?.generationCount ?? 0) >= dailyGenerationLimit;
+  const resetCountdownLabel = useMemo(() => {
+    if (!myAvatar?.nextResetAt) return null;
+    const resetAt = new Date(myAvatar.nextResetAt);
+    if (Number.isNaN(resetAt.getTime())) return null;
+    const diffMs = resetAt.getTime() - Date.now();
+    if (diffMs <= 0) return null;
+    const totalMinutes = Math.ceil(diffMs / (60 * 1000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours <= 0) return `${minutes}m`;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }, [myAvatar?.nextResetAt]);
 
   const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
   const championEntry = useLandingLeaderboardStore((state) => state.championEntry);
@@ -302,6 +316,10 @@ export const LandingPlayer = () => {
       toast.error("Please enter a description for your avatar.");
       return;
     }
+    if (hasReachedDailyLimit) {
+      toast.error("Daily avatar generation limit reached. Try again later.");
+      return;
+    }
 
     try {
       const result = await generateAvatar.mutateAsync({ prompt: avatarPrompt.trim() });
@@ -312,7 +330,7 @@ export const LandingPlayer = () => {
       console.error("Failed to generate avatar:", error);
       toast.error(error?.message || "Failed to generate avatar. Please try again.");
     }
-  }, [avatarPrompt, generateAvatar]);
+  }, [avatarPrompt, generateAvatar, hasReachedDailyLimit]);
 
   const handleDeleteAvatar = useCallback(async () => {
     try {
@@ -410,7 +428,13 @@ export const LandingPlayer = () => {
               </div>
               {myAvatar && myAvatar.generationCount !== undefined && (
                 <p className="text-sm text-white/50 text-center mt-3">
-                  {myAvatar.generationCount} / 1 weekly generation
+                  {myAvatar.generationCount} / {dailyGenerationLimit} daily generation
+                </p>
+              )}
+              {hasReachedDailyLimit && (
+                <p className="text-xs text-amber-200/80 text-center mt-1">
+                  Daily generation limit reached. <br />
+                  {resetCountdownLabel ? ` Next reset in ${resetCountdownLabel}.` : ""}
                 </p>
               )}
             </div>
@@ -457,7 +481,9 @@ export const LandingPlayer = () => {
                         className="flex-1 justify-center gap-2 !px-3 !py-1.5"
                         forceUppercase={false}
                         isLoading={generateAvatar.isPending}
-                        disabled={generateAvatar.isPending || !avatarPrompt.trim() || !hasDisplayName}
+                        disabled={
+                          generateAvatar.isPending || !avatarPrompt.trim() || !hasDisplayName || hasReachedDailyLimit
+                        }
                       >
                         <Sparkles className="w-4 h-4" />
                         <span>
@@ -495,9 +521,7 @@ export const LandingPlayer = () => {
                     )}
 
                     {!hasDisplayName && (
-                      <p className="text-xs text-yellow-400/80">
-                        Connect with Cartridge to create a custom avatar
-                      </p>
+                      <p className="text-xs text-yellow-400/80">Connect with Cartridge to create a custom avatar</p>
                     )}
                   </Tabs.Panel>
 
@@ -509,9 +533,7 @@ export const LandingPlayer = () => {
                     ) : galleryItems && galleryItems.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {galleryItems.map((item, index) => {
-                          const isOwnImage = Boolean(
-                            item.cartridgeUsername && item.cartridgeUsername === displayName,
-                          );
+                          const isOwnImage = Boolean(item.cartridgeUsername && item.cartridgeUsername === displayName);
                           const isSelected = myAvatar?.avatarUrl === item.imageUrl;
                           const canSelect = canSelectFromGallery && isOwnImage;
 
@@ -520,9 +542,7 @@ export const LandingPlayer = () => {
                               <button
                                 type="button"
                                 className={`group relative w-full overflow-hidden rounded-lg border bg-black/20 transition ${
-                                  isSelected
-                                    ? "border-gold/70"
-                                    : "border-gold/20 hover:border-gold/40"
+                                  isSelected ? "border-gold/70" : "border-gold/20 hover:border-gold/40"
                                 } ${!canSelect || isSelected ? "cursor-default" : ""}`}
                                 onClick={() => {
                                   if (!canSelect || isSelected) return;

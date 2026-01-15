@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import type { PlayerPresence } from "../../model/types";
 import { UserAvatar } from "./user-avatar";
+import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
 
 interface UserDropdownProps {
   users: PlayerPresence[];
@@ -39,10 +40,29 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
     return { usersWithUnread: withUnread, onlineUsers: online, offlineUsers: offline };
   }, [filteredUsers, threadsWithUnread]);
 
+  const usernames = useMemo(
+    () => filteredUsers.map((user) => user.displayName ?? user.playerId),
+    [filteredUsers],
+  );
+  const { data: avatarProfiles } = useAvatarProfilesByUsernames(usernames);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarUsername(profile.cartridgeUsername ?? undefined);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
+
   const renderUserItem = (user: PlayerPresence, isOffline = false) => {
     const displayLabel = user.displayName ?? user.playerId;
     const isPinned = pinnedUsers.has(user.playerId);
     const unreadCount = threadsWithUnread.get(user.playerId) ?? 0;
+    const normalized = normalizeAvatarUsername(user.displayName ?? user.playerId);
+    const avatarUrl = normalized ? avatarMap.get(normalized) : undefined;
 
     return (
       <li
@@ -50,7 +70,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
         className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${isOffline ? "opacity-60" : ""}`}
       >
         <button onClick={() => onUserSelect(user.playerId)} className="flex items-center flex-1">
-          <UserAvatar name={displayLabel} isOnline={!isOffline} size="sm" className="mr-2" />
+          <UserAvatar name={displayLabel} avatarUrl={avatarUrl} isOnline={!isOffline} size="sm" className="mr-2" />
           <span className="text-sm truncate text-white">{displayLabel}</span>
           {!isOffline && <div className="ml-auto w-2 h-2 bg-green-500 rounded-full" />}
           {unreadCount > 0 && (

@@ -10,6 +10,7 @@ import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
 import { dangerActionClasses, standardActionClasses } from "./action-button-classes";
+import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 
 import { useArmyEntityDetail } from "./hooks/use-army-entity-detail";
 
@@ -45,6 +46,9 @@ export const ArmyEntityDetail = memo(
       handleDeleteExplorer,
       isLoadingDelete,
     } = useArmyEntityDetail({ armyEntityId });
+    const ownerUsername = derivedData?.addressName ?? null;
+    const { data: ownerProfileByUsername } = usePlayerAvatarByUsername(ownerUsername);
+    const ownerAvatarUrl = ownerProfileByUsername?.avatarUrl ?? null;
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (
@@ -79,14 +83,25 @@ export const ArmyEntityDetail = memo(
                   </h4>
                   <span className="text-xxs uppercase tracking-[0.28em] text-gold/60">#{armyEntityId}</span>
                 </div>
-                {derivedData.playerGuild && (
-                  <div className={`${smallTextClass} text-gold/60`}>Guild · {derivedData.playerGuild.name}</div>
-                )}
-                {derivedData.structureOwnerName && (
-                  <div className={`${smallTextClass} text-gold/60`}>
-                    Stationed at · {derivedData.structureOwnerName}
+                <div className="flex items-center gap-2">
+                  {ownerAvatarUrl && (
+                    <img
+                      className="h-8 w-8 rounded-full border border-gold/30 object-cover"
+                      src={ownerAvatarUrl}
+                      alt={`${derivedData.addressName} avatar`}
+                    />
+                  )}
+                  <div className="flex flex-col gap-0.5">
+                    {derivedData.playerGuild && (
+                      <div className={`${smallTextClass} text-gold/60`}>Guild · {derivedData.playerGuild.name}</div>
+                    )}
+                    {derivedData.structureOwnerName && (
+                      <div className={`${smallTextClass} text-gold/60`}>
+                        Stationed at · {derivedData.structureOwnerName}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
               <div className="flex flex-col items-end gap-2">
                 {alignmentBadge && (
