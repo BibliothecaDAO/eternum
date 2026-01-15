@@ -2,6 +2,8 @@ use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
+    fn list_registered_players(self: @T) -> Array<starknet::ContractAddress>;
+
     fn obtain_entry_token(ref self: T);
     fn register(ref self: T, name: felt252, entry_token_id: u128, cosmetic_token_ids: Span<u128>);
     fn make_hyperstructures(ref self: T, count: u8);
@@ -23,7 +25,7 @@ pub mod blitz_realm_systems {
         BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister, BlitzEntryTokenRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
-        WorldConfigUtilImpl, BlitzCosmeticAttrsRegister, BlitzRealmSettleFinish
+        WorldConfigUtilImpl, BlitzCosmeticAttrsRegister, BlitzRealmSettleFinish, BlitzPlayerRegisterList
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
     use crate::models::map::TileImpl;
@@ -61,6 +63,21 @@ pub mod blitz_realm_systems {
 
     #[abi(embed_v0)]
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
+
+        fn list_registered_players(self: @ContractState) -> Array<ContractAddress> {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let blitz_registration_config: BlitzRegistrationConfig 
+                = WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+
+            let mut end: u16 = blitz_registration_config.registration_count;
+            let mut players: Array<ContractAddress> = array![];
+            while end.is_non_zero() {
+                let register: BlitzPlayerRegisterList = world.read_model(end);
+                players.append(register.player);
+                end -= 1;
+            }
+            players
+        }
 
         fn obtain_entry_token(ref self: ContractState) {
 
@@ -128,6 +145,13 @@ pub mod blitz_realm_systems {
                 !blitz_registration_config.is_registration_full(), "Eternum: All registration slots have been filled",
             );
             blitz_registration_config.increase_registration_count();
+
+
+            world.write_model(
+                @BlitzPlayerRegisterList {
+                    count: blitz_registration_config.registration_count,
+                    player: starknet::get_caller_address(),
+            });
 
             // if there is a required fee amount, ensure token is locked  
             if blitz_registration_config.fee_amount.is_non_zero() {

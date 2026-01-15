@@ -54,6 +54,7 @@ pub struct WorldConfig {
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub victory_points_win_config: VictoryPointsWinConfig,
+    pub factory_address: ContractAddress,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -1000,6 +1001,14 @@ pub struct BlitzRealmPlayerRegister {
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
+pub struct BlitzPlayerRegisterList {
+    #[key]
+    pub count: u16,
+    pub player: ContractAddress
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
 pub struct BlitzEntryTokenRegister {
     #[key]
     pub token_id: u128,
@@ -1014,10 +1023,3 @@ pub struct BlitzCosmeticAttrsRegister {
     pub attrs: Span<u128>,
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzPreviousGame {
-    #[key]
-    pub config_id: ID,
-    pub last_prize_distribution_systems: ContractAddress,
-}
