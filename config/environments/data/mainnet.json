@@ -15187,31 +15187,31 @@
       "libraries": [
         {
           "class_hash": "0x164e7764f2d85b3f4f26058f4b072f32d4425f47f371890088bbcd06f69807b",
-          "tag": "s1_eternum-biome_library_v0_1_4",
+          "tag": "s1_eternum-biome_library_v0_1_6",
           "selector": "0x17ea0292301ae3a0248f996d5cfb3e4ca37cc9bdcd1f88dc7c7977ed24f9c29",
           "systems": [],
-          "version": "0_1_4"
+          "version": "0_1_6"
         },
         {
           "class_hash": "0x60d02b1fe2c8456da0a76d89ce55731a1861913132b301574b647f090b272ce",
-          "tag": "s1_eternum-combat_library_v0_1_4",
+          "tag": "s1_eternum-combat_library_v0_1_6",
           "selector": "0x6a352fe85e5966806dfb50f4723a8e11a29bf0c5383a3f6facc68cdbc40850a",
           "systems": [],
-          "version": "0_1_4"
+          "version": "0_1_6"
         },
         {
           "class_hash": "0x414a4d912fe7041665ea107d8ca696433ce917497c4fd69d37ac51ddddeeaaa",
-          "tag": "s1_eternum-rng_library_v0_1_4",
+          "tag": "s1_eternum-rng_library_v0_1_6",
           "selector": "0x706baa7e13795e75b18774b3068f4bfbf16c3c22692cd8ac1e329255380ab03",
           "systems": [],
-          "version": "0_1_4"
+          "version": "0_1_6"
         },
         {
           "class_hash": "0x4a830f0e377468907e66ee073469d3cd708af1253070914cd79388bfe25a475",
-          "tag": "s1_eternum-structure_creation_library_v0_1_4",
+          "tag": "s1_eternum-structure_creation_library_v0_1_6",
           "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
           "systems": [],
-          "version": "0_1_4"
+          "version": "0_1_6"
         }
       ],
       "models": [
