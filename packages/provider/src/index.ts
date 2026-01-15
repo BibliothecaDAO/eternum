@@ -92,7 +92,7 @@ class PromiseQueue {
   }> = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly BATCH_DELAY = 250; // ms to wait for batching
+  private readonly BATCH_DELAY = 1000; // ms to wait for batching
   private readonly MAX_BATCH_SIZE = 2; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
@@ -2291,8 +2291,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id],
     });
 
-    // Execute directly, bypassing the queue to ensure this is never batched
-    return await this.executeAndCheckTransaction(signer, callData);
+    const call = this.createProviderCall(signer, callData);
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
