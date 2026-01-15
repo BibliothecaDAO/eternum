@@ -1,9 +1,17 @@
 import { getCosmeticsAddress } from "@/components/ui/utils/addresses";
-import { ChestAsset, chestAssets } from "@/utils/cosmetics";
+import { ChestAsset, getChestAssetFromAttributesRaw, getAllChestAssets, COSMETIC_NAMES } from "@/utils/cosmetics";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { fetchCollectibleClaimed } from "./services";
+
+// Helper to normalize attributesRaw for comparison (remove leading zeros after 0x)
+const normalizeAttributesRaw = (raw: string): string => {
+  if (!raw.startsWith("0x")) return raw;
+  // Remove 0x, strip leading zeros, add 0x back
+  const hex = raw.slice(2).replace(/^0+/, "");
+  return "0x" + (hex || "0");
+};
 
 // Parse CollectibleClaimed event data to extract chest assets
 const parseCollectibleClaimedData = (eventData: any[]): ChestAsset[] => {
@@ -16,13 +24,18 @@ const parseCollectibleClaimedData = (eventData: any[]): ChestAsset[] => {
 
       // The 3rd value (index 2) is the attributes_raw
       if (keyValues.length >= 3) {
-        const attributesRaw = keyValues[2];
+        const eventAttributesRaw = normalizeAttributesRaw(keyValues[2]);
 
-        // Find matching asset in chestAssets
-        const matchingAsset = chestAssets.find((asset) => asset.attributesRaw === attributesRaw);
+        // Find matching cosmetic by normalized attributesRaw
+        const matchingCosmetic = COSMETIC_NAMES.find(
+          (cosmetic) => normalizeAttributesRaw(cosmetic.attributesRaw) === eventAttributesRaw,
+        );
 
-        if (matchingAsset) {
-          parsedAssets.push(matchingAsset);
+        if (matchingCosmetic) {
+          const asset = getChestAssetFromAttributesRaw(matchingCosmetic.attributesRaw);
+          if (asset) {
+            parsedAssets.push(asset);
+          }
         }
       }
     }
@@ -54,27 +67,31 @@ export const useChestContent = (debugMode: boolean = false, timestamp: number) =
     // Debug mode: return all chest assets
     if (debugMode) {
       console.log("Debug mode enabled - returning all chest assets");
-      setChestContent(chestAssets);
+      setChestContent(getAllChestAssets());
       return;
     }
 
     if (collectibleClaimedQuery && Array.isArray(collectibleClaimedQuery)) {
       const currentLength = collectibleClaimedQuery.length;
+      const previousLength = previousLengthRef.current;
 
-      // If exactly 3 new items were added, get the last 3 items
-      if (currentLength === previousLengthRef.current + 3) {
-        const lastThreeTokens = collectibleClaimedQuery.slice(-3);
+      // If new items were added, get all the new items
+      if (currentLength > previousLength) {
+        const newItemCount = currentLength - previousLength;
+        const newTokens = collectibleClaimedQuery.slice(-newItemCount);
 
         // Parse the event data to extract chest assets
-        const newAssets: ChestAsset[] = parseCollectibleClaimedData(lastThreeTokens);
+        const newAssets: ChestAsset[] = parseCollectibleClaimedData(newTokens);
 
-        setChestContent(newAssets);
+        if (newAssets.length > 0) {
+          setChestContent(newAssets);
+        }
       }
 
       // Update ref with current length for next comparison
       previousLengthRef.current = currentLength;
     }
-  }, [collectibleClaimedQuery, debugMode, timestamp]); // Added debugMode and timestamp to dependencies
+  }, [collectibleClaimedQuery, debugMode, timestamp]);
 
   const resetChestContent = () => {
     setChestContent([]);

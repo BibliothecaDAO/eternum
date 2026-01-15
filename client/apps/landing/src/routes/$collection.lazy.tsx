@@ -1,4 +1,4 @@
-import { ChestOpeningModal } from "@/components/modules/chest-opening-modal";
+import { ChestOpeningExperience, FloatingOpenButton } from "@/components/modules/chest-opening";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
@@ -28,7 +28,7 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 
 export const Route = createLazyFileRoute("/$collection")({
@@ -50,7 +50,7 @@ function ManageCollectionRoute() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
-  const { showLootChestOpening, openedChestTokenId, chestOpenTimestamp } = useLootChestOpeningStore();
+  const { showLootChestOpening, setShowLootChestOpening, clearLootChestOpening } = useLootChestOpeningStore();
 
   const [tokenBalanceQuery] = useSuspenseQueries({
     queries: [
@@ -85,17 +85,15 @@ function ManageCollectionRoute() {
     }));
   }, [tokenBalanceQuery.data, collectionStats]);
 
-  const [nextChestToken, setNextChestToken] = useState<string | null>(null);
-  const [remainingChests, setRemainingChests] = useState<number>(0);
+  // Calculate owned chests (not listed/expired) for the floating button and chest opening experience
+  const ownedChests = useMemo(() => {
+    if (!tokensWithFloorPrice) return [];
+    // Filter to only include chests that are not listed (no expiration)
+    return tokensWithFloorPrice.filter((token) => !token.expiration);
+  }, [tokensWithFloorPrice]);
 
-  useEffect(() => {
-    if (!tokensWithFloorPrice || !openedChestTokenId) return;
-    const remainingTokens = tokensWithFloorPrice
-      .filter((token) => token.token_id !== openedChestTokenId)
-      .filter((token) => !token.expiration);
-    setNextChestToken(remainingTokens.length > 0 ? remainingTokens[0].token_id.toString() : null);
-    setRemainingChests(remainingTokens.length);
-  }, [tokensWithFloorPrice, openedChestTokenId]);
+  // Check if this is the loot chest collection
+  const isLootChestCollection = collectionName === "Loot Chest";
 
   const {
     selectedFilters,
@@ -339,7 +337,16 @@ function ManageCollectionRoute() {
             initialSelectedTokenId={initialSelectedTokenId}
           />
         )}
-        {showLootChestOpening && <ChestOpeningModal remainingChests={remainingChests} nextToken={nextChestToken} />}
+
+        {/* Floating Open Chest Button - only shown for Loot Chest collection */}
+        {isLootChestCollection && ownedChests.length > 0 && (
+          <FloatingOpenButton chestCount={ownedChests.length} onClick={() => setShowLootChestOpening(true)} />
+        )}
+
+        {/* Chest Opening Experience */}
+        {showLootChestOpening && (
+          <ChestOpeningExperience ownedChests={ownedChests} onClose={() => clearLootChestOpening()} />
+        )}
       </>
     </div>
   );

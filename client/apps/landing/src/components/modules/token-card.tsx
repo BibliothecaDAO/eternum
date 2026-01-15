@@ -1,4 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
@@ -6,9 +7,8 @@ import { MergedNftData } from "@/types";
 import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
-import { ArrowRightLeft, Check, Plus } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useMemo, useState } from "react";
+import { ArrowRightLeft, Check, ImageOff, Plus } from "lucide-react";
+import { useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -39,6 +39,7 @@ export const TokenCard = ({
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const normalizedAccountAddress = accountAddress ? trimAddress(accountAddress)?.toLowerCase() : undefined;
   const normalizedTokenOwner = token.token_owner ? trimAddress(token.token_owner)?.toLowerCase() : undefined;
@@ -121,17 +122,24 @@ export const TokenCard = ({
               </span>
             </div>
           )}
-          <img
-            src={image}
-            alt={name ?? "Token Image"}
-            className={`w-full object-contain transition-all duration-200 ${
-              isDisabledCard
-                ? "opacity-60 saturate-50 contrast-90 brightness-95"
-                : isSelected
-                  ? "opacity-100"
-                  : "opacity-90 group-hover:opacity-100"
-            }`}
-          />
+          {image && !imageError ? (
+            <img
+              src={image}
+              alt={name ?? "Token Image"}
+              className={`w-full object-contain transition-all duration-200 ${
+                isDisabledCard
+                  ? "opacity-60 saturate-50 contrast-90 brightness-95"
+                  : isSelected
+                    ? "opacity-100"
+                    : "opacity-90 group-hover:opacity-100"
+              }`}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full aspect-square bg-slate-800 flex items-center justify-center">
+              <ImageOff className="w-16 h-16 " />
+            </div>
+          )}
 
           {/* Selection overlay appears when this card can be toggled */}
           {canToggleSelection && (

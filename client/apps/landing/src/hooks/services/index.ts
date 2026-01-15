@@ -1135,7 +1135,7 @@ export async function fetchCollectibleClaimed(
     .replace("{playerAddress}", padAddress(playerAddress))
     .replace("{minTimestamp}", `'${formattedTimestamp}'`);
 
-  return await gameClientFetch<CollectibleClaimed[]>(query);
+  return await fetchSQL<CollectibleClaimed[]>(query);
 }
 function normalizeMetadata(rawMetadata: string | RealmMetadata | null | undefined): RealmMetadata | null {
   if (!rawMetadata) return null;
