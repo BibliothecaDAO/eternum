@@ -1,0 +1,365 @@
+import { Hono, type Context } from "hono";
+
+import type { AppEnv } from "../middleware/auth";
+import {
+  buildLeaderboardQuery,
+  buildStoryEventsQuery,
+  HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY,
+  HYPERSTRUCTURE_SHAREHOLDERS_QUERY,
+  HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY,
+} from "../../services/torii-queries";
+
+type CacheStatus = "hit" | "stale" | "miss";
+
+type CacheEntry<T> = {
+  value: T;
+  fetchedAt: number;
+};
+
+type CacheResult<T> = {
+  value: T;
+  status: CacheStatus;
+  fetchedAt: number;
+};
+
+type LeaderboardCachePayload = {
+  registeredRows: unknown[];
+  hyperstructureShareholderRows: unknown[];
+  hyperstructureRows: unknown[];
+  hyperstructureConfigRow?: unknown;
+};
+
+const DEFAULT_LEADERBOARD_TTL_MS = 60_000;
+const DEFAULT_LEADERBOARD_STALE_MS = 5 * 60_000;
+const DEFAULT_LEADERBOARD_MAX_ENTRIES = 5;
+const DEFAULT_LEADERBOARD_LIMIT = 50;
+const DEFAULT_LEADERBOARD_LIMIT_MAX = 5_000;
+
+const DEFAULT_STORY_EVENTS_TTL_MS = 30_000;
+const DEFAULT_STORY_EVENTS_STALE_MS = 2 * 60_000;
+const DEFAULT_STORY_EVENTS_MAX_ENTRIES = 25;
+const DEFAULT_STORY_EVENTS_LIMIT = 50;
+const DEFAULT_STORY_EVENTS_LIMIT_MAX = 2_000;
+
+const parseEnvNumber = (value: string | undefined, fallback: number, min = 0): number => {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= min ? parsed : fallback;
+};
+
+const parseEnvInt = (value: string | undefined, fallback: number, min = 0): number => {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed >= min ? parsed : fallback;
+};
+
+const clampNumber = (value: number, min: number, max: number): number => {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.min(Math.max(value, min), max);
+};
+
+const leaderboardTtlMs = parseEnvNumber(process.env.LEADERBOARD_CACHE_TTL_MS, DEFAULT_LEADERBOARD_TTL_MS);
+const leaderboardStaleMs = parseEnvNumber(
+  process.env.LEADERBOARD_CACHE_STALE_MS,
+  DEFAULT_LEADERBOARD_STALE_MS,
+  leaderboardTtlMs,
+);
+const leaderboardMaxEntries = parseEnvInt(
+  process.env.LEADERBOARD_CACHE_MAX_ENTRIES,
+  DEFAULT_LEADERBOARD_MAX_ENTRIES,
+  1,
+);
+const leaderboardLimitDefault = parseEnvInt(
+  process.env.LEADERBOARD_CACHE_LIMIT_DEFAULT,
+  DEFAULT_LEADERBOARD_LIMIT,
+  1,
+);
+const leaderboardLimitMax = parseEnvInt(
+  process.env.LEADERBOARD_CACHE_LIMIT_MAX,
+  DEFAULT_LEADERBOARD_LIMIT_MAX,
+  1,
+);
+
+const storyEventsTtlMs = parseEnvNumber(process.env.STORY_EVENTS_CACHE_TTL_MS, DEFAULT_STORY_EVENTS_TTL_MS);
+const storyEventsStaleMs = parseEnvNumber(
+  process.env.STORY_EVENTS_CACHE_STALE_MS,
+  DEFAULT_STORY_EVENTS_STALE_MS,
+  storyEventsTtlMs,
+);
+const storyEventsMaxEntries = parseEnvInt(
+  process.env.STORY_EVENTS_CACHE_MAX_ENTRIES,
+  DEFAULT_STORY_EVENTS_MAX_ENTRIES,
+  1,
+);
+const storyEventsLimitDefault = parseEnvInt(
+  process.env.STORY_EVENTS_CACHE_LIMIT_DEFAULT,
+  DEFAULT_STORY_EVENTS_LIMIT,
+  1,
+);
+const storyEventsLimitMax = parseEnvInt(
+  process.env.STORY_EVENTS_CACHE_LIMIT_MAX,
+  DEFAULT_STORY_EVENTS_LIMIT_MAX,
+  1,
+);
+
+const leaderboardCache = new Map<string, CacheEntry<LeaderboardCachePayload>>();
+const leaderboardInFlight = new Map<string, Promise<LeaderboardCachePayload>>();
+const storyEventsCache = new Map<string, CacheEntry<unknown[]>>();
+const storyEventsInFlight = new Map<string, Promise<unknown[]>>();
+
+const pruneCache = <T>(cache: Map<string, CacheEntry<T>>, maxEntries: number) => {
+  if (cache.size <= maxEntries) {
+    return;
+  }
+  const entries = Array.from(cache.entries()).sort((a, b) => a[1].fetchedAt - b[1].fetchedAt);
+  const overflow = entries.length - maxEntries;
+  for (let i = 0; i < overflow; i += 1) {
+    cache.delete(entries[i]![0]);
+  }
+};
+
+const buildSqlUrl = (baseUrl: string, query: string): string => {
+  const url = new URL(baseUrl);
+  url.searchParams.set("query", query);
+  return url.toString();
+};
+
+const fetchToriiRows = async <T>(baseUrl: string, query: string, context: string): Promise<T[]> => {
+  const url = buildSqlUrl(baseUrl, query);
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`${context}: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!Array.isArray(result)) {
+    throw new Error(`${context}: expected array response`);
+  }
+
+  return result as T[];
+};
+
+const getCachedValue = async <T>({
+  cache,
+  inFlight,
+  key,
+  ttlMs,
+  staleMs,
+  maxEntries,
+  fetcher,
+}: {
+  cache: Map<string, CacheEntry<T>>;
+  inFlight: Map<string, Promise<T>>;
+  key: string;
+  ttlMs: number;
+  staleMs: number;
+  maxEntries: number;
+  fetcher: () => Promise<T>;
+}): Promise<CacheResult<T>> => {
+  const now = Date.now();
+  const entry = cache.get(key);
+
+  if (entry) {
+    const age = now - entry.fetchedAt;
+    if (age <= ttlMs) {
+      return { value: entry.value, status: "hit", fetchedAt: entry.fetchedAt };
+    }
+    if (age <= staleMs) {
+      if (!inFlight.has(key)) {
+        const refresh = fetcher()
+          .then((value) => {
+            cache.set(key, { value, fetchedAt: Date.now() });
+            pruneCache(cache, maxEntries);
+            return value;
+          })
+          .finally(() => {
+            inFlight.delete(key);
+          });
+        inFlight.set(key, refresh);
+      }
+      return { value: entry.value, status: "stale", fetchedAt: entry.fetchedAt };
+    }
+  }
+
+  const existingRequest = inFlight.get(key);
+  if (existingRequest) {
+    const value = await existingRequest;
+    const cached = cache.get(key);
+    return {
+      value,
+      status: "miss",
+      fetchedAt: cached?.fetchedAt ?? now,
+    };
+  }
+
+  const refresh = fetcher()
+    .then((value) => {
+      cache.set(key, { value, fetchedAt: Date.now() });
+      pruneCache(cache, maxEntries);
+      return value;
+    })
+    .finally(() => {
+      inFlight.delete(key);
+    });
+  inFlight.set(key, refresh);
+
+  const value = await refresh;
+  const cached = cache.get(key);
+  return {
+    value,
+    status: "miss",
+    fetchedAt: cached?.fetchedAt ?? now,
+  };
+};
+
+const normalizeToriiBaseUrl = (value: string | undefined, appendSql: boolean): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    url.search = "";
+    url.hash = "";
+
+    const basePath = url.pathname.replace(/\/+$/, "");
+    const normalizedBasePath = basePath === "" ? "/" : basePath;
+
+    if (appendSql) {
+      url.pathname = normalizedBasePath.endsWith("/sql") ? normalizedBasePath : `${normalizedBasePath}/sql`;
+    } else {
+      url.pathname = normalizedBasePath;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+};
+
+const resolveToriiSqlBaseUrl = (c: Context): string | null => {
+  const querySqlBase = c.req.query("toriiSqlBaseUrl");
+  const queryBase = c.req.query("toriiBaseUrl");
+
+  const normalizedFromQuery =
+    normalizeToriiBaseUrl(querySqlBase, false) ?? normalizeToriiBaseUrl(queryBase, true);
+
+  if (normalizedFromQuery) {
+    return normalizedFromQuery;
+  }
+
+  return normalizeToriiBaseUrl(process.env.TORII_SQL_BASE_URL, false);
+};
+
+export const cacheRoutes = new Hono<AppEnv>();
+
+cacheRoutes.get("/leaderboard", async (c) => {
+  const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
+  if (!toriiBaseUrl) {
+    return c.json(
+      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
+      400,
+    );
+  }
+
+  const limitRaw = c.req.query("limit");
+  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : leaderboardLimitDefault;
+  const limit = limitParsed <= 0 ? 0 : clampNumber(limitParsed, 1, leaderboardLimitMax);
+  const cacheKey = limit <= 0 ? `${toriiBaseUrl}|all` : `${toriiBaseUrl}|limit:${limit}`;
+
+  try {
+    const result = await getCachedValue({
+      cache: leaderboardCache,
+      inFlight: leaderboardInFlight,
+      key: cacheKey,
+      ttlMs: leaderboardTtlMs,
+      staleMs: leaderboardStaleMs,
+      maxEntries: leaderboardMaxEntries,
+      fetcher: async () => {
+        const leaderboardQuery = buildLeaderboardQuery(limit <= 0 ? undefined : limit);
+        const [registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows] =
+          await Promise.all([
+            fetchToriiRows<unknown>(toriiBaseUrl, leaderboardQuery, "leaderboard"),
+            fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_SHAREHOLDERS_QUERY, "hyperstructure shareholders"),
+            fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY, "hyperstructure multipliers"),
+            fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY, "hyperstructure config"),
+          ]);
+
+        return {
+          registeredRows,
+          hyperstructureShareholderRows,
+          hyperstructureRows,
+          hyperstructureConfigRow: hyperstructureConfigRows[0],
+        };
+      },
+    });
+
+    c.header("x-cache", result.status);
+    return c.json(result.value);
+  } catch (error) {
+    console.error("Failed to fetch leaderboard cache", error);
+    return c.json({ error: "Failed to fetch leaderboard cache." }, 500);
+  }
+});
+
+cacheRoutes.get("/story-events", async (c) => {
+  const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
+  if (!toriiBaseUrl) {
+    return c.json(
+      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
+      400,
+    );
+  }
+
+  const limitRaw = c.req.query("limit");
+  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : storyEventsLimitDefault;
+  if (limitParsed <= 0) {
+    c.header("x-cache", "hit");
+    return c.json([]);
+  }
+
+  const limit = clampNumber(limitParsed, 1, storyEventsLimitMax);
+  const offsetRaw = c.req.query("offset");
+  const offsetParsed = offsetRaw ? Number.parseInt(offsetRaw, 10) : 0;
+  const offset = clampNumber(offsetParsed, 0, Number.MAX_SAFE_INTEGER);
+  const cacheKey = `${toriiBaseUrl}|limit:${limit}|offset:${offset}`;
+
+  try {
+    const result = await getCachedValue({
+      cache: storyEventsCache,
+      inFlight: storyEventsInFlight,
+      key: cacheKey,
+      ttlMs: storyEventsTtlMs,
+      staleMs: storyEventsStaleMs,
+      maxEntries: storyEventsMaxEntries,
+      fetcher: async () => {
+        const query = buildStoryEventsQuery(limit, offset);
+        return await fetchToriiRows<unknown>(toriiBaseUrl, query, "story events");
+      },
+    });
+
+    c.header("x-cache", result.status);
+    return c.json(result.value);
+  } catch (error) {
+    console.error("Failed to fetch story events cache", error);
+    return c.json({ error: "Failed to fetch story events cache." }, 500);
+  }
+});
+
+export default cacheRoutes;

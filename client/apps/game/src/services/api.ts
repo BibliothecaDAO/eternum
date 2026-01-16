@@ -7,11 +7,13 @@ let currentBaseUrl = (() => {
   return (active?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII) + "/sql";
 })();
 
-export let sqlApi = new SqlApi(currentBaseUrl);
+const cacheBaseUrl = env.VITE_PUBLIC_REALTIME_URL;
+
+export let sqlApi = new SqlApi(currentBaseUrl, cacheBaseUrl);
 
 export const setSqlApiBaseUrl = (baseUrl: string) => {
   currentBaseUrl = baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`;
-  sqlApi = new SqlApi(currentBaseUrl);
+  sqlApi = new SqlApi(currentBaseUrl, cacheBaseUrl);
 };
 
 export const getSqlApiBaseUrl = () => currentBaseUrl;

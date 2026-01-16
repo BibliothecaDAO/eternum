@@ -47,7 +47,7 @@ const MarketCard = memo(function MarketCard({
   );
 
   return (
-    <Card className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/60 p-3 transition hover:border-gold/60">
+    <Card className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/20 p-3 transition hover:border-gold/60">
       <CardHeader className="flex items-start justify-between gap-3 px-0">
         <CardTitle className="flex-1">
           {isLinkable ? (

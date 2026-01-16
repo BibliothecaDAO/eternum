@@ -12,16 +12,13 @@ interface LandingLayoutProps {
 }
 
 const SECTIONS = [
-  { label: "Overview", path: "/" },
-  { label: "Cosmetics", path: "/cosmetics" },
+  { label: "Game", path: "/" },
+  // { label: "Cosmetics", path: "/cosmetics" },
   // { label: "Account", path: "/account" },
   { label: "Player", path: "/player" },
   { label: "Markets", path: "/markets" },
   { label: "Leaderboard", path: "/leaderboard" },
 ];
-
-// Served from client/public/images/landing/wooden-panel.png
-const LANDING_NAV_PANEL_IMAGE = "/images/landing/wooden-panel.png";
 
 export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayoutProps) => {
   const location = useLocation();
@@ -169,7 +166,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
         {/* Global modal container for landing routes */}
         <LandingModalHost />
         <header className="flex flex-col gap-6 px-6 pt-0 lg:px-10">
-          <nav aria-label="Landing sections" className="flex justify-center">
+          <nav aria-label="Landing sections" className="flex justify-center uppercase font-serif">
             <div className="relative flex w-full max-w-[720px] justify-center sm:px-4">
               <img
                 alt=""
