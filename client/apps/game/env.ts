@@ -101,6 +101,13 @@ const envSchema = z.object({
     .optional()
     .default("false"),
 
+  // Chest opening feature flag
+  VITE_PUBLIC_CHEST_OPENING_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
+
   // PostHog
   VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
   VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
