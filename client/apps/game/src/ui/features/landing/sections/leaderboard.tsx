@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 
 import { Download } from "lucide-react";
 
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
-import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 
 import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
@@ -576,17 +576,17 @@ export const LandingLeaderboard = () => {
         {[0, 1, 2].map((item) => (
           <div
             key={item}
-            className="h-36 animate-pulse rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/30 to-black/70"
+            className="h-36 animate-pulse rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/30 to-black/70"
           />
         ))}
       </div>
-      <div className="h-80 animate-pulse rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/30 to-black/70" />
+      <div className="h-80 animate-pulse rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/30 to-black/70" />
     </div>
   );
   const renderScoreToBeatContent = () => {
     if (!showScoreToBeatSection) {
       return (
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
           Score to beat tracking isn't configured yet. Check back soon.
         </div>
       );
@@ -844,7 +844,7 @@ export const LandingLeaderboard = () => {
 
     if (entries.length === 0) {
       return (
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
           No ranked players yet. Check back soon once battles begin.
         </div>
       );
@@ -852,7 +852,7 @@ export const LandingLeaderboard = () => {
 
     if (isFiltering && filteredEntries.length === 0) {
       return (
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
           No players match "{searchQuery.trim()}".
         </div>
       );
@@ -862,13 +862,13 @@ export const LandingLeaderboard = () => {
 
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/70 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 rounded-3xl border border-gold/20 bg-gold/5 px-4 py-3 text-xs text-gold/70 sm:flex-row sm:items-center sm:justify-between">
           <span className="tracking-wide">Download the current view (filters included).</span>
           <button
             type="button"
             onClick={handleDownloadLeaderboardData}
             disabled={filteredEntries.length === 0}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:border-gold/50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gold/30 bg-gold/10 px-3 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             aria-label="Download current leaderboard"
           >
             <Download className="h-4 w-4" aria-hidden="true" />
@@ -895,51 +895,51 @@ export const LandingLeaderboard = () => {
                       aria-controls={panelId}
                       onClick={handleToggle}
                       onKeyDown={handleCardKeyDown}
-                      className={`group relative flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 p-6 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold/60 ${
+                      className={`group relative flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/80 p-6 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold/60 ${
                         podiumStyles[index] ?? podiumStyles[2]
                       } ${isExpanded ? "ring-1 ring-gold/50" : ""}`}
                     >
-                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
+                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gold/60">
                         <span>Rank</span>
                         <span className="text-2xl font-semibold text-gold">#{entry.rank}</span>
                       </div>
 
                       <div className="mt-4 flex items-center gap-3">
                         <img
-                          className="h-12 w-12 rounded-full border border-white/20 object-cover"
+                          className="h-12 w-12 rounded-full border border-gold/20 object-cover"
                           src={avatarUrl}
                           alt={`${entry.displayName ?? addressLabel} avatar`}
                         />
                         <div className="space-y-1">
-                          <p className="text-lg font-semibold text-white" title={entry.displayName ?? addressLabel}>
+                          <p className="text-lg font-semibold text-gold" title={entry.displayName ?? addressLabel}>
                             {entry.displayName ?? addressLabel}
                           </p>
-                          <p className="text-xs text-white/60" title={entry.address}>
+                          <p className="text-xs text-gold/60" title={entry.address}>
                             {entry.displayName ? addressLabel : entry.address}
                           </p>
                         </div>
                       </div>
 
                       <div className="mt-4 space-y-1">
-                        <p className="text-3xl font-bold text-white">{formatPoints(entry.points)}</p>
-                        <p className="text-xs text-white/60">{currencyIntlFormat(entry.points, 1)} pts</p>
+                        <p className="text-3xl font-bold text-gold">{formatPoints(entry.points)}</p>
+                        <p className="text-xs text-gold/60">{currencyIntlFormat(entry.points, 1)} pts</p>
                       </div>
 
-                      <div className="mt-5 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
+                      <div className="mt-5 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gold/60">
                         <span>Status</span>
                         <span
                           className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                            entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/70"
+                            entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-gold/10 text-gold/70"
                           }`}
                         >
                           {entry.prizeClaimed ? "Prize claimed" : "Unclaimed"}
                         </span>
                       </div>
 
-                      <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.35em] text-white/50">
+                      <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.35em] text-gold/50">
                         <span>{isExpanded ? "Hide activity" : "View activity"}</span>
                         <svg
-                          className={`h-3.5 w-3.5 text-white/60 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          className={`h-3.5 w-3.5 text-gold/60 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                           viewBox="0 0 16 16"
                           fill="none"
                           aria-hidden
@@ -961,7 +961,7 @@ export const LandingLeaderboard = () => {
             {expandedPodiumEntry ? (
               <div
                 id={getActivityPanelId(expandedPodiumEntry.address)}
-                className="rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white/80 shadow-[0_15px_35px_-25px_rgba(10,12,30,0.9)]"
+                className="rounded-3xl border border-gold/20 bg-black/60 px-4 py-3 text-sm text-gold/80 shadow-[0_15px_35px_-25px_rgba(10,12,30,0.9)]"
               >
                 <PlayerActivityBreakdown entry={expandedPodiumEntry} />
               </div>
@@ -969,11 +969,11 @@ export const LandingLeaderboard = () => {
           </div>
         ) : null}
         {remainingEntries.length > 0 ? (
-          <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 shadow-[0_25px_50px_-25px_rgba(10,12,30,0.75)] backdrop-blur-sm">
+          <div className="overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/80 shadow-[0_25px_50px_-25px_rgba(10,12,30,0.75)] backdrop-blur-sm">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/5 text-left">
+              <table className="min-w-full divide-y divide-gold/10 text-left">
                 <thead>
-                  <tr className="text-xs uppercase tracking-wide text-white/60">
+                  <tr className="text-xs uppercase tracking-wide text-gold/60">
                     <th scope="col" className="px-4 py-3 font-medium">
                       Rank
                     </th>
@@ -988,7 +988,7 @@ export const LandingLeaderboard = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-sm">
+                <tbody className="divide-y divide-gold/10 text-sm">
                   {remainingEntries.map((entry) => {
                     const addressLabel = displayAddress(entry.address);
                     const avatarUrl = getEntryAvatarUrl(entry);
@@ -1001,7 +1001,7 @@ export const LandingLeaderboard = () => {
                     return (
                       <Fragment key={entry.address}>
                         <tr
-                          className={`transition-colors hover:bg-white/10 ${isExpanded ? "bg-white/10" : ""}`}
+                          className={`transition-colors hover:bg-gold/10 ${isExpanded ? "bg-gold/10" : ""}`}
                           role="button"
                           tabIndex={0}
                           aria-expanded={isExpanded}
@@ -1009,40 +1009,38 @@ export const LandingLeaderboard = () => {
                           onClick={handleToggle}
                           onKeyDown={handleRowKeyDown}
                         >
-                          <td className="px-4 py-3 text-white/70">#{entry.rank}</td>
+                          <td className="px-4 py-3 text-gold/70">#{entry.rank}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <img
-                                className="h-9 w-9 rounded-full border border-white/15 object-cover"
+                                className="h-9 w-9 rounded-full border border-gold/20 object-cover"
                                 src={avatarUrl}
                                 alt={`${entry.displayName ?? addressLabel} avatar`}
                               />
                               <div className="flex flex-col">
-                                <span className="font-medium text-white" title={entry.displayName ?? addressLabel}>
+                                <span className="font-medium text-gold" title={entry.displayName ?? addressLabel}>
                                   {entry.displayName ?? addressLabel}
                                 </span>
-                                <span className="text-xs text-white/50" title={entry.address}>
+                                <span className="text-xs text-gold/50" title={entry.address}>
                                   {entry.displayName ? addressLabel : entry.address}
                                 </span>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-right text-white">
+                          <td className="px-4 py-3 text-right text-gold">
                             <span className="font-semibold">{formatPoints(entry.points)}</span>
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="ml-auto flex max-w-full items-center justify-end gap-2">
                               <span
                                 className={`inline-flex items-center justify-end rounded-full px-2.5 py-1 text-xs font-medium ${
-                                  entry.prizeClaimed
-                                    ? "bg-emerald-500/15 text-emerald-300"
-                                    : "bg-white/10 text-white/60"
+                                  entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-gold/10 text-gold/60"
                                 }`}
                               >
                                 {entry.prizeClaimed ? "Prize claimed" : "In play"}
                               </span>
                               <svg
-                                className={`h-3 w-3 text-white/50 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                className={`h-3 w-3 text-gold/50 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                                 viewBox="0 0 16 16"
                                 fill="none"
                                 aria-hidden
@@ -1078,17 +1076,22 @@ export const LandingLeaderboard = () => {
   };
 
   return (
-    <section className="relative h-[70vh] w-full max-w-5xl space-y-8 overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl md:max-h-[80vh]">
+    <section className="relative h-[90vh] w-full max-w-5xl space-y-8 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-gold shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl md:max-h-[80vh]">
       <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-none">
+          {error ? (
+            <span className="rounded-full bg-red-500/10 px-3 py-1 text-xxs font-medium text-red-300" role="alert">
+              {error}
+            </span>
+          ) : null}
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <div className="w-full sm:w-72">
               <label htmlFor="landing-leaderboard-search" className="sr-only">
                 Search players or addresses
               </label>
-              <div className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 shadow-[0_16px_40px_-25px_rgba(12,10,35,0.85)] transition focus-within:border-gold/60 focus-within:text-white focus-within:shadow-[0_20px_50px_-20px_rgba(255,215,128,0.45)]">
+              <div className="group flex items-center gap-3 rounded-2xl border border-gold/20 bg-gold/5 px-4 py-2 text-sm text-gold/70 shadow-[0_16px_40px_-25px_rgba(12,10,35,0.85)] transition focus-within:border-gold/60 focus-within:text-gold focus-within:shadow-[0_20px_50px_-20px_rgba(255,215,128,0.45)]">
                 <svg
-                  className="h-4 w-4 shrink-0 text-white/50 transition group-focus-within:text-gold"
+                  className="h-4 w-4 shrink-0 text-gold/50 transition group-focus-within:text-gold"
                   viewBox="0 0 20 20"
                   fill="none"
                   aria-hidden
@@ -1115,7 +1118,7 @@ export const LandingLeaderboard = () => {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search players or addresses"
-                  className="w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
+                  className="w-full bg-transparent text-sm text-gold placeholder:text-gold/40 focus:outline-none"
                   spellCheck={false}
                   autoComplete="off"
                 />
@@ -1123,7 +1126,7 @@ export const LandingLeaderboard = () => {
                   <button
                     type="button"
                     onClick={handleClearSearch}
-                    className="rounded-full p-1 text-white/50 transition hover:bg-white/10 hover:text-white"
+                    className="rounded-full p-1 text-gold/50 transition hover:bg-gold/10 hover:text-gold"
                     aria-label="Clear search"
                   >
                     <svg className="h-3.5 w-3.5" viewBox="0 0 12 12" fill="none" aria-hidden>
@@ -1139,28 +1142,24 @@ export const LandingLeaderboard = () => {
                 ) : null}
               </div>
             </div>
+
             <div className="flex flex-col gap-2 self-end sm:flex-row sm:items-center sm:gap-3 sm:self-auto">
               <button
                 type="button"
                 onClick={handleViewScoreCard}
-                className="inline-flex w-full items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:border-gold/50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 sm:w-auto"
               >
                 Check your score card
               </button>
               <div className="flex items-center justify-end gap-3">
-                {error ? (
-                  <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300" role="alert">
-                    {error}
-                  </span>
-                ) : null}
                 <div className="flex flex-col items-end gap-1 text-right">
                   <div className="flex items-center gap-2">
                     {isFetching ? (
-                      <span className="text-xs text-white/70" aria-live="polite">
+                      <span className="text-xs text-gold/70" aria-live="polite">
                         Refreshing…
                       </span>
                     ) : isCooldownActive ? (
-                      <span className="text-xs text-white/50" aria-live="polite">
+                      <span className="text-xs text-gold/50" aria-live="polite">
                         Wait {refreshSecondsLeft}s
                       </span>
                     ) : null}
@@ -1172,9 +1171,7 @@ export const LandingLeaderboard = () => {
                       aria-label="Refresh leaderboard"
                     />
                   </div>
-                  <span className="text-[11px] uppercase tracking-[0.28em] text-white/40">
-                    Last updated {lastUpdatedLabel}
-                  </span>
+                  <span className="text-[11px] uppercase  text-gold/40">Last updated {lastUpdatedLabel}</span>
                 </div>
               </div>
             </div>
@@ -1187,7 +1184,7 @@ export const LandingLeaderboard = () => {
           role="tablist"
           aria-label="Leaderboard sections"
           aria-orientation="horizontal"
-          className="flex gap-2 rounded-3xl border border-white/10 bg-white/5 p-1 text-sm font-semibold"
+          className="flex gap-2 rounded-3xl border border-gold/20 bg-gold/5 p-1 text-sm font-semibold"
         >
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -1203,8 +1200,8 @@ export const LandingLeaderboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 rounded-2xl px-4 py-2 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 ${
                   isActive
-                    ? "bg-white text-black shadow-[0_20px_45px_-25px_rgba(255,255,255,0.85)]"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                    ? "bg-gold text-black shadow-[0_20px_45px_-25px_rgba(255,215,128,0.85)]"
+                    : "text-gold/70 hover:bg-gold/10 hover:text-gold"
                 }`}
               >
                 {tab.label}
@@ -1238,8 +1235,8 @@ const PlayerActivityBreakdown = ({ entry }: PlayerActivityBreakdownProps) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-        <span className="font-semibold text-white">{formatPoints(entry.points)} pts</span>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-gold/60">
+        <span className="font-semibold text-gold">{formatPoints(entry.points)} pts</span>
         <span>Total points</span>
       </div>
       {hasBreakdown ? (
@@ -1247,21 +1244,21 @@ const PlayerActivityBreakdown = ({ entry }: PlayerActivityBreakdownProps) => {
           {breakdown.map((item) => (
             <div
               key={item.id}
-              className="rounded-2xl border border-white/10 bg-black/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+              className="rounded-2xl border border-gold/20 bg-black/40 p-3 shadow-[inset_0_1px_0_rgba(255,215,128,0.04)]"
             >
-              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-white/60">
+              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-gold/60">
                 <span>{item.label}</span>
-                {item.pointsLabel ? <span className="text-sm font-semibold text-white">{item.pointsLabel}</span> : null}
+                {item.pointsLabel ? <span className="text-sm font-semibold text-gold">{item.pointsLabel}</span> : null}
               </div>
-              {item.countLabel ? <p className="mt-1 text-sm text-white/80">{item.countLabel}</p> : null}
+              {item.countLabel ? <p className="mt-1 text-sm text-gold/80">{item.countLabel}</p> : null}
               {item.helper ? (
-                <p className="text-[10px] uppercase tracking-[0.35em] text-white/35">{item.helper}</p>
+                <p className="text-[10px] uppercase tracking-[0.35em] text-gold/35">{item.helper}</p>
               ) : null}
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-white/20 bg-black/30 px-4 py-3 text-xs text-white/70">
+        <div className="rounded-2xl border border-dashed border-gold/20 bg-black/30 px-4 py-3 text-xs text-gold/70">
           Blitz activity for this player is still syncing.
         </div>
       )}
