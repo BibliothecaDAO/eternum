@@ -483,12 +483,32 @@ WITH limited_active_orders AS (
     SELECT COUNT(*) as total_count FROM final_tokens
   `,
   COLLECTIBLE_CLAIMED: `
-    SELECT *
-    FROM [events]
-    WHERE keys LIKE '0x006d9857ff29ce02c8a34db3a4387b1438bd738b0b4c17679553432d8fc11ecb/{contractAddress}/%{playerAddress}/'
-      AND created_at > {minTimestamp}
-    ORDER BY created_at DESC
-    limit 3
+    WITH recent_transfers AS (
+      SELECT 
+        tt.token_id,
+        tt.executed_at,
+        tt.contract_address,
+        tt.from_address,
+        tt.to_address
+      FROM token_transfers tt
+      WHERE tt.contract_address = '{contractAddress}'
+        AND tt.from_address = '0x0000000000000000000000000000000000000000000000000000000000000000'
+        AND tt.to_address = '{playerAddress}'
+        AND tt.executed_at > {minTimestamp}
+      ORDER BY tt.executed_at DESC
+      LIMIT 10
+    )
+    SELECT 
+      rt.token_id,
+      rt.executed_at,
+      rt.contract_address,
+      rt.from_address,
+      rt.to_address,
+      t.metadata
+    FROM recent_transfers rt
+    LEFT JOIN tokens t ON t.token_id = rt.token_id 
+      AND t.contract_address = rt.contract_address
+    ORDER BY rt.executed_at DESC
   `,
   SINGLE_COLLECTION_TOKEN: `
     /* Fetch a single token by ID with listing status and current owner */

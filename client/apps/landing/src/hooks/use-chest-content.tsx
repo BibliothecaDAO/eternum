@@ -13,29 +13,72 @@ const normalizeAttributesRaw = (raw: string): string => {
   return "0x" + (hex || "0");
 };
 
-// Parse CollectibleClaimed event data to extract chest assets
-const parseCollectibleClaimedData = (eventData: any[]): ChestAsset[] => {
+// Extract attributes_raw from token metadata
+const extractAttributesRawFromMetadata = (metadata: string | null): string | null => {
+  if (!metadata) return null;
+  
+  try {
+    const metadataObj = typeof metadata === "string" ? JSON.parse(metadata) : metadata;
+    if (metadataObj && metadataObj.attributes && Array.isArray(metadataObj.attributes)) {
+      // Look for an attribute with trait_type "attributes_raw" or similar
+      const attributesRawTrait = metadataObj.attributes.find(
+        (attr: any) => attr.trait_type === "attributes_raw" || attr.trait_type === "Attributes Raw"
+      );
+      if (attributesRawTrait) {
+        return attributesRawTrait.value;
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to parse token metadata:", error);
+  }
+  
+  return null;
+};
+
+// Parse CollectibleClaimed token transfer data to extract chest assets
+// Groups items by timestamp to identify items from the same chest opening
+// Returns items from the most recent chest opening
+const parseCollectibleClaimedData = (tokenData: any[]): ChestAsset[] => {
+  if (!tokenData.length) return [];
+
+  // Group tokens by executed_at timestamp (chest opening events)
+  const tokensByTimestamp = new Map<string, any[]>();
+  
+  tokenData.forEach((token) => {
+    const timestamp = token.executed_at;
+    if (!tokensByTimestamp.has(timestamp)) {
+      tokensByTimestamp.set(timestamp, []);
+    }
+    tokensByTimestamp.get(timestamp)!.push(token);
+  });
+
+  // Get the most recent timestamp (latest chest opening)
+  const timestamps = Array.from(tokensByTimestamp.keys()).sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+  
+  if (timestamps.length === 0) return [];
+
+  // Get tokens from the most recent chest opening
+  const latestTokens = tokensByTimestamp.get(timestamps[0]) || [];
   const parsedAssets: ChestAsset[] = [];
 
-  eventData.forEach((event) => {
-    if (event.keys) {
-      // Split keys by "/" to get individual values
-      const keyValues = event.keys.split("/");
+  latestTokens.forEach((token) => {
+    // Extract attributes_raw from metadata
+    const attributesRaw = extractAttributesRawFromMetadata(token.metadata);
+    
+    if (attributesRaw) {
+      const normalizedAttributesRaw = normalizeAttributesRaw(attributesRaw);
 
-      // The 3rd value (index 2) is the attributes_raw
-      if (keyValues.length >= 3) {
-        const eventAttributesRaw = normalizeAttributesRaw(keyValues[2]);
+      // Find matching cosmetic by normalized attributesRaw
+      const matchingCosmetic = COSMETIC_NAMES.find(
+        (cosmetic) => normalizeAttributesRaw(cosmetic.attributesRaw) === normalizedAttributesRaw,
+      );
 
-        // Find matching cosmetic by normalized attributesRaw
-        const matchingCosmetic = COSMETIC_NAMES.find(
-          (cosmetic) => normalizeAttributesRaw(cosmetic.attributesRaw) === eventAttributesRaw,
-        );
-
-        if (matchingCosmetic) {
-          const asset = getChestAssetFromAttributesRaw(matchingCosmetic.attributesRaw);
-          if (asset) {
-            parsedAssets.push(asset);
-          }
+      if (matchingCosmetic) {
+        const asset = getChestAssetFromAttributesRaw(matchingCosmetic.attributesRaw);
+        if (asset) {
+          parsedAssets.push(asset);
         }
       }
     }

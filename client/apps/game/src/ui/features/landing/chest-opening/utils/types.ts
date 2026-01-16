@@ -40,9 +40,10 @@ export interface TokenBalanceWithToken {
 }
 
 export interface CollectibleClaimed {
-  token_address: string;
-  attributes_raw: string;
-  token_recipient: string;
-  timestamp: number;
-  keys?: string;
+  token_id: string;
+  executed_at: string;
+  contract_address: string;
+  from_address: string;
+  to_address: string;
+  metadata: string | null;
 }

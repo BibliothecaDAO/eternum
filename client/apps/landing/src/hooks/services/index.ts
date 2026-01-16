@@ -1113,10 +1113,12 @@ export async function fetchSeasonDay(): Promise<SeasonDay> {
 }
 
 interface CollectibleClaimed {
-  token_address: string;
-  attributes_raw: string;
-  token_recipient: string;
-  timestamp: number;
+  token_id: string;
+  executed_at: string;
+  contract_address: string;
+  from_address: string;
+  to_address: string;
+  metadata: string | null;
 }
 
 /**
@@ -1128,12 +1130,9 @@ export async function fetchCollectibleClaimed(
   playerAddress: string,
   minTimestamp: number = 0,
 ): Promise<CollectibleClaimed[]> {
-  // Convert Unix timestamp to ISO string format for SQL datetime comparison
-  const formattedTimestamp = new Date(minTimestamp * 1000).toISOString().replace("T", " ").replace("Z", "");
-
   const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{contractAddress}", padAddress(contractAddress))
     .replace("{playerAddress}", padAddress(playerAddress))
-    .replace("{minTimestamp}", `'${formattedTimestamp}'`);
+    .replace("{minTimestamp}", minTimestamp.toString());
 
   return await fetchSQL<CollectibleClaimed[]>(query);
 }
