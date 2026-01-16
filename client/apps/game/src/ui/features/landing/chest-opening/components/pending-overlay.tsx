@@ -66,9 +66,9 @@ export function PendingOverlay({
     }
   }, [txHash]);
 
-  // Main entrance/exit animation
+  // Main entrance/exit animation - simplified for reliability
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !active) return;
 
     const container = containerRef.current;
 
@@ -78,21 +78,12 @@ export function PendingOverlay({
       timelineRef.current = null;
     }
 
-    if (active) {
-      // Set initial state
-      gsap.set(container, { opacity: 0, scale: 0.95 });
+    // Create entrance timeline
+    const tl = gsap.timeline();
+    timelineRef.current = tl;
 
-      // Create entrance timeline
-      const tl = gsap.timeline();
-      timelineRef.current = tl;
-
-      tl.to(container, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.4,
-        ease: "power2.out",
-      });
-    }
+    // Animate from current state to visible
+    tl.fromTo(container, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" });
 
     return () => {
       if (timelineRef.current) {
@@ -144,6 +135,7 @@ export function PendingOverlay({
         <div
           ref={containerRef}
           className="relative flex flex-col items-center justify-center text-center max-w-md mx-auto"
+          style={{ opacity: 1 }}
         >
           {/* Animated glow background */}
           <div

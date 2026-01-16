@@ -1,10 +1,10 @@
 import Button from "@/ui/design-system/atoms/button";
-import { MergedNftData } from "../utils/types";
 import { ArrowUpDown, ChevronDown, Filter, Package, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { ChestEpoch } from "../hooks/use-chest-opening-flow";
+import { MergedNftData } from "../utils/types";
 import { ChestCard } from "./chest-card";
 import { ChestStageContainer } from "./chest-stage-container";
-import { ChestEpoch } from "../hooks/use-chest-opening-flow";
 
 type SortMode = "id-asc" | "id-desc";
 
@@ -131,6 +131,7 @@ export function ChestSelectionModal({
   isLoading = false,
   selectedChestId = null,
 }: ChestSelectionModalProps) {
+  console.log("chest selection modal");
   const gridRef = useRef<HTMLDivElement>(null);
   const [sortMode, setSortMode] = useState<SortMode>("id-desc");
   const [filters, setFilters] = useState<Record<string, string | null>>({});

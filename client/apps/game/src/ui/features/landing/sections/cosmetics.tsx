@@ -35,7 +35,7 @@ export const LandingCosmetics = () => {
   const [selectedId, setSelectedId] = useState<string | null>(COSMETIC_ITEMS[0]?.id ?? null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(0);
-  const [openingChestId, setOpeningChestId] = useState<string | null>(null);
+  const [openingChest, setOpeningChest] = useState<{ id: string; epoch: ChestEpoch } | null>(null);
 
   // Chest opening state
   const { showLootChestOpening, setShowLootChestOpening } = useLootChestOpeningStore();
@@ -143,8 +143,8 @@ export const LandingCosmetics = () => {
 
   // Handle opening a chest from the gallery
   const handleOpenChest = useCallback(
-    (chestId: string, _epoch: ChestEpoch) => {
-      setOpeningChestId(chestId);
+    (chestId: string, epoch: ChestEpoch) => {
+      setOpeningChest({ id: chestId, epoch });
       setShowLootChestOpening(true);
     },
     [setShowLootChestOpening],
@@ -153,7 +153,7 @@ export const LandingCosmetics = () => {
   // Handle closing chest experience
   const handleCloseChestExperience = useCallback(() => {
     setShowLootChestOpening(false);
-    setOpeningChestId(null);
+    setOpeningChest(null);
     refetchChests();
   }, [setShowLootChestOpening, refetchChests]);
 
@@ -225,7 +225,7 @@ export const LandingCosmetics = () => {
                   chests={ownedChests}
                   onOpenChest={handleOpenChest}
                   isLoading={isLoadingChests}
-                  openingChestId={openingChestId}
+                  openingChestId={openingChest?.id}
                 />
               </div>
             </Tabs.Panel>
@@ -241,7 +241,13 @@ export const LandingCosmetics = () => {
       </section>
 
       {/* Chest Opening Experience Modal */}
-      {showLootChestOpening && <ChestOpeningExperience onClose={handleCloseChestExperience} />}
+      {showLootChestOpening && (
+        <ChestOpeningExperience
+          onClose={handleCloseChestExperience}
+          initialChestId={openingChest?.id}
+          initialEpoch={openingChest?.epoch}
+        />
+      )}
     </>
   );
 };

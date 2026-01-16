@@ -75,6 +75,8 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
         "@contracts": path.resolve(__dirname, "../../../contracts/utils/utils"),
         "@manifests": path.resolve(__dirname, "../../../contracts/game"),
         "@pm": path.resolve(__dirname, "./src/pm"),
+        // Videos from landing app for chest opening
+        "@videos": path.resolve(__dirname, "../landing/src/assets/videos"),
       },
     },
     build: {

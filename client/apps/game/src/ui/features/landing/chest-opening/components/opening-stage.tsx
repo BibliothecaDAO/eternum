@@ -2,22 +2,31 @@ import gsap from "gsap";
 import { useCallback, useEffect, useRef } from "react";
 import { ChestStageContainer } from "./chest-stage-container";
 
-// Video paths - using public folder structure
-const getVideoPath = (epoch: string, rarity: string) =>
-  `/videos/chest-opening/${epoch}/${rarity}.mp4`;
+// Video imports - from landing app's assets
+// Eternum Rewards S1
+import chestOpeningEternumRewardsS1Common from "@videos/chest-opening/eternum-rewards-s1/common.mp4";
+import chestOpeningEternumRewardsS1Epic from "@videos/chest-opening/eternum-rewards-s1/epic.mp4";
+import chestOpeningEternumRewardsS1Legendary from "@videos/chest-opening/eternum-rewards-s1/legendary.mp4";
+import chestOpeningEternumRewardsS1Rare from "@videos/chest-opening/eternum-rewards-s1/rare.mp4";
+import chestOpeningEternumRewardsS1Uncommon from "@videos/chest-opening/eternum-rewards-s1/uncommon.mp4";
+
+// Blitz Rewards S0
+import chestOpeningBlitzRewardsS0Epic from "@videos/chest-opening/blitz-rewards-s0/epic.mp4";
+import chestOpeningBlitzRewardsS0Legendary from "@videos/chest-opening/blitz-rewards-s0/legendary.mp4";
+import chestOpeningBlitzRewardsS0Rare from "@videos/chest-opening/blitz-rewards-s0/rare.mp4";
 
 const chestOpeningVideoEternumRewardsS1: Record<string, string> = {
-  common: getVideoPath("eternum-rewards-s1", "common"),
-  uncommon: getVideoPath("eternum-rewards-s1", "uncommon"),
-  rare: getVideoPath("eternum-rewards-s1", "rare"),
-  epic: getVideoPath("eternum-rewards-s1", "epic"),
-  legendary: getVideoPath("eternum-rewards-s1", "legendary"),
+  common: chestOpeningEternumRewardsS1Common,
+  uncommon: chestOpeningEternumRewardsS1Uncommon,
+  rare: chestOpeningEternumRewardsS1Rare,
+  epic: chestOpeningEternumRewardsS1Epic,
+  legendary: chestOpeningEternumRewardsS1Legendary,
 };
 
 const chestOpeningVideoBlitzRewardsS0: Record<string, string> = {
-  rare: getVideoPath("blitz-rewards-s0", "rare"),
-  epic: getVideoPath("blitz-rewards-s0", "epic"),
-  legendary: getVideoPath("blitz-rewards-s0", "legendary"),
+  rare: chestOpeningBlitzRewardsS0Rare,
+  epic: chestOpeningBlitzRewardsS0Epic,
+  legendary: chestOpeningBlitzRewardsS0Legendary,
 };
 
 // Map epoch to video collection

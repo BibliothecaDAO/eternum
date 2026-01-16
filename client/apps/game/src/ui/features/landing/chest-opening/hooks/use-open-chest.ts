@@ -1,15 +1,11 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getCosmeticsClaimAddress, getLootChestsAddress } from "@/utils/addresses";
-import { useAccount } from "@starknet-react/core";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { Call } from "starknet";
 
 interface UseOpenChestReturn {
-  openChest: (props: {
-    tokenId: bigint;
-    onSuccess?: () => void;
-    onError?: (error: Error) => void;
-  }) => void;
+  openChest: (props: { tokenId: bigint; onSuccess?: () => void; onError?: (error: Error) => void }) => void;
   isLoading: boolean;
 }
 
@@ -20,7 +16,10 @@ interface UseOpenChestReturn {
  */
 export function useOpenChest(): UseOpenChestReturn {
   const [isLoading, setIsLoading] = useState(false);
-  const { account } = useAccount();
+  // Use useAccountStore instead of useAccount - handles Cartridge controller properly
+  const account = useAccountStore((state) => state.account);
+
+  console.log("useOpenChest - account:", account?.address, account);
 
   const openChest = useCallback(
     async ({
@@ -42,8 +41,11 @@ export function useOpenChest(): UseOpenChestReturn {
       setIsLoading(true);
 
       try {
+        console.log("getting the info");
         const lootChestAddress = getLootChestsAddress();
         const claimAddress = getCosmeticsClaimAddress();
+
+        console.log({ lootChestAddress, claimAddress });
 
         if (!lootChestAddress || !claimAddress) {
           throw new Error("Contract addresses not configured");
