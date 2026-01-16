@@ -18,6 +18,7 @@ pub mod blitz_realm_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo::world::IWorldDispatcherTrait;
     use crate::alias::ID;
     
     use crate::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
@@ -493,6 +494,7 @@ pub mod blitz_realm_systems {
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(caller),
                             entity_id: Option::Some(structure_id),
                             tx_hash: starknet::get_tx_info().unbox().transaction_hash,

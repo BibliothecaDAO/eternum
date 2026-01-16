@@ -34,6 +34,7 @@ use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait, WorldStorage};
+    use dojo::world::IWorldDispatcherTrait;
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID, VELORDS_BURNER_ADDRESS};
     use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister};
     use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
@@ -230,6 +231,7 @@ use core::num::traits::zero::Zero;
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(registered_player),
                         entity_id: Option::Some(0),
                         tx_hash,
@@ -334,6 +336,7 @@ use core::num::traits::zero::Zero;
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(player),
                             entity_id: Option::Some(0),
                             tx_hash,
@@ -536,6 +539,7 @@ use core::num::traits::zero::Zero;
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(caller),
                             entity_id: Option::Some(0),
                             tx_hash: starknet::get_tx_info().unbox().transaction_hash,

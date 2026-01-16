@@ -156,6 +156,7 @@ pub mod troop_management_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(for_structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -208,6 +209,7 @@ pub mod troop_management_systems {
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(structure_owner),
                             entity_id: Option::Some(for_structure_id),
                             tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -294,6 +296,7 @@ pub mod troop_management_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -374,6 +377,7 @@ pub mod troop_management_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(to_explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -425,6 +429,7 @@ pub mod troop_management_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -570,6 +575,7 @@ pub mod troop_management_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(from_owner),
                         entity_id: Option::Some(from_explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -737,6 +743,7 @@ pub mod troop_management_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(from_owner),
                         entity_id: Option::Some(from_explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -888,6 +895,7 @@ pub mod troop_management_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(from_structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
