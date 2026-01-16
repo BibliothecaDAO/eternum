@@ -2042,6 +2042,7 @@ const eventsComponents = (world: World) => {
         return defineComponent(
           world,
           {
+            id: RecsType.Number,
             owner: RecsType.OptionalString,
             entity_id: RecsType.OptionalNumber,
             tx_hash: RecsType.String,
@@ -2052,7 +2053,7 @@ const eventsComponents = (world: World) => {
             metadata: {
               namespace: "s1_eternum",
               name: "StoryEvent",
-              types: ["Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
+              types: ["u32", "Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
               customTypes: ["Story"],
             },
           },
