@@ -9,7 +9,7 @@ import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { AlertCircle, Globe, Home } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { env } from "../../../../../../env";
 import {
@@ -21,7 +21,7 @@ import {
   RegistrationState,
 } from "../blitz/components";
 import { FactoryGamesList } from "../blitz/factory";
-import { GameState } from "../blitz/types";
+import { GameState, RegistrationStage } from "../blitz/types";
 import { SpectateButton } from "../spectate-button";
 import { useBlitzGameState, useEntryTokens, useSettlement } from "./hooks";
 import { downloadPaymasterActionsJson } from "./paymaster-actions";
@@ -43,6 +43,8 @@ export const BlitzOnboarding = () => {
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
   const addressNameKeyRef = useRef<string | null>(null);
   const [isDownloadingActions, setIsDownloadingActions] = useState(false);
+  const [registrationStage, setRegistrationStage] = useState<RegistrationStage>("idle");
+  const availableEntryTokenIdsRef = useRef<bigint[]>([]);
 
   // Custom hooks for state management
   const {
@@ -57,6 +59,11 @@ export const BlitzOnboarding = () => {
 
   const entryTokens = useEntryTokens(account);
   const settlement = useSettlement(account);
+
+  // Keep ref updated with latest available token IDs for polling
+  useEffect(() => {
+    availableEntryTokenIdsRef.current = entryTokens.availableEntryTokenIds;
+  }, [entryTokens.availableEntryTokenIds]);
 
   // Setup address name from controller
   useSetAddressName(setup, settlement.hasSettled ? account : null, connector);
@@ -98,33 +105,69 @@ export const BlitzOnboarding = () => {
     void getUsername();
   }, [account?.address, addressNameFelt, connector]);
 
-  // Registration handler
-  const handleRegister = async () => {
+  // Helper to wait for entry token to appear
+  const waitForEntryToken = useCallback(async (): Promise<bigint | null> => {
+    const maxAttempts = 30;
+    const pollInterval = 2000;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await entryTokens.loadAvailableEntryTokens();
+      // Use ref to get fresh value after state update
+      if (availableEntryTokenIdsRef.current.length > 0) {
+        return availableEntryTokenIdsRef.current[0];
+      }
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+    return null;
+  }, [entryTokens.loadAvailableEntryTokens]);
+
+  // Combined registration handler - obtain token (if needed) then register
+  const handleRegister = useCallback(async () => {
     if (!account?.address) return;
 
-    if (entryTokens.requiresEntryToken && blitzConfig) {
-      const tokenIdToUse =
-        entryTokens.selectedEntryTokenId ??
-        (entryTokens.availableEntryTokenIds.length > 0 ? entryTokens.availableEntryTokenIds[0] : null);
-      if (!tokenIdToUse) {
-        throw new Error("No entry token available. Obtain one before registering.");
+    try {
+      if (entryTokens.requiresEntryToken && blitzConfig) {
+        let tokenIdToUse: bigint | null = entryTokens.availableEntryTokenIds[0] ?? null;
+
+        // Step 1: Obtain entry token if we don't have one
+        if (!tokenIdToUse) {
+          setRegistrationStage("obtaining-token");
+          await entryTokens.obtainEntryToken();
+
+          // Step 2: Wait for the token to appear on-chain
+          setRegistrationStage("waiting-for-token");
+          const obtainedTokenId = await waitForEntryToken();
+
+          if (!obtainedTokenId) {
+            throw new Error("Failed to obtain entry token. Please try again.");
+          }
+          tokenIdToUse = obtainedTokenId;
+        }
+
+        // Step 3: Register with the token
+        setRegistrationStage("registering");
+        await blitz_realm_register({
+          signer: account,
+          name: addressNameFelt,
+          tokenId: Number(tokenIdToUse),
+          entryTokenAddress: toHexString(blitzConfig.entry_token_address),
+          lockId: ENTRY_TOKEN_LOCK_ID,
+        });
+
+        entryTokens.refetchEntryTokenBalance?.();
+        entryTokens.refetchFeeTokenBalance?.();
+      } else {
+        // No token required - just register
+        setRegistrationStage("registering");
+        await blitz_realm_register({ signer: account, name: addressNameFelt, tokenId: 0 });
       }
 
-      await blitz_realm_register({
-        signer: account,
-        name: addressNameFelt,
-        tokenId: Number(tokenIdToUse),
-        entryTokenAddress: toHexString(blitzConfig.entry_token_address),
-        lockId: ENTRY_TOKEN_LOCK_ID,
-      });
-
-      entryTokens.refetchEntryTokenBalance?.();
-      entryTokens.refetchFeeTokenBalance?.();
-      return;
+      setRegistrationStage("done");
+    } catch (error) {
+      console.error("Registration failed:", error);
+      setRegistrationStage("error");
     }
-
-    await blitz_realm_register({ signer: account, name: addressNameFelt, tokenId: 0 });
-  };
+  }, [account, addressNameFelt, blitzConfig, blitz_realm_register, entryTokens, waitForEntryToken]);
 
   const handleMakeHyperstructures = async () => {
     if (!account?.address) return;
@@ -256,21 +299,13 @@ export const BlitzOnboarding = () => {
       {/* Registration State */}
       {gameState === GameState.REGISTRATION && (
         <RegistrationState
-          entryTokenBalance={entryTokens.entryTokenBalance}
           registrationCount={registrationCount}
           registrationEndAt={registration_end_at}
           isRegistered={settlement.isRegistered}
           onRegister={handleRegister}
           requiresEntryToken={entryTokens.requiresEntryToken}
-          onObtainEntryToken={entryTokens.requiresEntryToken ? entryTokens.obtainEntryToken : undefined}
-          isObtainingEntryToken={entryTokens.entryTokenStatus === "minting"}
-          availableEntryTokenIds={entryTokens.availableEntryTokenIds}
-          entryTokenStatus={entryTokens.entryTokenStatus}
-          hasSufficientFeeBalance={entryTokens.hasSufficientFeeBalance}
-          isFeeBalanceLoading={entryTokens.isFeeBalanceLoading}
-          isLoadingEntryTokens={entryTokens.isLoadingEntryTokens}
+          registrationStage={registrationStage}
           feeAmount={entryTokens.feeAmount}
-          feeTokenBalance={entryTokens.feeTokenBalance}
           feeTokenSymbol={entryTokens.feeTokenSymbol}
         />
       )}
