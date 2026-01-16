@@ -32,11 +32,7 @@ export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
     : "";
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(item.id)}
-      className={`${baseClass} ${activeClass} ${equippedClass}`}
-    >
+    <button type="button" onClick={() => onSelect(item.id)} className={`${baseClass} ${activeClass} ${equippedClass}`}>
       <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black/40">
         {item.image ? (
           <img

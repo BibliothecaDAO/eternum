@@ -127,7 +127,6 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
               <p className="mt-2 text-xs text-gold/50">No on-chain attribute metadata available.</p>
             )}
           </div>
-
         </div>
       </footer>
     </section>

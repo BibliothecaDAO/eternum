@@ -164,7 +164,13 @@ export const LandingCosmetics = () => {
   return (
     <>
       <section className="w-full max-w-7xl h-[85vh] md:h-[80vh] overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-6 md:p-8 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
-        <Tabs variant="selection" selectedIndex={activeTab} onChange={setActiveTab} size="small" className="flex h-full flex-col">
+        <Tabs
+          variant="selection"
+          selectedIndex={activeTab}
+          onChange={setActiveTab}
+          size="small"
+          className="flex h-full flex-col"
+        >
           <Tabs.List className="mb-4 flex-shrink-0 max-w-md">
             <Tabs.Tab>Cosmetics</Tabs.Tab>
             <Tabs.Tab>Chests ({ownedChests.length})</Tabs.Tab>
@@ -207,16 +213,21 @@ export const LandingCosmetics = () => {
                         className="w-full rounded-2xl border border-gold/20 bg-gold/5 px-4 py-2 text-sm text-gold placeholder:text-gold/40 focus:border-gold/60 focus:outline-none focus:ring-0"
                       />
 
-                      {isError && (
-                        <p className="text-xs text-rose-300">Failed to load on-chain cosmetics.</p>
-                      )}
+                      {isError && <p className="text-xs text-rose-300">Failed to load on-chain cosmetics.</p>}
                     </div>
 
-                    <CosmeticGallery items={filteredItems} selectedId={selectedId} onSelect={(id) => setSelectedId(id)} />
+                    <CosmeticGallery
+                      items={filteredItems}
+                      selectedId={selectedId}
+                      onSelect={(id) => setSelectedId(id)}
+                    />
                   </div>
 
                   <aside className="relative flex h-full w-full flex-col overflow-y-auto rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-6 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)] backdrop-blur xl:w-1/2 xl:min-w-[26rem]">
-                    <div className="pointer-events-none absolute inset-0 rounded-2xl border border-gold/5" aria-hidden />
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-2xl border border-gold/5"
+                      aria-hidden
+                    />
                     <CosmeticShowcase item={selectedItem} />
                   </aside>
                 </div>

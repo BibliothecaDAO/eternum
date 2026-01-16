@@ -206,12 +206,7 @@ export function ChestOpeningExperience({ onClose, initialChestId, initialEpoch }
 
       {/* Opening Video Stage - only render when opening */}
       {flowState.state === "opening" && (
-        <OpeningStage
-          active={true}
-          videoSrc={videoSrc}
-          onComplete={handleVideoComplete}
-          onSkip={handleSkipVideo}
-        />
+        <OpeningStage active={true} videoSrc={videoSrc} onComplete={handleVideoComplete} onSkip={handleSkipVideo} />
       )}
 
       {/* Reveal Stage - only render when reveal/done and has assets */}

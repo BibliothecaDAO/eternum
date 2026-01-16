@@ -3,12 +3,7 @@ import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { fetchCollectibleClaimed } from "../services";
-import {
-  ChestAsset,
-  COSMETIC_NAMES,
-  getAllChestAssets,
-  getChestAssetFromAttributesRaw,
-} from "../utils/cosmetics";
+import { ChestAsset, COSMETIC_NAMES, getAllChestAssets, getChestAssetFromAttributesRaw } from "../utils/cosmetics";
 
 // Helper to normalize attributesRaw for comparison (remove leading zeros after 0x)
 const normalizeAttributesRaw = (raw: string): string => {
