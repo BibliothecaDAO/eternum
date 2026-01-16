@@ -1,5 +1,5 @@
 // Feature flags for chest opening
-export const CHEST_OPENING_ENABLED = true;
+export const CHEST_OPENING_ENABLED = false;
 
 export * from "./chest-card";
 export * from "./chest-opening-experience";
