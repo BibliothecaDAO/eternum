@@ -45,6 +45,7 @@ import {
 import {
   buildApiUrl,
   extractFirstOrNull,
+  fetchJsonWithErrorHandling,
   fetchWithErrorHandling,
   formatAddressForQuery,
   hexToBigInt,
@@ -76,8 +77,14 @@ type TileOptRow = {
   data: TileDataInput;
 };
 
+const buildCacheUrl = (baseUrl: string, path: string): URL => {
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return new URL(`${trimmed}${normalizedPath}`);
+};
+
 export class SqlApi {
-  constructor(private readonly baseUrl: string) {}
+  constructor(private readonly baseUrl: string, private readonly cacheBaseUrl?: string) {}
 
   /**
    * Fetches quest data by entity ID from the SQL database.
@@ -574,6 +581,22 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchStoryEvents(limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/story-events");
+        cacheUrl.searchParams.set("limit", limit.toString());
+        cacheUrl.searchParams.set("offset", offset.toString());
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        return await fetchJsonWithErrorHandling<StoryEventData[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached story events",
+        );
+      } catch (error) {
+        console.warn("Cached story events fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const query = STORY_QUERIES.ALL_STORY_EVENTS.replace("{limit}", limit.toString()).replace(
       "{offset}",
       offset.toString(),
@@ -671,6 +694,7 @@ export class SqlApi {
     const { registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRow } =
       await fetchLeaderboardSourceData({
         baseUrl: this.baseUrl,
+        cacheBaseUrl: this.cacheBaseUrl,
         effectiveLimit,
         defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
       });
@@ -720,6 +744,7 @@ export class SqlApi {
 
     const leaderboardSourceData = await fetchLeaderboardSourceData({
       baseUrl: this.baseUrl,
+      cacheBaseUrl: this.cacheBaseUrl,
       effectiveLimit: 0,
       defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
     });

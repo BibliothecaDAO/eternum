@@ -15,7 +15,13 @@ import {
   HyperstructureLeaderboardHyperstructure,
   HyperstructureShareholder,
 } from "../../utils/leaderboard";
-import { buildApiUrl, extractFirstOrNull, fetchWithErrorHandling, formatAddressForQuery } from "../../utils/sql";
+import {
+  buildApiUrl,
+  extractFirstOrNull,
+  fetchJsonWithErrorHandling,
+  fetchWithErrorHandling,
+  formatAddressForQuery,
+} from "../../utils/sql";
 import { LEADERBOARD_QUERIES } from "./leaderboard";
 
 export const REGISTERED_POINTS_PRECISION = 1_000_000;
@@ -95,9 +101,32 @@ export interface LeaderboardSourceData {
 
 export interface FetchLeaderboardSourceDataOptions {
   baseUrl: string;
+  cacheBaseUrl?: string;
   effectiveLimit: number;
   defaultHyperstructureRadius: number;
 }
+
+interface LeaderboardCacheResponse {
+  registeredRows: RawPlayerLeaderboardRow[];
+  hyperstructureShareholderRows: HyperstructureShareholderRow[];
+  hyperstructureRows: HyperstructureRow[];
+  hyperstructureConfigRow?: HyperstructureLeaderboardConfigRow;
+}
+
+const buildCacheUrl = (baseUrl: string, path: string): URL => {
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return new URL(`${trimmed}${normalizedPath}`);
+};
+
+const appendToriiSqlBaseUrl = (cacheUrl: URL, toriiSqlBaseUrl: string): void => {
+  const trimmed = toriiSqlBaseUrl.trim();
+  if (!trimmed) {
+    return;
+  }
+
+  cacheUrl.searchParams.set("toriiSqlBaseUrl", trimmed);
+};
 
 export const sanitizeLeaderboardPagination = (limit: number, offset: number): LeaderboardPagination => {
   const safeLimit = Math.max(0, limit);
@@ -112,8 +141,32 @@ export const sanitizeLeaderboardPagination = (limit: number, offset: number): Le
 
 export const fetchLeaderboardSourceData = async ({
   baseUrl,
+  cacheBaseUrl,
   effectiveLimit,
 }: FetchLeaderboardSourceDataOptions): Promise<LeaderboardSourceData> => {
+  const cacheBase = cacheBaseUrl?.trim();
+
+  if (cacheBase) {
+    try {
+      const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/leaderboard");
+      cacheUrl.searchParams.set("limit", effectiveLimit > 0 ? effectiveLimit.toString() : "0");
+      appendToriiSqlBaseUrl(cacheUrl, baseUrl);
+      const cached = await fetchJsonWithErrorHandling<LeaderboardCacheResponse>(
+        cacheUrl.toString(),
+        "Failed to fetch cached player leaderboard",
+      );
+
+      return {
+        registeredRows: cached.registeredRows ?? [],
+        hyperstructureShareholderRows: cached.hyperstructureShareholderRows ?? [],
+        hyperstructureRows: cached.hyperstructureRows ?? [],
+        hyperstructureConfigRow: cached.hyperstructureConfigRow,
+      };
+    } catch (error) {
+      console.warn("Cached leaderboard fetch failed; falling back to direct SQL.", error);
+    }
+  }
+
   const leaderboardQuery =
     effectiveLimit > 0
       ? LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace("{offset}", "0")
