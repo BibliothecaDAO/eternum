@@ -65,9 +65,10 @@ The poller queries the Cartridge GraphQL API:
 **Endpoint**: `https://api.cartridge.gg/query`
 
 **Query**:
+
 ```graphql
 {
-  paymaster (name: "empire") {
+  paymaster(name: "empire") {
     budget
     budgetFeeUnit
     creditFees
@@ -100,7 +101,7 @@ import { createCartridgePoller } from "./src/services/cartridge-poller";
 
 const poller = createCartridgePoller(
   "YOUR_DISCORD_WEBHOOK_URL",
-  10000 // Poll every 10 seconds for testing
+  10000, // Poll every 10 seconds for testing
 );
 
 poller.start();

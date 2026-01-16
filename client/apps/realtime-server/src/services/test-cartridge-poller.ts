@@ -18,7 +18,9 @@ if (!webhookUrl) {
   console.error("❌ DISCORD_WEBHOOK_URL environment variable is required");
   console.error("\nUsage:");
   console.error("  1. Add DISCORD_WEBHOOK_URL to your .env file, or");
-  console.error("  2. Run with: DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/... bun run src/services/test-cartridge-poller.ts");
+  console.error(
+    "  2. Run with: DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/... bun run src/services/test-cartridge-poller.ts",
+  );
   process.exit(1);
 }
 
