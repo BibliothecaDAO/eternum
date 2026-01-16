@@ -65,14 +65,12 @@ const PLAYER_LEADERBOARD_BASE = `
       points_story AS (
         SELECT
           lower(COALESCE("story.PointsRegisteredStory.owner_address", '')) AS player_address,
-          lower(
+          replace(
             replace(
-              replace(
-                replace(trim(COALESCE("story.PointsRegisteredStory.activity", '')), 'pointsactivity::', ''),
-                'pointsactivity.', ''
-              ),
-              'pointsactivity', ''
-            )
+              replace(lower(trim(COALESCE("story.PointsRegisteredStory.activity", ''))), 'pointsactivity::', ''),
+              'pointsactivity.', ''
+            ),
+            'pointsactivity', ''
           ) AS raw_activity,
           lower(trim(COALESCE("story.PointsRegisteredStory.points", '0'))) AS raw_points
         FROM "s1_eternum-StoryEvent"
