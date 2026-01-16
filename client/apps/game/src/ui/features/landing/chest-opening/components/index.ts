@@ -1,3 +1,4 @@
+export * from "./chest-card";
 export * from "./chest-opening-experience";
 export * from "./chest-selection-modal";
 export * from "./chest-stage-container";

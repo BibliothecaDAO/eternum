@@ -35,6 +35,8 @@ export interface TokenBalanceWithToken {
   best_price_hex: bigint | null;
   metadata: RealmMetadata | null;
   order_id?: string | null;
+  /** Count of items with same metadata (when grouped) */
+  count?: number;
 }
 
 export interface CollectibleClaimed {

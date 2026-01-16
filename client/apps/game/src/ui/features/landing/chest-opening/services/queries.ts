@@ -38,23 +38,25 @@ export const QUERIES = {
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
 
-  // Simpler query for token balances with metadata (used for cosmetics)
+  // Grouped query for cosmetics - aggregates by attributes (not full metadata which has unique name)
   TOKEN_BALANCES_WITH_METADATA: `
   SELECT
-    tb.token_id,
-    tb.balance,
-    tb.contract_address,
-    tb.account_address as token_owner,
-    t.name,
-    t.symbol,
-    t.metadata
+    MIN(tb.token_id) as token_id,
+    MIN(tb.balance) as balance,
+    MIN(tb.contract_address) as contract_address,
+    MIN(tb.account_address) as token_owner,
+    MIN(t.name) as name,
+    MIN(t.symbol) as symbol,
+    MIN(t.metadata) as metadata,
+    COUNT(*) as count
   FROM token_balances tb
   LEFT JOIN tokens t
     ON t.token_id = substr(tb.token_id, instr(tb.token_id, ':') + 1)
     AND t.contract_address = '{contractAddress}'
   WHERE tb.contract_address = '{contractAddress}'
   AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
-  AND tb.account_address = '{accountAddress}';
+  AND tb.account_address = '{accountAddress}'
+  GROUP BY json_extract(t.metadata, '$.attributes');
   `,
   COLLECTIBLE_CLAIMED: `
     SELECT *
@@ -63,5 +65,13 @@ export const QUERIES = {
       AND created_at > {minTimestamp}
     ORDER BY created_at DESC
     limit 3
+  `,
+
+  // Query for total unique cosmetic types across all users
+  TOTAL_COSMETICS_SUPPLY: `
+  SELECT COUNT(DISTINCT json_extract(t.metadata, '$.attributes')) as total
+  FROM tokens t
+  WHERE t.contract_address = '{contractAddress}'
+    AND t.metadata IS NOT NULL;
   `,
 };

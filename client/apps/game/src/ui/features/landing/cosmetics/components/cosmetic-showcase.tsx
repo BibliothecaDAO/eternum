@@ -1,7 +1,10 @@
 import Button from "@/ui/design-system/atoms/button";
 import { CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
 import { useCosmeticLoadoutStore } from "@/ui/features/landing/cosmetics/model";
+import { ExternalLink } from "lucide-react";
 import { CosmeticModelViewer } from "./cosmetic-model-viewer";
+
+const TRADE_BASE_URL = "https://empire.realms.world/trade/cosmetics";
 
 interface CosmeticShowcaseProps {
   item: CosmeticItem | null;
@@ -9,7 +12,6 @@ interface CosmeticShowcaseProps {
 
 export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
   const attributes = item?.attributes ?? item?.metadata?.attributes ?? [];
-  const tokenSymbol = item?.tokenSymbol;
   const slot = item?.slot ?? attributes.find((attribute) => attribute.trait_type === "Type")?.value ?? null;
 
   const addCosmetic = useCosmeticLoadoutStore((state) => state.addCosmetic);
@@ -41,17 +43,11 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
             Select a cosmetic to preview.
           </div>
         )}
-        {item?.image && (
-          <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-2xl border border-white/15 bg-black/55 p-2 backdrop-blur">
-            <img
-              src={item.image}
-              alt={`${item.name ?? "Cosmetic"} thumbnail`}
-              className="h-12 w-12 rounded-xl object-cover"
-              loading="lazy"
-            />
-            <div className="max-w-[12rem] text-xs text-white/70">
-              <p className="font-semibold text-white">Metadata Render</p>
-              <p className="line-clamp-2">{item.name}</p>
+        {item && (
+          <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-2xl border border-white/15 bg-black/55 px-4 py-2 backdrop-blur">
+            <div className="text-xs text-white/70">
+              <p className="font-semibold text-white">Owned</p>
+              <p className="text-lg font-bold text-gold">{item.count ?? 1}</p>
             </div>
           </div>
         )}
@@ -67,29 +63,37 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
         </div>
 
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-            {slot && (
+          {slot && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
               <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 capitalize">
                 Slot: {slot.toLowerCase()}
               </span>
-            )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleEquipClick}
+              disabled={!canEquip || isEquipped}
+              variant={isEquipped ? "primarySelected" : "gold"}
+              forceUppercase={false}
+              size="md"
+            >
+              {isEquipped ? "Equipped" : hasSlotConflict ? "Replace equipped cosmetic" : "Equip cosmetic"}
+            </Button>
+
             {item?.tokenId && (
-              <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1">
-                Token ID: <span className="font-semibold text-white">{Number(item.tokenId).toString()}</span>
-              </span>
+              <a
+                href={`${TRADE_BASE_URL}/${item.tokenId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 items-center gap-2 rounded-lg border border-white/20 bg-black/40 px-4 text-sm text-white/70 transition hover:border-gold/50 hover:text-gold"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Trade
+              </a>
             )}
           </div>
-
-          <Button
-            onClick={handleEquipClick}
-            disabled={!canEquip || isEquipped}
-            variant={isEquipped ? "primarySelected" : "gold"}
-            forceUppercase={false}
-            className="self-start"
-            size="md"
-          >
-            {isEquipped ? "Equipped" : hasSlotConflict ? "Replace equipped cosmetic" : "Equip cosmetic"}
-          </Button>
 
           {!canEquip && (
             <p className="text-xs text-white/50">
@@ -124,20 +128,6 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
             )}
           </div>
 
-          {(tokenSymbol || item?.balance) && (
-            <div className="flex flex-wrap gap-4 text-xs text-white/60">
-              {tokenSymbol && (
-                <span>
-                  Symbol: <span className="font-semibold text-white">{tokenSymbol}</span>
-                </span>
-              )}
-              {item?.balance && (
-                <span>
-                  Balance: <span className="font-semibold text-white">{item.balance}</span>
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </footer>
     </section>

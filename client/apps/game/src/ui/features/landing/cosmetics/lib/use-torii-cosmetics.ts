@@ -1,4 +1,7 @@
-import { fetchTokenBalancesWithMetadata } from "@/ui/features/landing/chest-opening/services";
+import {
+  fetchTokenBalancesWithMetadata,
+  fetchTotalCosmeticsSupply,
+} from "@/ui/features/landing/chest-opening/services";
 import { getCosmeticsAddress } from "@/utils/addresses";
 import { useAccount } from "@starknet-react/core";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
@@ -23,6 +26,8 @@ export interface ToriiCosmeticAsset {
   balance: string;
   decimals: number;
   metadata: CosmeticMetadata | null;
+  /** Count of items with same metadata (pre-grouped by SQL) */
+  count?: number;
 }
 
 interface UseToriiCosmeticsOptions extends Pick<UseQueryOptions<ToriiCosmeticAsset[], Error>, "staleTime" | "enabled"> {
@@ -51,8 +56,9 @@ export const useToriiCosmetics = (options: UseToriiCosmeticsOptions = {}) => {
       }
 
       const tokenBalances = await fetchTokenBalancesWithMetadata(cosmeticsAddress, accountAddress);
+      console.log({ tokenBalances });
 
-      // Map to ToriiCosmeticAsset format
+      // Map to ToriiCosmeticAsset format (already grouped by SQL)
       return tokenBalances.map((token) => ({
         accountAddress: token.account_address,
         tokenName: token.name ?? "",
@@ -61,9 +67,33 @@ export const useToriiCosmetics = (options: UseToriiCosmeticsOptions = {}) => {
         balance: token.balance,
         decimals: 0,
         metadata: token.metadata as CosmeticMetadata | null,
+        count: token.count,
       }));
     },
     enabled: isEnabled,
+    staleTime,
+  });
+};
+
+/**
+ * Hook to fetch total unique cosmetic types across all users.
+ * Used for calculating collection progress percentage.
+ */
+export const useTotalCosmeticsSupply = (options: { enabled?: boolean; staleTime?: number } = {}) => {
+  const { enabled = true, staleTime = 300_000 } = options; // Cache for 5 minutes
+
+  return useQuery({
+    queryKey: ["torii", "cosmetics", "totalSupply"],
+    queryFn: async (): Promise<number> => {
+      const cosmeticsAddress = getCosmeticsAddress();
+      if (!cosmeticsAddress) {
+        console.warn("Cosmetics contract address not configured");
+        return 0;
+      }
+
+      return fetchTotalCosmeticsSupply(cosmeticsAddress);
+    },
+    enabled,
     staleTime,
   });
 };

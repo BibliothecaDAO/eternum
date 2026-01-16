@@ -61,6 +61,46 @@ export const COSMETIC_NAMES = [
 const NFT_IMAGES_BASE_PATH = "/images/nft-images";
 
 /**
+ * Maps attributesRaw hex values to GLB model paths (low-res only).
+ * Files are named by their attributesRaw value (e.g., 0x3040101.glb).
+ */
+export const COSMETIC_MODEL_BY_ATTRIBUTES_RAW: Record<string, string | null> = {
+  "0x3040101": "/models/cosmetics/low-res/0x3040101.glb", // Legacy Keep
+  "0x107050201": "/models/cosmetics/low-res/0x107050201.glb", // Legacy Guardian
+  "0x4050301": "/models/cosmetics/low-res/0x4050301.glb", // Aura of the Legacy Warrior
+  "0x2040401": "/models/cosmetics/low-res/0x2040401.glb", // Aura of the Legacy Realm
+  "0x3030501": "/models/cosmetics/low-res/0x3030501.glb", // Winterhold
+  "0x2030601": "/models/cosmetics/low-res/0x2030601.glb", // Winter's Palisade
+  "0x305020701": "/models/cosmetics/low-res/0x305020701.glb", // Winter Rider's Battleaxe
+  "0x306020801": "/models/cosmetics/low-res/0x306020801.glb", // Winter Rider's Shield
+  "0x205010901": "/models/cosmetics/low-res/0x205010901.glb", // Hunter's Bow
+  "0x206010a01": "/models/cosmetics/low-res/0x206010a01.glb", // Hunter's Quiver
+  "0x8010b01": "/models/cosmetics/low-res/0x8010b01.glb", // Carved Wooden Base
+  "0x207050c01": "/models/cosmetics/low-res/0x207050c01.glb", // Legacy Hunter
+  "0x4040d01": null, // Overgrown Wreath - no model yet
+  "0x8040e01": "/models/cosmetics/low-res/0x8040e01.glb", // Overgrown Foundation
+  "0x4030f01": "/models/cosmetics/low-res/0x4030f01.glb", // Winter Vortex
+  "0x8031001": "/models/cosmetics/low-res/0x8031001.glb", // Winter's Footing
+  "0x3021101": "/models/cosmetics/low-res/0x3021101.glb", // Overgrown Nest
+  "0x105021201": "/models/cosmetics/low-res/0x105021201.glb", // Winter Trooper's Broadaxe
+  "0x106021301": "/models/cosmetics/low-res/0x106021301.glb", // Winter Trooper's Targe
+  "0x1011401": "/models/cosmetics/low-res/0x1011401.glb", // Witness of the Morning Wars
+  "0x305011501": null, // Light Cavalry Sword - no model yet
+  "0x306011601": "/models/cosmetics/low-res/0x306011601.glb", // Light Cavalry Shield
+};
+
+export const DEFAULT_COSMETIC_MODEL_PATH = "/models/cosmetics/low-res/0x8010b01.glb";
+
+/**
+ * Gets the model path for a given attributesRaw hex string
+ * @param attributesRaw - Hex string like "0x2030601"
+ * @returns Model path or default if not found
+ */
+export function getModelPathFromAttributesRaw(attributesRaw: string): string {
+  return COSMETIC_MODEL_BY_ATTRIBUTES_RAW[attributesRaw] ?? DEFAULT_COSMETIC_MODEL_PATH;
+}
+
+/**
  * Gets the local image path for a given attributesRaw hex string
  * Images are named after their attributesRaw value (e.g., 0x2030601.png)
  * @param attributesRaw - Hex string like "0x2030601"

@@ -1,7 +1,8 @@
 import { CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
 import { useCosmeticLoadoutStore } from "@/ui/features/landing/cosmetics/model";
-import { useState } from "react";
-import { CosmeticModelViewer } from "./cosmetic-model-viewer";
+import { ExternalLink } from "lucide-react";
+
+const TRADE_BASE_URL = "https://empire.realms.world/trade/cosmetics";
 
 interface CosmeticTileProps {
   item: CosmeticItem;
@@ -10,7 +11,6 @@ interface CosmeticTileProps {
 }
 
 export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
-  const [isHovered, setIsHovered] = useState(false);
   const attributes = item.attributes ?? item.metadata?.attributes ?? [];
   const rarity = attributes.find((attribute) => attribute.trait_type === "Rarity")?.value;
   const cosmeticType = attributes.find((attribute) => attribute.trait_type === "Type")?.value;
@@ -35,17 +35,43 @@ export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
     <button
       type="button"
       onClick={() => onSelect(item.id)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={`${baseClass} ${activeClass} ${equippedClass}`}
     >
-      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-black/40">
-        <CosmeticModelViewer modelPath={item.modelPath} variant="card" autoRotate={active} isHovered={isHovered} />
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black/40">
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={item.name}
+            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-white/30">No image</div>
+        )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/40 opacity-0 transition group-hover:opacity-100" />
         {isEquipped && (
           <div className="pointer-events-none absolute right-3 top-3 rounded-full border border-gold/80 bg-black/70 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wider text-gold shadow-[0_0_12px_rgba(250,204,21,0.45)]">
             Equipped
           </div>
+        )}
+        {/* Count badge - shows how many of this cosmetic type you own */}
+        {item.count && item.count > 1 && (
+          <div className="pointer-events-none absolute left-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border border-white/30 bg-black/80 text-xs font-bold text-white shadow-lg">
+            {item.count}
+          </div>
+        )}
+        {/* Trade link - appears on hover */}
+        {item.tokenId && (
+          <a
+            href={`${TRADE_BASE_URL}/${item.tokenId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute bottom-3 right-3 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/80 text-white/70 opacity-0 transition-all hover:border-gold/60 hover:bg-black hover:text-gold group-hover:opacity-100"
+            title="Trade on Empire"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         )}
       </div>
 

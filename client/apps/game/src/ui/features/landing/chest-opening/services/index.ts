@@ -48,6 +48,7 @@ interface RawTokenBalanceWithMetadata {
   best_price_hex?: string;
   metadata?: string | RealmMetadata;
   order_id?: string;
+  count?: number;
 }
 
 /**
@@ -58,8 +59,12 @@ export async function fetchTokenBalancesWithMetadata(
   contractAddress: string,
   accountAddress: string,
 ): Promise<TokenBalanceWithToken[]> {
-  const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", padAddress(contractAddress))
-    .replaceAll("{accountAddress}", padAddress(accountAddress));
+  const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll(
+    "{contractAddress}",
+    padAddress(contractAddress),
+  ).replaceAll("{accountAddress}", padAddress(accountAddress));
+
+  console.log({ query });
 
   const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
 
@@ -74,6 +79,7 @@ export async function fetchTokenBalancesWithMetadata(
     best_price_hex: null,
     metadata: normalizeMetadata(item.metadata),
     order_id: null,
+    count: item.count ?? 1,
   }));
 }
 
@@ -124,4 +130,16 @@ export async function fetchCollectibleClaimed(
     .replace("{minTimestamp}", `'${formattedTimestamp}'`);
 
   return await fetchSQL<CollectibleClaimed[]>(query);
+}
+
+/**
+ * Fetch total unique cosmetic types across all users.
+ * Used for calculating collection progress percentage.
+ */
+export async function fetchTotalCosmeticsSupply(contractAddress: string): Promise<number> {
+  const query = QUERIES.TOTAL_COSMETICS_SUPPLY.replaceAll("{contractAddress}", padAddress(contractAddress));
+
+  const result = await fetchSQL<{ total: number }[]>(query);
+
+  return result[0]?.total ?? 0;
 }
