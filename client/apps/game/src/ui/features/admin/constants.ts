@@ -9,6 +9,7 @@ export const CURRENT_WORLD_NAME_KEY = "eternum_current_world_name";
 export const INDEXER_CREATION_COOLDOWN_KEY = "eternum_indexer_cooldown";
 export const CONFIGURED_WORLDS_KEY = "eternum_configured_worlds";
 export const WORLD_DEPLOYED_ADDRESS_MAP_KEY = "eternum_world_deployed_address_map";
+export const WORLD_SERIES_METADATA_KEY = "eternum_world_series_metadata";
 
 // Defaults
 export const DEFAULT_VERSION = "180";
@@ -32,9 +33,9 @@ export const getExplorerTxUrl = (chain: Chain | ChainType, txHash: string) => {
 // Factory addresses by chain (single source of truth for UI)
 export const FACTORY_ADDRESSES: Record<ChainType, string> = {
   sepolia: "0x07A6F094f15f8C18704bfb19fFEBCBC70b87e41674dE97EbeC7cb7Ffe5c9581B",
-  slot: "0x4b4e92fbcc6fdc40db899b345da2c08cf617df30660e71d1adcfb1301d5a06e",
+  slot: "0x78306a0c2ccf2227c3623d3a8b6fc4be4fbcc9c31c8c688fbc49da66b5b7835",
   local: "",
-  mainnet: "0x03f0207667f8a6f024513ba1224d1bb45a2075405a69bc21ae95a0812f56c0e8",
+  mainnet: "0x3a49cb39fb21e9d46139536ff4ef2b3ec6719f4c7dc8dd0853c850b4f2b0090",
   slottest: "",
 };
 

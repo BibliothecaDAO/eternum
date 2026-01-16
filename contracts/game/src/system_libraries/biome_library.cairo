@@ -18,7 +18,7 @@ mod biome_library {
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IBiomeLibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"biome_library_v0_1_6").expect('biome_library not found');
+        let (_, class_hash) = world.dns(@"biome_library_v0_1_8").expect('biome_library not found');
         super::IBiomeLibraryLibraryDispatcher { class_hash }
     }
 }

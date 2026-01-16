@@ -273,7 +273,7 @@ pub mod structure_creation_library {
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IStructureCreationlibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_6").expect('structure create lib not found');
+        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_8").expect('structure create lib not found');
         super::IStructureCreationlibraryLibraryDispatcher { class_hash }
     }
 }

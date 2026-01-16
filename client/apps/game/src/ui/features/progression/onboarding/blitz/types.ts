@@ -11,6 +11,9 @@ export type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
 // Entry token status
 export type EntryTokenStatus = "idle" | "minting" | "timeout" | "error";
 
+// Registration stage for combined obtain + register flow
+export type RegistrationStage = "idle" | "obtaining-token" | "waiting-for-token" | "registering" | "done" | "error";
+
 // Blitz step for progress indicator
 export type BlitzStep = "select-game" | "obtain-token" | "register" | "settle" | "play";
 

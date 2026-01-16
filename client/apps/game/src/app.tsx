@@ -21,7 +21,6 @@ import { MarketsProviders } from "./ui/features/landing/sections/markets";
 import { LandingLayout } from "./ui/layouts/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
-import { MobileBlocker } from "./ui/modules/mobile-blocker";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
 // Lazy load the entire game route to avoid loading heavy deps (World, Dojo, Three.js, etc.) on landing
@@ -59,9 +58,9 @@ function App() {
     return <ConstructionGate />;
   }
 
-  if (isMobileBlocked) {
-    return <MobileBlocker mobileVersionUrl={env.VITE_PUBLIC_MOBILE_VERSION_URL} />;
-  }
+  // if (isMobileBlocked) {
+  //   return <MobileBlocker mobileVersionUrl={env.VITE_PUBLIC_MOBILE_VERSION_URL} />;
+  // }
 
   return (
     <StarknetProvider>

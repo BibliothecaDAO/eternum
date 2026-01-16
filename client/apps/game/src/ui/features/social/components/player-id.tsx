@@ -2,6 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { sqlApi } from "@/services/api";
 import { Position as PositionType } from "@bibliothecadao/eternum";
+import { usePlayerAvatar, getAvatarUrl } from "@/hooks/use-player-avatar";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
@@ -284,12 +285,18 @@ export const PlayerId = ({
 };
 
 const AvatarImage = ({ address }: { address: string }) => {
-  const randomAvatarIndex = ((parseInt(address.slice(0, 8), 16) % 7) + 1).toString().padStart(2, "0");
-  const imgSource = `./images/avatars/${randomAvatarIndex}.png`;
+  const { data: profile, isLoading } = usePlayerAvatar(address);
+  const avatarUrl = getAvatarUrl(address, profile?.avatarUrl);
 
   return (
     <div className="w-24 h-24 rounded-md overflow-hidden border-2 border-gold/20 shadow-lg bg-brown/30">
-      <img className="h-full w-full object-cover" src={imgSource} alt="Player avatar" />
+      {isLoading ? (
+        <div className="h-full w-full flex items-center justify-center bg-gold/10">
+          <div className="text-xs text-gold/50">Loading...</div>
+        </div>
+      ) : (
+        <img className="h-full w-full object-cover" src={avatarUrl} alt="Player avatar" />
+      )}
     </div>
   );
 };

@@ -39,6 +39,7 @@ const envSchema = z.object({
     .default("https://torii-creator.zerocredence.workers.dev/dispatch/torii"),
   VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
   VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
+  VITE_PUBLIC_REALTIME_URL: z.string().url().optional().default("http://localhost:8080"),
 
   // Marketplace API endpoint (added)
   VITE_PUBLIC_MARKETPLACE_URL: z

@@ -16,7 +16,7 @@ declare module "@config-deployer/config" {
   export const setRealmUpgradeConfig: any;
   export const setResourceBridgeFeesConfig: any;
   export const setSpeedConfig: any;
-  export const setBlitzPreviousGame: any;
+  export const setFactoryAddress: any;
   export const setBlitzRegistrationConfig: any;
   export const setBuildingConfig: any;
   export const setCapacityConfig: any;

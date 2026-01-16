@@ -24,6 +24,7 @@ pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
+    use dojo::world::IWorldDispatcherTrait;
     use crate::alias::ID;
     use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
     use crate::models::config::{
@@ -330,6 +331,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_aggressor_owner_address),
                         entity_id: Option::Some(explorer_aggressor.explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -342,6 +344,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_defender_owner_address),
                         entity_id: Option::Some(explorer_defender.explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -593,6 +596,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_aggressor_owner_address),
                         entity_id: Option::Some(explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -605,6 +609,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(guarded_structure_owner),
                         entity_id: Option::Some(structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -852,6 +857,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_aggressor_owner),
                         entity_id: Option::Some(structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -864,6 +870,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_defender_owner_address),
                         entity_id: Option::Some(explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

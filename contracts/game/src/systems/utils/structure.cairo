@@ -2,6 +2,7 @@ use dojo::event::EventStorage;
 use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo::world::IWorldDispatcherTrait;
 use crate::alias::ID;
 use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
@@ -243,6 +244,7 @@ pub impl iStructureImpl of IStructureTrait {
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(explorer_owner_address),
                             entity_id: Option::Some(structure_id),
                             tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -269,6 +271,7 @@ pub impl iStructureImpl of IStructureTrait {
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(explorer_owner_address),
                             entity_id: Option::Some(structure_id),
                             tx_hash: starknet::get_tx_info().unbox().transaction_hash,

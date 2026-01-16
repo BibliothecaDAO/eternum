@@ -10,6 +10,7 @@ pub mod structure_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
+    use dojo::world::IWorldDispatcherTrait;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
@@ -125,6 +126,7 @@ pub mod structure_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

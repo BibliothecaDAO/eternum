@@ -10,11 +10,12 @@
     "client": "bun run src/ws/client.ts",
     "test": "vitest run",
     "lint": "eslint . --ext .ts",
-    "migrate:generate": "drizzle-kit generate --config drizzle.config.ts",
-    "migrate:push": "drizzle-kit push --config drizzle.config.ts"
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:push": "drizzle-kit push --config drizzle.config.ts"
   },
   "dependencies": {
     "@bibliothecadao/types": "workspace:*",
+    "@fal-ai/client": "^1.8.3",
     "@fastify/redis": "^6.0.0",
     "@types/pg": "^8.15.5",
     "dotenv": "^16.4.5",

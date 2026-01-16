@@ -21,6 +21,7 @@ pub mod relic_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
+    use dojo::world::IWorldDispatcherTrait;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, relic_essence_cost};
     use crate::models::config::{
@@ -123,6 +124,7 @@ pub mod relic_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_owner_address),
                         entity_id: Option::Some(explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
