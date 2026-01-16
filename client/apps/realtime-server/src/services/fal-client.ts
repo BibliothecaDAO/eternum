@@ -53,7 +53,7 @@ export async function generateAvatar(options: AvatarGenerationOptions): Promise<
     }
 
     return {
-      imageUrls: result.data.images.map((image) => image.url),
+      imageUrls: result.data.images.map((image: any) => image.url),
       jobId: result.requestId || crypto.randomUUID(),
     };
   } catch (error) {
