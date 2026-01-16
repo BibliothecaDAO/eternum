@@ -30,7 +30,7 @@
                 {
                     "traitValueId": 2,
                     "traitValueName": "Blitz Rewards (S0)",
-                    "traitValueNameOverwrite": true
+                    "traitValueNameOverwrite": false
                 }
             ]
         }
@@ -44,7 +44,7 @@
         { 
             "traits": "Epoch:Season 1,ID:Blitz Rewards (S0)", 
             "ipfsCid": "bafybeifc5ecqvn3hdct3azcnzxp6ckq7lau2agcpfcyrv374y24smv2jiy", 
-            "overwrite": true 
+            "overwrite": false 
         }
     ],
     "mintCData": [
