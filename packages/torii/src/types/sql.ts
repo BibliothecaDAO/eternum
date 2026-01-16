@@ -1,12 +1,12 @@
 import {
   Tile as CoreTile,
-  TileDataInput,
   Direction,
   EntityType,
   HexPosition,
   ID,
   Position,
   StructureType,
+  TileDataInput,
 } from "@bibliothecadao/types";
 
 // API response types
@@ -115,7 +115,7 @@ export interface HyperstructureRow {
 export interface StoryEventData {
   owner: string | null;
   entity_id: number | null;
-  id?: number | null;
+  id?: string | null;
   tx_hash: string;
   story: string; // The story type (e.g., "RealmCreatedStory", "ExplorerMoveStory", etc.)
   timestamp: string;
