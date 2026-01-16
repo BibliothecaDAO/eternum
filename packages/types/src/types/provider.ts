@@ -404,8 +404,8 @@ export interface SetBlitzModeConfigProps extends SystemSigner {
   blitz_mode_on: boolean;
 }
 
-export interface SetBlitzPreviousGameProps extends SystemSigner {
-  prev_prize_distribution_systems: BigNumberish;
+export interface SetFactoryAddressProps extends SystemSigner {
+  factory_address: BigNumberish;
 }
 
 export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSigner {

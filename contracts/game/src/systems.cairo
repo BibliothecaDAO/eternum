@@ -117,6 +117,10 @@ pub mod prize_distribution {
     pub mod contracts;
 }
 
+pub mod points {
+    pub mod contracts;
+}
+
 pub mod relic {
     pub mod contracts;
 }

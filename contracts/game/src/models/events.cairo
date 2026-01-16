@@ -7,6 +7,8 @@ use starknet::ContractAddress;
 #[dojo::event(historical: false)]
 pub struct StoryEvent {
     #[key]
+    pub id: ID,
+    #[key]
     pub owner: Option<ContractAddress>,
     #[key]
     pub entity_id: Option<ID>,

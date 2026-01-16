@@ -20,8 +20,10 @@ export const formatNumber = (value: number, maximumFractionDigits = 2) =>
 
 export const TabButton = ({ isActive, label, onClick }: { isActive: boolean; label: string; onClick: () => void }) => (
   <button
-    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-      isActive ? "bg-gold/30 text-white shadow-lg shadow-gold/10" : "bg-white/5 text-gold/70 hover:bg-white/10"
+    className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+      isActive
+        ? "bg-gold text-black shadow-[0_20px_45px_-25px_rgba(255,215,128,0.85)]"
+        : "border border-gold/20 bg-gold/5 text-gold/70 hover:bg-gold/10 hover:border-gold/40"
     }`}
     onClick={onClick}
     type="button"

@@ -17,6 +17,7 @@ import {
   LandingPlayer,
   LandingWelcome,
 } from "./ui/features/landing";
+import { LandingDojoProvider } from "./ui/features/landing/providers/landing-dojo-provider";
 import { MarketsProviders } from "./ui/features/landing/sections/markets";
 import { LandingLayout } from "./ui/layouts/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
@@ -69,19 +70,25 @@ function App() {
           <Routes>
             <Route
               path="/"
-              element={<LandingLayout backgroundImage={backgroundImage} backgroundVideo={LANDING_BACKGROUND_VIDEO} />}
+              element={
+                <LandingDojoProvider>
+                  <LandingLayout backgroundImage={backgroundImage} backgroundVideo={LANDING_BACKGROUND_VIDEO} />
+                </LandingDojoProvider>
+              }
             >
               <Route index element={<LandingWelcome />} />
               <Route
                 path="cosmetics"
                 element={
-                  <Suspense
-                    fallback={
-                      <div className="flex h-full items-center justify-center text-gold/60">Loading cosmetics...</div>
-                    }
-                  >
-                    <LazyLandingCosmetics />
-                  </Suspense>
+                  <MarketsProviders>
+                    <Suspense
+                      fallback={
+                        <div className="flex h-full items-center justify-center text-gold/60">Loading cosmetics...</div>
+                      }
+                    >
+                      <LazyLandingCosmetics />
+                    </Suspense>
+                  </MarketsProviders>
                 }
               />
               <Route path="account" element={<LandingAccount />} />

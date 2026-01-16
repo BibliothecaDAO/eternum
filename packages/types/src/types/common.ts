@@ -640,6 +640,9 @@ export interface Config {
       collectibles_elitenft_address: string;
     };
   };
+  factory: {
+    address: string;
+  };
 
   // Config for calling the setup function
   setup?: {

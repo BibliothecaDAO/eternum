@@ -149,6 +149,7 @@ pub mod hyperstructure_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
+    use dojo::world::IWorldDispatcherTrait;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
@@ -561,6 +562,7 @@ pub mod hyperstructure_systems {
                         world
                             .emit_event(
                                 @StoryEvent {
+                                    id: world.dispatcher.uuid(),
                                     owner: Option::Some(*shareholder_address),
                                     entity_id: Option::Some(hyperstructure_id),
                                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,

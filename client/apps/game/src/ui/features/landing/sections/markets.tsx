@@ -54,7 +54,7 @@ export const MarketsProviders = ({ children }: { children: ReactNode }) => {
 export const MarketsSection = ({ children, description }: { children: ReactNode; description?: string }) => (
   <section
     aria-label="Prediction markets"
-    className="relative h-[85vh] w-full max-w-[1400px] space-y-6 overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/40 to-black/90 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl sm:p-6 md:h-[70vh] md:max-h-[80vh] md:p-8"
+    className="relative h-[85vh] w-full max-w-[1400px] space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 text-gold shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl sm:p-6 md:h-[70vh] md:max-h-[80vh] md:p-8"
   >
     <div className="mx-auto flex w-full max-w-[1250px] flex-col gap-4 rounded-2xl border border-gold/30 bg-black/40 p-4 shadow-lg shadow-black/30 md:p-6">
       {description ? <p className="text-sm text-gold/70">{description}</p> : null}

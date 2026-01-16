@@ -1,7 +1,7 @@
 {
-    "name": "Realms: Elite Invite",
-    "symbol": "REI",
-    "description": "Elite Invite Realms:Blitz",
+    "name": "Realms: Blitz Elite Pass",
+    "symbol": "REP",
+    "description": "Elite Pass for Realms: Blitz",
     "defaultIpfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW",
     "defaultIpfsCidOverwrite": false,
     "traits": [
@@ -20,11 +20,23 @@
         {
             "traitTypeNameOverwrite": false,
             "traitTypeId": 1,
+            "traitTypeName": "Series",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Series 0",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 2,
             "traitTypeName": "ID",
             "traitValues": [
                 {
                     "traitValueId": 1,
-                    "traitValueName": "Blitz Elite Invite",
+                    "traitValueName": "Blitz Elite Pass",
                     "traitValueNameOverwrite": false
                 }
             ]
@@ -32,7 +44,7 @@
     ],
     "traitsCombinedIpfsCid": [
        { 
-            "traits": "Epoch:Season 1,ID:Blitz Elite Invite", 
+            "traits": "Epoch:Season 1,Series:Series 0,ID:Blitz Elite Pass", 
             "ipfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW", 
             "overwrite": false 
         }

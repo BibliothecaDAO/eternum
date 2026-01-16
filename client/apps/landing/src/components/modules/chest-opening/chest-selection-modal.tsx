@@ -409,7 +409,7 @@ export function ChestSelectionModal({
           {filteredAndSortedChests.length === 0 ? (
             // Empty state
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Package className="w-16 h-16 text-gold/30 mb-4" />
+              <Package className="w-16 h-16 mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">
                 {chests.length === 0 ? "No Chests Available" : "No Matching Chests"}
               </h3>
