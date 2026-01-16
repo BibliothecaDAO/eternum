@@ -12,7 +12,7 @@ import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
 import { useScoreToBeat } from "../lib/use-score-to-beat";
 
-const LEADERBOARD_LIMIT = 25;
+const LEADERBOARD_LIMIT = 30;
 const REFRESH_INTERVAL_MS = 60_000;
 
 const podiumStyles = [
