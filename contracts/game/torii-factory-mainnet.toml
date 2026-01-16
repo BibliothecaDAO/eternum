@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/starknet/mainnet"
 
-world_address = "0x0438ae7f2f209d544f19414a045d69e42c9bb813fed14c44c4d4e4998b63ce97"
+world_address = "0x0605da57a48c8d82d36c1ad376c4d45b7ce2d3abcf8c6b948aec7e100b131e01"
 
 db_dir = "torii-mainnet"
 

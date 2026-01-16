@@ -56,8 +56,8 @@ export const MainnetEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.blitz,
     registration: {
       ...CommonEternumGlobalConfig.blitz.registration,
-      registration_delay_seconds: 20,
-      registration_period_seconds: 60 * 60 * 23, // 23 hours
+      registration_delay_seconds: 1,
+      // registration_period_seconds: 60 * 60 * 23, // 23 hours
       fee_amount: 250n * 10n ** 18n,
       fee_token: getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords!,
     },

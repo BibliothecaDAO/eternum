@@ -48,7 +48,7 @@ export const NoGameState = ({ nextGameStart, onSelectGame, onSpectate, className
           transition={{ delay: 0.2 }}
           className="bg-gold/10 border border-gold/30 rounded-lg p-4"
         >
-          <p className="text-sm text-gold/70 mb-2">Next game starts in</p>
+          <p className="text-sm text-gold/70 mb-2">You can begin to register after</p>
           <CountdownTimer targetTime={nextGameStart} showLabel={false} size="lg" />
         </motion.div>
       )}
