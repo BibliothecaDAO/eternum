@@ -179,8 +179,6 @@ const TokenAmountInput = ({
   );
 };
 
-const DEFAULT_MARKET_ADDRESS = "";
-
 const tryBetterErrorMsg = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
