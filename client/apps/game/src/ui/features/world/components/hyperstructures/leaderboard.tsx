@@ -7,11 +7,12 @@ import {
   getEntityIdFromKeys,
   getRealmCountPerHyperstructure,
 } from "@/ui/utils/utils";
-import { getAddressName, LeaderboardManager } from "@bibliothecadao/eternum";
+import { getAddressName, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 
 export const Leaderboard = ({
   hyperstructureEntityId,
@@ -44,6 +45,23 @@ export const Leaderboard = ({
     // Sort by real-time total points
     return playersWithRealTimePoints.sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }, [dojo.setup.components]);
+
+  const playerAddresses = useMemo(
+    () => playerPointsLeaderboard.map(([address]) => toHexString(address)),
+    [playerPointsLeaderboard],
+  );
+  const { data: avatarProfiles } = useAvatarProfiles(playerAddresses);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 
@@ -87,6 +105,9 @@ export const Leaderboard = ({
       </SortPanel>
       {playerPointsLeaderboard.map(([address, points], index) => {
         const playerName = getAddressName(address, components) || "Player not found";
+        const playerAddress = toHexString(address);
+        const normalized = normalizeAvatarAddress(playerAddress);
+        const avatarUrl = normalized ? getAvatarUrl(playerAddress, avatarMap.get(normalized)) : null;
 
         const isOwner = address === ContractAddress(account.address);
 
@@ -94,7 +115,16 @@ export const Leaderboard = ({
           <div key={index} className={`flex mt-1 ${isOwner ? "bg-green/20" : ""} text-xxs text-gold`}>
             <div className={`flex relative group items-center text-xs px-2 p-1 w-full`}>
               <div className="flex w-full grid grid-cols-3">
-                <div className="text-sm font-bold">{playerName}</div>
+                <div className="flex items-center gap-2 text-sm font-bold">
+                  {avatarUrl && (
+                    <img
+                      className="h-6 w-6 rounded-full border border-gold/30 object-cover"
+                      src={avatarUrl}
+                      alt={`${playerName} avatar`}
+                    />
+                  )}
+                  <span className="truncate">{playerName}</span>
+                </div>
                 <div className=" text-sm font-bold">{displayAddress(address.toString(16))}</div>
                 <div className="text-right">{currencyIntlFormat(points)}</div>
               </div>

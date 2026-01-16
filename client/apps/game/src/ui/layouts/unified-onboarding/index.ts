@@ -4,3 +4,4 @@ export { WorldSelectPanel } from "./world-select-panel";
 export { AccountPanel } from "./account-panel";
 export { LoadingPanel } from "./loading-panel";
 export { BackgroundProgress } from "./background-progress";
+export { AvatarCreationPanel } from "./avatar-creation-panel";

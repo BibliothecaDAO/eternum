@@ -2,8 +2,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import type { UnifiedOnboardingState } from "@/hooks/context/use-unified-onboarding";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 
 import { AccountPanel } from "./account-panel";
+import { AvatarCreationPanel } from "./avatar-creation-panel";
 import { BackgroundProgress } from "./background-progress";
 import { LoadingPanel } from "./loading-panel";
 import { StepIndicator } from "./step-indicator";
@@ -15,7 +17,8 @@ interface UnifiedOnboardingScreenProps {
 }
 
 export const UnifiedOnboardingScreen = ({ backgroundImage, state }: UnifiedOnboardingScreenProps) => {
-  const { phase, bootstrap, isConnecting, selectWorld, connectWallet, spectate } = state;
+  const { phase, bootstrap, isConnecting, selectWorld, connectWallet, spectate, completeAvatar, account } = state;
+  const accountName = useAccountStore((state) => state.accountName);
 
   const isBootstrapRunning = bootstrap.status === "loading";
   const currentTaskLabel = bootstrap.tasks.find((t) => t.status === "running")?.label ?? null;
@@ -82,6 +85,24 @@ export const UnifiedOnboardingScreen = ({ backgroundImage, state }: UnifiedOnboa
                         isConnecting={isConnecting}
                         isBootstrapRunning={isBootstrapRunning}
                         bootstrapProgress={bootstrap.progress}
+                      />
+                    </motion.div>
+                  )}
+
+                  {phase === "avatar" && account && (
+                    <motion.div
+                      key="avatar"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.2 }}
+                      className="h-full"
+                    >
+                      <AvatarCreationPanel
+                        playerId={account.address}
+                        walletAddress={account.address}
+                        displayName={accountName ?? ""}
+                        onComplete={completeAvatar}
                       />
                     </motion.div>
                   )}

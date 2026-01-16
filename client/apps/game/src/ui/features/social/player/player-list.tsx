@@ -1,6 +1,7 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
@@ -76,6 +77,18 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
   const [prevPositions, setPrevPositions] = useState<Map<string, number>>(new Map());
+  const { data: avatarProfiles } = useAvatarProfiles(players.map((player) => player.address));
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
 
   const leaderboardGridTemplate = useMemo(
     () =>
@@ -220,11 +233,14 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
           sortedPlayers.map((player) => {
             const normalizedAddress = String(player.address);
             const playerEffect = effects.get(normalizedAddress.toLowerCase());
+            const avatarAddress = normalizeAvatarAddress(player.address);
+            const avatarUrl = avatarAddress ? getAvatarUrl(avatarAddress, avatarMap.get(avatarAddress)) : null;
 
             return (
               <PlayerRow
                 key={normalizedAddress}
                 player={player}
+                avatarUrl={avatarUrl}
                 onSelect={() => handleSelectPlayer(player.address)}
                 whitelistPlayer={whitelistPlayer}
                 isLoading={isLoading}
@@ -317,6 +333,7 @@ const PlayerListHeader = ({
 
 const PlayerRow = ({
   player,
+  avatarUrl,
   onSelect,
   whitelistPlayer,
   isLoading,
@@ -327,6 +344,7 @@ const PlayerRow = ({
   registerRef,
 }: {
   player: PlayerWithStats;
+  avatarUrl: string | null;
   onSelect: () => void;
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
@@ -391,6 +409,13 @@ const PlayerRow = ({
           </span>
         </div>
         <div className="flex min-w-0 items-center gap-2">
+          {avatarUrl && (
+            <img
+              className="h-7 w-7 rounded-full border border-gold/30 object-cover"
+              src={avatarUrl}
+              alt={`${player.name} avatar`}
+            />
+          )}
           <h6
             className={clsx("truncate text-sm font-semibold transition-colors", {
               "text-lightest": isSelected,

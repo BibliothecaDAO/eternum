@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import {
   useRealtimeChatActions,
@@ -9,6 +9,8 @@ import {
 } from "../../hooks/use-realtime-chat";
 import type { WorldChatMessage } from "../../model/types";
 import { MessageComposer } from "../shared/message-composer";
+import { UserAvatar } from "../shared/user-avatar";
+import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
 
 interface WorldChatPanelProps {
   zoneId?: string;
@@ -97,40 +99,6 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
 const formatSenderName = (message: WorldChatMessage) =>
   message.sender.displayName?.trim() || message.sender.playerId || "Unknown adventurer";
 
-const truncateWallet = (wallet?: string, visibleChars = 4) => {
-  if (!wallet) return undefined;
-  const normalized = wallet.trim();
-  if (normalized.length <= visibleChars * 2 + 3) {
-    return normalized;
-  }
-  return `${normalized.slice(0, visibleChars + 2)}…${normalized.slice(-visibleChars)}`;
-};
-
-// Copyable wallet address component with visual feedback
-const CopyableWalletAddress = ({ address, truncated }: { address: string; truncated: string }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy address:", err);
-    }
-  };
-
-  return (
-    <span
-      onClick={handleCopy}
-      className="text-[10px] text-amber-300 hover:text-amber-200 transition-colors cursor-pointer"
-      title={`${address} (click to copy)`}
-    >
-      └─ {copied ? "✓ Copied!" : truncated}
-    </span>
-  );
-};
-
 export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
   const fallbackZoneId = useRealtimeChatSelector((state) => state.activeZoneId ?? Object.keys(state.worldZones)[0]);
@@ -140,6 +108,22 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const { sendMessage, loadHistory, markAsRead, setActive } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? [];
   const presence = useRealtimePresence();
+  const senderIds = useMemo(
+    () => messages.map((message) => message.sender.displayName ?? message.sender.playerId),
+    [messages],
+  );
+  const { data: avatarProfiles } = useAvatarProfilesByUsernames(senderIds);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarUsername(profile.cartridgeUsername ?? undefined);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
@@ -277,36 +261,35 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               <ul className="flex flex-col gap-0.5">
                 {messages.map((message) => {
                   const senderName = formatSenderName(message);
-                  const walletBadge = truncateWallet(message.sender.walletAddress);
                   const messageParts = processMessage(message.content);
+                  const normalized = normalizeAvatarUsername(message.sender.displayName ?? message.sender.playerId);
+                  const avatarUrl = message.sender.avatarUrl ?? (normalized ? avatarMap.get(normalized) : undefined);
                   return (
                     <li key={message.id} className="text-[13px] leading-tight text-white/90">
-                      <div>
-                        <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>{" "}
-                        <span
-                          onClick={() => handleUserClick(message.sender.playerId)}
-                          className="text-gold/90 hover:text-gold transition-colors cursor-pointer"
-                          title={`Click to send DM to ${senderName}`}
-                        >
-                          &lt;{senderName}&gt;
-                        </span>{" "}
-                        <span className="break-words">
-                          {messageParts.map((part, i) => (
-                            <span key={i}>
-                              {part.type === "text" ? (
-                                <>{part.content}</>
-                              ) : (
-                                <CoordinateNavButton coordinates={part.content as { x: number; y: number }} />
-                              )}
-                            </span>
-                          ))}
-                        </span>
-                      </div>
-                      {walletBadge && message.sender.walletAddress && (
-                        <div className="ml-4 mt-0.5">
-                          <CopyableWalletAddress address={message.sender.walletAddress} truncated={walletBadge} />
+                      <div className="flex items-start gap-2">
+                        <UserAvatar name={senderName} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
+                        <div>
+                          <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>{" "}
+                          <span
+                            onClick={() => handleUserClick(message.sender.playerId)}
+                            className="text-gold/90 hover:text-gold transition-colors cursor-pointer"
+                            title={`Click to send DM to ${senderName}`}
+                          >
+                            &lt;{senderName}&gt;
+                          </span>{" "}
+                          <span className="break-words">
+                            {messageParts.map((part, i) => (
+                              <span key={i}>
+                                {part.type === "text" ? (
+                                  <>{part.content}</>
+                                ) : (
+                                  <CoordinateNavButton coordinates={part.content as { x: number; y: number }} />
+                                )}
+                              </span>
+                            ))}
+                          </span>
                         </div>
-                      )}
+                      </div>
                     </li>
                   );
                 })}
