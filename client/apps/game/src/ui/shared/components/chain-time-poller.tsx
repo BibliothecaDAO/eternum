@@ -36,21 +36,12 @@ export const ChainTimePoller = () => {
           return;
         }
 
-        const blockNumber =
-          typeof (block as any).block_number === "number"
-            ? (block as any).block_number
-            : typeof (block as any).blockNumber === "number"
-              ? (block as any).blockNumber
-              : undefined;
-
         if (isCancelled) {
           return;
         }
 
         setChainHeartbeat({
-          source: "mock",
           timestamp: timestampSeconds * 1000,
-          blockNumber,
         });
       } catch (error) {
         console.warn("[chain-time] failed to fetch latest block timestamp", error);

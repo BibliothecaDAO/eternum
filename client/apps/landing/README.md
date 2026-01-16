@@ -68,7 +68,7 @@ landing/
 
 ### Key Features
 
-- **NFT Marketplace**: Full-featured marketplace for trading Realms NFTs
+- **NFT Marketplace**: Full-featured marketplace for trading Eternum NFTs
   - Realm NFTs with detailed attributes
   - Season passes for game access
   - Listing creation and management

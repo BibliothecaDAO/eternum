@@ -25,5 +25,13 @@ export const getMarketplaceAddress = () => {
 };
 
 export const getLootChestsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lootChests;
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)["Collectibles: Realms: Loot Chest"];
+};
+
+export const getCosmeticsAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)["Collectibles: Realms: Cosmetic Items"];
+};
+
+export const getCosmeticsClaimAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).cosmeticsClaim;
 };

@@ -1,56 +1,46 @@
-export const latestFeatures = [
+export type FeatureType = "feature" | "improvement" | "balance" | "fix";
+
+export interface LatestFeature {
+  date: string;
+  title: string;
+  description: string;
+  type: FeatureType;
+}
+
+export const latestFeatures: LatestFeature[] = [
   {
-    date: "2025-09-27",
-    title: "Hex Double-Click Production",
+    date: "2026-01-14",
+    title: "Prediction Market: Combined Claims",
     description:
-      "Double-clicking any building in hex view now opens the production modal on the right with that structure selected and its produced resource pre-filled, speeding up production management.",
+      "When claiming from a resolved prediction market, your position winnings and vault fees are now claimed together in a single transaction. The displayed amount shows the combined total for a smoother experience.",
+    type: "improvement",
   },
   {
-    date: "2025-09-26",
-    title: "Worldmap Zoom Refinements",
+    date: "2026-01-14",
+    title: "Prediction Market: Custom Odds",
     description:
-      "Worldmap zooming is now deterministic: scroll gestures no longer randomly invert direction, micro-scrolls are ignored until intent is clear, each flick advances at most one camera tier, and the number keys 1/2/3 instantly snap between close, medium, and far presets for faster navigation.",
+      "Create prediction markets with customizable player weights and odds. Select 1-5 players, adjust individual weights, and see real-time percentage chances. The 'None of the above' option is also customizable. Minimum funding reduced to 100 LORDS.",
+    type: "feature",
   },
   {
-    date: "2025-09-24",
-    title: "Realm Ownership Highlights",
+    date: "2026-01-13",
+    title: "Transaction Status Center",
     description:
-      "Selecting a structure or one of its armies now highlights the owning realm across the map. The selected structure and every army it commands pulse in the same color, letting you instantly see a realm's forces at a glance.",
+      "A new transaction center is now available in the bottom-right corner. Track all your pending, confirmed, and failed transactions in real-time with a status beacon indicator. Click on any transaction to view details on Voyager.",
+    type: "feature",
   },
   {
-    date: "2025-09-17",
-    title: "Combat Directions",
+    date: "2026-01-13",
+    title: "Unit Ownership Indicators",
     description:
-      "Combat directions are now displayed on the worldmap. When an army or structure is attacked, the direction of the attack is displayed on the label. When an army or structure attacks another army or structure, the direction of the attack is displayed on the label.",
+      "Colored indicator dots now appear above units to clearly show player ownership. Your units display green dots, allies show blue, enemies have distinct colors, and AI agents show gold/amber dots for instant recognition during gameplay.",
+    type: "improvement",
   },
   {
-    date: "2025-08-18",
-    title: "Blitz mode gameplay updates",
+    date: "2026-01-09",
+    title: "Troop Balance Update",
     description:
-      "Major changes to Blitz mode: raiding is now disabled, structures cannot transfer items directly to troops, explorers only hold relic rewards (non-relic rewards go directly to realms), essence for relic activation is paid by the realm, and all structures now have maxed out storage capacity for streamlined gameplay. The UI will be updated soon to remove non functional features",
-  },
-  {
-    date: "2025-08-04",
-    title: "Enhanced Worldmap Labels",
-    description:
-      "Worldmap labels now display more detailed information: structures show their current productions and defense values, while armies display their unit count, type, and stamina. This gives you a clearer overview of your forces and assets at a glance.",
-  },
-  {
-    date: "2025-07-30",
-    title: "Active Production Display",
-    description:
-      "Structure details now show live active productions with real-time production rates per second, giving you better visibility into your realm's current resource generation.",
-  },
-  {
-    date: "2025-07-30",
-    title: "New Army Creation Flow",
-    description:
-      "New flow to create army, both from hex view and from worldmap view. In worldmap, left click on one of your structure, and then right click on an adjacent hex to open the army creation window.",
-  },
-  {
-    date: "2025-07-29",
-    title: "Keyboard Shortcuts Added",
-    description:
-      "New shortcuts have been added to the game. You can look at the current shortcuts by clicking on the keyboard icon on the top right corner of the screen.",
+      "Paladin stamina has been increased to 120, and mercenary troop bounds have been adjusted to 800-1600 for improved balance.",
+    type: "balance",
   },
 ];

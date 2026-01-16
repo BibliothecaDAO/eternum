@@ -1,0 +1,57 @@
+---
+title: Chest Contents
+description: Details on the contents of Loot Chests
+---
+
+import EternumRewardsChestTable from "@/components/EternumRewardsChestTable";
+
+# 📜 Chest Contents
+
+Each Loot Chest contains a varying number of items. For each item slot in a chest, an independent roll is performed
+against the item list for that Loot Chest type. Every item on the list has a defined draw chance. Because each roll is
+independent, Lords may receive multiple copies of the same item in a single Loot Chest.
+
+As seasons pass and new epochs of Loot Chest emerge, new chests of the same type (but bearing the mark of a new epoch)
+may be discovered. Loot Chest item lists are defined by both the Loot Chest type and the epoch from which they
+originated. So the items that can potentially be drawn from an Eternum Rewards Chest from epoch 2 are different to those
+drawn from an epoch 1 version of that chest.
+
+While most types of Loot Chests contain cosmetic items, Relic Chests contain consumable items that can be used in Blitz
+and Eternum to provide minor boosts, giving Lords slight advantages over their opponents when used strategically.
+
+_Note: While relics can currently be found in [Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates) in Blitz,
+onchain Relic Chests are still in development. These sections will be updated with more information as it becomes
+available._
+
+## Loot Chest Item Lists
+
+The following item lists contain information on the cosmetic items that can potentially be drawn from the various types
+of Loot Chest in the Realms ecosystem. Each cosmetic item is defined by:
+
+- **Item Name**
+- **Epoch Item Number** - the ID of unique items within an Epoch, the numbering starts again from 1 for each new epoch
+  (consider each epoch of items as a separate collection).
+- **Description** - a basic description, including the item set it is part of (if any).
+- **Rarity** - the relative rarity of the item, according to the designed item supply.
+- **Type** - the type of item (i.e. the 'slot' that the cosmetic occupies when outfitting a Realm).
+- **Troop Type** - whether the cosmetic item is relevant to a particular type of troop (Knight, Crossbowman, or
+  Paladin).
+- **Draw Chance** - the percentage chance of rolling this item on any of the three possible draws per Loot Chest.
+
+### Eternum Rewards Chest
+
+The Eternum Rewards Chest can contain three items from the following list:
+
+<EternumRewardsChestTable />
+
+### Blitz Rewards Chest
+
+_Work in progress..._
+
+### Elite Blitz Rewards Chest
+
+_Work in progress..._
+
+## Relic Chests
+
+_Work in progress..._

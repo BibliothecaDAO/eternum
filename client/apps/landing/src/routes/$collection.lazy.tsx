@@ -1,8 +1,9 @@
+import { ChestOpeningExperience, FloatingOpenButton } from "@/components/modules/chest-opening";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
-import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
+import TransferNftDialog from "@/components/modules/transfer-nft-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Pagination,
@@ -19,6 +20,7 @@ import { fetchCollectionStatistics, fetchTokenBalancesWithMetadata } from "@/hoo
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
+import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 
 import { MergedNftData } from "@/types";
@@ -48,6 +50,8 @@ function ManageCollectionRoute() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
+  const { showLootChestOpening, setShowLootChestOpening, clearLootChestOpening } = useLootChestOpeningStore();
+
   const [tokenBalanceQuery] = useSuspenseQueries({
     queries: [
       {
@@ -57,6 +61,7 @@ function ManageCollectionRoute() {
       },
     ],
   });
+
   const { data: collectionStats } = useQuery({
     queryKey: ["collectionStatistics", collectionAddress],
     queryFn: () => fetchCollectionStatistics(collectionAddress),
@@ -79,6 +84,16 @@ function ManageCollectionRoute() {
       collection_floor_price: floorPrice,
     }));
   }, [tokenBalanceQuery.data, collectionStats]);
+
+  // Calculate owned chests (not listed/expired) for the floating button and chest opening experience
+  const ownedChests = useMemo(() => {
+    if (!tokensWithFloorPrice) return [];
+    // Filter to only include chests that are not listed (no expiration)
+    return tokensWithFloorPrice.filter((token) => !token.expiration);
+  }, [tokensWithFloorPrice]);
+
+  // Check if this is the loot chest collection
+  const isLootChestCollection = collectionName === "Loot Chest";
 
   const {
     selectedFilters,
@@ -233,7 +248,9 @@ function ManageCollectionRoute() {
                     <div className="flex -space-x-2">
                       {selectedPasses.slice(0, 3).map((pass) => {
                         const metadata = pass.metadata;
-                        const image = metadata?.image;
+                        const image = metadata?.image?.startsWith("ipfs://")
+                          ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                          : metadata?.image;
                         return (
                           <div
                             key={pass.token_id}
@@ -311,12 +328,24 @@ function ManageCollectionRoute() {
         {/* End Pagination Controls */}
 
         {isTransferOpen && tokenBalanceQuery.data && (
-          <TransferSeasonPassDialog
+          <TransferNftDialog
             isOpen={isTransferOpen}
             setIsOpen={handleDialogClose}
-            seasonPassMints={tokenBalanceQuery.data}
+            nfts={tokenBalanceQuery.data}
+            collectionName={collectionName}
+            collectionAddress={collectionAddress}
             initialSelectedTokenId={initialSelectedTokenId}
           />
+        )}
+
+        {/* Floating Open Chest Button - only shown for Loot Chest collection */}
+        {isLootChestCollection && ownedChests.length > 0 && (
+          <FloatingOpenButton chestCount={ownedChests.length} onClick={() => setShowLootChestOpening(true)} />
+        )}
+
+        {/* Chest Opening Experience */}
+        {showLootChestOpening && (
+          <ChestOpeningExperience ownedChests={ownedChests} onClose={() => clearLootChestOpening()} />
         )}
       </>
     </div>

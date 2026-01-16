@@ -19,12 +19,9 @@ import {
   GetTransactionReceiptResponse,
   uint256,
 } from "starknet";
-import { ProviderHeartbeatManager, type ProviderDesyncStatus } from "./provider-heartbeat-manager";
-import { TransactionType, type ProviderHeartbeat, type ProviderHeartbeatSource, type ProviderSyncState } from "./types";
+import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
-export type { ProviderDesyncStatus, ProviderHeartbeat, ProviderHeartbeatSource, ProviderSyncState };
-export const PROVIDER_HEARTBEAT_EVENT = "providerHeartbeat";
 type TransactionFailureMeta = {
   type?: TransactionType;
   transactionCount?: number;
@@ -95,7 +92,7 @@ class PromiseQueue {
   }> = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly BATCH_DELAY = 250; // ms to wait for batching
+  private readonly BATCH_DELAY = 1000; // ms to wait for batching
   private readonly MAX_BATCH_SIZE = 2; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
@@ -246,7 +243,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ) => Promise<GetTransactionReceiptResponse>;
-  private heartbeatManager: ProviderHeartbeatManager;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   private pendingTransactionSpans = new Map<string, Span>();
   /**
@@ -268,50 +264,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       return worldAddress;
     };
     this.promiseQueue = new PromiseQueue(this);
-    this.heartbeatManager = new ProviderHeartbeatManager((heartbeat) => {
-      this.emit(PROVIDER_HEARTBEAT_EVENT, heartbeat);
-    });
-  }
-
-  public getSyncState(): ProviderSyncState {
-    return this.heartbeatManager.getSyncState();
-  }
-
-  public getDesyncStatus(thresholdMs = 10_000): ProviderDesyncStatus {
-    return this.heartbeatManager.getDesyncStatus(thresholdMs);
-  }
-
-  public simulateHeartbeat(
-    options: {
-      source?: ProviderHeartbeatSource;
-      timestamp?: number;
-      offsetMs?: number;
-      blockNumber?: number;
-      transactionHash?: string;
-    } = {},
-  ): ProviderHeartbeat {
-    return this.heartbeatManager.simulateHeartbeat(options);
-  }
-
-  public recordStreamActivity(meta?: { blockNumber?: number; timestamp?: number }) {
-    this.heartbeatManager.recordStreamActivity(meta);
-  }
-
-  private recordTransactionSubmission() {
-    this.heartbeatManager.recordTransactionSubmission();
-  }
-
-  private recordTransactionConfirmation({
-    transactionHash,
-    blockNumber,
-  }: {
-    transactionHash: string;
-    blockNumber?: number | null;
-  }) {
-    this.heartbeatManager.recordTransactionConfirmation({
-      transactionHash,
-      blockNumber,
-    });
   }
 
   private getTransactionSpanAttributes(
@@ -465,7 +417,6 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    */
   async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
-    this.recordTransactionSubmission();
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -506,6 +457,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     span.setAttribute("transaction.hash", tx.transaction_hash);
     span.addEvent("transaction.submitted", { "transaction.hash": tx.transaction_hash });
+
+    // Emit immediately so UI can show pending state
+    this.emit("transactionSubmitted", {
+      transactionHash: tx.transaction_hash,
+      ...transactionMeta,
+    });
 
     const waitPromise = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
       ...transactionMeta,
@@ -831,17 +788,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     const receiptAny = receipt as any;
-    const blockNumber =
-      typeof receiptAny?.block_number === "number"
-        ? receiptAny.block_number
-        : typeof receiptAny?.blockNumber === "number"
-          ? receiptAny.blockNumber
-          : undefined;
-
-    this.recordTransactionConfirmation({
-      transactionHash,
-      blockNumber,
-    });
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {
@@ -2280,7 +2226,77 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Move an explorer along a path of directions
+   * Move an explorer without exploring (can be batched with other transactions)
+   *
+   * @param props - Properties for traveling an explorer
+   * @param props.explorer_id - ID of the explorer to move
+   * @param props.directions - Array of directions to move in
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_travel(props: SystemProps.ExplorerTravelProps) {
+    const { explorer_id, directions, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      entrypoint: "explorer_move",
+      calldata: [explorer_id, directions, 0],
+    });
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Move an explorer and explore new tiles (never batched - executed in isolation)
+   *
+   * @param props - Properties for exploring with an explorer
+   * @param props.explorer_id - ID of the explorer to move
+   * @param props.directions - Array of directions to move in
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_explore(props: SystemProps.ExplorerExploreProps) {
+    const { explorer_id, directions, signer } = props;
+
+    let callData: Call[] = [];
+
+    // Pre-move VRF request
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      callData.push({
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      });
+    }
+
+    // Explorer move with explore=1
+    callData.push({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      entrypoint: "explorer_move",
+      calldata: [explorer_id, directions, 1],
+    });
+
+    // Post-move VRF request for reward extraction
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      callData.push({
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      });
+    }
+
+    // Extract reward
+    callData.push({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      entrypoint: "explorer_extract_reward",
+      calldata: [explorer_id],
+    });
+
+    const call = this.createProviderCall(signer, callData);
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * @deprecated Use explorer_travel or explorer_explore instead
    *
    * @param props - Properties for moving an explorer
    * @param props.explorer_id - ID of the explorer to move
@@ -2292,39 +2308,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_move(props: SystemProps.ExplorerMoveProps) {
     const { explorer_id, directions, explore, signer } = props;
 
-    let callData: Call[] = [];
-
-    if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      callData.push({
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-      });
-    }
-
-    callData.push({
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
-      entrypoint: "explorer_move",
-      calldata: [explorer_id, directions, explore ? 1 : 0],
-    });
     if (explore) {
-      if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-        callData.push({
-          contractAddress: this.VRF_PROVIDER_ADDRESS!,
-          entrypoint: "request_random",
-          calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-        });
-      }
-
-      callData.push({
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
-        entrypoint: "explorer_extract_reward",
-        calldata: [explorer_id],
-      });
+      return await this.explorer_explore({ explorer_id, directions, signer });
+    } else {
+      return await this.explorer_travel({ explorer_id, directions, signer });
     }
-
-    const call = this.createProviderCall(signer, [...callData]);
-    return await this.promiseQueue.enqueue(call);
   }
   /**
    * Attack an explorer with another explorer
@@ -3486,6 +3474,41 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return await this.promiseQueue.enqueue(call);
+  }
+
+  // Loot Chest functions
+
+  public async open_loot_chest(props: SystemProps.OpenLootChestProps) {
+    const { signer, token_id, loot_chest_address, claim_address } = props;
+
+    let callData: Call[] = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [claim_address, 0, signer.address],
+      };
+
+      callData = [requestRandomCall];
+    }
+
+    // create multicall
+    // first approve
+    callData.push({
+      contractAddress: loot_chest_address,
+      entrypoint: "approve",
+      calldata: [claim_address, token_id.toString(), 0],
+    });
+
+    // then claim
+    callData.push({
+      contractAddress: claim_address,
+      entrypoint: "claim",
+      calldata: [token_id.toString(), 0],
+    });
+
+    return await signer.execute(callData);
   }
 
   // Marketplace functions

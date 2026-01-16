@@ -11,6 +11,8 @@
   "villagePass": "0x5c7d2d225fcd746a797f0a6adf16312b03be896fa0d13da7c6870e76c06ba35",
   "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
   "lootChests": "",
+  "cosmetics": "",
+  "cosmeticsClaim": "",
   "resources": {
     "STONE": [1,"0x71843023d1b7f297d175b1d0edcd554dd834b42dbc9d7fa02ba09a233eee529"],
     "COAL": [2,"0x20ad02ce479ed93abb98c432550aa81bed57902d8de648100049f764797d862"],

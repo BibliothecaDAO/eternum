@@ -48,6 +48,8 @@
     "cmdk": "1.0.0",
     "graphql": "^16.9.0",
     "graphql-tag": "^2.12.6",
+    "gsap": "^3.12.5",
+    "html-to-image": "^1.11.13",
     "jotai": "^2.10.1",
     "nuqs": "^2.0.4",
     "open": "catalog:",
@@ -56,6 +58,8 @@
     "starknet": "catalog:",
     "starknetkit": "catalog:",
     "storybook": "^8.3.2",
+    "three": "^0.166.0",
+    "three-stdlib": "^2.29.5",
     "vaul": "^1.1.2",
     "vite-plugin-vercel": "^9.0.3",
     "zustand": "^4.5.2"
@@ -79,7 +83,8 @@
     "@tanstack/router-devtools": "^1.74.0",
     "@tanstack/router-plugin": "^1.73.1",
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:"
+    "@types/react-dom": "catalog:",
+    "@types/three": "^0.163.0"
   },
   "peerDependencies": {
     "starknet": "catalog:"

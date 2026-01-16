@@ -34,10 +34,10 @@ const sizes = {
 };
 
 const notificationPositions = {
-  topleft: "-top-1 -left-1",
-  topright: "-top-1 right-0 -translate-x-1",
-  bottomleft: "-bottom-1 -left-1",
-  bottomright: "-bottom-1 right-0 -translate-x-1",
+  topleft: "-top-0.5 -left-0.5",
+  topright: "-top-0.5 -right-0.5",
+  bottomleft: "-bottom-0.5 -left-0.5",
+  bottomright: "-bottom-0.5 -right-0.5",
 };
 
 type NotificationColor = Exclude<NonNullable<CircleButtonProps["primaryNotification"]>["color"], undefined>;
@@ -163,7 +163,7 @@ const CircleButton = ({
       {primaryNotification && primaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold transition-shadow duration-200",
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
             notificationPositions[primaryNotification.location || "topleft"],
             getToneClasses(primaryNotification.color, "green"),
           )}
@@ -174,7 +174,7 @@ const CircleButton = ({
       {secondaryNotification && secondaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold transition-shadow duration-200",
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
             notificationPositions[secondaryNotification.location || "topright"],
             getToneClasses(secondaryNotification.color, "blue"),
           )}

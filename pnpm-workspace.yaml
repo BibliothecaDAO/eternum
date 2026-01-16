@@ -16,8 +16,8 @@ packages:
 catalog:
   starknet: ^8.5.2
   starknetkit: ^2.10.4
-  "@cartridge/controller": ^0.11.3
-  "@cartridge/connector": ^0.11.3
+  "@cartridge/controller": ^0.12.1
+  "@cartridge/connector": ^0.12.1
   "@starknet-react/core": "5.0.3"
   "@starknet-react/chains": 5.0.3
   "@metamask/sdk": ^0.32.1
