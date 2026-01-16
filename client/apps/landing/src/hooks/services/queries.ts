@@ -485,9 +485,10 @@ WITH limited_active_orders AS (
   COLLECTIBLE_CLAIMED: `
     SELECT *
     FROM [events]
-    WHERE keys LIKE '0x6d9857ff29ce02c8a34db3a4387b1438bd738b0b4c17679553432d8fc11ecb/{contractAddress}/%{playerAddress}/'
+    WHERE keys LIKE '0x006d9857ff29ce02c8a34db3a4387b1438bd738b0b4c17679553432d8fc11ecb/{contractAddress}/%{playerAddress}/'
       AND created_at > {minTimestamp}
     ORDER BY created_at DESC
+    limit 3
   `,
   SINGLE_COLLECTION_TOKEN: `
     /* Fetch a single token by ID with listing status and current owner */

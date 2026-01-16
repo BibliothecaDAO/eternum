@@ -10,6 +10,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
+import { toHexString } from "@bibliothecadao/eternum";
+import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
@@ -59,6 +61,17 @@ const StructureBannerEntityDetailContent = memo(
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
+    const ownerAddress =
+      structure?.owner !== undefined && structure.owner !== null && structure.owner !== 0n
+        ? toHexString(structure.owner)
+        : null;
+    const { data: ownerProfile } = usePlayerAvatar(ownerAddress ?? undefined);
+    const ownerAvatarUrl =
+      ownerAddress && ownerProfile
+        ? getAvatarUrl(ownerAddress, ownerProfile.avatarUrl)
+        : ownerAddress
+          ? getAvatarUrl(ownerAddress, null)
+          : null;
 
     const rawCategory = structure?.base?.category;
     const handleOpenTransferPopup = useCallback(() => {
@@ -96,17 +109,34 @@ const StructureBannerEntityDetailContent = memo(
       typeof structure.entity_id !== "undefined";
     const bodyTextClass = compact ? "text-xs" : "text-sm";
     const labelTextClass = compact ? "text-xxs" : "text-xs";
+    const headerTitleClass = compact ? "text-sm" : "text-base";
+    const headerMetaClass = compact ? "text-xxs" : "text-xs";
+    const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
 
     return (
       <EntityDetailSection compact={compact} className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
-        <div className="flex items-center gap-2 text-gold">
-          <span className={cn(bodyTextClass, "font-normal flex-1")}>
-            {isMine ? "🟢" : "🔴"} {ownerDisplayName}
-            <span className="px-1 text-gold/50">·</span>
-            {structureName}
-          </span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3 text-gold">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
+              {ownerAvatarUrl ? (
+                <img className="h-full w-full object-cover" src={ownerAvatarUrl} alt={`${ownerDisplayName} avatar`} />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
+                  {ownerInitial}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className={cn("truncate font-semibold text-gold", headerTitleClass)}>{ownerDisplayName}</p>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className={cn("truncate text-gold/80", headerMetaClass)}>{structureName}</span>
+              </div>
+            </div>
+          </div>
           {canOpenTransferPopup && (
             <Button
               size="xs"

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, Globe, Loader2, User, Gamepad2, Play } from "lucide-react";
+import { Check, Globe, Loader2, User, Gamepad2, Play, Sparkles } from "lucide-react";
 
 import type { OnboardingPhase } from "@/hooks/context/use-unified-onboarding";
 
@@ -17,6 +17,7 @@ type Step = {
 const STEPS: Step[] = [
   { id: "world-select", label: "World", icon: Globe },
   { id: "account", label: "Account", icon: User },
+  { id: "avatar", label: "Avatar", icon: Sparkles },
   { id: "loading", label: "Setup", icon: Gamepad2 },
   { id: "settlement", label: "Settlement", icon: Play },
 ];
@@ -26,7 +27,7 @@ const getStepStatus = (
   currentPhase: OnboardingPhase,
   isBootstrapRunning: boolean,
 ): "complete" | "current" | "pending" | "running" => {
-  const phaseOrder: OnboardingPhase[] = ["world-select", "account", "loading", "settlement", "ready"];
+  const phaseOrder: OnboardingPhase[] = ["world-select", "account", "avatar", "loading", "settlement", "ready"];
   const currentIndex = phaseOrder.indexOf(currentPhase);
   const stepIndex = phaseOrder.indexOf(step.id as OnboardingPhase);
 
@@ -35,15 +36,15 @@ const getStepStatus = (
   }
 
   if (stepIndex === currentIndex) {
-    // Special case: if we're in account phase but bootstrap is running
-    if (currentPhase === "account" && step.id === "loading" && isBootstrapRunning) {
+    // Special case: if we're in account/avatar phase but bootstrap is running
+    if ((currentPhase === "account" || currentPhase === "avatar") && step.id === "loading" && isBootstrapRunning) {
       return "running";
     }
     return "current";
   }
 
-  // Show loading step as running even when in account phase if bootstrap is active
-  if (step.id === "loading" && isBootstrapRunning && currentPhase === "account") {
+  // Show loading step as running even when in account/avatar phase if bootstrap is active
+  if (step.id === "loading" && isBootstrapRunning && (currentPhase === "account" || currentPhase === "avatar")) {
     return "running";
   }
 

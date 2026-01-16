@@ -6,18 +6,15 @@ import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/conf
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { useOpenChest } from "@/hooks/use-open-chest";
 import { formatRelativeTime } from "@/lib/utils";
-import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Copy, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, Copy, ImageOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
-import { env } from "../../../env";
 import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -129,21 +126,9 @@ export const TokenDetailModal = ({
 
   console.log("[TokenDetailModal] tokenData", tokenData);
 
-  const { setShowLootChestOpening, setChestOpenTimestamp, setOpenedChestTokenId } = useLootChestOpeningStore();
-
   // Get wallet state
   const { address } = useAccount();
   const { connector, connectors, connect } = useConnect();
-
-  const [isController, setIsController] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const id = (connector as any)?.controller?.id;
-      const hasController = id === "controller";
-      setIsController(hasController);
-    }
-  }, [connectors, isOpen]);
 
   const { lordsBalance } = useLords();
 
@@ -152,30 +137,7 @@ export const TokenDetailModal = ({
   const hasSufficientBalance = userBalance >= nftPrice;
 
   const [isSyncing, setIsSyncing] = useState(false);
-
-  const { openChest, error: chestOpeningError } = useOpenChest();
-
-  const handleOpenChest = () => {
-    if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
-      openChest({
-        tokenId: BigInt(tokenData.token_id),
-        onSuccess: () => {
-          console.log("Chest opened successfully");
-          // Set timestamp for when chest is opened to listen for new events
-          setChestOpenTimestamp(Math.floor(Date.now() / 1000));
-          setShowLootChestOpening(true);
-          setOpenedChestTokenId(tokenData.token_id.toString());
-        },
-        onError: (error) => {
-          console.error("Failed to open chest:", error);
-        },
-      });
-    } else {
-      setShowLootChestOpening(true);
-      setOpenedChestTokenId(tokenData.token_id.toString());
-      setChestOpenTimestamp(Math.floor(Date.now() / 1000));
-    }
-  };
+  const [imageError, setImageError] = useState(false);
 
   // Effect to detect when indexer data has updated props
   useEffect(() => {
@@ -281,32 +243,6 @@ export const TokenDetailModal = ({
         </div>
       ) : (
         <div className="flex flex-col gap-2 mt-2">
-          {isOwner && collectionType === CollectionType.LootChest && (
-            <>
-              {!isController && (
-                <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md p-3 mb-2">
-                  <Info className="h-4 w-4 flex-shrink-0" />
-                  <span>Send to Cartridge Controller to open chests</span>
-                </div>
-              )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="w-full">
-                      <Button
-                        variant="default"
-                        className="w-full"
-                        onClick={handleOpenChest}
-                        disabled={isLoading || !isController || env.VITE_PUBLIC_BLOCK_CHEST_OPENING}
-                      >
-                        Open Chest {env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : ""}
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                </Tooltip>
-              </TooltipProvider>
-            </>
-          )}
           <CreateListingsDrawer
             isLoading={isLoading}
             isSyncing={isSyncing}
@@ -404,7 +340,18 @@ export const TokenDetailModal = ({
             <div className="grid gap-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center justify-center">
-                  <img src={image} alt={name ?? "Realm"} className="rounded-md  object-contain" />
+                  {image && !imageError ? (
+                    <img
+                      src={image}
+                      alt={name ?? "Realm"}
+                      className="rounded-md object-contain"
+                      onError={() => setImageError(true)}
+                    />
+                  ) : (
+                    <div className="w-full aspect-square bg-slate-800 rounded-md flex items-center justify-center">
+                      <ImageOff className="w-24 h-24" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-5">
                   <div className="flex flex-col gap-2">

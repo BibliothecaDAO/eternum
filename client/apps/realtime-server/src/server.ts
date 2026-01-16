@@ -34,6 +34,7 @@ import { attachPlayerSession, requirePlayerSession, type AppEnv, type PlayerSess
 import directMessageRoutes, { buildThreadId, sortParticipants } from "./http/routes/direct-messages";
 import notesRoutes from "./http/routes/notes";
 import worldChatRoutes from "./http/routes/world-chat";
+import avatarRoutes from "./http/routes/avatars";
 import { createZoneRegistry } from "./ws/zone-registry";
 
 const app = new Hono<AppEnv>();
@@ -532,6 +533,7 @@ app.get("/health", (c) => {
 app.route("/api/notes", notesRoutes);
 app.route("/api/chat/world", worldChatRoutes);
 app.route("/api/chat/dm", directMessageRoutes);
+app.route("/api/avatars", avatarRoutes);
 
 type ClientMessage =
   | { type: "join:zone"; zoneId: string }
