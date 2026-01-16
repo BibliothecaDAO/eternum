@@ -75,13 +75,15 @@ function App() {
               <Route
                 path="cosmetics"
                 element={
-                  <Suspense
-                    fallback={
-                      <div className="flex h-full items-center justify-center text-gold/60">Loading cosmetics...</div>
-                    }
-                  >
-                    <LazyLandingCosmetics />
-                  </Suspense>
+                  <MarketsProviders>
+                    <Suspense
+                      fallback={
+                        <div className="flex h-full items-center justify-center text-gold/60">Loading cosmetics...</div>
+                      }
+                    >
+                      <LazyLandingCosmetics />
+                    </Suspense>
+                  </MarketsProviders>
                 }
               />
               <Route path="account" element={<LandingAccount />} />

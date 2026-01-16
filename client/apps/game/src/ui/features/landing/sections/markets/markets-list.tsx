@@ -47,7 +47,7 @@ const MarketCard = memo(function MarketCard({
   );
 
   return (
-    <Card className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/60 p-3 transition hover:border-gold/60">
+    <Card className="h-full gap-3 rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/80 p-3 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)] backdrop-blur-sm transition hover:border-gold/60">
       <CardHeader className="flex items-start justify-between gap-3 px-0">
         <CardTitle className="flex-1">
           {isLinkable ? (
@@ -166,7 +166,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1 || isFetching}
             aria-label="Previous page"
-            className="min-h-[44px] min-w-[44px] rounded bg-white/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           >
             ←
           </button>
@@ -177,7 +177,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages || isFetching}
             aria-label="Next page"
-            className="min-h-[44px] min-w-[44px] rounded bg-white/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           >
             →
           </button>

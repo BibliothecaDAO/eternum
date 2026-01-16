@@ -1,5 +1,5 @@
 import { getCosmeticsAddress } from "@/components/ui/utils/addresses";
-import { ChestAsset, getChestAssetFromAttributesRaw, getAllChestAssets, COSMETIC_NAMES } from "@/utils/cosmetics";
+import { ChestAsset, COSMETIC_NAMES, getAllChestAssets, getChestAssetFromAttributesRaw } from "@/utils/cosmetics";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -60,8 +60,6 @@ export const useChestContent = (debugMode: boolean = false, timestamp: number) =
     queryFn: () => (address ? fetchCollectibleClaimed(cosmeticsAddress, address, timestamp) : null),
     refetchInterval: 3_000,
   });
-
-  console.log("collectibleClaimedQuery", collectibleClaimedQuery, timestamp);
 
   useEffect(() => {
     // Debug mode: return all chest assets
