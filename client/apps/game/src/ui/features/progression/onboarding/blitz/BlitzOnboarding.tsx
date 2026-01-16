@@ -167,14 +167,7 @@ export const BlitzOnboarding = () => {
       console.error("Registration failed:", error);
       setRegistrationStage("error");
     }
-  }, [
-    account,
-    addressNameFelt,
-    blitzConfig,
-    blitz_realm_register,
-    entryTokens,
-    waitForEntryToken,
-  ]);
+  }, [account, addressNameFelt, blitzConfig, blitz_realm_register, entryTokens, waitForEntryToken]);
 
   const handleMakeHyperstructures = async () => {
     if (!account?.address) return;

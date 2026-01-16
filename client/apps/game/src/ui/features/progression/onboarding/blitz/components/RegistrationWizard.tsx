@@ -178,7 +178,10 @@ export const RegistrationWizard = ({
                   {status === "complete" ? (
                     <Check className="w-4 h-4" />
                   ) : status === "active" ? (
-                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    >
                       <Loader2 className="w-4 h-4" />
                     </motion.div>
                   ) : (
