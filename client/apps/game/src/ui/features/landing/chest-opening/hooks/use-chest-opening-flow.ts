@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
 import { useLootChestOpeningStore } from "@/hooks/store/use-loot-chest-opening-store";
+import { useCallback, useState } from "react";
 import { MOCK_CHEST_OPENING, simulatePendingDelay } from "./mock-data";
 
 // State machine states for the chest opening flow
@@ -75,7 +75,7 @@ export function useChestOpeningFlow(): UseChestOpeningFlowReturn {
     }));
 
     // Set timestamp for event query
-    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
+    setChestOpenTimestamp(Math.floor(Date.now() / 1000) - 10);
 
     // In mock mode, simulate delay then transition to opening
     if (MOCK_CHEST_OPENING) {
