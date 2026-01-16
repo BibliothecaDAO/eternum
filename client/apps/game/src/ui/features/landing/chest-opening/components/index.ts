@@ -1,5 +1,7 @@
+import { env } from "../../../../../../env";
+
 // Feature flags for chest opening
-export const CHEST_OPENING_ENABLED = true;
+export const CHEST_OPENING_ENABLED = env.VITE_PUBLIC_CHEST_OPENING_ENABLED;
 
 export * from "./chest-card";
 export * from "./chest-opening-experience";
