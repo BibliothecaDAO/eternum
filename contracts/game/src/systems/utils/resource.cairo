@@ -2,6 +2,7 @@ use core::array::SpanTrait;
 use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::world::WorldStorage;
+use dojo::world::IWorldDispatcherTrait;
 use crate::alias::ID;
 use crate::constants::{all_resource_ids, is_bank};
 use crate::models::config::{SpeedImpl, WorldConfigUtilImpl};
@@ -245,6 +246,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(to_owner),
                     entity_id: Option::Some(to_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -320,6 +322,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(to_owner),
                     entity_id: Option::Some(to_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -401,6 +404,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(to_owner),
                     entity_id: Option::Some(to_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -544,6 +548,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(from_owner),
                     entity_id: Option::Some(from_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -555,6 +560,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(to_owner),
                     entity_id: Option::Some(to_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -595,6 +601,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(from_owner),
                     entity_id: Option::Some(from_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -675,6 +682,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(to_owner),
                         entity_id: Option::Some(to_structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

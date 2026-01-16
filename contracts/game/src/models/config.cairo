@@ -54,6 +54,7 @@ pub struct WorldConfig {
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub victory_points_win_config: VictoryPointsWinConfig,
+    pub factory_address: ContractAddress,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -654,11 +655,11 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 
     fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x101 // @todo @note to be changed 
+        0x201 // Blitz Rewards (s0) NFTS
     }
 
     fn collectibles_elitenft_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x101 // @todo @note to be changed 
+        0x10101 // Series 0 Elite Invite NFTs
     }
 
     fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {
@@ -1000,6 +1001,14 @@ pub struct BlitzRealmPlayerRegister {
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
+pub struct BlitzPlayerRegisterList {
+    #[key]
+    pub count: u16,
+    pub player: ContractAddress
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
 pub struct BlitzEntryTokenRegister {
     #[key]
     pub token_id: u128,
@@ -1014,10 +1023,3 @@ pub struct BlitzCosmeticAttrsRegister {
     pub attrs: Span<u128>,
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzPreviousGame {
-    #[key]
-    pub config_id: ID,
-    pub last_prize_distribution_systems: ContractAddress,
-}

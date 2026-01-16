@@ -14,18 +14,18 @@ pub mod series_chest_reward_calculator {
     const BPS: u128 = 10_000; // 100% in basis points
     const SCALE_MIN_BPS: u128 = 6_250; // 0.625x
     const SCALE_MAX_BPS: u128 = 16_000; // 1.6x
-    const RECENT_PLAYERS_MAX: u32 = 5; // fixed ring capacity
+    const RECENT_PLAYERS_MAX: u32 = 3; // fixed ring capacity
 
     // Some sensible defaults (used in tests / examples)
-    const NUM_GAMES_IN_SERIES: u32 = 100;
-    const TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED: u128 = 10_000;
+    const NUM_GAMES_IN_SERIES: u32 = 9;
+    const TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED: u128 = 730;
     const CAP_RATIO_BPS: u128 = 11_000; // 1.10
-    const EXPECTED_PLAYERS_START: u128 = 100;
-    const EXPECTED_PLAYERS_END: u128 = 200;
+    const EXPECTED_PLAYERS_START: u128 = 30;
+    const EXPECTED_PLAYERS_END: u128 = 30;
     const FORECAST_SCHEDULE_WEIGHT_BPS: u128 = 6_000; // 0.6
     const RECENT_RATE_WEIGHT_BPS: u128 = 6_000; // 0.6
-    const ANCHOR_WINDOW: u32 = 5; 
-    const EMA_WINDOW: u32 = 20; 
+    const ANCHOR_WINDOW: u32 = 2; 
+    const EMA_WINDOW: u32 = 3;
     const MIN_EFFECTIVE_PLAYERS: u128 = 1;
     const MAX_RATE_INCREASE_BPS: u128 = 600; // 6%
     const MAX_RATE_DECREASE_BPS: u128 = 600; // 6%

@@ -628,6 +628,7 @@ pub impl BuildingImpl of BuildingTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(outer_entity_owner_address),
                     entity_id: Option::Some(outer_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -677,6 +678,7 @@ pub impl BuildingImpl of BuildingTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(outer_entity_owner_address),
                     entity_id: Option::Some(outer_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -725,6 +727,7 @@ pub impl BuildingImpl of BuildingTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(outer_entity_owner_address),
                     entity_id: Option::Some(outer_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -795,6 +798,7 @@ pub impl BuildingImpl of BuildingTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(outer_entity_owner_address),
                     entity_id: Option::Some(outer_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -869,6 +873,7 @@ pub impl BuildingImpl of BuildingTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(building_owner_address),
                     entity_id: Option::Some(self.outer_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,

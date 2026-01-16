@@ -128,8 +128,8 @@ pub trait IGameModeConfig<T> {
 }
 
 #[starknet::interface]
-pub trait IBlitzConfig<T> {
-    fn set_blitz_previous_game(ref self: T, prev_prize_distribution_systems: starknet::ContractAddress);
+pub trait IFactoryConfig<T> {
+    fn set_factory_address(ref self: T, address: starknet::ContractAddress);
 }
 
 #[starknet::interface]
@@ -239,7 +239,7 @@ pub mod config_systems {
         StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
         VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
-        WorldConfigUtilImpl, BlitzRegistrationConfigImpl, BlitzPreviousGame
+        WorldConfigUtilImpl, BlitzRegistrationConfigImpl,
     };
     use crate::models::name::AddressName;
     use crate::models::position::{CoordImpl, CENTER_COL};
@@ -912,19 +912,17 @@ pub mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl IBlitzConfig of super::IBlitzConfig<ContractState> {
+    impl IFactoryConfig of super::IFactoryConfig<ContractState> {
 
-        fn set_blitz_previous_game(
-            ref self: ContractState, prev_prize_distribution_systems: starknet::ContractAddress
+        fn set_factory_address(
+            ref self: ContractState, address: starknet::ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
             
-            world.write_model(
-                @BlitzPreviousGame{
-                    config_id: WORLD_CONFIG_ID,
-                    last_prize_distribution_systems: prev_prize_distribution_systems
-                })
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("factory_address"), address,
+            );
         }
 
     }

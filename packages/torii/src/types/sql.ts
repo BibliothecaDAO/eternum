@@ -115,6 +115,7 @@ export interface HyperstructureRow {
 export interface StoryEventData {
   owner: string | null;
   entity_id: number | null;
+  id?: number | null;
   tx_hash: string;
   story: string; // The story type (e.g., "RealmCreatedStory", "ExplorerMoveStory", etc.)
   timestamp: string;

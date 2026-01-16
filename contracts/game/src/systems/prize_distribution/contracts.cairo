@@ -1,5 +1,13 @@
-use starknet::ContractAddress;
+use starknet::{ContractAddress, ClassHash};
 use crate::models::series_chest_reward::{SeriesChestRewardState};
+
+/// Interface for the world factory series.
+#[starknet::interface]
+pub trait IWorldFactorySeries<T> {    
+    fn get_series_game_data(self: @T, addr: ContractAddress) -> (felt252, u16);
+    fn get_series_game_address_by_class_hash(self: @T, name: felt252, game_number: u16, class_hash: ClassHash) -> ContractAddress;
+}
+
 
 #[starknet::interface]
 pub trait IPrizeDistributionSystems<T> {
@@ -26,8 +34,9 @@ use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait, WorldStorage};
-    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister, BlitzPreviousGame};
+    use dojo::world::IWorldDispatcherTrait;
+    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID, VELORDS_BURNER_ADDRESS};
+    use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister};
     use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
     use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize, RankPrizeImpl, RankList};
     use crate::models::season::{SeasonPrize};
@@ -43,8 +52,11 @@ use core::num::traits::zero::Zero;
     use super::{IPrizeDistributionSystems, IPrizeDistributionSystemsSafeDispatcher, IPrizeDistributionSystemsSafeDispatcherTrait};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
+    use super::{IWorldFactorySeriesDispatcher, IWorldFactorySeriesDispatcherTrait};
 
     const SYSTEM_TRIAL_ID: u128 = 1000;
+    const VICTORY_POINTS_MULTIPLIER: u128 = 1_000_000;
+    const GAME_REWARD_CHEST_POINTS_THRESHOLD: u128 = 500 * VICTORY_POINTS_MULTIPLIER;
 
 
     #[abi(embed_v0)]
@@ -69,11 +81,26 @@ use core::num::traits::zero::Zero;
             let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
             assert!(blitz_mode_on == true, "Eternum: Not a blitz game");
 
-            let last_game: BlitzPreviousGame = world.read_model(WORLD_CONFIG_ID);
+
+            let game_factory_dispatcher = IWorldFactorySeriesDispatcher {
+                contract_address: WorldConfigUtilImpl::get_member(world, selector!("factory_address"))
+            };
+            let (series_name, series_game_number) = game_factory_dispatcher.get_series_game_data(starknet::get_contract_address());
+            let mut last_game_last_prize_distribution_systems: ContractAddress = Zero::zero();
+            if series_game_number > 1 {
+                let (_, this_class_hash) = world.dns(@"prize_distribution_systems").unwrap();
+                last_game_last_prize_distribution_systems 
+                    = game_factory_dispatcher.get_series_game_address_by_class_hash(
+                        series_name, 
+                        series_game_number - 1, 
+                        this_class_hash
+                    );
+            };
+
             let mut last_game_series_chest_reward_state : SeriesChestRewardState 
-                = if last_game.last_prize_distribution_systems.is_non_zero() {
+                = if last_game_last_prize_distribution_systems.is_non_zero() {
                     IPrizeDistributionSystemsSafeDispatcher{
-                        contract_address: last_game.last_prize_distribution_systems
+                        contract_address: last_game_last_prize_distribution_systems
                     }.blitz_get_or_compute_series_chest_reward_state().unwrap_or(SeriesChestRewardStateImpl::new())
             } else {
                 SeriesChestRewardStateImpl::new()
@@ -204,6 +231,7 @@ use core::num::traits::zero::Zero;
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(registered_player),
                         entity_id: Option::Some(0),
                         tx_hash,
@@ -271,11 +299,18 @@ use core::num::traits::zero::Zero;
 
                 // transfer ERC20 prize to player
                 assert!(reward_token.transfer(player, amount.into()), "Eternum: Failed to transfer prize");
+                
+                // transfer 1 Game Chest to players above 500 points
+                let mut player_points: PlayerRegisteredPoints = world.read_model(player);
+                if player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
+                    // game_chest_reward.distributed_chests += 1;
+                    lootchest_erc721_dispatcher.mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
+                }
+
 
                 // transfer ERC721 Chest prize to player
                 if game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
 
-                    let mut player_points: PlayerRegisteredPoints = world.read_model(player);
                     let success: bool = rng_library_dispatcher
                         .get_weighted_choice_bool_simple(
                             player_points.registered_points.into(), 
@@ -301,6 +336,7 @@ use core::num::traits::zero::Zero;
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(player),
                             entity_id: Option::Some(0),
                             tx_hash,
@@ -384,7 +420,7 @@ use core::num::traits::zero::Zero;
                     // todo: fix: send velords to correct address
                     // send the velords fees
                     assert!(
-                        reward_token.transfer(blitz_registration_config.fee_recipient, blitz_fee_split_record.velords_receives_amount.into()), 
+                        reward_token.transfer(VELORDS_BURNER_ADDRESS.try_into().unwrap(), blitz_fee_split_record.velords_receives_amount.into()), 
                             "Eternum: Failed to transfer velords fees"
                     );
 
@@ -503,6 +539,7 @@ use core::num::traits::zero::Zero;
                 world
                     .emit_event(
                         @StoryEvent {
+                            id: world.dispatcher.uuid(),
                             owner: Option::Some(caller),
                             entity_id: Option::Some(0),
                             tx_hash: starknet::get_tx_info().unbox().transaction_hash,

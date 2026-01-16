@@ -2,10 +2,10 @@
 default = "s1_eternum"
 
 [lib_versions]
-"s1_eternum-combat_library" = "0_1_6"
-"s1_eternum-rng_library" = "0_1_6"
-"s1_eternum-biome_library" = "0_1_6"
-"s1_eternum-structure_creation_library" = "0_1_6"
+"s1_eternum-combat_library" = "0_1_8"
+"s1_eternum-rng_library" = "0_1_8"
+"s1_eternum-biome_library" = "0_1_8"
+"s1_eternum-structure_creation_library" = "0_1_8"
 
 
 [env]
