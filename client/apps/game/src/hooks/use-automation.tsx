@@ -222,7 +222,7 @@ export const useAutomation = () => {
       // Phase 1: Build all plans synchronously (no awaits, so no event loop yields)
       const executablePlans: Array<{
         plan: RealmProductionPlan;
-        realmConfig: typeof realmList[0];
+        realmConfig: (typeof realmList)[0];
         realmLabel: string;
         planLogPayload: Record<string, unknown>;
       }> = [];
@@ -401,9 +401,7 @@ export const useAutomation = () => {
                   return `${Math.round(amount).toLocaleString()} ${label}`;
                 })
                 .join(", ");
-              toast.success(
-                `Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
-              );
+              toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`);
             } else {
               toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
             }
