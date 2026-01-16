@@ -201,7 +201,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
           </nav>
         </header>
 
-        <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-6 lg:px-0">
+        <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center lg:px-0">
           <Outlet />
         </main>
       </div>
