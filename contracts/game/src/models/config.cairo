@@ -655,11 +655,11 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 
     fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x101 // @todo @note to be changed 
+        0x201 // Blitz Rewards (s0) NFTS
     }
 
     fn collectibles_elitenft_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x101 // @todo @note to be changed 
+        0x10101 // Series 0 Elite Invite NFTs
     }
 
     fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {

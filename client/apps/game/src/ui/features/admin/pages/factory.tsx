@@ -1558,7 +1558,7 @@ export const FactoryPage = () => {
                                             type="number"
                                             min={0}
                                             step={1}
-                                            placeholder="36"
+                                            placeholder="30"
                                             value={registrationCountMaxOverrides[name] || ""}
                                             onChange={(e) =>
                                               setRegistrationCountMaxOverrides((p) => ({ ...p, [name]: e.target.value }))
@@ -1566,7 +1566,7 @@ export const FactoryPage = () => {
                                             className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
                                           />
                                           <p className="text-[10px] text-slate-500">
-                                            Default: 36.
+                                            Default: 30.
                                           </p>
                                         </div>
                                       </div>
@@ -1642,7 +1642,7 @@ export const FactoryPage = () => {
                                                 rawRegistrationCountMax !== undefined && rawRegistrationCountMax !== "";
                                               const registrationCountMax = hasRegistrationCountMax
                                                 ? Number(rawRegistrationCountMax)
-                                                : 36;
+                                                : 30;
                                               if (!Number.isFinite(registrationCountMax) || registrationCountMax < 0) {
                                                 throw new Error("Registration count max must be a non-negative number");
                                               }
