@@ -2648,13 +2648,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_blitz_previous_game(props: SystemProps.SetBlitzPreviousGameProps) {
-    const { prev_prize_distribution_systems, signer } = props;
+  public async set_factory_address(props: SystemProps.SetFactoryAddressProps) {
+    const { factory_address, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_blitz_previous_game",
-      calldata: [prev_prize_distribution_systems],
+      entrypoint: "set_factory_address",
+      calldata: [factory_address],
     });
   }
 

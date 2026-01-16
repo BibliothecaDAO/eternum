@@ -161,11 +161,12 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
 
       {/* Pagination controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center space-x-4 py-4">
+        <div className="flex items-center justify-center gap-3 py-4">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1 || isFetching}
-            className="rounded bg-white/5 px-3 py-1 text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Previous page"
+            className="min-h-[44px] min-w-[44px] rounded bg-white/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           >
             ←
           </button>
@@ -175,7 +176,8 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
           <button
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages || isFetching}
-            className="rounded bg-white/5 px-3 py-1 text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Next page"
+            className="min-h-[44px] min-w-[44px] rounded bg-white/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           >
             →
           </button>

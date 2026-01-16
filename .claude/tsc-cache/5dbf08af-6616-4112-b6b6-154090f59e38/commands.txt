@@ -1,0 +1,2 @@
+client:build:cd /Users/os/Documents/code/biblio/eternum/client && npm run build
+client:tsc:cd /Users/os/Documents/code/biblio/eternum/client && npx tsc --noEmit

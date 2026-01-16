@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useFactorySeries, type FactorySeries } from "@/hooks/use-factory-series";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ETERNUM_CONFIG } from "@/utils/config";
@@ -8,11 +9,11 @@ import {
   SetResourceFactoryConfig,
   setAgentConfig,
   setBattleConfig,
-  setBlitzPreviousGame,
   setBlitzRegistrationConfig,
   setBuildingConfig,
   setCapacityConfig,
   setDiscoverableVillageSpawnResourcesConfig,
+  setFactoryAddress as setFactoryAddressConfig,
   setGameModeConfig,
   setHyperstructureConfig,
   setRealmUpgradeConfig,
@@ -29,7 +30,7 @@ import {
   setVillageControllersConfig,
   setWeightConfig,
   setWorldConfig,
-  setupGlobals,
+  setupGlobals
 } from "@config-deployer/config";
 import { getGameManifest, type Chain } from "@contracts";
 import {
@@ -76,12 +77,15 @@ import {
   getDeployedAddressMap,
   getRemainingCooldown,
   getStoredWorldNames,
+  getStoredWorldSeriesMetadata,
   isWorldOnCooldown,
   markWorldAsConfigured,
   persistStoredWorldNames,
   saveWorldNameToStorage,
   setCurrentWorldName,
   setIndexerCooldown,
+  updateWorldSeriesMetadata,
+  type WorldSeriesMetadata,
 } from "../utils/storage";
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
@@ -289,11 +293,22 @@ export const FactoryPage = () => {
   const { refreshStatuses } = useFactoryAdmin(currentChain);
   const factoryDeployRepeats = getFactoryDeployRepeatsForChain(currentChain);
   const defaultBlitzRegistration = useMemo(() => getDefaultBlitzRegistrationConfig(currentChain), [currentChain]);
+  const {
+    data: ownedSeries = [],
+    isLoading: seriesLoading,
+    isFetching: seriesFetching,
+    error: seriesError,
+    refetch: refetchSeries,
+  } = useFactorySeries(currentChain as Chain, account?.address ?? null);
 
   const [factoryAddress, setFactoryAddress] = useState<string>("");
   const [version, setVersion] = useState<string>(DEFAULT_VERSION);
   const [namespace, setNamespace] = useState<string>(DEFAULT_NAMESPACE);
   const [worldName, setWorldName] = useState<string>("");
+  const [seriesName, setSeriesName] = useState<string>("");
+  const [seriesGameNumber, setSeriesGameNumber] = useState<string>("");
+  const [seriesConfigName, setSeriesConfigName] = useState<string>("");
+  const [seriesConfigTx, setSeriesConfigTx] = useState<TxState>({ status: "idle" });
   const [maxActions, setMaxActions] = useState<number>(() => getDefaultMaxActionsForChain(currentChain));
   const [defaultNamespaceWriterAll, setDefaultNamespaceWriterAll] = useState<boolean>(true);
   const [manifestJson, setManifestJson] = useState<string>("");
@@ -320,6 +335,7 @@ export const FactoryPage = () => {
   });
   const [storedWorldNames, setStoredWorldNames] = useState<string[]>([]);
   const [showStoredNames, setShowStoredNames] = useState<boolean>(true); // Show by default
+  const [worldSeriesMetadata, setWorldSeriesMetadata] = useState<Record<string, WorldSeriesMetadata>>({});
   const [worldIndexerStatus, setWorldIndexerStatus] = useState<Record<string, boolean>>({});
   const [creatingIndexer, setCreatingIndexer] = useState<Record<string, boolean>>({});
   const [cooldownTimers, setCooldownTimers] = useState<Record<string, number>>({});
@@ -337,13 +353,21 @@ export const FactoryPage = () => {
   // Per-world overrides
   const [devModeOverrides, setDevModeOverrides] = useState<Record<string, boolean>>({});
   const [durationHoursOverrides, setDurationHoursOverrides] = useState<Record<string, number>>({});
+  const [durationMinutesOverrides, setDurationMinutesOverrides] = useState<Record<string, number>>({});
   const [blitzFeeAmountOverrides, setBlitzFeeAmountOverrides] = useState<Record<string, string>>({});
   const [blitzFeePrecisionOverrides, setBlitzFeePrecisionOverrides] = useState<Record<string, string>>({});
   const [blitzFeeTokenOverrides, setBlitzFeeTokenOverrides] = useState<Record<string, string>>({});
+  const [registrationCountMaxOverrides, setRegistrationCountMaxOverrides] = useState<Record<string, string>>({});
+  const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
+  const baseDurationMinutes = useMemo(() => {
+    const secs = Number(eternumConfig?.season?.durationSeconds || 0);
+    if (!Number.isFinite(secs) || secs <= 0) return 0;
+    return Math.max(0, Math.round((secs % 3600) / 60));
+  }, [eternumConfig]);
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
@@ -359,6 +383,7 @@ export const FactoryPage = () => {
 
     // Load stored world names
     setStoredWorldNames(getStoredWorldNames());
+    setWorldSeriesMetadata(getStoredWorldSeriesMetadata());
 
     // Initialize world name from storage or generate new one
     const savedWorldName = getCurrentWorldName();
@@ -455,22 +480,102 @@ export const FactoryPage = () => {
     setCurrentWorldName(newWorldName);
   };
 
+  const applySeriesMetadataUpdate = (worldName: string, metadata: WorldSeriesMetadata | null) => {
+    setWorldSeriesMetadata((prev) => {
+      const next = { ...prev };
+      if (metadata && (metadata.seriesName || metadata.seriesGameNumber)) {
+        next[worldName] = metadata;
+      } else {
+        delete next[worldName];
+      }
+      return next;
+    });
+    updateWorldSeriesMetadata(worldName, metadata);
+  };
+
+  const resolveSeriesGameNumber = (name: string, gameNumber: string) => {
+    const trimmedGameNumber = gameNumber.trim();
+    if (trimmedGameNumber) return trimmedGameNumber;
+    const matched = ownedSeries.find((series) => series.name === name);
+    if (!matched) return gameNumber;
+    const nextNumber = matched.lastGameNumber !== null ? matched.lastGameNumber + BigInt(1) : BigInt(1);
+    return nextNumber.toString();
+  };
+
+  const buildSeriesCalldata = (name: string, gameNumber: string) => {
+    const trimmedName = name.trim();
+    const trimmedGameNumber = gameNumber.trim();
+    const seriesNameFelt = trimmedName ? shortString.encodeShortString(trimmedName) : "0x0";
+    const parsedSeriesGameNumber = trimmedGameNumber
+      ? BigInt(trimmedGameNumber.replace(/[^\d]/g, ""))
+      : BigInt(0);
+    return {
+      trimmedName,
+      trimmedGameNumber,
+      seriesNameFelt,
+      seriesGameNumber: parsedSeriesGameNumber.toString(),
+    };
+  };
+
+  const handleSeriesSuggestion = (series: FactorySeries) => {
+    setSeriesName(series.name);
+    const nextNumber = series.lastGameNumber !== null ? series.lastGameNumber + BigInt(1) : BigInt(1);
+    setSeriesGameNumber(nextNumber.toString());
+  };
+
+  const handleCreateSeries = async () => {
+    if (!account || !factoryAddress || !seriesConfigName.trim()) return;
+    setSeriesConfigTx({ status: "running" });
+
+    try {
+      const seriesNameFelt = shortString.encodeShortString(seriesConfigName.trim());
+      const result = await account.execute({
+        contractAddress: factoryAddress,
+        entrypoint: "set_series_config",
+        calldata: [seriesNameFelt],
+      });
+
+      setSeriesConfigTx({ status: "success", hash: result.transaction_hash });
+      await account.waitForTransaction(result.transaction_hash);
+      await refetchSeries();
+    } catch (err: any) {
+      setSeriesConfigTx({ status: "error", error: err.message });
+    }
+  };
+
   // Add current world name to queue
   const handleAddToQueue = () => {
     if (!worldName) return;
 
     // Check if already in list
     const existing = getStoredWorldNames();
-    if (existing.includes(worldName)) return;
+    const isExisting = existing.includes(worldName);
 
     // Add to localStorage
-    saveWorldNameToStorage(worldName);
-    setStoredWorldNames(getStoredWorldNames());
+    if (!isExisting) {
+      saveWorldNameToStorage(worldName);
+      setStoredWorldNames(getStoredWorldNames());
+    }
+
+    const resolvedSeriesName = seriesName.trim();
+    const resolvedSeriesGameNumber = resolvedSeriesName
+      ? resolveSeriesGameNumber(resolvedSeriesName, seriesGameNumber.trim())
+      : seriesGameNumber.trim();
+    const metadata =
+      resolvedSeriesName || resolvedSeriesGameNumber
+        ? {
+            seriesName: resolvedSeriesName || undefined,
+            seriesGameNumber: resolvedSeriesGameNumber || undefined,
+          }
+        : null;
+    applySeriesMetadataUpdate(worldName, metadata);
 
     // Generate new world name for next queue item
-    const newWorldName = generateWorldName();
-    setWorldName(newWorldName);
-    setCurrentWorldName(newWorldName);
+    if (!isExisting) {
+      const newWorldName = generateWorldName();
+      setWorldName(newWorldName);
+      setCurrentWorldName(newWorldName);
+    }
   };
 
   // Remove world name from queue
@@ -484,6 +589,7 @@ export const FactoryPage = () => {
       if (getCurrentWorldName() === worldName) {
         setCurrentWorldName("");
       }
+      applySeriesMetadataUpdate(worldName, null);
     } catch (err) {
       console.error("Failed to remove world name:", err);
     }
@@ -598,7 +704,7 @@ export const FactoryPage = () => {
     try {
       const result = await account.execute({
         contractAddress: factoryAddress,
-        entrypoint: "set_config",
+        entrypoint: "set_factory_config",
         calldata: generatedCalldata,
       });
 
@@ -620,10 +726,11 @@ export const FactoryPage = () => {
 
     try {
       const worldNameFelt = shortString.encodeShortString(worldName);
+      const series = buildSeriesCalldata(seriesName, seriesGameNumber);
       const result = await account.execute({
         contractAddress: factoryAddress,
-        entrypoint: "deploy",
-        calldata: [worldNameFelt, version],
+        entrypoint: "create_game",
+        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
       });
 
       setTx({ status: "success", hash: result.transaction_hash });
@@ -647,16 +754,17 @@ export const FactoryPage = () => {
 
     try {
       const worldNameFelt = shortString.encodeShortString(worldName);
+      const series = buildSeriesCalldata(seriesName, seriesGameNumber);
       const result = await account.execute([
         {
           contractAddress: factoryAddress,
-          entrypoint: "set_config",
+          entrypoint: "set_factory_config",
           calldata: generatedCalldata,
         },
         {
           contractAddress: factoryAddress,
-          entrypoint: "deploy",
-          calldata: [worldNameFelt, version],
+          entrypoint: "create_game",
+          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
         },
       ]);
 
@@ -692,7 +800,9 @@ export const FactoryPage = () => {
     }));
 
     try {
-      const worldNameFelt = shortString.encodeShortString(name);
+        const worldNameFelt = shortString.encodeShortString(name);
+        const metadata = worldSeriesMetadata[name];
+        const series = buildSeriesCalldata(metadata?.seriesName ?? "", metadata?.seriesGameNumber ?? "");
       let deployedAddress: string | null = null;
 
       for (let i = 0; i < totalRepeats; i++) {
@@ -707,8 +817,8 @@ export const FactoryPage = () => {
         setTx({ status: "running" });
         const result = await account.execute({
           contractAddress: factoryAddress,
-          entrypoint: "deploy",
-          calldata: [worldNameFelt, version],
+          entrypoint: "create_game",
+          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
         });
         setTx({ status: "success", hash: result.transaction_hash });
 
@@ -867,7 +977,7 @@ export const FactoryPage = () => {
                         </button>
                         <button
                           onClick={handleAddToQueue}
-                          disabled={!worldName || storedWorldNames.includes(worldName)}
+                          disabled={!worldName}
                           className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
                         >
                           Add
@@ -876,6 +986,114 @@ export const FactoryPage = () => {
                       <p className="text-xs text-slate-500">
                         Generate a game name and add it to the queue to deploy now or later
                       </p>
+                    </div>
+
+                    {/* Series selection */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Series (optional)</label>
+                        {(seriesLoading || seriesFetching) && account && (
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Fetching your series
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <input
+                          type="text"
+                          value={seriesName}
+                          onChange={(e) => setSeriesName(e.target.value)}
+                          placeholder="ccf-series-wars"
+                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={seriesGameNumber}
+                          onChange={(e) => setSeriesGameNumber(e.target.value.replace(/[^\d]/g, ""))}
+                          placeholder="Game #"
+                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <span className="font-medium text-slate-700">Series status:</span>
+                        <span className="text-slate-500">
+                          {seriesName ? `${seriesName} #${seriesGameNumber || "0"}` : "Not configured"}
+                        </span>
+                      </div>
+                      {seriesError && (
+                        <p className="text-[11px] text-red-600">
+                          Unable to load your series ({seriesError.message || "unknown error"})
+                        </p>
+                      )}
+                      {account ? (
+                        <div className="space-y-1">
+                          {ownedSeries.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {ownedSeries.map((series) => (
+                                <button
+                                  key={series.paddedName}
+                                  type="button"
+                                  onClick={() => handleSeriesSuggestion(series)}
+                                  className="flex flex-col items-start gap-0.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-left text-[11px] text-slate-600 hover:border-blue-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                                >
+                                  <span className="font-semibold text-slate-900">{series.name}</span>
+                                  <span className="text-[10px] text-slate-500">
+                                    Last game #{series.lastGameNumber?.toString() ?? "n/a"}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-slate-500">No series found for this wallet.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500">
+                          Connect your wallet to list the series you control.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Create Series */}
+                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-white/70 p-4">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Create Series</label>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="text"
+                          value={seriesConfigName}
+                          onChange={(e) => setSeriesConfigName(e.target.value)}
+                          placeholder="ccf-series-wars"
+                          className="flex-1 px-4 py-2.5 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                        />
+                        <button
+                          onClick={handleCreateSeries}
+                          disabled={!account || !factoryAddress || !seriesConfigName.trim() || seriesConfigTx.status === "running"}
+                          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                          {seriesConfigTx.status === "running" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                          Create Series
+                        </button>
+                      </div>
+                      {seriesConfigTx.status === "success" && seriesConfigTx.hash && (
+                        <div className="flex items-center gap-2 text-[11px] text-emerald-700">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Created
+                          <a
+                            href={getExplorerTxUrl(currentChain as any, seriesConfigTx.hash)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 underline"
+                          >
+                            View Tx
+                          </a>
+                        </div>
+                      )}
+                      {seriesConfigTx.status === "error" && seriesConfigTx.error && (
+                        <p className="text-[11px] text-red-600">{seriesConfigTx.error}</p>
+                      )}
                     </div>
 
                     {/* Game Queue */}
@@ -890,9 +1108,15 @@ export const FactoryPage = () => {
                         </button>
                         {showStoredNames && (
                           <div className="pl-4 space-y-3">
-                            {[...storedWorldNames].reverse().map((name, idx) => (
-                              <div key={idx} className="space-y-2">
-                                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
+                            {[...storedWorldNames].reverse().map((name, idx) => {
+                              const metadata = worldSeriesMetadata[name];
+                              const metadataParts: string[] = [];
+                              if (metadata?.seriesName) metadataParts.push(metadata.seriesName);
+                              if (metadata?.seriesGameNumber) metadataParts.push(`#${metadata.seriesGameNumber}`);
+
+                              return (
+                                <div key={idx} className="space-y-2">
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
                                   <span className="flex-1 text-xs font-mono text-slate-700">{name}</span>
 
                                   {/* Copy Button */}
@@ -1015,6 +1239,9 @@ export const FactoryPage = () => {
                                     </>
                                   )}
                                 </div>
+                                {metadataParts.length > 0 && (
+                                  <p className="text-[11px] text-slate-500">Series: {metadataParts.join(" ")}</p>
+                                )}
 
                                 {/* No extra status panel; only small wait timer above */}
 
@@ -1176,7 +1403,7 @@ export const FactoryPage = () => {
                                           </label>
                                           <input
                                             type="number"
-                                            min={1}
+                                            min={0}
                                             value={
                                               Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
                                                 ? Number(durationHoursOverrides[name] || 0)
@@ -1191,7 +1418,49 @@ export const FactoryPage = () => {
                                             className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
                                           />
                                           <p className="text-[10px] text-slate-500">
-                                            Applies to season.durationSeconds (hours × 3600).
+                                            Applies to season.durationSeconds.
+                                          </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Game Duration (minutes)
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            max={59}
+                                            value={
+                                              Object.prototype.hasOwnProperty.call(durationMinutesOverrides, name)
+                                                ? Number(durationMinutesOverrides[name] || 0)
+                                                : baseDurationMinutes
+                                            }
+                                            onChange={(e) =>
+                                              setDurationMinutesOverrides((p) => ({
+                                                ...p,
+                                                [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
+                                              }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            0–59 minutes (added to hours).
+                                          </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Factory Address Override
+                                          </label>
+                                          <input
+                                            type="text"
+                                            placeholder={factoryAddress || (eternumConfig as any)?.factory_address || "0x..."}
+                                            value={factoryAddressOverrides[name] || ""}
+                                            onChange={(e) =>
+                                              setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Used by set_factory_address when configuring this world.
                                           </p>
                                         </div>
                                         <div className="space-y-1">
@@ -1226,7 +1495,7 @@ export const FactoryPage = () => {
                                       </div>
 
                                       {/* Blitz Registration Fee Configuration */}
-                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                         <div className="space-y-1">
                                           <label className="text-xs font-semibold text-slate-600">
                                             Blitz Registration Fee Amount
@@ -1281,6 +1550,25 @@ export const FactoryPage = () => {
                                             Default: {defaultBlitzRegistration.token}. Leave empty for default.
                                           </p>
                                         </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Registration Count Max
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            placeholder="30"
+                                            value={registrationCountMaxOverrides[name] || ""}
+                                            onChange={(e) =>
+                                              setRegistrationCountMaxOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Default: 30.
+                                          </p>
+                                        </div>
                                       </div>
 
                                       <div className="flex items-center gap-2">
@@ -1331,12 +1619,35 @@ export const FactoryPage = () => {
                                               )
                                                 ? Number(durationHoursOverrides[name] || 0)
                                                 : Number(durationHours || 0);
+                                              const selectedDurationMinutes = Object.prototype.hasOwnProperty.call(
+                                                durationMinutesOverrides,
+                                                name,
+                                              )
+                                                ? Number(durationMinutesOverrides[name] || 0)
+                                                : Number(baseDurationMinutes || 0);
+                                              if (
+                                                !Number.isFinite(selectedDurationMinutes) ||
+                                                selectedDurationMinutes < 0 ||
+                                                selectedDurationMinutes > 59
+                                              ) {
+                                                throw new Error("Duration minutes must be between 0 and 59");
+                                              }
 
                                               // Apply blitz registration fee overrides if provided
                                               const rawFeeAmount = blitzFeeAmountOverrides[name]?.trim();
                                               const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
                                               const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
-                                              const precision = rawFeePrecision
+                                              const rawRegistrationCountMax = registrationCountMaxOverrides[name]?.trim();
+                                              const hasRegistrationCountMax =
+                                                rawRegistrationCountMax !== undefined && rawRegistrationCountMax !== "";
+                                              const registrationCountMax = hasRegistrationCountMax
+                                                ? Number(rawRegistrationCountMax)
+                                                : 30;
+                                              if (!Number.isFinite(registrationCountMax) || registrationCountMax < 0) {
+                                                throw new Error("Registration count max must be a non-negative number");
+                                              }
+                                              const hasFeePrecision = rawFeePrecision !== undefined && rawFeePrecision !== "";
+                                              const precision = hasFeePrecision
                                                 ? Number(rawFeePrecision)
                                                 : defaultBlitzRegistration.precision;
                                               if (
@@ -1346,7 +1657,8 @@ export const FactoryPage = () => {
                                               ) {
                                                 throw new Error("Fee precision must be a non-negative integer");
                                               }
-                                              const amountToParse = rawFeeAmount || defaultBlitzRegistration.amount;
+                                              const hasFeeAmount = rawFeeAmount !== undefined && rawFeeAmount !== "";
+                                              const amountToParse = hasFeeAmount ? rawFeeAmount : defaultBlitzRegistration.amount;
                                               const blitzFeeAmount = amountToParse
                                                 ? parseDecimalToBigInt(amountToParse, precision)
                                                 : eternumConfig.blitz?.registration?.fee_amount;
@@ -1354,6 +1666,12 @@ export const FactoryPage = () => {
                                                 rawFeeToken ||
                                                 defaultBlitzRegistration.token ||
                                                 eternumConfig.blitz?.registration?.fee_token;
+
+                                              const rawFactoryAddress = factoryAddressOverrides[name]?.trim();
+                                              const factoryAddressOverride =
+                                                rawFactoryAddress ||
+                                                factoryAddress ||
+                                                (eternumConfig as any)?.factory_address;
 
                                               // Apply single realm mode override if provided
                                               const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
@@ -1365,6 +1683,7 @@ export const FactoryPage = () => {
 
                                               const configForWorld = {
                                                 ...eternumConfig,
+                                                factory_address: factoryAddressOverride,
                                                 dev: {
                                                   ...(eternumConfig as any).dev,
                                                   mode: {
@@ -1375,7 +1694,11 @@ export const FactoryPage = () => {
                                                 season: {
                                                   ...eternumConfig.season,
                                                   startMainAt: selectedStart,
-                                                  durationSeconds: Math.max(1, selectedDurationHours) * 3600,
+                                                  durationSeconds: Math.max(
+                                                    60,
+                                                    Math.max(0, selectedDurationHours) * 3600 +
+                                                      Math.max(0, selectedDurationMinutes) * 60,
+                                                  ),
                                                 },
                                                 blitz: {
                                                   ...eternumConfig.blitz,
@@ -1383,6 +1706,7 @@ export const FactoryPage = () => {
                                                     ...eternumConfig.blitz?.registration,
                                                     fee_amount: blitzFeeAmount,
                                                     fee_token: blitzFeeToken,
+                                                    registration_count_max: registrationCountMax,
                                                   },
                                                 },
                                                 settlement: {
@@ -1400,7 +1724,7 @@ export const FactoryPage = () => {
                                               await setWorldConfig(ctx);
                                               await setVRFConfig(ctx);
                                               await setGameModeConfig(ctx);
-                                              await setBlitzPreviousGame(ctx);
+                                              await setFactoryAddressConfig(ctx);
                                               await setVictoryPointsConfig(ctx);
                                               await setDiscoverableVillageSpawnResourcesConfig(ctx);
                                               await setBlitzRegistrationConfig(ctx);
@@ -1477,7 +1801,8 @@ export const FactoryPage = () => {
                                   </div>
                                 )}
                               </div>
-                            ))}
+                            );
+                            })}
                           </div>
                         )}
                       </div>

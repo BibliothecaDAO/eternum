@@ -5,6 +5,7 @@ import {
   INDEXER_CREATION_COOLDOWN_KEY,
   INDEXER_COOLDOWN_MS,
   WORLD_DEPLOYED_ADDRESS_MAP_KEY,
+  WORLD_SERIES_METADATA_KEY,
 } from "../constants";
 
 export const getStoredWorldNames = (): string[] => {
@@ -112,4 +113,49 @@ export const cacheDeployedAddress = (worldName: string, address: string) => {
     map[worldName] = address;
     setDeployedAddressMap(map);
   }
+};
+
+export interface WorldSeriesMetadata {
+  seriesName?: string;
+  seriesGameNumber?: string;
+}
+
+export const getStoredWorldSeriesMetadata = (): Record<string, WorldSeriesMetadata> => {
+  try {
+    const stored = localStorage.getItem(WORLD_SERIES_METADATA_KEY);
+    return stored ? (JSON.parse(stored) as Record<string, WorldSeriesMetadata>) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const persistWorldSeriesMetadata = (map: Record<string, WorldSeriesMetadata>) => {
+  try {
+    localStorage.setItem(WORLD_SERIES_METADATA_KEY, JSON.stringify(map));
+  } catch {}
+};
+
+export const updateWorldSeriesMetadata = (
+  worldName: string,
+  metadata: WorldSeriesMetadata | null,
+) => {
+  try {
+    const existing = getStoredWorldSeriesMetadata();
+    if (metadata && (metadata.seriesName || metadata.seriesGameNumber)) {
+      existing[worldName] = metadata;
+    } else if (Object.prototype.hasOwnProperty.call(existing, worldName)) {
+      delete existing[worldName];
+    }
+    persistWorldSeriesMetadata(existing);
+  } catch {}
+};
+
+export const removeWorldSeriesMetadata = (worldName: string) => {
+  try {
+    const existing = getStoredWorldSeriesMetadata();
+    if (Object.prototype.hasOwnProperty.call(existing, worldName)) {
+      delete existing[worldName];
+      persistWorldSeriesMetadata(existing);
+    }
+  } catch {}
 };
