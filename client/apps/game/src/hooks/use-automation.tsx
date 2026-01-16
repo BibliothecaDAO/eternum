@@ -219,6 +219,14 @@ export const useAutomation = () => {
       // Use conservative tick for resource validation to prevent tx failures from clock desync
       const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
 
+      // Phase 1: Build all plans synchronously (no awaits, so no event loop yields)
+      const executablePlans: Array<{
+        plan: RealmProductionPlan;
+        realmConfig: typeof realmList[0];
+        realmLabel: string;
+        planLogPayload: Record<string, unknown>;
+      }> = [];
+
       for (const realmConfig of realmList) {
         let activeRealmConfig = realmConfig;
         const realmIdNum = Number(activeRealmConfig.realmId);
@@ -335,54 +343,76 @@ export const useAutomation = () => {
           continue;
         }
 
-        try {
-          console.log("[Automation] Executing production plan", planLogPayload);
-          const callset = plan.callset;
-          await execute_realm_production_plan({
-            signer: starknetSignerAccount as StarknetAccount,
-            realm_entity_id: plan.realmId,
-            resource_to_resource: callset.resourceToResource.map((item) => ({
-              resource_id: item.resourceId,
-              cycles: item.cycles,
-            })),
-            labor_to_resource: callset.laborToResource.map((item) => ({
-              resource_id: item.resourceId,
-              cycles: item.cycles,
-            })),
-          });
+        // Collect executable plans for parallel execution
+        executablePlans.push({
+          plan,
+          realmConfig: activeRealmConfig,
+          realmLabel,
+          planLogPayload,
+        });
+      }
 
-          const summary = buildExecutionSummary(plan, Date.now());
-          recordExecution(activeRealmConfig.realmId, summary);
-          console.log("[Automation] Automation execution complete", {
-            realmId: plan.realmId,
-            realmName: realmLabel,
-            outputs: planLogPayload.outputs,
-            consumption: planLogPayload.consumption,
-            resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
-            laborExecutions: labelExecutionEntries(plan.laborExecutions),
-            skipped: planLogPayload.skipped,
-          });
-          anyExecuted = true;
+      // Phase 2: Execute all plans in parallel (enqueue all at once before any user actions can interleave)
+      if (executablePlans.length > 0) {
+        console.log(`[Automation] Executing ${executablePlans.length} production plans in parallel`);
 
-          const producedResources = Object.entries(plan.outputsByResource);
-          if (producedResources.length > 0) {
-            const detail = producedResources
-              .map(([resId, amount]) => {
-                const label = resolveResourceLabel(Number(resId));
-                return `${Math.round(amount).toLocaleString()} ${label}`;
-              })
-              .join(", ");
-            toast.success(
-              `Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
-            );
+        const results = await Promise.allSettled(
+          executablePlans.map(async ({ plan, realmConfig, realmLabel, planLogPayload }) => {
+            console.log("[Automation] Executing production plan", planLogPayload);
+            const callset = plan.callset;
+            await execute_realm_production_plan({
+              signer: starknetSignerAccount as StarknetAccount,
+              realm_entity_id: plan.realmId,
+              resource_to_resource: callset.resourceToResource.map((item) => ({
+                resource_id: item.resourceId,
+                cycles: item.cycles,
+              })),
+              labor_to_resource: callset.laborToResource.map((item) => ({
+                resource_id: item.resourceId,
+                cycles: item.cycles,
+              })),
+            });
+            return { plan, realmConfig, realmLabel, planLogPayload };
+          }),
+        );
+
+        // Phase 3: Process results
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            const { plan, realmConfig, realmLabel, planLogPayload } = result.value;
+            const summary = buildExecutionSummary(plan, Date.now());
+            recordExecution(realmConfig.realmId, summary);
+            console.log("[Automation] Automation execution complete", {
+              realmId: plan.realmId,
+              realmName: realmLabel,
+              outputs: planLogPayload.outputs,
+              consumption: planLogPayload.consumption,
+              resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
+              laborExecutions: labelExecutionEntries(plan.laborExecutions),
+              skipped: planLogPayload.skipped,
+            });
+            anyExecuted = true;
+
+            const producedResources = Object.entries(plan.outputsByResource);
+            if (producedResources.length > 0) {
+              const detail = producedResources
+                .map(([resId, amount]) => {
+                  const label = resolveResourceLabel(Number(resId));
+                  return `${Math.round(amount).toLocaleString()} ${label}`;
+                })
+                .join(", ");
+              toast.success(
+                `Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
+              );
+            } else {
+              toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
+            }
           } else {
-            toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
+            // Extract realm info from the error if possible
+            const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
+            console.error(`Automation: Failed to execute plan`, errorMessage);
+            toast.error(`Automation failed. Check console for details.`);
           }
-        } catch (error) {
-          console.error(`Automation: Failed to execute plan for realm ${activeRealmConfig.realmId}`, error);
-          toast.error(
-            `Automation failed for ${activeRealmConfig.realmName ?? activeRealmConfig.realmId}. Check console for details.`,
-          );
         }
       }
     } finally {
