@@ -35,7 +35,7 @@ export const FACTORY_ADDRESSES: Record<ChainType, string> = {
   sepolia: "0x07A6F094f15f8C18704bfb19fFEBCBC70b87e41674dE97EbeC7cb7Ffe5c9581B",
   slot: "0x78306a0c2ccf2227c3623d3a8b6fc4be4fbcc9c31c8c688fbc49da66b5b7835",
   local: "",
-  mainnet: "0x03f0207667f8a6f024513ba1224d1bb45a2075405a69bc21ae95a0812f56c0e8",
+  mainnet: "0x3a49cb39fb21e9d46139536ff4ef2b3ec6719f4c7dc8dd0853c850b4f2b0090",
   slottest: "",
 };
 

@@ -1686,6 +1686,7 @@ export function defineContractComponents(world: World) {
           victory_points_win_config: {
             points_for_win: RecsType.BigInt,
           },
+          factory_address: RecsType.BigInt
         },
         {
           metadata: {
@@ -1834,6 +1835,7 @@ export function defineContractComponents(world: World) {
               "u32", // VictoryPointsGrantConfig explore_tiles_points
               "u32", // VictoryPointsGrantConfig relic_open_points
               "u128", // VictoryPointsWinConfig points_for_win
+              "ContractAddress", // factory address
             ],
             customTypes: [],
           },

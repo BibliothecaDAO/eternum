@@ -353,13 +353,21 @@ export const FactoryPage = () => {
   // Per-world overrides
   const [devModeOverrides, setDevModeOverrides] = useState<Record<string, boolean>>({});
   const [durationHoursOverrides, setDurationHoursOverrides] = useState<Record<string, number>>({});
+  const [durationMinutesOverrides, setDurationMinutesOverrides] = useState<Record<string, number>>({});
   const [blitzFeeAmountOverrides, setBlitzFeeAmountOverrides] = useState<Record<string, string>>({});
   const [blitzFeePrecisionOverrides, setBlitzFeePrecisionOverrides] = useState<Record<string, string>>({});
   const [blitzFeeTokenOverrides, setBlitzFeeTokenOverrides] = useState<Record<string, string>>({});
+  const [registrationCountMaxOverrides, setRegistrationCountMaxOverrides] = useState<Record<string, string>>({});
+  const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
+  const baseDurationMinutes = useMemo(() => {
+    const secs = Number(eternumConfig?.season?.durationSeconds || 0);
+    if (!Number.isFinite(secs) || secs <= 0) return 0;
+    return Math.max(0, Math.round((secs % 3600) / 60));
+  }, [eternumConfig]);
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
@@ -1395,7 +1403,7 @@ export const FactoryPage = () => {
                                           </label>
                                           <input
                                             type="number"
-                                            min={1}
+                                            min={0}
                                             value={
                                               Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
                                                 ? Number(durationHoursOverrides[name] || 0)
@@ -1410,7 +1418,49 @@ export const FactoryPage = () => {
                                             className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
                                           />
                                           <p className="text-[10px] text-slate-500">
-                                            Applies to season.durationSeconds (hours × 3600).
+                                            Applies to season.durationSeconds.
+                                          </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Game Duration (minutes)
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            max={59}
+                                            value={
+                                              Object.prototype.hasOwnProperty.call(durationMinutesOverrides, name)
+                                                ? Number(durationMinutesOverrides[name] || 0)
+                                                : baseDurationMinutes
+                                            }
+                                            onChange={(e) =>
+                                              setDurationMinutesOverrides((p) => ({
+                                                ...p,
+                                                [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
+                                              }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            0–59 minutes (added to hours).
+                                          </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Factory Address Override
+                                          </label>
+                                          <input
+                                            type="text"
+                                            placeholder={factoryAddress || (eternumConfig as any)?.factory_address || "0x..."}
+                                            value={factoryAddressOverrides[name] || ""}
+                                            onChange={(e) =>
+                                              setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Used by set_factory_address when configuring this world.
                                           </p>
                                         </div>
                                         <div className="space-y-1">
@@ -1445,7 +1495,7 @@ export const FactoryPage = () => {
                                       </div>
 
                                       {/* Blitz Registration Fee Configuration */}
-                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                         <div className="space-y-1">
                                           <label className="text-xs font-semibold text-slate-600">
                                             Blitz Registration Fee Amount
@@ -1500,6 +1550,25 @@ export const FactoryPage = () => {
                                             Default: {defaultBlitzRegistration.token}. Leave empty for default.
                                           </p>
                                         </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Registration Count Max
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            placeholder={String(eternumConfig.blitz?.registration?.registration_count_max || 36)}
+                                            value={registrationCountMaxOverrides[name] || ""}
+                                            onChange={(e) =>
+                                              setRegistrationCountMaxOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Default: {String(eternumConfig.blitz?.registration?.registration_count_max || 36)}.
+                                          </p>
+                                        </div>
                                       </div>
 
                                       <div className="flex items-center gap-2">
@@ -1550,11 +1619,31 @@ export const FactoryPage = () => {
                                               )
                                                 ? Number(durationHoursOverrides[name] || 0)
                                                 : Number(durationHours || 0);
+                                              const selectedDurationMinutes = Object.prototype.hasOwnProperty.call(
+                                                durationMinutesOverrides,
+                                                name,
+                                              )
+                                                ? Number(durationMinutesOverrides[name] || 0)
+                                                : Number(baseDurationMinutes || 0);
+                                              if (
+                                                !Number.isFinite(selectedDurationMinutes) ||
+                                                selectedDurationMinutes < 0 ||
+                                                selectedDurationMinutes > 59
+                                              ) {
+                                                throw new Error("Duration minutes must be between 0 and 59");
+                                              }
 
                                               // Apply blitz registration fee overrides if provided
                                               const rawFeeAmount = blitzFeeAmountOverrides[name]?.trim();
                                               const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
                                               const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
+                                              const rawRegistrationCountMax = registrationCountMaxOverrides[name]?.trim();
+                                              const registrationCountMax = rawRegistrationCountMax
+                                                ? Number(rawRegistrationCountMax)
+                                                : Number(eternumConfig.blitz?.registration?.registration_count_max || 36);
+                                              if (!Number.isFinite(registrationCountMax) || registrationCountMax < 0) {
+                                                throw new Error("Registration count max must be a non-negative number");
+                                              }
                                               const precision = rawFeePrecision
                                                 ? Number(rawFeePrecision)
                                                 : defaultBlitzRegistration.precision;
@@ -1574,6 +1663,9 @@ export const FactoryPage = () => {
                                                 defaultBlitzRegistration.token ||
                                                 eternumConfig.blitz?.registration?.fee_token;
 
+                                              const rawFactoryAddress = factoryAddressOverrides[name]?.trim();
+                                              const factoryAddressOverride = rawFactoryAddress || (eternumConfig as any)?.factory_address;
+
                                               // Apply single realm mode override if provided
                                               const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
                                                 singleRealmModeOverrides,
@@ -1584,6 +1676,7 @@ export const FactoryPage = () => {
 
                                               const configForWorld = {
                                                 ...eternumConfig,
+                                                factory_address: factoryAddressOverride,
                                                 dev: {
                                                   ...(eternumConfig as any).dev,
                                                   mode: {
@@ -1594,7 +1687,11 @@ export const FactoryPage = () => {
                                                 season: {
                                                   ...eternumConfig.season,
                                                   startMainAt: selectedStart,
-                                                  durationSeconds: Math.max(1, selectedDurationHours) * 3600,
+                                                  durationSeconds: Math.max(
+                                                    60,
+                                                    Math.max(0, selectedDurationHours) * 3600 +
+                                                      Math.max(0, selectedDurationMinutes) * 60,
+                                                  ),
                                                 },
                                                 blitz: {
                                                   ...eternumConfig.blitz,
@@ -1602,6 +1699,7 @@ export const FactoryPage = () => {
                                                     ...eternumConfig.blitz?.registration,
                                                     fee_amount: blitzFeeAmount,
                                                     fee_token: blitzFeeToken,
+                                                    registration_count_max: registrationCountMax,
                                                   },
                                                 },
                                                 settlement: {
