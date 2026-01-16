@@ -1558,7 +1558,7 @@ export const FactoryPage = () => {
                                             type="number"
                                             min={0}
                                             step={1}
-                                            placeholder={String(eternumConfig.blitz?.registration?.registration_count_max || 36)}
+                                            placeholder="36"
                                             value={registrationCountMaxOverrides[name] || ""}
                                             onChange={(e) =>
                                               setRegistrationCountMaxOverrides((p) => ({ ...p, [name]: e.target.value }))
@@ -1566,7 +1566,7 @@ export const FactoryPage = () => {
                                             className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
                                           />
                                           <p className="text-[10px] text-slate-500">
-                                            Default: {String(eternumConfig.blitz?.registration?.registration_count_max || 36)}.
+                                            Default: 36.
                                           </p>
                                         </div>
                                       </div>
@@ -1638,13 +1638,16 @@ export const FactoryPage = () => {
                                               const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
                                               const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
                                               const rawRegistrationCountMax = registrationCountMaxOverrides[name]?.trim();
-                                              const registrationCountMax = rawRegistrationCountMax
+                                              const hasRegistrationCountMax =
+                                                rawRegistrationCountMax !== undefined && rawRegistrationCountMax !== "";
+                                              const registrationCountMax = hasRegistrationCountMax
                                                 ? Number(rawRegistrationCountMax)
-                                                : Number(eternumConfig.blitz?.registration?.registration_count_max || 36);
+                                                : 36;
                                               if (!Number.isFinite(registrationCountMax) || registrationCountMax < 0) {
                                                 throw new Error("Registration count max must be a non-negative number");
                                               }
-                                              const precision = rawFeePrecision
+                                              const hasFeePrecision = rawFeePrecision !== undefined && rawFeePrecision !== "";
+                                              const precision = hasFeePrecision
                                                 ? Number(rawFeePrecision)
                                                 : defaultBlitzRegistration.precision;
                                               if (
@@ -1654,7 +1657,8 @@ export const FactoryPage = () => {
                                               ) {
                                                 throw new Error("Fee precision must be a non-negative integer");
                                               }
-                                              const amountToParse = rawFeeAmount || defaultBlitzRegistration.amount;
+                                              const hasFeeAmount = rawFeeAmount !== undefined && rawFeeAmount !== "";
+                                              const amountToParse = hasFeeAmount ? rawFeeAmount : defaultBlitzRegistration.amount;
                                               const blitzFeeAmount = amountToParse
                                                 ? parseDecimalToBigInt(amountToParse, precision)
                                                 : eternumConfig.blitz?.registration?.fee_amount;
@@ -1664,7 +1668,10 @@ export const FactoryPage = () => {
                                                 eternumConfig.blitz?.registration?.fee_token;
 
                                               const rawFactoryAddress = factoryAddressOverrides[name]?.trim();
-                                              const factoryAddressOverride = rawFactoryAddress || (eternumConfig as any)?.factory_address;
+                                              const factoryAddressOverride =
+                                                rawFactoryAddress ||
+                                                factoryAddress ||
+                                                (eternumConfig as any)?.factory_address;
 
                                               // Apply single realm mode override if provided
                                               const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
