@@ -1,91 +1,81 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getCosmeticsClaimAddress, getLootChestsAddress } from "@/utils/addresses";
+import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { Call } from "starknet";
+
+interface OpenChestParams {
+  tokenId: bigint;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
 
 interface UseOpenChestReturn {
-  openChest: (props: { tokenId: bigint; onSuccess?: () => void; onError?: (error: Error) => void }) => void;
+  openChest: (props: OpenChestParams) => void;
   isLoading: boolean;
+  error: Error | null;
 }
 
 /**
  * Hook to open loot chests via blockchain transaction.
- * Uses direct Starknet calls to interact with the smart contract.
- * Does not require DojoProvider - works on landing pages.
+ * Uses Dojo system calls for proper transaction handling.
  */
 export function useOpenChest(): UseOpenChestReturn {
   const [isLoading, setIsLoading] = useState(false);
-  // Use useAccountStore instead of useAccount - handles Cartridge controller properly
-  const account = useAccountStore((state) => state.account);
+  const [error, setError] = useState<Error | null>(null);
 
-  console.log("useOpenChest - account:", account?.address, account);
+  const {
+    setup: {
+      systemCalls: { open_loot_chest },
+    },
+    account: { account },
+  } = useDojo();
 
   const openChest = useCallback(
-    async ({
-      tokenId,
-      onSuccess,
-      onError,
-    }: {
-      tokenId: bigint;
-      onSuccess?: () => void;
-      onError?: (error: Error) => void;
-    }) => {
+    async ({ tokenId, onSuccess, onError }: OpenChestParams) => {
       if (!account) {
-        const error = new Error("Wallet not connected");
-        toast.error("Please connect your wallet to open chests");
+        const error = new Error("No account connected");
         onError?.(error);
+        toast.error("Please connect your wallet first");
         return;
       }
 
       setIsLoading(true);
+      setError(null);
 
       try {
-        console.log("getting the info");
         const lootChestAddress = getLootChestsAddress();
         const claimAddress = getCosmeticsClaimAddress();
 
-        console.log({ lootChestAddress, claimAddress });
-
         if (!lootChestAddress || !claimAddress) {
-          throw new Error("Contract addresses not configured");
+          throw new Error("Contract addresses not configured. Please ensure the contracts are deployed.");
         }
 
-        // Build multicall:
-        // 1. Approve the claim contract to transfer the chest token
-        // 2. Claim (burn chest and mint cosmetic)
-        const callData: Call[] = [
-          {
-            contractAddress: lootChestAddress,
-            entrypoint: "approve",
-            calldata: [claimAddress, tokenId.toString(), "0"],
-          },
-          {
-            contractAddress: claimAddress,
-            entrypoint: "claim",
-            calldata: [tokenId.toString(), "0"],
-          },
-        ];
+        // Call the system call to open the loot chest
+        await open_loot_chest({
+          signer: account,
+          token_id: tokenId,
+          loot_chest_address: lootChestAddress,
+          claim_address: claimAddress,
+        });
 
-        // Execute multicall
-        await account.execute(callData);
-
-        toast.success("Chest opened successfully!");
+        toast.success("Transaction sent! Opening chest...");
         onSuccess?.();
-      } catch (error) {
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Failed to open chest");
         console.error("Failed to open chest:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to open chest";
-        toast.error(errorMessage);
-        onError?.(error instanceof Error ? error : new Error(errorMessage));
+        setError(error);
+        onError?.(error);
+        toast.error(error.message);
       } finally {
         setIsLoading(false);
       }
     },
-    [account],
+    [account, open_loot_chest],
   );
 
   return {
     openChest,
     isLoading,
+    error,
   };
 }

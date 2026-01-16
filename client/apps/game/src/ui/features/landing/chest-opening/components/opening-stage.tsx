@@ -11,9 +11,11 @@ import chestOpeningEternumRewardsS1Rare from "@videos/chest-opening/eternum-rewa
 import chestOpeningEternumRewardsS1Uncommon from "@videos/chest-opening/eternum-rewards-s1/uncommon.mp4";
 
 // Blitz Rewards S0
+import chestOpeningBlitzRewardsS0Common from "@videos/chest-opening/blitz-rewards-s0/common.mp4";
 import chestOpeningBlitzRewardsS0Epic from "@videos/chest-opening/blitz-rewards-s0/epic.mp4";
 import chestOpeningBlitzRewardsS0Legendary from "@videos/chest-opening/blitz-rewards-s0/legendary.mp4";
 import chestOpeningBlitzRewardsS0Rare from "@videos/chest-opening/blitz-rewards-s0/rare.mp4";
+import chestOpeningBlitzRewardsS0Uncommon from "@videos/chest-opening/blitz-rewards-s0/uncommon.mp4";
 
 const chestOpeningVideoEternumRewardsS1: Record<string, string> = {
   common: chestOpeningEternumRewardsS1Common,
@@ -24,6 +26,8 @@ const chestOpeningVideoEternumRewardsS1: Record<string, string> = {
 };
 
 const chestOpeningVideoBlitzRewardsS0: Record<string, string> = {
+  common: chestOpeningBlitzRewardsS0Common,
+  uncommon: chestOpeningBlitzRewardsS0Uncommon,
   rare: chestOpeningBlitzRewardsS0Rare,
   epic: chestOpeningBlitzRewardsS0Epic,
   legendary: chestOpeningBlitzRewardsS0Legendary,
