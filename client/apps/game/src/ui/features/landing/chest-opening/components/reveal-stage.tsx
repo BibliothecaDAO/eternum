@@ -270,7 +270,7 @@ export function RevealStage({
           {showContent && isPreloading && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <Loader2 className="w-12 h-12 text-gold animate-spin" />
-              <p className="text-white/60 text-sm">Loading your rewards...</p>
+              <p className="text-gold/60 text-sm">Loading your rewards...</p>
             </div>
           )}
 
@@ -414,7 +414,7 @@ export function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 
   );
 
   return (
-    <div className="bg-slate-900/80 rounded-xl p-6 backdrop-blur-sm border border-gold/10">
+    <div className="bg-black/60 rounded-2xl p-6 backdrop-blur-sm border border-gold/20">
       <h3 className="text-lg font-bold text-gold mb-4">Items Received</h3>
 
       {/* Rarity breakdown */}
@@ -424,7 +424,7 @@ export function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 
           return (
             <div key={rarity} className="flex items-center justify-between">
               <span className={`${style.text} capitalize`}>{rarity}</span>
-              <span className="text-white font-mono">{count}</span>
+              <span className="text-gold font-mono">{count}</span>
             </div>
           );
         })}
@@ -432,14 +432,14 @@ export function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 
 
       {/* Collection progress */}
       {collectionSize > 0 && (
-        <div className="mt-4 pt-4 border-t border-gold/10">
+        <div className="mt-4 pt-4 border-t border-gold/20">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-white/60">Collection Progress</span>
+            <span className="text-gold/60">Collection Progress</span>
             <span className="text-gold font-bold">
               {totalOwned}/{collectionSize}
             </span>
           </div>
-          <div className="mt-2 h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div className="mt-2 h-2 bg-gold/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-gold rounded-full transition-all duration-500"
               style={{ width: `${(totalOwned / collectionSize) * 100}%` }}

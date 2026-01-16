@@ -52,7 +52,7 @@ export function useRevealShare({ chestRarity }: UseRevealShareOptions): UseRevea
     try {
       // Capture the element as PNG
       const dataUrl = await toPng(captureRef.current, {
-        backgroundColor: "#0f172a", // slate-900
+        backgroundColor: "#0a0908", // dark black matching gold theme
         pixelRatio: 2,
         cacheBust: true,
       });

@@ -3,6 +3,7 @@ import gsap from "gsap";
 import { Package } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { MergedNftData } from "../utils/types";
+import { CHEST_OPENING_ENABLED } from "./index";
 
 export interface ChestCardProps {
   chest: MergedNftData;
@@ -101,16 +102,16 @@ export function ChestCard({
     <div
       ref={cardRef}
       className={`
-        relative rounded-xl overflow-hidden
+        relative rounded-2xl overflow-hidden border
         transition-shadow duration-200
         ${onSelect ? "cursor-pointer" : ""}
-        ${isSelected ? "ring-2 ring-gold shadow-xl shadow-gold/20" : "shadow-lg hover:shadow-xl"}
+        ${isSelected ? "border-gold/80 ring-2 ring-gold shadow-xl shadow-gold/20" : "border-gold/20 shadow-lg hover:shadow-xl hover:border-gold/40"}
         ${isLoading && isSelected ? "pointer-events-none" : ""}
       `}
       onClick={handleClick}
     >
       {/* Chest image */}
-      <div className="aspect-square bg-slate-900 relative">
+      <div className="aspect-square bg-black/60 relative">
         {image && !imageError ? (
           <img
             src={image}
@@ -140,16 +141,16 @@ export function ChestCard({
       </div>
 
       {/* Chest info */}
-      <div className="p-3 bg-slate-800">
+      <div className="p-3 bg-gradient-to-b from-black/40 to-black/60">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium text-white">#{chest.token_id}</span>
+          <span className="text-sm font-medium text-gold">#{chest.token_id}</span>
         </div>
         {/* Show key attributes from metadata */}
         {chest.metadata?.attributes && chest.metadata.attributes.length > 0 && (
           <div className="space-y-0.5">
             {chest.metadata.attributes.slice(0, 3).map((attr, idx) => (
-              <div key={idx} className="text-xs text-white/50 truncate">
-                <span className="text-white/70">{attr.trait_type}:</span> {attr.value}
+              <div key={idx} className="text-xs text-gold/50 truncate">
+                <span className="text-gold/70">{attr.trait_type}:</span> {attr.value}
               </div>
             ))}
           </div>
@@ -162,15 +163,16 @@ export function ChestCard({
             variant="gold"
             size="xs"
             className="mt-3 w-full"
-            disabled={isLoading}
+            disabled={isLoading || !CHEST_OPENING_ENABLED}
+            title={!CHEST_OPENING_ENABLED ? "Chest opening is currently disabled" : undefined}
           >
-            {isLoading ? "Opening..." : "Open Chest"}
+            {isLoading ? "Opening..." : !CHEST_OPENING_ENABLED ? "Coming Soon" : "Open Chest"}
           </Button>
         )}
       </div>
 
       {/* Glow effect */}
-      <div className="absolute inset-0 pointer-events-none rounded-xl opacity-20 border border-gold/30" />
+      <div className="absolute inset-0 pointer-events-none rounded-2xl opacity-20 border border-gold/30" />
     </div>
   );
 }

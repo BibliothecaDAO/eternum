@@ -188,17 +188,17 @@ export function TiltCard({
           {/* Type icon and badge */}
           <div className="flex items-center gap-2 mb-2">
             <TypeIcon className={`w-4 h-4 ${rarityStyle.text}`} />
-            <span className="text-xs text-white/70 uppercase tracking-wider">{asset.type}</span>
+            <span className="text-xs text-gold/70 uppercase tracking-wider">{asset.type}</span>
           </div>
 
           {/* Asset name */}
-          <h3 className="text-xl font-bold text-white mb-2 leading-tight">{asset.name}</h3>
+          <h3 className="text-xl font-bold text-gold mb-2 leading-tight">{asset.name}</h3>
 
           {/* Set name */}
-          {asset.set && <p className="text-sm text-white/50">{asset.set}</p>}
+          {asset.set && <p className="text-sm text-gold/50">{asset.set}</p>}
 
           {/* Troop type if applicable */}
-          {asset.troopType && <p className="text-xs text-white/40 mt-1">For: {asset.troopType}</p>}
+          {asset.troopType && <p className="text-xs text-gold/40 mt-1">For: {asset.troopType}</p>}
         </div>
 
         {/* Shine effect on hover */}
@@ -248,7 +248,7 @@ export function TiltCardMini({
       <img src={imagePath} alt={asset.name} className="w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
       <div className="absolute bottom-1 left-1 right-1">
-        <p className="text-[10px] text-white truncate font-medium">{asset.name}</p>
+        <p className="text-[10px] text-gold truncate font-medium">{asset.name}</p>
       </div>
     </div>
   );

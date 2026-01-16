@@ -2,6 +2,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { Package } from "lucide-react";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { CHEST_OPENING_ENABLED } from "./index";
 
 interface FloatingOpenButtonProps {
   chestCount: number;
@@ -15,6 +16,7 @@ export function FloatingOpenButton({ chestCount, onClick, disabled = false }: Fl
 
   // Pulse animation for the glow effect
   useEffect(() => {
+    if (!CHEST_OPENING_ENABLED) return;
     if (!glowRef.current || disabled || chestCount === 0) return;
 
     const ctx = gsap.context(() => {
@@ -33,6 +35,7 @@ export function FloatingOpenButton({ chestCount, onClick, disabled = false }: Fl
 
   // Subtle float animation
   useEffect(() => {
+    if (!CHEST_OPENING_ENABLED) return;
     if (!buttonRef.current || disabled || chestCount === 0) return;
 
     const ctx = gsap.context(() => {
@@ -48,7 +51,8 @@ export function FloatingOpenButton({ chestCount, onClick, disabled = false }: Fl
     return () => ctx.revert();
   }, [disabled, chestCount]);
 
-  if (chestCount === 0) {
+  // Return null if feature is disabled or no chests
+  if (!CHEST_OPENING_ENABLED || chestCount === 0) {
     return null;
   }
 

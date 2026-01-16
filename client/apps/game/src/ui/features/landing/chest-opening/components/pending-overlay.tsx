@@ -32,6 +32,9 @@ interface PendingOverlayProps {
  * - Optional tx hash with copy
  * - Rarity-based styling
  */
+// Timeout in ms before showing "stuck" help button
+const STUCK_TIMEOUT_MS = 10_000;
+
 export function PendingOverlay({
   active,
   title = "Opening chest",
@@ -46,6 +49,7 @@ export function PendingOverlay({
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const pulseTimelineRef = useRef<gsap.core.Timeline | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showStuckHelp, setShowStuckHelp] = useState(false);
 
   // Use gold/neutral styling for pending state (rarity unknown until reveal)
   const pendingStyle = {
@@ -53,6 +57,23 @@ export function PendingOverlay({
     border: "border-gold",
     text: "text-gold",
   };
+
+  // Show "stuck" help after timeout
+  useEffect(() => {
+    if (!active || error) {
+      setShowStuckHelp(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setShowStuckHelp(true);
+    }, STUCK_TIMEOUT_MS);
+
+    return () => {
+      clearTimeout(timer);
+      setShowStuckHelp(false);
+    };
+  }, [active, error]);
 
   // Copy tx hash to clipboard
   const handleCopyTxHash = useCallback(async () => {
@@ -154,7 +175,7 @@ export function PendingOverlay({
               <div className="flex flex-col items-center gap-2">
                 <AlertCircle className="w-8 h-8 text-red-500" />
                 <h2 className="text-xl font-bold text-red-500">Failed to Open</h2>
-                <p className="text-sm text-white/60 max-w-xs">
+                <p className="text-sm text-gold/60 max-w-xs">
                   {error.message || "Something went wrong. Please try again."}
                 </p>
               </div>
@@ -164,7 +185,7 @@ export function PendingOverlay({
                   {title}
                   <LoadingDots />
                 </h2>
-                <p className="text-sm text-white/60">{subtitle}</p>
+                <p className="text-sm text-gold/60">{subtitle}</p>
               </div>
             )}
 
@@ -172,7 +193,7 @@ export function PendingOverlay({
             {txHash && !error && (
               <button
                 onClick={handleCopyTxHash}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors text-xs text-white/50 hover:text-white/70"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gold/20 bg-black/40 hover:bg-gold/10 transition-colors text-xs text-gold/50 hover:text-gold/70"
               >
                 <span className="font-mono">{truncatedHash}</span>
                 {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
@@ -198,10 +219,21 @@ export function PendingOverlay({
             )}
 
             {/* Safety message */}
-            {!error && (
-              <p className="text-xs text-white/40 mt-4 max-w-xs">
+            {!error && !showStuckHelp && (
+              <p className="text-xs text-gold/40 mt-4 max-w-xs">
                 Please don&apos;t close this window while the transaction is being confirmed.
               </p>
+            )}
+
+            {/* Stuck help - appears after timeout */}
+            {!error && showStuckHelp && onClose && (
+              <div className="flex flex-col items-center gap-3 mt-4 pt-4 border-t border-gold/10">
+                <p className="text-xs text-gold/50">Taking too long? Something might have gone wrong.</p>
+                <Button variant="outline" size="xs" onClick={onClose} className="gap-2">
+                  <X className="w-4 h-4" />
+                  Close
+                </Button>
+              </div>
             )}
           </div>
         </div>

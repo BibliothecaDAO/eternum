@@ -37,9 +37,9 @@ export function ChestStageContainer({
       <div
         className={`
           relative w-full max-w-5xl h-[700px] max-h-[90vh] mx-4
-          bg-gradient-to-b from-slate-900 to-slate-950
+          bg-gradient-to-br from-gold/5 via-black/60 to-black/90
           rounded-2xl border border-gold/20
-          shadow-2xl shadow-black/50
+          shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)]
           overflow-hidden
           ${className}
         `}
@@ -48,10 +48,10 @@ export function ChestStageContainer({
         {showCloseButton && onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+            className="absolute top-4 right-4 z-10 p-2 rounded-full border border-gold/20 bg-black/50 hover:bg-gold/10 hover:border-gold/40 transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5 text-white/70" />
+            <X className="w-5 h-5 text-gold/70" />
           </button>
         )}
 
@@ -84,7 +84,7 @@ export function ChestStageHeader({
   return (
     <div className={`text-center mb-6 ${className}`}>
       <h2 className="text-2xl sm:text-3xl font-bold text-gold mb-2">{title}</h2>
-      {subtitle && <p className="text-sm text-white/60">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-gold/60">{subtitle}</p>}
     </div>
   );
 }
@@ -95,7 +95,7 @@ export function ChestStageHeader({
 export function ChestStageFooter({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`flex items-center justify-center gap-4 p-4 border-t border-gold/10 ${className}`}
+      className={`flex items-center justify-center gap-4 p-4 border-t border-gold/20 ${className}`}
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
       {children}

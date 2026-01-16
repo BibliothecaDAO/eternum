@@ -91,7 +91,8 @@ export const LandingCosmetics = () => {
   }, [toriiCosmetics]);
 
   // Data is already grouped by SQL, no client-side grouping needed
-  const baseItems = toriiItems.length > 0 ? toriiItems : COSMETIC_ITEMS;
+  // Only use toriiItems when loaded, don't fall back to COSMETIC_ITEMS during loading
+  const baseItems = toriiItems;
 
   const filteredItems = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -162,9 +163,9 @@ export const LandingCosmetics = () => {
 
   return (
     <>
-      <section className="container flex h-[70vh] w-full flex-col -mt-12">
+      <section className="w-full max-w-7xl h-[85vh] md:h-[80vh] overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-6 md:p-8 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
         <Tabs variant="selection" selectedIndex={activeTab} onChange={setActiveTab} size="small" className="flex h-full flex-col">
-          <Tabs.List className="mb-2 flex-shrink-0 max-w-md">
+          <Tabs.List className="mb-4 flex-shrink-0 max-w-md">
             <Tabs.Tab>Cosmetics</Tabs.Tab>
             <Tabs.Tab>Chests ({ownedChests.length})</Tabs.Tab>
             <Tabs.Tab disabled>
@@ -172,55 +173,59 @@ export const LandingCosmetics = () => {
             </Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panels className="min-h-0 flex-1">
+          <Tabs.Panels className="min-h-0 flex-1 overflow-hidden">
             {/* Cosmetics Tab */}
             <Tabs.Panel className="h-full">
-              <div className="flex h-full w-full flex-col gap-6 xl:flex-row">
-                <div className="w-full space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-6 backdrop-blur panel-wood xl:w-1/2">
-                  {/* Collection Progress */}
-                  <CollectionProgress
-                    ownedCount={ownedUniqueCount}
-                    totalCount={totalSupply ?? COSMETIC_NAMES.length}
-                    isLoading={isLoadingSupply}
-                  />
-
-                  <div className="space-y-2">
-                    <label className="sr-only" htmlFor="cosmetic-search">
-                      Search cosmetics
-                    </label>
-                    <input
-                      id="cosmetic-search"
-                      type="search"
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Search by name, rarity, or trait"
-                      className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-gold focus:outline-none focus:ring-0"
+              {isLoading ? (
+                /* Loading state */
+                <div className="flex h-full w-full items-center justify-center rounded-2xl border border-gold/20 bg-black/60 backdrop-blur">
+                  <div className="flex flex-col items-center gap-4">
+                    <img src="/images/logos/eternum-loader.png" alt="Loading" className="w-14 animate-pulse" />
+                    <p className="text-gold/60 text-sm">Loading your cosmetics...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-full w-full flex-col gap-6 xl:flex-row">
+                  <div className="w-full space-y-4 overflow-y-auto rounded-2xl border border-gold/20 bg-black/60 p-6 backdrop-blur xl:w-1/2">
+                    {/* Collection Progress */}
+                    <CollectionProgress
+                      ownedCount={ownedUniqueCount}
+                      totalCount={totalSupply ?? COSMETIC_NAMES.length}
+                      isLoading={isLoadingSupply}
                     />
 
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                      {isLoading && <p className="text-white/60">Loading on-chain cosmetics…</p>}
-                      {isError && !isLoading && (
-                        <p className="text-rose-300">Failed to load on-chain cosmetics. Showing curated preview.</p>
-                      )}
-                      {!isLoading && !isError && toriiItems.length === 0 && (
-                        <p className="text-white/50">Showing curated preview set.</p>
+                    <div className="space-y-2">
+                      <label className="sr-only" htmlFor="cosmetic-search">
+                        Search cosmetics
+                      </label>
+                      <input
+                        id="cosmetic-search"
+                        type="search"
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        placeholder="Search by name, rarity, or trait"
+                        className="w-full rounded-2xl border border-gold/20 bg-gold/5 px-4 py-2 text-sm text-gold placeholder:text-gold/40 focus:border-gold/60 focus:outline-none focus:ring-0"
+                      />
+
+                      {isError && (
+                        <p className="text-xs text-rose-300">Failed to load on-chain cosmetics.</p>
                       )}
                     </div>
+
+                    <CosmeticGallery items={filteredItems} selectedId={selectedId} onSelect={(id) => setSelectedId(id)} />
                   </div>
 
-                  <CosmeticGallery items={filteredItems} selectedId={selectedId} onSelect={(id) => setSelectedId(id)} />
+                  <aside className="relative flex h-full w-full flex-col overflow-y-auto rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-6 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)] backdrop-blur xl:w-1/2 xl:min-w-[26rem]">
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl border border-gold/5" aria-hidden />
+                    <CosmeticShowcase item={selectedItem} />
+                  </aside>
                 </div>
-
-                <aside className="relative flex h-full w-full flex-col overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/70 to-black/95 p-6 shadow-2xl backdrop-blur xl:w-1/2 xl:min-w-[26rem]">
-                  <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/5" aria-hidden />
-                  <CosmeticShowcase item={selectedItem} />
-                </aside>
-              </div>
+              )}
             </Tabs.Panel>
 
             {/* Chests Tab */}
             <Tabs.Panel className="h-full">
-              <div className="h-full overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-6 backdrop-blur panel-wood">
+              <div className="h-full overflow-y-auto rounded-2xl border border-gold/20 bg-black/60 p-6 backdrop-blur">
                 <ChestGallery
                   chests={ownedChests}
                   onOpenChest={handleOpenChest}
@@ -232,8 +237,8 @@ export const LandingCosmetics = () => {
 
             {/* Elite Passes Tab (Coming Soon) */}
             <Tabs.Panel className="h-full">
-              <div className="flex h-full items-center justify-center rounded-3xl border border-white/10 bg-black/60 backdrop-blur panel-wood">
-                <p className="text-white/50">Coming Soon</p>
+              <div className="flex h-full items-center justify-center rounded-2xl border border-gold/20 bg-black/60 backdrop-blur">
+                <p className="text-gold/50">Coming Soon</p>
               </div>
             </Tabs.Panel>
           </Tabs.Panels>
