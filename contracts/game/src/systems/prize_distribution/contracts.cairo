@@ -34,7 +34,7 @@ use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait, WorldStorage};
-    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID, VELORDS_BURNER_ADDRESS};
     use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister};
     use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
     use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize, RankPrizeImpl, RankList};
@@ -52,7 +52,10 @@ use core::num::traits::zero::Zero;
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use super::{IWorldFactorySeriesDispatcher, IWorldFactorySeriesDispatcherTrait};
+
     const SYSTEM_TRIAL_ID: u128 = 1000;
+    const VICTORY_POINTS_MULTIPLIER: u128 = 1_000_000;
+    const GAME_REWARD_CHEST_POINTS_THRESHOLD: u128 = 500 * VICTORY_POINTS_MULTIPLIER;
 
 
     #[abi(embed_v0)]
@@ -294,11 +297,18 @@ use core::num::traits::zero::Zero;
 
                 // transfer ERC20 prize to player
                 assert!(reward_token.transfer(player, amount.into()), "Eternum: Failed to transfer prize");
+                
+                // transfer 1 Game Chest to players above 500 points
+                let mut player_points: PlayerRegisteredPoints = world.read_model(player);
+                if player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
+                    // game_chest_reward.distributed_chests += 1;
+                    lootchest_erc721_dispatcher.mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
+                }
+
 
                 // transfer ERC721 Chest prize to player
                 if game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
 
-                    let mut player_points: PlayerRegisteredPoints = world.read_model(player);
                     let success: bool = rng_library_dispatcher
                         .get_weighted_choice_bool_simple(
                             player_points.registered_points.into(), 
@@ -407,7 +417,7 @@ use core::num::traits::zero::Zero;
                     // todo: fix: send velords to correct address
                     // send the velords fees
                     assert!(
-                        reward_token.transfer(blitz_registration_config.fee_recipient, blitz_fee_split_record.velords_receives_amount.into()), 
+                        reward_token.transfer(VELORDS_BURNER_ADDRESS.try_into().unwrap(), blitz_fee_split_record.velords_receives_amount.into()), 
                             "Eternum: Failed to transfer velords fees"
                     );
 
