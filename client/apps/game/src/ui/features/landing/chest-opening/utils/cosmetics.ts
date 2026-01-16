@@ -77,7 +77,7 @@ export const COSMETIC_MODEL_BY_ATTRIBUTES_RAW: Record<string, string | null> = {
   "0x206010a01": "/models/cosmetics/low-res/0x206010a01.glb", // Hunter's Quiver
   "0x8010b01": "/models/cosmetics/low-res/0x8010b01.glb", // Carved Wooden Base
   "0x207050c01": "/models/cosmetics/low-res/0x207050c01.glb", // Legacy Hunter
-  "0x4040d01": null, // Overgrown Wreath - no model yet
+  "0x4040d01": "/models/cosmetics/low-res/0x4040d01.glb", // Overgrown Wreath
   "0x8040e01": "/models/cosmetics/low-res/0x8040e01.glb", // Overgrown Foundation
   "0x4030f01": "/models/cosmetics/low-res/0x4030f01.glb", // Winter Vortex
   "0x8031001": "/models/cosmetics/low-res/0x8031001.glb", // Winter's Footing
@@ -85,7 +85,7 @@ export const COSMETIC_MODEL_BY_ATTRIBUTES_RAW: Record<string, string | null> = {
   "0x105021201": "/models/cosmetics/low-res/0x105021201.glb", // Winter Trooper's Broadaxe
   "0x106021301": "/models/cosmetics/low-res/0x106021301.glb", // Winter Trooper's Targe
   "0x1011401": "/models/cosmetics/low-res/0x1011401.glb", // Witness of the Morning Wars
-  "0x305011501": null, // Light Cavalry Sword - no model yet
+  "0x305011501": "/models/cosmetics/low-res/0x305011501.glb", // Light Cavalry Sword - no model yet
   "0x306011601": "/models/cosmetics/low-res/0x306011601.glb", // Light Cavalry Shield
 };
 
