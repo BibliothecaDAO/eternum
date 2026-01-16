@@ -67,6 +67,23 @@ export const QUERIES = {
     limit 3
   `,
 
+  // Optimized query for minted cosmetics using token_transfers table
+  MINTED_COSMETICS: `
+    SELECT
+      tt.token_id,
+      tt.executed_at,
+      t.metadata
+    FROM token_transfers AS tt
+    LEFT JOIN tokens t ON t.contract_address = tt.contract_address
+      AND t.token_id = substr(tt.token_id, instr(tt.token_id, ':') + 1)
+    WHERE tt.contract_address = '{contractAddress}'
+    AND tt.from_address = '0x0000000000000000000000000000000000000000000000000000000000000000'
+    AND tt.to_address = '{playerAddress}'
+    AND tt.executed_at >= {minTimestamp}
+    ORDER BY tt.executed_at DESC
+    LIMIT 10;
+  `,
+
   // Query for total unique cosmetic types across all users
   TOTAL_COSMETICS_SUPPLY: `
   SELECT COUNT(DISTINCT json_extract(t.metadata, '$.attributes')) as total

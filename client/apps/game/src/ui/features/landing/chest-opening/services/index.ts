@@ -1,4 +1,4 @@
-import { CollectibleClaimed, RealmMetadata, TokenBalanceWithToken } from "../utils/types";
+import { CollectibleClaimed, MintedCosmetic, RealmMetadata, TokenBalanceWithToken } from "../utils/types";
 import { fetchSQL } from "./api-client";
 import { QUERIES } from "./queries";
 
@@ -130,6 +130,31 @@ export async function fetchCollectibleClaimed(
     .replace("{minTimestamp}", `'${formattedTimestamp}'`);
 
   return await fetchSQL<CollectibleClaimed[]>(query);
+}
+
+/**
+ * Fetch minted cosmetics for a specific player using token_transfers table.
+ * More efficient than querying events table.
+ */
+export async function fetchMintedCosmetics(
+  contractAddress: string,
+  playerAddress: string,
+  minTimestamp: number = 0,
+): Promise<MintedCosmetic[]> {
+  // Convert Unix timestamp to ISO 8601 format matching the database format (e.g., 2026-01-16T19:32:21+00:00)
+  const formattedTimestamp = new Date(minTimestamp * 1000).toISOString().replace("Z", "+00:00");
+
+  const query = QUERIES.MINTED_COSMETICS.replace("{contractAddress}", padAddress(contractAddress))
+    .replace("{playerAddress}", padAddress(playerAddress))
+    .replace("{minTimestamp}", `'${formattedTimestamp}'`);
+
+  const rawData = await fetchSQL<MintedCosmetic[]>(query);
+
+  // Normalize metadata for each result
+  return rawData.map((item) => ({
+    ...item,
+    metadata: normalizeMetadata(item.metadata),
+  }));
 }
 
 /**
