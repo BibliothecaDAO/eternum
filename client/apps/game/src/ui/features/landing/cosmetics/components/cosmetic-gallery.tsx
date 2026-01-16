@@ -11,8 +11,9 @@ export const CosmeticGallery = ({ items, selectedId, onSelect }: CosmeticGallery
   if (items.length === 0) {
     return (
       <section className="space-y-4">
-        <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-10 text-center text-sm text-white/60">
-          No cosmetics match your search yet.
+        <div className="rounded-2xl border border-gold/10 bg-black/40 px-4 py-10 text-center">
+          <p className="text-sm text-gold/60">No cosmetics found.</p>
+          <p className="text-xs text-gold/40 mt-2">Open chests to discover new cosmetics!</p>
         </div>
       </section>
     );

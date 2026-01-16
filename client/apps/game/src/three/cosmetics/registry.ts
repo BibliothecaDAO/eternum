@@ -15,8 +15,8 @@ const ARMY_TIERS = Object.values(TroopTier) as TroopTier[];
 const STRUCTURE_TYPES = Object.values(StructureType).filter((value) => typeof value === "number") as StructureType[];
 const COSMETIC_ROOT = "models/cosmetics";
 
-const highResPath = (fileName: string) => `${COSMETIC_ROOT}/high-res/${fileName}`;
-const lowResPath = (fileName: string) => `${COSMETIC_ROOT}/low-res/${fileName}`;
+// Only using low-res models now - files are named by attributesRaw (e.g., 0x305020701.glb)
+const lowResPath = (attributesRaw: string) => `${COSMETIC_ROOT}/low-res/${attributesRaw}.glb`;
 
 /**
  * Normalises asset paths so loaders can resolve both relative and absolute entries.
@@ -130,11 +130,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:weapon:bow-common",
     category: "attachment",
     appliesTo: [formatArmyCosmeticFamily(TroopType.Crossbowman)],
-    assetPaths: [highResPath("bow_common.glb")],
+    assetPaths: [lowResPath("0x205010901")], // Hunter's Bow
     attachments: [
       {
         id: "bow-common",
-        assetPath: highResPath("bow_common.glb"),
+        assetPath: lowResPath("0x205010901"),
         mountPoint: "weapon_r",
         slot: "weapon",
         persistent: true,
@@ -143,8 +143,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "weapon",
     metadata: {
       lod: {
-        high: highResPath("bow_common.glb"),
-        low: lowResPath("bow_common.glb"),
+        high: lowResPath("0x205010901"),
+        low: lowResPath("0x205010901"),
       },
       trait: CosmeticTraitType.TroopPrimary,
     },
@@ -153,11 +153,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:back:common-quiver",
     category: "attachment",
     appliesTo: [formatArmyCosmeticFamily(TroopType.Crossbowman)],
-    assetPaths: [highResPath("common_quiver.glb")],
+    assetPaths: [lowResPath("0x206010a01")], // Hunter's Quiver
     attachments: [
       {
         id: "common-quiver",
-        assetPath: highResPath("common_quiver.glb"),
+        assetPath: lowResPath("0x206010a01"),
         mountPoint: "spine",
         slot: "back",
         persistent: true,
@@ -166,8 +166,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "back",
     metadata: {
       lod: {
-        high: highResPath("common_quiver.glb"),
-        low: lowResPath("common_quiver.glb"),
+        high: lowResPath("0x206010a01"),
+        low: lowResPath("0x206010a01"),
       },
       trait: CosmeticTraitType.TroopSecondary,
     },
@@ -176,11 +176,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:paladin:winter-primary",
     category: "attachment",
     appliesTo: [formatArmyCosmeticFamily(TroopType.Paladin)],
-    assetPaths: [highResPath("winter_lord_paladin_primary.glb")],
+    assetPaths: [lowResPath("0x305020701")], // Winter Rider's Battleaxe
     attachments: [
       {
         id: "winter-paladin-primary",
-        assetPath: highResPath("winter_lord_paladin_primary.glb"),
+        assetPath: lowResPath("0x305020701"),
         mountPoint: "weapon_r",
         slot: "weapon",
         persistent: true,
@@ -189,8 +189,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "weapon",
     metadata: {
       lod: {
-        high: highResPath("winter_lord_paladin_primary.glb"),
-        low: lowResPath("winter_lord_paladin_primary.glb"),
+        high: lowResPath("0x305020701"),
+        low: lowResPath("0x305020701"),
       },
       trait: CosmeticTraitType.TroopPrimary,
     },
@@ -199,11 +199,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:paladin:winter-secondary",
     category: "attachment",
     appliesTo: [formatArmyCosmeticFamily(TroopType.Paladin)],
-    assetPaths: [highResPath("winter_lord_paladin_secondary.glb")],
+    assetPaths: [lowResPath("0x306020801")], // Winter Rider's Shield
     attachments: [
       {
         id: "winter-paladin-secondary",
-        assetPath: highResPath("winter_lord_paladin_secondary.glb"),
+        assetPath: lowResPath("0x306020801"),
         mountPoint: "weapon_l",
         slot: "offhand",
         persistent: true,
@@ -212,8 +212,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "offhand",
     metadata: {
       lod: {
-        high: highResPath("winter_lord_paladin_secondary.glb"),
-        low: lowResPath("winter_lord_paladin_secondary.glb"),
+        high: lowResPath("0x306020801"),
+        low: lowResPath("0x306020801"),
       },
       trait: CosmeticTraitType.TroopSecondary,
     },
@@ -222,11 +222,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:army:aura-legacy",
     category: "attachment",
     appliesTo: ARMY_TROOP_TYPES.map(formatArmyCosmeticFamily),
-    assetPaths: [highResPath("s1_legacy_troop_aura.glb")],
+    assetPaths: [lowResPath("0x4050301")], // Aura of the Legacy Warrior
     attachments: [
       {
         id: "legacy-troop-aura",
-        assetPath: highResPath("s1_legacy_troop_aura.glb"),
+        assetPath: lowResPath("0x4050301"),
         mountPoint: "root",
         slot: "aura",
         persistent: true,
@@ -235,8 +235,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "aura",
     metadata: {
       lod: {
-        high: highResPath("s1_legacy_troop_aura.glb"),
-        low: lowResPath("s1_legacy_troop_aura.glb"),
+        high: lowResPath("0x4050301"),
+        low: lowResPath("0x4050301"),
       },
       trait: CosmeticTraitType.TroopAura,
     },
@@ -245,11 +245,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:structure:common-platform",
     category: "attachment",
     appliesTo: [formatStructureCosmeticTarget(StructureType.Realm)],
-    assetPaths: [highResPath("common_platform.glb")],
+    assetPaths: [lowResPath("0x8010b01")], // Carved Wooden Base
     attachments: [
       {
         id: "common-platform",
-        assetPath: highResPath("common_platform.glb"),
+        assetPath: lowResPath("0x8010b01"),
         mountPoint: "origin",
         slot: "base",
         persistent: true,
@@ -258,8 +258,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "base",
     metadata: {
       lod: {
-        high: highResPath("common_platform.glb"),
-        low: lowResPath("common_platform.glb"),
+        high: lowResPath("0x8010b01"),
+        low: lowResPath("0x8010b01"),
       },
       trait: CosmeticTraitType.TroopBase,
     },
@@ -268,11 +268,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:structure:aura-legacy",
     category: "attachment",
     appliesTo: [formatStructureCosmeticTarget(StructureType.Realm)],
-    assetPaths: [highResPath("s1_legacy_realm_aura.glb")],
+    assetPaths: [lowResPath("0x2040401")], // Aura of the Legacy Realm
     attachments: [
       {
         id: "legacy-realm-aura",
-        assetPath: highResPath("s1_legacy_realm_aura.glb"),
+        assetPath: lowResPath("0x2040401"),
         mountPoint: "origin",
         slot: "aura",
         persistent: true,
@@ -281,8 +281,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "aura",
     metadata: {
       lod: {
-        high: highResPath("s1_legacy_realm_aura.glb"),
-        low: lowResPath("s1_legacy_realm_aura.glb"),
+        high: lowResPath("0x2040401"),
+        low: lowResPath("0x2040401"),
       },
       trait: CosmeticTraitType.RealmAura,
     },
@@ -291,11 +291,11 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     id: "attachment:structure:aura-winter-spike",
     category: "attachment",
     appliesTo: [formatStructureCosmeticTarget(StructureType.Realm)],
-    assetPaths: [highResPath("winter_lord_spike_aura.glb")],
+    assetPaths: [lowResPath("0x2030601")], // Winter's Palisade
     attachments: [
       {
         id: "winter-spike-aura",
-        assetPath: highResPath("winter_lord_spike_aura.glb"),
+        assetPath: lowResPath("0x2030601"),
         mountPoint: "origin",
         slot: "aura",
         persistent: true,
@@ -304,8 +304,8 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     attachmentSlot: "aura",
     metadata: {
       lod: {
-        high: highResPath("winter_lord_spike_aura.glb"),
-        low: lowResPath("winter_lord_spike_aura.glb"),
+        high: lowResPath("0x2030601"),
+        low: lowResPath("0x2030601"),
       },
       trait: CosmeticTraitType.RealmAura,
     },
@@ -317,11 +317,11 @@ const DEFAULT_EXTRA_ARMY_SKINS: CosmeticRegistryEntry[] = [
     id: "army:Knight:T3:legacy",
     category: "army-skin",
     appliesTo: [formatArmyCosmeticTarget(TroopType.Knight, TroopTier.T3)],
-    assetPaths: [highResPath("legacy_knight_t3.glb")],
+    assetPaths: [lowResPath("0x107050201")], // Legacy Guardian
     metadata: {
       lod: {
-        high: highResPath("legacy_knight_t3.glb"),
-        low: lowResPath("legacy_knight_t3.glb"),
+        high: lowResPath("0x107050201"),
+        low: lowResPath("0x107050201"),
       },
       trait: CosmeticTraitType.TroopArmor,
     },
@@ -333,11 +333,11 @@ const DEFAULT_EXTRA_STRUCTURE_SKINS: CosmeticRegistryEntry[] = [
     id: "structure:realm:castle-s1-lvl2",
     category: "structure-skin",
     appliesTo: [formatStructureCosmeticTarget(StructureType.Realm, 2)],
-    assetPaths: [highResPath("castle_s1_lvl2.glb")],
+    assetPaths: [lowResPath("0x3040101")], // Legacy Keep
     metadata: {
       lod: {
-        high: highResPath("castle_s1_lvl2.glb"),
-        low: lowResPath("castle_s1_lvl2.glb"),
+        high: lowResPath("0x3040101"),
+        low: lowResPath("0x3040101"),
       },
       trait: CosmeticTraitType.RealmSkin,
     },
@@ -346,11 +346,11 @@ const DEFAULT_EXTRA_STRUCTURE_SKINS: CosmeticRegistryEntry[] = [
     id: "structure:realm:castle-winter-l3",
     category: "structure-skin",
     appliesTo: [formatStructureCosmeticTarget(StructureType.Realm, 3)],
-    assetPaths: [highResPath("castle_winter_lord_l3.glb")],
+    assetPaths: [lowResPath("0x3030501")], // Winterhold
     metadata: {
       lod: {
-        high: highResPath("castle_winter_lord_l3.glb"),
-        low: lowResPath("castle_winter_lord_l3.glb"),
+        high: lowResPath("0x3030501"),
+        low: lowResPath("0x3030501"),
       },
       trait: CosmeticTraitType.RealmSkin,
     },

@@ -1,7 +1,7 @@
 {
   "Collectibles: Realms: Elite Invite": "",
-  "Collectibles: Realms: Loot Chest": "0x576ee0d5dfe431ddb56c97c30f92a88c6b4c1d43c2319965f2829bd510b4d22",
-  "Collectibles: Realms: Cosmetic Items": "0x4bd487ac7542700cb966406be3fbf5f4b80647e6c64ca7a7cbb7f9e4516d1c3",
+  "Collectibles: Realms: Loot Chest": "0x3055a923ad7546302c22c7faea014179b6c0fdb7677aedd9439b2cbf6c68806",
+  "Collectibles: Realms: Cosmetic Items": "0x59b49434d129e1a7fab31ef3652f07fa5cd8ba5acaa45bb48a6aad50086b395",
   "Collectibles: Timelock Maker": "0x4e847f9abd36c5f91eaaf51699934b7a5dd44ff9dc8d3d78d97710df1e152f",
   "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
   "seasonPass": "0x7740bb27e547db8cf7ed3d9995f686a85e76eb211f12a2985783bd5a7cef85a",
@@ -10,8 +10,6 @@
   "strk": "0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D",
   "villagePass": "0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
   "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
-  "lootChests": "0x3055a923ad7546302c22c7faea014179b6c0fdb7677aedd9439b2cbf6c68806",
-  "cosmetics": "0x59b49434d129e1a7fab31ef3652f07fa5cd8ba5acaa45bb48a6aad50086b395",
   "cosmeticsClaim": "0x72cf9022b79b6886e72c31249afbc894b5102dbd73369ba31f180e34802db1d",
   "resources": {
     "STONE": [1,"0x27dbfe27fc79ed10bc7e8c0889dd01d2b5e9d1c4e471a32d447b156f0a6fea1"],
