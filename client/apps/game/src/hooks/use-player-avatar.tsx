@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { env } from "../../env";
 
-const REALTIME_SERVER_URL = env.VITE_PUBLIC_REALTIME_SERVER_URL;
+const REALTIME_SERVER_URL = env.VITE_PUBLIC_REALTIME_URL;
 const AVATAR_CACHE_STALE_MS = 60 * 60 * 1000;
 const AVATAR_CACHE_GC_MS = 24 * 60 * 60 * 1000;
 
