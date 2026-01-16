@@ -118,7 +118,7 @@ const PlayButton = ({ onClick }: { onClick: () => void }) => (
     <Button onClick={onClick} className="w-full h-14 !text-brown !bg-gold rounded-md" forceUppercase={false}>
       <div className="flex items-center justify-center gap-3">
         <Sword className="w-6 h-6 fill-brown" />
-        <span className="text-lg font-bold">Play Blitz</span>  
+        <span className="text-lg font-bold">Play Blitz</span>
       </div>
     </Button>
   </motion.div>

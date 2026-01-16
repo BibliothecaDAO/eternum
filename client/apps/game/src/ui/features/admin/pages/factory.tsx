@@ -30,7 +30,7 @@ import {
   setVillageControllersConfig,
   setWeightConfig,
   setWorldConfig,
-  setupGlobals
+  setupGlobals,
 } from "@config-deployer/config";
 import { getGameManifest, type Chain } from "@contracts";
 import {
@@ -506,9 +506,7 @@ export const FactoryPage = () => {
     const trimmedName = name.trim();
     const trimmedGameNumber = gameNumber.trim();
     const seriesNameFelt = trimmedName ? shortString.encodeShortString(trimmedName) : "0x0";
-    const parsedSeriesGameNumber = trimmedGameNumber
-      ? BigInt(trimmedGameNumber.replace(/[^\d]/g, ""))
-      : BigInt(0);
+    const parsedSeriesGameNumber = trimmedGameNumber ? BigInt(trimmedGameNumber.replace(/[^\d]/g, "")) : BigInt(0);
     return {
       trimmedName,
       trimmedGameNumber,
@@ -800,9 +798,9 @@ export const FactoryPage = () => {
     }));
 
     try {
-        const worldNameFelt = shortString.encodeShortString(name);
-        const metadata = worldSeriesMetadata[name];
-        const series = buildSeriesCalldata(metadata?.seriesName ?? "", metadata?.seriesGameNumber ?? "");
+      const worldNameFelt = shortString.encodeShortString(name);
+      const metadata = worldSeriesMetadata[name];
+      const series = buildSeriesCalldata(metadata?.seriesName ?? "", metadata?.seriesGameNumber ?? "");
       let deployedAddress: string | null = null;
 
       for (let i = 0; i < totalRepeats; i++) {
@@ -991,7 +989,9 @@ export const FactoryPage = () => {
                     {/* Series selection */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Series (optional)</label>
+                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+                          Series (optional)
+                        </label>
                         {(seriesLoading || seriesFetching) && account && (
                           <div className="flex items-center gap-2 text-xs text-slate-500">
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -1070,7 +1070,12 @@ export const FactoryPage = () => {
                         />
                         <button
                           onClick={handleCreateSeries}
-                          disabled={!account || !factoryAddress || !seriesConfigName.trim() || seriesConfigTx.status === "running"}
+                          disabled={
+                            !account ||
+                            !factoryAddress ||
+                            !seriesConfigName.trim() ||
+                            seriesConfigTx.status === "running"
+                          }
                           className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                         >
                           {seriesConfigTx.status === "running" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -1117,691 +1122,710 @@ export const FactoryPage = () => {
                               return (
                                 <div key={idx} className="space-y-2">
                                   <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
-                                  <span className="flex-1 text-xs font-mono text-slate-700">{name}</span>
+                                    <span className="flex-1 text-xs font-mono text-slate-700">{name}</span>
 
-                                  {/* Copy Button */}
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        await navigator.clipboard.writeText(name);
-                                      } catch (err) {
-                                        console.error("Failed to copy world name", err);
-                                      }
-                                    }}
-                                    className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded transition-colors"
-                                    title="Copy world name"
-                                    aria-label="Copy world name"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
+                                    {/* Copy Button */}
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          await navigator.clipboard.writeText(name);
+                                        } catch (err) {
+                                          console.error("Failed to copy world name", err);
+                                        }
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded transition-colors"
+                                      title="Copy world name"
+                                      aria-label="Copy world name"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
 
-                                  {/* Remove Button */}
-                                  <button
-                                    onClick={() => handleRemoveFromQueue(name)}
-                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                    title="Remove from queue"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                    {/* Remove Button */}
+                                    <button
+                                      onClick={() => handleRemoveFromQueue(name)}
+                                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      title="Remove from queue"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
 
-                                  {/* Divider */}
-                                  <div className="h-4 w-px bg-slate-200" />
+                                    {/* Divider */}
+                                    <div className="h-4 w-px bg-slate-200" />
 
-                                  {/* Verifying Deployment Status */}
-                                  {verifyingDeployment[name] && (
-                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                      Verifying...
-                                    </span>
-                                  )}
-
-                                  {autoDeployState[name] && !verifyingDeployment[name] && (
-                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                      {autoDeployState[name].status === "stopping" ? "Stopping" : "Deploying"}{" "}
-                                      {autoDeployState[name].current}/{autoDeployState[name].total}
-                                    </span>
-                                  )}
-
-                                  {/* Deployment Status Badge - Only show if deployed and not verifying */}
-                                  {worldDeployedStatus[name] && !verifyingDeployment[name] && (
-                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded border border-emerald-200">
-                                      <CheckCircle2 className="w-3 h-3" />
-                                      Deployed
-                                    </span>
-                                  )}
-
-                                  {/* Deploy Button - Only show if not deployed and not verifying */}
-                                  {!worldDeployedStatus[name] &&
-                                    !verifyingDeployment[name] &&
-                                    !autoDeployState[name] && (
-                                      <button
-                                        onClick={() => handleQueueDeploy(name)}
-                                        disabled={!account || !factoryAddress || tx.status === "running"}
-                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
-                                      >
-                                        {tx.status === "running" && getTxStatusIcon()}
-                                        {factoryDeployRepeats > 1 ? `Deploy x${factoryDeployRepeats}` : "Deploy"}
-                                      </button>
+                                    {/* Verifying Deployment Status */}
+                                    {verifyingDeployment[name] && (
+                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        Verifying...
+                                      </span>
                                     )}
 
-                                  {!worldDeployedStatus[name] &&
-                                    autoDeployState[name] &&
-                                    !verifyingDeployment[name] && (
-                                      <button
-                                        onClick={() => handleStopAutoDeploy(name)}
-                                        disabled={autoDeployState[name].status === "stopping"}
-                                        className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
-                                      >
-                                        {autoDeployState[name].status === "stopping" ? "Stopping..." : "Stop"}
-                                      </button>
+                                    {autoDeployState[name] && !verifyingDeployment[name] && (
+                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        {autoDeployState[name].status === "stopping" ? "Stopping" : "Deploying"}{" "}
+                                        {autoDeployState[name].current}/{autoDeployState[name].total}
+                                      </span>
                                     )}
 
-                                  {/* Indexer Status/Actions - Only show if deployed */}
-                                  {worldDeployedStatus[name] && (
-                                    <>
-                                      {/* Step 2: Configure (can run before indexer) - Only show if not configured yet */}
-                                      {!isWorldConfigured(name) && (
+                                    {/* Deployment Status Badge - Only show if deployed and not verifying */}
+                                    {worldDeployedStatus[name] && !verifyingDeployment[name] && (
+                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded border border-emerald-200">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        Deployed
+                                      </span>
+                                    )}
+
+                                    {/* Deploy Button - Only show if not deployed and not verifying */}
+                                    {!worldDeployedStatus[name] &&
+                                      !verifyingDeployment[name] &&
+                                      !autoDeployState[name] && (
                                         <button
-                                          onClick={() =>
-                                            setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))
-                                          }
-                                          className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
+                                          onClick={() => handleQueueDeploy(name)}
+                                          disabled={!account || !factoryAddress || tx.status === "running"}
+                                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
                                         >
-                                          {worldConfigOpen[name] ? "Hide Config" : "Configure"}
+                                          {tx.status === "running" && getTxStatusIcon()}
+                                          {factoryDeployRepeats > 1 ? `Deploy x${factoryDeployRepeats}` : "Deploy"}
                                         </button>
                                       )}
 
-                                      {/* Step 3: Indexer - Always show if no indexer exists (regardless of config status) */}
-                                      {worldIndexerStatus[name] ? (
-                                        <a
-                                          href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
-                                        >
-                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                          Indexer On
-                                        </a>
-                                      ) : isWorldOnCooldown(name) ? (
-                                        <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
-                                          Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
-                                          {getRemainingCooldown(name) % 60}s
-                                        </span>
-                                      ) : (
+                                    {!worldDeployedStatus[name] &&
+                                      autoDeployState[name] &&
+                                      !verifyingDeployment[name] && (
                                         <button
-                                          onClick={() => handleCreateIndexer(name)}
-                                          className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                                          onClick={() => handleStopAutoDeploy(name)}
+                                          disabled={autoDeployState[name].status === "stopping"}
+                                          className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
                                         >
-                                          Create Indexer
+                                          {autoDeployState[name].status === "stopping" ? "Stopping..." : "Stop"}
                                         </button>
                                       )}
-                                    </>
-                                  )}
-                                </div>
-                                {metadataParts.length > 0 && (
-                                  <p className="text-[11px] text-slate-500">Series: {metadataParts.join(" ")}</p>
-                                )}
 
-                                {/* No extra status panel; only small wait timer above */}
-
-                                {/* Per-world Config Panel */}
-                                {worldConfigOpen[name] && (
-                                  <div className="ml-3 pl-3 py-4 border-l-2 border-slate-200">
-                                    <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
-                                      <div className="flex items-center justify-between">
-                                        <div>
-                                          <p className="text-sm font-semibold text-slate-800">Configure Game</p>
-                                          <p className="text-xs text-slate-500">Runs full config using live manifest</p>
-                                        </div>
-                                        {worldConfigTx[name]?.status === "running" && (
-                                          <span className="inline-flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
-                                            <Loader2 className="w-3 h-3 animate-spin" /> Running
-                                          </span>
+                                    {/* Indexer Status/Actions - Only show if deployed */}
+                                    {worldDeployedStatus[name] && (
+                                      <>
+                                        {/* Step 2: Configure (can run before indexer) - Only show if not configured yet */}
+                                        {!isWorldConfigured(name) && (
+                                          <button
+                                            onClick={() =>
+                                              setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))
+                                            }
+                                            className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
+                                          >
+                                            {worldConfigOpen[name] ? "Hide Config" : "Configure"}
+                                          </button>
                                         )}
-                                        {worldConfigTx[name]?.status === "success" && worldConfigTx[name]?.hash && (
-                                          <div className="inline-flex items-center gap-2">
-                                            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
-                                              <CheckCircle2 className="w-3 h-3" /> Success
+
+                                        {/* Step 3: Indexer - Always show if no indexer exists (regardless of config status) */}
+                                        {worldIndexerStatus[name] ? (
+                                          <a
+                                            href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
+                                          >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Indexer On
+                                          </a>
+                                        ) : isWorldOnCooldown(name) ? (
+                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
+                                            Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
+                                            {getRemainingCooldown(name) % 60}s
+                                          </span>
+                                        ) : (
+                                          <button
+                                            onClick={() => handleCreateIndexer(name)}
+                                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                                          >
+                                            Create Indexer
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                  {metadataParts.length > 0 && (
+                                    <p className="text-[11px] text-slate-500">Series: {metadataParts.join(" ")}</p>
+                                  )}
+
+                                  {/* No extra status panel; only small wait timer above */}
+
+                                  {/* Per-world Config Panel */}
+                                  {worldConfigOpen[name] && (
+                                    <div className="ml-3 pl-3 py-4 border-l-2 border-slate-200">
+                                      <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
+                                        <div className="flex items-center justify-between">
+                                          <div>
+                                            <p className="text-sm font-semibold text-slate-800">Configure Game</p>
+                                            <p className="text-xs text-slate-500">
+                                              Runs full config using live manifest
+                                            </p>
+                                          </div>
+                                          {worldConfigTx[name]?.status === "running" && (
+                                            <span className="inline-flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
+                                              <Loader2 className="w-3 h-3 animate-spin" /> Running
                                             </span>
+                                          )}
+                                          {worldConfigTx[name]?.status === "success" && worldConfigTx[name]?.hash && (
+                                            <div className="inline-flex items-center gap-2">
+                                              <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
+                                                <CheckCircle2 className="w-3 h-3" /> Success
+                                              </span>
+                                              <a
+                                                href={getExplorerTxUrl(currentChain as any, worldConfigTx[name].hash)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                              >
+                                                View Tx
+                                              </a>
+                                            </div>
+                                          )}
+                                          {worldConfigTx[name]?.status === "error" && (
+                                            <div className="flex flex-col items-end gap-1">
+                                              <span className="inline-flex items-center gap-1.5 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">
+                                                <XCircle className="w-3 h-3" /> Error
+                                              </span>
+                                              {worldConfigTx[name]?.error && (
+                                                <p className="text-[10px] text-red-600 max-w-xs text-right">
+                                                  {worldConfigTx[name].error}
+                                                </p>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* startMainAt override */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Game Start Time
+                                            </label>
+                                            <input
+                                              type="datetime-local"
+                                              min={(() => {
+                                                const d = new Date();
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const yyyy = d.getFullYear();
+                                                const mm = pad(d.getMonth() + 1);
+                                                const dd = pad(d.getDate());
+                                                const hh = pad(d.getHours());
+                                                const mi = pad(d.getMinutes());
+                                                return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                              })()}
+                                              max={(() => {
+                                                const d = new Date(Date.now() + MAX_START_TIME_HOURS * 3600 * 1000);
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const yyyy = d.getFullYear();
+                                                const mm = pad(d.getMonth() + 1);
+                                                const dd = pad(d.getDate());
+                                                const hh = pad(d.getHours());
+                                                const mi = pad(d.getMinutes());
+                                                return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                              })()}
+                                              value={(() => {
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const toLocalInput = (date: Date) => {
+                                                  const yyyy = date.getFullYear();
+                                                  const mm = pad(date.getMonth() + 1);
+                                                  const dd = pad(date.getDate());
+                                                  const hh = pad(date.getHours());
+                                                  const mi = pad(date.getMinutes());
+                                                  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                                };
+
+                                                const ts = startMainAtOverrides[name];
+                                                if (ts && ts > 0) {
+                                                  return toLocalInput(new Date(ts * 1000));
+                                                }
+                                                // Default: start of next hour
+                                                const now = new Date();
+                                                const nextHour = new Date(now.getTime());
+                                                nextHour.setMinutes(0, 0, 0);
+                                                nextHour.setHours(nextHour.getHours() + 1);
+                                                return toLocalInput(nextHour);
+                                              })()}
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (!val) {
+                                                  setStartMainAtOverrides((p) => ({ ...p, [name]: 0 }));
+                                                  setStartMainAtErrors((p) => ({ ...p, [name]: "" }));
+                                                  return;
+                                                }
+                                                const selected = Math.floor(new Date(val).getTime() / 1000);
+                                                const now = Math.floor(Date.now() / 1000);
+                                                const maxAllowed = now + MAX_START_TIME_HOURS * 3600;
+                                                if (selected < now) {
+                                                  setStartMainAtErrors((p) => ({
+                                                    ...p,
+                                                    [name]: "Start time cannot be in the past",
+                                                  }));
+                                                } else if (selected > maxAllowed) {
+                                                  setStartMainAtErrors((p) => ({
+                                                    ...p,
+                                                    [name]: `Start time cannot be more than ${MAX_START_TIME_HOURS.toLocaleString()} hours ahead`,
+                                                  }));
+                                                } else {
+                                                  setStartMainAtErrors((p) => ({ ...p, [name]: "" }));
+                                                }
+                                                setStartMainAtOverrides((p) => ({ ...p, [name]: selected }));
+                                              }}
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                            />
+                                            <p className="text-[10px] text-slate-500">
+                                              Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
+                                            </p>
+                                            {startMainAtErrors[name] && (
+                                              <p className="text-[11px] text-red-600">{startMainAtErrors[name]}</p>
+                                            )}
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">Dev Mode</label>
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                id={`dev-mode-${name}`}
+                                                type="checkbox"
+                                                checked={
+                                                  Object.prototype.hasOwnProperty.call(devModeOverrides, name)
+                                                    ? !!devModeOverrides[name]
+                                                    : devModeOn
+                                                }
+                                                onChange={(e) =>
+                                                  setDevModeOverrides((p) => ({ ...p, [name]: e.target.checked }))
+                                                }
+                                                className="h-4 w-4 accent-blue-600"
+                                              />
+                                              <label htmlFor={`dev-mode-${name}`} className="text-xs text-slate-700">
+                                                Enable developer mode for this world
+                                              </label>
+                                            </div>
+                                            <p className="text-[10px] text-slate-500">Controls in-game dev features.</p>
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Game Duration (hours)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              value={
+                                                Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
+                                                  ? Number(durationHoursOverrides[name] || 0)
+                                                  : Number(durationHours || 0)
+                                              }
+                                              onChange={(e) =>
+                                                setDurationHoursOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: Number(e.target.value || 0),
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                            />
+                                            <p className="text-[10px] text-slate-500">
+                                              Applies to season.durationSeconds.
+                                            </p>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Game Duration (minutes)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              max={59}
+                                              value={
+                                                Object.prototype.hasOwnProperty.call(durationMinutesOverrides, name)
+                                                  ? Number(durationMinutesOverrides[name] || 0)
+                                                  : baseDurationMinutes
+                                              }
+                                              onChange={(e) =>
+                                                setDurationMinutesOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                            />
+                                            <p className="text-[10px] text-slate-500">0–59 minutes (added to hours).</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Factory Address Override
+                                            </label>
+                                            <input
+                                              type="text"
+                                              placeholder={
+                                                factoryAddress || (eternumConfig as any)?.factory_address || "0x..."
+                                              }
+                                              value={factoryAddressOverrides[name] || ""}
+                                              onChange={(e) =>
+                                                setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                            <p className="text-[10px] text-slate-500">
+                                              Used by set_factory_address when configuring this world.
+                                            </p>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Single Realm Mode
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                id={`single-realm-mode-${name}`}
+                                                type="checkbox"
+                                                checked={
+                                                  Object.prototype.hasOwnProperty.call(singleRealmModeOverrides, name)
+                                                    ? !!singleRealmModeOverrides[name]
+                                                    : !!eternumConfig.settlement?.single_realm_mode
+                                                }
+                                                onChange={(e) =>
+                                                  setSingleRealmModeOverrides((p) => ({
+                                                    ...p,
+                                                    [name]: e.target.checked,
+                                                  }))
+                                                }
+                                                className="h-4 w-4 accent-blue-600"
+                                              />
+                                              <label
+                                                htmlFor={`single-realm-mode-${name}`}
+                                                className="text-xs text-slate-700"
+                                              >
+                                                Enable single realm mode for this world
+                                              </label>
+                                            </div>
+                                            <p className="text-[10px] text-slate-500">
+                                              Controls settlement spawning behavior.
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        {/* Blitz Registration Fee Configuration */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Blitz Registration Fee Amount
+                                            </label>
+                                            <input
+                                              type="text"
+                                              placeholder={defaultBlitzRegistration.amount}
+                                              value={blitzFeeAmountOverrides[name] || ""}
+                                              onChange={(e) =>
+                                                setBlitzFeeAmountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                            <p className="text-[10px] text-slate-500">
+                                              Default: {defaultBlitzRegistration.amount} with precision{" "}
+                                              {defaultBlitzRegistration.precision}.
+                                            </p>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Fee Precision (decimals)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String(defaultBlitzRegistration.precision)}
+                                              value={blitzFeePrecisionOverrides[name] || ""}
+                                              onChange={(e) =>
+                                                setBlitzFeePrecisionOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                            <p className="text-[10px] text-slate-500">
+                                              Default: {defaultBlitzRegistration.precision} decimals.
+                                            </p>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Blitz Registration Fee Token
+                                            </label>
+                                            <input
+                                              type="text"
+                                              placeholder={defaultBlitzRegistration.token || "0x..."}
+                                              value={blitzFeeTokenOverrides[name] || ""}
+                                              onChange={(e) =>
+                                                setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                            <p className="text-[10px] text-slate-500">
+                                              Default: {defaultBlitzRegistration.token}. Leave empty for default.
+                                            </p>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Registration Count Max
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder="30"
+                                              value={registrationCountMaxOverrides[name] || ""}
+                                              onChange={(e) =>
+                                                setRegistrationCountMaxOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                            <p className="text-[10px] text-slate-500">Default: 30.</p>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={async () => {
+                                              if (!account) return;
+                                              setWorldConfigTx((p) => ({ ...p, [name]: { status: "running" } }));
+                                              try {
+                                                // 1) Build runtime profile, patch manifest, create provider for this world
+                                                const profile = await buildWorldProfile(currentChain as Chain, name);
+                                                const baseManifest = getGameManifest(currentChain as Chain);
+                                                const patched = patchManifestWithFactory(
+                                                  baseManifest as any,
+                                                  profile.worldAddress,
+                                                  profile.contractsBySelector,
+                                                );
+                                                let localProvider: any = new EternumProvider(
+                                                  patched,
+                                                  env.VITE_PUBLIC_NODE_URL,
+                                                  env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+                                                );
+
+                                                // 2) Batch and run all config functions (same order as config-admin-page)
+                                                await localProvider.beginBatch({ signer: account });
+
+                                                // prepare optional override for startMainAt (clamped to +MAX_START_TIME_HOURS)
+                                                const nowSec = Math.floor(Date.now() / 1000);
+                                                const maxAllowed = nowSec + MAX_START_TIME_HOURS * 3600;
+                                                const sel = startMainAtOverrides[name];
+                                                // default to start of next hour if not provided
+                                                const nextHourDefault = (() => {
+                                                  const now = Date.now();
+                                                  const nextHourMs = Math.ceil(now / 3600000) * 3600000;
+                                                  return Math.floor(nextHourMs / 1000);
+                                                })();
+                                                const chosenStart = sel && sel > 0 ? sel : nextHourDefault;
+                                                const selectedStart = Math.max(
+                                                  nowSec,
+                                                  Math.min(chosenStart, maxAllowed),
+                                                );
+
+                                                const selectedDevMode = Object.prototype.hasOwnProperty.call(
+                                                  devModeOverrides,
+                                                  name,
+                                                )
+                                                  ? !!devModeOverrides[name]
+                                                  : devModeOn;
+                                                const selectedDurationHours = Object.prototype.hasOwnProperty.call(
+                                                  durationHoursOverrides,
+                                                  name,
+                                                )
+                                                  ? Number(durationHoursOverrides[name] || 0)
+                                                  : Number(durationHours || 0);
+                                                const selectedDurationMinutes = Object.prototype.hasOwnProperty.call(
+                                                  durationMinutesOverrides,
+                                                  name,
+                                                )
+                                                  ? Number(durationMinutesOverrides[name] || 0)
+                                                  : Number(baseDurationMinutes || 0);
+                                                if (
+                                                  !Number.isFinite(selectedDurationMinutes) ||
+                                                  selectedDurationMinutes < 0 ||
+                                                  selectedDurationMinutes > 59
+                                                ) {
+                                                  throw new Error("Duration minutes must be between 0 and 59");
+                                                }
+
+                                                // Apply blitz registration fee overrides if provided
+                                                const rawFeeAmount = blitzFeeAmountOverrides[name]?.trim();
+                                                const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
+                                                const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
+                                                const rawRegistrationCountMax =
+                                                  registrationCountMaxOverrides[name]?.trim();
+                                                const hasRegistrationCountMax =
+                                                  rawRegistrationCountMax !== undefined &&
+                                                  rawRegistrationCountMax !== "";
+                                                const registrationCountMax = hasRegistrationCountMax
+                                                  ? Number(rawRegistrationCountMax)
+                                                  : 30;
+                                                if (
+                                                  !Number.isFinite(registrationCountMax) ||
+                                                  registrationCountMax < 0
+                                                ) {
+                                                  throw new Error(
+                                                    "Registration count max must be a non-negative number",
+                                                  );
+                                                }
+                                                const hasFeePrecision =
+                                                  rawFeePrecision !== undefined && rawFeePrecision !== "";
+                                                const precision = hasFeePrecision
+                                                  ? Number(rawFeePrecision)
+                                                  : defaultBlitzRegistration.precision;
+                                                if (
+                                                  !Number.isFinite(precision) ||
+                                                  precision < 0 ||
+                                                  !Number.isInteger(precision)
+                                                ) {
+                                                  throw new Error("Fee precision must be a non-negative integer");
+                                                }
+                                                const hasFeeAmount = rawFeeAmount !== undefined && rawFeeAmount !== "";
+                                                const amountToParse = hasFeeAmount
+                                                  ? rawFeeAmount
+                                                  : defaultBlitzRegistration.amount;
+                                                const blitzFeeAmount = amountToParse
+                                                  ? parseDecimalToBigInt(amountToParse, precision)
+                                                  : eternumConfig.blitz?.registration?.fee_amount;
+                                                const blitzFeeToken =
+                                                  rawFeeToken ||
+                                                  defaultBlitzRegistration.token ||
+                                                  eternumConfig.blitz?.registration?.fee_token;
+
+                                                const rawFactoryAddress = factoryAddressOverrides[name]?.trim();
+                                                const factoryAddressOverride =
+                                                  rawFactoryAddress ||
+                                                  factoryAddress ||
+                                                  (eternumConfig as any)?.factory_address;
+
+                                                // Apply single realm mode override if provided
+                                                const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
+                                                  singleRealmModeOverrides,
+                                                  name,
+                                                )
+                                                  ? !!singleRealmModeOverrides[name]
+                                                  : !!eternumConfig.settlement?.single_realm_mode;
+
+                                                const configForWorld = {
+                                                  ...eternumConfig,
+                                                  factory_address: factoryAddressOverride,
+                                                  dev: {
+                                                    ...(eternumConfig as any).dev,
+                                                    mode: {
+                                                      ...((eternumConfig as any).dev?.mode || {}),
+                                                      on: selectedDevMode,
+                                                    },
+                                                  },
+                                                  season: {
+                                                    ...eternumConfig.season,
+                                                    startMainAt: selectedStart,
+                                                    durationSeconds: Math.max(
+                                                      60,
+                                                      Math.max(0, selectedDurationHours) * 3600 +
+                                                        Math.max(0, selectedDurationMinutes) * 60,
+                                                    ),
+                                                  },
+                                                  blitz: {
+                                                    ...eternumConfig.blitz,
+                                                    registration: {
+                                                      ...eternumConfig.blitz?.registration,
+                                                      fee_amount: blitzFeeAmount,
+                                                      fee_token: blitzFeeToken,
+                                                      registration_count_max: registrationCountMax,
+                                                    },
+                                                  },
+                                                  settlement: {
+                                                    ...eternumConfig.settlement,
+                                                    single_realm_mode: selectedSingleRealmMode,
+                                                  },
+                                                } as any;
+
+                                                const ctx = {
+                                                  account,
+                                                  provider: localProvider as any,
+                                                  config: configForWorld,
+                                                } as any;
+
+                                                await setWorldConfig(ctx);
+                                                await setVRFConfig(ctx);
+                                                await setGameModeConfig(ctx);
+                                                await setFactoryAddressConfig(ctx);
+                                                await setVictoryPointsConfig(ctx);
+                                                await setDiscoverableVillageSpawnResourcesConfig(ctx);
+                                                await setBlitzRegistrationConfig(ctx);
+                                                await setAgentConfig(ctx);
+                                                await setVillageControllersConfig(ctx);
+                                                await setTradeConfig(ctx);
+                                                await setSeasonConfig(ctx);
+                                                await setResourceBridgeFeesConfig(ctx);
+                                                await setBattleConfig(ctx);
+                                                await setStructureMaxLevelConfig(ctx);
+                                                await setupGlobals(ctx);
+                                                await setCapacityConfig(ctx);
+                                                await setSpeedConfig(ctx);
+                                                await setHyperstructureConfig(ctx);
+                                                await setSettlementConfig(ctx);
+                                                await setStartingResourcesConfig(ctx);
+                                                await setWeightConfig(ctx);
+                                                await setRealmUpgradeConfig(ctx);
+                                                await setTroopConfig(ctx);
+                                                await setBuildingConfig(ctx);
+                                                await SetResourceFactoryConfig(ctx);
+                                                // await setResourceBridgeWtlConfig(ctx);
+
+                                                const receipt = await localProvider.endBatch({ flush: true });
+                                                setWorldConfigTx((p) => ({
+                                                  ...p,
+                                                  [name]: { status: "success", hash: receipt?.transaction_hash },
+                                                }));
+
+                                                // Mark world as configured after successful transaction
+                                                markWorldAsConfigured(name);
+
+                                                // Close the config panel after successful configuration
+                                                setWorldConfigOpen((prev) => ({ ...prev, [name]: false }));
+                                              } catch (e: any) {
+                                                const msg = e?.message ?? String(e);
+                                                setWorldConfigTx((p) => ({
+                                                  ...p,
+                                                  [name]: { status: "error", error: msg },
+                                                }));
+                                                try {
+                                                  // attempt to cancel if batching
+                                                  // @ts-ignore
+                                                  await (localProvider as any)?.endBatch?.({ flush: false });
+                                                } catch {}
+                                              }
+                                            }}
+                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                            disabled={
+                                              !account ||
+                                              worldConfigTx[name]?.status === "running" ||
+                                              !!startMainAtErrors[name]
+                                            }
+                                          >
+                                            Set
+                                          </button>
+
+                                          {worldConfigTx[name]?.hash && (
                                             <a
-                                              href={getExplorerTxUrl(currentChain as any, worldConfigTx[name].hash)}
+                                              href={getExplorerTxUrl(currentChain as any, worldConfigTx[name]!.hash)}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                              className="text-xs text-blue-700 hover:underline ml-2"
                                             >
                                               View Tx
                                             </a>
-                                          </div>
-                                        )}
-                                        {worldConfigTx[name]?.status === "error" && (
-                                          <div className="flex flex-col items-end gap-1">
-                                            <span className="inline-flex items-center gap-1.5 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">
-                                              <XCircle className="w-3 h-3" /> Error
-                                            </span>
-                                            {worldConfigTx[name]?.error && (
-                                              <p className="text-[10px] text-red-600 max-w-xs text-right">
-                                                {worldConfigTx[name].error}
-                                              </p>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {/* startMainAt override */}
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Game Start Time
-                                          </label>
-                                          <input
-                                            type="datetime-local"
-                                            min={(() => {
-                                              const d = new Date();
-                                              const pad = (n: number) => n.toString().padStart(2, "0");
-                                              const yyyy = d.getFullYear();
-                                              const mm = pad(d.getMonth() + 1);
-                                              const dd = pad(d.getDate());
-                                              const hh = pad(d.getHours());
-                                              const mi = pad(d.getMinutes());
-                                              return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-                                            })()}
-                                            max={(() => {
-                                              const d = new Date(Date.now() + MAX_START_TIME_HOURS * 3600 * 1000);
-                                              const pad = (n: number) => n.toString().padStart(2, "0");
-                                              const yyyy = d.getFullYear();
-                                              const mm = pad(d.getMonth() + 1);
-                                              const dd = pad(d.getDate());
-                                              const hh = pad(d.getHours());
-                                              const mi = pad(d.getMinutes());
-                                              return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-                                            })()}
-                                            value={(() => {
-                                              const pad = (n: number) => n.toString().padStart(2, "0");
-                                              const toLocalInput = (date: Date) => {
-                                                const yyyy = date.getFullYear();
-                                                const mm = pad(date.getMonth() + 1);
-                                                const dd = pad(date.getDate());
-                                                const hh = pad(date.getHours());
-                                                const mi = pad(date.getMinutes());
-                                                return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-                                              };
-
-                                              const ts = startMainAtOverrides[name];
-                                              if (ts && ts > 0) {
-                                                return toLocalInput(new Date(ts * 1000));
-                                              }
-                                              // Default: start of next hour
-                                              const now = new Date();
-                                              const nextHour = new Date(now.getTime());
-                                              nextHour.setMinutes(0, 0, 0);
-                                              nextHour.setHours(nextHour.getHours() + 1);
-                                              return toLocalInput(nextHour);
-                                            })()}
-                                            onChange={(e) => {
-                                              const val = e.target.value;
-                                              if (!val) {
-                                                setStartMainAtOverrides((p) => ({ ...p, [name]: 0 }));
-                                                setStartMainAtErrors((p) => ({ ...p, [name]: "" }));
-                                                return;
-                                              }
-                                              const selected = Math.floor(new Date(val).getTime() / 1000);
-                                              const now = Math.floor(Date.now() / 1000);
-                                              const maxAllowed = now + MAX_START_TIME_HOURS * 3600;
-                                              if (selected < now) {
-                                                setStartMainAtErrors((p) => ({
-                                                  ...p,
-                                                  [name]: "Start time cannot be in the past",
-                                                }));
-                                              } else if (selected > maxAllowed) {
-                                                setStartMainAtErrors((p) => ({
-                                                  ...p,
-                                                  [name]: `Start time cannot be more than ${MAX_START_TIME_HOURS.toLocaleString()} hours ahead`,
-                                                }));
-                                              } else {
-                                                setStartMainAtErrors((p) => ({ ...p, [name]: "" }));
-                                              }
-                                              setStartMainAtOverrides((p) => ({ ...p, [name]: selected }));
-                                            }}
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
-                                          </p>
-                                          {startMainAtErrors[name] && (
-                                            <p className="text-[11px] text-red-600">{startMainAtErrors[name]}</p>
                                           )}
                                         </div>
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">Dev Mode</label>
-                                          <div className="flex items-center gap-2">
-                                            <input
-                                              id={`dev-mode-${name}`}
-                                              type="checkbox"
-                                              checked={
-                                                Object.prototype.hasOwnProperty.call(devModeOverrides, name)
-                                                  ? !!devModeOverrides[name]
-                                                  : devModeOn
-                                              }
-                                              onChange={(e) =>
-                                                setDevModeOverrides((p) => ({ ...p, [name]: e.target.checked }))
-                                              }
-                                              className="h-4 w-4 accent-blue-600"
-                                            />
-                                            <label htmlFor={`dev-mode-${name}`} className="text-xs text-slate-700">
-                                              Enable developer mode for this world
-                                            </label>
-                                          </div>
-                                          <p className="text-[10px] text-slate-500">Controls in-game dev features.</p>
-                                        </div>
-                                      </div>
 
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Game Duration (hours)
-                                          </label>
-                                          <input
-                                            type="number"
-                                            min={0}
-                                            value={
-                                              Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
-                                                ? Number(durationHoursOverrides[name] || 0)
-                                                : Number(durationHours || 0)
-                                            }
-                                            onChange={(e) =>
-                                              setDurationHoursOverrides((p) => ({
-                                                ...p,
-                                                [name]: Number(e.target.value || 0),
-                                              }))
-                                            }
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            Applies to season.durationSeconds.
-                                          </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Game Duration (minutes)
-                                          </label>
-                                          <input
-                                            type="number"
-                                            min={0}
-                                            max={59}
-                                            value={
-                                              Object.prototype.hasOwnProperty.call(durationMinutesOverrides, name)
-                                                ? Number(durationMinutesOverrides[name] || 0)
-                                                : baseDurationMinutes
-                                            }
-                                            onChange={(e) =>
-                                              setDurationMinutesOverrides((p) => ({
-                                                ...p,
-                                                [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
-                                              }))
-                                            }
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            0–59 minutes (added to hours).
-                                          </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Factory Address Override
-                                          </label>
-                                          <input
-                                            type="text"
-                                            placeholder={factoryAddress || (eternumConfig as any)?.factory_address || "0x..."}
-                                            value={factoryAddressOverrides[name] || ""}
-                                            onChange={(e) =>
-                                              setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                            }
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            Used by set_factory_address when configuring this world.
-                                          </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Single Realm Mode
-                                          </label>
-                                          <div className="flex items-center gap-2">
-                                            <input
-                                              id={`single-realm-mode-${name}`}
-                                              type="checkbox"
-                                              checked={
-                                                Object.prototype.hasOwnProperty.call(singleRealmModeOverrides, name)
-                                                  ? !!singleRealmModeOverrides[name]
-                                                  : !!eternumConfig.settlement?.single_realm_mode
-                                              }
-                                              onChange={(e) =>
-                                                setSingleRealmModeOverrides((p) => ({ ...p, [name]: e.target.checked }))
-                                              }
-                                              className="h-4 w-4 accent-blue-600"
-                                            />
-                                            <label
-                                              htmlFor={`single-realm-mode-${name}`}
-                                              className="text-xs text-slate-700"
-                                            >
-                                              Enable single realm mode for this world
-                                            </label>
-                                          </div>
-                                          <p className="text-[10px] text-slate-500">
-                                            Controls settlement spawning behavior.
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      {/* Blitz Registration Fee Configuration */}
-                                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Blitz Registration Fee Amount
-                                          </label>
-                                          <input
-                                            type="text"
-                                            placeholder={defaultBlitzRegistration.amount}
-                                            value={blitzFeeAmountOverrides[name] || ""}
-                                            onChange={(e) =>
-                                              setBlitzFeeAmountOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                            }
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            Default: {defaultBlitzRegistration.amount} with precision{" "}
-                                            {defaultBlitzRegistration.precision}.
-                                          </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Fee Precision (decimals)
-                                          </label>
-                                          <input
-                                            type="number"
-                                            min={0}
-                                            step={1}
-                                            placeholder={String(defaultBlitzRegistration.precision)}
-                                            value={blitzFeePrecisionOverrides[name] || ""}
-                                            onChange={(e) =>
-                                              setBlitzFeePrecisionOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                            }
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            Default: {defaultBlitzRegistration.precision} decimals.
-                                          </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Blitz Registration Fee Token
-                                          </label>
-                                          <input
-                                            type="text"
-                                            placeholder={defaultBlitzRegistration.token || "0x..."}
-                                            value={blitzFeeTokenOverrides[name] || ""}
-                                            onChange={(e) =>
-                                              setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                            }
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            Default: {defaultBlitzRegistration.token}. Leave empty for default.
-                                          </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">
-                                            Registration Count Max
-                                          </label>
-                                          <input
-                                            type="number"
-                                            min={0}
-                                            step={1}
-                                            placeholder="30"
-                                            value={registrationCountMaxOverrides[name] || ""}
-                                            onChange={(e) =>
-                                              setRegistrationCountMaxOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                            }
-                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
-                                          />
-                                          <p className="text-[10px] text-slate-500">
-                                            Default: 30.
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                        <button
-                                          onClick={async () => {
-                                            if (!account) return;
-                                            setWorldConfigTx((p) => ({ ...p, [name]: { status: "running" } }));
-                                            try {
-                                              // 1) Build runtime profile, patch manifest, create provider for this world
-                                              const profile = await buildWorldProfile(currentChain as Chain, name);
-                                              const baseManifest = getGameManifest(currentChain as Chain);
-                                              const patched = patchManifestWithFactory(
-                                                baseManifest as any,
-                                                profile.worldAddress,
-                                                profile.contractsBySelector,
-                                              );
-                                              let localProvider: any = new EternumProvider(
-                                                patched,
-                                                env.VITE_PUBLIC_NODE_URL,
-                                                env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-                                              );
-
-                                              // 2) Batch and run all config functions (same order as config-admin-page)
-                                              await localProvider.beginBatch({ signer: account });
-
-                                              // prepare optional override for startMainAt (clamped to +MAX_START_TIME_HOURS)
-                                              const nowSec = Math.floor(Date.now() / 1000);
-                                              const maxAllowed = nowSec + MAX_START_TIME_HOURS * 3600;
-                                              const sel = startMainAtOverrides[name];
-                                              // default to start of next hour if not provided
-                                              const nextHourDefault = (() => {
-                                                const now = Date.now();
-                                                const nextHourMs = Math.ceil(now / 3600000) * 3600000;
-                                                return Math.floor(nextHourMs / 1000);
-                                              })();
-                                              const chosenStart = sel && sel > 0 ? sel : nextHourDefault;
-                                              const selectedStart = Math.max(nowSec, Math.min(chosenStart, maxAllowed));
-
-                                              const selectedDevMode = Object.prototype.hasOwnProperty.call(
-                                                devModeOverrides,
-                                                name,
-                                              )
-                                                ? !!devModeOverrides[name]
-                                                : devModeOn;
-                                              const selectedDurationHours = Object.prototype.hasOwnProperty.call(
-                                                durationHoursOverrides,
-                                                name,
-                                              )
-                                                ? Number(durationHoursOverrides[name] || 0)
-                                                : Number(durationHours || 0);
-                                              const selectedDurationMinutes = Object.prototype.hasOwnProperty.call(
-                                                durationMinutesOverrides,
-                                                name,
-                                              )
-                                                ? Number(durationMinutesOverrides[name] || 0)
-                                                : Number(baseDurationMinutes || 0);
-                                              if (
-                                                !Number.isFinite(selectedDurationMinutes) ||
-                                                selectedDurationMinutes < 0 ||
-                                                selectedDurationMinutes > 59
-                                              ) {
-                                                throw new Error("Duration minutes must be between 0 and 59");
-                                              }
-
-                                              // Apply blitz registration fee overrides if provided
-                                              const rawFeeAmount = blitzFeeAmountOverrides[name]?.trim();
-                                              const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
-                                              const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
-                                              const rawRegistrationCountMax = registrationCountMaxOverrides[name]?.trim();
-                                              const hasRegistrationCountMax =
-                                                rawRegistrationCountMax !== undefined && rawRegistrationCountMax !== "";
-                                              const registrationCountMax = hasRegistrationCountMax
-                                                ? Number(rawRegistrationCountMax)
-                                                : 30;
-                                              if (!Number.isFinite(registrationCountMax) || registrationCountMax < 0) {
-                                                throw new Error("Registration count max must be a non-negative number");
-                                              }
-                                              const hasFeePrecision = rawFeePrecision !== undefined && rawFeePrecision !== "";
-                                              const precision = hasFeePrecision
-                                                ? Number(rawFeePrecision)
-                                                : defaultBlitzRegistration.precision;
-                                              if (
-                                                !Number.isFinite(precision) ||
-                                                precision < 0 ||
-                                                !Number.isInteger(precision)
-                                              ) {
-                                                throw new Error("Fee precision must be a non-negative integer");
-                                              }
-                                              const hasFeeAmount = rawFeeAmount !== undefined && rawFeeAmount !== "";
-                                              const amountToParse = hasFeeAmount ? rawFeeAmount : defaultBlitzRegistration.amount;
-                                              const blitzFeeAmount = amountToParse
-                                                ? parseDecimalToBigInt(amountToParse, precision)
-                                                : eternumConfig.blitz?.registration?.fee_amount;
-                                              const blitzFeeToken =
-                                                rawFeeToken ||
-                                                defaultBlitzRegistration.token ||
-                                                eternumConfig.blitz?.registration?.fee_token;
-
-                                              const rawFactoryAddress = factoryAddressOverrides[name]?.trim();
-                                              const factoryAddressOverride =
-                                                rawFactoryAddress ||
-                                                factoryAddress ||
-                                                (eternumConfig as any)?.factory_address;
-
-                                              // Apply single realm mode override if provided
-                                              const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
-                                                singleRealmModeOverrides,
-                                                name,
-                                              )
-                                                ? !!singleRealmModeOverrides[name]
-                                                : !!eternumConfig.settlement?.single_realm_mode;
-
-                                              const configForWorld = {
-                                                ...eternumConfig,
-                                                factory_address: factoryAddressOverride,
-                                                dev: {
-                                                  ...(eternumConfig as any).dev,
-                                                  mode: {
-                                                    ...((eternumConfig as any).dev?.mode || {}),
-                                                    on: selectedDevMode,
-                                                  },
-                                                },
-                                                season: {
-                                                  ...eternumConfig.season,
-                                                  startMainAt: selectedStart,
-                                                  durationSeconds: Math.max(
-                                                    60,
-                                                    Math.max(0, selectedDurationHours) * 3600 +
-                                                      Math.max(0, selectedDurationMinutes) * 60,
-                                                  ),
-                                                },
-                                                blitz: {
-                                                  ...eternumConfig.blitz,
-                                                  registration: {
-                                                    ...eternumConfig.blitz?.registration,
-                                                    fee_amount: blitzFeeAmount,
-                                                    fee_token: blitzFeeToken,
-                                                    registration_count_max: registrationCountMax,
-                                                  },
-                                                },
-                                                settlement: {
-                                                  ...eternumConfig.settlement,
-                                                  single_realm_mode: selectedSingleRealmMode,
-                                                },
-                                              } as any;
-
-                                              const ctx = {
-                                                account,
-                                                provider: localProvider as any,
-                                                config: configForWorld,
-                                              } as any;
-
-                                              await setWorldConfig(ctx);
-                                              await setVRFConfig(ctx);
-                                              await setGameModeConfig(ctx);
-                                              await setFactoryAddressConfig(ctx);
-                                              await setVictoryPointsConfig(ctx);
-                                              await setDiscoverableVillageSpawnResourcesConfig(ctx);
-                                              await setBlitzRegistrationConfig(ctx);
-                                              await setAgentConfig(ctx);
-                                              await setVillageControllersConfig(ctx);
-                                              await setTradeConfig(ctx);
-                                              await setSeasonConfig(ctx);
-                                              await setResourceBridgeFeesConfig(ctx);
-                                              await setBattleConfig(ctx);
-                                              await setStructureMaxLevelConfig(ctx);
-                                              await setupGlobals(ctx);
-                                              await setCapacityConfig(ctx);
-                                              await setSpeedConfig(ctx);
-                                              await setHyperstructureConfig(ctx);
-                                              await setSettlementConfig(ctx);
-                                              await setStartingResourcesConfig(ctx);
-                                              await setWeightConfig(ctx);
-                                              await setRealmUpgradeConfig(ctx);
-                                              await setTroopConfig(ctx);
-                                              await setBuildingConfig(ctx);
-                                              await SetResourceFactoryConfig(ctx);
-                                              // await setResourceBridgeWtlConfig(ctx);
-
-                                              const receipt = await localProvider.endBatch({ flush: true });
-                                              setWorldConfigTx((p) => ({
-                                                ...p,
-                                                [name]: { status: "success", hash: receipt?.transaction_hash },
-                                              }));
-
-                                              // Mark world as configured after successful transaction
-                                              markWorldAsConfigured(name);
-
-                                              // Close the config panel after successful configuration
-                                              setWorldConfigOpen((prev) => ({ ...prev, [name]: false }));
-                                            } catch (e: any) {
-                                              const msg = e?.message ?? String(e);
-                                              setWorldConfigTx((p) => ({
-                                                ...p,
-                                                [name]: { status: "error", error: msg },
-                                              }));
-                                              try {
-                                                // attempt to cancel if batching
-                                                // @ts-ignore
-                                                await (localProvider as any)?.endBatch?.({ flush: false });
-                                              } catch {}
-                                            }
-                                          }}
-                                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md disabled:bg-slate-300 disabled:cursor-not-allowed"
-                                          disabled={
-                                            !account ||
-                                            worldConfigTx[name]?.status === "running" ||
-                                            !!startMainAtErrors[name]
-                                          }
-                                        >
-                                          Set
-                                        </button>
-
-                                        {worldConfigTx[name]?.hash && (
-                                          <a
-                                            href={getExplorerTxUrl(currentChain as any, worldConfigTx[name]!.hash)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-blue-700 hover:underline ml-2"
-                                          >
-                                            View Tx
-                                          </a>
+                                        {worldConfigTx[name]?.error && (
+                                          <p className="text-xs text-red-600">{worldConfigTx[name]?.error}</p>
                                         )}
                                       </div>
-
-                                      {worldConfigTx[name]?.error && (
-                                        <p className="text-xs text-red-600">{worldConfigTx[name]?.error}</p>
-                                      )}
                                     </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
+                                  )}
+                                </div>
+                              );
                             })}
                           </div>
                         )}
