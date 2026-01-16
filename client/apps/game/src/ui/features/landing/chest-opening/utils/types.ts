@@ -46,3 +46,9 @@ export interface CollectibleClaimed {
   timestamp: number;
   keys?: string;
 }
+
+export interface MintedCosmetic {
+  token_id: string;
+  executed_at: string;
+  metadata: string | RealmMetadata | null;
+}

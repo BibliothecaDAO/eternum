@@ -40,34 +40,6 @@ export function ChestOpeningExperience({ onClose, initialChestId, initialEpoch }
   // Listen for CollectibleClaimed events
   const { chestContent, resetChestContent } = useChestContent(MOCK_CHEST_OPENING, chestOpenTimestamp);
 
-  useEffect(() => {
-    console.log({
-      flowState,
-      actions,
-      openChest,
-      isOpeningChest,
-      ownedChests,
-      refetchChests,
-      chestOpenTimestamp,
-      setShowLootChestOpening,
-      storeAssets,
-      chestContent,
-      resetChestContent,
-    });
-  }, [
-    flowState,
-    actions,
-    openChest,
-    isOpeningChest,
-    ownedChests,
-    refetchChests,
-    chestOpenTimestamp,
-    setShowLootChestOpening,
-    storeAssets,
-    chestContent,
-    resetChestContent,
-  ]);
-
   // Local state for revealed assets (from events or mock)
   const [revealedAssets, setRevealedAssets] = useState(storeAssets);
 
