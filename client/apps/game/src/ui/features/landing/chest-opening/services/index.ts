@@ -115,19 +115,16 @@ export async function fetchLootChestBalances(
 }
 
 /**
- * Fetch collectible claimed events for a specific player
+ * Fetch collectible claimed events for a specific player using token_transfers table
  */
 export async function fetchCollectibleClaimed(
   contractAddress: string,
   playerAddress: string,
   minTimestamp: number = 0,
 ): Promise<CollectibleClaimed[]> {
-  // Convert Unix timestamp to ISO string format for SQL datetime comparison
-  const formattedTimestamp = new Date(minTimestamp * 1000).toISOString().replace("T", " ").replace("Z", "");
-
   const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{contractAddress}", padAddress(contractAddress))
     .replace("{playerAddress}", padAddress(playerAddress))
-    .replace("{minTimestamp}", `'${formattedTimestamp}'`);
+    .replace("{minTimestamp}", minTimestamp.toString());
 
   return await fetchSQL<CollectibleClaimed[]>(query);
 }

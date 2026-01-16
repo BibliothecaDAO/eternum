@@ -59,12 +59,22 @@ export const QUERIES = {
   GROUP BY json_extract(t.metadata, '$.attributes');
   `,
   COLLECTIBLE_CLAIMED: `
-    SELECT *
-    FROM [events]
-    WHERE keys LIKE '0x006d9857ff29ce02c8a34db3a4387b1438bd738b0b4c17679553432d8fc11ecb/{contractAddress}/%{playerAddress}/'
-      AND created_at > {minTimestamp}
-    ORDER BY created_at DESC
-    limit 3
+    SELECT 
+      tt.token_id,
+      t.metadata,
+      tt.executed_at as timestamp,
+      '{contractAddress}' as token_address,
+      '{playerAddress}' as token_recipient
+    FROM token_transfers tt
+    LEFT JOIN tokens t
+      ON t.token_id = substr(tt.token_id, instr(tt.token_id, ':') + 1)
+      AND t.contract_address = '{contractAddress}'
+    WHERE tt.contract_address = '{contractAddress}'
+      AND tt.from_address = '0x0000000000000000000000000000000000000000000000000000000000000000'
+      AND tt.to_address = '{playerAddress}'
+      AND tt.executed_at > {minTimestamp}
+    ORDER BY tt.executed_at DESC
+    LIMIT 10
   `,
 
   // Query for total unique cosmetic types across all users

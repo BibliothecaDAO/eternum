@@ -5,37 +5,59 @@ import { useEffect, useRef, useState } from "react";
 import { fetchCollectibleClaimed } from "../services";
 import { ChestAsset, COSMETIC_NAMES, getAllChestAssets, getChestAssetFromAttributesRaw } from "../utils/cosmetics";
 
-// Helper to normalize attributesRaw for comparison (remove leading zeros after 0x)
-const normalizeAttributesRaw = (raw: string): string => {
-  if (!raw.startsWith("0x")) return raw;
-  // Remove 0x, strip leading zeros, add 0x back
-  const hex = raw.slice(2).replace(/^0+/, "");
-  return "0x" + (hex || "0");
+// Helper to normalize metadata for consistent parsing
+const normalizeMetadata = (metadata: string | null | undefined): any => {
+  if (!metadata) return null;
+  try {
+    return typeof metadata === "string" ? JSON.parse(metadata) : metadata;
+  } catch {
+    return null;
+  }
 };
 
-// Parse CollectibleClaimed event data to extract chest assets
-const parseCollectibleClaimedData = (eventData: { keys?: string }[]): ChestAsset[] => {
+// Parse CollectibleClaimed data to extract chest assets with timestamp grouping
+const parseCollectibleClaimedData = (eventData: { metadata?: string | null; timestamp?: string }[]): ChestAsset[] => {
+  if (!eventData || eventData.length === 0) return [];
+
+  // Group items by timestamp to identify items from the same chest opening
+  const timestampGroups = new Map<string, any[]>();
+  
+  eventData.forEach((event) => {
+    if (event.timestamp && event.metadata) {
+      const timestamp = event.timestamp;
+      if (!timestampGroups.has(timestamp)) {
+        timestampGroups.set(timestamp, []);
+      }
+      timestampGroups.get(timestamp)!.push(event);
+    }
+  });
+
+  // Get the most recent timestamp group (latest chest opening)
+  const sortedTimestamps = Array.from(timestampGroups.keys()).sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+
+  if (sortedTimestamps.length === 0) return [];
+
+  const latestItems = timestampGroups.get(sortedTimestamps[0]) || [];
   const parsedAssets: ChestAsset[] = [];
 
-  eventData.forEach((event) => {
-    if (event.keys) {
-      // Split keys by "/" to get individual values
-      const keyValues = event.keys.split("/");
+  latestItems.forEach((item) => {
+    const metadata = normalizeMetadata(item.metadata);
+    if (metadata?.attributes) {
+      // Find matching cosmetic by attributes
+      const matchingCosmetic = COSMETIC_NAMES.find((cosmetic) => {
+        const cosmeticMetadata = normalizeMetadata(cosmetic.attributesRaw);
+        if (!cosmeticMetadata) return false;
+        
+        // Compare attributes arrays
+        return JSON.stringify(cosmeticMetadata) === JSON.stringify(metadata.attributes);
+      });
 
-      // The 3rd value (index 2) is the attributes_raw
-      if (keyValues.length >= 3) {
-        const eventAttributesRaw = normalizeAttributesRaw(keyValues[2]);
-
-        // Find matching cosmetic by normalized attributesRaw
-        const matchingCosmetic = COSMETIC_NAMES.find(
-          (cosmetic) => normalizeAttributesRaw(cosmetic.attributesRaw) === eventAttributesRaw,
-        );
-
-        if (matchingCosmetic) {
-          const asset = getChestAssetFromAttributesRaw(matchingCosmetic.attributesRaw);
-          if (asset) {
-            parsedAssets.push(asset);
-          }
+      if (matchingCosmetic) {
+        const asset = getChestAssetFromAttributesRaw(matchingCosmetic.attributesRaw);
+        if (asset) {
+          parsedAssets.push(asset);
         }
       }
     }
@@ -80,13 +102,10 @@ export function useChestContent(debugMode: boolean = false, timestamp: number): 
       const currentLength = collectibleClaimedQuery.length;
       const previousLength = previousLengthRef.current;
 
-      // If new items were added, get all the new items
+      // If new items were added, parse all items to get latest chest opening
       if (currentLength > previousLength) {
-        const newItemCount = currentLength - previousLength;
-        const newTokens = collectibleClaimedQuery.slice(-newItemCount);
-
-        // Parse the event data to extract chest assets
-        const newAssets: ChestAsset[] = parseCollectibleClaimedData(newTokens);
+        // Parse all the token transfer data to extract chest assets from latest chest
+        const newAssets: ChestAsset[] = parseCollectibleClaimedData(collectibleClaimedQuery);
 
         if (newAssets.length > 0) {
           setChestContent(newAssets);

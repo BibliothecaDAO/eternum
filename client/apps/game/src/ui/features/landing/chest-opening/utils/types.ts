@@ -40,9 +40,9 @@ export interface TokenBalanceWithToken {
 }
 
 export interface CollectibleClaimed {
+  token_id: string;
+  metadata: string | RealmMetadata | null;
+  timestamp: string;
   token_address: string;
-  attributes_raw: string;
   token_recipient: string;
-  timestamp: number;
-  keys?: string;
 }
