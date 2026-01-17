@@ -41,6 +41,10 @@ on:
         description: "External contracts to index (one per line: erc721:0x..., erc20:0x...)"
         required: false
         default: ""
+      torii_replicas:
+        description: "Torii replicas"
+        required: false
+        default: "2"
 
 permissions:
   contents: write
@@ -224,6 +228,7 @@ jobs:
           VERSION: ${{ github.event.inputs.torii_version }}
           NAME: ${{ steps.name.outputs.torii_name }}
           CONFIG: ${{ steps.render.outputs.config_path }}
+          REPLICAS: ${{ github.event.inputs.torii_replicas }}
         run: |
           set -euo pipefail
           echo "Creating Torii slot: $NAME"
@@ -235,6 +240,7 @@ jobs:
             "$NAME" torii \
             --version "$VERSION" \
             --config "$CONFIG"
+            --replicas "$REPLICAS"
 
       # - name: Commit and push torii config
       #   if: success()
