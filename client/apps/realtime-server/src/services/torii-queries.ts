@@ -342,6 +342,18 @@ export const HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY = `
     FROM "s1_eternum-WorldConfig";
 `;
 
+export const ALL_TILES_QUERY = `
+    SELECT DISTINCT
+      data
+    FROM "s1_eternum-TileOpt"
+    ORDER BY alt, col, row;
+`;
+
+export const HYPERSTRUCTURES_QUERY = `
+    SELECT hyperstructure_id
+    FROM "s1_eternum-Hyperstructure";
+`;
+
 export const HYPERSTRUCTURE_SHAREHOLDERS_QUERY = `
     SELECT
       hyperstructure_id,
