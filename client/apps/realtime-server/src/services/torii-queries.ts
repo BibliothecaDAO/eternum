@@ -342,6 +342,45 @@ export const HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY = `
     FROM "s1_eternum-WorldConfig";
 `;
 
+export const ALL_TILES_QUERY = `
+    SELECT DISTINCT
+      data
+    FROM "s1_eternum-TileOpt"
+    ORDER BY alt, col, row;
+`;
+
+export const HYPERSTRUCTURES_QUERY = `
+    SELECT hyperstructure_id
+    FROM "s1_eternum-Hyperstructure";
+`;
+
+export const STRUCTURE_AND_EXPLORER_DETAILS_QUERY = `
+    SELECT
+        s.owner AS owner_address,
+        GROUP_CONCAT(DISTINCT s.entity_id || ':' || s.\`metadata.realm_id\`|| ':' || s.\`category\`) AS structure_ids,
+        GROUP_CONCAT(
+            CASE 
+                WHEN et.explorer_id IS NOT NULL 
+                THEN et.explorer_id || ':' || s.entity_id 
+                ELSE NULL 
+            END
+        ) AS explorer_ids,
+        COUNT(DISTINCT CASE WHEN s.category = 1 THEN s.entity_id END) as realms_count,
+        COUNT(DISTINCT CASE WHEN s.category = 2 THEN s.entity_id END) as hyperstructures_count,
+        COUNT(DISTINCT CASE WHEN s.category = 3 THEN s.entity_id END) as bank_count,
+        COUNT(DISTINCT CASE WHEN s.category = 4 THEN s.entity_id END) as mine_count,
+        COUNT(DISTINCT CASE WHEN s.category = 5 THEN s.entity_id END) as village_count,
+        gm.guild_id,
+        g.name AS guild_name,
+        sos.name AS player_name
+    FROM [s1_eternum-Structure] s
+    LEFT JOIN [s1_eternum-ExplorerTroops] et ON et.owner = s.entity_id
+    LEFT JOIN [s1_eternum-GuildMember] gm ON gm.member = s.owner
+    LEFT JOIN [s1_eternum-Guild] g ON g.guild_id = gm.guild_id
+    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+    GROUP BY s.owner
+`;
+
 export const HYPERSTRUCTURE_SHAREHOLDERS_QUERY = `
     SELECT
       hyperstructure_id,

@@ -213,6 +213,20 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchGlobalStructureExplorerAndGuildDetails(): Promise<PlayersData[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/structure-explorer-details");
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        return await fetchJsonWithErrorHandling<PlayersData[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached structure explorer details",
+        );
+      } catch (error) {
+        console.warn("Cached structure explorer details fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.STRUCTURE_AND_EXPLORER_DETAILS);
     return await fetchWithErrorHandling<PlayersData>(url, "Failed to fetch structure explorer and guild details");
   }
@@ -222,6 +236,24 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchAllTiles(): Promise<Tile[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/tiles");
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        const cachedRows = await fetchJsonWithErrorHandling<TileOptRow[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached tiles",
+        );
+
+        if (Array.isArray(cachedRows)) {
+          return cachedRows.map((row) => tileDataToTile(row.data));
+        }
+      } catch (error) {
+        console.warn("Cached tiles fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const url = buildApiUrl(this.baseUrl, TILES_QUERIES.ALL_TILES);
     const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles");
     return rows.map((row) => tileDataToTile(row.data));
@@ -232,6 +264,24 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchHyperstructures(): Promise<Hyperstructure[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/hyperstructures");
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        const cachedRows = await fetchJsonWithErrorHandling<Hyperstructure[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached hyperstructures",
+        );
+
+        if (Array.isArray(cachedRows)) {
+          return cachedRows;
+        }
+      } catch (error) {
+        console.warn("Cached hyperstructures fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.HYPERSTRUCTURES);
     return await fetchWithErrorHandling<Hyperstructure>(url, "Failed to fetch hyperstructures");
   }

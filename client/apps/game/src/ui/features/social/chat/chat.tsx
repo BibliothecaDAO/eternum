@@ -421,56 +421,30 @@ export function ChatModule() {
 
   useConnectionEvents(chatClient);
 
-  // Request initial data once (after a short delay to ensure connection is ready)
-  useEffect(() => {
-    const initTimer = setTimeout(() => {
-      if (chatClient?.socket.connected) {
-        chatLogger.log("Requesting initial data");
-        // No need to request data separately - server will send everything on connection
-      }
-    }, 500);
+  const activeRoomId = activeTab?.type === "room" ? activeTab.roomId ?? null : null;
 
-    // Set up an interval to periodically request online users and rooms
-    const updateInterval = setInterval(() => {
-      if (chatClient?.socket.connected) {
-        chatLogger.log("Refreshing user and room data");
-        chatClient.getAllUsers();
-        chatClient.getRooms();
-      }
-    }, 30000);
+  useEffect(() => {
+    if (!chatClient) return;
 
     return () => {
       chatLogger.log("Cleaning up chat client");
-      // Clear timers first
-      clearTimeout(initTimer);
-      clearInterval(updateInterval);
-
-      // Disconnect socket to prevent memory leaks
-      if (chatClient) {
-        chatClient.socket.disconnect();
-      }
+      chatClient.socket.disconnect();
     };
   }, [chatClient]);
 
-  const joinedRoomsRef = useRef(new Set<string>());
-
-  // Automatically join all available rooms to receive notifications
   useEffect(() => {
-    if (chatClient && chatClient.socket && chatClient.socket.connected && availableRooms.length > 0) {
-      availableRooms.forEach((room) => {
-        if (!joinedRoomsRef.current.has(room.id)) {
-          chatLogger.log(`Auto-joining room for notifications: ${room.id}`);
-          chatClient.joinRoom(room.id);
-          joinedRoomsRef.current.add(room.id);
-        }
-      });
+    if (!chatClient || !activeRoomId) {
+      return;
     }
-    // If the socket disconnects, we might want to clear joinedRoomsRef
-    // so it attempts to rejoin when connection is re-established.
-    // However, the current ChatClient re-initialization on disconnect/reconnect might handle this implicitly
-    // by creating a new client instance, which would also mean a new joinedRoomsRef effectively.
-    // For now, let's keep the dependencies simple.
-  }, [chatClient, availableRooms, chatClient?.socket?.connected]);
+
+    chatLogger.log(`Joining active room: ${activeRoomId}`);
+    chatClient.joinRoom(activeRoomId);
+
+    return () => {
+      chatLogger.log(`Leaving active room: ${activeRoomId}`);
+      chatClient.leaveRoom(activeRoomId);
+    };
+  }, [chatClient, activeRoomId]);
 
   // Filter rooms based on search input
   const filteredRooms = useMemo(() => {

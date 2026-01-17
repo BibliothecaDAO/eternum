@@ -2,11 +2,14 @@ import { Hono, type Context } from "hono";
 
 import type { AppEnv } from "../middleware/auth";
 import {
+  ALL_TILES_QUERY,
   buildLeaderboardQuery,
   buildStoryEventsQuery,
   HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY,
+  HYPERSTRUCTURES_QUERY,
   HYPERSTRUCTURE_SHAREHOLDERS_QUERY,
   HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY,
+  STRUCTURE_AND_EXPLORER_DETAILS_QUERY,
 } from "../../services/torii-queries";
 
 type CacheStatus = "hit" | "stale" | "miss";
@@ -40,6 +43,18 @@ const DEFAULT_STORY_EVENTS_STALE_MS = 2 * 60_000;
 const DEFAULT_STORY_EVENTS_MAX_ENTRIES = 25;
 const DEFAULT_STORY_EVENTS_LIMIT = 50;
 const DEFAULT_STORY_EVENTS_LIMIT_MAX = 2_000;
+
+const DEFAULT_TILES_TTL_MS = 60_000;
+const DEFAULT_TILES_STALE_MS = 5 * 60_000;
+const DEFAULT_TILES_MAX_ENTRIES = 2;
+
+const DEFAULT_HYPERSTRUCTURES_TTL_MS = 60_000;
+const DEFAULT_HYPERSTRUCTURES_STALE_MS = 5 * 60_000;
+const DEFAULT_HYPERSTRUCTURES_MAX_ENTRIES = 10;
+
+const DEFAULT_STRUCTURE_EXPLORER_DETAILS_TTL_MS = 60_000;
+const DEFAULT_STRUCTURE_EXPLORER_DETAILS_STALE_MS = 5 * 60_000;
+const DEFAULT_STRUCTURE_EXPLORER_DETAILS_MAX_ENTRIES = 5;
 
 const parseEnvNumber = (value: string | undefined, fallback: number, min = 0): number => {
   if (!value) {
@@ -108,10 +123,47 @@ const storyEventsLimitMax = parseEnvInt(
   1,
 );
 
+const tilesTtlMs = parseEnvNumber(process.env.TILES_CACHE_TTL_MS, DEFAULT_TILES_TTL_MS);
+const tilesStaleMs = parseEnvNumber(process.env.TILES_CACHE_STALE_MS, DEFAULT_TILES_STALE_MS, tilesTtlMs);
+const tilesMaxEntries = parseEnvInt(process.env.TILES_CACHE_MAX_ENTRIES, DEFAULT_TILES_MAX_ENTRIES, 1);
+
+const hyperstructuresTtlMs = parseEnvNumber(process.env.HYPERSTRUCTURES_CACHE_TTL_MS, DEFAULT_HYPERSTRUCTURES_TTL_MS);
+const hyperstructuresStaleMs = parseEnvNumber(
+  process.env.HYPERSTRUCTURES_CACHE_STALE_MS,
+  DEFAULT_HYPERSTRUCTURES_STALE_MS,
+  hyperstructuresTtlMs,
+);
+const hyperstructuresMaxEntries = parseEnvInt(
+  process.env.HYPERSTRUCTURES_CACHE_MAX_ENTRIES,
+  DEFAULT_HYPERSTRUCTURES_MAX_ENTRIES,
+  1,
+);
+
+const structureExplorerDetailsTtlMs = parseEnvNumber(
+  process.env.STRUCTURE_EXPLORER_DETAILS_CACHE_TTL_MS,
+  DEFAULT_STRUCTURE_EXPLORER_DETAILS_TTL_MS,
+);
+const structureExplorerDetailsStaleMs = parseEnvNumber(
+  process.env.STRUCTURE_EXPLORER_DETAILS_CACHE_STALE_MS,
+  DEFAULT_STRUCTURE_EXPLORER_DETAILS_STALE_MS,
+  structureExplorerDetailsTtlMs,
+);
+const structureExplorerDetailsMaxEntries = parseEnvInt(
+  process.env.STRUCTURE_EXPLORER_DETAILS_CACHE_MAX_ENTRIES,
+  DEFAULT_STRUCTURE_EXPLORER_DETAILS_MAX_ENTRIES,
+  1,
+);
+
 const leaderboardCache = new Map<string, CacheEntry<LeaderboardCachePayload>>();
 const leaderboardInFlight = new Map<string, Promise<LeaderboardCachePayload>>();
 const storyEventsCache = new Map<string, CacheEntry<unknown[]>>();
 const storyEventsInFlight = new Map<string, Promise<unknown[]>>();
+const tilesCache = new Map<string, CacheEntry<unknown[]>>();
+const tilesInFlight = new Map<string, Promise<unknown[]>>();
+const hyperstructuresCache = new Map<string, CacheEntry<unknown[]>>();
+const hyperstructuresInFlight = new Map<string, Promise<unknown[]>>();
+const structureExplorerDetailsCache = new Map<string, CacheEntry<unknown[]>>();
+const structureExplorerDetailsInFlight = new Map<string, Promise<unknown[]>>();
 
 const pruneCache = <T>(cache: Map<string, CacheEntry<T>>, maxEntries: number) => {
   if (cache.size <= maxEntries) {
@@ -123,6 +175,54 @@ const pruneCache = <T>(cache: Map<string, CacheEntry<T>>, maxEntries: number) =>
     cache.delete(entries[i]![0]);
   }
 };
+
+const cleanupExpiredEntries = <T>(cache: Map<string, CacheEntry<T>>, staleMs: number) => {
+  const now = Date.now();
+  const entriesToDelete: string[] = [];
+
+  for (const [key, entry] of cache.entries()) {
+    const age = now - entry.fetchedAt;
+    if (age > staleMs) {
+      entriesToDelete.push(key);
+    }
+  }
+
+  for (const key of entriesToDelete) {
+    cache.delete(key);
+  }
+
+  if (entriesToDelete.length > 0) {
+    console.log(`Cleaned up ${entriesToDelete.length} expired cache entries`);
+  }
+};
+
+let cacheCleanupIntervalId: NodeJS.Timeout | null = null;
+
+export const startCacheCleanup = () => {
+  if (cacheCleanupIntervalId) {
+    return;
+  }
+
+  cacheCleanupIntervalId = setInterval(
+    () => {
+      cleanupExpiredEntries(leaderboardCache, leaderboardStaleMs);
+      cleanupExpiredEntries(storyEventsCache, storyEventsStaleMs);
+      cleanupExpiredEntries(tilesCache, tilesStaleMs);
+      cleanupExpiredEntries(hyperstructuresCache, hyperstructuresStaleMs);
+      cleanupExpiredEntries(structureExplorerDetailsCache, structureExplorerDetailsStaleMs);
+    },
+    10 * 60 * 1000,
+  );
+};
+
+export const stopCacheCleanup = () => {
+  if (cacheCleanupIntervalId) {
+    clearInterval(cacheCleanupIntervalId);
+    cacheCleanupIntervalId = null;
+  }
+};
+
+startCacheCleanup();
 
 const buildSqlUrl = (baseUrl: string, query: string): string => {
   const url = new URL(baseUrl);
@@ -179,6 +279,10 @@ const getCachedValue = async <T>({
             pruneCache(cache, maxEntries);
             return value;
           })
+          .catch((error) => {
+            console.error(`Background cache refresh failed for key "${key}":`, error);
+            return entry.value;
+          })
           .finally(() => {
             inFlight.delete(key);
           });
@@ -204,6 +308,10 @@ const getCachedValue = async <T>({
       cache.set(key, { value, fetchedAt: Date.now() });
       pruneCache(cache, maxEntries);
       return value;
+    })
+    .catch((error) => {
+      console.error(`Cache refresh failed for key "${key}":`, error);
+      throw error;
     })
     .finally(() => {
       inFlight.delete(key);
@@ -359,6 +467,101 @@ cacheRoutes.get("/story-events", async (c) => {
   } catch (error) {
     console.error("Failed to fetch story events cache", error);
     return c.json({ error: "Failed to fetch story events cache." }, 500);
+  }
+});
+
+cacheRoutes.get("/tiles", async (c) => {
+  const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
+  if (!toriiBaseUrl) {
+    return c.json(
+      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
+      400,
+    );
+  }
+
+  const cacheKey = `${toriiBaseUrl}|all`;
+
+  try {
+    const result = await getCachedValue({
+      cache: tilesCache,
+      inFlight: tilesInFlight,
+      key: cacheKey,
+      ttlMs: tilesTtlMs,
+      staleMs: tilesStaleMs,
+      maxEntries: tilesMaxEntries,
+      fetcher: async () => await fetchToriiRows<unknown>(toriiBaseUrl, ALL_TILES_QUERY, "tiles"),
+    });
+
+    c.header("x-cache", result.status);
+    return c.json(result.value);
+  } catch (error) {
+    console.error("Failed to fetch tiles cache", error);
+    return c.json({ error: "Failed to fetch tiles cache." }, 500);
+  }
+});
+
+cacheRoutes.get("/hyperstructures", async (c) => {
+  const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
+  if (!toriiBaseUrl) {
+    return c.json(
+      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
+      400,
+    );
+  }
+
+  const cacheKey = `${toriiBaseUrl}|all`;
+
+  try {
+    const result = await getCachedValue({
+      cache: hyperstructuresCache,
+      inFlight: hyperstructuresInFlight,
+      key: cacheKey,
+      ttlMs: hyperstructuresTtlMs,
+      staleMs: hyperstructuresStaleMs,
+      maxEntries: hyperstructuresMaxEntries,
+      fetcher: async () => await fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_QUERY, "hyperstructures"),
+    });
+
+    c.header("x-cache", result.status);
+    return c.json(result.value);
+  } catch (error) {
+    console.error("Failed to fetch hyperstructures cache", error);
+    return c.json({ error: "Failed to fetch hyperstructures cache." }, 500);
+  }
+});
+
+cacheRoutes.get("/structure-explorer-details", async (c) => {
+  const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
+  if (!toriiBaseUrl) {
+    return c.json(
+      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
+      400,
+    );
+  }
+
+  const cacheKey = `${toriiBaseUrl}|all`;
+
+  try {
+    const result = await getCachedValue({
+      cache: structureExplorerDetailsCache,
+      inFlight: structureExplorerDetailsInFlight,
+      key: cacheKey,
+      ttlMs: structureExplorerDetailsTtlMs,
+      staleMs: structureExplorerDetailsStaleMs,
+      maxEntries: structureExplorerDetailsMaxEntries,
+      fetcher: async () =>
+        await fetchToriiRows<unknown>(
+          toriiBaseUrl,
+          STRUCTURE_AND_EXPLORER_DETAILS_QUERY,
+          "structure explorer details",
+        ),
+    });
+
+    c.header("x-cache", result.status);
+    return c.json(result.value);
+  } catch (error) {
+    console.error("Failed to fetch structure explorer details cache", error);
+    return c.json({ error: "Failed to fetch structure explorer details cache." }, 500);
   }
 });
 

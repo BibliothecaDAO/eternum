@@ -96,6 +96,11 @@ class ChatClient {
     });
   }
 
+  leaveRoom(roomId: string) {
+    console.log(`Leaving room: ${roomId}`);
+    this.socket.emit("leaveRoom", { roomId });
+  }
+
   sendRoomMessage(roomId: string, message: string) {
     this.socket.emit("roomMessage", { roomId, message });
   }
