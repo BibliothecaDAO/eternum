@@ -240,7 +240,6 @@ jobs:
             "$NAME" torii \
             --version "$VERSION" \
             --config "$CONFIG"
-            --replicas "$REPLICAS"
 
       # - name: Commit and push torii config
       #   if: success()
