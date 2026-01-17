@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: "blitz"
+          ref: "next"
 
       - name: Install Slot CLI
         run: |
