@@ -56,6 +56,8 @@ const DEFAULT_STRUCTURE_EXPLORER_DETAILS_TTL_MS = 60_000;
 const DEFAULT_STRUCTURE_EXPLORER_DETAILS_STALE_MS = 5 * 60_000;
 const DEFAULT_STRUCTURE_EXPLORER_DETAILS_MAX_ENTRIES = 5;
 
+const cacheEnabled = process.env.CACHE_ENABLED !== "false";
+
 const parseEnvNumber = (value: string | undefined, fallback: number, min = 0): number => {
   if (!value) {
     return fallback;
@@ -210,7 +212,9 @@ export const stopCacheCleanup = () => {
   }
 };
 
-startCacheCleanup();
+if (cacheEnabled) {
+  startCacheCleanup();
+}
 
 const buildSqlUrl = (baseUrl: string, query: string): string => {
   const url = new URL(baseUrl);
@@ -251,6 +255,11 @@ const getCachedValue = async <T>({
   maxEntries: number;
   fetcher: () => Promise<T>;
 }): Promise<CacheResult<T>> => {
+  if (!cacheEnabled) {
+    const value = await fetcher();
+    return { value, status: "miss", fetchedAt: Date.now() };
+  }
+
   const now = Date.now();
   const entry = cache.get(key);
 

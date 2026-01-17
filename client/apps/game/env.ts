@@ -40,6 +40,11 @@ const envSchema = z.object({
   VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
   VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
   VITE_PUBLIC_REALTIME_URL: z.string().url().optional().default("http://localhost:8080"),
+  VITE_PUBLIC_ENABLE_SQL_CACHE: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
 
   // Marketplace API endpoint (added)
   VITE_PUBLIC_MARKETPLACE_URL: z
