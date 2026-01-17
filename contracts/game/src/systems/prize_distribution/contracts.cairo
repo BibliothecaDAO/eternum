@@ -280,7 +280,7 @@ use core::num::traits::zero::Zero;
             let season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
 
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let mut random_number = rng_library_dispatcher.get_random_number(caller, world);
+            let mut _random_number = rng_library_dispatcher.get_random_number(caller, world);
             for player in players {
                 // ensure player is eligible for prize
                 let mut player_rank: PlayerRank = world.read_model((final_trial_id, player));
@@ -311,18 +311,23 @@ use core::num::traits::zero::Zero;
                 // transfer ERC721 Chest prize to player
                 if game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
 
-                    let success: bool = rng_library_dispatcher
-                        .get_weighted_choice_bool_simple(
-                            player_points.registered_points.into(), 
-                            season_prize.total_registered_points.into(), 
-                            random_number
-                        );
-                    random_number += 1;
-
-                    if success {
-                        game_chest_reward.distributed_chests += 1;
-                        lootchest_erc721_dispatcher.mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
+                    let mut received_num_chests: u128 
+                        = (game_chest_reward.allocated_chests.into() * player_points.registered_points) / season_prize.total_registered_points;
+                    
+                    // should be impossible but who knows
+                    let chests_left = game_chest_reward.allocated_chests - game_chest_reward.distributed_chests;
+                    if chests_left.into() < received_num_chests {
+                        received_num_chests = chests_left.into()
                     }
+
+                    lootchest_erc721_dispatcher
+                        .mint_many(player, array![
+                            (
+                                blitz_registration_config.collectibles_lootchest_attrs_raw(), 
+                                received_num_chests.try_into().unwrap()
+                            )
+                        ].span());
+                    game_chest_reward.distributed_chests += received_num_chests.try_into().unwrap();
                 }
 
                 // transfer ERC721 Elite Invite NFT prize to player

@@ -17,8 +17,8 @@ pub mod series_chest_reward_calculator {
     const RECENT_PLAYERS_MAX: u32 = 3; // fixed ring capacity
 
     // Some sensible defaults (used in tests / examples)
-    const NUM_GAMES_IN_SERIES: u32 = 9;
-    const TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED: u128 = 730;
+    const NUM_GAMES_IN_SERIES: u32 = 8;
+    const TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED: u128 = 650;
     const CAP_RATIO_BPS: u128 = 11_000; // 1.10
     const EXPECTED_PLAYERS_START: u128 = 30;
     const EXPECTED_PLAYERS_END: u128 = 30;

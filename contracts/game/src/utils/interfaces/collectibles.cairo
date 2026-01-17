@@ -1,7 +1,10 @@
 // Note: dont include burn as that would affect the total supply check in `obtain_entry_token` function
+use starknet;
+
 #[starknet::interface]
 pub trait ICollectible<T> {
     fn mint(ref self: T, recipient: starknet::ContractAddress, attributes_raw: u128);
+    fn mint_many(ref self: T, recipient: starknet::ContractAddress, attributes_and_counts: Span<(u128, u16)>);
     fn lock_state_update(ref self: T, lock_id: felt252, unlock_at: u64);
     fn set_attrs_raw_to_ipfs_cid(ref self: T, attrs_raw: u128, ipfs_cid: ByteArray, overwrite: bool);
 
