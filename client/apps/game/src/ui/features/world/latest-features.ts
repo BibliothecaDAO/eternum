@@ -9,6 +9,13 @@ export interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-01-17",
+    title: "Chat Room Subscriptions",
+    description:
+      "Chat now joins only the room you're viewing, reducing background traffic while keeping messages responsive.",
+    type: "improvement",
+  },
+  {
     date: "2026-01-15",
     title: "Open Loot Chests",
     description:

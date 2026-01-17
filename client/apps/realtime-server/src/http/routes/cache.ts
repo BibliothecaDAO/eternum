@@ -176,6 +176,54 @@ const pruneCache = <T>(cache: Map<string, CacheEntry<T>>, maxEntries: number) =>
   }
 };
 
+const cleanupExpiredEntries = <T>(cache: Map<string, CacheEntry<T>>, staleMs: number) => {
+  const now = Date.now();
+  const entriesToDelete: string[] = [];
+
+  for (const [key, entry] of cache.entries()) {
+    const age = now - entry.fetchedAt;
+    if (age > staleMs) {
+      entriesToDelete.push(key);
+    }
+  }
+
+  for (const key of entriesToDelete) {
+    cache.delete(key);
+  }
+
+  if (entriesToDelete.length > 0) {
+    console.log(`Cleaned up ${entriesToDelete.length} expired cache entries`);
+  }
+};
+
+let cacheCleanupIntervalId: NodeJS.Timeout | null = null;
+
+export const startCacheCleanup = () => {
+  if (cacheCleanupIntervalId) {
+    return;
+  }
+
+  cacheCleanupIntervalId = setInterval(
+    () => {
+      cleanupExpiredEntries(leaderboardCache, leaderboardStaleMs);
+      cleanupExpiredEntries(storyEventsCache, storyEventsStaleMs);
+      cleanupExpiredEntries(tilesCache, tilesStaleMs);
+      cleanupExpiredEntries(hyperstructuresCache, hyperstructuresStaleMs);
+      cleanupExpiredEntries(structureExplorerDetailsCache, structureExplorerDetailsStaleMs);
+    },
+    10 * 60 * 1000,
+  );
+};
+
+export const stopCacheCleanup = () => {
+  if (cacheCleanupIntervalId) {
+    clearInterval(cacheCleanupIntervalId);
+    cacheCleanupIntervalId = null;
+  }
+};
+
+startCacheCleanup();
+
 const buildSqlUrl = (baseUrl: string, query: string): string => {
   const url = new URL(baseUrl);
   url.searchParams.set("query", query);
@@ -231,6 +279,10 @@ const getCachedValue = async <T>({
             pruneCache(cache, maxEntries);
             return value;
           })
+          .catch((error) => {
+            console.error(`Background cache refresh failed for key "${key}":`, error);
+            return entry.value;
+          })
           .finally(() => {
             inFlight.delete(key);
           });
@@ -256,6 +308,10 @@ const getCachedValue = async <T>({
       cache.set(key, { value, fetchedAt: Date.now() });
       pruneCache(cache, maxEntries);
       return value;
+    })
+    .catch((error) => {
+      console.error(`Cache refresh failed for key "${key}":`, error);
+      throw error;
     })
     .finally(() => {
       inFlight.delete(key);

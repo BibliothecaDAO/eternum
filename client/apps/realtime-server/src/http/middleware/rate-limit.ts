@@ -57,14 +57,31 @@ export function incrementRateLimit(username: string): void {
   }
 }
 
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [key, limitInfo] of rateLimitStore.entries()) {
-      if (now >= limitInfo.resetAt) {
-        rateLimitStore.delete(key);
+let cleanupIntervalId: NodeJS.Timeout | null = null;
+
+export function startRateLimitCleanup(): void {
+  if (cleanupIntervalId) {
+    return;
+  }
+
+  cleanupIntervalId = setInterval(
+    () => {
+      const now = Date.now();
+      for (const [key, limitInfo] of rateLimitStore.entries()) {
+        if (now >= limitInfo.resetAt) {
+          rateLimitStore.delete(key);
+        }
       }
-    }
-  },
-  60 * 60 * 1000,
-);
+    },
+    60 * 60 * 1000,
+  );
+}
+
+export function stopRateLimitCleanup(): void {
+  if (cleanupIntervalId) {
+    clearInterval(cleanupIntervalId);
+    cleanupIntervalId = null;
+  }
+}
+
+startRateLimitCleanup();
