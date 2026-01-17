@@ -213,6 +213,20 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchGlobalStructureExplorerAndGuildDetails(): Promise<PlayersData[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/structure-explorer-details");
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        return await fetchJsonWithErrorHandling<PlayersData[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached structure explorer details",
+        );
+      } catch (error) {
+        console.warn("Cached structure explorer details fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.STRUCTURE_AND_EXPLORER_DETAILS);
     return await fetchWithErrorHandling<PlayersData>(url, "Failed to fetch structure explorer and guild details");
   }

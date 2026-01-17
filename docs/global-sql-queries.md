@@ -6,12 +6,6 @@ reads most or all rows in a table or uses only broad filters (e.g., category fil
 
 ## Remaining Global Queries (Uncached)
 
-- STRUCTURE_AND_EXPLORER_DETAILS
-  - Query: `packages/torii/src/queries/sql/structure.ts`
-  - API: `packages/torii/src/queries/sql/api.ts` → `fetchGlobalStructureExplorerAndGuildDetails()`
-  - Usage (main game): `client/apps/game/src/three/managers/player-data-store.ts`
-  - Notes: No WHERE clause; GROUP BY owner with multiple joins. Scales with total structures.
-
 - REALM_VILLAGE_SLOTS
   - Query: `packages/torii/src/queries/sql/structure.ts`
   - API: `packages/torii/src/queries/sql/api.ts` → `fetchRealmVillageSlots()`
@@ -50,3 +44,4 @@ reads most or all rows in a table or uses only broad filters (e.g., category fil
 - Story events (cached via `/api/cache/story-events`).
 - Tiles (cached via `/api/cache/tiles`).
 - Hyperstructures list (cached via `/api/cache/hyperstructures`).
+- Structure/explorer/guild details (cached via `/api/cache/structure-explorer-details`).
