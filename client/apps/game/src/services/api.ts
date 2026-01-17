@@ -7,7 +7,7 @@ let currentBaseUrl = (() => {
   return (active?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII) + "/sql";
 })();
 
-const cacheBaseUrl = env.VITE_PUBLIC_REALTIME_URL;
+const cacheBaseUrl = env.VITE_PUBLIC_ENABLE_SQL_CACHE ? env.VITE_PUBLIC_REALTIME_URL : undefined;
 
 export let sqlApi = new SqlApi(currentBaseUrl, cacheBaseUrl);
 
