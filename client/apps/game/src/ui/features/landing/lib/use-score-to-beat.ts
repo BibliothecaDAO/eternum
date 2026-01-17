@@ -26,15 +26,14 @@ const buildInitialState = (): ScoreToBeatState => ({
   error: null,
 });
 
-export const useScoreToBeat = (endpoints: string[], refreshIntervalMs: number = SCORE_TO_BEAT_REFRESH_INTERVAL_MS) => {
+export const useScoreToBeat = (
+  endpoints: string[],
+  runsToAggregate: number = 2,
+  refreshIntervalMs: number = SCORE_TO_BEAT_REFRESH_INTERVAL_MS,
+) => {
   const [scoreToBeatState, setScoreToBeatState] = useState<ScoreToBeatState>(buildInitialState);
 
-  useEffect(() => {
-    console.log("rascheltest4", scoreToBeatState);
-  }, [scoreToBeatState]);
-
   const refresh = useCallback(async () => {
-    console.log("rascheltest6");
     if (!endpoints.length) {
       setScoreToBeatState((previous) => ({
         ...previous,
@@ -53,11 +52,9 @@ export const useScoreToBeat = (endpoints: string[], refreshIntervalMs: number = 
     try {
       const result: ScoreToBeatResult = await fetchScoreToBeatAcrossEndpoints(endpoints, {
         perEndpointLimit: 50,
-        runsToAggregate: 2,
+        runsToAggregate,
         maxPlayers: 10,
       });
-
-      console.log("rascheltest3", result);
 
       setScoreToBeatState({
         entries: result.entries,
@@ -68,12 +65,10 @@ export const useScoreToBeat = (endpoints: string[], refreshIntervalMs: number = 
         error: null,
       });
     } catch (error) {
-      console.log("rascheltest5", error);
-
       const message = error instanceof Error ? error.message : "Unable to load score to beat.";
       setScoreToBeatState((previous) => ({ ...previous, isLoading: false, error: message }));
     }
-  }, [endpoints]);
+  }, [endpoints, runsToAggregate]);
 
   useEffect(() => {
     void refresh();
