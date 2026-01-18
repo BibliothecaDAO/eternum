@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
+import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -122,8 +123,23 @@ interface PrefetchQueueItem {
   fetchStructures: boolean;
 }
 
+type ToriiBoundsCounterKey =
+  | "tiles"
+  | "structureTiles"
+  | "structures"
+  | "structureBuildings"
+  | "explorerTiles"
+  | "explorerTroops";
+
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
+const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
+  { model: "s1_eternum-TileOpt", colField: "col", rowField: "row" },
+  { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
+  { model: "s1_eternum-ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
+  { model: "s1_eternum-Building", colField: "outer_col", rowField: "outer_row" },
+];
 
 export default class WorldmapScene extends HexagonScene {
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
@@ -385,6 +401,17 @@ export default class WorldmapScene extends HexagonScene {
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
+  private toriiStreamManager?: ToriiStreamManager;
+  private toriiBoundsAreaKey: string | null = null;
+  private toriiBoundsUpdateCounts: Record<ToriiBoundsCounterKey, number> = {
+    tiles: 0,
+    structureTiles: 0,
+    structures: 0,
+    structureBuildings: 0,
+    explorerTiles: 0,
+    explorerTroops: 0,
+  };
+  private toriiBoundsLogInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     dojoContext: SetupResult,
@@ -396,6 +423,11 @@ export default class WorldmapScene extends HexagonScene {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.dojo = dojoContext;
+    const toriiClient = dojoContext.network?.toriiClient;
+    if (toriiClient) {
+      this.toriiStreamManager = new ToriiStreamManager({ client: toriiClient, setup: dojoContext, logging: false });
+      this.startToriiBoundsCounterLog();
+    }
     this.fxManager = new FXManager(this.scene, 1);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
 
@@ -548,6 +580,7 @@ export default class WorldmapScene extends HexagonScene {
     // Store the unsubscribe function for Army updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
+        this.incrementToriiBoundsCounter("explorerTiles");
         this.cancelPendingArmyRemoval(update.entityId);
 
         if (update.removed) {
@@ -598,6 +631,7 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for troop count and stamina changes
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
+        this.incrementToriiBoundsCounter("explorerTroops");
         this.cancelPendingArmyRemoval(update.entityId);
 
         if (update.troopCount <= 0) {
@@ -662,6 +696,7 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for structure guard updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onStructureUpdate((update) => {
+        this.incrementToriiBoundsCounter("structures");
         this.updateStructureHexes(update);
         this.structureManager.updateStructureLabelFromStructureUpdate(update);
       }),
@@ -670,18 +705,23 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for structure building updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
+        this.incrementToriiBoundsCounter("structureBuildings");
         this.structureManager.updateStructureLabelFromBuildingUpdate(update);
       }),
     );
 
     // Store the unsubscribe function for Tile updates
     this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Tile.onTileUpdate((value) => this.updateExploredHex(value)),
+      this.worldUpdateListener.Tile.onTileUpdate((value) => {
+        this.incrementToriiBoundsCounter("tiles");
+        this.updateExploredHex(value);
+      }),
     );
 
     // Store the unsubscribe function for Structure updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
+        this.incrementToriiBoundsCounter("structureTiles");
         const positions = this.updateStructureHexes(value);
 
         const optimisticStructure = this.structureManager.structures.removeStructure(
@@ -3102,6 +3142,92 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
+  private incrementToriiBoundsCounter(key: ToriiBoundsCounterKey): void {
+    if (!TORII_BOUNDS_DEBUG) {
+      return;
+    }
+
+    this.toriiBoundsUpdateCounts[key] += 1;
+  }
+
+  private resetToriiBoundsCounters(): void {
+    this.toriiBoundsUpdateCounts = {
+      tiles: 0,
+      structureTiles: 0,
+      structures: 0,
+      structureBuildings: 0,
+      explorerTiles: 0,
+      explorerTroops: 0,
+    };
+  }
+
+  private startToriiBoundsCounterLog(): void {
+    if (!TORII_BOUNDS_DEBUG || this.toriiBoundsLogInterval) {
+      return;
+    }
+
+    this.resetToriiBoundsCounters();
+    this.toriiBoundsLogInterval = setInterval(() => {
+      const snapshot = { ...this.toriiBoundsUpdateCounts };
+      const total = Object.values(snapshot).reduce((sum, value) => sum + value, 0);
+      console.log("[ToriiBounds] Update counts (last 5s)", {
+        areaKey: this.toriiBoundsAreaKey,
+        chunkKey: this.currentChunk,
+        counts: snapshot,
+        total,
+      });
+      this.resetToriiBoundsCounters();
+    }, 5000);
+  }
+
+  private stopToriiBoundsCounterLog(): void {
+    if (!this.toriiBoundsLogInterval) {
+      return;
+    }
+
+    clearInterval(this.toriiBoundsLogInterval);
+    this.toriiBoundsLogInterval = null;
+  }
+
+  private async updateToriiBoundsSubscription(chunkKey: string): Promise<void> {
+    if (!this.toriiStreamManager || !chunkKey || chunkKey === "null") {
+      return;
+    }
+
+    const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+    if (areaKey === this.toriiBoundsAreaKey) {
+      if (TORII_BOUNDS_DEBUG) {
+        console.log("[ToriiBounds] Skip switch (area unchanged)", { chunkKey, areaKey });
+      }
+      return;
+    }
+
+    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBoundsForArea(areaKey);
+    const feltCenter = FELT_CENTER();
+    const descriptor: BoundsDescriptor = {
+      minCol: minCol + feltCenter,
+      maxCol: maxCol + feltCenter,
+      minRow: minRow + feltCenter,
+      maxRow: maxRow + feltCenter,
+      models: TORII_BOUNDS_MODELS,
+    };
+
+    try {
+      if (TORII_BOUNDS_DEBUG) {
+        console.log("[ToriiBounds] Switching bounds", {
+          chunkKey,
+          areaKey,
+          bounds: { minCol, maxCol, minRow, maxRow },
+          models: TORII_BOUNDS_MODELS.map((model) => model.model),
+        });
+      }
+      await this.toriiStreamManager.switchBounds(descriptor);
+      this.toriiBoundsAreaKey = areaKey;
+    } catch (error) {
+      console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);
+    }
+  }
+
   private addWorldUpdateSubscription(unsub: any) {
     if (typeof unsub === "function") {
       this.worldUpdateUnsubscribes.push(unsub);
@@ -3609,6 +3735,7 @@ export default class WorldmapScene extends HexagonScene {
     // Load surrounding chunks for better UX (3x3 grid)
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
+    void this.updateToriiBoundsSubscription(chunkKey);
 
     // Start loading all surrounding chunks (they will deduplicate automatically)
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -3673,6 +3800,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
+    void this.updateToriiBoundsSubscription(chunkKey);
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
@@ -3977,6 +4105,9 @@ export default class WorldmapScene extends HexagonScene {
 
     this.disposeStoreSubscriptions();
     this.disposeWorldUpdateSubscriptions();
+    this.stopToriiBoundsCounterLog();
+    this.toriiStreamManager?.shutdown();
+    this.toriiBoundsAreaKey = null;
 
     this.resourceFXManager.destroy();
     this.updateCameraTargetHexThrottled?.cancel();

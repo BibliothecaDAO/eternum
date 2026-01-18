@@ -13,11 +13,56 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
+import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
 let entityStreamSubscription: { cancel: () => void } | null = null;
+
+const GLOBAL_NON_SPATIAL_MODELS: string[] = [
+  // Events
+  "s1_eternum-StoryEvent",
+  "s1_eternum-ExplorerMoveEvent",
+  "s1_eternum-ExplorerRewardEvent",
+  "s1_eternum-BattleEvent",
+  // Guilds
+  "s1_eternum-Guild",
+  "s1_eternum-GuildMember",
+  "s1_eternum-GuildWhitelist",
+  // Market
+  "s1_eternum-Market",
+  "s1_eternum-Liquidity",
+  "s1_eternum-Trade",
+  // Config + global metadata
+  "s1_eternum-WorldConfig",
+  "s1_eternum-HyperstrtConstructConfig",
+  "s1_eternum-HyperstructureGlobals",
+  "s1_eternum-WeightConfig",
+  "s1_eternum-ResourceFactoryConfig",
+  "s1_eternum-BuildingCategoryConfig",
+  "s1_eternum-ResourceBridgeWtlConfig",
+  "s1_eternum-StructureLevelConfig",
+  "s1_eternum-SeasonPrize",
+  "s1_eternum-SeasonEnded",
+  "s1_eternum-QuestLevels",
+  "s1_eternum-AddressName",
+  "s1_eternum-PlayerRegisteredPoints",
+  "s1_eternum-BlitzRealmPlayerRegister",
+  "s1_eternum-BlitzEntryTokenRegister",
+  "s1_eternum-BlitzRealmSettleFinish",
+  "s1_eternum-PlayersRankTrial",
+  "s1_eternum-PlayersRankFinal",
+  "s1_eternum-ResourceList",
+  "s1_eternum-PlayerRank",
+  "s1_eternum-RankPrize",
+  // Structure-scoped but non-spatial models (kept global for now)
+  "s1_eternum-StructureBuildings",
+  "s1_eternum-ProductionBoostBonus",
+];
+
+const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_NON_SPATIAL_MODELS.map((model) => ({ model }));
+const GLOBAL_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_STREAM_MODELS);
 
 function isToriiDeleteNotification(entity: ToriiEntity): boolean {
   return Object.keys(entity.models).length === 0;
@@ -266,7 +311,12 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
-  entityStreamSubscription = await syncEntitiesDebounced(setup.network.toriiClient, setup, null, logging);
+  entityStreamSubscription = await syncEntitiesDebounced(
+    setup.network.toriiClient,
+    setup,
+    GLOBAL_STREAM_CLAUSE,
+    logging,
+  );
 
   const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
 
