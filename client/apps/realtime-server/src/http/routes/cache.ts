@@ -1,3 +1,4 @@
+import { brotliCompressSync, gzipSync } from "zlib";
 import { Hono, type Context } from "hono";
 
 import type { AppEnv } from "../middleware/auth";
@@ -13,6 +14,15 @@ import {
 } from "../../services/torii-queries";
 
 type CacheStatus = "hit" | "stale" | "miss";
+
+type SerializedJson = string;
+
+type CachedJsonPayload = {
+  json: SerializedJson;
+  size: number;
+  br?: Uint8Array;
+  gzip?: Uint8Array;
+};
 
 type CacheEntry<T> = {
   value: T;
@@ -44,16 +54,16 @@ const DEFAULT_STORY_EVENTS_MAX_ENTRIES = 25;
 const DEFAULT_STORY_EVENTS_LIMIT = 50;
 const DEFAULT_STORY_EVENTS_LIMIT_MAX = 2_000;
 
-const DEFAULT_TILES_TTL_MS = 60_000;
-const DEFAULT_TILES_STALE_MS = 5 * 60_000;
+const DEFAULT_TILES_TTL_MS = 5_000;
+const DEFAULT_TILES_STALE_MS = 30_000;
 const DEFAULT_TILES_MAX_ENTRIES = 2;
 
-const DEFAULT_HYPERSTRUCTURES_TTL_MS = 60_000;
-const DEFAULT_HYPERSTRUCTURES_STALE_MS = 5 * 60_000;
+const DEFAULT_HYPERSTRUCTURES_TTL_MS = 5_000;
+const DEFAULT_HYPERSTRUCTURES_STALE_MS = 30_000;
 const DEFAULT_HYPERSTRUCTURES_MAX_ENTRIES = 10;
 
-const DEFAULT_STRUCTURE_EXPLORER_DETAILS_TTL_MS = 60_000;
-const DEFAULT_STRUCTURE_EXPLORER_DETAILS_STALE_MS = 5 * 60_000;
+const DEFAULT_STRUCTURE_EXPLORER_DETAILS_TTL_MS = 5_000;
+const DEFAULT_STRUCTURE_EXPLORER_DETAILS_STALE_MS = 30_000;
 const DEFAULT_STRUCTURE_EXPLORER_DETAILS_MAX_ENTRIES = 5;
 
 const cacheEnabled = process.env.CACHE_ENABLED !== "false";
@@ -144,16 +154,16 @@ const structureExplorerDetailsMaxEntries = parseEnvInt(
   1,
 );
 
-const leaderboardCache = new Map<string, CacheEntry<LeaderboardCachePayload>>();
-const leaderboardInFlight = new Map<string, Promise<LeaderboardCachePayload>>();
-const storyEventsCache = new Map<string, CacheEntry<unknown[]>>();
-const storyEventsInFlight = new Map<string, Promise<unknown[]>>();
-const tilesCache = new Map<string, CacheEntry<unknown[]>>();
-const tilesInFlight = new Map<string, Promise<unknown[]>>();
-const hyperstructuresCache = new Map<string, CacheEntry<unknown[]>>();
-const hyperstructuresInFlight = new Map<string, Promise<unknown[]>>();
-const structureExplorerDetailsCache = new Map<string, CacheEntry<unknown[]>>();
-const structureExplorerDetailsInFlight = new Map<string, Promise<unknown[]>>();
+const leaderboardCache = new Map<string, CacheEntry<CachedJsonPayload>>();
+const leaderboardInFlight = new Map<string, Promise<CachedJsonPayload>>();
+const storyEventsCache = new Map<string, CacheEntry<CachedJsonPayload>>();
+const storyEventsInFlight = new Map<string, Promise<CachedJsonPayload>>();
+const tilesCache = new Map<string, CacheEntry<CachedJsonPayload>>();
+const tilesInFlight = new Map<string, Promise<CachedJsonPayload>>();
+const hyperstructuresCache = new Map<string, CacheEntry<CachedJsonPayload>>();
+const hyperstructuresInFlight = new Map<string, Promise<CachedJsonPayload>>();
+const structureExplorerDetailsCache = new Map<string, CacheEntry<CachedJsonPayload>>();
+const structureExplorerDetailsInFlight = new Map<string, Promise<CachedJsonPayload>>();
 
 const pruneCache = <T>(cache: Map<string, CacheEntry<T>>, maxEntries: number) => {
   if (cache.size <= maxEntries) {
@@ -215,6 +225,95 @@ export const stopCacheCleanup = () => {
 if (cacheEnabled) {
   startCacheCleanup();
 }
+
+const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+const COMPRESSION_THRESHOLD_BYTES = 1024;
+const VARY_HEADER = "Vary";
+const ACCEPT_ENCODING_HEADER = "Accept-Encoding";
+
+const createJsonPayload = (value: unknown): CachedJsonPayload => {
+  const json = JSON.stringify(value);
+  return { json, size: Buffer.byteLength(json) };
+};
+
+const getCompressedPayload = (payload: CachedJsonPayload, encoding: "br" | "gzip"): Uint8Array => {
+  if (encoding === "br") {
+    if (!payload.br) {
+      payload.br = brotliCompressSync(payload.json);
+    }
+    return payload.br;
+  }
+
+  if (!payload.gzip) {
+    payload.gzip = gzipSync(payload.json);
+  }
+  return payload.gzip;
+};
+
+const appendVaryHeader = (c: Context, value: string) => {
+  const existing = c.res.headers.get(VARY_HEADER);
+  if (!existing) {
+    c.header(VARY_HEADER, value);
+    return;
+  }
+
+  const existingValues = existing
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+  if (existingValues.includes(value.toLowerCase())) {
+    return;
+  }
+
+  c.header(VARY_HEADER, `${existing}, ${value}`);
+};
+
+const sendJsonBody = (c: Context, payload: CachedJsonPayload, status: number = 200) => {
+  c.header("Content-Type", JSON_CONTENT_TYPE);
+  appendVaryHeader(c, ACCEPT_ENCODING_HEADER);
+
+  if (payload.size >= COMPRESSION_THRESHOLD_BYTES) {
+    const acceptEncoding = c.req.header(ACCEPT_ENCODING_HEADER)?.toLowerCase() ?? "";
+    if (acceptEncoding.includes("br")) {
+      c.header("Content-Encoding", "br");
+      return c.body(getCompressedPayload(payload, "br"), status);
+    }
+    if (acceptEncoding.includes("gzip")) {
+      c.header("Content-Encoding", "gzip");
+      return c.body(getCompressedPayload(payload, "gzip"), status);
+    }
+  }
+
+  return c.body(payload.json, status);
+};
+
+const logCacheMetrics = ({
+  name,
+  status,
+  totalMs,
+  fetchMs,
+  ageMs,
+  extra,
+}: {
+  name: string;
+  status: CacheStatus;
+  totalMs: number;
+  fetchMs: number | null;
+  ageMs: number | null;
+  extra?: string;
+}) => {
+  const parts = [`[cache] ${name}`, `status=${status}`, `totalMs=${Math.round(totalMs)}ms`];
+  if (fetchMs !== null) {
+    parts.push(`fetchMs=${Math.round(fetchMs)}ms`);
+  }
+  if (ageMs !== null) {
+    parts.push(`ageMs=${Math.max(0, Math.round(ageMs))}ms`);
+  }
+  if (extra) {
+    parts.push(extra);
+  }
+  console.log(parts.join(" "));
+};
 
 const buildSqlUrl = (baseUrl: string, query: string): string => {
   const url = new URL(baseUrl);
@@ -374,6 +473,7 @@ const resolveToriiSqlBaseUrl = (c: Context): string | null => {
 export const cacheRoutes = new Hono<AppEnv>();
 
 cacheRoutes.get("/leaderboard", async (c) => {
+  const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
     return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
@@ -385,6 +485,7 @@ cacheRoutes.get("/leaderboard", async (c) => {
   const cacheKey = limit <= 0 ? `${toriiBaseUrl}|all` : `${toriiBaseUrl}|limit:${limit}`;
 
   try {
+    let fetchMs: number | null = null;
     const result = await getCachedValue({
       cache: leaderboardCache,
       inFlight: leaderboardInFlight,
@@ -393,26 +494,41 @@ cacheRoutes.get("/leaderboard", async (c) => {
       staleMs: leaderboardStaleMs,
       maxEntries: leaderboardMaxEntries,
       fetcher: async () => {
-        const leaderboardQuery = buildLeaderboardQuery(limit <= 0 ? undefined : limit);
-        const [registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows] =
-          await Promise.all([
-            fetchToriiRows<unknown>(toriiBaseUrl, leaderboardQuery, "leaderboard"),
-            fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_SHAREHOLDERS_QUERY, "hyperstructure shareholders"),
-            fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY, "hyperstructure multipliers"),
-            fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY, "hyperstructure config"),
-          ]);
+        const fetchStart = Date.now();
+        try {
+          const leaderboardQuery = buildLeaderboardQuery(limit <= 0 ? undefined : limit);
+          const [registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows] =
+            await Promise.all([
+              fetchToriiRows<unknown>(toriiBaseUrl, leaderboardQuery, "leaderboard"),
+              fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_SHAREHOLDERS_QUERY, "hyperstructure shareholders"),
+              fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY, "hyperstructure multipliers"),
+              fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY, "hyperstructure config"),
+            ]);
 
-        return {
-          registeredRows,
-          hyperstructureShareholderRows,
-          hyperstructureRows,
-          hyperstructureConfigRow: hyperstructureConfigRows[0],
-        };
+          const payload: LeaderboardCachePayload = {
+            registeredRows,
+            hyperstructureShareholderRows,
+            hyperstructureRows,
+            hyperstructureConfigRow: hyperstructureConfigRows[0],
+          };
+
+          return createJsonPayload(payload);
+        } finally {
+          fetchMs = Date.now() - fetchStart;
+        }
       },
     });
 
+    logCacheMetrics({
+      name: "leaderboard",
+      status: result.status,
+      totalMs: Date.now() - start,
+      fetchMs,
+      ageMs: Date.now() - result.fetchedAt,
+      extra: `limit=${limit}`,
+    });
     c.header("x-cache", result.status);
-    return c.json(result.value);
+    return sendJsonBody(c, result.value);
   } catch (error) {
     console.error("Failed to fetch leaderboard cache", error);
     return c.json({ error: "Failed to fetch leaderboard cache." }, 500);
@@ -420,6 +536,7 @@ cacheRoutes.get("/leaderboard", async (c) => {
 });
 
 cacheRoutes.get("/story-events", async (c) => {
+  const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
     return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
@@ -428,8 +545,16 @@ cacheRoutes.get("/story-events", async (c) => {
   const limitRaw = c.req.query("limit");
   const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : storyEventsLimitDefault;
   if (limitParsed <= 0) {
+    logCacheMetrics({
+      name: "story-events",
+      status: "hit",
+      totalMs: Date.now() - start,
+      fetchMs: null,
+      ageMs: null,
+      extra: "limit=0",
+    });
     c.header("x-cache", "hit");
-    return c.json([]);
+    return sendJsonBody(c, createJsonPayload([]));
   }
 
   const limit = clampNumber(limitParsed, 1, storyEventsLimitMax);
@@ -439,6 +564,7 @@ cacheRoutes.get("/story-events", async (c) => {
   const cacheKey = `${toriiBaseUrl}|limit:${limit}|offset:${offset}`;
 
   try {
+    let fetchMs: number | null = null;
     const result = await getCachedValue({
       cache: storyEventsCache,
       inFlight: storyEventsInFlight,
@@ -447,13 +573,27 @@ cacheRoutes.get("/story-events", async (c) => {
       staleMs: storyEventsStaleMs,
       maxEntries: storyEventsMaxEntries,
       fetcher: async () => {
-        const query = buildStoryEventsQuery(limit, offset);
-        return await fetchToriiRows<unknown>(toriiBaseUrl, query, "story events");
+        const fetchStart = Date.now();
+        try {
+          const query = buildStoryEventsQuery(limit, offset);
+          const rows = await fetchToriiRows<unknown>(toriiBaseUrl, query, "story events");
+          return createJsonPayload(rows);
+        } finally {
+          fetchMs = Date.now() - fetchStart;
+        }
       },
     });
 
+    logCacheMetrics({
+      name: "story-events",
+      status: result.status,
+      totalMs: Date.now() - start,
+      fetchMs,
+      ageMs: Date.now() - result.fetchedAt,
+      extra: `limit=${limit} offset=${offset}`,
+    });
     c.header("x-cache", result.status);
-    return c.json(result.value);
+    return sendJsonBody(c, result.value);
   } catch (error) {
     console.error("Failed to fetch story events cache", error);
     return c.json({ error: "Failed to fetch story events cache." }, 500);
@@ -461,6 +601,7 @@ cacheRoutes.get("/story-events", async (c) => {
 });
 
 cacheRoutes.get("/tiles", async (c) => {
+  const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
     return c.json(
@@ -472,6 +613,7 @@ cacheRoutes.get("/tiles", async (c) => {
   const cacheKey = `${toriiBaseUrl}|all`;
 
   try {
+    let fetchMs: number | null = null;
     const result = await getCachedValue({
       cache: tilesCache,
       inFlight: tilesInFlight,
@@ -479,11 +621,26 @@ cacheRoutes.get("/tiles", async (c) => {
       ttlMs: tilesTtlMs,
       staleMs: tilesStaleMs,
       maxEntries: tilesMaxEntries,
-      fetcher: async () => await fetchToriiRows<unknown>(toriiBaseUrl, ALL_TILES_QUERY, "tiles"),
+      fetcher: async () => {
+        const fetchStart = Date.now();
+        try {
+          const rows = await fetchToriiRows<unknown>(toriiBaseUrl, ALL_TILES_QUERY, "tiles");
+          return createJsonPayload(rows);
+        } finally {
+          fetchMs = Date.now() - fetchStart;
+        }
+      },
     });
 
+    logCacheMetrics({
+      name: "tiles",
+      status: result.status,
+      totalMs: Date.now() - start,
+      fetchMs,
+      ageMs: Date.now() - result.fetchedAt,
+    });
     c.header("x-cache", result.status);
-    return c.json(result.value);
+    return sendJsonBody(c, result.value);
   } catch (error) {
     console.error("Failed to fetch tiles cache", error);
     return c.json({ error: "Failed to fetch tiles cache." }, 500);
@@ -491,6 +648,7 @@ cacheRoutes.get("/tiles", async (c) => {
 });
 
 cacheRoutes.get("/hyperstructures", async (c) => {
+  const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
     return c.json(
@@ -502,6 +660,7 @@ cacheRoutes.get("/hyperstructures", async (c) => {
   const cacheKey = `${toriiBaseUrl}|all`;
 
   try {
+    let fetchMs: number | null = null;
     const result = await getCachedValue({
       cache: hyperstructuresCache,
       inFlight: hyperstructuresInFlight,
@@ -509,11 +668,26 @@ cacheRoutes.get("/hyperstructures", async (c) => {
       ttlMs: hyperstructuresTtlMs,
       staleMs: hyperstructuresStaleMs,
       maxEntries: hyperstructuresMaxEntries,
-      fetcher: async () => await fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_QUERY, "hyperstructures"),
+      fetcher: async () => {
+        const fetchStart = Date.now();
+        try {
+          const rows = await fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_QUERY, "hyperstructures");
+          return createJsonPayload(rows);
+        } finally {
+          fetchMs = Date.now() - fetchStart;
+        }
+      },
     });
 
+    logCacheMetrics({
+      name: "hyperstructures",
+      status: result.status,
+      totalMs: Date.now() - start,
+      fetchMs,
+      ageMs: Date.now() - result.fetchedAt,
+    });
     c.header("x-cache", result.status);
-    return c.json(result.value);
+    return sendJsonBody(c, result.value);
   } catch (error) {
     console.error("Failed to fetch hyperstructures cache", error);
     return c.json({ error: "Failed to fetch hyperstructures cache." }, 500);
@@ -521,6 +695,7 @@ cacheRoutes.get("/hyperstructures", async (c) => {
 });
 
 cacheRoutes.get("/structure-explorer-details", async (c) => {
+  const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
     return c.json(
@@ -532,6 +707,7 @@ cacheRoutes.get("/structure-explorer-details", async (c) => {
   const cacheKey = `${toriiBaseUrl}|all`;
 
   try {
+    let fetchMs: number | null = null;
     const result = await getCachedValue({
       cache: structureExplorerDetailsCache,
       inFlight: structureExplorerDetailsInFlight,
@@ -539,16 +715,30 @@ cacheRoutes.get("/structure-explorer-details", async (c) => {
       ttlMs: structureExplorerDetailsTtlMs,
       staleMs: structureExplorerDetailsStaleMs,
       maxEntries: structureExplorerDetailsMaxEntries,
-      fetcher: async () =>
-        await fetchToriiRows<unknown>(
-          toriiBaseUrl,
-          STRUCTURE_AND_EXPLORER_DETAILS_QUERY,
-          "structure explorer details",
-        ),
+      fetcher: async () => {
+        const fetchStart = Date.now();
+        try {
+          const rows = await fetchToriiRows<unknown>(
+            toriiBaseUrl,
+            STRUCTURE_AND_EXPLORER_DETAILS_QUERY,
+            "structure explorer details",
+          );
+          return createJsonPayload(rows);
+        } finally {
+          fetchMs = Date.now() - fetchStart;
+        }
+      },
     });
 
+    logCacheMetrics({
+      name: "structure-explorer-details",
+      status: result.status,
+      totalMs: Date.now() - start,
+      fetchMs,
+      ageMs: Date.now() - result.fetchedAt,
+    });
     c.header("x-cache", result.status);
-    return c.json(result.value);
+    return sendJsonBody(c, result.value);
   } catch (error) {
     console.error("Failed to fetch structure explorer details cache", error);
     return c.json({ error: "Failed to fetch structure explorer details cache." }, 500);
