@@ -56,6 +56,24 @@ export const GAME_PRESETS: Record<GamePresetType, GamePreset> = {
       singleRealmMode: true,
     },
   },
+  custom: {
+    id: "custom",
+    name: "Custom",
+    description: "Full control over all game parameters",
+    tagline: "Your rules | Your way",
+    icon: "Wrench",
+    features: ["Configure duration", "Set entry fees", "Choose player limits", "Toggle all modes"],
+    configOverrides: {
+      durationHours: 2,
+      durationMinutes: 0,
+      hasFee: false,
+      feeAmount: "0",
+      feePrecision: 18,
+      registrationCountMax: 30,
+      devMode: false,
+      singleRealmMode: false,
+    },
+  },
 };
 
 /**

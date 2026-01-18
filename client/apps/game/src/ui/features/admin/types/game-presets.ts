@@ -1,4 +1,4 @@
-export type GamePresetType = "blitz" | "tournament" | "practice";
+export type GamePresetType = "blitz" | "tournament" | "practice" | "custom";
 
 export interface GamePresetConfigOverrides {
   // Duration
@@ -23,7 +23,7 @@ export interface GamePreset {
   name: string;
   description: string;
   tagline: string;
-  icon: "Zap" | "Trophy" | "GraduationCap";
+  icon: "Zap" | "Trophy" | "GraduationCap" | "Wrench";
   features: string[];
   isRecommended?: boolean;
   configOverrides: GamePresetConfigOverrides;

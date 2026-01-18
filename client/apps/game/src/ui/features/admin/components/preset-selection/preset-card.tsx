@@ -1,10 +1,11 @@
-import { CheckCircle2, GraduationCap, Trophy, Zap } from "lucide-react";
+import { CheckCircle2, GraduationCap, Trophy, Wrench, Zap } from "lucide-react";
 import type { GamePreset } from "../../types/game-presets";
 
 const Icons = {
   Zap,
   Trophy,
   GraduationCap,
+  Wrench,
 } as const;
 
 interface PresetCardProps {
