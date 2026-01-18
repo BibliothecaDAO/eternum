@@ -275,3 +275,30 @@ jobs:
             echo "- Config saved: \`$CONFIG\`";
             echo "- Deployed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')";
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 🚨 Notify on Failure
+        if: failure()
+        env:
+          NAME: ${{ steps.name.outputs.torii_name }}
+          ENV_NAME: ${{ github.event.inputs.env }}
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_FAILURE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Torii Deployment Failed",
+                "description": "Failed to deploy Torii: '"$NAME"' for env: '"$ENV_NAME"'",
+                "color": 16711680,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🔗 Workflow Run",
+                    "value": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Torii Deployer"
+                }
+              }]
+            }'

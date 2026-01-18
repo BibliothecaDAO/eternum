@@ -52,7 +52,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: blitz
+          ref: next
           fetch-depth: 0
 
       - name: Setup Bun
@@ -125,3 +125,27 @@ jobs:
             git commit -m "chore(orchestrator): update state for ${CHAIN}"
             git push
           fi
+
+      - name: 🚨 Notify on Failure
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_FAILURE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Factory Orchestrator Failed",
+                "description": "Failed to maintain upcoming worlds for chain: '"$CHAIN"'",
+                "color": 16711680,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🔗 Workflow Run",
+                    "value": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Factory Orchestrator"
+                }
+              }]
+            }'

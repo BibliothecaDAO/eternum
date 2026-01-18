@@ -26,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: blitz
+          ref: next
           fetch-depth: 0
 
       - name: Install Slot CLI
@@ -53,7 +53,7 @@ jobs:
       - name: Install sozo (for env parity)
         run: |
           set -euo pipefail
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.2/dojo_v1.7.0-alpha.2_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.1/dojo_v1.7.1_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
           sozo --version
@@ -74,3 +74,27 @@ jobs:
             git commit -m "chore(orchestrator): prune deployments older than 10h for ${CHAIN}"
             git push
           fi
+
+      - name: 🚨 Notify on Failure
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_FAILURE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Factory Cleanup Failed",
+                "description": "Failed to cleanup old deployments for chain: '"$CHAIN"'",
+                "color": 16711680,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🔗 Workflow Run",
+                    "value": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Factory Cleanup"
+                }
+              }]
+            }'
