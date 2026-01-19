@@ -61,7 +61,11 @@ export function LandingDojoProvider({ children, fallback }: LandingDojoProviderP
     const initializeSystemCalls = async () => {
       try {
         // Create only the provider (no torii client, no components)
-        const provider = new EternumProvider(dojoConfig.manifest, dojoConfig.rpcUrl, env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
+        const provider = new EternumProvider(
+          dojoConfig.manifest,
+          dojoConfig.rpcUrl,
+          env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+        );
 
         if (cancelled) return;
 
