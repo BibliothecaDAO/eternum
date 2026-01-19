@@ -102,16 +102,8 @@ const leaderboardMaxEntries = parseEnvInt(
   DEFAULT_LEADERBOARD_MAX_ENTRIES,
   1,
 );
-const leaderboardLimitDefault = parseEnvInt(
-  process.env.LEADERBOARD_CACHE_LIMIT_DEFAULT,
-  DEFAULT_LEADERBOARD_LIMIT,
-  1,
-);
-const leaderboardLimitMax = parseEnvInt(
-  process.env.LEADERBOARD_CACHE_LIMIT_MAX,
-  DEFAULT_LEADERBOARD_LIMIT_MAX,
-  1,
-);
+const leaderboardLimitDefault = parseEnvInt(process.env.LEADERBOARD_CACHE_LIMIT_DEFAULT, DEFAULT_LEADERBOARD_LIMIT, 1);
+const leaderboardLimitMax = parseEnvInt(process.env.LEADERBOARD_CACHE_LIMIT_MAX, DEFAULT_LEADERBOARD_LIMIT_MAX, 1);
 
 const storyEventsTtlMs = parseEnvNumber(process.env.STORY_EVENTS_CACHE_TTL_MS, DEFAULT_STORY_EVENTS_TTL_MS);
 const storyEventsStaleMs = parseEnvNumber(
@@ -129,11 +121,7 @@ const storyEventsLimitDefault = parseEnvInt(
   DEFAULT_STORY_EVENTS_LIMIT,
   1,
 );
-const storyEventsLimitMax = parseEnvInt(
-  process.env.STORY_EVENTS_CACHE_LIMIT_MAX,
-  DEFAULT_STORY_EVENTS_LIMIT_MAX,
-  1,
-);
+const storyEventsLimitMax = parseEnvInt(process.env.STORY_EVENTS_CACHE_LIMIT_MAX, DEFAULT_STORY_EVENTS_LIMIT_MAX, 1);
 
 const tilesTtlMs = parseEnvNumber(process.env.TILES_CACHE_TTL_MS, DEFAULT_TILES_TTL_MS);
 const tilesStaleMs = parseEnvNumber(process.env.TILES_CACHE_STALE_MS, DEFAULT_TILES_STALE_MS, tilesTtlMs);
@@ -473,8 +461,7 @@ const resolveToriiSqlBaseUrl = (c: Context): string | null => {
   const querySqlBase = c.req.query("toriiSqlBaseUrl");
   const queryBase = c.req.query("toriiBaseUrl");
 
-  const normalizedFromQuery =
-    normalizeToriiBaseUrl(querySqlBase, false) ?? normalizeToriiBaseUrl(queryBase, true);
+  const normalizedFromQuery = normalizeToriiBaseUrl(querySqlBase, false) ?? normalizeToriiBaseUrl(queryBase, true);
 
   if (normalizedFromQuery) {
     return normalizedFromQuery;
@@ -489,10 +476,7 @@ cacheRoutes.get("/leaderboard", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const limitRaw = c.req.query("limit");
@@ -517,7 +501,11 @@ cacheRoutes.get("/leaderboard", async (c) => {
             await Promise.all([
               fetchToriiRows<unknown>(toriiBaseUrl, leaderboardQuery, "leaderboard"),
               fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_SHAREHOLDERS_QUERY, "hyperstructure shareholders"),
-              fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY, "hyperstructure multipliers"),
+              fetchToriiRows<unknown>(
+                toriiBaseUrl,
+                HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY,
+                "hyperstructure multipliers",
+              ),
               fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY, "hyperstructure config"),
             ]);
 
@@ -555,10 +543,7 @@ cacheRoutes.get("/story-events", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const limitRaw = c.req.query("limit");
@@ -623,10 +608,7 @@ cacheRoutes.get("/tiles", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const cacheKey = `${toriiBaseUrl}|all`;
@@ -670,10 +652,7 @@ cacheRoutes.get("/hyperstructures", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const cacheKey = `${toriiBaseUrl}|all`;
@@ -717,10 +696,7 @@ cacheRoutes.get("/structure-explorer-details", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const cacheKey = `${toriiBaseUrl}|all`;
