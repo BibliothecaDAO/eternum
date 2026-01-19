@@ -6,7 +6,14 @@ import type { GamePreset, GamePresetConfigOverrides, GamePresetType } from "../t
  */
 const DEFAULT_ADVANCED_CONFIG: Omit<
   GamePresetConfigOverrides,
-  "durationHours" | "durationMinutes" | "hasFee" | "feeAmount" | "feePrecision" | "registrationCountMax" | "devMode" | "singleRealmMode"
+  | "durationHours"
+  | "durationMinutes"
+  | "hasFee"
+  | "feeAmount"
+  | "feePrecision"
+  | "registrationCountMax"
+  | "devMode"
+  | "singleRealmMode"
 > = {
   // Registration Timing
   registrationDelaySeconds: 0,

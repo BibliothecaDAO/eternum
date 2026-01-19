@@ -79,9 +79,7 @@ export const DeployActions = ({
       </div>
 
       {/* Disabled reason */}
-      {disabledReason && !isDeploying && (
-        <p className="text-sm text-orange text-center">{disabledReason}</p>
-      )}
+      {disabledReason && !isDeploying && <p className="text-sm text-orange text-center">{disabledReason}</p>}
 
       {/* Success message */}
       {isSuccess && txState.hash && (

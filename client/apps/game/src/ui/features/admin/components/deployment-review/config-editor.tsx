@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Clock,
-  Users,
   Coins,
   Settings,
   ToggleLeft,
@@ -161,7 +160,12 @@ export const ConfigEditor = ({ config, onChange }: ConfigEditorProps) => {
             Entry Fee
           </label>
           <div className="flex items-center gap-4">
-            <ToggleButton label={config.hasFee ? "Enabled" : "Disabled"} value={config.hasFee} onChange={(v) => onChange({ hasFee: v })} activeColor="orange" />
+            <ToggleButton
+              label={config.hasFee ? "Enabled" : "Disabled"}
+              value={config.hasFee}
+              onChange={(v) => onChange({ hasFee: v })}
+              activeColor="orange"
+            />
             {config.hasFee && (
               <input
                 type="text"
@@ -176,8 +180,17 @@ export const ConfigEditor = ({ config, onChange }: ConfigEditorProps) => {
 
         {/* Mode Toggles */}
         <div className="flex flex-wrap gap-3">
-          <ToggleButton label="Dev Mode" value={config.devMode} onChange={(v) => onChange({ devMode: v })} activeColor="brilliance" />
-          <ToggleButton label="Single Realm" value={config.singleRealmMode} onChange={(v) => onChange({ singleRealmMode: v })} />
+          <ToggleButton
+            label="Dev Mode"
+            value={config.devMode}
+            onChange={(v) => onChange({ devMode: v })}
+            activeColor="brilliance"
+          />
+          <ToggleButton
+            label="Single Realm"
+            value={config.singleRealmMode}
+            onChange={(v) => onChange({ singleRealmMode: v })}
+          />
         </div>
       </CollapsibleSection>
 

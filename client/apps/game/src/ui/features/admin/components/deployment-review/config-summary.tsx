@@ -89,7 +89,9 @@ export const ConfigSummary = ({ preset, customOverrides }: ConfigSummaryProps) =
             <span className="px-2 py-1 bg-orange/20 text-orange text-xs font-medium rounded-md">Blitz Mode</span>
           )}
           {config.devMode && (
-            <span className="px-2 py-1 bg-brilliance/20 text-brilliance text-xs font-medium rounded-md">Dev Features Enabled</span>
+            <span className="px-2 py-1 bg-brilliance/20 text-brilliance text-xs font-medium rounded-md">
+              Dev Features Enabled
+            </span>
           )}
         </div>
       </div>

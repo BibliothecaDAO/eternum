@@ -335,9 +335,17 @@ export const FactoryPage = () => {
         // Build runtime profile and patch manifest
         const profile = await buildWorldProfile(currentChain as Chain, worldName);
         const baseManifest = getGameManifest(currentChain as Chain);
-        const patched = patchManifestWithFactory(baseManifest as any, profile.worldAddress, profile.contractsBySelector);
+        const patched = patchManifestWithFactory(
+          baseManifest as any,
+          profile.worldAddress,
+          profile.contractsBySelector,
+        );
 
-        const localProvider = new EternumProvider(patched, env.VITE_PUBLIC_NODE_URL, env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
+        const localProvider = new EternumProvider(
+          patched,
+          env.VITE_PUBLIC_NODE_URL,
+          env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+        );
 
         // Batch and run all config functions
         await (localProvider as any).beginBatch({ signer: account });
@@ -448,8 +456,9 @@ export const FactoryPage = () => {
 
   const selectedPreset = state.deployment.selectedPreset ? GAME_PRESETS[state.deployment.selectedPreset] : null;
 
-  const explorerTxUrl =
-    state.txState.deploy.hash ? getExplorerTxUrl(currentChain as any, state.txState.deploy.hash) : undefined;
+  const explorerTxUrl = state.txState.deploy.hash
+    ? getExplorerTxUrl(currentChain as any, state.txState.deploy.hash)
+    : undefined;
 
   // ============================================================================
   // Render

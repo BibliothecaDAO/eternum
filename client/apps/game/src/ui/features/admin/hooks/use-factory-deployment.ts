@@ -59,7 +59,11 @@ type FactoryAction =
   | { type: "REMOVE_FROM_QUEUE"; worldName: string }
   | { type: "UPDATE_WORLD_STATUS"; worldName: string; status: Partial<WorldStatus> }
   | { type: "SET_WORLD_STATUSES"; statuses: Record<string, WorldStatus> }
-  | { type: "UPDATE_WORLD_CONFIG_OVERRIDE"; worldName: string; overrides: Partial<GamePresetConfigOverrides> & { startTime?: number } }
+  | {
+      type: "UPDATE_WORLD_CONFIG_OVERRIDE";
+      worldName: string;
+      overrides: Partial<GamePresetConfigOverrides> & { startTime?: number };
+    }
   | { type: "TOGGLE_UI"; key: keyof FactoryUIState }
   | { type: "SET_EXPANDED_WORLD_CONFIG"; worldName: string | null }
   | { type: "LOAD_FROM_STORAGE"; worldQueue: string[]; worldSeriesMetadata: Record<string, WorldSeriesMetadata> }

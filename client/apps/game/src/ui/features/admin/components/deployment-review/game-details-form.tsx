@@ -84,7 +84,9 @@ export const GameDetailsForm = ({ deployment, onUpdate, onRegenerateWorldName }:
           }`}
         />
         {!isStartTimeValid() && (
-          <p className="text-xs text-danger">Start time must be in the future and within {MAX_START_TIME_HOURS.toLocaleString()} hours</p>
+          <p className="text-xs text-danger">
+            Start time must be in the future and within {MAX_START_TIME_HOURS.toLocaleString()} hours
+          </p>
         )}
         <p className="text-xs text-gold/60">When the main game phase begins. Defaults to next hour.</p>
       </div>

@@ -54,10 +54,7 @@ export const DeploymentReviewStep = ({
   return (
     <div className="space-y-8">
       {/* Back button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-gold/70 hover:text-gold transition-colors group"
-      >
+      <button onClick={onBack} className="flex items-center gap-2 text-gold/70 hover:text-gold transition-colors group">
         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         <span>Change game type</span>
       </button>
@@ -66,9 +63,7 @@ export const DeploymentReviewStep = ({
       <div className="p-6 panel-wood rounded-xl border border-gold/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="px-4 py-2 bg-gold text-brown text-lg font-bold rounded-xl shadow-md">
-              {preset.name}
-            </span>
+            <span className="px-4 py-2 bg-gold text-brown text-lg font-bold rounded-xl shadow-md">{preset.name}</span>
             <div>
               <p className="text-gold font-medium">{preset.description}</p>
               <p className="text-sm text-gold/60 mt-1">{preset.tagline}</p>
