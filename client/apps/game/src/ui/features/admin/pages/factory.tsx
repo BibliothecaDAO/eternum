@@ -462,7 +462,7 @@ export const FactoryPage = () => {
 
   return (
     <div className="fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-dark-brown">
-      <div className="max-w-6xl mx-auto px-8 py-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
         <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />
 
         {/* Wallet Connection (if not connected) */}
@@ -529,7 +529,7 @@ export const FactoryPage = () => {
                       className="w-full px-4 py-3 bg-brown/50 border border-gold/30 rounded-xl text-gold/60 font-mono text-sm cursor-not-allowed"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Version</label>
                       <input

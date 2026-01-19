@@ -94,7 +94,7 @@ export const GameDetailsForm = ({ deployment, onUpdate, onRegenerateWorldName }:
       {/* Series (optional) */}
       <div className="space-y-2">
         <label className="text-sm font-semibold text-gold/80">Series (optional)</label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             type="text"
             placeholder="Series name"

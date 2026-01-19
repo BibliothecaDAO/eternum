@@ -45,7 +45,7 @@ export const DeployActions = ({
   return (
     <div className="space-y-4">
       {/* Main action buttons */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onDeploy}
           disabled={!!disabledReason}
@@ -71,7 +71,7 @@ export const DeployActions = ({
         <button
           onClick={onAddToQueue}
           disabled={isDeploying}
-          className="px-6 py-4 rounded-xl font-semibold bg-brown/50 hover:bg-brown/70 text-gold border border-gold/30 hover:border-gold/50 transition-all"
+          className="px-6 py-4 rounded-xl font-semibold bg-brown/50 hover:bg-brown/70 text-gold border border-gold/30 hover:border-gold/50 transition-all sm:w-auto"
           title="Add to queue without deploying"
         >
           Add to Queue

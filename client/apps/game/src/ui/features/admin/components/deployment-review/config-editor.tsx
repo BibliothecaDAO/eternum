@@ -196,7 +196,7 @@ export const ConfigEditor = ({ config, onChange }: ConfigEditorProps) => {
 
       {/* Registration Timing */}
       <CollapsibleSection title="Registration Timing" icon={<Timer className="w-4 h-4" />}>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <NumberInput
             label="Registration Delay (seconds)"
             value={config.registrationDelaySeconds}
@@ -452,7 +452,7 @@ export const ConfigEditor = ({ config, onChange }: ConfigEditorProps) => {
         </div>
         <div className="mt-4 pt-4 border-t border-gold/10">
           <p className="text-xs text-gold/60 mb-3">Exploration Costs</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <NumberInput
               label="Wheat Cost"
               value={config.staminaExploreWheatCost}
@@ -475,7 +475,7 @@ export const ConfigEditor = ({ config, onChange }: ConfigEditorProps) => {
         </div>
         <div className="mt-4 pt-4 border-t border-gold/10">
           <p className="text-xs text-gold/60 mb-3">Travel Costs</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <NumberInput
               label="Wheat Cost"
               value={config.staminaTravelWheatCost}
