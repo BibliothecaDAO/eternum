@@ -1,6 +1,10 @@
 export type GamePresetType = "blitz" | "tournament" | "practice" | "custom";
 
 export interface GamePresetConfigOverrides {
+  // ============================================================================
+  // Basic Settings
+  // ============================================================================
+
   // Duration
   durationHours: number;
   durationMinutes: number;
@@ -16,6 +20,98 @@ export interface GamePresetConfigOverrides {
   // Modes
   devMode: boolean;
   singleRealmMode: boolean;
+
+  // ============================================================================
+  // Registration Timing
+  // ============================================================================
+  registrationDelaySeconds: number;
+  registrationPeriodSeconds: number;
+
+  // ============================================================================
+  // Season Timing
+  // ============================================================================
+  startSettlingAfterSeconds: number;
+  bridgeCloseAfterEndSeconds: number;
+  pointRegistrationCloseAfterEndSeconds: number;
+
+  // ============================================================================
+  // Battle Settings
+  // ============================================================================
+  battleGraceTickCount: number;
+  battleGraceTickCountHyp: number;
+  battleDelaySeconds: number;
+
+  // ============================================================================
+  // Tick Intervals
+  // ============================================================================
+  defaultTickIntervalSeconds: number;
+  armiesTickIntervalSeconds: number;
+  deliveryTickIntervalSeconds: number;
+
+  // ============================================================================
+  // Movement & Speed
+  // ============================================================================
+  speedDonkey: number;
+  speedArmy: number;
+
+  // ============================================================================
+  // Exploration
+  // ============================================================================
+  explorationReward: number;
+  shardsMinesFailProbability: number;
+  shardsMinesWinProbability: number;
+  agentFindProbability: number;
+  agentFindFailProbability: number;
+  villageFindProbability: number;
+  villageFindFailProbability: number;
+  hyperstructureWinProbAtCenter: number;
+  hyperstructureFailProbAtCenter: number;
+  questFindProbability: number;
+  questFindFailProbability: number;
+
+  // ============================================================================
+  // Troop Stamina
+  // ============================================================================
+  staminaGainPerTick: number;
+  staminaInitial: number;
+  staminaBonusValue: number;
+  staminaKnightMax: number;
+  staminaPaladinMax: number;
+  staminaCrossbowmanMax: number;
+  staminaAttackReq: number;
+  staminaDefenseReq: number;
+  staminaExploreWheatCost: number;
+  staminaExploreFishCost: number;
+  staminaExploreStaminaCost: number;
+  staminaTravelWheatCost: number;
+  staminaTravelFishCost: number;
+  staminaTravelStaminaCost: number;
+
+  // ============================================================================
+  // Troop Limits
+  // ============================================================================
+  explorerMaxPartyCount: number;
+  explorerAndGuardMaxTroopCount: number;
+  guardResurrectionDelay: number;
+  mercenariesTroopLowerBound: number;
+  mercenariesTroopUpperBound: number;
+
+  // ============================================================================
+  // Settlement
+  // ============================================================================
+  settlementCenter: number;
+  settlementBaseDistance: number;
+  settlementSubsequentDistance: number;
+
+  // ============================================================================
+  // Population
+  // ============================================================================
+  basePopulation: number;
+
+  // ============================================================================
+  // Trade
+  // ============================================================================
+  tradeMaxCount: number;
 }
 
 export interface GamePreset {
