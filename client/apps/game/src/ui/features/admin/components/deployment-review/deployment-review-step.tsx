@@ -56,30 +56,30 @@ export const DeploymentReviewStep = ({
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors group"
+        className="flex items-center gap-2 text-gold/70 hover:text-gold transition-colors group"
       >
         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         <span>Change game type</span>
       </button>
 
       {/* Selected preset banner */}
-      <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200">
+      <div className="p-6 panel-wood rounded-xl border border-gold/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="px-4 py-2 bg-blue-600 text-white text-lg font-bold rounded-xl shadow-md">
+            <span className="px-4 py-2 bg-gold text-brown text-lg font-bold rounded-xl shadow-md">
               {preset.name}
             </span>
             <div>
-              <p className="text-slate-700 font-medium">{preset.description}</p>
-              <p className="text-sm text-slate-500 mt-1">{preset.tagline}</p>
+              <p className="text-gold font-medium">{preset.description}</p>
+              <p className="text-sm text-gold/60 mt-1">{preset.tagline}</p>
             </div>
           </div>
           {!isCustomPreset && (
             <button
               onClick={() => setShowConfigEditor(!showConfigEditor)}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all text-sm font-semibold
-                ${showConfigEditor ? "bg-blue-100 border-blue-300 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:border-blue-300"}
+                flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-semibold
+                ${showConfigEditor ? "bg-gold/20 border-gold/50 text-gold" : "bg-brown/50 border-gold/20 text-gold/70 hover:border-gold/40"}
               `}
             >
               {showConfigEditor ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}

@@ -9,10 +9,10 @@ interface AdvancedSectionProps {
 
 export const AdvancedSection = ({ isExpanded, onToggle, children }: AdvancedSectionProps) => {
   return (
-    <div className="mt-12 pt-8 border-t border-slate-200">
+    <div className="mt-12 pt-8 border-t border-gold/20">
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-gold/70 hover:text-gold transition-colors"
       >
         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         Advanced / Developer Options

@@ -21,13 +21,13 @@ export const PresetCard = ({ preset, isSelected, onSelect }: PresetCardProps) =>
     <button
       onClick={onSelect}
       className={`
-        relative p-6 rounded-2xl border-2 transition-all text-left w-full
-        hover:border-blue-400 hover:shadow-lg hover:scale-[1.02]
-        ${isSelected ? "border-blue-500 bg-blue-50 shadow-lg shadow-blue-500/20" : "border-slate-200 bg-white"}
+        relative p-6 rounded-xl border transition-all text-left w-full panel-wood
+        hover:border-gold/50 hover:scale-[1.02]
+        ${isSelected ? "border-gold bg-gold/10" : "border-gold/20"}
       `}
     >
       {preset.isRecommended && (
-        <span className="absolute -top-3 right-4 px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-md">
+        <span className="absolute -top-3 right-4 px-3 py-1 bg-gold text-brown text-xs font-bold rounded-full shadow-md">
           Recommended
         </span>
       )}
@@ -38,25 +38,25 @@ export const PresetCard = ({ preset, isSelected, onSelect }: PresetCardProps) =>
           <div
             className={`
             p-3 rounded-xl
-            ${isSelected ? "bg-blue-100" : "bg-slate-100"}
+            ${isSelected ? "bg-gold/20" : "bg-brown/50"}
           `}
           >
-            <Icon className={`w-6 h-6 ${isSelected ? "text-blue-600" : "text-slate-700"}`} />
+            <Icon className={`w-6 h-6 ${isSelected ? "text-gold" : "text-gold/70"}`} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-slate-900">{preset.name}</h3>
-            <p className="text-sm text-slate-500">{preset.tagline}</p>
+            <h3 className="text-xl font-bold text-gold">{preset.name}</h3>
+            <p className="text-sm text-gold/60">{preset.tagline}</p>
           </div>
         </div>
 
         {/* Description */}
-        <p className="text-sm text-slate-600">{preset.description}</p>
+        <p className="text-sm text-gold/80">{preset.description}</p>
 
         {/* Features */}
         <ul className="space-y-2">
           {preset.features.map((feature, i) => (
-            <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
-              <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+            <li key={i} className="flex items-center gap-2 text-sm text-gold/70">
+              <CheckCircle2 className="w-4 h-4 text-brilliance flex-shrink-0" />
               <span>{feature}</span>
             </li>
           ))}
@@ -66,7 +66,7 @@ export const PresetCard = ({ preset, isSelected, onSelect }: PresetCardProps) =>
         <div
           className={`
           mt-2 py-2 px-4 rounded-lg text-center text-sm font-semibold transition-colors
-          ${isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"}
+          ${isSelected ? "bg-gold text-brown" : "bg-brown/50 text-gold/70"}
         `}
         >
           {isSelected ? "Selected" : "Click to select"}

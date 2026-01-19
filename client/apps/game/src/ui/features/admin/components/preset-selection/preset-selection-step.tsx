@@ -14,8 +14,8 @@ export const PresetSelectionStep = ({ selectedPreset, onSelect }: PresetSelectio
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-slate-900">Choose Game Type</h2>
-        <p className="text-slate-600 mt-2">Select a preset to get started quickly</p>
+        <h2 className="text-3xl font-bold text-gold">Choose Game Type</h2>
+        <p className="text-gold/70 mt-2">Select a preset to get started quickly</p>
       </div>
 
       {/* Preset Grid */}
@@ -31,7 +31,7 @@ export const PresetSelectionStep = ({ selectedPreset, onSelect }: PresetSelectio
       </div>
 
       {/* Help text */}
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-sm text-gold/60">
         Click a preset card above to select it, then customize details in the next step
       </p>
     </div>

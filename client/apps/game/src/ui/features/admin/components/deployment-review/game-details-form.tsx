@@ -43,62 +43,62 @@ export const GameDetailsForm = ({ deployment, onUpdate, onRegenerateWorldName }:
   };
 
   return (
-    <div className="space-y-6 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
-      <h3 className="text-lg font-bold text-slate-900">Game Details</h3>
+    <div className="space-y-6 p-6 panel-wood rounded-xl border border-gold/20">
+      <h3 className="text-lg font-bold text-gold">Game Details</h3>
 
       {/* Game name */}
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-slate-700">Game Name</label>
+        <label className="text-sm font-semibold text-gold/80">Game Name</label>
         <div className="flex gap-2">
           <input
             type="text"
             value={deployment.gameName}
             onChange={(e) => onUpdate({ gameName: e.target.value })}
             placeholder="test-fire-gate-42"
-            className="flex-1 px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-mono focus:outline-none transition-all"
+            className="flex-1 px-4 py-3 bg-brown/50 border border-gold/30 hover:border-gold/50 focus:border-gold rounded-xl text-gold placeholder-gold/40 font-mono focus:outline-none transition-all"
           />
           <button
             onClick={onRegenerateWorldName}
-            className="p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors group"
+            className="p-3 bg-gold/20 hover:bg-gold/30 rounded-xl transition-colors group"
             title="Generate new game name"
           >
-            <RefreshCw className="w-5 h-5 text-blue-600 group-hover:rotate-180 transition-transform duration-500" />
+            <RefreshCw className="w-5 h-5 text-gold group-hover:rotate-180 transition-transform duration-500" />
           </button>
         </div>
-        <p className="text-xs text-slate-500">A unique identifier for your game world</p>
+        <p className="text-xs text-gold/60">A unique identifier for your game world</p>
       </div>
 
       {/* Start time */}
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-slate-700">Start Time</label>
+        <label className="text-sm font-semibold text-gold/80">Start Time</label>
         <input
           type="datetime-local"
           min={getMinDateTime()}
           max={getMaxDateTime()}
           value={formatDateTimeLocal(deployment.startTime || getNextHourEpoch())}
           onChange={(e) => handleStartTimeChange(e.target.value)}
-          className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
+          className={`w-full px-4 py-3 bg-brown/50 border rounded-xl text-gold focus:outline-none transition-all ${
             isStartTimeValid()
-              ? "border-slate-200 hover:border-blue-300 focus:border-blue-500"
-              : "border-red-300 focus:border-red-500"
+              ? "border-gold/30 hover:border-gold/50 focus:border-gold"
+              : "border-danger focus:border-danger"
           }`}
         />
         {!isStartTimeValid() && (
-          <p className="text-xs text-red-600">Start time must be in the future and within {MAX_START_TIME_HOURS.toLocaleString()} hours</p>
+          <p className="text-xs text-danger">Start time must be in the future and within {MAX_START_TIME_HOURS.toLocaleString()} hours</p>
         )}
-        <p className="text-xs text-slate-500">When the main game phase begins. Defaults to next hour.</p>
+        <p className="text-xs text-gold/60">When the main game phase begins. Defaults to next hour.</p>
       </div>
 
       {/* Series (optional) */}
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-slate-700">Series (optional)</label>
+        <label className="text-sm font-semibold text-gold/80">Series (optional)</label>
         <div className="grid grid-cols-2 gap-3">
           <input
             type="text"
             placeholder="Series name"
             value={deployment.seriesName}
             onChange={(e) => onUpdate({ seriesName: e.target.value })}
-            className="px-4 py-3 border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl focus:outline-none transition-all"
+            className="px-4 py-3 bg-brown/50 border border-gold/30 hover:border-gold/50 focus:border-gold rounded-xl text-gold placeholder-gold/40 focus:outline-none transition-all"
           />
           <input
             type="number"
@@ -107,10 +107,10 @@ export const GameDetailsForm = ({ deployment, onUpdate, onRegenerateWorldName }:
             step={1}
             value={deployment.seriesGameNumber}
             onChange={(e) => onUpdate({ seriesGameNumber: e.target.value.replace(/[^\d]/g, "") })}
-            className="px-4 py-3 border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl focus:outline-none transition-all"
+            className="px-4 py-3 bg-brown/50 border border-gold/30 hover:border-gold/50 focus:border-gold rounded-xl text-gold placeholder-gold/40 focus:outline-none transition-all"
           />
         </div>
-        <p className="text-xs text-slate-500">Link this game to a series for organized tournaments</p>
+        <p className="text-xs text-gold/60">Link this game to a series for organized tournaments</p>
       </div>
     </div>
   );

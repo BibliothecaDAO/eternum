@@ -36,10 +36,10 @@ export const WorldQueueList = ({
   }
 
   return (
-    <div className="mt-8 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <div className="mt-8 p-6 panel-wood rounded-xl border border-gold/20">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors w-full"
+        className="flex items-center gap-2 text-sm font-semibold text-gold/80 hover:text-gold transition-colors w-full"
       >
         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         Game Queue ({worlds.length})

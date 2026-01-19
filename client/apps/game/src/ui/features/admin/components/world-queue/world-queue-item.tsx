@@ -46,14 +46,14 @@ export const WorldQueueItem = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
+      <div className="flex items-center gap-2 px-3 py-2 panel-wood rounded-lg border border-gold/20 hover:border-gold/40 transition-colors">
         {/* World name */}
-        <span className="flex-1 text-xs font-mono text-slate-700">{worldName}</span>
+        <span className="flex-1 text-xs font-mono text-gold">{worldName}</span>
 
         {/* Copy Button */}
         <button
           onClick={handleCopy}
-          className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded transition-colors"
+          className="p-1 text-gold/40 hover:text-gold hover:bg-brown/30 rounded transition-colors"
           title="Copy world name"
         >
           <Copy className="w-3.5 h-3.5" />
@@ -62,25 +62,25 @@ export const WorldQueueItem = ({
         {/* Remove Button */}
         <button
           onClick={onRemove}
-          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          className="p-1 text-gold/40 hover:text-danger hover:bg-danger/10 rounded transition-colors"
           title="Remove from queue"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
 
         {/* Divider */}
-        <div className="h-4 w-px bg-slate-200" />
+        <div className="h-4 w-px bg-gold/20" />
 
         {/* Status indicators and actions */}
         {status.verifying && (
-          <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+          <span className="flex items-center gap-1.5 px-2 py-1 bg-gold/20 text-gold text-xs font-semibold rounded border border-gold/30">
             <Loader2 className="w-3 h-3 animate-spin" />
             Verifying...
           </span>
         )}
 
         {status.autoDeploying && !status.verifying && (
-          <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+          <span className="flex items-center gap-1.5 px-2 py-1 bg-gold/20 text-gold text-xs font-semibold rounded border border-gold/30">
             <Loader2 className="w-3 h-3 animate-spin" />
             {status.autoDeploying.stopping ? "Stopping" : "Deploying"} {status.autoDeploying.current}/
             {status.autoDeploying.total}
@@ -89,7 +89,7 @@ export const WorldQueueItem = ({
 
         {/* Deployed status */}
         {status.deployed && !status.verifying && (
-          <span className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded border border-emerald-200">
+          <span className="flex items-center gap-1.5 px-2 py-1 bg-brilliance/20 text-brilliance text-xs font-semibold rounded border border-brilliance/30">
             <CheckCircle2 className="w-3 h-3" />
             Deployed
           </span>
@@ -100,7 +100,7 @@ export const WorldQueueItem = ({
           <button
             onClick={onDeploy}
             disabled={isDeploying}
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors"
+            className="px-3 py-1 bg-gold hover:bg-gold/80 disabled:bg-brown/50 disabled:text-gold/40 disabled:cursor-not-allowed text-brown text-xs font-semibold rounded-md transition-colors"
           >
             Deploy
           </button>
@@ -113,7 +113,7 @@ export const WorldQueueItem = ({
             {!isConfigured && (
               <button
                 onClick={onConfigure}
-                className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
+                className="px-3 py-1 bg-brown/50 hover:bg-brown/70 text-gold text-xs font-semibold rounded-md border border-gold/30 hover:border-gold/50 transition-colors"
               >
                 Configure
               </button>
@@ -125,19 +125,19 @@ export const WorldQueueItem = ({
                 href={`${CARTRIDGE_API_BASE}/x/${worldName}/torii`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1 bg-brilliance/20 hover:bg-brilliance/30 text-brilliance text-xs font-semibold rounded-md border border-brilliance/30 hover:border-brilliance/50 transition-colors"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-brilliance" />
                 Indexer On
               </a>
             ) : onCooldown ? (
-              <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
+              <span className="flex items-center gap-1.5 px-3 py-1 bg-brown/50 text-gold/60 text-xs font-semibold rounded-md border border-gold/20 cursor-not-allowed">
                 Wait {Math.floor(cooldownRemaining / 60)}m {cooldownRemaining % 60}s
               </span>
             ) : (
               <button
                 onClick={onCreateIndexer}
-                className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                className="px-3 py-1 bg-gold/20 hover:bg-gold/30 text-gold text-xs font-semibold rounded-md border border-gold/30 hover:border-gold/50 transition-colors"
               >
                 Create Indexer
               </button>
@@ -147,7 +147,7 @@ export const WorldQueueItem = ({
       </div>
 
       {/* Series metadata */}
-      {metadataParts.length > 0 && <p className="text-[11px] text-slate-500 pl-3">Series: {metadataParts.join(" ")}</p>}
+      {metadataParts.length > 0 && <p className="text-[11px] text-gold/60 pl-3">Series: {metadataParts.join(" ")}</p>}
     </div>
   );
 };

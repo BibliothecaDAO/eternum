@@ -456,17 +456,17 @@ export const FactoryPage = () => {
   // ============================================================================
 
   return (
-    <div className="fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-slate-200 via-blue-200 to-indigo-200">
+    <div className="fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-dark-brown">
       <div className="max-w-6xl mx-auto px-8 py-16">
         <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />
 
         {/* Wallet Connection (if not connected) */}
         {!account && (
-          <div className="mb-8 p-6 bg-amber-50 border-2 border-amber-200 rounded-2xl">
+          <div className="mb-8 p-6 bg-orange/10 border border-orange/30 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-amber-900">Connect Your Wallet</h3>
-                <p className="text-sm text-amber-700 mt-1">You need to connect a wallet to deploy games</p>
+                <h3 className="text-lg font-bold text-orange">Connect Your Wallet</h3>
+                <p className="text-sm text-orange/80 mt-1">You need to connect a wallet to deploy games</p>
               </div>
               <Controller className="h-10 px-4" />
             </div>
@@ -512,35 +512,35 @@ export const FactoryPage = () => {
           <AdvancedSection isExpanded={state.ui.showAdvanced} onToggle={() => actions.toggleUI("showAdvanced")}>
             <div className="space-y-6">
               {/* Configuration Info */}
-              <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-200">
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Configuration</h3>
+              <div className="p-6 panel-wood rounded-xl border border-gold/20">
+                <h3 className="text-lg font-bold text-gold mb-4">Configuration</h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Factory Address</label>
+                    <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Factory Address</label>
                     <input
                       type="text"
                       value={factoryAddress}
                       disabled
-                      className="w-full px-4 py-3 bg-slate-200 border-2 border-slate-300 rounded-xl text-slate-500 font-mono text-sm cursor-not-allowed"
+                      className="w-full px-4 py-3 bg-brown/50 border border-gold/30 rounded-xl text-gold/60 font-mono text-sm cursor-not-allowed"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Version</label>
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Version</label>
                       <input
                         type="text"
                         value={DEFAULT_VERSION}
                         disabled
-                        className="w-full px-4 py-3 bg-slate-200 border-2 border-slate-300 rounded-xl text-slate-500 cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-brown/50 border border-gold/30 rounded-xl text-gold/60 cursor-not-allowed"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Namespace</label>
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Namespace</label>
                       <input
                         type="text"
                         value={DEFAULT_NAMESPACE}
                         disabled
-                        className="w-full px-4 py-3 bg-slate-200 border-2 border-slate-300 rounded-xl text-slate-500 cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-brown/50 border border-gold/30 rounded-xl text-gold/60 cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -548,24 +548,24 @@ export const FactoryPage = () => {
               </div>
 
               {/* Deployment Summary */}
-              <div className="p-6 bg-white border-2 border-slate-200 rounded-2xl">
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Manifest Summary</h3>
+              <div className="p-6 panel-wood border border-gold/20 rounded-xl">
+                <h3 className="text-lg font-bold text-gold mb-4">Manifest Summary</h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm font-medium text-slate-600">Contracts</span>
-                    <span className="text-sm font-bold text-slate-900">{parsedManifest.contracts.length}</span>
+                  <div className="flex justify-between py-2 border-b border-gold/10">
+                    <span className="text-sm font-medium text-gold/70">Contracts</span>
+                    <span className="text-sm font-bold text-gold">{parsedManifest.contracts.length}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm font-medium text-slate-600">Models</span>
-                    <span className="text-sm font-bold text-slate-900">{parsedManifest.models.length}</span>
+                  <div className="flex justify-between py-2 border-b border-gold/10">
+                    <span className="text-sm font-medium text-gold/70">Models</span>
+                    <span className="text-sm font-bold text-gold">{parsedManifest.models.length}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm font-medium text-slate-600">Events</span>
-                    <span className="text-sm font-bold text-slate-900">{parsedManifest.events.length}</span>
+                  <div className="flex justify-between py-2 border-b border-gold/10">
+                    <span className="text-sm font-medium text-gold/70">Events</span>
+                    <span className="text-sm font-bold text-gold">{parsedManifest.events.length}</span>
                   </div>
                   <div className="flex justify-between py-2">
-                    <span className="text-sm font-medium text-slate-600">Calldata Args</span>
-                    <span className="text-sm font-bold text-slate-900">{generatedCalldata.length}</span>
+                    <span className="text-sm font-medium text-gold/70">Calldata Args</span>
+                    <span className="text-sm font-bold text-gold">{generatedCalldata.length}</span>
                   </div>
                 </div>
               </div>
@@ -574,14 +574,14 @@ export const FactoryPage = () => {
               <div className="space-y-4">
                 <button
                   onClick={() => actions.toggleUI("showCairoOutput")}
-                  className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-semibold text-gold bg-brown/50 hover:bg-brown/70 border border-gold/30 rounded-lg transition-colors"
                 >
                   {state.ui.showCairoOutput ? "Hide" : "Show"} Cairo Output
                 </button>
 
                 {state.ui.showCairoOutput && (
-                  <div className="p-6 bg-slate-900 border-2 border-slate-700 rounded-2xl">
-                    <pre className="text-xs text-emerald-400 overflow-x-auto leading-relaxed font-mono">
+                  <div className="p-6 bg-brown border border-gold/30 rounded-xl">
+                    <pre className="text-xs text-brilliance overflow-x-auto leading-relaxed font-mono">
                       {generateCairoOutput(
                         parsedManifest,
                         DEFAULT_VERSION,
