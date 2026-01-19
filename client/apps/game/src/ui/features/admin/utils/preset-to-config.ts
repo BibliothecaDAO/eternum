@@ -38,7 +38,12 @@ export const getNextHourEpoch = (): number => {
 };
 
 /**
- * Apply preset configuration overrides to base Eternum config
+ * Apply preset configuration overrides to base Eternum config.
+ *
+ * IMPORTANT: This function is conservative - it only overrides fields that
+ * truly need to change for the game mode. All other fields are preserved
+ * from baseConfig (ETERNUM_CONFIG). This approach matches the working
+ * implementation from the next branch.
  */
 export const applyPresetToConfig = (
   baseConfig: EternumConfig,
@@ -61,15 +66,21 @@ export const applyPresetToConfig = (
   const nowSec = Math.floor(Date.now() / 1000);
   const effectiveStartTime = startTime > 0 ? Math.max(startTime, nowSec) : getNextHourEpoch();
 
-  // Calculate fee amount
+  // Calculate fee amount - only if fees are enabled
   const feeAmount = effectiveOverrides.hasFee
     ? parseDecimalToBigInt(effectiveOverrides.feeAmount || blitzDefaults.amount, effectiveOverrides.feePrecision)
     : BigInt(0);
 
+  // Determine fee token: use override if provided, otherwise chain default, otherwise preserve baseConfig
+  const feeToken =
+    blitzDefaults.token || (baseConfig.blitz?.registration?.fee_token as string) || blitzDefaults.token;
+
+  // Build the config - ONLY override fields that need to change for the game mode
+  // Preserve everything else from baseConfig to match ETERNUM_CONFIG values
   return {
     ...baseConfig,
 
-    // Dev mode
+    // Dev mode - this is a core game mode setting
     dev: {
       ...(baseConfig as any).dev,
       mode: {
@@ -78,120 +89,32 @@ export const applyPresetToConfig = (
       },
     },
 
-    // Season timing
+    // Season timing - core game mode settings
     season: {
       ...baseConfig.season,
       durationSeconds: Math.max(60, durationSeconds),
       startMainAt: effectiveStartTime,
-      startSettlingAfterSeconds: effectiveOverrides.startSettlingAfterSeconds,
-      bridgeCloseAfterEndSeconds: effectiveOverrides.bridgeCloseAfterEndSeconds,
-      pointRegistrationCloseAfterEndSeconds: effectiveOverrides.pointRegistrationCloseAfterEndSeconds,
     },
 
-    // Blitz / Registration
+    // Blitz / Registration - core game mode settings
     blitz: {
       ...baseConfig.blitz,
       mode: {
-        on: effectiveOverrides.hasFee, // Blitz mode correlates with fees
+        ...(baseConfig.blitz?.mode || {}),
+        on: effectiveOverrides.hasFee,
       },
       registration: {
         ...baseConfig.blitz?.registration,
         fee_amount: feeAmount,
-        fee_token: blitzDefaults.token,
+        fee_token: feeToken,
         registration_count_max: effectiveOverrides.registrationCountMax,
-        registration_delay_seconds: effectiveOverrides.registrationDelaySeconds,
-        registration_period_seconds: effectiveOverrides.registrationPeriodSeconds,
       },
     },
 
-    // Settlement
+    // Settlement - single_realm_mode is a core game mode setting
     settlement: {
       ...baseConfig.settlement,
       single_realm_mode: effectiveOverrides.singleRealmMode,
-      center: effectiveOverrides.settlementCenter,
-      base_distance: effectiveOverrides.settlementBaseDistance,
-      subsequent_distance: effectiveOverrides.settlementSubsequentDistance,
-    },
-
-    // Battle settings
-    battle: {
-      ...baseConfig.battle,
-      graceTickCount: effectiveOverrides.battleGraceTickCount,
-      graceTickCountHyp: effectiveOverrides.battleGraceTickCountHyp,
-      delaySeconds: effectiveOverrides.battleDelaySeconds,
-    },
-
-    // Tick intervals
-    tick: {
-      ...baseConfig.tick,
-      defaultTickIntervalInSeconds: effectiveOverrides.defaultTickIntervalSeconds,
-      armiesTickIntervalInSeconds: effectiveOverrides.armiesTickIntervalSeconds,
-      deliveryTickIntervalInSeconds: effectiveOverrides.deliveryTickIntervalSeconds,
-    },
-
-    // Movement speed
-    speed: {
-      ...baseConfig.speed,
-      donkey: effectiveOverrides.speedDonkey,
-      army: effectiveOverrides.speedArmy,
-    },
-
-    // Exploration
-    exploration: {
-      ...baseConfig.exploration,
-      reward: effectiveOverrides.explorationReward,
-      shardsMinesFailProbability: effectiveOverrides.shardsMinesFailProbability,
-      shardsMinesWinProbability: effectiveOverrides.shardsMinesWinProbability,
-      agentFindProbability: effectiveOverrides.agentFindProbability,
-      agentFindFailProbability: effectiveOverrides.agentFindFailProbability,
-      villageFindProbability: effectiveOverrides.villageFindProbability,
-      villageFindFailProbability: effectiveOverrides.villageFindFailProbability,
-      hyperstructureWinProbAtCenter: effectiveOverrides.hyperstructureWinProbAtCenter,
-      hyperstructureFailProbAtCenter: effectiveOverrides.hyperstructureFailProbAtCenter,
-      questFindProbability: effectiveOverrides.questFindProbability,
-      questFindFailProbability: effectiveOverrides.questFindFailProbability,
-    },
-
-    // Troop settings
-    troop: {
-      ...baseConfig.troop,
-      stamina: {
-        ...baseConfig.troop?.stamina,
-        staminaGainPerTick: effectiveOverrides.staminaGainPerTick,
-        staminaInitial: effectiveOverrides.staminaInitial,
-        staminaBonusValue: effectiveOverrides.staminaBonusValue,
-        staminaKnightMax: effectiveOverrides.staminaKnightMax,
-        staminaPaladinMax: effectiveOverrides.staminaPaladinMax,
-        staminaCrossbowmanMax: effectiveOverrides.staminaCrossbowmanMax,
-        staminaAttackReq: effectiveOverrides.staminaAttackReq,
-        staminaDefenseReq: effectiveOverrides.staminaDefenseReq,
-        staminaExploreWheatCost: effectiveOverrides.staminaExploreWheatCost,
-        staminaExploreFishCost: effectiveOverrides.staminaExploreFishCost,
-        staminaExploreStaminaCost: effectiveOverrides.staminaExploreStaminaCost,
-        staminaTravelWheatCost: effectiveOverrides.staminaTravelWheatCost,
-        staminaTravelFishCost: effectiveOverrides.staminaTravelFishCost,
-        staminaTravelStaminaCost: effectiveOverrides.staminaTravelStaminaCost,
-      },
-      limit: {
-        ...baseConfig.troop?.limit,
-        explorerMaxPartyCount: effectiveOverrides.explorerMaxPartyCount,
-        explorerAndGuardMaxTroopCount: effectiveOverrides.explorerAndGuardMaxTroopCount,
-        guardResurrectionDelay: effectiveOverrides.guardResurrectionDelay,
-        mercenariesTroopLowerBound: effectiveOverrides.mercenariesTroopLowerBound,
-        mercenariesTroopUpperBound: effectiveOverrides.mercenariesTroopUpperBound,
-      },
-    },
-
-    // Population
-    populationCapacity: {
-      ...baseConfig.populationCapacity,
-      basePopulation: effectiveOverrides.basePopulation,
-    },
-
-    // Trade
-    trade: {
-      ...baseConfig.trade,
-      maxCount: effectiveOverrides.tradeMaxCount,
     },
   } as EternumConfig;
 };
