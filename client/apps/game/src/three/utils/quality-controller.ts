@@ -30,7 +30,6 @@ export interface QualityFeatures {
 
   // Chunk system
   chunkLoadRadius: number;
-  renderChunkSize: number; // Width/height of render area in hexes
 }
 
 /**
@@ -69,7 +68,6 @@ const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     animationCullDistance: 60,
     // Chunk system
     chunkLoadRadius: 1,
-    renderChunkSize: 32, // 32x32 = 1,024 hexes (~55% triangle reduction)
   },
   [GraphicsSettings.MID]: {
     name: "Medium",
@@ -95,7 +93,6 @@ const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     animationCullDistance: 100,
     // Chunk system
     chunkLoadRadius: 2,
-    renderChunkSize: 40, // 40x40 = 1,600 hexes (~30% triangle reduction)
   },
   [GraphicsSettings.HIGH]: {
     name: "High",
@@ -121,7 +118,6 @@ const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     animationCullDistance: 140,
     // Chunk system
     chunkLoadRadius: 3,
-    renderChunkSize: 48, // 48x48 = 2,304 hexes (full quality)
   },
 };
 
@@ -141,11 +137,9 @@ const DEGRADATION_STEPS: DegradationStep[] = [
   { feature: "animationFPS", value: 15, description: "Reduced animation FPS to 15" },
   { feature: "maxVisibleLabels", value: 150, description: "Reduced max visible labels" },
   { feature: "bloom", value: false, description: "Disabled bloom effect" },
-  { feature: "renderChunkSize", value: 40, description: "Reduced render chunk size to 40" },
   { feature: "morphAnimations", value: false, description: "Disabled morph animations" },
   { feature: "fxaa", value: false, description: "Disabled FXAA anti-aliasing" },
   { feature: "shadowMapSize", value: 1024, description: "Reduced shadow map size" },
-  { feature: "renderChunkSize", value: 32, description: "Reduced render chunk size to 32" },
   { feature: "maxVisibleArmies", value: 200, description: "Reduced max visible armies" },
   { feature: "maxVisibleStructures", value: 100, description: "Reduced max visible structures" },
   { feature: "shadows", value: false, description: "Disabled shadows" },
