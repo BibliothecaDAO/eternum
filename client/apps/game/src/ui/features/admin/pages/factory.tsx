@@ -188,17 +188,6 @@ export const FactoryPage = () => {
   // Deployment Handlers
   // ============================================================================
 
-  const buildSeriesCalldata = (seriesName: string, gameNumber: string) => {
-    const trimmedName = seriesName.trim();
-    const trimmedGameNumber = gameNumber.trim();
-    const seriesNameFelt = trimmedName ? shortString.encodeShortString(trimmedName) : "0x0";
-    const parsedSeriesGameNumber = trimmedGameNumber ? BigInt(trimmedGameNumber.replace(/[^\d]/g, "")) : BigInt(0);
-    return {
-      seriesNameFelt,
-      seriesGameNumber: parsedSeriesGameNumber.toString(),
-    };
-  };
-
   const handleDeploy = useCallback(async () => {
     if (!account || !factoryAddress || !state.deployment.gameName || !state.deployment.selectedPreset) return;
 
@@ -206,12 +195,11 @@ export const FactoryPage = () => {
 
     try {
       const worldNameFelt = shortString.encodeShortString(state.deployment.gameName);
-      const series = buildSeriesCalldata(state.deployment.seriesName, state.deployment.seriesGameNumber);
 
       const result = await account.execute({
         contractAddress: factoryAddress,
-        entrypoint: "create_game",
-        calldata: [worldNameFelt, DEFAULT_VERSION, series.seriesNameFelt, series.seriesGameNumber],
+        entrypoint: "deploy",
+        calldata: [worldNameFelt, DEFAULT_VERSION],
       });
 
       actions.setTxState("deploy", { status: "success", hash: result.transaction_hash });
@@ -254,8 +242,6 @@ export const FactoryPage = () => {
 
       try {
         const worldNameFelt = shortString.encodeShortString(worldName);
-        const metadata = state.worldSeriesMetadata[worldName];
-        const series = buildSeriesCalldata(metadata?.seriesName ?? "", metadata?.seriesGameNumber ?? "");
         let deployedAddress: string | null = null;
 
         for (let i = 0; i < totalRepeats; i++) {
@@ -267,8 +253,8 @@ export const FactoryPage = () => {
 
           const result = await account.execute({
             contractAddress: factoryAddress,
-            entrypoint: "create_game",
-            calldata: [worldNameFelt, DEFAULT_VERSION, series.seriesNameFelt, series.seriesGameNumber],
+            entrypoint: "deploy",
+            calldata: [worldNameFelt, DEFAULT_VERSION],
           });
 
           await Promise.race([
