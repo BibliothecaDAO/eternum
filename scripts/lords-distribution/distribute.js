@@ -260,14 +260,21 @@ async function main() {
     const batchLords = batch.reduce((sum, r) => sum + r.reimbursementLords, 0);
 
     log(`\n${"═".repeat(60)}`, colors.blue);
-    log(`📤 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} transfers, ${batchLords} LORDS)`, colors.blue);
+    log(
+      `📤 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} transfers, ${batchLords} LORDS)`,
+      colors.blue,
+    );
     log("═".repeat(60), colors.blue);
 
     // Build calls for this batch
     const calls = batch.map((recipient) => ({
       contractAddress: LORDS_CONTRACT_ADDRESS,
       entrypoint: "transfer",
-      calldata: [recipient.address, toUint256(recipient.reimbursementLords).low, toUint256(recipient.reimbursementLords).high],
+      calldata: [
+        recipient.address,
+        toUint256(recipient.reimbursementLords).low,
+        toUint256(recipient.reimbursementLords).high,
+      ],
     }));
 
     try {

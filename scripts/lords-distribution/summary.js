@@ -130,7 +130,9 @@ async function main() {
   log(
     `\n   ${colors.bold}Estimated fee: ${(Number(totalEstimatedFee) / 10 ** STRK_DECIMALS).toFixed(6)} STRK${colors.reset}`,
   );
-  log(`   ${colors.bold}${colors.green}Recommended (with 50% buffer): ${safeEstimateStrk.toFixed(6)} STRK${colors.reset}`);
+  log(
+    `   ${colors.bold}${colors.green}Recommended (with 50% buffer): ${safeEstimateStrk.toFixed(6)} STRK${colors.reset}`,
+  );
 
   log("\n" + "═".repeat(60), colors.blue);
   log(`\n${colors.magenta}💡 Make sure your account has:${colors.reset}`);

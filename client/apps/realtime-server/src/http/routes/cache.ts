@@ -501,7 +501,11 @@ cacheRoutes.get("/leaderboard", async (c) => {
             await Promise.all([
               fetchToriiRows<unknown>(toriiBaseUrl, leaderboardQuery, "leaderboard"),
               fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_SHAREHOLDERS_QUERY, "hyperstructure shareholders"),
-              fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY, "hyperstructure multipliers"),
+              fetchToriiRows<unknown>(
+                toriiBaseUrl,
+                HYPERSTRUCTURES_WITH_MULTIPLIER_QUERY,
+                "hyperstructure multipliers",
+              ),
               fetchToriiRows<unknown>(toriiBaseUrl, HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY, "hyperstructure config"),
             ]);
 
@@ -604,10 +608,7 @@ cacheRoutes.get("/tiles", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const cacheKey = `${toriiBaseUrl}|all`;
@@ -651,10 +652,7 @@ cacheRoutes.get("/hyperstructures", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const cacheKey = `${toriiBaseUrl}|all`;
@@ -698,10 +696,7 @@ cacheRoutes.get("/structure-explorer-details", async (c) => {
   const start = Date.now();
   const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
   if (!toriiBaseUrl) {
-    return c.json(
-      { error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." },
-      400,
-    );
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
   }
 
   const cacheKey = `${toriiBaseUrl}|all`;
