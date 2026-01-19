@@ -39,6 +39,7 @@ import { env } from "../../../../../env";
 
 // Components
 import { AdminHeader } from "../components/admin-header";
+import { QuickAddGame } from "../components/quick-add-game";
 import { PresetSelectionStep } from "../components/preset-selection";
 import { DeploymentReviewStep } from "../components/deployment-review";
 import { WorldQueueList } from "../components/world-queue";
@@ -72,7 +73,7 @@ import {
 } from "../utils/storage";
 
 // Types
-import type { TxState, WorldStatus } from "../types/game-presets";
+import type { WorldStatus } from "../types/game-presets";
 
 // ============================================================================
 // Manifest Types
@@ -478,6 +479,32 @@ export const FactoryPage = () => {
           </div>
         )}
 
+        {/* Quick Add Game to Queue */}
+        <QuickAddGame
+          gameName={state.deployment.gameName}
+          seriesName={state.deployment.seriesName}
+          seriesGameNumber={state.deployment.seriesGameNumber}
+          onGameNameChange={(name) => actions.updateDeployment({ gameName: name })}
+          onSeriesNameChange={(name) => actions.updateDeployment({ seriesName: name })}
+          onSeriesGameNumberChange={(num) => actions.updateDeployment({ seriesGameNumber: num })}
+          onRegenerateWorldName={actions.regenerateWorldName}
+          onAddToQueue={handleAddToQueue}
+          isNameInQueue={state.worldQueue.includes(state.deployment.gameName)}
+        />
+
+        {/* World Queue - Prominent Position */}
+        <WorldQueueList
+          worlds={state.worldQueue}
+          statuses={state.worldStatuses}
+          metadata={state.worldSeriesMetadata}
+          onRemove={actions.removeFromQueue}
+          onDeploy={handleQueueDeploy}
+          onConfigure={handleConfigureWorld}
+          onCreateIndexer={handleCreateIndexer}
+          isDeploying={state.txState.deploy.status === "running"}
+          currentChain={currentChain}
+        />
+
         {/* Step 1: Preset Selection */}
         {state.deployment.step === "select-preset" && (
           <PresetSelectionStep selectedPreset={state.deployment.selectedPreset} onSelect={actions.selectPreset} />
@@ -498,19 +525,6 @@ export const FactoryPage = () => {
             onAddToQueue={handleAddToQueue}
           />
         )}
-
-        {/* World Queue */}
-        <WorldQueueList
-          worlds={state.worldQueue}
-          statuses={state.worldStatuses}
-          metadata={state.worldSeriesMetadata}
-          onRemove={actions.removeFromQueue}
-          onDeploy={handleQueueDeploy}
-          onConfigure={handleConfigureWorld}
-          onCreateIndexer={handleCreateIndexer}
-          isDeploying={state.txState.deploy.status === "running"}
-          currentChain={currentChain}
-        />
 
         {/* Advanced Section */}
         {parsedManifest && (
