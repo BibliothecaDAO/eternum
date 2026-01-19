@@ -54,7 +54,6 @@ import {
   DEFAULT_VERSION,
   DEFAULT_NAMESPACE,
   DEFAULT_TORII_NAMESPACE,
-  getDefaultBlitzRegistrationConfig,
   getDefaultMaxActionsForChain,
   getExplorerTxUrl,
   getFactoryDeployRepeatsForChain,
@@ -64,15 +63,12 @@ import { generateFactoryCalldata, generateCairoOutput } from "../services/factor
 import {
   checkIndexerExists as checkIndexerExistsService,
   createIndexer as createIndexerService,
-  getWorldDeployedAddress as getWorldDeployedAddressService,
 } from "../services/factory-indexer";
 import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
 import {
   cacheDeployedAddress,
-  getDeployedAddressMap,
   markWorldAsConfigured,
   setIndexerCooldown,
-  getRemainingCooldown,
 } from "../utils/storage";
 
 // Types

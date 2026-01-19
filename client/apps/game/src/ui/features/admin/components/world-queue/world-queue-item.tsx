@@ -27,7 +27,6 @@ export const WorldQueueItem = ({
   onConfigure,
   onCreateIndexer,
   isDeploying,
-  currentChain,
 }: WorldQueueItemProps) => {
   const metadataParts: string[] = [];
   if (metadata?.seriesName) metadataParts.push(metadata.seriesName);
