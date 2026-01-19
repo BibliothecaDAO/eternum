@@ -101,25 +101,25 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gold">Create Your Avatar</h2>
-        <p className="text-sm text-gold/60 mt-1">Personalize your identity with an AI-generated avatar (optional)</p>
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gold">Create Your Avatar</h2>
+        <p className="text-xs sm:text-sm text-gold/60 mt-1">Personalize your identity with an AI-generated avatar (optional)</p>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center">
-        <div className="space-y-6">
+      <div className="flex-1 flex flex-col justify-center overflow-y-auto">
+        <div className="space-y-4 sm:space-y-6">
           {/* Avatar Preview */}
           <div className="flex justify-center">
             <div className="relative">
               {isLoadingAvatarOrAccount ? (
-                <div className="w-32 h-32 rounded-full bg-gold/10 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-gold" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gold/10 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-gold" />
                 </div>
               ) : (
                 <img
                   src={currentAvatarUrl}
                   alt="Your avatar"
-                  className="w-32 h-32 rounded-full border-2 border-gold/30 object-cover"
+                  className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-2 border-gold/30 object-cover"
                 />
               )}
               {generateAvatar.isPending && (
@@ -167,9 +167,9 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
           )}
 
           {/* Action Buttons */}
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <Button
-              className="w-full rounded-md shadow-md !h-14"
+              className="w-full rounded-md shadow-md !h-12 sm:!h-14"
               size="lg"
               forceUppercase={false}
               variant="gold"
@@ -192,7 +192,7 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
             </Button>
 
             <Button
-              className="w-full rounded-md shadow-md !h-14"
+              className="w-full rounded-md shadow-md !h-12 sm:!h-14"
               size="lg"
               forceUppercase={false}
               variant="outline"

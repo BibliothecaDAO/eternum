@@ -36,21 +36,21 @@ export const UnifiedOnboardingScreen = ({ backgroundImage, state }: UnifiedOnboa
       />
 
       {/* Main Content */}
-      <div className="absolute z-10 w-screen h-screen flex">
-        {/* Left side - Logo */}
-        <div className="pointer-events-none flex flex-1 items-center pl-16">
-          <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-[360px]" />
+      <div className="absolute z-10 w-screen h-screen flex flex-col md:flex-row">
+        {/* Left side - Logo (hidden on mobile) */}
+        <div className="pointer-events-none hidden md:flex flex-1 items-center pl-8 lg:pl-16">
+          <EternumWordsLogo className="fill-brown w-48 lg:w-72 xl:w-[360px]" />
         </div>
 
         {/* Right side - Panel */}
-        <div className="flex flex-1 justify-end">
+        <div className="flex flex-1 items-center justify-center md:justify-end p-4 md:p-0">
           <motion.div
-            className="flex h-screen w-full z-50 justify-end"
+            className="flex h-full md:h-screen w-full z-50 justify-center md:justify-end"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: "ease-in-out", duration: 0.3 }}
           >
-            <div className="bg-black/20 border-r border-[0.5px] border-gradient p-3 text-gold relative z-50 backdrop-filter backdrop-blur-[32px] my-8 mr-8 panel-wood panel-wood-corners w-[456px] flex flex-col">
+            <div className="bg-black/20 border-r border-[0.5px] border-gradient p-3 text-gold relative z-50 backdrop-filter backdrop-blur-[32px] my-0 mx-0 md:my-8 md:mr-8 panel-wood panel-wood-corners w-full max-w-[456px] md:w-[456px] flex flex-col max-h-[calc(100vh-2rem)] md:max-h-none">
               {/* Step Indicator */}
               <StepIndicator currentPhase={phase} isBootstrapRunning={isBootstrapRunning} />
 

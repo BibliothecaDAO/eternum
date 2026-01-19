@@ -26,15 +26,15 @@ export const AccountPanel = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gold">Welcome to Eternum</h2>
-        <p className="text-sm text-gold/60 mt-1">Connect your wallet to begin your conquest</p>
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gold">Welcome to Eternum</h2>
+        <p className="text-xs sm:text-sm text-gold/60 mt-1">Connect your wallet to begin your conquest</p>
       </div>
 
       <div className="flex-1 flex flex-col justify-center">
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <Button
-            className="w-full rounded-md shadow-md !h-14"
+            className="w-full rounded-md shadow-md !h-12 sm:!h-14"
             size="lg"
             forceUppercase={false}
             variant="gold"
@@ -51,11 +51,11 @@ export const AccountPanel = ({
             </div>
           </Button>
 
-          <SpectateButton className="w-full rounded-md shadow-md !h-14" onClick={onSpectate} />
+          <SpectateButton className="w-full rounded-md shadow-md !h-12 sm:!h-14" onClick={onSpectate} />
 
           {mode.ui.showMintCta && (
             <a className="w-full cursor-pointer block" href={mintUrl} target="_blank" rel="noopener noreferrer">
-              <Button className="w-full rounded-md shadow-md !h-14" size="lg" forceUppercase={false}>
+              <Button className="w-full rounded-md shadow-md !h-12 sm:!h-14" size="lg" forceUppercase={false}>
                 <div className="flex items-center justify-center w-full">
                   <TreasureChest className="w-5 h-5 mr-2 fill-gold" />
                   <span>Mint Season Pass</span>
@@ -68,7 +68,7 @@ export const AccountPanel = ({
 
       {/* Background bootstrap status */}
       {isBootstrapRunning && (
-        <div className="mt-6 pt-4 border-t border-gold/20">
+        <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gold/20">
           <div className="flex items-center justify-between text-xs text-gold/60 mb-2">
             <span className="flex items-center gap-2">
               <Loader2 className="w-3 h-3 animate-spin" />
