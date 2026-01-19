@@ -1,7 +1,7 @@
 import { getCosmeticsClaimAddress, getLootChestsAddress } from "@/utils/addresses";
-import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useLandingDojo } from "../../providers/landing-dojo-provider";
 
 interface OpenChestParams {
   tokenId: bigint;
@@ -23,12 +23,7 @@ export function useOpenChest(): UseOpenChestReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const {
-    setup: {
-      systemCalls: { open_loot_chest },
-    },
-    account: { account },
-  } = useDojo();
+  const { systemCalls: { open_loot_chest }, account } = useLandingDojo();
 
   const openChest = useCallback(
     async ({ tokenId, onSuccess, onError }: OpenChestParams) => {
