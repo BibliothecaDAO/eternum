@@ -13,7 +13,7 @@ interface LandingLayoutProps {
 
 const SECTIONS = [
   { label: "Game", path: "/" },
-  // { label: "Cosmetics", path: "/cosmetics" },
+  { label: "Cosmetics", path: "/cosmetics" },
   // { label: "Account", path: "/account" },
   { label: "Player", path: "/player" },
   { label: "Markets", path: "/markets" },
@@ -176,7 +176,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
                 className="w-full hidden sm:block select-none object-contain pointer-events-none"
               />
               <div className="sm:absolute inset-0 flex items-center justify-center px-6 py-4 sm:px-8  sm:-mt-6">
-                <div className="flex w-full flex-wrap items-center justify-center gap-2">
+                <div className="flex w-full flex-wrap items-center justify-center gap-1">
                   {SECTIONS.map((section) => (
                     <NavLink
                       key={section.path}
