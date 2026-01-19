@@ -103,6 +103,7 @@ import {
   toggleMapHexView,
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
+import { qualityController, QualityChangeEvent } from "../utils/quality-controller";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 
@@ -154,7 +155,8 @@ export default class WorldmapScene extends HexagonScene {
   private wheelDirection: -1 | 0 | 1 = 0;
   private wheelStepsThisGesture = 0;
   private readonly wheelGestureTimeoutMs = 50;
-  private renderChunkSize = this.chunkGeometry.renderSize;
+  private renderChunkSize = this.getInitialRenderChunkSize();
+  private unsubscribeQuality?: () => void;
 
   private totalStructures: number = 0;
 
@@ -386,6 +388,14 @@ export default class WorldmapScene extends HexagonScene {
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
 
+  /**
+   * Get initial render chunk size from quality controller
+   */
+  private getInitialRenderChunkSize(): { width: number; height: number } {
+    const size = qualityController.getFeatures().renderChunkSize;
+    return { width: size, height: size };
+  }
+
   constructor(
     dojoContext: SetupResult,
     raycaster: Raycaster,
@@ -426,6 +436,16 @@ export default class WorldmapScene extends HexagonScene {
       hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
     });
     this.perfSimulation.setupPerformanceSimulationGUI();
+
+    // Subscribe to quality controller for dynamic render chunk size adjustments
+    this.unsubscribeQuality = qualityController.addEventListener((event: QualityChangeEvent) => {
+      if (event.changedFeature === "renderChunkSize") {
+        const newSize = event.currentFeatures.renderChunkSize;
+        console.log(`[WorldmapScene] Quality change: renderChunkSize ${this.renderChunkSize.width} -> ${newSize}`);
+        this.renderChunkSize = { width: newSize, height: newSize };
+        this.requestChunkRefresh(true);
+      }
+    });
 
     // Initialize sync simulator with dojo context for ECS injection
     initializeSyncSimulator(dojoContext);
@@ -3989,6 +4009,12 @@ export default class WorldmapScene extends HexagonScene {
 
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();
+
+    // Clean up quality controller subscription
+    if (this.unsubscribeQuality) {
+      this.unsubscribeQuality();
+      this.unsubscribeQuality = undefined;
+    }
 
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
