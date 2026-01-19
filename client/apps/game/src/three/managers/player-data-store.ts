@@ -64,6 +64,13 @@ export class PlayerDataStore {
     const mode = getGameModeConfig();
     const result = await sqlApi.fetchGlobalStructureExplorerAndGuildDetails();
     let realmsData = realms as Record<string, { name: string }>;
+
+    // Clear existing data before repopulating to prevent stale entries
+    this.addressToPlayerDataMap.clear();
+    this.structureToAddressMap.clear();
+    this.explorerToStructureMap.clear();
+    this.structureToNameMap.clear();
+
     await Promise.all(
       result.map((item) => {
         let transformedItem = {
