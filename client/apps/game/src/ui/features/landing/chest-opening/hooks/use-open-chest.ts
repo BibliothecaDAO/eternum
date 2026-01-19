@@ -23,7 +23,10 @@ export function useOpenChest(): UseOpenChestReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const { systemCalls: { open_loot_chest }, account } = useLandingDojo();
+  const {
+    systemCalls: { open_loot_chest },
+    account,
+  } = useLandingDojo();
 
   const openChest = useCallback(
     async ({ tokenId, onSuccess, onError }: OpenChestParams) => {
