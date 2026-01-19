@@ -2,8 +2,8 @@ import { RefreshCw } from "lucide-react";
 import type { DeploymentState } from "../../types/game-presets";
 import { formatDateTimeLocal, parseDateTimeLocal, getNextHourEpoch } from "../../utils/preset-to-config";
 
-// Maximum hours in the future that a game start time can be set
-const MAX_START_TIME_HOURS = 50_000;
+// Maximum hours in the future that a game start time can be set (1 week)
+const MAX_START_TIME_HOURS = 24 * 7;
 
 interface GameDetailsFormProps {
   deployment: DeploymentState;

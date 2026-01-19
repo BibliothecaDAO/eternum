@@ -183,7 +183,7 @@ export const FactoryPage = () => {
         actions.setWorldStatuses(statuses);
       });
     }
-  }, [state.worldQueue.length]);
+  }, [state.worldQueue, refreshStatuses, actions.setWorldStatuses]);
 
   // ============================================================================
   // Deployment Handlers

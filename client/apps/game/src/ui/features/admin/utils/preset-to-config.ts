@@ -37,6 +37,8 @@ export const getNextHourEpoch = (): number => {
   return Math.floor(nextHourMs / 1000);
 };
 
+const MAX_START_TIME_SECONDS = 7 * 24 * 60 * 60;
+
 /**
  * Apply preset configuration overrides to base Eternum config.
  *
@@ -64,7 +66,9 @@ export const applyPresetToConfig = (
 
   // Calculate start time
   const nowSec = Math.floor(Date.now() / 1000);
-  const effectiveStartTime = startTime > 0 ? Math.max(startTime, nowSec) : getNextHourEpoch();
+  const maxAllowed = nowSec + MAX_START_TIME_SECONDS;
+  const effectiveStartTime =
+    startTime > 0 ? Math.min(Math.max(startTime, nowSec), maxAllowed) : Math.min(getNextHourEpoch(), maxAllowed);
 
   // Calculate fee amount - only if fees are enabled
   const feeAmount = effectiveOverrides.hasFee
@@ -94,6 +98,9 @@ export const applyPresetToConfig = (
       ...baseConfig.season,
       durationSeconds: Math.max(60, durationSeconds),
       startMainAt: effectiveStartTime,
+      startSettlingAfterSeconds: effectiveOverrides.startSettlingAfterSeconds,
+      bridgeCloseAfterEndSeconds: effectiveOverrides.bridgeCloseAfterEndSeconds,
+      pointRegistrationCloseAfterEndSeconds: effectiveOverrides.pointRegistrationCloseAfterEndSeconds,
     },
 
     // Blitz / Registration - core game mode settings
@@ -108,13 +115,99 @@ export const applyPresetToConfig = (
         fee_amount: feeAmount,
         fee_token: feeToken,
         registration_count_max: effectiveOverrides.registrationCountMax,
+        registration_delay_seconds: effectiveOverrides.registrationDelaySeconds,
+        registration_period_seconds: effectiveOverrides.registrationPeriodSeconds,
+      },
+    },
+
+    // Battle settings
+    battle: {
+      ...baseConfig.battle,
+      graceTickCount: effectiveOverrides.battleGraceTickCount,
+      graceTickCountHyp: effectiveOverrides.battleGraceTickCountHyp,
+      delaySeconds: effectiveOverrides.battleDelaySeconds,
+    },
+
+    // Tick intervals
+    tick: {
+      ...baseConfig.tick,
+      defaultTickIntervalInSeconds: effectiveOverrides.defaultTickIntervalSeconds,
+      armiesTickIntervalInSeconds: effectiveOverrides.armiesTickIntervalSeconds,
+      deliveryTickIntervalInSeconds: effectiveOverrides.deliveryTickIntervalSeconds,
+    },
+
+    // Movement & speed
+    speed: {
+      ...baseConfig.speed,
+      donkey: effectiveOverrides.speedDonkey,
+      army: effectiveOverrides.speedArmy,
+    },
+
+    // Exploration settings
+    exploration: {
+      ...baseConfig.exploration,
+      reward: effectiveOverrides.explorationReward,
+      shardsMinesFailProbability: effectiveOverrides.shardsMinesFailProbability,
+      shardsMinesWinProbability: effectiveOverrides.shardsMinesWinProbability,
+      agentFindProbability: effectiveOverrides.agentFindProbability,
+      agentFindFailProbability: effectiveOverrides.agentFindFailProbability,
+      villageFindProbability: effectiveOverrides.villageFindProbability,
+      villageFindFailProbability: effectiveOverrides.villageFindFailProbability,
+      hyperstructureWinProbAtCenter: effectiveOverrides.hyperstructureWinProbAtCenter,
+      hyperstructureFailProbAtCenter: effectiveOverrides.hyperstructureFailProbAtCenter,
+      questFindProbability: effectiveOverrides.questFindProbability,
+      questFindFailProbability: effectiveOverrides.questFindFailProbability,
+    },
+
+    // Troop settings
+    troop: {
+      ...baseConfig.troop,
+      stamina: {
+        ...(baseConfig.troop?.stamina || {}),
+        staminaGainPerTick: effectiveOverrides.staminaGainPerTick,
+        staminaInitial: effectiveOverrides.staminaInitial,
+        staminaBonusValue: effectiveOverrides.staminaBonusValue,
+        staminaKnightMax: effectiveOverrides.staminaKnightMax,
+        staminaPaladinMax: effectiveOverrides.staminaPaladinMax,
+        staminaCrossbowmanMax: effectiveOverrides.staminaCrossbowmanMax,
+        staminaAttackReq: effectiveOverrides.staminaAttackReq,
+        staminaDefenseReq: effectiveOverrides.staminaDefenseReq,
+        staminaExploreWheatCost: effectiveOverrides.staminaExploreWheatCost,
+        staminaExploreFishCost: effectiveOverrides.staminaExploreFishCost,
+        staminaExploreStaminaCost: effectiveOverrides.staminaExploreStaminaCost,
+        staminaTravelWheatCost: effectiveOverrides.staminaTravelWheatCost,
+        staminaTravelFishCost: effectiveOverrides.staminaTravelFishCost,
+        staminaTravelStaminaCost: effectiveOverrides.staminaTravelStaminaCost,
+      },
+      limit: {
+        ...(baseConfig.troop?.limit || {}),
+        explorerMaxPartyCount: effectiveOverrides.explorerMaxPartyCount,
+        explorerAndGuardMaxTroopCount: effectiveOverrides.explorerAndGuardMaxTroopCount,
+        guardResurrectionDelay: effectiveOverrides.guardResurrectionDelay,
+        mercenariesTroopLowerBound: effectiveOverrides.mercenariesTroopLowerBound,
+        mercenariesTroopUpperBound: effectiveOverrides.mercenariesTroopUpperBound,
       },
     },
 
     // Settlement - single_realm_mode is a core game mode setting
     settlement: {
       ...baseConfig.settlement,
+      center: effectiveOverrides.settlementCenter,
+      base_distance: effectiveOverrides.settlementBaseDistance,
+      subsequent_distance: effectiveOverrides.settlementSubsequentDistance,
       single_realm_mode: effectiveOverrides.singleRealmMode,
+    },
+
+    // Population
+    populationCapacity: {
+      ...baseConfig.populationCapacity,
+      basePopulation: effectiveOverrides.basePopulation,
+    },
+
+    // Trade
+    trade: {
+      ...baseConfig.trade,
+      maxCount: effectiveOverrides.tradeMaxCount,
     },
   } as EternumConfig;
 };
