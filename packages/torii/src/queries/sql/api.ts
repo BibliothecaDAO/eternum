@@ -84,7 +84,10 @@ const buildCacheUrl = (baseUrl: string, path: string): URL => {
 };
 
 export class SqlApi {
-  constructor(private readonly baseUrl: string, private readonly cacheBaseUrl?: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly cacheBaseUrl?: string,
+  ) {}
 
   /**
    * Fetches quest data by entity ID from the SQL database.
