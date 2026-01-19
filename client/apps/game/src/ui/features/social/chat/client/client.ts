@@ -188,6 +188,32 @@ class ChatClient {
       console.log("Debug result:", result);
     });
   }
+
+  /**
+   * Disconnect the socket and remove all event listeners.
+   * Call this when the chat UI unmounts to prevent memory leaks.
+   */
+  disconnect(): void {
+    // Remove all event listeners registered in setupListeners()
+    this.socket.off("connect");
+    this.socket.off("disconnect");
+    this.socket.off("connect_error");
+    this.socket.off("reconnect");
+    this.socket.off("initialData");
+    this.socket.off("directMessageHistoryRequested");
+    this.socket.off("onlineUsers");
+    this.socket.off("userJoined");
+    this.socket.off("userOffline");
+
+    // Remove any one-time listeners that might be pending
+    this.socket.off("roomJoined");
+    this.socket.off("debugResult");
+
+    // Disconnect the socket
+    this.socket.disconnect();
+
+    console.log("ChatClient disconnected and all listeners removed");
+  }
 }
 
 export default ChatClient;

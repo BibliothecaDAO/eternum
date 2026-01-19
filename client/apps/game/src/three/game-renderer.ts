@@ -1,11 +1,4 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { TransitionManager } from "@/three/managers/transition-manager";
-import { SceneManager } from "@/three/scene-manager";
-import { CameraView } from "@/three/scenes/hexagon-scene";
-import HexceptionScene from "@/three/scenes/hexception";
-import HUDScene from "@/three/scenes/hud-scene";
-import WorldmapScene from "@/three/scenes/worldmap";
-import { GUIManager } from "@/three/utils/";
 import {
   CAMERA_CONFIG,
   CAMERA_FAR_PLANE,
@@ -13,6 +6,13 @@ import {
   POST_PROCESSING_CONFIG,
   type PostProcessingConfig,
 } from "@/three/constants";
+import { TransitionManager } from "@/three/managers/transition-manager";
+import { SceneManager } from "@/three/scene-manager";
+import { CameraView } from "@/three/scenes/hexagon-scene";
+import HexceptionScene from "@/three/scenes/hexception";
+import HUDScene from "@/three/scenes/hud-scene";
+import WorldmapScene from "@/three/scenes/worldmap";
+import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -589,9 +589,30 @@ export default class GameRenderer {
     const fps = samples.map((s) => s.fps).filter((f) => f > 0);
     const drawCalls = samples.map((s) => s.drawCalls);
     const triangles = samples.map((s) => s.triangles);
+    const heapUsed = samples.map((s) => s.heapUsedMB).filter((h): h is number => h !== undefined);
+    const geometries = samples.map((s) => s.geometries);
+    const textures = samples.map((s) => s.textures);
+    const programs = samples.map((s) => s.programs);
+
+    const recordingDurationSec = samples[samples.length - 1].elapsedMs / 1000;
+
+    // Calculate memory growth rate (MB/s) using linear regression for accuracy
+    let memoryGrowthMBPerSecond = 0;
+    if (heapUsed.length >= 2 && recordingDurationSec > 0) {
+      const firstHeap = heapUsed[0];
+      const lastHeap = heapUsed[heapUsed.length - 1];
+      memoryGrowthMBPerSecond = Math.round(((lastHeap - firstHeap) / recordingDurationSec) * 100) / 100;
+    }
+
+    // Calculate resource changes
+    const resourceChanges = {
+      geometries: geometries[geometries.length - 1] - geometries[0],
+      textures: textures[textures.length - 1] - textures[0],
+      programs: programs[programs.length - 1] - programs[0],
+    };
 
     const summary = {
-      recordingDuration: samples[samples.length - 1].elapsedMs / 1000,
+      recordingDuration: recordingDurationSec,
       sampleCount: samples.length,
       fps: {
         min: Math.min(...fps),
@@ -607,6 +628,16 @@ export default class GameRenderer {
         min: Math.min(...triangles),
         max: Math.max(...triangles),
         avg: Math.round(triangles.reduce((a, b) => a + b, 0) / triangles.length),
+      },
+      memory: {
+        heapUsedMB: {
+          start: heapUsed.length > 0 ? heapUsed[0] : 0,
+          end: heapUsed.length > 0 ? heapUsed[heapUsed.length - 1] : 0,
+          min: heapUsed.length > 0 ? Math.min(...heapUsed) : 0,
+          max: heapUsed.length > 0 ? Math.max(...heapUsed) : 0,
+        },
+        growthMBPerSecond: memoryGrowthMBPerSecond,
+        resourceChanges,
       },
     };
 
