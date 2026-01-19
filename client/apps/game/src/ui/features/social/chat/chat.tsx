@@ -421,7 +421,7 @@ export function ChatModule() {
 
   useConnectionEvents(chatClient);
 
-  const activeRoomId = activeTab?.type === "room" ? activeTab.roomId ?? null : null;
+  const activeRoomId = activeTab?.type === "room" ? (activeTab.roomId ?? null) : null;
 
   useEffect(() => {
     if (!chatClient) return;

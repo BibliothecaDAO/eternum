@@ -1,8 +1,8 @@
 # Global SQL Queries (Remaining, Uncached)
 
 This list covers global or near-global SQL queries that are still uncached after the recent
-leaderboard/story-events/tiles/hyperstructures caching work. "Global" here means the query
-reads most or all rows in a table or uses only broad filters (e.g., category filters).
+leaderboard/story-events/tiles/hyperstructures caching work. "Global" here means the query reads most or all rows in a
+table or uses only broad filters (e.g., category filters).
 
 ## Remaining Global Queries (Uncached)
 
