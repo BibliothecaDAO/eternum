@@ -29,11 +29,11 @@ export const StepContainer = ({
   isSettleRealm = false,
   showLogo = true,
 }: StepContainerProps) => {
-  const width = "w-[456px]";
+  const width = "w-full max-w-[456px] md:w-[456px]";
   const showToS = useUIStore((state) => state.showToS);
   const setShowToS = useUIStore((state) => state.setShowToS);
   const isTermsEnabled = env.VITE_PUBLIC_ENABLE_TOS;
-  const expandedWidth = (isTermsEnabled && showToS) || isSettleRealm ? "w-[800px]" : width;
+  const expandedWidth = (isTermsEnabled && showToS) || isSettleRealm ? "w-full max-w-[800px] md:w-[800px]" : width;
 
   const motionProps = transition
     ? {
@@ -47,9 +47,9 @@ export const StepContainer = ({
   const shouldRenderHeader = showLogo || loading;
 
   return (
-    <motion.div className="flex h-screen w-full z-50 justify-end" {...motionProps}>
+    <motion.div className="flex h-full md:h-screen w-full z-50 justify-center md:justify-end" {...motionProps}>
       <div
-        className={`bg-black/20 border-r border-[0.5px] border-gradient p-3 text-gold relative z-50 backdrop-filter backdrop-blur-[32px] my-8 mr-8 panel-wood panel-wood-corners ${
+        className={`bg-black/20 border-r border-[0.5px] border-gradient p-3 text-gold relative z-50 backdrop-filter backdrop-blur-[32px] my-0 mx-0 md:my-8 md:mr-8 panel-wood panel-wood-corners flex flex-col max-h-[calc(100vh-2rem)] md:max-h-none ${
           expandedWidth
         }`}
       >
