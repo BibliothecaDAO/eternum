@@ -948,16 +948,18 @@ mod tests {
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
     use crate::systems::combat::contracts::troop_movement::{
-        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
-        hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
+        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, troop_movement_systems,
     };
     use crate::systems::realm::utils::contracts::realm_internal_systems;
-    use crate::systems::resources::contracts::resource_systems::resource_systems;
     use crate::systems::village::contracts::village_systems;
     use crate::utils::testing::helpers::{
         MOCK_TICK_CONFIG, init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
     };
 
+    // Optimized namespace_def - only models and contracts actually used by tests
+    // Removed unused contracts: agent_discovery_systems, hyperstructure_discovery_systems,
+    // mine_discovery_systems, resource_systems, troop_movement_util_systems
+    // These are not called by troop_management_systems or the tests
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {
             namespace: DEFAULT_NS_STR(),
@@ -973,16 +975,11 @@ mod tests {
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureVillageSlots::TEST_CLASS_HASH),
                 TestResource::Event(e_TrophyProgression::TEST_CLASS_HASH),
-                // contracts
+                // contracts - only those actually used by troop_management_systems
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
-                TestResource::Contract(troop_movement_systems::TEST_CLASS_HASH),
-                TestResource::Contract(troop_movement_util_systems::TEST_CLASS_HASH),
-                TestResource::Contract(agent_discovery_systems::TEST_CLASS_HASH),
-                TestResource::Contract(hyperstructure_discovery_systems::TEST_CLASS_HASH),
-                TestResource::Contract(mine_discovery_systems::TEST_CLASS_HASH),
-                TestResource::Contract(resource_systems::TEST_CLASS_HASH),
-                TestResource::Contract(village_systems::TEST_CLASS_HASH),
-                TestResource::Contract(realm_internal_systems::TEST_CLASS_HASH),
+                TestResource::Contract(troop_movement_systems::TEST_CLASS_HASH), // used by one swap test
+                TestResource::Contract(village_systems::TEST_CLASS_HASH), // used for authorization check
+                TestResource::Contract(realm_internal_systems::TEST_CLASS_HASH), // used for authorization check
                 // libraries
                 TestResource::Library(
                     (structure_creation_library::TEST_CLASS_HASH, @"structure_creation_library", @"0_1_8"),
@@ -998,21 +995,12 @@ mod tests {
         ndef
     }
 
+    // Optimized contract_defs - only contracts actually used
     fn contract_defs() -> Span<ContractDef> {
         [
             ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
-                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-            ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_util_systems")
-                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-            ContractDefTrait::new(DEFAULT_NS(), @"agent_discovery_systems")
-                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-            ContractDefTrait::new(DEFAULT_NS(), @"hyperstructure_discovery_systems")
-                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-            ContractDefTrait::new(DEFAULT_NS(), @"mine_discovery_systems")
-                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-            ContractDefTrait::new(DEFAULT_NS(), @"resource_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"village_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
