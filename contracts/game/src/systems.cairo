@@ -101,11 +101,10 @@ pub mod utils {
     pub mod realm;
     pub mod relic;
     pub mod resource;
+    pub mod series_chest_reward;
     pub mod structure;
     pub mod troop;
     pub mod village;
-    pub mod series_chest_reward;
-
 }
 
 pub mod quest {

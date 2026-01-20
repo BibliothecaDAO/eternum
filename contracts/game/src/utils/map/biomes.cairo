@@ -1,5 +1,5 @@
 use cubit::f128::procgen::simplex3;
-use cubit::f128::types::fixed::{Fixed,FixedTrait};
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use cubit::f128::types::vec3::Vec3Trait;
 use crate::utils::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
@@ -166,11 +166,7 @@ fn MOISTURE_OCTAVE() -> Fixed {
 }
 
 fn ELEVATION_OCTAVES() -> Array<Fixed> {
-    array![
-        fc::_1(),
-        fc::_0_2(),
-        fc::_0_083333(),
-    ]
+    array![fc::_1(), fc::_0_2(), fc::_0_083333()]
 }
 
 

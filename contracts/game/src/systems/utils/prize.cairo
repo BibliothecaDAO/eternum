@@ -1,6 +1,5 @@
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use cubit::f128::math::ops as fixed_ops;
-
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use crate::utils::fixed_constants as fc;
 
 #[generate_trait]
@@ -20,7 +19,7 @@ pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
         }
     }
 
-    // Should be very nearly equivalent to _sum_of_powers. 
+    // Should be very nearly equivalent to _sum_of_powers.
     // the _sum_of_powers may be slightly higher than this one e.g _sum_of_powers(0.95, 50)
     // but it means _norm_weight will be slightly lower which will make calculations round downwards
     // and thus be more conservative in prize distribution.
@@ -31,7 +30,7 @@ pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
         for _ in 0..y {
             sum += current_power;
             current_power *= x; // Move to the next power of x
-        };
+        }
 
         sum
     }
@@ -53,7 +52,7 @@ pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
             b
         }
     }
-    
+
     fn _clamp_min_max(value: Fixed, min_value: Fixed, max_value: Fixed) -> Fixed {
         if fixed_ops::lt(value, min_value) {
             min_value
@@ -86,7 +85,9 @@ pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
         total_prize_pool_amount: u128,
     ) -> u16 {
         assert!(registered_player_count > 0, "Registered player count must be greater than zero");
-        assert!(num_players_with_non_zero_points > 0, "Number of players with non-zero points must be greater than zero");
+        assert!(
+            num_players_with_non_zero_points > 0, "Number of players with non-zero points must be greater than zero",
+        );
         assert!(registered_player_count >= num_players_with_non_zero_points, "Invalid player counts");
 
         let registered_player_count_fixed: Fixed = registered_player_count.into();
@@ -130,9 +131,8 @@ pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
 
 
     fn get_position_prize_amount(
-        prize_pool: Fixed, position: u16, sum_position_weights: Fixed, s_parameter: Fixed, winner_count: u16
+        prize_pool: Fixed, position: u16, sum_position_weights: Fixed, s_parameter: Fixed, winner_count: u16,
     ) -> u128 {
-
         if position > winner_count {
             return 0;
         }
@@ -153,17 +153,15 @@ mod tests {
     fn test_get_position_prize_amount() {
         let _1e18: u128 = 1_000_000_000_000_000_000;
         let total_entry_fee_amount: u128 = (6_300 * _1e18);
-        let total_sponsored_fee_amount: u128 = (10_000 * _1e18); 
+        let total_sponsored_fee_amount: u128 = (10_000 * _1e18);
         let total_prize_amount: u128 = total_entry_fee_amount + total_sponsored_fee_amount;
-        
+
         let registered_player_count: u16 = 36;
         let total_players_with_non_zero_points: u16 = 36;
 
         let calc_prize_pool: Fixed = FixedTrait::new(total_prize_amount, false);
         let calc_winner_count: u16 = iPrizeDistributionCalcImpl::get_winner_count(
-            registered_player_count, total_players_with_non_zero_points,
-            total_entry_fee_amount, total_prize_amount
-
+            registered_player_count, total_players_with_non_zero_points, total_entry_fee_amount, total_prize_amount,
         );
         let calc_s_parameter: Fixed = iPrizeDistributionCalcImpl::get_s_parameter(registered_player_count);
         let calc_sum_position_weights: Fixed = iPrizeDistributionCalcImpl::get_sum_rank_weights(
@@ -172,22 +170,22 @@ mod tests {
 
         let p1 = iPrizeDistributionCalcImpl::get_position_prize_amount(
             calc_prize_pool, 1, // player.position
-            calc_sum_position_weights, calc_s_parameter, calc_winner_count
+            calc_sum_position_weights, calc_s_parameter, calc_winner_count,
         );
 
         let p5 = iPrizeDistributionCalcImpl::get_position_prize_amount(
             calc_prize_pool, 5, // player.position
-            calc_sum_position_weights, calc_s_parameter, calc_winner_count
+            calc_sum_position_weights, calc_s_parameter, calc_winner_count,
         );
 
         let p14 = iPrizeDistributionCalcImpl::get_position_prize_amount(
             calc_prize_pool, 14, // player.position
-            calc_sum_position_weights, calc_s_parameter, calc_winner_count
+            calc_sum_position_weights, calc_s_parameter, calc_winner_count,
         );
 
         let p15 = iPrizeDistributionCalcImpl::get_position_prize_amount(
             calc_prize_pool, 15, // player.position
-            calc_sum_position_weights, calc_s_parameter, calc_winner_count
+            calc_sum_position_weights, calc_s_parameter, calc_winner_count,
         );
 
         assert_eq!(p1, 2196_243_834_924_649_237_442);

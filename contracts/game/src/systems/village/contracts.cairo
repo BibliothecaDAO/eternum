@@ -21,14 +21,14 @@ pub mod village_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots,
     };
+    use crate::system_libraries::structure_libraries::structure_creation_library::{
+        IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+    };
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
-    use crate::system_libraries::structure_libraries::structure_creation_library::{
-        IStructureCreationlibraryDispatcherTrait, structure_creation_library,
-    };
     use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]

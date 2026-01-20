@@ -120,9 +120,7 @@ pub impl GuardImpl of GuardTrait {
             2 => { array![GuardSlot::Charlie, GuardSlot::Delta] },
             3 => { array![GuardSlot::Bravo, GuardSlot::Charlie, GuardSlot::Delta] },
             4 => { array![GuardSlot::Alpha, GuardSlot::Bravo, GuardSlot::Charlie, GuardSlot::Delta] },
-            _ => {
-                panic!("max guards is greater than 4");
-            },
+            _ => { panic!("max guards is greater than 4"); },
         }
     }
 
@@ -508,7 +506,7 @@ pub impl TroopsImpl of TroopsTrait {
                     TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
                     TroopType::Paladin => (NEUTRAL, ZERO) // 0
                 }
-            }
+            },
         }
     }
 

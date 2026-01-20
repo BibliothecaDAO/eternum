@@ -34,7 +34,7 @@ pub mod structure_creation_library {
     };
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::map::{Tile, TileImpl, TileOccupier};
-    use crate::models::map2::{TileOpt};
+    use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordImpl, Direction};
     use crate::models::resource::resource::{
         ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
@@ -140,10 +140,13 @@ pub mod structure_creation_library {
                 || explore_village_coord {
                 for direction in structure_surrounding {
                     let neighbor_coord: Coord = coord.neighbor(direction);
-                    let neighbor_tile_opt: TileOpt = world.read_model((neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
+                    let neighbor_tile_opt: TileOpt = world
+                        .read_model((neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
                     let mut neighbor_tile: Tile = neighbor_tile_opt.into();
                     if !neighbor_tile.discovered() {
-                        let biome: Biome = get_biome(neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
+                        let biome: Biome = get_biome(
+                            neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into(),
+                        );
                         IMapImpl::explore(ref world, ref neighbor_tile, biome);
                     }
 
@@ -152,10 +155,13 @@ pub mod structure_creation_library {
                         // explore village tile so that no structure can be built on it
                         let village_coord = coord
                             .neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
-                        let village_tile_opt: TileOpt = world.read_model((village_coord.alt, village_coord.x, village_coord.y));
+                        let village_tile_opt: TileOpt = world
+                            .read_model((village_coord.alt, village_coord.x, village_coord.y));
                         let mut village_tile: Tile = village_tile_opt.into();
                         if !village_tile.discovered() {
-                            let village_biome: Biome = get_biome(village_coord.alt, village_coord.x.into(), village_coord.y.into());
+                            let village_biome: Biome = get_biome(
+                                village_coord.alt, village_coord.x.into(), village_coord.y.into(),
+                            );
                             IMapImpl::explore(ref world, ref village_tile, village_biome);
                         }
 

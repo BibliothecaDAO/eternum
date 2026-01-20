@@ -34,15 +34,15 @@ pub impl TileIntoCoord of Into<Tile, Coord> {
 #[generate_trait]
 pub impl TileImpl of TileTrait {
     fn keys_only(coord: Coord) -> Tile {
-        Tile { 
+        Tile {
             alt: coord.alt,
-            col: coord.x, 
-            row: coord.y, 
-            biome: 0, 
-            occupier_id: 0, 
-            occupier_type: 0, 
+            col: coord.x,
+            row: coord.y,
+            biome: 0,
+            occupier_id: 0,
+            occupier_type: 0,
             occupier_is_structure: false,
-            reward_extracted: false
+            reward_extracted: false,
         }
     }
 
@@ -107,7 +107,7 @@ pub enum TileOccupier {
     //
     Quest,
     Chest,
-    Spire
+    Spire,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {

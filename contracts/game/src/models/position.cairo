@@ -1,10 +1,10 @@
-use dojo::world::WorldStorage;
 use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use core::traits::{Into, TryInto};
-use crate::utils::number::NumberTrait;
+use dojo::world::WorldStorage;
 use crate::models::config::WorldConfigUtilImpl;
+use crate::utils::number::NumberTrait;
 
 // todo@credence revisit zone calculation
 
