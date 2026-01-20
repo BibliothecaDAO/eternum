@@ -350,6 +350,44 @@ pub fn init_config(ref world: WorldStorage) {
     );
 }
 
+// Modular init helpers for optimized test setup
+// These allow tests to only initialize the configs they actually need
+
+/// Initialize only troop-related configs (for guard/explorer tests)
+pub fn init_troop_config(ref world: WorldStorage) {
+    tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+    tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+    tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+}
+
+/// Initialize resource/capacity configs
+pub fn init_resource_config(ref world: WorldStorage) {
+    tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+    tstore_structure_capacity_config(ref world, MOCK_STRUCTURE_CAPACITY_CONFIG());
+    tstore_weight_config(
+        ref world,
+        array![
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+        ]
+            .span(),
+    );
+}
+
+/// Initialize minimal config for guard tests (most common test type)
+/// Skips: map_config, quest_config, village_token_config
+pub fn init_guard_test_config(ref world: WorldStorage) {
+    init_troop_config(ref world);
+    init_resource_config(ref world);
+    tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+}
+
+/// Initialize config for explorer tests (slightly more than guard tests)
+pub fn init_explorer_test_config(ref world: WorldStorage) {
+    init_guard_test_config(ref world);
+    tstore_map_config(ref world, MOCK_MAP_CONFIG());
+}
+
 pub fn tspawn_quest_tile(
     ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
 ) -> @QuestTile {
