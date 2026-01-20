@@ -20,9 +20,9 @@ import {
   uint256,
 } from "starknet";
 import { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
-import { TransactionType } from "./types";
+import { BatchedTransactionDetail, TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
-export { TransactionType };
+export { TransactionType, BatchedTransactionDetail } from "./types";
 export { TransactionCostCategory, CATEGORY_BATCH_LIMITS, getTransactionCategory } from "./batch-config";
 type TransactionFailureMeta = {
   type?: TransactionType;
@@ -213,8 +213,21 @@ class PromiseQueue {
         // Get signer from first call
         const signer = (batch[0].providerCall as any)._signer;
 
-        // Execute the batched transaction
-        const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+        // Collect batch details - count by transaction type
+        const typeCounts = new Map<TransactionType, number>();
+        batch.forEach((item) => {
+          if (item.transactionType) {
+            typeCounts.set(item.transactionType, (typeCounts.get(item.transactionType) || 0) + 1);
+          }
+        });
+
+        const batchDetails: BatchedTransactionDetail[] = Array.from(typeCounts.entries()).map(([type, count]) => ({
+          type,
+          count,
+        }));
+
+        // Execute the batched transaction with batch details
+        const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls, batchDetails);
 
         // Resolve all promises with the result
         batch.forEach((item) => item.resolve(result));
@@ -434,9 +447,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    *
    * @param signer - Account that will sign the transaction
    * @param transactionDetails - Transaction call data
+   * @param batchDetails - Optional details about batched transactions (from PromiseQueue)
    * @returns Transaction receipt
    */
-  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+  async executeAndCheckTransaction(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+    batchDetails?: BatchedTransactionDetail[],
+  ) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -461,6 +479,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const transactionMeta = {
       type: txType,
       ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
+      ...(batchDetails && batchDetails.length > 0 && { batchDetails }),
     };
 
     const span = this.startTransactionSpan(transactionDetails, transactionMeta);
