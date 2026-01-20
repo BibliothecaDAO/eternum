@@ -6650,7 +6650,7 @@
     },
     {
       "address": "0x519e2e2e62fb5e9ad88bd7742187116717efb4a883171e7968276a83270ef48",
-      "class_hash": "0x370403f886c39d4d114d0ddc58edff76f87f52d23e76a8ef61dc895ff704f61",
+      "class_hash": "0x56fa27c52ae115e4ab1f117516e95ba7f696c196b5271059dad98699614862",
       "init_calldata": [],
       "tag": "s1_eternum-prize_distribution_systems",
       "selector": "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179",
