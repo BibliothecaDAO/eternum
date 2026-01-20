@@ -135,11 +135,6 @@ pub mod mmr_systems {
                 return;
             }
 
-            // Check if MMR token is configured
-            if mmr_config.mmr_token_address.is_zero() {
-                return;
-            }
-
             // Check if this trial has already been processed
             let mut series_config: SeriesMMRConfig = world.read_model(trial_id);
             if series_config.mmr_processed {
@@ -160,26 +155,39 @@ pub mod mmr_systems {
                 return;
             }
 
-            // Get MMR token dispatcher
-            let mmr_token = IMMRTokenDispatcher { contract_address: mmr_config.mmr_token_address };
+            // Check if token is configured (optional - we can still process records without it)
+            let has_token = !mmr_config.mmr_token_address.is_zero();
 
-            // Collect current MMRs (initialize if needed)
+            // Collect current MMRs
             let mut current_mmrs: Array<u128> = array![];
             let mut players_span = players.span();
             let mut i: u32 = 0;
-            while i < player_count.into() {
-                let player = *players_span.at(i);
 
-                // Initialize player if they don't have MMR
-                if !mmr_token.has_mmr(player) {
-                    mmr_token.initialize_player(player);
-                }
+            if has_token {
+                // Get MMRs from token contract
+                let mmr_token = IMMRTokenDispatcher { contract_address: mmr_config.mmr_token_address };
 
-                // Get current MMR
-                let current_mmr: u128 = mmr_token.get_mmr(player).try_into().unwrap();
-                current_mmrs.append(current_mmr);
-                i += 1;
-            };
+                while i < player_count.into() {
+                    let player = *players_span.at(i);
+
+                    // Initialize player if they don't have MMR
+                    if !mmr_token.has_mmr(player) {
+                        mmr_token.initialize_player(player);
+                    }
+
+                    // Get current MMR
+                    let current_mmr: u128 = mmr_token.get_mmr(player).try_into().unwrap();
+                    current_mmrs.append(current_mmr);
+                    i += 1;
+                };
+            } else {
+                // Use initial MMR from config (for testing or when token not deployed)
+                // All players start at the same initial MMR
+                while i < player_count.into() {
+                    current_mmrs.append(mmr_config.initial_mmr);
+                    i += 1;
+                };
+            }
 
             // Calculate new MMRs
             let updates = MMRCalculatorImpl::calculate_game_mmr_updates(
@@ -189,7 +197,7 @@ pub mod mmr_systems {
             // Calculate median for event
             let median_mmr = MMRCalculatorImpl::calculate_median(current_mmrs.span());
 
-            // Update MMR token and store records
+            // Update records, stats, and optionally token
             let now = starknet::get_block_timestamp();
             let mut update_batch: Array<(ContractAddress, u256)> = array![];
 
@@ -220,7 +228,7 @@ pub mod mmr_systems {
                 stats.record_game(new_mmr, old_mmr, now);
                 world.write_model(@stats);
 
-                // Add to batch update
+                // Add to batch update (for token)
                 update_batch.append((player, new_mmr.into()));
 
                 // Emit player event
@@ -232,8 +240,11 @@ pub mod mmr_systems {
                 j += 1;
             };
 
-            // Batch update MMR tokens
-            mmr_token.update_mmr_batch(update_batch);
+            // Batch update MMR tokens (only if token is configured)
+            if has_token {
+                let mmr_token = IMMRTokenDispatcher { contract_address: mmr_config.mmr_token_address };
+                mmr_token.update_mmr_batch(update_batch);
+            }
 
             // Mark trial as processed
             series_config.mmr_processed = true;
