@@ -920,6 +920,7 @@ mod tests {
     use achievement::events::index::e_TrophyProgression;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::WorldStorageTrait;
+    use dojo::world::world;
     use dojo_cairo_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
@@ -927,7 +928,8 @@ mod tests {
     use crate::models::config::{
         CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig,
     };
-    use crate::models::map::{Tile, TileTrait, m_Tile};
+    use crate::models::map::{Tile, TileTrait};
+    use crate::models::map2::{TileOpt, m_TileOpt};
     use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::production::building::{m_Building, m_StructureBuildings};
     use crate::models::resource::resource::{ResourceImpl, m_Resource};
@@ -936,6 +938,7 @@ mod tests {
         m_StructureOwnerStats, m_StructureVillageSlots,
     };
     use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops};
+    use crate::models::events::e_StoryEvent;
 
     // use crate::models::weight::m_Weight; // Removed: Weight is not a model
     use crate::systems::combat::contracts::troop_management::{
@@ -945,11 +948,13 @@ mod tests {
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
         hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
+    use crate::system_libraries::biome_library::biome_library;
+    use crate::system_libraries::structure_libraries::structure_creation_library::structure_creation_library;
     use crate::systems::realm::utils::contracts::realm_internal_systems;
     use crate::systems::resources::contracts::resource_systems::resource_systems;
     use crate::systems::village::contracts::village_systems;
     use crate::utils::testing::helpers::{
-        init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
+        init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm, MOCK_TICK_CONFIG,
     };
     use starknet::ContractAddress;
     use starknet::testing::{set_account_contract_address, set_contract_address};
@@ -964,7 +969,7 @@ mod tests {
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureOwnerStats::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
-                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
+                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_TileOpt::TEST_CLASS_HASH),
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureVillageSlots::TEST_CLASS_HASH),
@@ -979,7 +984,19 @@ mod tests {
                 TestResource::Contract(resource_systems::TEST_CLASS_HASH),
                 TestResource::Contract(village_systems::TEST_CLASS_HASH),
                 TestResource::Contract(realm_internal_systems::TEST_CLASS_HASH),
+                // libraries
+                TestResource::Library((
+                    structure_creation_library::TEST_CLASS_HASH,
+                    @"structure_creation_library",
+                    @"0_1_8",
+                )),
+                TestResource::Library((
+                    biome_library::TEST_CLASS_HASH,
+                    @"biome_library",
+                    @"0_1_8",
+                )),
                 // events
+                TestResource::Event(e_StoryEvent::TEST_CLASS_HASH),
                 TestResource::Event(troop_movement_systems::e_ExplorerMoveEvent::TEST_CLASS_HASH),
             ]
                 .span(),
@@ -1035,12 +1052,12 @@ mod tests {
     #[test]
     fn guard_add_success_empty_slot() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1095,12 +1112,12 @@ mod tests {
     #[test]
     fn guard_add_success_existing_slot() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1165,7 +1182,7 @@ mod tests {
     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_season_inactive() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world); // Initialize all standard configs first
 
@@ -1183,7 +1200,7 @@ mod tests {
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Can use tspawn_realm_with_resources now that init_config was called
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
         // Grant resources needed for the call
@@ -1210,13 +1227,13 @@ mod tests {
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_not_owner() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::contract_address_const::<0x1>();
         let other_caller = starknet::contract_address_const::<0x2>();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources to the realm, though ownership check should happen first
@@ -1245,12 +1262,12 @@ mod tests {
     #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_insufficient_resources() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address(); // Use default caller
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord); // Spawn without resources
 
         // DO NOT grant resources
@@ -1277,12 +1294,12 @@ mod tests {
     #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_mismatched_type() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant enough resources for both types
@@ -1327,12 +1344,12 @@ mod tests {
     #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_mismatched_tier() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant enough resources for both tiers
@@ -1376,12 +1393,12 @@ mod tests {
     #[should_panic(expected: ("reached limit of structure guard troop count", 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_exceed_limit() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Get the limit from config
@@ -1413,12 +1430,12 @@ mod tests {
     #[test]
     fn guard_delete_success() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1463,12 +1480,12 @@ mod tests {
     #[should_panic(expected: ("guard_delete: No troops in specified slot", 'ENTRYPOINT_FAILED'))]
     fn guard_delete_empty_slot() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
@@ -1502,7 +1519,7 @@ mod tests {
     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn guard_delete_revert_season_inactive() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
@@ -1520,7 +1537,7 @@ mod tests {
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
         // No need to add troops, check should happen before slot logic
 
@@ -1542,13 +1559,13 @@ mod tests {
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn guard_delete_revert_not_owner() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::contract_address_const::<0x1>();
         let other_caller = starknet::contract_address_const::<0x2>();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Add some troops to a slot first (as owner)
@@ -1578,12 +1595,12 @@ mod tests {
     #[test]
     fn explorer_create_success() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1603,9 +1620,10 @@ mod tests {
         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
         assert(SpanTrait::len(initial_explorers) == 0, 'Initial explorer count');
 
-        let structure_coord = Coord { x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
+        let structure_coord = Coord { alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
         let spawn_coord = structure_coord.neighbor(spawn_direction);
-        let initial_spawn_tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
+        let initial_tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+        let initial_spawn_tile: Tile = initial_tile_opt.into();
         assert(initial_spawn_tile.not_occupied(), 'Spawn tile initially free');
 
         // Act
@@ -1636,7 +1654,8 @@ mod tests {
         assert(*final_explorers.at(0) == explorer_id, 'Explorer ID not in list');
 
         // Check Tile occupation
-        let final_spawn_tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
+        let final_tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+        let final_spawn_tile: Tile = final_tile_opt.into();
         assert(!final_spawn_tile.not_occupied(), 'Spawn tile should be occupied');
         assert(final_spawn_tile.occupier_id == explorer_id, 'Spawn tile occupant ID');
 
@@ -1658,12 +1677,12 @@ mod tests {
     #[should_panic(expected: ("amount must be greater than 0", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_zero_amount() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Spawn realm with resources (though not strictly needed for this check)
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -1688,12 +1707,12 @@ mod tests {
     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_season_inactive() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world); // Init standard config first
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
@@ -1739,12 +1758,12 @@ mod tests {
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_not_owner() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::contract_address_const::<0x1>();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for the call
@@ -1771,12 +1790,12 @@ mod tests {
     #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_insufficient_resources() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address(); // Use default caller
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Spawn realm WITHOUT granting any resources
         let realm_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord);
 
@@ -1802,12 +1821,12 @@ mod tests {
     #[should_panic(expected: ("reached limit of troops for your structure", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_structure_explorer_limit() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Set the structure's specific explorer limit to 1
@@ -1851,12 +1870,12 @@ mod tests {
     #[should_panic(expected: ("reached limit of troops per structure", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_global_explorer_limit() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world); // Init config first (sets global limit to 20)
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Create the realm *before* changing the global limit config
         // This ensures the structure's internal max_explorer_count is 20
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
@@ -1894,12 +1913,12 @@ mod tests {
     #[should_panic(expected: ("explorer spawn location is occupied", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_spawn_occupied() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Increase structure explorer limit to avoid hitting it first
@@ -1939,12 +1958,12 @@ mod tests {
     #[test]
     fn explorer_add_success() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources for creation and addition
@@ -1996,12 +2015,12 @@ mod tests {
     #[should_panic(expected: ("amount must be greater than 0", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_zero_amount() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
@@ -2036,12 +2055,12 @@ mod tests {
     #[should_panic(expected: ("amount must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_invalid_precision() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation and attempt
@@ -2075,12 +2094,12 @@ mod tests {
     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_season_inactive() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world); // Init standard config first
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
@@ -2128,13 +2147,13 @@ mod tests {
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_not_owner() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::contract_address_const::<0x1>();
         let other_caller = starknet::contract_address_const::<0x2>();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Spawn the realm with the intended owner
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -2174,12 +2193,12 @@ mod tests {
     #[should_panic(expected: ("explorer not adjacent to home structure", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_not_adjacent_home() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for creation and attempted addition
@@ -2209,6 +2228,9 @@ mod tests {
         let add_amount = 1 * RESOURCE_PRECISION;
         let spawn_direction = Direction::NorthEast;
 
+        // Set block timestamp so stamina can be initialized (requires non-zero tick)
+        starknet::testing::set_block_timestamp(MOCK_TICK_CONFIG().armies_tick_in_seconds);
+
         // Act
         let explorer_id = troop_management_systems
             .explorer_create(realm_id, category, tier, create_amount, spawn_direction);
@@ -2233,12 +2255,12 @@ mod tests {
     #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 2000000000", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_insufficient_resources() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_simple_realm(
             ref world, 1, realm_owner, realm_coord,
         ); // Spawn without extra resources initially
@@ -2278,12 +2300,12 @@ mod tests {
     #[should_panic(expected: ("reached limit of explorers amount per army", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_exceed_limit() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Get the limit from config
@@ -2326,12 +2348,12 @@ mod tests {
     #[test]
     fn explorer_delete_success() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources for creation
@@ -2359,14 +2381,15 @@ mod tests {
 
         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
         assert(initial_structure_base.troop_explorer_count == 1, 'Initial structure count wrong');
-        let structure_coord = Coord { x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
+        let structure_coord = Coord { alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
         let spawn_coord = structure_coord.neighbor(spawn_direction);
 
         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
         assert(initial_explorers.len() == 1, 'Initial explorer list len wrong');
         assert(*initial_explorers.at(0) == explorer_id, 'Initial explorer ID not in list');
 
-        let initial_spawn_tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
+        let initial_tile_opt2: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+        let initial_spawn_tile: Tile = initial_tile_opt2.into();
         assert(!initial_spawn_tile.not_occupied(), 'Spawn tile should be occupied');
         assert(initial_spawn_tile.occupier_id == explorer_id, 'Spawn tile occupier wrong');
 
@@ -2391,7 +2414,8 @@ mod tests {
         let final_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
         assert(final_explorers.len() == 0, 'Final explorer list len wrong');
 
-        let final_spawn_tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
+        let final_tile_opt2: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+        let final_spawn_tile: Tile = final_tile_opt2.into();
         assert(final_spawn_tile.not_occupied(), 'Spawn tile should be free');
         assert(final_spawn_tile.occupier_id == 0, 'Spawn tile occupier should be 0');
     }
@@ -2402,12 +2426,12 @@ mod tests {
     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_delete_revert_season_inactive() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world); // Init standard config first
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
@@ -2454,13 +2478,13 @@ mod tests {
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn explorer_delete_revert_not_owner() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::contract_address_const::<0x1>();
         let other_caller = starknet::contract_address_const::<0x2>();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Spawn the realm with the intended owner
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
@@ -2496,7 +2520,7 @@ mod tests {
     #[test]
     fn explorer_swap_success() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
@@ -2505,9 +2529,9 @@ mod tests {
         assert(troop_limit_config_check.explorer_max_party_count == 20, 'Config Max Party Count Check');
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { x: 13, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
         // Verify structure max count after creation
@@ -2590,7 +2614,7 @@ mod tests {
     #[test]
     fn explorer_swap_success_delete_source() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
@@ -2599,9 +2623,9 @@ mod tests {
         assert(troop_limit_config_check.explorer_max_party_count == 20, 'Config Max Party Count Check');
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { x: 13, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
         // Verify structure max count after creation
@@ -2676,14 +2700,14 @@ mod tests {
     #[should_panic(expected: ("count must be greater than 0", 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_zero_amount() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { x: 13, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
@@ -2722,13 +2746,13 @@ mod tests {
     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_season_inactive() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
-        let realm2_coord = Coord { x: 13, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
@@ -2784,15 +2808,15 @@ mod tests {
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_not_owner() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::contract_address_const::<0x1>();
         let other_caller = starknet::contract_address_const::<0x2>();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { x: 13, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
@@ -2835,14 +2859,14 @@ mod tests {
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_different_owners() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner_1 = starknet::contract_address_const::<0x1>();
         let realm_owner_2 = starknet::contract_address_const::<0x2>();
-        let realm_coord_1 = Coord { x: 10, y: 10 };
-        let realm_coord_2 = Coord { x: 13, y: 10 };
+        let realm_coord_1 = Coord { alt: false, x: 10, y: 10 };
+        let realm_coord_2 = Coord { alt: false, x: 13, y: 10 };
         let realm_id_1 = tspawn_realm_with_resources(ref world, 1, realm_owner_1, realm_coord_1);
         let realm_id_2 = tspawn_realm_with_resources(ref world, 2, realm_owner_2, realm_coord_2);
 
@@ -2885,14 +2909,14 @@ mod tests {
     #[should_panic(expected: ("to explorer is not at the target coordinate", 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_not_adjacent() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { x: 15, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 15, y: 10 };
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
@@ -2931,14 +2955,14 @@ mod tests {
     #[should_panic(expected: ("insufficient troops in source explorer", 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_insufficient_troops() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { x: 13, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
@@ -2976,14 +3000,14 @@ mod tests {
     #[should_panic(expected: ("count must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_invalid_precision() {
         // Arrange
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         init_config(ref world);
 
         let realm_owner = starknet::get_contract_address();
-        let realm_coord = Coord { x: 10, y: 10 };
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { x: 13, y: 10 };
+        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers

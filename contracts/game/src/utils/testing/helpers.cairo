@@ -1,7 +1,9 @@
 use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, deploy_contract, spawn_test_world};
+use dojo::world::world;
+use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
+use starknet::syscalls::deploy_syscall;
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
@@ -10,6 +12,7 @@ use crate::models::config::{
     WorldConfigUtilImpl,
 };
 use crate::models::map::{Tile, TileOccupier};
+use crate::models::map2::TileOpt;
 use crate::models::position::Coord;
 use crate::models::quest::{Level, QuestTile};
 use crate::models::resource::resource::{
@@ -20,7 +23,7 @@ use crate::models::stamina::{StaminaImpl, StaminaTrait};
 use crate::models::structure::{
     Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots,
 };
-use crate::models::troop::{ExplorerTroops, GuardTroops, TroopTier, TroopType, Troops};
+use crate::models::troop::{ExplorerTroops, GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
 use crate::models::weight::Weight;
 use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
@@ -34,7 +37,10 @@ fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAd
         admin.into(), admin.into(), starknet::get_contract_address().into(), 2, starknet::get_contract_address().into(),
         admin.into(),
     ];
-    let mock_village_pass_address = deploy_contract(EternumVillagePassMock::TEST_CLASS_HASH, mock_calldata.span());
+    let salt = core::testing::get_available_gas();
+    let (mock_village_pass_address, _) = deploy_syscall(
+        EternumVillagePassMock::TEST_CLASS_HASH, salt.into(), mock_calldata.span(), false
+    ).unwrap();
     mock_village_pass_address
 }
 
@@ -192,7 +198,7 @@ pub fn tgrant_resources(ref world: WorldStorage, to: ID, resources: Span<(u8, u1
 
 
 pub fn tspawn_world(namespace_def: NamespaceDef, contract_defs: Span<ContractDef>) -> WorldStorage {
-    let mut world = spawn_test_world([namespace_def].span());
+    let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def].span());
     world.sync_perms_and_inits(contract_defs);
     world.dispatcher.uuid();
     add_test_quest_game(ref world);
@@ -415,7 +421,8 @@ pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: C
 }
 
 pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddress, coord: Coord) -> ID {
-    let tile: Tile = world.read_model((coord.x, coord.y));
+    let tile_opt: TileOpt = world.read_model((coord.alt, coord.x, coord.y));
+    let tile: Tile = tile_opt.into();
     assert!(tile.occupier_id == 0, "Can't spawn village on occupied tile");
 
     let mut uuid = world.dispatcher.uuid();
@@ -478,7 +485,7 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
     };
     world.write_model_test(@structure);
 
-    let realm_coord = Coord { x: 0, y: 0 };
+    let realm_coord = Coord { alt: false, x: 0, y: 0 };
 
     let structure_village_slots = StructureVillageSlots {
         connected_realm_entity_id: realm_id,
@@ -489,11 +496,13 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
     world.write_model_test(@structure_village_slots);
 
     // Ensure the tile is marked as occupied by the village
-    let mut tile: Tile = world.read_model((coord.x, coord.y));
+    let tile_opt: TileOpt = world.read_model((coord.alt, coord.x, coord.y));
+    let mut tile: Tile = tile_opt.into();
     tile.occupier_type = TileOccupier::Village.into();
     tile.occupier_id = village_id;
     tile.occupier_is_structure = true;
-    world.write_model_test(@tile);
+    let updated_tile_opt: TileOpt = tile.into();
+    world.write_model_test(@updated_tile_opt);
 
     village_id
 }

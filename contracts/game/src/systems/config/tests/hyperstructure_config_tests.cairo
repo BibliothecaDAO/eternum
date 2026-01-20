@@ -37,7 +37,7 @@
 // //     // starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 
 // //     // let hyperstructure_type = 1_u8;
-// //     // let hyperstructure_coord = Coord { x: 20, y: 30 };
+// //     // let hyperstructure_coord = Coord { alt: false, x: 20, y: 30 };
 // //     // let completion_cost = array![(ResourceTypes::STONE, 10_u128)].span();
 
 // //     // // let mut world.uuid start from 1

@@ -104,7 +104,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -251,7 +251,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -383,7 +383,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -499,7 +499,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -616,7 +616,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -737,7 +737,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -857,7 +857,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -992,7 +992,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -1124,7 +1124,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -1269,7 +1269,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -1385,7 +1385,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -1507,7 +1507,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -1625,7 +1625,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -1762,7 +1762,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -1897,7 +1897,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -2015,7 +2015,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -2139,7 +2139,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -2263,7 +2263,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
@@ -2384,7 +2384,7 @@
 //         ////////////////////////////////////////////////////
 
 //         let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
-//         let first_realm_coord = Coord { x: 80, y: 80 };
+//         let first_realm_coord = Coord { alt: false, x: 80, y: 80 };
 //         let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
 
 //         ////////////////  CREATE 2nd REALM  ////////////////
