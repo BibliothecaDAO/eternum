@@ -48,7 +48,9 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
       <div className="flex flex-col h-full items-center justify-center text-center">
         <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-danger/60 mb-3 sm:mb-4" />
         <h2 className="text-lg sm:text-xl font-bold text-gold mb-2">Unable to Start</h2>
-        <p className="text-xs sm:text-sm text-white/70 max-w-md mb-2">Something went wrong while preparing the world.</p>
+        <p className="text-xs sm:text-sm text-white/70 max-w-md mb-2">
+          Something went wrong while preparing the world.
+        </p>
         {error.message && (
           <p className="text-xs text-white/50 max-w-md mb-4 font-mono bg-black/20 px-3 py-2 rounded">{error.message}</p>
         )}

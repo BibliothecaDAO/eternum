@@ -103,7 +103,9 @@ export const AvatarCreationPanel = ({ playerId, walletAddress, displayName, onCo
     <div className="flex flex-col h-full">
       <div className="text-center mb-4 sm:mb-6">
         <h2 className="text-lg sm:text-xl font-bold text-gold">Create Your Avatar</h2>
-        <p className="text-xs sm:text-sm text-gold/60 mt-1">Personalize your identity with an AI-generated avatar (optional)</p>
+        <p className="text-xs sm:text-sm text-gold/60 mt-1">
+          Personalize your identity with an AI-generated avatar (optional)
+        </p>
       </div>
 
       <div className="flex-1 flex flex-col justify-center overflow-y-auto">

@@ -404,7 +404,9 @@ export const WorldSelectorModal = ({
     const countLabel =
       isLoading && registrationCount == null ? "Checking players…" : `${registrationCount ?? "—"} registered`;
     return (
-      <div className={`${className} flex flex-wrap items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] text-white/70`}>
+      <div
+        className={`${className} flex flex-wrap items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] text-white/70`}
+      >
         <span className="inline-flex items-center gap-1.5">
           <Users className="w-3 h-3" />
           {countLabel}
@@ -630,7 +632,9 @@ export const WorldSelectorModal = ({
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center gap-2 mb-2 sm:mb-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Factory Games</div>
+                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">
+                  Factory Games
+                </div>
                 {factoryLoading && (
                   <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide bg-gold/10 text-gold border border-gold/30">
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -816,7 +820,9 @@ export const WorldSelectorModal = ({
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center gap-2 mb-2 sm:mb-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Recent Games</div>
+                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">
+                  Recent Games
+                </div>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
               </div>
 
@@ -833,7 +839,9 @@ export const WorldSelectorModal = ({
                   <div className="rounded-lg border-2 border-dashed border-gold/20 p-4 sm:p-6 text-center">
                     <Globe className="w-10 h-10 sm:w-12 sm:h-12 text-gold/30 mx-auto mb-2" />
                     <p className="text-xs sm:text-sm text-gold/60">No recent games yet</p>
-                    <p className="text-[10px] sm:text-xs text-gold/40 mt-1">Enter a world name to begin your conquest</p>
+                    <p className="text-[10px] sm:text-xs text-gold/40 mt-1">
+                      Enter a world name to begin your conquest
+                    </p>
                   </div>
                 )}
                 {(() => {
