@@ -17,22 +17,21 @@ pub trait IRelicSystems<T> {
 
 #[dojo::contract]
 pub mod relic_systems {
-    use starknet::ContractAddress;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, relic_essence_cost};
     use crate::models::config::{
-        CombatConfigImpl, MapConfig, SeasonConfig, SeasonConfigImpl, TickImpl, TroopStaminaConfig, WorldConfigUtilImpl,
-        VictoryPointsGrantConfig
+        CombatConfigImpl, MapConfig, SeasonConfig, SeasonConfigImpl, TickImpl, TroopStaminaConfig,
+        VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
-    use crate::models::events::{PointsRegisteredStory, Story, StoryEvent, PointsActivity};
-    use crate::models::map::{Tile, TileImpl, TileOccupier};
-    use crate::models::map2::{TileOpt};
-    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
+    use crate::models::map::{Tile, TileImpl, TileOccupier};
+    use crate::models::map2::TileOpt;
+    use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, TravelTrait};
     use crate::models::relic::{RELIC_EFFECT, RelicEffectImpl};
     use crate::models::resource::production::production::ProductionBoostBonus;
@@ -45,13 +44,13 @@ pub mod relic_systems {
     };
     use crate::models::troop::{ExplorerTroops, GuardImpl, GuardTroops};
     use crate::models::weight::Weight;
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::relic::iRelicChestResourceFactoryImpl;
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use crate::utils::random::VRFImpl;
-    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::RelicRecipientTypeParam;
 
 
@@ -224,7 +223,7 @@ pub mod relic_systems {
             troop_stamina_config: TroopStaminaConfig,
         ) {
             assert!(explorer.coord.alt == false, "Eternum: explorer must be on surface to apply relic");
-            
+
             // refill stamina
             explorer
                 .troops

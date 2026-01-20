@@ -1,8 +1,7 @@
 use core::array::SpanTrait;
 use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
-use dojo::world::WorldStorage;
-use dojo::world::IWorldDispatcherTrait;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
 use crate::constants::{all_resource_ids, is_bank};
 use crate::models::config::{SpeedImpl, WorldConfigUtilImpl};

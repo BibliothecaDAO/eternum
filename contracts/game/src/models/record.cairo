@@ -34,11 +34,10 @@ pub struct BlitzFeeSplitRecord {
 
 #[generate_trait]
 pub impl BlitzFeeSplitRecordImpl of BlitzFeeSplitRecordTrait {
-
     fn creator_fee_percent() -> u64 {
         PercentageValueImpl::_15()
     }
-    
+
     fn velords_fee_percent() -> u64 {
         PercentageValueImpl::_15()
     }
@@ -60,7 +59,7 @@ pub impl BlitzFeeSplitRecordImpl of BlitzFeeSplitRecordTrait {
         assert!(velords_fee > 0, "Eternum: velords_fee is zero");
         assert!(players_fee > 0, "Eternum: players_fee is zero");
 
-        // todo: add velords amount here 
+        // todo: add velords amount here
         self.total_sponsorship = total_bonus_amount;
         self.velords_receives_amount = velords_fee;
         self.creator_receives_amount = creator_fee;

@@ -27,6 +27,7 @@ pub mod resource_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, SpeedImpl};
@@ -45,7 +46,6 @@ pub mod resource_systems {
     use crate::systems::utils::donkey::iDonkeyImpl;
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::troop::iExplorerImpl;
-    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]
