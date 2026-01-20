@@ -1,6 +1,7 @@
 use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{ResourceTypes, blitz_produceable_resources};
 use crate::models::config::{
@@ -19,13 +20,12 @@ use crate::models::structure::{
 };
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 use crate::models::weight::Weight;
-use crate::systems::utils::structure::iStructureImpl;
-use crate::systems::utils::troop::iMercenariesImpl;
-use starknet::ContractAddress;
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,
 };
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
 
 #[generate_trait]
 pub impl iVillageImpl of iVillageTrait {

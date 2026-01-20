@@ -31,7 +31,7 @@ pub mod troop_battle_systems {
         BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use crate::models::events::{BattleStory, BattleType, BattleStructureType, Story, StoryEvent};
+    use crate::models::events::{BattleStory, BattleStructureType, BattleType, Story, StoryEvent};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{CoordTrait, Direction};
     use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
@@ -42,14 +42,14 @@ pub mod troop_battle_systems {
     };
     use crate::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
     use crate::models::weight::Weight;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
-    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-    use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
     use super::super::super::super::super::models::troop::GuardTrait;
 
 
@@ -139,7 +139,9 @@ pub mod troop_battle_systems {
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+                .get_biome(
+                    explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into(),
+                );
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
 
@@ -303,8 +305,7 @@ pub mod troop_battle_systems {
                 battle_type: BattleType::ExplorerVsExplorer,
                 attacker_id: explorer_aggressor.explorer_id,
                 attacker_structure: BattleStructureType {
-                    structure_category: StructureCategory::None.into(),
-                    structure_taken: false,
+                    structure_category: StructureCategory::None.into(), structure_taken: false,
                 },
                 attacker_owner_id: explorer_aggressor.owner,
                 attacker_owner_address: explorer_aggressor_owner_address,
@@ -314,8 +315,7 @@ pub mod troop_battle_systems {
                 attacker_troops_lost: explorer_aggressor_troop_count_before_attack - explorer_aggressor_troops.count,
                 defender_id: explorer_defender.explorer_id,
                 defender_structure: BattleStructureType {
-                    structure_category: StructureCategory::None.into(),
-                    structure_taken: false,
+                    structure_category: StructureCategory::None.into(), structure_taken: false,
                 },
                 defender_owner_id: explorer_defender.owner,
                 defender_owner_address: explorer_defender_owner_address,
@@ -431,7 +431,11 @@ pub mod troop_battle_systems {
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(guarded_structure.coord().alt, guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
+                .get_biome(
+                    guarded_structure.coord().alt,
+                    guarded_structure.coord().x.into(),
+                    guarded_structure.coord().y.into(),
+                );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::get_tick_interval(ref world);
@@ -568,8 +572,7 @@ pub mod troop_battle_systems {
                 battle_type: BattleType::ExplorerVsGuard,
                 attacker_id: explorer_id,
                 attacker_structure: BattleStructureType {
-                    structure_category: StructureCategory::None.into(),
-                    structure_taken: false,
+                    structure_category: StructureCategory::None.into(), structure_taken: false,
                 },
                 attacker_owner_id: explorer_aggressor.owner,
                 attacker_owner_address: explorer_aggressor_owner_address,
@@ -691,7 +694,9 @@ pub mod troop_battle_systems {
             // aggressor attacks defender
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+                .get_biome(
+                    explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into(),
+                );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
@@ -840,8 +845,7 @@ pub mod troop_battle_systems {
                     - structure_guard_aggressor_troops.count,
                 defender_id: explorer_id,
                 defender_structure: BattleStructureType {
-                    structure_category: StructureCategory::None.into(),
-                    structure_taken: false,
+                    structure_category: StructureCategory::None.into(), structure_taken: false,
                 },
                 defender_owner_id: explorer_defender.owner,
                 defender_owner_address: explorer_defender_owner_address,

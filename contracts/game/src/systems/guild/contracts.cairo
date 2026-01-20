@@ -62,12 +62,12 @@ pub mod guild_systems {
     use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
+    use starknet::ContractAddress;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::SeasonConfigImpl;
     use crate::models::guild::{Guild, GuildMember, GuildWhitelist};
     use crate::models::structure::StructureOwnerStats;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
-    use starknet::ContractAddress;
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
         fn create_guild(ref self: ContractState, public: bool, name: felt252) {

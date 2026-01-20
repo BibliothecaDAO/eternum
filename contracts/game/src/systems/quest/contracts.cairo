@@ -1,10 +1,13 @@
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::position::Coord;
 use crate::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::systems::quest::constants::{
     CAPACITY_SELECTOR_SALT, GAME_SELECTOR_SALT, LEVEL_SELECTOR_SALT, MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY,
     QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
@@ -12,9 +15,6 @@ use crate::systems::quest::constants::{
 use crate::systems::utils::map::IMapImpl;
 use crate::systems::utils::troop::iExplorerImpl;
 use crate::utils::map::biomes::Biome;
-use starknet::ContractAddress;
-use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 #[starknet::interface]
 pub trait IQuestSystems<T> {
@@ -57,13 +57,12 @@ pub mod quest_systems {
     use core::array::ArrayTrait;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
     use crate::models::map::Tile;
     use crate::models::position::TravelTrait;
-    use crate::models::quest::{
-        Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestTile,
-    };
+    use crate::models::quest::{Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestTile};
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -71,7 +70,6 @@ pub mod quest_systems {
     use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;
     use crate::systems::quest::constants::VERSION;
-    use starknet::ContractAddress;
     use super::{IBudokanGameDispatcher, IBudokanGameDispatcherTrait, iQuestDiscoveryImpl};
 
     fn dojo_init(self: @ContractState) {
@@ -494,9 +492,11 @@ mod tests {
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{CombatConfigImpl, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig};
     use crate::models::map::{Tile, TileImpl, TileOccupier, m_BiomeDiscovered};
+    use crate::models::map2::{TileOpt, m_TileOpt};
     use crate::models::position::{Coord, Direction, TravelTrait};
     use crate::models::quest::{
         Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
@@ -506,7 +506,6 @@ mod tests {
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, m_Resource,
     };
-    use crate::models::map2::{TileOpt, m_TileOpt};
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
         StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl, m_Structure,
@@ -535,7 +534,6 @@ mod tests {
         tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_village, tspawn_village_explorer,
         tspawn_world,
     };
-    use starknet::ContractAddress;
 
 
     fn namespace_def() -> NamespaceDef {

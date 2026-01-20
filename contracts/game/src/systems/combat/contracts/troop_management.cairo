@@ -62,6 +62,7 @@ pub mod troop_management_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use crate::models::config::{
@@ -73,7 +74,7 @@ pub mod troop_management_systems {
         GuardAddStory, GuardDeleteStory, GuardExplorerSwapStory, Story, StoryEvent,
     };
     use crate::models::map::{Tile, TileImpl};
-    use crate::models::map2::{TileOpt};
+    use crate::models::map2::TileOpt;
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::{
@@ -91,7 +92,6 @@ pub mod troop_management_systems {
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
-    use starknet::ContractAddress;
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
@@ -145,7 +145,7 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
-                true
+                true,
             );
 
             StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
@@ -733,7 +733,7 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
-                false
+                false,
             );
             StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
             StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);
@@ -919,15 +919,17 @@ pub mod troop_management_systems {
 mod tests {
     use achievement::events::index::e_TrophyProgression;
     use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::WorldStorageTrait;
-    use dojo::world::world;
+    use dojo::world::{WorldStorageTrait, world};
     use dojo_cairo_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
+    use starknet::ContractAddress;
+    use starknet::testing::{set_account_contract_address, set_contract_address};
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{
         CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig,
     };
+    use crate::models::events::e_StoryEvent;
     use crate::models::map::{Tile, TileTrait};
     use crate::models::map2::{TileOpt, m_TileOpt};
     use crate::models::position::{Coord, CoordTrait, Direction};
@@ -938,7 +940,8 @@ mod tests {
         m_StructureOwnerStats, m_StructureVillageSlots,
     };
     use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops};
-    use crate::models::events::e_StoryEvent;
+    use crate::system_libraries::biome_library::biome_library;
+    use crate::system_libraries::structure_libraries::structure_creation_library::structure_creation_library;
 
     // use crate::models::weight::m_Weight; // Removed: Weight is not a model
     use crate::systems::combat::contracts::troop_management::{
@@ -948,16 +951,12 @@ mod tests {
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
         hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
-    use crate::system_libraries::biome_library::biome_library;
-    use crate::system_libraries::structure_libraries::structure_creation_library::structure_creation_library;
     use crate::systems::realm::utils::contracts::realm_internal_systems;
     use crate::systems::resources::contracts::resource_systems::resource_systems;
     use crate::systems::village::contracts::village_systems;
     use crate::utils::testing::helpers::{
-        init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm, MOCK_TICK_CONFIG,
+        MOCK_TICK_CONFIG, init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
     };
-    use starknet::ContractAddress;
-    use starknet::testing::{set_account_contract_address, set_contract_address};
 
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {
@@ -985,16 +984,10 @@ mod tests {
                 TestResource::Contract(village_systems::TEST_CLASS_HASH),
                 TestResource::Contract(realm_internal_systems::TEST_CLASS_HASH),
                 // libraries
-                TestResource::Library((
-                    structure_creation_library::TEST_CLASS_HASH,
-                    @"structure_creation_library",
-                    @"0_1_8",
-                )),
-                TestResource::Library((
-                    biome_library::TEST_CLASS_HASH,
-                    @"biome_library",
-                    @"0_1_8",
-                )),
+                TestResource::Library(
+                    (structure_creation_library::TEST_CLASS_HASH, @"structure_creation_library", @"0_1_8"),
+                ),
+                TestResource::Library((biome_library::TEST_CLASS_HASH, @"biome_library", @"0_1_8")),
                 // events
                 TestResource::Event(e_StoryEvent::TEST_CLASS_HASH),
                 TestResource::Event(troop_movement_systems::e_ExplorerMoveEvent::TEST_CLASS_HASH),
@@ -1620,7 +1613,9 @@ mod tests {
         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
         assert(SpanTrait::len(initial_explorers) == 0, 'Initial explorer count');
 
-        let structure_coord = Coord { alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
+        let structure_coord = Coord {
+            alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y,
+        };
         let spawn_coord = structure_coord.neighbor(spawn_direction);
         let initial_tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
         let initial_spawn_tile: Tile = initial_tile_opt.into();
@@ -2381,7 +2376,9 @@ mod tests {
 
         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
         assert(initial_structure_base.troop_explorer_count == 1, 'Initial structure count wrong');
-        let structure_coord = Coord { alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
+        let structure_coord = Coord {
+            alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y,
+        };
         let spawn_coord = structure_coord.neighbor(spawn_direction);
 
         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
