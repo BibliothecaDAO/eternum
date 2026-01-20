@@ -5,6 +5,7 @@ import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
+  AnimationClip,
   AnimationAction,
   AnimationMixer,
   Box3,
@@ -167,9 +168,9 @@ export class ArmyModel {
    * Returns undefined if no match found.
    */
   private findAnimationByName(
-    animations: { name: string }[],
+    animations: AnimationClip[],
     patterns: string[],
-  ): (typeof animations)[number] | undefined {
+  ): AnimationClip | undefined {
     const lowerPatterns = patterns.map((p) => p.toLowerCase());
     return animations.find((clip) => lowerPatterns.some((pattern) => clip.name.toLowerCase().includes(pattern)));
   }
