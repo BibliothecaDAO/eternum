@@ -496,6 +496,7 @@ mod tests {
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{CombatConfigImpl, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig};
     use crate::models::map::{Tile, TileImpl, TileOccupier, m_BiomeDiscovered};
+    use crate::models::map2::{TileOpt, m_TileOpt};
     use crate::models::position::{Coord, Direction, TravelTrait};
     use crate::models::quest::{
         Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
@@ -505,7 +506,6 @@ mod tests {
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, m_Resource,
     };
-    use crate::models::map2::{TileOpt, m_TileOpt};
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
         StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl, m_Structure,
