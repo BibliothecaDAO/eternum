@@ -274,14 +274,11 @@ export class HighlightHexManager {
       this.instancedMesh.parent.remove(this.instancedMesh);
     }
 
-    // Dispose the instanced mesh resources
-    // Note: We don't dispose geometry since it's from the pool
+    // Dispose the material (geometry is from the pool, don't dispose it)
     this.material.dispose();
 
-    // Dispose instance color buffer
-    if (this.instancedMesh.instanceColor) {
-      (this.instancedMesh.instanceColor as InstancedBufferAttribute).array = null as unknown as Float32Array;
-    }
+    // Dispose the instanced mesh (handles instance matrix/color buffers)
+    this.instancedMesh.dispose();
 
     // Clear active instances
     this.activeInstances = [];

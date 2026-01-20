@@ -82,10 +82,10 @@ export function ChatModule() {
       }
     }
 
-    // Cleanup any existing socket connection
+    // Cleanup any existing socket connection (use disconnect() for proper listener cleanup)
     if (chatClientRef.current) {
       chatLogger.log("Disconnecting previous chat client");
-      chatClientRef.current.socket.disconnect();
+      chatClientRef.current.disconnect();
     }
 
     chatLogger.log("Initializing new chat client for", username);
@@ -428,7 +428,7 @@ export function ChatModule() {
 
     return () => {
       chatLogger.log("Cleaning up chat client");
-      chatClient.socket.disconnect();
+      chatClient.disconnect();
     };
   }, [chatClient]);
 

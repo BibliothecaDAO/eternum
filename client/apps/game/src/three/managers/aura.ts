@@ -94,10 +94,15 @@ export class Aura {
    * Only disposes shared resources when the last instance is disposed.
    */
   dispose(): void {
+    // Prevent count from going negative (guard against double-dispose)
+    if (auraInstanceCount <= 0) {
+      return;
+    }
+
     auraInstanceCount--;
 
     // Only dispose shared resources when no instances remain
-    if (auraInstanceCount <= 0) {
+    if (auraInstanceCount === 0) {
       if (sharedAuraGeometry) {
         sharedAuraGeometry.dispose();
         sharedAuraGeometry = null;
@@ -110,7 +115,6 @@ export class Aura {
         sharedAuraTexture.dispose();
         sharedAuraTexture = null;
       }
-      auraInstanceCount = 0;
     }
   }
 }
