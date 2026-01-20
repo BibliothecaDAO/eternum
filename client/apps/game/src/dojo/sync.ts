@@ -13,8 +13,8 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
-import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
+import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
@@ -26,6 +26,7 @@ const GLOBAL_NON_SPATIAL_MODELS: string[] = [
   "s1_eternum-ExplorerMoveEvent",
   "s1_eternum-ExplorerRewardEvent",
   "s1_eternum-BattleEvent",
+  "s1_eternum-OpenRelicChestEvent",
   // Guilds
   "s1_eternum-Guild",
   "s1_eternum-GuildMember",
