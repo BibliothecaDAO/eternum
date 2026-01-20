@@ -1384,7 +1384,6 @@ export const setFactoryAddress = async (config: Config) => {
     return;
   }
 
-
   console.log(
     chalk.cyan(`
   ⚡ Factory Address

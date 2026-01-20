@@ -1,0 +1,2 @@
+packages/torii:build:cd /Users/os/Documents/code/biblio/eternum/packages/torii && npm run build
+packages/torii:tsc:cd /Users/os/Documents/code/biblio/eternum/packages/torii && npx tsc --noEmit

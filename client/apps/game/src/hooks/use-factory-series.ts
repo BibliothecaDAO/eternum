@@ -2,12 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Chain } from "@contracts";
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { normalizeHex } from "@/runtime/world/normalize";
-import {
-  decodePaddedFeltAscii,
-  extractGameNumberFromRow,
-  extractNameFelt,
-  fetchFactoryRows,
-} from "./factory-sql";
+import { decodePaddedFeltAscii, extractGameNumberFromRow, extractNameFelt, fetchFactoryRows } from "./factory-sql";
 
 const SERIES_BY_OWNER_QUERY = (ownerHex: string) =>
   `SELECT name FROM [wf-Series] WHERE owner = "${ownerHex}" LIMIT 50;`;

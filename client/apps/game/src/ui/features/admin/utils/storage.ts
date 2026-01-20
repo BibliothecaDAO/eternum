@@ -135,10 +135,7 @@ export const persistWorldSeriesMetadata = (map: Record<string, WorldSeriesMetada
   } catch {}
 };
 
-export const updateWorldSeriesMetadata = (
-  worldName: string,
-  metadata: WorldSeriesMetadata | null,
-) => {
+export const updateWorldSeriesMetadata = (worldName: string, metadata: WorldSeriesMetadata | null) => {
   try {
     const existing = getStoredWorldSeriesMetadata();
     if (metadata && (metadata.seriesName || metadata.seriesGameNumber)) {

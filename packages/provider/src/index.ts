@@ -107,25 +107,30 @@ class PromiseQueue {
   private scheduleProcessing() {
     if (this.processing) return;
 
-    if (this.batchTimeout) {
-      clearTimeout(this.batchTimeout);
-      this.batchTimeout = null;
-    }
-
+    // Process immediately if queue is at or above batch size
     if (this.queue.length >= this.MAX_BATCH_SIZE) {
+      if (this.batchTimeout) {
+        clearTimeout(this.batchTimeout);
+        this.batchTimeout = null;
+      }
       void this.processQueue();
       return;
     }
 
+    // If no delay configured, process immediately
     if (this.BATCH_DELAY <= 0) {
       void this.processQueue();
       return;
     }
 
-    this.batchTimeout = setTimeout(() => {
-      this.batchTimeout = null;
-      void this.processQueue();
-    }, this.BATCH_DELAY);
+    // Only start timer if one isn't already running (first-in timestamp)
+    // This ensures earlier transactions aren't delayed by later ones
+    if (!this.batchTimeout) {
+      this.batchTimeout = setTimeout(() => {
+        this.batchTimeout = null;
+        void this.processQueue();
+      }, this.BATCH_DELAY);
+    }
   }
 
   private async processQueue() {

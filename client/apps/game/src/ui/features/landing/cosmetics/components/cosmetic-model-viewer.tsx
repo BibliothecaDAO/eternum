@@ -80,9 +80,11 @@ export const CosmeticModelViewer = ({
 
     const camera = new THREE.PerspectiveCamera(preset.fov, 1, 0.1, 100);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
     renderer.shadowMap.enabled = false;
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
@@ -90,12 +92,12 @@ export const CosmeticModelViewer = ({
     renderer.domElement.style.touchAction = variant === "showcase" ? "none" : "auto";
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, variant === "card" ? 0.85 : 0.95);
-    const keyLight = new THREE.DirectionalLight(0xffffff, variant === "card" ? 1.15 : 1.35);
+    const ambientLight = new THREE.AmbientLight(0xffffff, variant === "card" ? 1.2 : 1.4);
+    const keyLight = new THREE.DirectionalLight(0xffffff, variant === "card" ? 1.5 : 1.8);
     keyLight.position.set(6, 10, 8);
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.45);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.7);
     fillLight.position.set(-6, 5, -4);
-    const rimLight = new THREE.DirectionalLight(0x88bbff, 0.35);
+    const rimLight = new THREE.DirectionalLight(0x88bbff, 0.5);
     rimLight.position.set(-8, 9, 10);
 
     scene.add(ambientLight, keyLight, fillLight, rimLight);
@@ -150,26 +152,37 @@ export const CosmeticModelViewer = ({
 
         scene.add(model);
 
-        // Render once immediately after model loads for initial static display
+        // Render multiple frames after model loads to ensure proper display
+        // This handles cases where the container might not have final dimensions yet
         renderer.render(scene, camera);
+        requestAnimationFrame(() => {
+          if (mounted) {
+            handleResize();
+            renderer.render(scene, camera);
+          }
+        });
       } catch (error) {
         console.error("Failed to load cosmetic model", error);
       }
     };
 
-    loadModel();
-
+    // Defer resize to next frame to ensure container has dimensions
     const handleResize = () => {
       const width = container.clientWidth || 1;
       const height = container.clientHeight || 1;
+      if (width <= 1 || height <= 1) return; // Skip if container not sized yet
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      // Re-render after resize to prevent blank canvas when not animating
       renderer.render(scene, camera);
     };
 
-    handleResize();
+    loadModel();
+
+    // Defer initial resize to next frame to ensure container has dimensions
+    requestAnimationFrame(() => {
+      if (mounted) handleResize();
+    });
 
     let resizeObserver: ResizeObserver | null = null;
     if (typeof ResizeObserver !== "undefined") {
@@ -297,5 +310,5 @@ export const CosmeticModelViewer = ({
     };
   }, [modelPath, variant]);
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return <div ref={containerRef} className="relative z-10 h-full w-full" />;
 };

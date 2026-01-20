@@ -443,7 +443,7 @@ export const EternumGlobalConfig: Config = {
     },
   },
   factory: {
-    address: "0"
+    address: "0",
   },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,

@@ -25,7 +25,7 @@ import playerOddsConfig from "../config/player-odds.json";
 
 // Constants
 const MAX_SELECTED_PLAYERS = 5;
-const MIN_SELECTED_PLAYERS = 1;
+const MIN_SELECTED_PLAYERS = 2;
 const MIN_FUNDING_LORDS = 100;
 const DEFAULT_CREATOR_FEE = "10";
 const DEFAULT_FEE_CURVE_RANGE = { start: 0, end: 2000 };

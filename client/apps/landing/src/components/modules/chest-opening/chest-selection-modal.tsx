@@ -74,6 +74,23 @@ interface ChestCardProps {
   index: number;
 }
 
+// Check if chest is an eternum-rewards-s1 chest based on metadata
+function isEternumRewardsS1(metadata: MergedNftData["metadata"] | undefined): boolean {
+  if (!metadata?.attributes) return false;
+
+  const idAttr = metadata.attributes.find((a) => a.trait_type === "ID");
+  const epochAttr = metadata.attributes.find((a) => a.trait_type === "Epoch");
+
+  if (idAttr && epochAttr) {
+    const idValue = String(idAttr.value).toLowerCase();
+    const epochValue = String(epochAttr.value).toLowerCase();
+    // ID: "Eternum Rewards Chest", Epoch: "Season 1"
+    return idValue.includes("eternum") && idValue.includes("rewards") && epochValue.includes("season 1");
+  }
+
+  return false;
+}
+
 // Extract all trait values for a specific trait type
 function getTraitValue(metadata: MergedNftData["metadata"] | undefined, traitType: string): string | null {
   if (!metadata?.attributes) return null;
@@ -85,10 +102,12 @@ function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardP
   const cardRef = useRef<HTMLDivElement>(null);
   const [imageError, setImageError] = useState(false);
 
-  // Transform IPFS URLs to use Pinata gateway
-  const image = chest.metadata?.image?.startsWith("ipfs://")
-    ? chest.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
-    : chest.metadata?.image;
+  // Use local image for eternum-rewards-s1 chests, otherwise transform IPFS URLs
+  const image = isEternumRewardsS1(chest.metadata)
+    ? "/images/loot-chests/eternum-rewards-s1.png"
+    : chest.metadata?.image?.startsWith("ipfs://")
+      ? chest.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+      : chest.metadata?.image;
 
   // GSAP hover animations
   useEffect(() => {
@@ -409,7 +428,7 @@ export function ChestSelectionModal({
           {filteredAndSortedChests.length === 0 ? (
             // Empty state
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Package className="w-16 h-16 text-gold/30 mb-4" />
+              <Package className="w-16 h-16 mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">
                 {chests.length === 0 ? "No Chests Available" : "No Matching Chests"}
               </h3>

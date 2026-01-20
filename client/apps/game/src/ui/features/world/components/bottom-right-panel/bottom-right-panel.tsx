@@ -429,10 +429,34 @@ const LocalTilePanel = () => {
           <div className="h-full min-h-0 overflow-hidden">
             <div className="flex flex-col gap-3 text-xs text-gold">
               {isPaused && (
-                <div className="flex justify-end">
-                  <span className="rounded-full bg-red/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
-                    Paused
+                <div className="flex items-center justify-between gap-2 py-2 px-3 bg-red/20 rounded">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
+                    ⚠️ Production Paused
                   </span>
+                  {isOwnedByPlayer && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        disabled={isActionLoading}
+                        onClick={handleToggleProduction}
+                        className="text-xxs h-6 bg-green/20 hover:bg-green/40 border-green/50"
+                      >
+                        ▶ Resume
+                      </Button>
+                      {!isCastleTile && (
+                        <Button
+                          size="xs"
+                          variant="danger"
+                          disabled={isActionLoading}
+                          onClick={handleDestroy}
+                          className="text-xxs h-6"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

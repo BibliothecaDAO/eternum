@@ -13,9 +13,10 @@ import { StructureProductionPanel } from "./structure-production-panel";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useStructureEntityDetail } from "./hooks/use-structure-entity-detail";
+import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
 
 export interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -61,6 +62,17 @@ export const StructureEntityDetail = memo(
       structureEntityIdNumber,
     } = useStructureEntityDetail({ structureEntityId });
     const goToStructure = useGoToStructure(setup);
+    const ownerAddress =
+      structure?.owner !== undefined && structure.owner !== null && structure.owner !== 0n
+        ? toHexString(structure.owner)
+        : null;
+    const { data: ownerProfile } = usePlayerAvatar(ownerAddress ?? undefined);
+    const ownerAvatarUrl =
+      ownerAddress && ownerProfile
+        ? getAvatarUrl(ownerAddress, ownerProfile.avatarUrl)
+        : ownerAddress
+          ? getAvatarUrl(ownerAddress, null)
+          : null;
 
     if (isLoadingStructure) {
       return (
@@ -105,7 +117,16 @@ export const StructureEntityDetail = memo(
                   <h4 className={`${compact ? "text-xl" : "text-2xl"} font-bold text-gold`}>{structureName}</h4>
                   <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">#{structure.entity_id}</span>
                 </div>
-                <div className={`${smallTextClass} text-gold/70`}>Owner · {ownerDisplayName}</div>
+                <div className="flex items-center gap-2">
+                  {ownerAvatarUrl && (
+                    <img
+                      className="h-8 w-8 rounded-full border border-gold/30 object-cover"
+                      src={ownerAvatarUrl}
+                      alt={`${ownerDisplayName} avatar`}
+                    />
+                  )}
+                  <div className={`${smallTextClass} text-gold/70`}>Owner · {ownerDisplayName}</div>
+                </div>
                 {playerGuild && <div className={`${smallTextClass} text-gold/60`}>Guild · {playerGuild.name}</div>}
               </div>
               <div className="flex flex-col items-end gap-2">

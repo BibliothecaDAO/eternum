@@ -1,0 +1,22 @@
+{
+  "name": "lords-distribution",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "summary": "node summary.js reimbursements.csv",
+    "distribute": "node distribute.js reimbursements.csv",
+    "dry-run": "node distribute.js reimbursements.csv --dry-run",
+    "status": "node distribute.js reimbursements.csv --status",
+    "reset": "node distribute.js reimbursements.csv --reset --dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "starknet": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

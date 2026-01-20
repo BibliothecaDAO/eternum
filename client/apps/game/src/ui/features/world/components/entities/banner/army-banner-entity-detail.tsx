@@ -1,15 +1,16 @@
 import { Loader, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
 
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
+import { configManager } from "@bibliothecadao/eternum";
+import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../../armies/army-warning";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
-import { HexPosition, ID, RelicRecipientType, EntityType, BiomeType, TroopType } from "@bibliothecadao/types";
-import { configManager } from "@bibliothecadao/eternum";
 
 export interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -43,6 +44,9 @@ const ArmyBannerEntityDetailContent = memo(
       isLoadingDelete,
     } = useArmyEntityDetail({ armyEntityId });
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
+    const ownerUsername = derivedData?.addressName ?? null;
+    const { data: ownerProfileByUsername } = usePlayerAvatarByUsername(ownerUsername);
+    const ownerAvatarUrl = ownerProfileByUsername?.avatarUrl ?? null;
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (
@@ -57,6 +61,13 @@ const ArmyBannerEntityDetailContent = memo(
     const hasWarnings = Boolean(structureResources && explorerResources);
     const ownerDisplay = derivedData.addressName ?? `Army Owner`;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
+    const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
+    const headerTitleClass = compact ? "text-sm" : "text-base";
+    const headerMetaClass = compact ? "text-xxs" : "text-xs";
+    const statusLabel = derivedData.isMine ? "You" : "Other";
+    const statusClass = derivedData.isMine
+      ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
+      : "border-red-400/40 bg-red-400/15 text-red-200";
 
     return (
       <EntityDetailSection
@@ -64,26 +75,46 @@ const ArmyBannerEntityDetailContent = memo(
         tone={hasWarnings ? "highlight" : "default"}
         className={cn("flex flex-col gap-3", className)}
       >
-        <div className="flex flex-col gap-1 text-gold">
-          <span className="text-xs flex flex-wrap items-center gap-2">
-            <span className="font-normal text-gold">
-              {derivedData.isMine ? "🟢" : "🔴"} {ownerDisplay}
-              <span className="px-1 text-gold/50">·</span>
-              {stationedDisplay}
-            </span>
-            {derivedData.isMine ? (
-              <button
-                type="button"
-                onClick={handleDeleteExplorer}
-                disabled={isLoadingDelete}
-                className="inline-flex items-center rounded border border-red-500/40 p-1 text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                title={isLoadingDelete ? "Deleting" : "Delete Army"}
-              >
-                {isLoadingDelete ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                <span className="sr-only">Delete Army</span>
-              </button>
-            ) : null}
-          </span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
+              {ownerAvatarUrl ? (
+                <img className="h-full w-full object-cover" src={ownerAvatarUrl} alt={`${ownerDisplay} avatar`} />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
+                  {ownerInitial}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className={cn("truncate font-semibold text-gold", headerTitleClass)}>{ownerDisplay}</p>
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]",
+                    statusClass,
+                  )}
+                >
+                  {statusLabel}
+                </span>
+              </div>
+              <div className="flex items-baseline">
+                <span className={cn("truncate text-gold/80", headerMetaClass)}>{stationedDisplay}</span>
+              </div>
+            </div>
+          </div>
+          {derivedData.isMine ? (
+            <button
+              type="button"
+              onClick={handleDeleteExplorer}
+              disabled={isLoadingDelete}
+              className="inline-flex items-center rounded border border-red-500/40 p-1 text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+              title={isLoadingDelete ? "Deleting" : "Delete Army"}
+            >
+              {isLoadingDelete ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              <span className="sr-only">Delete Army</span>
+            </button>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-2">

@@ -1686,7 +1686,7 @@ export function defineContractComponents(world: World) {
           victory_points_win_config: {
             points_for_win: RecsType.BigInt,
           },
-          factory_address: RecsType.BigInt
+          factory_address: RecsType.BigInt,
         },
         {
           metadata: {
