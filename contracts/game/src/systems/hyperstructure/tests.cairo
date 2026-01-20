@@ -289,11 +289,11 @@
 //     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
 //     let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
-//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 },
+//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { alt: false, x: 0, y: 0 },
 //     );
 
 //     let hyperstructure_entity_id_1 = spawn_and_finish_hyperstructure(
-//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 1, y: 1 },
+//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { alt: false, x: 1, y: 1 },
 //     );
 
 //     hyperstructure_systems_dispatcher
@@ -309,7 +309,7 @@
 //     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
 //     let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
-//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 },
+//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { alt: false, x: 0, y: 0 },
 //     );
 
 //     hyperstructure_systems_dispatcher
@@ -333,7 +333,7 @@
 //     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
 //     let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
-//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 },
+//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { alt: false, x: 0, y: 0 },
 //     );
 
 //     hyperstructure_systems_dispatcher
@@ -357,7 +357,7 @@
 //     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
 //     let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
-//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 },
+//         ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { alt: false, x: 0, y: 0 },
 //     );
 
 //     hyperstructure_systems_dispatcher

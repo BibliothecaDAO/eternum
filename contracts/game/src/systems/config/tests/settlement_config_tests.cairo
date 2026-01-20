@@ -43,7 +43,7 @@
 //         let config_systems_address = deploy_system(ref world, "config_systems");
 //         set_settlement_config(config_systems_address);
 
-//         let structure_coords = Coord { x: 2147483646, y: 2147483671 };
+//         let structure_coords = Coord { alt: false, x: 2147483646, y: 2147483671 };
 
 //         let mut structure_count: StructureCount = world.read_model(structure_coords);
 //         structure_count.count = 1;
