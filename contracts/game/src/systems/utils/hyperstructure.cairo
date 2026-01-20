@@ -8,17 +8,17 @@ use crate::models::config::{
 };
 use crate::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use crate::models::map::{Tile, TileOccupier};
-use crate::models::map2::{TileOpt};
+use crate::models::map2::TileOpt;
 use crate::models::position::{Coord, CoordImpl, Direction, TravelImpl};
 use crate::models::structure::{Structure, StructureCategory, StructureImpl};
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
-use crate::systems::utils::structure::iStructureImpl;
-use crate::systems::utils::troop::iMercenariesImpl;
-use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,
 };
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
@@ -177,7 +177,8 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
                 .neighbor_after_distance(start_direction, Self::realm_tile_distance())
                 .neighbor_after_distance(triangle_direction, Self::realm_tile_distance() / 2);
 
-            let potential_realm_tile_opt: TileOpt = world.read_model((potential_realm_coord.alt, potential_realm_coord.x, potential_realm_coord.y));
+            let potential_realm_tile_opt: TileOpt = world
+                .read_model((potential_realm_coord.alt, potential_realm_coord.x, potential_realm_coord.y));
             let potential_realm_tile: Tile = potential_realm_tile_opt.into();
             if potential_realm_tile.occupier_is_structure {
                 let structure_category: u8 = world

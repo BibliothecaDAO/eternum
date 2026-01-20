@@ -46,9 +46,11 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
   if (error) {
     return (
       <div className="flex flex-col h-full items-center justify-center text-center">
-        <AlertCircle className="w-12 h-12 text-danger/60 mb-4" />
-        <h2 className="text-xl font-bold text-gold mb-2">Unable to Start</h2>
-        <p className="text-sm text-white/70 max-w-md mb-2">Something went wrong while preparing the world.</p>
+        <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-danger/60 mb-3 sm:mb-4" />
+        <h2 className="text-lg sm:text-xl font-bold text-gold mb-2">Unable to Start</h2>
+        <p className="text-xs sm:text-sm text-white/70 max-w-md mb-2">
+          Something went wrong while preparing the world.
+        </p>
         {error.message && (
           <p className="text-xs text-white/50 max-w-md mb-4 font-mono bg-black/20 px-3 py-2 rounded">{error.message}</p>
         )}
@@ -62,17 +64,17 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-center mb-6">
-        <img src="/images/logos/eternum-loader.png" className="mx-auto w-24 mb-4" alt="Loading" />
-        <h2 className="text-lg font-semibold text-gold">{currentStatement}</h2>
+      <div className="text-center mb-4 sm:mb-6">
+        <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 sm:w-24 mb-3 sm:mb-4" alt="Loading" />
+        <h2 className="text-base sm:text-lg font-semibold text-gold">{currentStatement}</h2>
       </div>
 
       {/* Task list */}
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-1.5 sm:space-y-2 overflow-y-auto">
         {tasks.map((task) => (
           <div
             key={task.id}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ${
+            className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-300 ${
               task.status === "running"
                 ? "bg-gold/10 border border-gold/30"
                 : task.status === "complete"
@@ -92,7 +94,7 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
               <div className="w-4 h-4 rounded-full border border-white/30 flex-shrink-0" />
             )}
             <span
-              className={`text-sm ${
+              className={`text-xs sm:text-sm ${
                 task.status === "running"
                   ? "text-gold"
                   : task.status === "complete"
@@ -109,7 +111,7 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
       </div>
 
       {/* Progress bar */}
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <div className="flex items-center justify-between text-xs text-gold/60 mb-2">
           <span>Loading...</span>
           <span>{displayProgress}%</span>

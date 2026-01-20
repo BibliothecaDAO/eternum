@@ -14,6 +14,23 @@ export interface ChestCardProps {
   index?: number;
 }
 
+// Check if chest is an eternum-rewards-s1 chest based on metadata
+function isEternumRewardsS1(metadata: MergedNftData["metadata"] | undefined): boolean {
+  if (!metadata?.attributes) return false;
+
+  const idAttr = metadata.attributes.find((a) => a.trait_type === "ID");
+  const epochAttr = metadata.attributes.find((a) => a.trait_type === "Epoch");
+
+  if (idAttr && epochAttr) {
+    const idValue = String(idAttr.value).toLowerCase();
+    const epochValue = String(epochAttr.value).toLowerCase();
+    // ID: "Eternum Rewards Chest", Epoch: "Season 1"
+    return idValue.includes("eternum") && idValue.includes("rewards") && epochValue.includes("season 1");
+  }
+
+  return false;
+}
+
 export function ChestCard({
   chest,
   onSelect,
@@ -25,10 +42,12 @@ export function ChestCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const [imageError, setImageError] = useState(false);
 
-  // Transform IPFS URLs to use Pinata gateway
-  const image = chest.metadata?.image?.startsWith("ipfs://")
-    ? chest.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
-    : chest.metadata?.image;
+  // Use local image for eternum-rewards-s1 chests, otherwise transform IPFS URLs
+  const image = isEternumRewardsS1(chest.metadata)
+    ? "/images/loot-chests/eternum-rewards-s1.png"
+    : chest.metadata?.image?.startsWith("ipfs://")
+      ? chest.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+      : chest.metadata?.image;
 
   // GSAP hover animations
   useEffect(() => {

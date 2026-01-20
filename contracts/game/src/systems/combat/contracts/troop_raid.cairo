@@ -35,6 +35,8 @@ pub mod troop_raid_systems {
     };
     use crate::models::troop::{ExplorerTroops, GuardImpl, GuardTroops, TroopsImpl, TroopsTrait};
     use crate::models::weight::Weight;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
@@ -42,8 +44,6 @@ pub mod troop_raid_systems {
     use crate::utils::map::biomes::Biome;
     use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;
-    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::super::super::super::super::models::structure::StructureBaseTrait;
     use super::super::super::super::super::models::troop::GuardTrait;
 
@@ -129,7 +129,11 @@ pub mod troop_raid_systems {
             let mut explorer_aggressor_troops = explorer_aggressor.troops;
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
-                .get_biome(guarded_structure.coord().alt, guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
+                .get_biome(
+                    guarded_structure.coord().alt,
+                    guarded_structure.coord().x.into(),
+                    guarded_structure.coord().y.into(),
+                );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let current_tick = tick.current();

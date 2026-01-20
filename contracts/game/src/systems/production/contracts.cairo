@@ -36,26 +36,25 @@ trait IProductionContract<TContractState> {
         produced_resource_types: Span<u8>,
         production_cycles: Span<u128>,
     );
-
 }
 
 #[dojo::contract]
 mod production_systems {
     use dojo::world::WorldStorage;
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, CoordTrait, TravelImpl};
     use crate::models::resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl};
-    use crate::models::resource::production::production::{ ProductionStrategyImpl};
+    use crate::models::resource::production::production::ProductionStrategyImpl;
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory,
-        StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadataStoreImpl,
+        StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
     };
     use crate::systems::utils::map::IMapImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
-    use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {

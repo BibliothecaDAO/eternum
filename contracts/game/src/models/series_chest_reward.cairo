@@ -1,5 +1,5 @@
-use crate::utils::math::div_round;
 use crate::alias::ID;
+use crate::utils::math::div_round;
 
 
 #[derive(Drop, Serde, DojoStore, Introspect)]
@@ -11,7 +11,7 @@ pub struct RecentRing {
 #[generate_trait]
 pub impl RecentRingImpl of RecentRingTrait {
     fn new() -> RecentRing {
-        RecentRing{ data: array![], sum: 0_u128 }
+        RecentRing { data: array![], sum: 0_u128 }
     }
 
     fn push(ref self: RecentRing, value: u128, cap: u32) {
@@ -31,13 +31,15 @@ pub impl RecentRingImpl of RecentRingTrait {
             while i < cap {
                 new_data.append(*self.data[i.into()]);
                 i += 1;
-            };
+            }
             new_data.append(value);
             self.data = new_data;
         }
     }
 
-    fn window_len(self: @RecentRing) -> u32 { self.data.len() }
+    fn window_len(self: @RecentRing) -> u32 {
+        self.data.len()
+    }
 }
 
 
@@ -50,7 +52,7 @@ pub struct AnchorRing {
 #[generate_trait]
 pub impl AnchorRingImpl of AnchorRingTrait {
     fn new() -> AnchorRing {
-        AnchorRing{ data: array![], sum: 0_u128 }
+        AnchorRing { data: array![], sum: 0_u128 }
     }
 
     fn push_with_cap(ref self: AnchorRing, value: u128, cap: u32) {
@@ -71,7 +73,7 @@ pub impl AnchorRingImpl of AnchorRingTrait {
             while i < cap {
                 new_data.append(*self.data[i.into()]);
                 i += 1;
-            };
+            }
             new_data.append(value);
             self.data = new_data;
         }
@@ -79,7 +81,11 @@ pub impl AnchorRingImpl of AnchorRingTrait {
 
     fn avg_or(self: @AnchorRing, default: u128) -> u128 {
         let count: u128 = self.data.len().into();
-        if count == 0_u128 { default } else { div_round(*self.sum, count) }
+        if count == 0_u128 {
+            default
+        } else {
+            div_round(*self.sum, count)
+        }
     }
 }
 
@@ -91,19 +97,15 @@ pub impl AnchorRingImpl of AnchorRingTrait {
 pub struct SeriesChestRewardState {
     #[key]
     pub world_id: ID,
-
     // Runtime state
     pub game_index: u32,
     pub ema_players_scaled: u128, // players * BPS
-
     // Rolling windows
     pub recent: RecentRing,
     pub anchor: AnchorRing,
-
     // Last per-player rate (bps)
     pub has_last_rate: bool,
     pub last_rate_bps: u128,
-
     // Supplies (current state only)
     pub soft_supply: u128,
     pub overspend_remaining: u128,
@@ -115,7 +117,7 @@ pub struct SeriesChestRewardState {
 pub struct GameChestReward {
     #[key]
     pub world_id: ID,
-    // max possible 
+    // max possible
     pub allocated_chests: u16,
     // amount distributed
     pub distributed_chests: u16 // <= allocated_chests

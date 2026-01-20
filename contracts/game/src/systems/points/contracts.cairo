@@ -10,14 +10,16 @@ trait IPointSystems<T> {
 pub mod point_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use crate::models::hyperstructure::{PlayerRegisteredPoints};
-    use crate::constants::DEFAULT_NS;
     use starknet::ContractAddress;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::hyperstructure::PlayerRegisteredPoints;
 
 
     #[abi(embed_v0)]
     impl PointSystemsImpl of super::IPointSystems<ContractState> {
-        fn view_registered_points(self: @ContractState, players: Array<ContractAddress>) -> Array<(ContractAddress, u128)> {
+        fn view_registered_points(
+            self: @ContractState, players: Array<ContractAddress>,
+        ) -> Array<(ContractAddress, u128)> {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let mut result: Array<(ContractAddress, u128)> = array![];
             for player in players {

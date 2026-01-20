@@ -1,6 +1,7 @@
 use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use crate::models::config::{
@@ -22,7 +23,6 @@ use crate::systems::utils::erc20::{
 };
 use crate::systems::utils::resource::iResourceTransferImpl;
 use crate::utils::math::{PercentageImpl, PercentageValueImpl, pow};
-use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
 pub enum BridgeTxType {

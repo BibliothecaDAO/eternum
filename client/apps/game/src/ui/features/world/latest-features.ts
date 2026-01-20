@@ -9,6 +9,13 @@ export interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-01-19",
+    title: "Mobile Game Registration",
+    description:
+      "The game registration flow is now fully responsive. Mobile and tablet users can now select worlds, connect accounts, and create avatars with an optimized touch-friendly interface.",
+    type: "improvement",
+  },
+  {
     date: "2026-01-17",
     title: "Chat Room Subscriptions",
     description:

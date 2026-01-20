@@ -30,7 +30,8 @@ pub struct TileOpt {
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Tile Data Packing Layout and Bit Manipulation Helpers
-// Layout (LSB -> MSB): occupier_is_structure, occupier_type, occupier_id, biome, row, col, reward_extracted, ... , alt (bit 127).
+// Layout (LSB -> MSB): occupier_is_structure, occupier_type, occupier_id, biome, row, col, reward_extracted, ... , alt
+// (bit 127).
 const OCCUPIER_IS_STRUCTURE_SHIFT: u8 = 0; // bit 0 [LSB]
 const OCCUPIER_IS_STRUCTURE_MASK: u128 = 0x1; // 1 bit
 
@@ -56,11 +57,14 @@ const ALT_SHIFT: u8 = 127; // bit 127 [MSB]
 const ALT_MASK: u128 = 0x1; // 1 bit
 ////////////////////////////////////////////////////////////////////////////////////
 
-
 #[generate_trait]
 pub impl TileOptDataWriteImpl of TileOptDataWriteTrait {
     fn with_alt(data: u128, alt: bool) -> u128 {
-        let value: u128 = if alt { 1 } else { 0 };
+        let value: u128 = if alt {
+            1
+        } else {
+            0
+        };
         Self::_set_field(data, value, ALT_SHIFT, ALT_MASK)
     }
 
@@ -85,12 +89,20 @@ pub impl TileOptDataWriteImpl of TileOptDataWriteTrait {
     }
 
     fn with_occupier_is_structure(data: u128, occupier_is_structure: bool) -> u128 {
-        let value: u128 = if occupier_is_structure { 1 } else { 0 };
+        let value: u128 = if occupier_is_structure {
+            1
+        } else {
+            0
+        };
         Self::_set_field(data, value, OCCUPIER_IS_STRUCTURE_SHIFT, OCCUPIER_IS_STRUCTURE_MASK)
     }
 
     fn with_reward_extracted(data: u128, reward_extracted: bool) -> u128 {
-        let value: u128 = if reward_extracted { 1 } else { 0 };
+        let value: u128 = if reward_extracted {
+            1
+        } else {
+            0
+        };
         Self::_set_field(data, value, REWARD_EXTRACTED_SHIFT, REWARD_EXTRACTED_MASK)
     }
 
@@ -196,15 +208,6 @@ pub impl TileOptIntoTile of Into<TileOpt, Tile> {
         let occupier_is_structure = TileOptDataReadTrait::occupier_is_structure(self.data);
         let reward_extracted = TileOptDataReadTrait::reward_extracted(self.data);
 
-        Tile {
-            alt,
-            col,
-            row,
-            biome,
-            occupier_id,
-            occupier_type,
-            occupier_is_structure,
-            reward_extracted
-        }
+        Tile { alt, col, row, biome, occupier_id, occupier_type, occupier_is_structure, reward_extracted }
     }
 }

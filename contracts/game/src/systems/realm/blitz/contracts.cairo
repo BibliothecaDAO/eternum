@@ -14,19 +14,18 @@ pub trait IBlitzRealmSystems<T> {
 #[dojo::contract]
 pub mod blitz_realm_systems {
     use core::num::traits::{Bounded, Zero};
-    use starknet::ContractAddress;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::alias::ID;
-    
     use crate::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
     use crate::models::config::{
-        BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister, BlitzEntryTokenRegister,
-        BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
+        BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzHypersSettlementConfig,
+        BlitzHypersSettlementConfigImpl, BlitzPlayerRegisterList, BlitzRealmPlayerRegister, BlitzRealmPositionRegister,
+        BlitzRealmSettleFinish, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
-        WorldConfigUtilImpl, BlitzCosmeticAttrsRegister, BlitzRealmSettleFinish, BlitzPlayerRegisterList
+        WorldConfigUtilImpl,
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
     use crate::models::map::TileImpl;
@@ -42,17 +41,17 @@ pub mod blitz_realm_systems {
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStats, StructureOwnerStoreImpl,
         StructureReservation,
     };
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use crate::systems::prize_distribution::contracts::prize_distribution_systems;
     use crate::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::realm::iRealmImpl;
     use crate::systems::utils::structure::iStructureImpl;
-    use crate::utils::collectibles::iCollectiblesImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
-    use crate::systems::prize_distribution::contracts::prize_distribution_systems;
+    use crate::utils::collectibles::iCollectiblesImpl;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
-    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -64,11 +63,11 @@ pub mod blitz_realm_systems {
 
     #[abi(embed_v0)]
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
-
         fn list_registered_players(self: @ContractState) -> Array<ContractAddress> {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let blitz_registration_config: BlitzRegistrationConfig 
-                = WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
 
             let mut end: u16 = blitz_registration_config.registration_count;
             let mut players: Array<ContractAddress> = array![];
@@ -81,10 +80,10 @@ pub mod blitz_realm_systems {
         }
 
         fn obtain_entry_token(ref self: ContractState) {
-
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut blitz_registration_config: BlitzRegistrationConfig 
-                = WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
 
             if blitz_registration_config.fee_amount.is_non_zero() {
                 // collect registration erc20 fee
@@ -96,13 +95,12 @@ pub mod blitz_realm_systems {
                 // transfer the fee to the prize distribution systems contract
                 let prize_distribution_systems = prize_distribution_systems::get_dispatcher(@world);
                 assert!(
-                    fee_token_contract.transfer_from(
-                        caller, 
-                        prize_distribution_systems.contract_address, 
-                        blitz_registration_config.fee_amount
-                    )
-                , "Eternum: Fee transfer failed");
-
+                    fee_token_contract
+                        .transfer_from(
+                            caller, prize_distribution_systems.contract_address, blitz_registration_config.fee_amount,
+                        ),
+                    "Eternum: Fee transfer failed",
+                );
 
                 // mint entry erc721 token
                 let entry_token_contract = ICollectibleDispatcher {
@@ -114,9 +112,9 @@ pub mod blitz_realm_systems {
                 //
                 // ensure the new supply is not greater than registration_count_max
                 assert!(
-                    entry_token_contract.total_supply() 
-                    <= blitz_registration_config.registration_count_max.into()
-                , "Eternum: All entry tokens have been minted");
+                    entry_token_contract.total_supply() <= blitz_registration_config.registration_count_max.into(),
+                    "Eternum: All entry tokens have been minted",
+                );
             }
         }
 
@@ -124,7 +122,6 @@ pub mod blitz_realm_systems {
         // Register for the game and pay the registration fee
         // Owner is the address that is going to own the realm
         fn register(ref self: ContractState, name: felt252, entry_token_id: u128, cosmetic_token_ids: Span<u128>) {
-
             // todo ensure owner is a cartridge controller address
             assert!(name.is_non_zero(), "Eternum: Name cannot be empty");
 
@@ -147,30 +144,28 @@ pub mod blitz_realm_systems {
             );
             blitz_registration_config.increase_registration_count();
 
+            world
+                .write_model(
+                    @BlitzPlayerRegisterList {
+                        count: blitz_registration_config.registration_count, player: starknet::get_caller_address(),
+                    },
+                );
 
-            world.write_model(
-                @BlitzPlayerRegisterList {
-                    count: blitz_registration_config.registration_count,
-                    player: starknet::get_caller_address(),
-            });
-
-            // if there is a required fee amount, ensure token is locked  
+            // if there is a required fee amount, ensure token is locked
             if blitz_registration_config.fee_amount.is_non_zero() {
-
                 let entry_token_contract = ICollectibleDispatcher {
                     contract_address: blitz_registration_config.entry_token_address,
                 };
                 let (lock_id, _) = entry_token_contract.token_lock_state(entry_token_id.into());
                 assert!(
-                    lock_id.is_non_zero() 
-                    && lock_id == blitz_registration_config.entry_token_lock_id(),
+                    lock_id.is_non_zero() && lock_id == blitz_registration_config.entry_token_lock_id(),
                     "Eternum: Entry token is not locked",
                 );
 
                 // ensure token cant be reused
                 let entry_token_register: BlitzEntryTokenRegister = world.read_model(entry_token_id);
                 assert!(!entry_token_register.registered, "Eternum: Entry token has already been used");
-                world.write_model(@BlitzEntryTokenRegister { token_id: entry_token_id, registered: true } );
+                world.write_model(@BlitzEntryTokenRegister { token_id: entry_token_id, registered: true });
             }
 
             // ensure that the player is not already registered
@@ -188,11 +183,10 @@ pub mod blitz_realm_systems {
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
             );
 
-
             ////////////////////////////////////////////////
             /// Register player's cosmetic items
             ////////////////////////////////////////////////
-            
+
             // create lock if registration_count is 1
             let collectibles_lock_id: u64 = season_config.end_at;
             let collectibles_cosmetics_address = blitz_registration_config.collectibles_cosmetics_address;
@@ -200,34 +194,28 @@ pub mod blitz_realm_systems {
             if collectibles_cosmetics_address.is_non_zero() && collectibles_timelock_address.is_non_zero() {
                 if blitz_registration_config.registration_count == 1 {
                     iCollectiblesImpl::create_lock(
-                        collectibles_timelock_address,
-                        collectibles_cosmetics_address,
-                        collectibles_lock_id
+                        collectibles_timelock_address, collectibles_cosmetics_address, collectibles_lock_id,
                     );
                 }
 
                 // ensure all token ids are locked and retrieve their attributes
                 if cosmetic_token_ids.len() > 0 {
-                    let player_cosmetic_attrs 
-                        = iCollectiblesImpl::ensure_locked_and_retrieve_attrs(
-                            collectibles_cosmetics_address,
-                            owner,
-                            cosmetic_token_ids,
-                            collectibles_lock_id.into(),
-                            blitz_registration_config.collectibles_cosmetics_max
-                        );
-
-                    world.write_model(
-                        @BlitzCosmeticAttrsRegister {
-                            player: starknet::get_caller_address(),
-                            attrs: player_cosmetic_attrs,
-                        }
+                    let player_cosmetic_attrs = iCollectiblesImpl::ensure_locked_and_retrieve_attrs(
+                        collectibles_cosmetics_address,
+                        owner,
+                        cosmetic_token_ids,
+                        collectibles_lock_id.into(),
+                        blitz_registration_config.collectibles_cosmetics_max,
                     );
+
+                    world
+                        .write_model(
+                            @BlitzCosmeticAttrsRegister {
+                                player: starknet::get_caller_address(), attrs: player_cosmetic_attrs,
+                            },
+                        );
                 }
             }
-
-
-
 
             ////////////////////////////////////////////////
             /// Generate the next 3 possible spawn points
@@ -447,7 +435,6 @@ pub mod blitz_realm_systems {
                 "Eternum: Player has no assigned realm positions or has finished settlement",
             );
 
-
             // get realm count
             let realm_count_selector: felt252 = selector!("realm_count_config");
             let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
@@ -457,20 +444,16 @@ pub mod blitz_realm_systems {
             let resources = blitz_produceable_resources();
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
 
-            
-            assert!(
-                coords.len() >= settlement_count.into(),
-                "Eternum: Not enough assigned coords to settle realms",
-            );
+            assert!(coords.len() >= settlement_count.into(), "Eternum: Not enough assigned coords to settle realms");
             for _ in 0..settlement_count {
-                 // create realm structure
+                // create realm structure
                 realm_count.count += 1;
                 let realm_id = realm_count.count.into();
                 let coord = *coords.pop_front().unwrap();
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                     .create_internal(caller, realm_id, resources.clone(), 0, 1, coord, false);
 
-                 // set infinite labor production
+                // set infinite labor production
                 let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
                 let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 let mut structure_labor_resource = SingleResourceStoreImpl::retrieve(
