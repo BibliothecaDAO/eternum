@@ -60,6 +60,7 @@ const GLOBAL_NON_SPATIAL_MODELS: string[] = [
   // Structure-scoped but non-spatial models (kept global for now)
   "s1_eternum-StructureBuildings",
   "s1_eternum-ProductionBoostBonus",
+  "s1_eternum-Resource"
 ];
 
 const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_NON_SPATIAL_MODELS.map((model) => ({ model }));
