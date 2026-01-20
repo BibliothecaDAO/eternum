@@ -54,6 +54,7 @@ pub mod prize_distribution_systems {
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::SeriesChestRewardStateImpl;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use crate::utils::world::CustomDojoWorldImpl;
+    use crate::systems::mmr::contracts::{mmr_systems, IMMRSystemsDispatcherTrait};
     use super::{
         IPrizeDistributionSystems, IPrizeDistributionSystemsSafeDispatcher,
         IPrizeDistributionSystemsSafeDispatcherTrait, IWorldFactorySeriesDispatcher, IWorldFactorySeriesDispatcherTrait,
@@ -545,6 +546,12 @@ pub mod prize_distribution_systems {
 
                 // compute reward chest allocations for this game
                 self.blitz_get_or_compute_series_chest_reward_state();
+
+                //////////////////////////////////////////
+                ///  process MMR updates
+                //////////////////////////////////////////
+                let mmr_dispatcher = mmr_systems::get_dispatcher(@world);
+                mmr_dispatcher.process_game_mmr_from_trial(trial.trial_id);
 
                 // emit event
                 world
