@@ -209,6 +209,94 @@ export const FactoryPage = () => {
     };
   }, [state.deployment.selectedPreset, state.deployment.startTime, state.deployment.customOverrides]);
 
+  const handleConfigureWorld = useCallback(
+    async (worldName: string) => {
+      if (!account) return;
+
+      const worldOverrides = state.worldConfigOverrides[worldName];
+      const presetId = worldOverrides?.preset ?? state.deployment.selectedPreset;
+
+      if (!presetId) {
+        actions.setTxState("config", { status: "error", error: "Select a preset before configuring this world." });
+        return;
+      }
+
+      actions.setTxState("config", { status: "running" });
+
+      try {
+        const preset = getPresetForChain(presetId, currentChain);
+        const customOverrides = worldOverrides?.customOverrides ?? state.deployment.customOverrides;
+        const startTime = worldOverrides?.startTime ?? state.deployment.startTime;
+        const configForWorld = applyPresetToConfig(
+          eternumConfig,
+          preset,
+          customOverrides,
+          currentChain,
+          startTime,
+        );
+
+        // Build runtime profile and patch manifest
+        const profile = await buildWorldProfile(currentChain as Chain, worldName);
+        const baseManifest = getGameManifest(currentChain as Chain);
+        const patched = patchManifestWithFactory(
+          baseManifest as any,
+          profile.worldAddress,
+          profile.contractsBySelector,
+        );
+
+        const localProvider = new EternumProvider(
+          patched,
+          env.VITE_PUBLIC_NODE_URL,
+          env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+        );
+
+        // Batch and run all config functions
+        await (localProvider as any).beginBatch({ signer: account });
+
+        const ctx = {
+          account,
+          provider: localProvider as any,
+          config: configForWorld,
+        } as any;
+
+        await setWorldConfig(ctx);
+        await setVRFConfig(ctx);
+        await setGameModeConfig(ctx);
+        await setFactoryAddressConfig(ctx);
+        await setVictoryPointsConfig(ctx);
+        await setDiscoverableVillageSpawnResourcesConfig(ctx);
+        await setBlitzRegistrationConfig(ctx);
+        await setAgentConfig(ctx);
+        await setVillageControllersConfig(ctx);
+        await setTradeConfig(ctx);
+        await setSeasonConfig(ctx);
+        await setResourceBridgeFeesConfig(ctx);
+        await setBattleConfig(ctx);
+        await setStructureMaxLevelConfig(ctx);
+        await setupGlobals(ctx);
+        await setCapacityConfig(ctx);
+        await setSpeedConfig(ctx);
+        await setHyperstructureConfig(ctx);
+        await setSettlementConfig(ctx);
+        await setStartingResourcesConfig(ctx);
+        await setWeightConfig(ctx);
+        await setRealmUpgradeConfig(ctx);
+        await setTroopConfig(ctx);
+        await setBuildingConfig(ctx);
+        await SetResourceFactoryConfig(ctx);
+
+        const receipt = await (localProvider as any).endBatch({ flush: true });
+        actions.setTxState("config", { status: "success", hash: receipt?.transaction_hash });
+
+        markWorldAsConfigured(worldName);
+        actions.updateWorldStatus(worldName, { configured: true });
+      } catch (err: any) {
+        actions.setTxState("config", { status: "error", error: err.message });
+      }
+    },
+    [account, state.deployment, state.worldConfigOverrides, eternumConfig, currentChain, actions],
+  );
+
   const handleDeploy = useCallback(async () => {
     if (!account || !factoryAddress || !state.deployment.gameName || !state.deployment.selectedPreset) return;
 
@@ -328,94 +416,6 @@ export const FactoryPage = () => {
       }
     },
     [account, factoryAddress, factoryDeployRepeats, state.worldSeriesMetadata],
-  );
-
-  const handleConfigureWorld = useCallback(
-    async (worldName: string) => {
-      if (!account) return;
-
-      const worldOverrides = state.worldConfigOverrides[worldName];
-      const presetId = worldOverrides?.preset ?? state.deployment.selectedPreset;
-
-      if (!presetId) {
-        actions.setTxState("config", { status: "error", error: "Select a preset before configuring this world." });
-        return;
-      }
-
-      actions.setTxState("config", { status: "running" });
-
-      try {
-        const preset = getPresetForChain(presetId, currentChain);
-        const customOverrides = worldOverrides?.customOverrides ?? state.deployment.customOverrides;
-        const startTime = worldOverrides?.startTime ?? state.deployment.startTime;
-        const configForWorld = applyPresetToConfig(
-          eternumConfig,
-          preset,
-          customOverrides,
-          currentChain,
-          startTime,
-        );
-
-        // Build runtime profile and patch manifest
-        const profile = await buildWorldProfile(currentChain as Chain, worldName);
-        const baseManifest = getGameManifest(currentChain as Chain);
-        const patched = patchManifestWithFactory(
-          baseManifest as any,
-          profile.worldAddress,
-          profile.contractsBySelector,
-        );
-
-        const localProvider = new EternumProvider(
-          patched,
-          env.VITE_PUBLIC_NODE_URL,
-          env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-        );
-
-        // Batch and run all config functions
-        await (localProvider as any).beginBatch({ signer: account });
-
-        const ctx = {
-          account,
-          provider: localProvider as any,
-          config: configForWorld,
-        } as any;
-
-        await setWorldConfig(ctx);
-        await setVRFConfig(ctx);
-        await setGameModeConfig(ctx);
-        await setFactoryAddressConfig(ctx);
-        await setVictoryPointsConfig(ctx);
-        await setDiscoverableVillageSpawnResourcesConfig(ctx);
-        await setBlitzRegistrationConfig(ctx);
-        await setAgentConfig(ctx);
-        await setVillageControllersConfig(ctx);
-        await setTradeConfig(ctx);
-        await setSeasonConfig(ctx);
-        await setResourceBridgeFeesConfig(ctx);
-        await setBattleConfig(ctx);
-        await setStructureMaxLevelConfig(ctx);
-        await setupGlobals(ctx);
-        await setCapacityConfig(ctx);
-        await setSpeedConfig(ctx);
-        await setHyperstructureConfig(ctx);
-        await setSettlementConfig(ctx);
-        await setStartingResourcesConfig(ctx);
-        await setWeightConfig(ctx);
-        await setRealmUpgradeConfig(ctx);
-        await setTroopConfig(ctx);
-        await setBuildingConfig(ctx);
-        await SetResourceFactoryConfig(ctx);
-
-        const receipt = await (localProvider as any).endBatch({ flush: true });
-        actions.setTxState("config", { status: "success", hash: receipt?.transaction_hash });
-
-        markWorldAsConfigured(worldName);
-        actions.updateWorldStatus(worldName, { configured: true });
-      } catch (err: any) {
-        actions.setTxState("config", { status: "error", error: err.message });
-      }
-    },
-    [account, state.deployment, state.worldConfigOverrides, eternumConfig, currentChain, actions],
   );
 
   const handleSetFactoryConfig = useCallback(async () => {
