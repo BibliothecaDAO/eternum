@@ -37,6 +37,9 @@ interface OddsBarChartProps {
 export const OddsBarChart = ({ market, maxVisible = 5, animated = true }: OddsBarChartProps) => {
   const outcomes = useMemo(() => getOutcomes(market), [market]);
 
+  // DEBUG: Log market outcomes for landing page
+  console.log("[Landing OddsBarChart] market.getMarketOutcomes():", market.getMarketOutcomes());
+
   const { sortedOutcomes, winningOutcomeOrdersSet } = useMemo(() => {
     const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
     const winningOutcomeOrders = resolvedPayouts
@@ -105,7 +108,7 @@ export const OddsBarChart = ({ market, maxVisible = 5, animated = true }: OddsBa
                 {isWinner && <span className="text-[10px] text-brilliance">(Winner)</span>}
               </span>
               <span className={cx("ml-2 flex-shrink-0 font-mono font-medium", isWinner ? "text-brilliance" : "text-gold")}>
-                {oddsPercent > 0 ? `${oddsPercent.toFixed(1)}%` : "--"}
+                {oddsPercent > 0 ? `${oddsPercent < 1 ? oddsPercent.toFixed(2) : oddsPercent.toFixed(1)}%` : "--"}
               </span>
             </div>
             <div className="relative h-2 w-full overflow-hidden rounded-full bg-brown/60">

@@ -9,9 +9,9 @@ const cx = (...classes: Array<string | null | undefined | false>) => classes.fil
 const formatOdds = (value: unknown) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return null;
-  if (num > 0 && num <= 1) return `${(num * 100).toFixed(1)}%`;
-  if (num >= 1 && num <= 100) return `${num.toFixed(num % 1 === 0 ? 0 : 1)}%`;
-  return num.toFixed(2);
+  // Values from MarketClass are already percentages (e.g., 0.95 = 0.95%, 95.23 = 95.23%)
+  if (num < 1) return `${num.toFixed(2)}%`; // Show 2 decimals for small percentages
+  return `${num.toFixed(num % 1 === 0 ? 0 : 1)}%`;
 };
 
 const getOddsValue = (outcome: MarketOutcome) =>

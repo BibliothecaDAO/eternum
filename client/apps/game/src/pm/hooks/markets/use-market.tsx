@@ -74,9 +74,14 @@ export const useMarket = (marketId: bigint): UseMarketResult => {
 
       const numerators = vaultNumeratorItems
         .flatMap((item) => (item.models.pm?.VaultNumerator ? [item.models.pm.VaultNumerator as VaultNumerator] : []))
-        .sort((a, b) => Number(a.index) - Number(b.index));
+        .map((n) => ({
+          market_id: BigInt(n.market_id),
+          index: Number(n.index),
+          value: BigInt(n.value),
+        }))
+        .sort((a, b) => a.index - b.index);
 
-      setVaultNumerators(numerators);
+      setVaultNumerators(numerators as VaultNumerator[]);
 
       // Fetch market created event
       const marketCreatedQuery = new ToriiQueryBuilder()
