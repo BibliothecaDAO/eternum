@@ -15,7 +15,7 @@ export enum TransactionCostCategory {
  * These limits are based on the Starknet step limit of 25M steps.
  */
 export const CATEGORY_BATCH_LIMITS: Record<TransactionCostCategory, number> = {
-  [TransactionCostCategory.HIGH]: 3,
+  [TransactionCostCategory.HIGH]: 2,
   [TransactionCostCategory.MEDIUM]: 5,
   [TransactionCostCategory.LOW]: 10,
 };
