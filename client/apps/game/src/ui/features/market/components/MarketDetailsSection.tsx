@@ -50,10 +50,12 @@ export const MarketDetailsSection = ({ initialMarket, onRefreshMarkets }: Market
   // Use live market data if available, fallback to initial
   const market = liveMarket ?? initialMarket;
 
+  // Get current outcomes from market
+  const outcomes = useMemo(() => market.getMarketOutcomes() ?? [], [market]);
+
   // Default to highest odds outcome when market loads
   const defaultHighestOutcome = useMemo(() => {
-    const outcomes = market.getMarketOutcomes();
-    if (!outcomes || outcomes.length === 0) return undefined;
+    if (outcomes.length === 0) return undefined;
 
     return outcomes.reduce<MarketOutcome | undefined>((best, current) => {
       const currentOdds = Number((current as any)?.odds ?? 0);
@@ -64,13 +66,21 @@ export const MarketDetailsSection = ({ initialMarket, onRefreshMarkets }: Market
 
       return best;
     }, undefined);
-  }, [market]);
+  }, [outcomes]);
 
+  // Set initial selection OR sync selected outcome with updated market data
   useEffect(() => {
-    if (defaultHighestOutcome && !selectedOutcome) {
+    if (!selectedOutcome && defaultHighestOutcome) {
+      // Initial selection
       setSelectedOutcome(defaultHighestOutcome);
+    } else if (selectedOutcome) {
+      // Sync with updated market data - find outcome with same index
+      const updatedOutcome = outcomes.find((o) => o.index === selectedOutcome.index);
+      if (updatedOutcome && updatedOutcome !== selectedOutcome) {
+        setSelectedOutcome(updatedOutcome);
+      }
     }
-  }, [defaultHighestOutcome, selectedOutcome]);
+  }, [outcomes, defaultHighestOutcome, selectedOutcome]);
 
   const handleRefresh = useCallback(async () => {
     onRefreshMarkets();
@@ -165,7 +175,7 @@ export const MarketDetailsSection = ({ initialMarket, onRefreshMarkets }: Market
             {activeTab === "activity" && (
               <div className="space-y-4">
                 <MarketHistory market={market} refreshKey={refreshKey} />
-                <MarketActivity market={market} />
+                <MarketActivity market={market} refreshKey={refreshKey} />
               </div>
             )}
 

@@ -34,9 +34,9 @@ const TimeAgo = ({ date, className }: { date: Date; className?: string }) => {
   return <span className={className}>{label}</span>;
 };
 
-export const MarketActivity = ({ market }: { market: MarketClass }) => {
+export const MarketActivity = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {
   const { account } = useAccount();
-  const { marketBuys, refresh, isLoading, isError } = useMarketActivity(market.market_id);
+  const { marketBuys, isLoading, isError } = useMarketActivity(market.market_id, refreshKey);
 
   // Loading state (only show skeleton on initial load with no data)
   if (isLoading && marketBuys.length === 0) {
@@ -45,7 +45,7 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
 
   // Error state
   if (isError) {
-    return <PMErrorState message="Failed to load activity" onRetry={refresh} />;
+    return <PMErrorState message="Failed to load activity" />;
   }
 
   // Empty state
@@ -61,19 +61,7 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
   const outcomes = market.getMarketOutcomes();
 
   return (
-    <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={refresh}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80 transition-colors hover:border-gold/50 hover:text-gold"
-          disabled={isLoading}
-        >
-          {isLoading ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
-
-      <div className="space-y-3">
+    <div className="space-y-3">
         {marketBuys.map((marketBuy) => {
           const isSelf = BigInt(marketBuy.account_address) === BigInt(account?.address || 0);
           const outcome = outcomes[Number(marketBuy.outcome_index)];
@@ -125,7 +113,6 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
             </div>
           );
         })}
-      </div>
-    </>
+    </div>
   );
 };
