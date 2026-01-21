@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test: [models, troop_management, test_troop_movement, test_troop_battle, quest]
+        test: [models, faith, troop_management, test_troop_movement, test_troop_battle, quest]
       fail-fast: false
     steps:
       - uses: actions/checkout@v3

@@ -6,6 +6,7 @@ use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
 use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::models::faith::{FaithConfig, FaithPrizeConfig};
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 use crate::utils::random::VRFImpl;
 //
@@ -54,6 +55,8 @@ pub struct WorldConfig {
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub victory_points_win_config: VictoryPointsWinConfig,
+    pub faith_config: FaithConfig,
+    pub faith_prize_config: FaithPrizeConfig,
     pub factory_address: ContractAddress,
 }
 
@@ -1021,4 +1024,3 @@ pub struct BlitzCosmeticAttrsRegister {
     pub player: ContractAddress,
     pub attrs: Span<u128>,
 }
-
