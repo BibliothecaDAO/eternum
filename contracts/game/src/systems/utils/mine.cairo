@@ -14,12 +14,12 @@ use crate::models::resource::resource::{
 use crate::models::structure::{StructureCategory, StructureImpl};
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 use crate::models::weight::Weight;
-use crate::systems::utils::structure::iStructureImpl;
-use crate::systems::utils::troop::iMercenariesImpl;
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,
 };
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {

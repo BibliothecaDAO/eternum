@@ -3,11 +3,11 @@ use dojo::world::WorldStorage;
 use crate::alias::ID;
 use crate::constants::DAYDREAMS_AGENT_ID;
 use crate::models::map::{Tile, TileOccupier};
-use crate::models::map2::{TileOpt};
+use crate::models::map2::TileOpt;
 use crate::models::position::{Coord, CoordTrait};
 use crate::models::troop::{TroopTier, TroopType};
-use crate::utils::map::biomes::Biome;
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::utils::map::biomes::Biome;
 
 #[generate_trait]
 pub impl IMapImpl of IMapTrait {
@@ -120,7 +120,6 @@ pub impl IMapImpl of IMapTrait {
             } else {
                 panic!("invalid level")
             }
-            
         }
     }
 
@@ -132,9 +131,8 @@ pub impl IMapImpl of IMapTrait {
         world.write_model(@tile_opt);
         // todo add event {if not already explored}
     }
-    
-    fn mark_reward_extracted(ref world: WorldStorage, ref tile: Tile) {
 
+    fn mark_reward_extracted(ref world: WorldStorage, ref tile: Tile) {
         tile.reward_extracted = true;
         let tile_opt: TileOpt = tile.into();
         world.write_model(@tile_opt);

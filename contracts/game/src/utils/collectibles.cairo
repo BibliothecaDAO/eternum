@@ -1,34 +1,31 @@
 use starknet::ContractAddress;
 use crate::utils::interfaces::collectibles::{
-    ICollectibleDispatcher, ICollectibleDispatcherTrait,
-    ICollectibleTimeLockManagerDispatcher, ICollectibleTimeLockManagerDispatcherTrait
+    ICollectibleDispatcher, ICollectibleDispatcherTrait, ICollectibleTimeLockManagerDispatcher,
+    ICollectibleTimeLockManagerDispatcherTrait,
 };
 
 
 #[generate_trait]
 pub impl iCollectiblesImpl of ICollectiblesTrait {
-    fn create_lock(
-        collection_timelock_admin: ContractAddress,
-        collection: ContractAddress,
-        lock_id: u64, 
-    ) {
+    fn create_lock(collection_timelock_admin: ContractAddress, collection: ContractAddress, lock_id: u64) {
         // lock_id == lock_end_time
-        let collection_timelock_admin_contract = ICollectibleTimeLockManagerDispatcher{contract_address: collection_timelock_admin};
+        let collection_timelock_admin_contract = ICollectibleTimeLockManagerDispatcher {
+            contract_address: collection_timelock_admin,
+        };
         collection_timelock_admin_contract.create_lock(collection, lock_id);
     }
 
     fn ensure_locked_and_retrieve_attrs(
         collection: ContractAddress,
         player: ContractAddress,
-        token_ids: Span<u128>, 
-        lock_id: felt252, 
+        token_ids: Span<u128>,
+        lock_id: felt252,
         max_tokens: u8 // todo hmm todo
     ) -> Span<u128> {
-
         assert!(token_ids.len() <= max_tokens.into(), "Eternum: exceeded max allowed tokens");
-        
-        let collectible_contract = ICollectibleDispatcher{contract_address: collection};
-        
+
+        let collectible_contract = ICollectibleDispatcher { contract_address: collection };
+
         let mut token_attrs = array![];
         for token_id in token_ids {
             let token_id = *token_id;

@@ -62,6 +62,7 @@ pub mod troop_management_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use crate::models::config::{
@@ -73,7 +74,7 @@ pub mod troop_management_systems {
         GuardAddStory, GuardDeleteStory, GuardExplorerSwapStory, Story, StoryEvent,
     };
     use crate::models::map::{Tile, TileImpl};
-    use crate::models::map2::{TileOpt};
+    use crate::models::map2::TileOpt;
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::{
@@ -91,7 +92,6 @@ pub mod troop_management_systems {
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
-    use starknet::ContractAddress;
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
@@ -145,7 +145,7 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
-                true
+                true,
             );
 
             StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
@@ -733,7 +733,7 @@ pub mod troop_management_systems {
                 tick,
                 troop_limit_config,
                 troop_stamina_config,
-                false
+                false,
             );
             StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
             StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);
@@ -923,6 +923,8 @@ mod tests {
     use dojo_cairo_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
+    use starknet::ContractAddress;
+    use starknet::testing::{set_account_contract_address, set_contract_address};
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{
         CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig,
@@ -951,8 +953,6 @@ mod tests {
     use crate::utils::testing::helpers::{
         init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
     };
-    use starknet::ContractAddress;
-    use starknet::testing::{set_account_contract_address, set_contract_address};
 
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {

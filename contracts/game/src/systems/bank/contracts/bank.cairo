@@ -29,12 +29,12 @@ pub mod bank_systems {
     };
     use crate::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
     use crate::models::troop::{GuardSlot, TroopTier, TroopType};
-    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
-    use crate::systems::utils::structure::iStructureImpl;
-    use crate::systems::utils::troop::iMercenariesImpl;
     use crate::system_libraries::structure_libraries::structure_creation_library::{
         IStructureCreationlibraryDispatcherTrait, structure_creation_library,
     };
+    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::troop::iMercenariesImpl;
 
     const MAX_BANK_COUNT: u8 = 6;
 

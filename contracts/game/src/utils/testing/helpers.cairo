@@ -2,6 +2,7 @@ use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, deploy_contract, spawn_test_world};
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
@@ -17,16 +18,13 @@ use crate::models::resource::resource::{
     WeightStoreImpl,
 };
 use crate::models::stamina::{StaminaImpl, StaminaTrait};
-use crate::models::structure::{
-    Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots,
-};
+use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots};
 use crate::models::troop::{ExplorerTroops, GuardTroops, TroopTier, TroopType, Troops};
 use crate::models::weight::Weight;
 use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
 use crate::systems::utils::realm::iRealmImpl;
 use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
-use starknet::ContractAddress;
 
 
 fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAddress) -> ContractAddress {
