@@ -404,9 +404,9 @@ Key metrics in the exported summary:
 
 ### Chrome DevTools
 
-1. **Performance tab** → Record for 60s → Check JS Heap trend
-2. **Memory tab** → Take heap snapshots → Compare allocations
-3. **Performance Monitor** → Watch real-time JS heap size
+1. **Performance tab** -> Record for 60s -> Check JS Heap trend
+2. **Memory tab** -> Take heap snapshots -> Compare allocations
+3. **Performance Monitor** -> Watch real-time JS heap size
 
 ---
 
