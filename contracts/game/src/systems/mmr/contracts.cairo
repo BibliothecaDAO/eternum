@@ -138,9 +138,26 @@ pub mod mmr_systems {
                 return;
             }
 
+            // Ensure trial is complete before processing
+            let trial: PlayersRankTrial = world.read_model(trial_id);
+            if trial.total_player_count_revealed == 0 {
+                return;
+            }
+            if trial.total_player_count_revealed != trial.total_player_count_committed {
+                return;
+            }
+            if trial.last_rank == 0 {
+                return;
+            }
+
             // Verify arrays match
             let player_count: u16 = players.len().try_into().unwrap();
             assert!(player_count == ranks.len().try_into().unwrap(), "Players and ranks arrays must match");
+
+            // Ensure provided arrays represent the full revealed roster
+            if player_count != trial.total_player_count_revealed {
+                return;
+            }
 
             // Check minimum players
             if player_count < mmr_config.min_players {
@@ -270,6 +287,12 @@ pub mod mmr_systems {
             if trial.total_player_count_revealed == 0 {
                 return;
             }
+            if trial.total_player_count_revealed != trial.total_player_count_committed {
+                return;
+            }
+            if trial.last_rank == 0 {
+                return;
+            }
 
             // Check minimum players
             if trial.total_player_count_revealed < mmr_config.min_players {
@@ -296,6 +319,11 @@ pub mod mmr_systems {
                 }
 
                 rank += 1;
+            }
+
+            let collected_count: u16 = players.len().try_into().unwrap();
+            if collected_count != trial.total_player_count_revealed {
+                return;
             }
 
             // Call the main process function

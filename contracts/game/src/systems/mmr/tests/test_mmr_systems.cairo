@@ -682,6 +682,36 @@ fn test_process_game_mmr_from_trial_not_ranked() {
 }
 
 #[test]
+fn test_process_game_mmr_from_trial_incomplete() {
+    let mut world = spawn_mmr_test_world();
+    setup_world_config(ref world, ADMIN());
+    setup_mmr_config(ref world);
+
+    let mmr = get_mmr_dispatcher(@world);
+    let trial_id: u128 = 1025;
+
+    // Mark series as ranked
+    starknet::testing::set_contract_address(ADMIN());
+    mmr.set_series_ranked(trial_id, true);
+
+    // Set up a trial then mark it as incomplete (revealed < committed)
+    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4()].span();
+    let ranks: Span<u16> = array![1_u16, 2, 3, 4].span();
+    setup_complete_trial(ref world, trial_id, players, ranks);
+
+    let mut trial: PlayersRankTrial = world.read_model(trial_id);
+    trial.total_player_count_revealed = 2;
+    world.write_model_test(@trial);
+
+    // Process MMR - should be a no-op since trial is incomplete
+    mmr.process_game_mmr_from_trial(trial_id);
+
+    // Verify no records were created
+    let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
+    assert!(record.timestamp == 0, "No record should be created for incomplete trial");
+}
+
+#[test]
 fn test_process_game_mmr_from_trial_below_min_players() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
