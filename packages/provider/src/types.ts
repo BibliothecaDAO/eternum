@@ -1,3 +1,12 @@
+/**
+ * Details about a single transaction type within a batch.
+ * Used to display breakdown of batched transactions in the UI.
+ */
+export interface BatchedTransactionDetail {
+  type: TransactionType;
+  count: number;
+}
+
 export enum TransactionType {
   // Exploration & Movement
   EXPLORE = "explore",
