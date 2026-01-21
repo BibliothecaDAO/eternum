@@ -7,6 +7,7 @@ import { BigNumberish, Call, uint256 } from "starknet";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
+import { ORACLE_FEE_BPS, PROTOCOL_FEE_BPS } from "@/pm/constants/market-creation-defaults";
 import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useUser } from "@/pm/hooks/dojo/user";
@@ -289,6 +290,43 @@ export function MarketTrade({
 
   const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
 
+  // Helper to calculate if a trade is profitable for a given outcome index
+  const isProfitableForOutcome = useMemo(() => {
+    return (outcomeIndex: number): boolean => {
+      const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
+      const totalLiquidityRaw = market.vaultDenominator?.value;
+      const outcomeLiquidityRaw = market.vaultNumerators?.find((num) => num.index === outcomeIndex)?.value;
+
+      if (
+        baseAmount == null ||
+        baseAmount <= 0n ||
+        totalLiquidityRaw == null ||
+        outcomeLiquidityRaw == null ||
+        BigInt(totalLiquidityRaw) <= 0n
+      ) {
+        return true; // No data to evaluate, allow by default
+      }
+
+      const baseAmountBig = BigInt(baseAmount);
+      const modelFeeBps = BigInt(market.getModelFees(Date.now()));
+      const creatorFeeBps = BigInt(market.creator_fee || 0);
+      const totalFeeBps = PROTOCOL_FEE_BPS + ORACLE_FEE_BPS + modelFeeBps + creatorFeeBps;
+      const effectiveAmount = (baseAmountBig * (10000n - totalFeeBps)) / 10000n;
+
+      const outcomeLiquidity = BigInt(outcomeLiquidityRaw);
+      const totalLiquidity = BigInt(totalLiquidityRaw);
+      const newOutcomeLiquidity = outcomeLiquidity + effectiveAmount;
+      const newTotalLiquidity = totalLiquidity + effectiveAmount;
+
+      if (newOutcomeLiquidity === 0n || newTotalLiquidity === 0n) {
+        return true;
+      }
+
+      const potentialWinRaw = (effectiveAmount * newTotalLiquidity) / newOutcomeLiquidity;
+      return potentialWinRaw >= baseAmountBig;
+    };
+  }, [amount, collateralDecimals, market]);
+
   const tradePreview = useMemo(() => {
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
     const totalLiquidityRaw = market.vaultDenominator?.value;
@@ -303,24 +341,38 @@ export function MarketTrade({
       outcomeLiquidityRaw == null ||
       BigInt(totalLiquidityRaw) <= 0n
     ) {
-      return { averageEntryPercent: null, potentialWinFormatted: null };
+      return { averageEntryPercent: null, potentialWinFormatted: null, isProfitable: true };
     }
 
     const baseAmountBig = BigInt(baseAmount);
+
+    // Calculate total fees in basis points (10000 = 100%)
+    // Fees: protocol (0.3%) + oracle (0.5%) + model/vault fee (time-based) + creator fee
+    const modelFeeBps = BigInt(market.getModelFees(Date.now()));
+    const creatorFeeBps = BigInt(market.creator_fee || 0);
+    const totalFeeBps = PROTOCOL_FEE_BPS + ORACLE_FEE_BPS + modelFeeBps + creatorFeeBps;
+
+    // Deduct fees from the investment amount: effective = amount * (10000 - fees) / 10000
+    const effectiveAmount = (baseAmountBig * (10000n - totalFeeBps)) / 10000n;
+
     const outcomeLiquidity = BigInt(outcomeLiquidityRaw);
     const totalLiquidity = BigInt(totalLiquidityRaw);
-    const newOutcomeLiquidity = outcomeLiquidity + baseAmountBig;
-    const newTotalLiquidity = totalLiquidity + baseAmountBig;
+    const newOutcomeLiquidity = outcomeLiquidity + effectiveAmount;
+    const newTotalLiquidity = totalLiquidity + effectiveAmount;
 
     if (newOutcomeLiquidity === 0n || newTotalLiquidity === 0n) {
-      return { averageEntryPercent: null, potentialWinFormatted: null };
+      return { averageEntryPercent: null, potentialWinFormatted: null, isProfitable: true };
     }
 
     const averageEntryPercent = Number((newOutcomeLiquidity * 10_000n) / newTotalLiquidity) / 100;
-    const potentialWinRaw = (baseAmountBig * newTotalLiquidity) / newOutcomeLiquidity;
+    // Potential win is based on effective amount (after fees)
+    const potentialWinRaw = (effectiveAmount * newTotalLiquidity) / newOutcomeLiquidity;
     const potentialWinFormatted = formatUnits(potentialWinRaw, collateralDecimals, 4);
 
-    return { averageEntryPercent, potentialWinFormatted };
+    // Check if potential win is greater than or equal to input amount
+    const isProfitable = potentialWinRaw >= baseAmountBig;
+
+    return { averageEntryPercent, potentialWinFormatted, isProfitable };
   }, [amount, collateralDecimals, market, selectedOutcome]);
 
   const onBuy = async (outcomeIndex: number) => {
@@ -452,33 +504,42 @@ export function MarketTrade({
 
           {/* Selected Outcome / Buy Buttons */}
           {market.typBinary() ? (
-            <div className="flex gap-2">
-              <Button
-                variant="success"
-                size="md"
-                className="flex-1"
-                onClick={() => {
-                  setSelectedOutcome?.(outcomes[0]);
-                  setIsDialogOpen(true);
-                }}
-                disabled={isSubmitting}
-                forceUppercase={false}
-              >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buy YES"}
-              </Button>
-              <Button
-                variant="danger"
-                size="md"
-                className="flex-1"
-                onClick={() => {
-                  setSelectedOutcome?.(outcomes[1]);
-                  setIsDialogOpen(true);
-                }}
-                disabled={isSubmitting}
-                forceUppercase={false}
-              >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buy NO"}
-              </Button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Button
+                  variant="success"
+                  size="md"
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedOutcome?.(outcomes[0]);
+                    setIsDialogOpen(true);
+                  }}
+                  disabled={isSubmitting || !isProfitableForOutcome(0)}
+                  forceUppercase={false}
+                >
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : !isProfitableForOutcome(0) ? "Odds too low" : "Buy YES"}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="md"
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedOutcome?.(outcomes[1]);
+                    setIsDialogOpen(true);
+                  }}
+                  disabled={isSubmitting || !isProfitableForOutcome(1)}
+                  forceUppercase={false}
+                >
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : !isProfitableForOutcome(1) ? "Odds too low" : "Buy NO"}
+                </Button>
+              </div>
+              {(!isProfitableForOutcome(0) || !isProfitableForOutcome(1)) && (
+                <p className="text-center text-xs text-danger">
+                  {!isProfitableForOutcome(0) && !isProfitableForOutcome(1)
+                    ? "Both outcomes have odds too low for this amount."
+                    : "One outcome has odds too low. Choose a lower amount."}
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -514,12 +575,23 @@ export function MarketTrade({
                 size="md"
                 className="w-full"
                 onClick={() => setIsDialogOpen(true)}
-                disabled={!selectedOutcome || isSubmitting}
+                disabled={!selectedOutcome || isSubmitting || !tradePreview.isProfitable}
                 isLoading={isSubmitting}
                 forceUppercase={false}
               >
-                {!selectedOutcome ? "Select outcome to trade" : isSubmitting ? "Confirming..." : "Buy Position"}
+                {!selectedOutcome
+                  ? "Select outcome to trade"
+                  : !tradePreview.isProfitable
+                    ? "Odds too low"
+                    : isSubmitting
+                      ? "Confirming..."
+                      : "Buy Position"}
               </Button>
+              {!tradePreview.isProfitable && selectedOutcome && (
+                <p className="text-center text-xs text-danger">
+                  Potential win is less than your bet. Choose a lower amount or different outcome.
+                </p>
+              )}
             </div>
           )}
         </div>
