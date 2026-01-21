@@ -83,8 +83,9 @@ pub struct FollowerAllegiance {
     pub entity_type: FollowerType,
 }
 
-#[derive(Introspect, Copy, Drop, Serde, PartialEq)]
+#[derive(Introspect, Copy, Drop, Serde, PartialEq, Default, DojoStore)]
 pub enum FollowerType {
+    #[default]
     None,
     Realm,
     Village,
