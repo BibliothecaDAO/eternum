@@ -1,5 +1,5 @@
 import { Loader, RefreshCw, Trash2 } from "lucide-react";
-import { memo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
@@ -11,6 +11,11 @@ import { ActiveRelicEffects } from "./active-relic-effects";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
 import { dangerActionClasses, standardActionClasses } from "./action-button-classes";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
+import TextInput from "@/ui/design-system/atoms/text-input";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { EXPLORATION_STRATEGIES } from "@/automation/exploration";
+import { DEFAULT_SCOPE_RADIUS, DEFAULT_STRATEGY_ID, useExplorationAutomationStore } from "@/hooks/store/use-exploration-automation-store";
 
 import { useArmyEntityDetail } from "./hooks/use-army-entity-detail";
 
@@ -185,6 +190,10 @@ export const ArmyEntityDetail = memo(
             </div>
           </div>
 
+          {showButtons && derivedData.isMine && (
+            <ExplorationAutomationSection explorerId={armyEntityId} className={panelClasses()} />
+          )}
+
           {explorerResources ? (
             <div className={panelClasses("flex flex-col")}>
               <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
@@ -223,3 +232,107 @@ export const ArmyEntityDetail = memo(
 );
 
 ArmyEntityDetail.displayName = "ArmyEntityDetail";
+
+const ExplorationAutomationSection = ({ explorerId, className }: { explorerId: ID; className?: string }) => {
+  const entries = useExplorationAutomationStore((s) => s.entries);
+  const addEntry = useExplorationAutomationStore((s) => s.add);
+  const updateEntry = useExplorationAutomationStore((s) => s.update);
+  const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
+
+  const entry = useMemo(
+    () => Object.values(entries).find((item) => item.explorerId === String(explorerId)),
+    [entries, explorerId],
+  );
+
+  const [scopeRadius, setScopeRadius] = useState<number>(entry?.scopeRadius ?? DEFAULT_SCOPE_RADIUS);
+  const [strategyId, setStrategyId] = useState<string>(entry?.strategyId ?? DEFAULT_STRATEGY_ID);
+
+  useEffect(() => {
+    setScopeRadius(entry?.scopeRadius ?? DEFAULT_SCOPE_RADIUS);
+    setStrategyId(entry?.strategyId ?? DEFAULT_STRATEGY_ID);
+  }, [entry?.scopeRadius, entry?.strategyId]);
+
+  const hasChanges = Boolean(
+    entry &&
+      (entry.scopeRadius !== scopeRadius ||
+        entry.strategyId !== (strategyId as typeof entry.strategyId) ||
+        entry.blockedReason),
+  );
+
+  const handleEnable = () => {
+    if (entry) {
+      updateEntry(entry.id, { scopeRadius, strategyId: strategyId as typeof entry.strategyId, blockedReason: null });
+      if (!entry.active) {
+        toggleActive(entry.id, true);
+      }
+    } else {
+      addEntry({
+        explorerId: String(explorerId),
+        scopeRadius,
+        strategyId: strategyId as typeof DEFAULT_STRATEGY_ID,
+        active: true,
+      });
+    }
+  };
+
+  const handleDisable = () => {
+    if (!entry) return;
+    toggleActive(entry.id, false);
+  };
+
+  const statusLabel = entry ? (entry.active ? "Active" : "Paused") : "Not configured";
+
+  return (
+    <div className={className}>
+      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gold/80 mb-2">Exploration Automation</div>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Unit ID</span>
+          <TextInput disabled value={String(explorerId)} onChange={() => {}} />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Scope Radius</span>
+          <NumberInput value={scopeRadius} onChange={setScopeRadius} min={1} className="h-9" />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Strategy</span>
+          <Select value={strategyId} onValueChange={setStrategyId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select strategy" />
+            </SelectTrigger>
+            <SelectContent>
+              {EXPLORATION_STRATEGIES.map((strategy) => (
+                <SelectItem key={strategy.id} value={strategy.id}>
+                  {strategy.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleEnable}
+            className={standardActionClasses}
+            disabled={entry?.active && !hasChanges}
+          >
+            {entry?.active ? "Update" : "Enable"}
+          </button>
+          {entry && (
+            <button type="button" onClick={handleDisable} className={dangerActionClasses} disabled={!entry.active}>
+              Disable
+            </button>
+          )}
+          <span className="text-xxs text-gold/60 uppercase tracking-[0.2em]">{statusLabel}</span>
+        </div>
+
+        {entry?.blockedReason && (
+          <div className="text-xxs text-warning uppercase tracking-[0.2em]">Blocked: {entry.blockedReason}</div>
+        )}
+      </div>
+    </div>
+  );
+};
