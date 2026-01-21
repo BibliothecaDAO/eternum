@@ -32,7 +32,7 @@ import {
   setupGlobals,
 } from "@config-deployer/config";
 import { getGameManifest, type Chain } from "@contracts";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
 import { env } from "../../../../../env";
@@ -73,7 +73,7 @@ import {
 } from "../utils/storage";
 
 // Types
-import type { WorldStatus } from "../types/game-presets";
+import type { TxState, WorldStatus } from "../types/game-presets";
 
 // ============================================================================
 // Manifest Types
@@ -127,6 +127,7 @@ export const FactoryPage = () => {
   // State management
   const { state, actions } = useFactoryDeployment();
   const { refreshStatuses, getWorldDeployedAddressLocal } = useFactoryAdmin(currentChain);
+  const [factoryConfigTx, setFactoryConfigTx] = useState<TxState>({ status: "idle" });
 
   // Auto-deploy cancellation refs
   const autoDeployCancelRef = useRef<Record<string, boolean>>({});
@@ -200,6 +201,14 @@ export const FactoryPage = () => {
     };
   };
 
+  const buildQueueConfigOverrides = useCallback(() => {
+    return {
+      preset: state.deployment.selectedPreset || undefined,
+      startTime: state.deployment.startTime || 0,
+      customOverrides: { ...state.deployment.customOverrides },
+    };
+  }, [state.deployment.selectedPreset, state.deployment.startTime, state.deployment.customOverrides]);
+
   const handleDeploy = useCallback(async () => {
     if (!account || !factoryAddress || !state.deployment.gameName || !state.deployment.selectedPreset) return;
 
@@ -219,10 +228,14 @@ export const FactoryPage = () => {
       await account.waitForTransaction(result.transaction_hash);
 
       // Add to queue and update status
-      actions.addToQueue(state.deployment.gameName, {
-        seriesName: state.deployment.seriesName || undefined,
-        seriesGameNumber: state.deployment.seriesGameNumber || undefined,
-      });
+      actions.addToQueue(
+        state.deployment.gameName,
+        {
+          seriesName: state.deployment.seriesName || undefined,
+          seriesGameNumber: state.deployment.seriesGameNumber || undefined,
+        },
+        buildQueueConfigOverrides(),
+      );
 
       actions.updateWorldStatus(state.deployment.gameName, { deployed: true });
 
@@ -231,16 +244,20 @@ export const FactoryPage = () => {
     } catch (err: any) {
       actions.setTxState("deploy", { status: "error", error: err.message });
     }
-  }, [account, factoryAddress, state.deployment]);
+  }, [account, factoryAddress, state.deployment, buildQueueConfigOverrides, handleConfigureWorld, actions]);
 
   const handleAddToQueue = useCallback(() => {
     if (!state.deployment.gameName) return;
 
-    actions.addToQueue(state.deployment.gameName, {
-      seriesName: state.deployment.seriesName || undefined,
-      seriesGameNumber: state.deployment.seriesGameNumber || undefined,
-    });
-  }, [state.deployment]);
+    actions.addToQueue(
+      state.deployment.gameName,
+      {
+        seriesName: state.deployment.seriesName || undefined,
+        seriesGameNumber: state.deployment.seriesGameNumber || undefined,
+      },
+      buildQueueConfigOverrides(),
+    );
+  }, [state.deployment, buildQueueConfigOverrides]);
 
   const handleQueueDeploy = useCallback(
     async (worldName: string) => {
@@ -315,18 +332,28 @@ export const FactoryPage = () => {
 
   const handleConfigureWorld = useCallback(
     async (worldName: string) => {
-      if (!account || !state.deployment.selectedPreset) return;
+      if (!account) return;
+
+      const worldOverrides = state.worldConfigOverrides[worldName];
+      const presetId = worldOverrides?.preset ?? state.deployment.selectedPreset;
+
+      if (!presetId) {
+        actions.setTxState("config", { status: "error", error: "Select a preset before configuring this world." });
+        return;
+      }
 
       actions.setTxState("config", { status: "running" });
 
       try {
-        const preset = getPresetForChain(state.deployment.selectedPreset, currentChain);
+        const preset = getPresetForChain(presetId, currentChain);
+        const customOverrides = worldOverrides?.customOverrides ?? state.deployment.customOverrides;
+        const startTime = worldOverrides?.startTime ?? state.deployment.startTime;
         const configForWorld = applyPresetToConfig(
           eternumConfig,
           preset,
-          state.deployment.customOverrides,
+          customOverrides,
           currentChain,
-          state.deployment.startTime,
+          startTime,
         );
 
         // Build runtime profile and patch manifest
@@ -388,8 +415,88 @@ export const FactoryPage = () => {
         actions.setTxState("config", { status: "error", error: err.message });
       }
     },
-    [account, state.deployment, eternumConfig, currentChain],
+    [account, state.deployment, state.worldConfigOverrides, eternumConfig, currentChain, actions],
   );
+
+  const handleSetFactoryConfig = useCallback(async () => {
+    if (!account || !parsedManifest || !factoryAddress || generatedCalldata.length === 0) return;
+
+    setFactoryConfigTx({ status: "running" });
+
+    try {
+      const result = await account.execute({
+        contractAddress: factoryAddress,
+        entrypoint: "set_factory_config",
+        calldata: generatedCalldata,
+      });
+
+      setFactoryConfigTx({ status: "success", hash: result.transaction_hash });
+      await account.waitForTransaction(result.transaction_hash);
+    } catch (err: any) {
+      setFactoryConfigTx({ status: "error", error: err.message });
+    }
+  }, [account, parsedManifest, factoryAddress, generatedCalldata]);
+
+  const handleSetFactoryConfigAndDeploy = useCallback(async () => {
+    if (
+      !account ||
+      !parsedManifest ||
+      !factoryAddress ||
+      generatedCalldata.length === 0 ||
+      !state.deployment.gameName ||
+      !state.deployment.selectedPreset
+    )
+      return;
+
+    setFactoryConfigTx({ status: "running" });
+    actions.setTxState("deploy", { status: "running" });
+
+    try {
+      const worldNameFelt = shortString.encodeShortString(state.deployment.gameName);
+      const series = buildSeriesCalldata(state.deployment.seriesName, state.deployment.seriesGameNumber);
+      const result = await account.execute([
+        {
+          contractAddress: factoryAddress,
+          entrypoint: "set_factory_config",
+          calldata: generatedCalldata,
+        },
+        {
+          contractAddress: factoryAddress,
+          entrypoint: "create_game",
+          calldata: [worldNameFelt, DEFAULT_VERSION, series.seriesNameFelt, series.seriesGameNumber],
+        },
+      ]);
+
+      setFactoryConfigTx({ status: "success", hash: result.transaction_hash });
+      actions.setTxState("deploy", { status: "success", hash: result.transaction_hash });
+      await account.waitForTransaction(result.transaction_hash);
+
+      actions.addToQueue(
+        state.deployment.gameName,
+        {
+          seriesName: state.deployment.seriesName || undefined,
+          seriesGameNumber: state.deployment.seriesGameNumber || undefined,
+        },
+        buildQueueConfigOverrides(),
+      );
+
+      actions.updateWorldStatus(state.deployment.gameName, { deployed: true });
+      await handleConfigureWorld(state.deployment.gameName);
+    } catch (err: any) {
+      const message = err?.message || "Failed to set factory config and deploy.";
+      setFactoryConfigTx({ status: "error", error: message });
+      actions.setTxState("deploy", { status: "error", error: message });
+    }
+  }, [
+    account,
+    parsedManifest,
+    factoryAddress,
+    state.deployment,
+    generatedCalldata,
+    buildQueueConfigOverrides,
+    handleConfigureWorld,
+    actions,
+  ]);
 
   const handleCreateIndexer = useCallback(
     async (worldName: string) => {
@@ -431,6 +538,7 @@ export const FactoryPage = () => {
   const handleReload = useCallback(async () => {
     actions.setTxState("deploy", { status: "idle" });
     actions.setTxState("config", { status: "idle" });
+    setFactoryConfigTx({ status: "idle" });
 
     if (state.worldQueue.length > 0) {
       const { indexerStatusMap, deployedStatusMap } = await refreshStatuses(state.worldQueue);
@@ -445,7 +553,7 @@ export const FactoryPage = () => {
       });
       actions.setWorldStatuses(statuses);
     }
-  }, [state.worldQueue]);
+  }, [state.worldQueue, refreshStatuses, actions]);
 
   // ============================================================================
   // Computed Values
@@ -455,6 +563,9 @@ export const FactoryPage = () => {
 
   const explorerTxUrl = state.txState.deploy.hash
     ? getExplorerTxUrl(currentChain as any, state.txState.deploy.hash)
+    : undefined;
+  const factoryConfigExplorerTxUrl = factoryConfigTx.hash
+    ? getExplorerTxUrl(currentChain as any, factoryConfigTx.hash)
     : undefined;
 
   // ============================================================================
@@ -563,6 +674,47 @@ export const FactoryPage = () => {
                       />
                     </div>
                   </div>
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    <button
+                      onClick={handleSetFactoryConfig}
+                      disabled={
+                        !account || !factoryAddress || generatedCalldata.length === 0 || factoryConfigTx.status === "running"
+                      }
+                      className="px-4 py-2 bg-gold hover:bg-gold/80 disabled:bg-brown/50 disabled:text-gold/40 disabled:cursor-not-allowed text-brown text-sm font-semibold rounded-lg transition-colors"
+                    >
+                      Set Factory Config
+                    </button>
+                    <button
+                      onClick={handleSetFactoryConfigAndDeploy}
+                      disabled={
+                        !account ||
+                        !factoryAddress ||
+                        generatedCalldata.length === 0 ||
+                        !state.deployment.gameName ||
+                        !state.deployment.selectedPreset ||
+                        factoryConfigTx.status === "running"
+                      }
+                      className="px-4 py-2 bg-brilliance/20 hover:bg-brilliance/30 disabled:bg-brown/50 disabled:text-gold/40 disabled:cursor-not-allowed text-brilliance text-sm font-semibold rounded-lg border border-brilliance/30 transition-colors"
+                    >
+                      Set Config + Deploy
+                    </button>
+                  </div>
+                  {factoryConfigTx.status === "success" && factoryConfigExplorerTxUrl && (
+                    <div className="flex items-center gap-3 text-sm text-brilliance">
+                      <span className="font-semibold">Factory config updated.</span>
+                      <a
+                        href={factoryConfigExplorerTxUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brilliance/80 hover:text-brilliance underline"
+                      >
+                        View Transaction
+                      </a>
+                    </div>
+                  )}
+                  {factoryConfigTx.status === "error" && factoryConfigTx.error && (
+                    <p className="text-sm text-danger">{factoryConfigTx.error}</p>
+                  )}
                 </div>
               </div>
 

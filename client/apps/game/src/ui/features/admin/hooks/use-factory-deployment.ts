@@ -23,6 +23,12 @@ import {
 // State Types
 // ============================================================================
 
+export interface WorldConfigOverride {
+  preset?: GamePresetType;
+  startTime?: number;
+  customOverrides?: Partial<GamePresetConfigOverrides>;
+}
+
 export interface FactoryState {
   // Deployment wizard state
   deployment: DeploymentState;
@@ -40,7 +46,7 @@ export interface FactoryState {
   worldSeriesMetadata: Record<string, WorldSeriesMetadata>;
 
   // Per-world config overrides (for the queue)
-  worldConfigOverrides: Record<string, Partial<GamePresetConfigOverrides> & { startTime?: number }>;
+  worldConfigOverrides: Record<string, WorldConfigOverride>;
 
   // UI state
   ui: FactoryUIState;
@@ -55,15 +61,11 @@ type FactoryAction =
   | { type: "GO_BACK" }
   | { type: "UPDATE_DEPLOYMENT"; updates: Partial<DeploymentState> }
   | { type: "SET_TX_STATE"; txType: keyof FactoryState["txState"]; state: TxState }
-  | { type: "ADD_TO_QUEUE"; worldName: string; metadata?: WorldSeriesMetadata }
+  | { type: "ADD_TO_QUEUE"; worldName: string; metadata?: WorldSeriesMetadata; configOverrides?: WorldConfigOverride }
   | { type: "REMOVE_FROM_QUEUE"; worldName: string }
   | { type: "UPDATE_WORLD_STATUS"; worldName: string; status: Partial<WorldStatus> }
   | { type: "SET_WORLD_STATUSES"; statuses: Record<string, WorldStatus> }
-  | {
-      type: "UPDATE_WORLD_CONFIG_OVERRIDE";
-      worldName: string;
-      overrides: Partial<GamePresetConfigOverrides> & { startTime?: number };
-    }
+  | { type: "UPDATE_WORLD_CONFIG_OVERRIDE"; worldName: string; overrides: Partial<WorldConfigOverride> }
   | { type: "TOGGLE_UI"; key: keyof FactoryUIState }
   | { type: "SET_EXPANDED_WORLD_CONFIG"; worldName: string | null }
   | { type: "LOAD_FROM_STORAGE"; worldQueue: string[]; worldSeriesMetadata: Record<string, WorldSeriesMetadata> }
@@ -151,11 +153,15 @@ function factoryReducer(state: FactoryState, action: FactoryAction): FactoryStat
       const newMetadata = action.metadata
         ? { ...state.worldSeriesMetadata, [action.worldName]: action.metadata }
         : state.worldSeriesMetadata;
+      const newOverrides = action.configOverrides
+        ? { ...state.worldConfigOverrides, [action.worldName]: action.configOverrides }
+        : state.worldConfigOverrides;
 
       return {
         ...state,
         worldQueue: newQueue,
         worldSeriesMetadata: newMetadata,
+        worldConfigOverrides: newOverrides,
         // Generate new name for next addition
         deployment: {
           ...state.deployment,
@@ -329,15 +335,18 @@ export const useFactoryDeployment = () => {
     dispatch({ type: "SET_TX_STATE", txType, state: txState });
   }, []);
 
-  const addToQueue = useCallback((worldName: string, metadata?: WorldSeriesMetadata) => {
+  const addToQueue = useCallback(
+    (worldName: string, metadata?: WorldSeriesMetadata, configOverrides?: WorldConfigOverride) => {
     // Persist to storage
     saveWorldNameToStorage(worldName);
     if (metadata) {
       updateWorldSeriesMetadata(worldName, metadata);
     }
 
-    dispatch({ type: "ADD_TO_QUEUE", worldName, metadata });
-  }, []);
+      dispatch({ type: "ADD_TO_QUEUE", worldName, metadata, configOverrides });
+    },
+    [],
+  );
 
   const removeFromQueue = useCallback((worldName: string) => {
     // Remove from storage
@@ -357,12 +366,9 @@ export const useFactoryDeployment = () => {
     dispatch({ type: "SET_WORLD_STATUSES", statuses });
   }, []);
 
-  const updateWorldConfigOverride = useCallback(
-    (worldName: string, overrides: Partial<GamePresetConfigOverrides> & { startTime?: number }) => {
-      dispatch({ type: "UPDATE_WORLD_CONFIG_OVERRIDE", worldName, overrides });
-    },
-    [],
-  );
+  const updateWorldConfigOverride = useCallback((worldName: string, overrides: Partial<WorldConfigOverride>) => {
+    dispatch({ type: "UPDATE_WORLD_CONFIG_OVERRIDE", worldName, overrides });
+  }, []);
 
   const toggleUI = useCallback((key: keyof FactoryUIState) => {
     dispatch({ type: "TOGGLE_UI", key });
