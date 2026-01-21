@@ -140,7 +140,7 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
             utils: ["lodash", "uuid", "platform", "buffer", "wouter"],
 
             // Communication & External APIs
-            external: ["socket.io-client", "graphql-request", "@vercel/analytics", "posthog-js"],
+            external: ["graphql-request", "@vercel/analytics", "posthog-js"],
           },
           inlineDynamicImports: false,
           sourcemapIgnoreList: (relativeSourcePath) => {
