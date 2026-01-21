@@ -32,7 +32,9 @@ const TradeConfirmDialog = ({
   token,
   selectedOutcome,
   potentialWin,
-  avgEntry,
+  userShares,
+  netResult,
+  isProfit,
   onConfirm,
   isSubmitting,
 }: {
@@ -42,7 +44,9 @@ const TradeConfirmDialog = ({
   token: RegisteredToken;
   selectedOutcome?: MarketOutcome;
   potentialWin: string | null;
-  avgEntry: number | null;
+  userShares: number | null;
+  netResult: string | null;
+  isProfit: boolean;
   onConfirm: () => void;
   isSubmitting: boolean;
 }) => {
@@ -107,15 +111,36 @@ const TradeConfirmDialog = ({
             </div>
           </div>
 
-          {/* Potential Win */}
+          {/* Payout Summary */}
           {potentialWin && (
-            <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3 text-center">
-              <p className="text-xs uppercase tracking-wide text-brilliance/70">Potential win</p>
-              <div className="mt-1 flex items-center justify-center gap-2">
-                <span className="font-cinzel text-xl font-bold text-brilliance">+{potentialWin}</span>
-                <TokenIcon token={token} size={18} />
+            <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3">
+              <div className="space-y-2">
+                {/* Shares */}
+                {userShares != null && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gold/60">Your Shares</span>
+                    <span className="font-medium text-white">{userShares.toFixed(2)}%</span>
+                  </div>
+                )}
+                {/* Payout if Win */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gold/60">Payout if Win</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-cinzel text-lg font-bold text-brilliance">{potentialWin}</span>
+                    <TokenIcon token={token} size={16} />
+                  </div>
+                </div>
+                {/* Net Profit */}
+                {netResult && (
+                  <div className="flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
+                    <span className="text-gold/60">Net Profit</span>
+                    <span className={isProfit ? "font-semibold text-brilliance" : "font-semibold text-danger"}>
+                      {isProfit ? "+" : "-"}
+                      {netResult}
+                    </span>
+                  </div>
+                )}
               </div>
-              {avgEntry && <p className="mt-1 text-[10px] text-brilliance/60">at {avgEntry.toFixed(2)}% avg entry</p>}
             </div>
           )}
 
@@ -203,18 +228,20 @@ const TokenAmountInput = ({
   return (
     <div className="space-y-3">
       {/* Large centered input */}
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-2">
+      <div className="flex flex-col items-center">
+        <div className="relative flex items-center justify-center">
           <input
             type="number"
             min="0"
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full max-w-[160px] bg-transparent text-center font-cinzel text-3xl text-white outline-none placeholder:text-gold/30"
+            className="w-[140px] bg-transparent text-center font-cinzel text-3xl text-white outline-none placeholder:text-gold/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             placeholder="0"
           />
-          <TokenIcon token={token} size={24} />
+          <div className="pointer-events-none absolute right-0 top-2 translate-x-full pl-2">
+            <TokenIcon token={token} size={24} />
+          </div>
         </div>
         <span className="text-sm text-gold/50">{token?.symbol}</span>
       </div>
@@ -339,7 +366,13 @@ export function MarketTrade({
       outcomeLiquidityRaw == null ||
       BigInt(totalLiquidityRaw) <= 0n
     ) {
-      return { averageEntryPercent: null, potentialWinFormatted: null, isProfitable: true };
+      return {
+        userShares: null,
+        potentialWinFormatted: null,
+        netResultFormatted: null,
+        isProfit: false,
+        isProfitable: true,
+      };
     }
 
     const baseAmountBig = BigInt(baseAmount);
@@ -359,18 +392,32 @@ export function MarketTrade({
     const newTotalLiquidity = totalLiquidity + effectiveAmount;
 
     if (newOutcomeLiquidity === 0n || newTotalLiquidity === 0n) {
-      return { averageEntryPercent: null, potentialWinFormatted: null, isProfitable: true };
+      return {
+        userShares: null,
+        potentialWinFormatted: null,
+        netResultFormatted: null,
+        isProfit: false,
+        isProfitable: true,
+      };
     }
 
-    const averageEntryPercent = Number((newOutcomeLiquidity * 10_000n) / newTotalLiquidity) / 100;
-    // Potential win is based on effective amount (after fees)
+    // Parimutuel calculation:
+    // User's shares = (effectiveAmount / newOutcomeLiquidity) * 100
+    const userShares = Number((effectiveAmount * 10_000n) / newOutcomeLiquidity) / 100;
+
+    // Payout if win = (shares * totalPool) / 100 = effectiveAmount * totalPool / outcomePool
     const potentialWinRaw = (effectiveAmount * newTotalLiquidity) / newOutcomeLiquidity;
     const potentialWinFormatted = formatUnits(potentialWinRaw, collateralDecimals, 4);
+
+    // Net result = payout - initial bet
+    const netResultRaw = potentialWinRaw - baseAmountBig;
+    const netResultFormatted = formatUnits(netResultRaw < 0n ? -netResultRaw : netResultRaw, collateralDecimals, 4);
+    const isProfit = netResultRaw > 0n;
 
     // Check if potential win is greater than or equal to input amount
     const isProfitable = potentialWinRaw >= baseAmountBig;
 
-    return { averageEntryPercent, potentialWinFormatted, isProfitable };
+    return { userShares, potentialWinFormatted, netResultFormatted, isProfit, isProfitable };
   }, [amount, collateralDecimals, market, selectedOutcome]);
 
   const onBuy = async (outcomeIndex: number) => {
@@ -481,23 +528,44 @@ export function MarketTrade({
           {/* Amount Input */}
           <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
 
-          {/* Potential Win Display */}
-          <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3 text-center">
-            <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wide text-brilliance/70">
-              <TrendingUp className="h-3 w-3" />
-              <span>Potential Win</span>
+          {/* Payout Summary Display */}
+          <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3">
+            <div className="space-y-2">
+              {/* Your Shares */}
+              {tradePreview.userShares != null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gold/60">Your Shares</span>
+                  <span className="font-medium text-white">{tradePreview.userShares.toFixed(2)}%</span>
+                </div>
+              )}
+
+              {/* Payout if Win */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-brilliance/70">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>Payout if Win</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-cinzel text-xl font-bold text-brilliance">
+                    {tradePreview.potentialWinFormatted ?? "--"}
+                  </span>
+                  <TokenIcon token={market.collateralToken} size={18} />
+                </div>
+              </div>
+
+              {/* Net Profit/Loss */}
+              {tradePreview.netResultFormatted && (
+                <div className="flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
+                  <span className="text-gold/60">Net Profit</span>
+                  <span
+                    className={tradePreview.isProfit ? "font-semibold text-brilliance" : "font-semibold text-danger"}
+                  >
+                    {tradePreview.isProfit ? "+" : "-"}
+                    {tradePreview.netResultFormatted}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="mt-1 flex items-center justify-center gap-2">
-              <span className="font-cinzel text-2xl font-bold text-brilliance">
-                {tradePreview.potentialWinFormatted ?? "--"}
-              </span>
-              <TokenIcon token={market.collateralToken} size={20} />
-            </div>
-            {tradePreview.averageEntryPercent && (
-              <p className="mt-1 text-[10px] text-brilliance/60">
-                at {tradePreview.averageEntryPercent.toFixed(2)}% avg entry
-              </p>
-            )}
           </div>
 
           {/* Selected Outcome / Buy Buttons */}
@@ -615,7 +683,9 @@ export function MarketTrade({
         token={market.collateralToken}
         selectedOutcome={selectedOutcome}
         potentialWin={tradePreview.potentialWinFormatted}
-        avgEntry={tradePreview.averageEntryPercent}
+        userShares={tradePreview.userShares}
+        netResult={tradePreview.netResultFormatted}
+        isProfit={tradePreview.isProfit}
         onConfirm={() => onBuy(selectedOutcome?.index ?? 0)}
         isSubmitting={isSubmitting}
       />
