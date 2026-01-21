@@ -31,6 +31,17 @@ in desktop and `client/apps/eternum-mobile/src` in mobile. Run `pnpm --dir clien
 patches; fixable issues can be auto-corrected with `lint:fix`. Formatting is enforced through Prettier (`format` /
 `format:check`).
 
+## Cairo Contract Guidelines
+
+When modifying Cairo contracts in `contracts/game/`:
+
+- **Always run `scarb fmt` before committing**: CI enforces formatting via `scarb fmt --check`. Run formatting from the
+  contract directory: `cd contracts/game && scarb fmt`
+- **Run tests before pushing**: Use `sozo test -f <test_name>` to run specific tests or `sozo test` for all tests
+- **Use Dojo 1.8.0 patterns**: Models use `#[dojo::model]`, events use `#[dojo::event]`, contracts use `#[dojo::contract]`
+- **Follow existing module structure**: Systems go in `src/systems/<name>/contracts.cairo`, models in `src/models/`
+- **Register new modules**: Add new systems/models to `src/systems.cairo` and `src/models.cairo` respectively
+
 ## Mobile Specific Guidelines
 
 - Use `client/apps/eternum-mobile/README.md` for mobile specific guidelines.

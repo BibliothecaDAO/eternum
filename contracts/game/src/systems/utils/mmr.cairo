@@ -13,8 +13,8 @@
 // 7. New Rating: MMR' = max(100, MMR + Δ_reg)
 
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use crate::models::mmr::MMRConfig;
 use starknet::ContractAddress;
+use crate::models::mmr::MMRConfig;
 
 
 // ================================
@@ -103,15 +103,15 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
                             new_sorted.append(*sorted.at(k));
                         }
                         k += 1;
-                    };
+                    }
                     sorted = new_sorted;
                     j -= 1;
                 } else {
                     break;
                 }
-            };
+            }
             i += 1;
-        };
+        }
 
         // Return median (middle element, or lower-middle for even length)
         let mid_idx = (len - 1) / 2;
@@ -188,12 +188,9 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
 
     /// Step 6: Apply mean regression
     /// Δ_reg = Δ - λ × (MMR - μ)
-    fn apply_mean_regression(
-        delta: Fixed, current_mmr: u128, mean: u128, lambda_scaled: u128,
-    ) -> Fixed {
+    fn apply_mean_regression(delta: Fixed, current_mmr: u128, mean: u128, lambda_scaled: u128) -> Fixed {
         // Convert lambda from scaled (1e6) to fixed
-        let lambda = FixedTrait::new_unscaled(lambda_scaled, false)
-            / FixedTrait::new_unscaled(PRECISION_SCALE, false);
+        let lambda = FixedTrait::new_unscaled(lambda_scaled, false) / FixedTrait::new_unscaled(PRECISION_SCALE, false);
 
         // (MMR - μ) - can be positive or negative
         let deviation = if current_mmr >= mean {
@@ -248,11 +245,7 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
     /// Calculate new MMR for a single player given game results
     /// Returns the new MMR value
     fn calculate_player_mmr(
-        config: MMRConfig,
-        player_mmr: u128,
-        rank: u16,
-        player_count: u16,
-        median_mmr: u128,
+        config: MMRConfig, player_mmr: u128, rank: u16, player_count: u16, median_mmr: u128,
     ) -> u128 {
         // Step 2: Expected percentile
         let p_exp = Self::expected_percentile(player_mmr, median_mmr, config.spread_factor);
@@ -278,10 +271,7 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
     /// Calculate MMR updates for all players in a game
     /// Returns array of (player, new_mmr) tuples
     fn calculate_game_mmr_updates(
-        config: MMRConfig,
-        players: Span<ContractAddress>,
-        ranks: Span<u16>,
-        current_mmrs: Span<u128>,
+        config: MMRConfig, players: Span<ContractAddress>, ranks: Span<u16>, current_mmrs: Span<u128>,
     ) -> Array<(ContractAddress, u128)> {
         let player_count: u16 = players.len().try_into().unwrap();
 
@@ -296,13 +286,11 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
             let rank = *ranks.at(i);
             let current_mmr = *current_mmrs.at(i);
 
-            let new_mmr = Self::calculate_player_mmr(
-                config, current_mmr, rank, player_count, median_mmr,
-            );
+            let new_mmr = Self::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
 
             updates.append((player, new_mmr));
             i += 1;
-        };
+        }
 
         updates
     }
@@ -315,10 +303,10 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
 
 #[cfg(test)]
 mod tests {
-    use super::MMRCalculatorImpl;
-    use crate::models::mmr::MMRConfigDefaultImpl;
     use cubit::f128::types::fixed::FixedTrait;
     use starknet::ContractAddress;
+    use crate::models::mmr::MMRConfigDefaultImpl;
+    use super::MMRCalculatorImpl;
 
     // ================================
     // MEDIAN CALCULATION TESTS
@@ -725,9 +713,7 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1000;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, rank, player_count, median_mmr,
-        );
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
 
         // Winner should gain MMR
         assert!(new_mmr > current_mmr, "Winner should gain MMR");
@@ -743,9 +729,7 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1000;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, rank, player_count, median_mmr,
-        );
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
 
         // Loser should lose MMR
         assert!(new_mmr < current_mmr, "Loser should lose MMR");
@@ -761,9 +745,7 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1500;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, rank, player_count, median_mmr,
-        );
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
 
         // Should not go below floor
         assert!(new_mmr >= config.min_mmr, "MMR should not go below floor");
@@ -780,9 +762,7 @@ mod tests {
         let player_count: u16 = 6;
         let rank: u16 = 1;
 
-        let high_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, high_mmr, rank, player_count, median_mmr,
-        );
+        let high_new = MMRCalculatorImpl::calculate_player_mmr(config, high_mmr, rank, player_count, median_mmr);
         let med_new = MMRCalculatorImpl::calculate_player_mmr(
             config, median_player_mmr, rank, player_count, median_mmr,
         );
@@ -805,9 +785,7 @@ mod tests {
         let player_count: u16 = 6;
         let rank: u16 = 6; // last place
 
-        let low_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, low_mmr, rank, player_count, median_mmr,
-        );
+        let low_new = MMRCalculatorImpl::calculate_player_mmr(config, low_mmr, rank, player_count, median_mmr);
 
         // Low MMR player was expected to lose, so performance matches expectations
         // Mean regression pulls toward 1500, which can actually offset losses
@@ -816,12 +794,14 @@ mod tests {
 
         // Compare to a player with higher MMR losing
         let med_mmr: u128 = 1000;
-        let med_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, med_mmr, rank, player_count, median_mmr,
-        );
+        let med_new = MMRCalculatorImpl::calculate_player_mmr(config, med_mmr, rank, player_count, median_mmr);
 
         // The median player underperformed more, so should lose more
-        let low_change = if low_new > low_mmr { low_new - low_mmr } else { low_mmr - low_new };
+        let low_change = if low_new > low_mmr {
+            low_new - low_mmr
+        } else {
+            low_mmr - low_new
+        };
         let med_loss = med_mmr - med_new;
         // Median player's loss should be larger (they underperformed expectations more)
         assert!(med_loss > low_change, "Median MMR loser should have larger net change");
@@ -837,9 +817,7 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1000;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, rank, player_count, median_mmr,
-        );
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
 
         // Change should be relatively small
         let change = if new_mmr > current_mmr {
@@ -950,13 +928,9 @@ mod tests {
         let player_count: u16 = 2;
 
         // Winner
-        let winner_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, 1, player_count, median_mmr,
-        );
+        let winner_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 1, player_count, median_mmr);
         // Loser
-        let loser_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, 2, player_count, median_mmr,
-        );
+        let loser_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 2, player_count, median_mmr);
 
         assert!(winner_new > current_mmr, "2-player winner should gain");
         assert!(loser_new < current_mmr, "2-player loser should lose");
@@ -971,20 +945,14 @@ mod tests {
         let median_mmr: u128 = 1000;
         let player_count: u16 = 12;
 
-        let winner_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, 1, player_count, median_mmr,
-        );
-        let loser_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, 12, player_count, median_mmr,
-        );
+        let winner_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 1, player_count, median_mmr);
+        let loser_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 12, player_count, median_mmr);
 
         // Larger lobby should have larger potential changes (sqrt(N/6) scaling)
         assert!(winner_new > current_mmr, "12-player winner should gain");
         assert!(loser_new < current_mmr, "12-player loser should lose");
 
-        let winner_6_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, current_mmr, 1, 6, median_mmr,
-        );
+        let winner_6_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 1, 6, median_mmr);
         let winner_12_gain = winner_new - current_mmr;
         let winner_6_gain = winner_6_new - current_mmr;
         assert!(winner_12_gain > winner_6_gain, "12-player winner should gain more than 6-player");
@@ -1000,9 +968,7 @@ mod tests {
         let player_count: u16 = 6;
 
         // If they win (expected), they may still gain a tiny amount
-        let high_winner = MMRCalculatorImpl::calculate_player_mmr(
-            config, high_mmr, 1, player_count, median_mmr,
-        );
+        let high_winner = MMRCalculatorImpl::calculate_player_mmr(config, high_mmr, 1, player_count, median_mmr);
         // Due to mean regression pulling toward 1500, very high MMR
         // player may actually lose MMR even when winning!
         // This is expected behavior - the system pulls back to mean
@@ -1010,9 +976,7 @@ mod tests {
         assert!(high_winner > 0, "Winner MMR should be positive");
 
         // If they lose (unexpected), they lose MMR
-        let high_loser = MMRCalculatorImpl::calculate_player_mmr(
-            config, high_mmr, 6, player_count, median_mmr,
-        );
+        let high_loser = MMRCalculatorImpl::calculate_player_mmr(config, high_mmr, 6, player_count, median_mmr);
         // Loser should have less MMR than winner
         assert!(high_loser < high_winner, "Loser should have less than winner");
     }

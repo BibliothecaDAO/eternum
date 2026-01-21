@@ -27,12 +27,7 @@ pub trait IMMRSystems<T> {
     fn is_series_ranked(self: @T, trial_id: u128) -> bool;
 
     /// Process MMR updates for a completed game using explicit player/rank arrays
-    fn process_game_mmr(
-        ref self: T,
-        trial_id: u128,
-        players: Array<ContractAddress>,
-        ranks: Array<u16>,
-    );
+    fn process_game_mmr(ref self: T, trial_id: u128, players: Array<ContractAddress>, ranks: Array<u16>);
 
     /// Process MMR updates for a completed game by reading from trial models
     /// This is the preferred method - called by prize_distribution_systems
@@ -120,10 +115,7 @@ pub mod mmr_systems {
         }
 
         fn process_game_mmr(
-            ref self: ContractState,
-            trial_id: u128,
-            players: Array<ContractAddress>,
-            ranks: Array<u16>,
+            ref self: ContractState, trial_id: u128, players: Array<ContractAddress>, ranks: Array<u16>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
@@ -232,13 +224,10 @@ pub mod mmr_systems {
                 update_batch.append((player, new_mmr.into()));
 
                 // Emit player event
-                world
-                    .emit_event(
-                        @PlayerMMRChanged { player, trial_id, old_mmr, new_mmr, rank, timestamp: now },
-                    );
+                world.emit_event(@PlayerMMRChanged { player, trial_id, old_mmr, new_mmr, rank, timestamp: now });
 
                 j += 1;
-            };
+            }
 
             // Batch update MMR tokens (only if token is configured)
             if has_token {
@@ -302,10 +291,10 @@ pub mod mmr_systems {
                     players.append(rank_list.player);
                     ranks.append(rank);
                     index += 1;
-                };
+                }
 
                 rank += 1;
-            };
+            }
 
             // Call the main process function
             self.process_game_mmr(trial_id, players, ranks);
@@ -337,9 +326,7 @@ pub mod mmr_systems {
             world.read_model((trial_id, player))
         }
 
-        fn is_game_mmr_eligible(
-            self: @ContractState, trial_id: u128, player_count: u16, entry_fee: u256,
-        ) -> bool {
+        fn is_game_mmr_eligible(self: @ContractState, trial_id: u128, player_count: u16, entry_fee: u256) -> bool {
             let world: WorldStorage = self.world(DEFAULT_NS());
             let mmr_config: MMRConfig = WorldConfigUtilImpl::get_member(world, selector!("mmr_config"));
 

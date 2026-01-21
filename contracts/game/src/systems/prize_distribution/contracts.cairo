@@ -48,13 +48,13 @@ pub mod prize_distribution_systems {
     use crate::models::season::SeasonPrize;
     use crate::models::series_chest_reward::{GameChestReward, SeriesChestRewardState};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use crate::systems::mmr::contracts::{IMMRSystemsDispatcherTrait, mmr_systems};
     use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use crate::systems::utils::prize::iPrizeDistributionCalcImpl;
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator;
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::SeriesChestRewardStateImpl;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use crate::utils::world::CustomDojoWorldImpl;
-    use crate::systems::mmr::contracts::{mmr_systems, IMMRSystemsDispatcherTrait};
     use super::{
         IPrizeDistributionSystems, IPrizeDistributionSystemsSafeDispatcher,
         IPrizeDistributionSystemsSafeDispatcherTrait, IWorldFactorySeriesDispatcher, IWorldFactorySeriesDispatcherTrait,

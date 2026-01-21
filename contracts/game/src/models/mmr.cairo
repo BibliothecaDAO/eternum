@@ -110,9 +110,7 @@ pub impl PlayerMMRStatsImpl of PlayerMMRStatsTrait {
     }
 
     /// Update stats after a game
-    fn record_game(
-        ref self: PlayerMMRStats, new_mmr: u128, old_mmr: u128, timestamp: u64,
-    ) {
+    fn record_game(ref self: PlayerMMRStats, new_mmr: u128, old_mmr: u128, timestamp: u64) {
         self.games_played += 1;
         self.last_game_timestamp = timestamp;
 
@@ -207,8 +205,8 @@ pub struct SeriesMMRConfig {
 
 #[cfg(test)]
 mod tests {
-    use super::{MMRConfigDefaultImpl, PlayerMMRStatsTrait};
     use starknet::ContractAddress;
+    use super::{MMRConfigDefaultImpl, PlayerMMRStatsTrait};
 
     fn addr(val: felt252) -> ContractAddress {
         val.try_into().unwrap()
@@ -410,7 +408,7 @@ mod tests {
         for i in 1..11_u32 {
             stats.record_game(1000, 1000, i.into() * 100);
             assert!(stats.games_played == i, "Games should match iteration");
-        };
+        }
 
         assert!(stats.games_played == 10, "Should have 10 games");
     }

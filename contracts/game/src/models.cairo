@@ -1,12 +1,12 @@
 pub mod agent;
 pub mod config;
 pub mod events;
-pub mod mmr;
 pub mod guild;
 pub mod hyperstructure;
 pub mod map;
 pub mod map2;
 pub mod message;
+pub mod mmr;
 pub mod name;
 pub mod owner;
 pub mod position;

@@ -10,9 +10,10 @@ use core::dict::Felt252Dict;
 use core::num::traits::Zero;
 use dojo::model::{Model, ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait, world};
-use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
-use starknet::ContractAddress;
-use starknet::contract_address_const;
+use dojo_cairo_test::{
+    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
+};
+use starknet::{ContractAddress, contract_address_const};
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, WORLD_CONFIG_ID};
 use crate::models::config::{WorldConfig, WorldConfigUtilImpl, m_WorldConfig};
 use crate::models::mmr::{
@@ -66,16 +67,13 @@ fn namespace_def() -> NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
             // Config models
-            TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-            // MMR models
+            TestResource::Model(m_WorldConfig::TEST_CLASS_HASH), // MMR models
             TestResource::Model(m_PlayerMMRStats::TEST_CLASS_HASH),
             TestResource::Model(m_GameMMRRecord::TEST_CLASS_HASH),
             TestResource::Model(m_SeriesMMRConfig::TEST_CLASS_HASH),
             // Rank models (for trial data)
-            TestResource::Model(m_PlayersRankTrial::TEST_CLASS_HASH),
-            TestResource::Model(m_RankPrize::TEST_CLASS_HASH),
-            TestResource::Model(m_RankList::TEST_CLASS_HASH),
-            // MMR systems contract
+            TestResource::Model(m_PlayersRankTrial::TEST_CLASS_HASH), TestResource::Model(m_RankPrize::TEST_CLASS_HASH),
+            TestResource::Model(m_RankList::TEST_CLASS_HASH), // MMR systems contract
             TestResource::Contract(mmr_systems::TEST_CLASS_HASH),
             // MMR events
             TestResource::Event(mmr_systems::e_MMRGameProcessed::TEST_CLASS_HASH),
@@ -121,18 +119,13 @@ fn setup_mmr_config(ref world: WorldStorage) {
         k_factor: 50,
         mean_regression_scaled: 15000, // 0.015 * 1e6
         min_players: 2, // Lower threshold for testing
-        min_entry_fee: 0, // No fee requirement for testing
+        min_entry_fee: 0 // No fee requirement for testing
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 }
 
 /// Set up a mock trial with player rankings
-fn setup_mock_trial(
-    ref world: WorldStorage,
-    trial_id: u128,
-    players: Span<ContractAddress>,
-    ranks: Span<u16>,
-) {
+fn setup_mock_trial(ref world: WorldStorage, trial_id: u128, players: Span<ContractAddress>, ranks: Span<u16>) {
     let player_count: u16 = players.len().try_into().unwrap();
 
     // Create trial
@@ -364,7 +357,7 @@ fn test_is_game_mmr_eligible_below_min_fee() {
         k_factor: 50,
         mean_regression_scaled: 15000,
         min_players: 2,
-        min_entry_fee: 1_000000000000000000, // 1 LORDS (18 decimals)
+        min_entry_fee: 1_000000000000000000 // 1 LORDS (18 decimals)
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
@@ -380,14 +373,11 @@ fn test_is_game_mmr_eligible_below_min_fee() {
 
     // Below min fee should not be eligible
     assert!(
-        !mmr.is_game_mmr_eligible(trial_id, 6, 500000000000000000),
-        "Should not be eligible below min fee",
+        !mmr.is_game_mmr_eligible(trial_id, 6, 500000000000000000), "Should not be eligible below min fee",
     ); // 0.5 LORDS
 
     // Exactly min fee should be eligible
-    assert!(
-        mmr.is_game_mmr_eligible(trial_id, 6, 1_000000000000000000), "Should be eligible with exactly min fee",
-    );
+    assert!(mmr.is_game_mmr_eligible(trial_id, 6, 1_000000000000000000), "Should be eligible with exactly min fee");
 
     // Above min fee should be eligible
     assert!(mmr.is_game_mmr_eligible(trial_id, 6, 5_000000000000000000), "Should be eligible above min fee");
@@ -468,7 +458,6 @@ fn test_process_game_mmr_already_processed() {
     let players = array![PLAYER1(), PLAYER2()];
     let ranks = array![1_u16, 2];
     mmr.process_game_mmr(trial_id, players, ranks);
-
     // Would need token to actually create records, so we just verify no panic
 }
 
@@ -529,12 +518,7 @@ fn test_multiple_series_independent() {
 // ================================
 
 /// Helper to set up a complete trial with players and rankings
-fn setup_complete_trial(
-    ref world: WorldStorage,
-    trial_id: u128,
-    players: Span<ContractAddress>,
-    ranks: Span<u16>,
-) {
+fn setup_complete_trial(ref world: WorldStorage, trial_id: u128, players: Span<ContractAddress>, ranks: Span<u16>) {
     let player_count: u16 = players.len().try_into().unwrap();
     let last_rank: u16 = *ranks.at(ranks.len() - 1);
 
@@ -572,7 +556,7 @@ fn setup_complete_trial(
         rank_counts.insert(rank.into(), current_count + 1);
 
         i += 1;
-    };
+    }
 
     // Create RankPrize entries for each unique rank
     let mut rank: u16 = 1;
@@ -788,7 +772,8 @@ fn test_process_game_mmr_from_trial_six_players() {
     mmr.set_series_ranked(trial_id, true);
 
     // Set up trial with 6 players (standard Blitz game)
-    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4(), PLAYER5(), PLAYER6()].span();
+    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4(), PLAYER5(), PLAYER6()]
+        .span();
     let ranks: Span<u16> = array![1_u16, 2, 3, 4, 5, 6].span();
     setup_complete_trial(ref world, trial_id, players, ranks);
 
@@ -837,7 +822,8 @@ fn test_mmr_calculator_full_game() {
     let config = MMRConfigDefaultImpl::default();
 
     // 6 players with equal MMR
-    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4(), PLAYER5(), PLAYER6()].span();
+    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4(), PLAYER5(), PLAYER6()]
+        .span();
     let ranks: Span<u16> = array![1_u16, 2, 3, 4, 5, 6].span();
     let mmrs: Span<u128> = array![1000_u128, 1000, 1000, 1000, 1000, 1000].span();
 
