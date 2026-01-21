@@ -84,9 +84,7 @@ const TradeConfirmDialog = ({
           <div className="rounded-lg bg-brown/50 p-4 text-center">
             <p className="text-xs uppercase tracking-wide text-gold/50">You are buying</p>
             <div className="mt-1 flex items-center justify-center gap-2">
-              <span className="font-cinzel text-2xl font-bold text-white">
-                {Number(amount) > 0 ? amount : "0"}
-              </span>
+              <span className="font-cinzel text-2xl font-bold text-white">{Number(amount) > 0 ? amount : "0"}</span>
               <TokenIcon token={token} size={20} />
               <span className="text-gold/70">{token?.symbol}</span>
             </div>
@@ -117,9 +115,7 @@ const TradeConfirmDialog = ({
                 <span className="font-cinzel text-xl font-bold text-brilliance">+{potentialWin}</span>
                 <TokenIcon token={token} size={18} />
               </div>
-              {avgEntry && (
-                <p className="mt-1 text-[10px] text-brilliance/60">at {avgEntry.toFixed(2)}% avg entry</p>
-              )}
+              {avgEntry && <p className="mt-1 text-[10px] text-brilliance/60">at {avgEntry.toFixed(2)}% avg entry</p>}
             </div>
           )}
 
@@ -247,7 +243,9 @@ const TokenAmountInput = ({
       </div>
 
       {/* Balance */}
-      <p className="text-center text-[10px] text-gold/40">Balance: {balanceFormatted} {token?.symbol}</p>
+      <p className="text-center text-[10px] text-gold/40">
+        Balance: {balanceFormatted} {token?.symbol}
+      </p>
     </div>
   );
 };
@@ -517,7 +515,13 @@ export function MarketTrade({
                   disabled={isSubmitting || !isProfitableForOutcome(0)}
                   forceUppercase={false}
                 >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : !isProfitableForOutcome(0) ? "Odds too low" : "Buy YES"}
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : !isProfitableForOutcome(0) ? (
+                    "Odds too low"
+                  ) : (
+                    "Buy YES"
+                  )}
                 </Button>
                 <Button
                   variant="danger"
@@ -530,7 +534,13 @@ export function MarketTrade({
                   disabled={isSubmitting || !isProfitableForOutcome(1)}
                   forceUppercase={false}
                 >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : !isProfitableForOutcome(1) ? "Odds too low" : "Buy NO"}
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : !isProfitableForOutcome(1) ? (
+                    "Odds too low"
+                  ) : (
+                    "Buy NO"
+                  )}
                 </Button>
               </div>
               {(!isProfitableForOutcome(0) || !isProfitableForOutcome(1)) && (

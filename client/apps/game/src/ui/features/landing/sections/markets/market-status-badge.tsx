@@ -5,7 +5,18 @@ import { MarketClass } from "@/pm/class";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
-type StatusKey = "open" | "active" | "trading" | "closed" | "resolvable" | "resolved" | "settling" | "pending" | "upcoming" | "cancelled" | "default";
+type StatusKey =
+  | "open"
+  | "active"
+  | "trading"
+  | "closed"
+  | "resolvable"
+  | "resolved"
+  | "settling"
+  | "pending"
+  | "upcoming"
+  | "cancelled"
+  | "default";
 
 const STATUS_STYLES: Record<StatusKey, string> = {
   open: "border-brilliance/40 bg-brilliance/10 text-brilliance",
@@ -62,7 +73,12 @@ export const MarketStatusBadge = ({ market }: { market: MarketClass }) => {
   const Icon = STATUS_ICONS[computedStatus] || STATUS_ICONS.default;
 
   return (
-    <span className={cx("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide", style)}>
+    <span
+      className={cx(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide",
+        style,
+      )}
+    >
       <Icon className="h-3 w-3" aria-hidden="true" />
       {formatStatus(computedStatus)}
     </span>

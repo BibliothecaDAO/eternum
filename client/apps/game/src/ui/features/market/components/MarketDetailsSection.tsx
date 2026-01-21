@@ -126,9 +126,7 @@ export const MarketDetailsSection = ({ initialMarket, onRefreshMarkets }: Market
               type="button"
               className={cx(
                 "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all",
-                isActive
-                  ? "bg-gold/20 text-gold"
-                  : "bg-brown/50 text-gold/50 hover:bg-gold/10 hover:text-gold/70",
+                isActive ? "bg-gold/20 text-gold" : "bg-brown/50 text-gold/50 hover:bg-gold/10 hover:text-gold/70",
               )}
               onClick={() => setActiveTab(tab.key)}
             >

@@ -74,9 +74,7 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
         {/* Header */}
         <div className="mb-4 flex items-center justify-between border-b border-gold/10 pb-3">
           <h3 className="font-cinzel text-lg font-semibold text-gold">Top Earners</h3>
-          <span className="text-xs text-gold/50">
-            {entries.length || 0} players ranked
-          </span>
+          <span className="text-xs text-gold/50">{entries.length || 0} players ranked</span>
         </div>
 
         {/* Content */}
@@ -110,7 +108,9 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
                     className={cx(
                       "flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors",
                       "animate-fade-in-up",
-                      rankStyle ? `${rankStyle.bg} ${rankStyle.border} ${rankStyle.ring}` : "border-gold/10 bg-brown/30 hover:bg-brown/50",
+                      rankStyle
+                        ? `${rankStyle.bg} ${rankStyle.border} ${rankStyle.ring}`
+                        : "border-gold/10 bg-brown/30 hover:bg-brown/50",
                     )}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
@@ -120,26 +120,17 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
                       <div
                         className={cx(
                           "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full font-cinzel text-sm font-bold",
-                          rankStyle
-                            ? `${rankStyle.bg} ${rankStyle.text}`
-                            : "bg-brown/50 text-gold/60",
+                          rankStyle ? `${rankStyle.bg} ${rankStyle.text}` : "bg-brown/50 text-gold/60",
                         )}
                       >
-                        {RankIcon ? (
-                          <RankIcon className={cx("h-4 w-4", rankStyle?.iconColor)} />
-                        ) : (
-                          rank
-                        )}
+                        {RankIcon ? <RankIcon className={cx("h-4 w-4", rankStyle?.iconColor)} /> : rank}
                       </div>
 
                       {/* Player Name */}
                       <div className="min-w-0">
                         <MaybeController
                           address={entry.address}
-                          className={cx(
-                            "truncate font-semibold",
-                            rankStyle ? rankStyle.text : "text-gold/80",
-                          )}
+                          className={cx("truncate font-semibold", rankStyle ? rankStyle.text : "text-gold/80")}
                         />
                         {/* Mobile: Show trades count under name */}
                         <p className="text-[10px] text-gold/40 sm:hidden">
@@ -164,7 +155,10 @@ export const MarketsLeaderboardView = ({ initialRange = "all" }: MarketsLeaderbo
                           entry.pnl >= 0 ? "bg-brilliance/10 text-brilliance" : "bg-danger/10 text-danger",
                         )}
                       >
-                        <span>{entry.pnl >= 0 ? "+" : ""}{formatNumber(entry.pnl, 2)}</span>
+                        <span>
+                          {entry.pnl >= 0 ? "+" : ""}
+                          {formatNumber(entry.pnl, 2)}
+                        </span>
                       </div>
 
                       {/* Volume - Hidden on mobile */}

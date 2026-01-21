@@ -107,7 +107,9 @@ export const OddsBarChart = ({ market, maxVisible = 5, animated = true }: OddsBa
                 <MaybeController address={outcome.name} />
                 {isWinner && <span className="text-[10px] text-brilliance">(Winner)</span>}
               </span>
-              <span className={cx("ml-2 flex-shrink-0 font-mono font-medium", isWinner ? "text-brilliance" : "text-gold")}>
+              <span
+                className={cx("ml-2 flex-shrink-0 font-mono font-medium", isWinner ? "text-brilliance" : "text-gold")}
+              >
                 {oddsPercent > 0 ? `${oddsPercent < 1 ? oddsPercent.toFixed(2) : oddsPercent.toFixed(1)}%` : "--"}
               </span>
             </div>
@@ -130,7 +132,9 @@ export const OddsBarChart = ({ market, maxVisible = 5, animated = true }: OddsBa
       })}
 
       {hiddenCount > 0 && (
-        <p className="pt-1 text-[10px] text-gold/50">+{hiddenCount} more outcome{hiddenCount > 1 ? "s" : ""}</p>
+        <p className="pt-1 text-[10px] text-gold/50">
+          +{hiddenCount} more outcome{hiddenCount > 1 ? "s" : ""}
+        </p>
       )}
     </div>
   );
