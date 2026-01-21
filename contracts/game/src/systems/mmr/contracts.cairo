@@ -55,6 +55,7 @@ pub mod mmr_systems {
     use crate::models::mmr::{
         GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, PlayerMMRStats, PlayerMMRStatsTrait, SeriesMMRConfig,
     };
+    use crate::models::config::BlitzRegistrationConfig;
     use crate::models::rank::{PlayersRankTrial, RankList, RankPrize};
     use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
     use crate::systems::utils::mmr::MMRCalculatorImpl;
@@ -135,6 +136,13 @@ pub mod mmr_systems {
 
             // Check if series is ranked
             if !series_config.is_ranked {
+                return;
+            }
+
+            // Check minimum entry fee
+            let blitz_registration_config: BlitzRegistrationConfig =
+                WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+            if blitz_registration_config.fee_amount < mmr_config.min_entry_fee {
                 return;
             }
 
@@ -279,6 +287,13 @@ pub mod mmr_systems {
 
             // Check if ranked
             if !series_config.is_ranked {
+                return;
+            }
+
+            // Check minimum entry fee
+            let blitz_registration_config: BlitzRegistrationConfig =
+                WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+            if blitz_registration_config.fee_amount < mmr_config.min_entry_fee {
                 return;
             }
 

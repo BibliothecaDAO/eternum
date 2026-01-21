@@ -9,7 +9,7 @@
 use core::dict::Felt252Dict;
 use core::num::traits::Zero;
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, WORLD_CONFIG_ID};
-use crate::models::config::{WorldConfig, WorldConfigUtilImpl, m_WorldConfig};
+use crate::models::config::{BlitzRegistrationConfig, WorldConfig, WorldConfigUtilImpl, m_WorldConfig};
 use crate::models::mmr::{
     GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, PlayerMMRStats, SeriesMMRConfig, m_GameMMRRecord, m_PlayerMMRStats,
     m_SeriesMMRConfig,
@@ -123,6 +123,26 @@ fn setup_mmr_config(ref world: WorldStorage) {
         min_entry_fee: 0 // No fee requirement for testing
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
+}
+
+/// Set blitz registration fee (used for MMR min entry fee checks)
+fn setup_blitz_registration_fee(ref world: WorldStorage, fee_amount: u256) {
+    let blitz_registration_config = BlitzRegistrationConfig {
+        fee_amount,
+        fee_token: Zero::zero(),
+        fee_recipient: Zero::zero(),
+        entry_token_address: Zero::zero(),
+        collectibles_cosmetics_max: 0,
+        collectibles_cosmetics_address: Zero::zero(),
+        collectibles_timelock_address: Zero::zero(),
+        collectibles_lootchest_address: Zero::zero(),
+        collectibles_elitenft_address: Zero::zero(),
+        registration_count: 0,
+        registration_count_max: 0,
+        registration_start_at: 0,
+        assigned_positions_count: 0,
+    };
+    WorldConfigUtilImpl::set_member(ref world, selector!("blitz_registration_config"), blitz_registration_config);
 }
 
 /// Set up a mock trial with player rankings
@@ -686,6 +706,7 @@ fn test_process_game_mmr_from_trial_incomplete() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
+    setup_blitz_registration_fee(ref world, 0);
 
     let mmr = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1025;
@@ -709,6 +730,51 @@ fn test_process_game_mmr_from_trial_incomplete() {
     // Verify no records were created
     let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
     assert!(record.timestamp == 0, "No record should be created for incomplete trial");
+}
+
+#[test]
+fn test_process_game_mmr_from_trial_below_min_entry_fee() {
+    let mut world = spawn_mmr_test_world();
+    setup_world_config(ref world, ADMIN());
+
+    // Set min_entry_fee to 1 LORDS
+    let mmr_config = MMRConfig {
+        enabled: true,
+        mmr_token_address: Zero::zero(),
+        initial_mmr: 1000,
+        min_mmr: 100,
+        distribution_mean: 1500,
+        spread_factor: 450,
+        max_delta: 45,
+        k_factor: 50,
+        lobby_split_weight_scaled: 250000,
+        mean_regression_scaled: 15000,
+        min_players: 2,
+        min_entry_fee: 1_000000000000000000,
+    };
+    WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
+
+    // Fee amount below min_entry_fee
+    setup_blitz_registration_fee(ref world, 0);
+
+    let mmr = get_mmr_dispatcher(@world);
+    let trial_id: u128 = 1026;
+
+    // Mark series as ranked
+    starknet::testing::set_contract_address(ADMIN());
+    mmr.set_series_ranked(trial_id, true);
+
+    // Set up complete trial
+    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
+    let ranks: Span<u16> = array![1_u16, 2].span();
+    setup_complete_trial(ref world, trial_id, players, ranks);
+
+    // Process MMR - should be a no-op since entry fee is below min
+    mmr.process_game_mmr_from_trial(trial_id);
+
+    // Verify no records were created
+    let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
+    assert!(record.timestamp == 0, "No record should be created below min entry fee");
 }
 
 #[test]
