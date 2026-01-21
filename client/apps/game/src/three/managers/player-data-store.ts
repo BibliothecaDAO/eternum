@@ -1,5 +1,5 @@
-import { sqlApi } from "@/services/api";
 import { getGameModeConfig } from "@/config/game-modes";
+import { sqlApi } from "@/services/api";
 import { StructureType } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";

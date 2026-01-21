@@ -34,7 +34,7 @@ const getHighlightColorForAction = (actionType: ActionType): Vector3 => {
 };
 
 // Maximum number of highlights that can be displayed at once
-const MAX_HIGHLIGHTS = 100;
+const MAX_HIGHLIGHTS = 500;
 
 // Temporary objects to avoid allocations in hot paths
 const tempMatrix = new Matrix4();
