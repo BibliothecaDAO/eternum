@@ -386,8 +386,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         row: outerRow,
       });
 
-      const existingBuildings = tileManager.existingBuildings();
-      const categoryBuildings = existingBuildings.filter((b) => b.category === target.type);
+      const currentBuildings = tileManager.existingBuildings();
+      const categoryBuildings = currentBuildings.filter((b) => b.category === target.type);
 
       if (categoryBuildings.length === 0) {
         toast.error("No buildings of this type found.");
@@ -425,25 +425,29 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     [dojo.account.account, dojo.setup.components, dojo.setup.systemCalls, entityId, realm?.position],
   );
 
-  const getCategoryPauseState = useCallback(
-    (buildingType: BuildingType): boolean | null => {
-      if (!realm?.position) return null;
-
-      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+  const existingBuildings = realm?.position
+    ? new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
         col: Number(realm.position.x),
         row: Number(realm.position.y),
-      });
+      }).existingBuildings()
+    : [];
 
-      const existingBuildings = tileManager.existingBuildings();
-      const categoryBuildings = existingBuildings.filter((b) => b.category === buildingType);
+  const pausedByCategory = useMemo(() => {
+    const counts = new Map<BuildingType, { total: number; paused: number }>();
+    existingBuildings.forEach((building) => {
+      const entry = counts.get(building.category) ?? { total: 0, paused: 0 };
+      entry.total += 1;
+      if (building.paused) entry.paused += 1;
+      counts.set(building.category, entry);
+    });
 
-      if (categoryBuildings.length === 0) return null;
+    const map = new Map<BuildingType, boolean>();
+    counts.forEach((entry, category) => {
+      map.set(category, entry.paused === entry.total);
+    });
 
-      // Return true if all are paused, false if any are active
-      return categoryBuildings.every((b) => b.paused);
-    },
-    [dojo.setup.components, dojo.setup.systemCalls, realm?.position],
-  );
+    return map;
+  }, [existingBuildings]);
 
   const realmBiome = useMemo<BiomeType | null>(() => {
     if (!realm?.position) return null;
@@ -667,7 +671,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               const destroyDisabled = count <= 0 || destroyPending;
 
               const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
-              const allPausedState = getCategoryPauseState(building);
+              const allPausedState = pausedByCategory.get(building);
 
               return (
                 <BuildingCard
@@ -774,7 +778,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const isMarket = building === BuildingType.ResourceDonkey;
 
                 const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
-                const allPausedState = getCategoryPauseState(building);
+                const allPausedState = pausedByCategory.get(building);
                 const showPauseResume = !isWorkersHut;
 
                 return (
@@ -940,7 +944,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             const destroyDisabled = count <= 0 || destroyPending;
 
                             const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
-                            const allPausedState = getCategoryPauseState(building);
+                            const allPausedState = pausedByCategory.get(building);
 
                             return (
                               <BuildingCard
@@ -1014,11 +1018,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       pendingBuilds,
       pendingDestroys,
       pendingPauseResume,
+      pausedByCategory,
       handleAutoBuild,
       handleDestroyBuilding,
       handlePauseResumeAll,
       getBuildingCountFor,
-      getCategoryPauseState,
       checkBalance,
     ],
   );
