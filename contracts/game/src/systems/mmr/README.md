@@ -1,0 +1,608 @@
+# Blitz MMR System - Technical Documentation
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Models](#data-models)
+4. [Rating Algorithm](#rating-algorithm)
+5. [MMR Systems Contract](#mmr-systems-contract)
+6. [MMR Token Contract](#mmr-token-contract)
+7. [Integration Guide](#integration-guide)
+8. [Configuration](#configuration)
+9. [Testing](#testing)
+
+---
+
+## Overview
+
+The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for competitive Blitz games in Eternum. It provides persistent player ratings that reflect relative skill levels across games.
+
+### Key Features
+
+- **Persistent Ratings**: Player MMR persists across games and sessions
+- **Soul-Bound Token**: MMR is represented as a non-transferable ERC20 token
+- **Gaussian Distribution**: Ratings follow a bell curve centered at 1500
+- **Performance-Based Updates**: Rating changes reflect performance vs expectations
+- **Configurable Parameters**: All formula constants are tunable via WorldConfig
+- **Integration with Trials**: Automatically processes MMR when games complete
+
+### Design Goals
+
+1. **Fair Competition**: Match players of similar skill for balanced games
+2. **Skill Progression**: Reward improvement, not just grinding
+3. **Smurf Resistance**: Mean regression prevents rating manipulation
+4. **Transparency**: All calculations are on-chain and verifiable
+
+---
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           Blitz MMR System                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────┐    ┌─────────────────────┐    ┌──────────────────┐  │
+│  │   MMR Systems       │    │  MMR Calculator     │    │   MMR Token      │  │
+│  │   (Dojo Contract)   │───▶│  (Utils Library)    │    │   (ERC20)        │  │
+│  │                     │    │                     │    │                  │  │
+│  │ • process_game_mmr  │    │ • 7-step formula    │    │ • Soul-bound     │  │
+│  │ • set_series_ranked │    │ • Median calc       │    │ • GAME_ROLE only │  │
+│  │ • get_player_stats  │    │ • Fixed-point math  │    │ • Min floor 100  │  │
+│  └─────────────────────┘    └─────────────────────┘    └──────────────────┘  │
+│           │                                                    ▲             │
+│           │ writes                                             │ updates     │
+│           ▼                                                    │             │
+│  ┌─────────────────────────────────────────────────────────────┘             │
+│  │                                                                           │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐           │
+│  │  │ PlayerMMRStats  │  │ GameMMRRecord   │  │ SeriesMMRConfig │           │
+│  │  │                 │  │                 │  │                 │           │
+│  │  │ • games_played  │  │ • mmr_before    │  │ • is_ranked     │           │
+│  │  │ • highest_mmr   │  │ • mmr_after     │  │ • mmr_processed │           │
+│  │  │ • lowest_mmr    │  │ • rank          │  │                 │           │
+│  │  │ • streak        │  │ • median_mmr    │  │                 │           │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘           │
+│                                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                           External Integration                                │
+│                                                                              │
+│  Prize Distribution ──▶ process_game_mmr_from_trial() ──▶ Updates MMR       │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Responsibilities
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **MMR Systems** | `contracts/game/src/systems/mmr/contracts.cairo` | Dojo contract orchestrating MMR processing |
+| **MMR Calculator** | `contracts/game/src/systems/utils/mmr.cairo` | Pure calculation library (7-step formula) |
+| **MMR Token** | `contracts/mmr/src/contract.cairo` | Soul-bound ERC20 storing actual ratings |
+| **MMR Models** | `contracts/game/src/models/mmr.cairo` | Data structures for stats and records |
+
+---
+
+## Data Models
+
+### MMRConfig
+
+Configuration for the MMR system, stored in WorldConfig.
+
+```cairo
+struct MMRConfig {
+    enabled: bool,                    // Master switch for MMR tracking
+    mmr_token_address: ContractAddress, // Address of MMR token contract
+    initial_mmr: u128,                // Starting MMR for new players (default: 1000)
+    min_mmr: u128,                    // Hard floor (default: 100)
+    distribution_mean: u128,          // Target mean μ (default: 1500)
+    spread_factor: u128,              // D value for logistic function (default: 450)
+    max_delta: u128,                  // Maximum rating change per game (default: 45)
+    k_factor: u128,                   // Base scaling factor K₀ (default: 50)
+    mean_regression_scaled: u128,     // λ × 1e6 for regression (default: 15000 = 0.015)
+    min_players: u16,                 // Minimum players for rated game (default: 6)
+    min_entry_fee: u256,              // Minimum fee for rated game (in LORDS wei)
+}
+```
+
+### PlayerMMRStats
+
+Per-player statistics, updated after each rated game.
+
+```cairo
+struct PlayerMMRStats {
+    #[key] player: ContractAddress,
+    games_played: u32,                // Total rated games
+    highest_mmr: u128,                // Peak rating achieved
+    lowest_mmr: u128,                 // Lowest rating recorded
+    last_game_timestamp: u64,         // When last game was played
+    last_mmr_change_magnitude: u128,  // Absolute value of last change
+    last_mmr_change_negative: bool,   // True if last change was a loss
+    current_streak: u16,              // Consecutive wins or losses
+    streak_is_wins: bool,             // True if streak is wins
+}
+```
+
+### GameMMRRecord
+
+Historical record for a specific player in a specific game.
+
+```cairo
+struct GameMMRRecord {
+    #[key] trial_id: u128,
+    #[key] player: ContractAddress,
+    mmr_before: u128,                 // Rating before this game
+    mmr_after: u128,                  // Rating after this game
+    rank: u16,                        // Final placement (1 = winner)
+    player_count: u16,                // Total players in game
+    median_mmr: u128,                 // Median MMR of lobby
+    timestamp: u64,                   // When game ended
+}
+```
+
+### SeriesMMRConfig
+
+Per-trial configuration for MMR eligibility.
+
+```cairo
+struct SeriesMMRConfig {
+    #[key] trial_id: u128,
+    is_ranked: bool,                  // Whether this series affects MMR
+    mmr_processed: bool,              // Whether MMR has been calculated
+}
+```
+
+---
+
+## Rating Algorithm
+
+The MMR system uses a **7-step formula** to calculate rating changes:
+
+### Step 1: Median MMR
+
+Calculate the median MMR of all players in the game:
+
+```
+M = median{MMR₁, MMR₂, ..., MMRₙ}
+```
+
+The median (not mean) is used to reduce the impact of outliers.
+
+### Step 2: Expected Percentile
+
+Calculate where the player is expected to finish based on their MMR:
+
+```
+p_exp = 1 / (1 + e^((MMR - M) / D))
+```
+
+Where:
+- `MMR` = player's current rating
+- `M` = median from Step 1
+- `D` = spread factor (default 450)
+
+**Interpretation**:
+- High MMR → Low `p_exp` (expected to place well)
+- Low MMR → High `p_exp` (expected to place poorly)
+- At median → `p_exp = 0.5`
+
+### Step 3: Actual Percentile
+
+Calculate where the player actually finished:
+
+```
+p_act = (rank - 1) / (N - 1)
+```
+
+Where:
+- `rank` = final placement (1 = winner)
+- `N` = total players
+
+**Range**: 0 (winner) to 1 (last place)
+
+### Step 4: Raw Delta
+
+Calculate the base rating change:
+
+```
+Δ_base = K₀ × √(N/6) × [p_exp - p_act]
+```
+
+Where:
+- `K₀` = base K-factor (default 50)
+- `N` = player count
+- `√(N/6)` = lobby size scaling (larger lobbies → bigger swings)
+
+**Key insight**: If you outperform expectations (`p_act < p_exp`), you gain rating.
+
+### Step 5: Diminishing Returns
+
+Apply soft cap using hyperbolic tangent:
+
+```
+Δ = Δ_max × tanh(Δ_base / Δ_max)
+```
+
+Where:
+- `Δ_max` = maximum delta (default 45)
+- `tanh` smoothly caps extreme values
+
+**Effect**: Small deltas pass through mostly unchanged; large deltas asymptotically approach `Δ_max`.
+
+### Step 6: Mean Regression
+
+Pull ratings toward the distribution mean:
+
+```
+Δ_reg = Δ - λ × (MMR - μ)
+```
+
+Where:
+- `λ` = regression factor (default 0.015)
+- `μ` = distribution mean (default 1500)
+
+**Effect**:
+- Players above mean lose a bit more / gain a bit less
+- Players below mean lose a bit less / gain a bit more
+- Prevents rating inflation/deflation over time
+
+### Step 7: Final Rating
+
+Apply the change with floor enforcement:
+
+```
+MMR' = max(min_mmr, MMR + Δ_reg)
+```
+
+Where `min_mmr` = 100 (hard floor)
+
+### Example Calculation
+
+**Scenario**: 6-player game, all at 1000 MMR, player finishes 1st
+
+| Step | Calculation | Result |
+|------|-------------|--------|
+| 1. Median | median{1000, 1000, 1000, 1000, 1000, 1000} | M = 1000 |
+| 2. Expected | 1 / (1 + e^((1000-1000)/450)) | p_exp = 0.5 |
+| 3. Actual | (1-1) / (6-1) | p_act = 0.0 |
+| 4. Raw Delta | 50 × √(6/6) × [0.5 - 0.0] | Δ_base = 25 |
+| 5. Diminishing | 45 × tanh(25/45) | Δ ≈ 22.4 |
+| 6. Regression | 22.4 - 0.015 × (1000-1500) | Δ_reg ≈ 29.9 |
+| 7. Final | max(100, 1000 + 29.9) | MMR' ≈ 1030 |
+
+---
+
+## MMR Systems Contract
+
+### Interface
+
+```cairo
+#[starknet::interface]
+pub trait IMMRSystems<T> {
+    /// Mark a series as ranked (MMR-eligible) - Admin only
+    fn set_series_ranked(ref self: T, trial_id: u128, is_ranked: bool);
+
+    /// Check if a series is ranked
+    fn is_series_ranked(self: @T, trial_id: u128) -> bool;
+
+    /// Process MMR updates with explicit player/rank arrays
+    fn process_game_mmr(
+        ref self: T,
+        trial_id: u128,
+        players: Array<ContractAddress>,
+        ranks: Array<u16>,
+    );
+
+    /// Process MMR updates by reading from trial models (preferred)
+    fn process_game_mmr_from_trial(ref self: T, trial_id: u128);
+
+    /// Get a player's current MMR
+    fn get_player_mmr(self: @T, player: ContractAddress) -> u128;
+
+    /// Get a player's full statistics
+    fn get_player_stats(self: @T, player: ContractAddress) -> PlayerMMRStats;
+
+    /// Get the MMR record for a player in a specific game
+    fn get_game_mmr_record(self: @T, trial_id: u128, player: ContractAddress) -> GameMMRRecord;
+
+    /// Check if a game meets MMR eligibility requirements
+    fn is_game_mmr_eligible(self: @T, trial_id: u128, player_count: u16, entry_fee: u256) -> bool;
+}
+```
+
+### Events
+
+```cairo
+#[dojo::event]
+pub struct MMRGameProcessed {
+    #[key] trial_id: u128,
+    player_count: u16,
+    median_mmr: u128,
+    timestamp: u64,
+}
+
+#[dojo::event]
+pub struct PlayerMMRChanged {
+    #[key] player: ContractAddress,
+    #[key] trial_id: u128,
+    old_mmr: u128,
+    new_mmr: u128,
+    rank: u16,
+    timestamp: u64,
+}
+```
+
+### Eligibility Requirements
+
+A game is eligible for MMR updates when:
+1. `mmr_config.enabled == true`
+2. Series is marked as ranked (`is_ranked == true`)
+3. Game has not been processed yet (`mmr_processed == false`)
+4. Player count >= `min_players` (default 6)
+5. Entry fee >= `min_entry_fee` (default $1 in LORDS)
+
+---
+
+## MMR Token Contract
+
+The MMR Token is a **soul-bound ERC20** token that represents player ratings.
+
+### Key Properties
+
+| Property | Value |
+|----------|-------|
+| Name | "Blitz MMR" |
+| Symbol | "MMR" |
+| Decimals | 18 |
+| Initial MMR | 1000 (stored as 1000e18) |
+| Minimum MMR | 100 (hard floor) |
+| Transferable | No (soul-bound) |
+
+### Interface
+
+```cairo
+#[starknet::interface]
+pub trait IMMRToken<T> {
+    /// Get player's MMR (balance / 1e18 for display)
+    fn get_mmr(self: @T, player: ContractAddress) -> u256;
+
+    /// Check if player has been initialized
+    fn has_mmr(self: @T, player: ContractAddress) -> bool;
+
+    /// Initialize player with starting MMR (GAME_ROLE only)
+    fn initialize_player(ref self: T, player: ContractAddress);
+
+    /// Update player's MMR (GAME_ROLE only)
+    fn update_mmr(ref self: T, player: ContractAddress, new_mmr: u256);
+
+    /// Batch update multiple players (GAME_ROLE only)
+    fn update_mmr_batch(ref self: T, updates: Array<(ContractAddress, u256)>);
+}
+```
+
+### Access Control
+
+| Role | Can Do |
+|------|--------|
+| `DEFAULT_ADMIN_ROLE` | Grant/revoke roles |
+| `GAME_ROLE` | Initialize players, update MMR |
+| `UPGRADER_ROLE` | Upgrade contract |
+
+### Soul-Bound Implementation
+
+The token blocks all transfers via the ERC20 `before_update` hook:
+
+```cairo
+fn before_update(ref self, from: ContractAddress, to: ContractAddress, amount: u256) {
+    // Allow mints (from is zero)
+    if Zero::is_zero(@from) { return; }
+    // Allow burns (to is zero)
+    if Zero::is_zero(@to) { return; }
+    // Block transfers
+    panic!("MMRToken: Soul-bound token cannot be transferred");
+}
+```
+
+---
+
+## Integration Guide
+
+### Marking a Series as Ranked
+
+Before a game starts, an admin must mark the series as ranked:
+
+```cairo
+// In game setup (admin only)
+let mmr_systems = mmr_systems::get_dispatcher(@world);
+mmr_systems.set_series_ranked(trial_id, true);
+```
+
+### Processing MMR After Game Completion
+
+After rankings are finalized, call `process_game_mmr_from_trial`:
+
+```cairo
+// In prize_distribution_systems after rankings revealed
+mmr_systems.process_game_mmr_from_trial(trial_id);
+```
+
+This will:
+1. Read player rankings from `PlayersRankTrial` and `RankList` models
+2. Calculate new MMR for each player
+3. Update `PlayerMMRStats` records
+4. Create `GameMMRRecord` entries
+5. Update MMR token balances (if configured)
+6. Emit events
+
+### Querying Player Data
+
+```cairo
+let mmr_systems = mmr_systems::get_dispatcher(@world);
+
+// Get current MMR
+let mmr = mmr_systems.get_player_mmr(player_address);
+
+// Get full statistics
+let stats = mmr_systems.get_player_stats(player_address);
+println!("Games played: {}", stats.games_played);
+println!("Highest MMR: {}", stats.highest_mmr);
+println!("Current streak: {}", stats.current_streak);
+
+// Get specific game record
+let record = mmr_systems.get_game_mmr_record(trial_id, player_address);
+println!("Rank: {}, MMR change: {} -> {}", record.rank, record.mmr_before, record.mmr_after);
+```
+
+---
+
+## Configuration
+
+### Default Values
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `enabled` | false | Master switch (disabled by default) |
+| `initial_mmr` | 1000 | Starting rating for new players |
+| `min_mmr` | 100 | Hard floor (cannot go below) |
+| `distribution_mean` | 1500 | Target population mean |
+| `spread_factor` | 450 | Logistic function width (D) |
+| `max_delta` | 45 | Maximum rating change per game |
+| `k_factor` | 50 | Base scaling factor (K₀) |
+| `mean_regression_scaled` | 15000 | λ × 1e6 (0.015 = 1.5%) |
+| `min_players` | 6 | Minimum for rated game |
+| `min_entry_fee` | 1e18 | $1 in LORDS (18 decimals) |
+
+### Tuning Guidelines
+
+**Want more rating volatility?**
+- Increase `k_factor` (more swing per game)
+- Increase `max_delta` (allow larger changes)
+
+**Want more stable ratings?**
+- Decrease `k_factor`
+- Decrease `max_delta`
+- Increase `spread_factor` (flatter expected percentile curve)
+
+**Want faster convergence to true skill?**
+- Increase `mean_regression_scaled` (stronger pull to mean)
+- Be careful: too high and ratings feel "sticky"
+
+**Want to exclude casual games?**
+- Increase `min_players`
+- Increase `min_entry_fee`
+
+### Setting Configuration
+
+```cairo
+let mmr_config = MMRConfig {
+    enabled: true,
+    mmr_token_address: token_address,
+    initial_mmr: 1000,
+    min_mmr: 100,
+    distribution_mean: 1500,
+    spread_factor: 450,
+    max_delta: 45,
+    k_factor: 50,
+    mean_regression_scaled: 15000,
+    min_players: 6,
+    min_entry_fee: 1_000000000000000000, // $1 LORDS
+};
+
+WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
+```
+
+---
+
+## Testing
+
+### Test Organization
+
+| Test File | Coverage |
+|-----------|----------|
+| `models/mmr.cairo` | Model unit tests (PlayerMMRStats) |
+| `systems/utils/mmr.cairo` | Algorithm unit tests (all 7 steps) |
+| `systems/mmr/tests/test_mmr_systems.cairo` | Integration tests |
+
+### Running Tests
+
+```bash
+# Run all MMR tests
+cd contracts/game && sozo test -f mmr
+
+# Run specific test groups
+sozo test -f test_mmr_calculator        # Algorithm tests
+sozo test -f test_process_game_mmr      # System tests
+sozo test -f test_player_stats          # Model tests
+```
+
+### Test Coverage Summary
+
+- **82 total tests** across all MMR components
+- **Model tests**: Player stats tracking, streak management
+- **Algorithm tests**: Each formula step, edge cases, upset scenarios
+- **Integration tests**: Full game processing, eligibility checks, idempotency
+
+### CI Integration
+
+MMR tests run automatically on PRs modifying `contracts/game/**`:
+
+```yaml
+# .github/workflows/test-contracts.yml
+test: [troop_management, mmr]
+```
+
+---
+
+## Appendix: Mathematical Properties
+
+### Rating Distribution
+
+With default parameters:
+- Mean: μ = 1500
+- Players start at 1000, naturally migrate toward 1500
+- Hard floor at 100 prevents negative-like ratings
+
+### Expected Percentile Curve
+
+The logistic function `1 / (1 + e^x)` creates a smooth S-curve:
+
+```
+p_exp
+  1 │          ________
+    │         /
+0.5 │--------*--------  ← At median
+    │       /
+  0 │______/
+    └────────────────── MMR
+       Low    Med   High
+```
+
+### Diminishing Returns
+
+The `tanh` function creates soft caps:
+
+```
+Δ
+ 45│           _______ ← asymptotic cap
+   │          /
+   │        /
+  0│───────*─────────── Raw Δ
+   │      /
+-45│_____/              ← negative cap
+```
+
+### Mean Regression Effect
+
+Over many games, ratings cluster around μ = 1500:
+
+```
+Count
+  │      ╱╲
+  │     ╱  ╲
+  │    ╱    ╲
+  │   ╱      ╲
+  │__╱________╲__
+  └──────────────── MMR
+     μ=1500
+```
