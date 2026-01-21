@@ -1,5 +1,5 @@
-use starknet::{ClassHash, ContractAddress};
 use crate::models::series_chest_reward::SeriesChestRewardState;
+use starknet::{ClassHash, ContractAddress};
 
 /// Interface for the world factory series.
 #[starknet::interface]
@@ -30,12 +30,6 @@ pub trait IPrizeDistributionSystems<T> {
 pub mod prize_distribution_systems {
     use core::num::traits::zero::Zero;
     use core::result::ResultTrait;
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use series_chest_reward_calculator::SeriesChestRewardStateTrait;
-    use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, VELORDS_BURNER_ADDRESS, WORLD_CONFIG_ID};
     use crate::models::config::{
         BlitzRealmPlayerRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl,
@@ -55,6 +49,12 @@ pub mod prize_distribution_systems {
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::SeriesChestRewardStateImpl;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use crate::utils::world::CustomDojoWorldImpl;
+    use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use series_chest_reward_calculator::SeriesChestRewardStateTrait;
+    use starknet::ContractAddress;
     use super::{
         IPrizeDistributionSystems, IPrizeDistributionSystemsSafeDispatcher,
         IPrizeDistributionSystemsSafeDispatcherTrait, IWorldFactorySeriesDispatcher, IWorldFactorySeriesDispatcherTrait,

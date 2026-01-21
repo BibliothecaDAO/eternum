@@ -1,8 +1,8 @@
-use starknet::ContractAddress;
 use crate::utils::interfaces::collectibles::{
     ICollectibleDispatcher, ICollectibleDispatcherTrait, ICollectibleTimeLockManagerDispatcher,
     ICollectibleTimeLockManagerDispatcherTrait,
 };
+use starknet::ContractAddress;
 
 
 #[generate_trait]

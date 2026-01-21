@@ -1,6 +1,6 @@
 use core::num::traits::zero::Zero;
-use starknet::ContractAddress;
 use crate::constants::ErrorMessages;
+use starknet::ContractAddress;
 
 #[generate_trait]
 pub impl OwnerAddressImpl of OwnerAddressTrait {

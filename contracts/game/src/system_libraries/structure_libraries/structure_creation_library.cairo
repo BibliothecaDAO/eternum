@@ -1,9 +1,9 @@
-use dojo::world::WorldStorage;
 use crate::alias::ID;
 use crate::models::config::WorldConfigUtilImpl;
 use crate::models::map::TileOccupier;
 use crate::models::position::Coord;
 use crate::models::structure::{StructureCategory, StructureMetadata};
+use dojo::world::WorldStorage;
 
 #[starknet::interface]
 pub trait IStructureCreationlibrary<T> {
@@ -25,8 +25,6 @@ pub trait IStructureCreationlibrary<T> {
 #[dojo::library]
 pub mod structure_creation_library {
     use core::num::traits::Zero;
-    use dojo::model::ModelStorage;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
     use crate::alias::ID;
     use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{
@@ -55,6 +53,8 @@ pub mod structure_creation_library {
     use crate::systems::utils::village::iVillageImpl;
     use crate::utils::map::biomes::{Biome, get_biome};
     use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+    use dojo::model::ModelStorage;
+    use dojo::world::{WorldStorage, WorldStorageTrait};
 
 
     #[abi(embed_v0)]
@@ -128,7 +128,11 @@ pub mod structure_creation_library {
 
             // explore all tiles around the structure, as well as village spots
             let structure_surrounding = array![
-                Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
+                Direction::East,
+                Direction::NorthEast,
+                Direction::NorthWest,
+                Direction::West,
+                Direction::SouthWest,
                 Direction::SouthEast,
             ];
             let mut possible_village_slots: Array<Direction> = array![];

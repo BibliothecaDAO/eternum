@@ -1,9 +1,9 @@
-use dojo::model::{Model, ModelStorage};
-use dojo::storage::dojo_store::DojoStore;
-use dojo::world::WorldStorage;
 use crate::alias::ID;
 use crate::constants::WORLD_CONFIG_ID;
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
+use dojo::model::{Model, ModelStorage};
+use dojo::storage::dojo_store::DojoStore;
+use dojo::world::WorldStorage;
 
 //
 // GLOBAL RECORDS

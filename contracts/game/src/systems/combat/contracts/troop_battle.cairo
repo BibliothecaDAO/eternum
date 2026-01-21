@@ -22,9 +22,6 @@ pub trait ITroopBattleSystems<T> {
 #[dojo::contract]
 pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::IWorldDispatcherTrait;
     use crate::alias::ID;
     use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
     use crate::models::config::{
@@ -50,6 +47,9 @@ pub mod troop_battle_systems {
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::IWorldDispatcherTrait;
     use super::super::super::super::super::models::troop::GuardTrait;
 
 

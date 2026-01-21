@@ -1,14 +1,14 @@
 use core::num::traits::zero::Zero;
-use dojo::model::{Model, ModelStorage};
-use dojo::storage::dojo_store::DojoStore;
-use dojo::world::WorldStorage;
-use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 use crate::utils::random::VRFImpl;
+use dojo::model::{Model, ModelStorage};
+use dojo::storage::dojo_store::DojoStore;
+use dojo::world::WorldStorage;
+use starknet::ContractAddress;
 //
 // GLOBAL CONFIGS
 //
@@ -393,9 +393,12 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
 
         let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest), (Direction::East, Direction::SouthWest),
-            (Direction::West, Direction::NorthEast), (Direction::West, Direction::SouthEast),
-            (Direction::SouthEast, Direction::West), (Direction::NorthEast, Direction::West),
+            (Direction::East, Direction::NorthWest),
+            (Direction::East, Direction::SouthWest),
+            (Direction::West, Direction::NorthEast),
+            (Direction::West, Direction::SouthEast),
+            (Direction::SouthEast, Direction::West),
+            (Direction::NorthEast, Direction::West),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(side);
         assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
@@ -473,9 +476,12 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     fn generate_coords(ref self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
         let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::NorthEast, Direction::West), (Direction::West, Direction::SouthEast),
-            (Direction::SouthEast, Direction::NorthEast), (Direction::NorthWest, Direction::SouthWest),
-            (Direction::SouthWest, Direction::East), (Direction::East, Direction::NorthWest),
+            (Direction::NorthEast, Direction::West),
+            (Direction::West, Direction::SouthEast),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::SouthWest, Direction::East),
+            (Direction::East, Direction::NorthWest),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(self.side);
         assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
@@ -579,9 +585,12 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
     fn next_coord(self: BlitzHypersSettlementConfig, map_center: Coord) -> Coord {
         let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
-            (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),
-            (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
+            (Direction::East, Direction::NorthWest),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::NorthEast, Direction::West),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(self.side);
         return start_coord

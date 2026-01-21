@@ -15,8 +15,6 @@ pub trait ITroopRaidSystems<T> {
 #[dojo::contract]
 pub mod troop_raid_systems {
     use core::num::traits::zero::Zero;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
     use crate::alias::ID;
     use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION};
     use crate::models::config::{
@@ -44,6 +42,8 @@ pub mod troop_raid_systems {
     use crate::utils::map::biomes::Biome;
     use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
     use super::super::super::super::super::models::structure::StructureBaseTrait;
     use super::super::super::super::super::models::troop::GuardTrait;
 

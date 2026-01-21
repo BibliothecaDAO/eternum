@@ -40,8 +40,6 @@ trait IProductionContract<TContractState> {
 
 #[dojo::contract]
 mod production_systems {
-    use dojo::world::WorldStorage;
-    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, WorldConfigUtilImpl};
@@ -55,6 +53,8 @@ mod production_systems {
     };
     use crate::systems::utils::map::IMapImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use dojo::world::WorldStorage;
+    use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {

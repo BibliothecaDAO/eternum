@@ -1,7 +1,5 @@
 use core::array::SpanTrait;
 use core::num::traits::zero::Zero;
-use dojo::event::EventStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
 use crate::constants::{all_resource_ids, is_bank};
 use crate::models::config::{SpeedImpl, WorldConfigUtilImpl};
@@ -21,6 +19,8 @@ use crate::models::weight::{Weight, WeightImpl};
 use crate::systems::utils::distance::iDistanceKmImpl;
 use crate::systems::utils::donkey::iDonkeyImpl;
 use crate::systems::utils::village::iVillageImpl;
+use dojo::event::EventStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 
 
 #[generate_trait]

@@ -226,8 +226,6 @@ pub trait IQuestConfig<T> {
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
@@ -246,6 +244,8 @@ pub mod config_systems {
     use crate::models::resource::production::building::BuildingCategory;
     use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
     use crate::utils::achievements::index::AchievementTrait;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 
     // Constuctor
 

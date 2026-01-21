@@ -7,8 +7,8 @@ pub trait IBiomeLibrary<T> {
 
 #[dojo::library]
 mod biome_library {
-    use dojo::world::{WorldStorage, WorldStorageTrait};
     use crate::utils::map::biomes::{Biome, get_biome};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
 
     #[abi(embed_v0)]
     pub impl BiomeLibraryImpl of super::IBiomeLibrary<ContractState> {

@@ -23,13 +23,13 @@ pub trait ISeasonSystems<T> {
 
 #[dojo::contract]
 pub mod season_systems {
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, VictoryPointsWinConfig, WorldConfigUtilImpl};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
 
 
     #[derive(Copy, Drop, Serde)]

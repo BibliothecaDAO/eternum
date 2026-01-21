@@ -1,9 +1,3 @@
-use cubit::f128::types::fixed::FixedTrait;
-use dojo::model::{ModelStorage, ModelStorageTest};
-use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait, world};
-use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
-use starknet::ContractAddress;
-use starknet::syscalls::deploy_syscall;
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
@@ -27,11 +21,21 @@ use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
 use crate::systems::utils::realm::iRealmImpl;
 use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
+use cubit::f128::types::fixed::FixedTrait;
+use dojo::model::{ModelStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait, world};
+use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
+use starknet::ContractAddress;
+use starknet::syscalls::deploy_syscall;
 
 
 fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAddress) -> ContractAddress {
     let mock_calldata: Array<felt252> = array![
-        admin.into(), admin.into(), starknet::get_contract_address().into(), 2, starknet::get_contract_address().into(),
+        admin.into(),
+        admin.into(),
+        starknet::get_contract_address().into(),
+        2,
+        starknet::get_contract_address().into(),
         admin.into(),
     ];
     let salt = core::testing::get_available_gas();
@@ -338,8 +342,10 @@ pub fn init_config(ref world: WorldStorage) {
     tstore_weight_config(
         ref world,
         array![
-            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
         ]
             .span(),
     );
@@ -367,8 +373,10 @@ pub fn init_resource_config(ref world: WorldStorage) {
     tstore_weight_config(
         ref world,
         array![
-            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
         ]
             .span(),
     );

@@ -1,6 +1,3 @@
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
@@ -15,6 +12,9 @@ use crate::systems::quest::constants::{
 use crate::systems::utils::map::IMapImpl;
 use crate::systems::utils::troop::iExplorerImpl;
 use crate::utils::map::biomes::Biome;
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IQuestSystems<T> {
@@ -55,9 +55,6 @@ pub trait IBudokanGame<T> {
 #[dojo::contract]
 pub mod quest_systems {
     use core::array::ArrayTrait;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
     use crate::models::map::Tile;
@@ -70,6 +67,9 @@ pub mod quest_systems {
     use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;
     use crate::systems::quest::constants::VERSION;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use starknet::ContractAddress;
     use super::{IBudokanGameDispatcher, IBudokanGameDispatcherTrait, iQuestDiscoveryImpl};
 
     fn dojo_init(self: @ContractState) {
@@ -488,11 +488,6 @@ mod tests {
         IGameTokenMockInitDispatcherTrait, game_mock,
     };
     use core::num::traits::Zero;
-    use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
-    use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
-    use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
-    use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{CombatConfigImpl, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig};
     use crate::models::map::{Tile, TileImpl, TileOccupier, m_BiomeDiscovered};
@@ -534,6 +529,11 @@ mod tests {
         tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_village, tspawn_village_explorer,
         tspawn_world,
     };
+    use dojo::model::{ModelStorage, ModelStorageTest};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
+    use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use starknet::ContractAddress;
 
 
     fn namespace_def() -> NamespaceDef {

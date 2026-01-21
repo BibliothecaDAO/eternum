@@ -1,8 +1,8 @@
 use core::dict::Felt252Dict;
 use core::num::traits::zero::Zero;
 use core::poseidon::poseidon_hash_span;
-use starknet::{ContractAddress, TxInfo};
 use crate::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
+use starknet::{ContractAddress, TxInfo};
 
 #[generate_trait]
 pub impl VRFImpl of VRFTrait {

@@ -1,5 +1,5 @@
-use starknet::ContractAddress;
 use crate::alias::ID;
+use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IResourceBridgeSystems<T> {
@@ -22,9 +22,6 @@ pub trait IResourceBridgeSystems<T> {
 #[dojo::contract]
 pub mod resource_bridge_systems {
     use core::num::traits::Zero;
-    use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ResourceTypes};
     use crate::models::config::{
@@ -46,6 +43,9 @@ pub mod resource_bridge_systems {
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::math::{PercentageImpl, PercentageValueImpl};
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
 
     #[abi(embed_v0)]
     impl ResourceBridgeImpl of super::IResourceBridgeSystems<ContractState> {

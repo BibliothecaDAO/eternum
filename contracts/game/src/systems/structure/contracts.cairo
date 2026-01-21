@@ -7,10 +7,6 @@ pub trait IStructureSystems<T> {
 
 #[dojo::contract]
 pub mod structure_systems {
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
@@ -31,6 +27,10 @@ pub mod structure_systems {
     use crate::models::weight::Weight;
     use crate::systems::utils::map::IMapImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
 
     #[abi(embed_v0)]
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {

@@ -1,6 +1,6 @@
-use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::position::Coord;
+use starknet::ContractAddress;
 
 
 #[starknet::interface]
@@ -28,12 +28,12 @@ pub trait IRealmInternalSystems<T> {
 
 #[dojo::contract]
 pub mod realm_internal_systems {
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::position::Coord;
     use crate::systems::utils::realm::iRealmImpl;
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use starknet::ContractAddress;
 
     #[abi(embed_v0)]
     impl RealmInternalSystemsImpl of super::IRealmInternalSystems<ContractState> {

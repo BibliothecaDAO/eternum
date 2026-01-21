@@ -59,10 +59,6 @@ pub trait ITroopManagementSystems<TContractState> {
 #[dojo::contract]
 pub mod troop_management_systems {
     use core::num::traits::zero::Zero;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
-    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use crate::models::config::{
@@ -92,6 +88,10 @@ pub mod troop_management_systems {
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use starknet::ContractAddress;
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
@@ -918,13 +918,6 @@ pub mod troop_management_systems {
 #[cfg(test)]
 mod tests {
     use achievement::events::index::e_TrophyProgression;
-    use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::{WorldStorageTrait, world};
-    use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-    };
-    use starknet::ContractAddress;
-    use starknet::testing::{set_account_contract_address, set_contract_address};
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{
         CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig,
@@ -955,6 +948,13 @@ mod tests {
     use crate::utils::testing::helpers::{
         MOCK_TICK_CONFIG, init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
     };
+    use dojo::model::{ModelStorage, ModelStorageTest};
+    use dojo::world::{WorldStorageTrait, world};
+    use dojo_cairo_test::{
+        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
+    };
+    use starknet::ContractAddress;
+    use starknet::testing::{set_account_contract_address, set_contract_address};
 
     // Optimized namespace_def - only models and contracts actually used by tests
     // Removed unused contracts: agent_discovery_systems, hyperstructure_discovery_systems,
@@ -2192,7 +2192,8 @@ mod tests {
             ref world,
             realm_id,
             array![
-                (ResourceTypes::KNIGHT_T1, starting_knight_t1_amount), (ResourceTypes::WHEAT, wheat_amount),
+                (ResourceTypes::KNIGHT_T1, starting_knight_t1_amount),
+                (ResourceTypes::WHEAT, wheat_amount),
                 (ResourceTypes::FISH, fish_amount),
             ]
                 .span(),

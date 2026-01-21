@@ -1,7 +1,4 @@
 use core::num::traits::zero::Zero;
-use cubit::f128::types::fixed::FixedTrait;
-use dojo::model::{Model, ModelStorage};
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::constants::WORLD_CONFIG_ID;
 use crate::models::config::{
     MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
@@ -19,6 +16,9 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
 use crate::systems::utils::structure::iStructureImpl;
 use crate::systems::utils::troop::iMercenariesImpl;
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
+use cubit::f128::types::fixed::FixedTrait;
+use dojo::model::{Model, ModelStorage};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
@@ -165,9 +165,12 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
     fn count_surrounding_realms(ref world: WorldStorage, hyperstructure_coord: Coord) -> u8 {
         let mut start_coord: Coord = hyperstructure_coord;
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
-            (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),
-            (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
+            (Direction::East, Direction::NorthWest),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::NorthEast, Direction::West),
         ];
 
         let mut count = 0;

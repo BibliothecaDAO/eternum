@@ -1,5 +1,3 @@
-use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
 use crate::alias::ID;
 use crate::constants::DAYDREAMS_AGENT_ID;
 use crate::models::map::{Tile, TileOccupier};
@@ -8,6 +6,8 @@ use crate::models::position::{Coord, CoordTrait};
 use crate::models::troop::{TroopTier, TroopType};
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::utils::map::biomes::Biome;
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 
 #[generate_trait]
 pub impl IMapImpl of IMapTrait {

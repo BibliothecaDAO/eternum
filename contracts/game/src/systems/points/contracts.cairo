@@ -8,11 +8,11 @@ trait IPointSystems<T> {
 
 #[dojo::contract]
 pub mod point_systems {
+    use crate::constants::DEFAULT_NS;
+    use crate::models::hyperstructure::PlayerRegisteredPoints;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use starknet::ContractAddress;
-    use crate::constants::DEFAULT_NS;
-    use crate::models::hyperstructure::PlayerRegisteredPoints;
 
 
     #[abi(embed_v0)]

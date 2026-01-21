@@ -1,9 +1,6 @@
 use core::num::traits::Bounded;
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
-use dojo::event::EventStorage;
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
@@ -16,6 +13,9 @@ use crate::models::structure::{StructureImpl, StructureOwnerStoreImpl};
 use crate::models::weight::Weight;
 use crate::utils::achievements::index::{AchievementTrait, Tasks};
 use crate::utils::math::{PercentageValueImpl, min};
+use dojo::event::EventStorage;
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

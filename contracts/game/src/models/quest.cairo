@@ -1,6 +1,6 @@
-use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::position::Coord;
+use starknet::ContractAddress;
 
 
 /// Represents a tile on the map where a quest can be discovered and initiated.

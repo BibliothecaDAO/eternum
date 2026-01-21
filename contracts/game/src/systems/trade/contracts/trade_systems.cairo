@@ -21,10 +21,6 @@ pub trait ITradeSystems<T> {
 #[dojo::contract]
 pub mod trade_systems {
     use core::num::traits::zero::Zero;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
@@ -42,6 +38,10 @@ pub mod trade_systems {
     use crate::systems::utils::distance::iDistanceKmImpl;
     use crate::systems::utils::donkey::iDonkeyImpl;
     use crate::systems::utils::village::iVillageImpl;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]
