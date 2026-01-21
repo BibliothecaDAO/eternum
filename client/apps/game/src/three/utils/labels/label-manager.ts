@@ -9,6 +9,7 @@ import {
   LabelConfig,
   LabelData,
   LabelEventHandler,
+  LabelEventHandlers,
   LabelEventType,
   LabelInstance,
   LabelManagerConfig,
@@ -327,51 +328,66 @@ export class LabelManager {
     // Store original render order for hover effect
     const originalRenderOrder = css2dObject.renderOrder;
 
-    // Mouse enter
-    element.addEventListener("mouseenter", (e) => {
-      // Apply hover styles
-      if (labelInstance.config.styles?.hover) {
-        this.applyStyles(element, labelInstance.config.styles.hover);
-      }
+    // Create handler functions and store references for cleanup
+    const handlers: LabelEventHandlers = {
+      mouseenter: (e: Event) => {
+        // Apply hover styles
+        if (labelInstance.config.styles?.hover) {
+          this.applyStyles(element, labelInstance.config.styles.hover);
+        }
 
-      // Bring to front
-      css2dObject.renderOrder = Infinity;
+        // Bring to front
+        css2dObject.renderOrder = Infinity;
 
-      // Trigger events
-      this.triggerEvent("mouseenter", labelInstance, e);
-    });
+        // Trigger events
+        this.triggerEvent("mouseenter", labelInstance, e);
+      },
 
-    // Mouse leave
-    element.addEventListener("mouseleave", (e) => {
-      // Restore default styles
-      if (labelInstance.config.styles?.default) {
-        this.applyStyles(element, labelInstance.config.styles.default);
-      }
+      mouseleave: (e: Event) => {
+        // Restore default styles
+        if (labelInstance.config.styles?.default) {
+          this.applyStyles(element, labelInstance.config.styles.default);
+        }
 
-      // Restore render order
-      css2dObject.renderOrder = originalRenderOrder;
+        // Restore render order
+        css2dObject.renderOrder = originalRenderOrder;
 
-      // Trigger events
-      this.triggerEvent("mouseleave", labelInstance, e);
-    });
+        // Trigger events
+        this.triggerEvent("mouseleave", labelInstance, e);
+      },
 
-    // Click
-    element.addEventListener("click", (e) => {
-      this.triggerEvent("click", labelInstance, e);
-    });
+      click: (e: Event) => {
+        this.triggerEvent("click", labelInstance, e);
+      },
 
-    // Right click
-    element.addEventListener("contextmenu", (e) => {
-      this.triggerEvent("rightclick", labelInstance, e);
-    });
+      contextmenu: (e: Event) => {
+        this.triggerEvent("rightclick", labelInstance, e);
+      },
+    };
+
+    // Store handlers for cleanup
+    labelInstance._eventHandlers = handlers;
+
+    // Add event listeners
+    element.addEventListener("mouseenter", handlers.mouseenter);
+    element.addEventListener("mouseleave", handlers.mouseleave);
+    element.addEventListener("click", handlers.click);
+    element.addEventListener("contextmenu", handlers.contextmenu);
   }
 
   /**
    * Remove event handlers from a label
    */
   private removeEventHandlers(labelInstance: LabelInstance): void {
-    // Event listeners are automatically removed when the element is destroyed
-    // but we could store references and remove them explicitly if needed
+    const handlers = labelInstance._eventHandlers;
+    if (handlers) {
+      const element = labelInstance.element;
+      element.removeEventListener("mouseenter", handlers.mouseenter);
+      element.removeEventListener("mouseleave", handlers.mouseleave);
+      element.removeEventListener("click", handlers.click);
+      element.removeEventListener("contextmenu", handlers.contextmenu);
+      labelInstance._eventHandlers = undefined;
+    }
   }
 
   /**
