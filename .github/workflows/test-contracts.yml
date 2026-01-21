@@ -23,7 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Only troop_management has active tests (40 tests)
+        # Active test suites:
+        # - troop_management: 40 tests (combat systems)
+        # - mmr: 82 tests (matchmaking rating system)
+        #
         # Disabled jobs that run 0 tests:
         # - models: all tests commented out
         # - test_troop_movement: all tests commented out
@@ -34,7 +37,7 @@ jobs:
         # but not implemented because compilation overhead (~3min) per job would increase
         # total CI time. With 40 tests in single job, compilation is done once.
         # See contracts/game/src/systems/combat/contracts/TEST_ANALYSIS.md for details.
-        test: [troop_management]
+        test: [troop_management, mmr]
       fail-fast: false
     steps:
       - uses: actions/checkout@v3
