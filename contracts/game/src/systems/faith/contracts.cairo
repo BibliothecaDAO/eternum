@@ -80,6 +80,29 @@ pub mod faith_systems {
 
             let mut allegiance: FollowerAllegiance = world.read_model(entity_id);
             assert!(allegiance.wonder_id.is_non_zero(), "Not pledged");
+            let wonder_id = allegiance.wonder_id;
+
+            let mut faith: WonderFaith = world.read_model(wonder_id);
+            match allegiance.entity_type {
+                FollowerType::Realm => {
+                    if faith.realm_follower_count > 0 {
+                        faith.realm_follower_count -= 1;
+                    }
+                },
+                FollowerType::Village => {
+                    if faith.village_follower_count > 0 {
+                        faith.village_follower_count -= 1;
+                    }
+                },
+                FollowerType::Wonder => {
+                    if faith.wonder_follower_count > 0 {
+                        faith.wonder_follower_count -= 1;
+                    }
+                },
+                FollowerType::None => {},
+            }
+            world.write_model(@faith);
+
             allegiance.wonder_id = 0;
             world.write_model(@allegiance);
         }
