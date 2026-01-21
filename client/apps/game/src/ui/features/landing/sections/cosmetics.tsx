@@ -3,6 +3,7 @@ import { Tabs } from "@/ui/design-system/atoms/tab/tabs";
 import { ChestOpeningExperience } from "@/ui/features/landing/chest-opening";
 import { ChestEpoch } from "@/ui/features/landing/chest-opening/hooks/use-chest-opening-flow";
 import { useOwnedChests } from "@/ui/features/landing/chest-opening/hooks/use-owned-chests";
+import { LandingDojoProvider } from "@/ui/features/landing/providers/landing-dojo-provider";
 import {
   COSMETIC_NAMES,
   DEFAULT_COSMETIC_MODEL_PATH,
@@ -258,11 +259,13 @@ export const LandingCosmetics = () => {
 
       {/* Chest Opening Experience Modal */}
       {showLootChestOpening && (
-        <ChestOpeningExperience
-          onClose={handleCloseChestExperience}
-          initialChestId={openingChest?.id}
-          initialEpoch={openingChest?.epoch}
-        />
+        <LandingDojoProvider>
+          <ChestOpeningExperience
+            onClose={handleCloseChestExperience}
+            initialChestId={openingChest?.id}
+            initialEpoch={openingChest?.epoch}
+          />
+        </LandingDojoProvider>
       )}
     </>
   );
