@@ -146,6 +146,7 @@ export class ArmyManager {
   private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private memoryMonitor?: MemoryMonitor;
+  private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
   private attachmentManager: CosmeticAttachmentManager;
   private armyAttachmentSignatures: Map<number, string> = new Map();
@@ -409,7 +410,7 @@ export class ArmyManager {
       statsParams.totalArmyCount = `Total: ${self.armies?.size ?? 0}`;
       statsParams.visibleArmyCount = `Visible: ${self.visibleArmyOrder?.length ?? 0}`;
     };
-    setInterval(updateStats, 500);
+    this.debugStatsIntervalId = setInterval(updateStats, 500);
 
     const statsFolder = debugFolder.addFolder("Stats");
     statsFolder.add(statsParams, "debugArmyCount").name("Debug Armies").listen();
@@ -2735,6 +2736,12 @@ ${
     if (this.cleanupTimeout) {
       clearTimeout(this.cleanupTimeout);
       this.cleanupTimeout = null;
+    }
+
+    // Clean up debug stats interval
+    if (this.debugStatsIntervalId) {
+      clearInterval(this.debugStatsIntervalId);
+      this.debugStatsIntervalId = undefined;
     }
 
     // Clear any remaining pending updates

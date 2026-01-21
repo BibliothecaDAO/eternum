@@ -6,7 +6,7 @@ import { NavigationButton } from "@/ui/design-system/atoms/navigation-button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { CompactDefenseDisplay } from "@/ui/features/military/components/compact-defense-display";
-import { useChatStore } from "@/ui/features/social";
+import { useRealtimeChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
 import {
   getAddressName,
@@ -43,9 +43,9 @@ export const BlitzHyperstructuresMenu = () => {
 
   const hyperstructures = useHyperstructures();
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
-  const openChat = useChatStore((state) => state.actions.openChat);
-  const addTab = useChatStore((state) => state.actions.addTab);
-  const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
+  const setShellOpen = useRealtimeChatStore((state) => state.actions.setShellOpen);
+  const openDirectThread = useRealtimeChatStore((state) => state.actions.openDirectThread);
+  const onlinePlayers = useRealtimeChatStore((state) => state.onlinePlayers);
 
   const processedHyperstructures = useMemo(() => {
     return hyperstructures.map((hyperstructure) => {
@@ -125,15 +125,12 @@ export const BlitzHyperstructuresMenu = () => {
 
   const handleChatClick = (hyperstructure: any) => {
     if (hyperstructure.isMine) {
-      openChat();
+      setShellOpen(true);
     } else if (hyperstructure.addressName && hyperstructure.addressName !== MERCENARIES) {
-      const userId = getUserIdByUsername(hyperstructure.addressName);
-      if (userId) {
-        addTab({
-          type: "direct",
-          name: hyperstructure.addressName,
-          recipientId: userId,
-        });
+      // Find player by display name from online players
+      const player = Object.values(onlinePlayers).find((p) => p.displayName === hyperstructure.addressName);
+      if (player) {
+        openDirectThread(player.playerId);
       }
     }
   };

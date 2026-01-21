@@ -58,6 +58,16 @@ export interface LabelStyle {
 }
 
 /**
+ * Stored event handlers for cleanup
+ */
+export interface LabelEventHandlers {
+  mouseenter: (e: Event) => void;
+  mouseleave: (e: Event) => void;
+  click: (e: Event) => void;
+  contextmenu: (e: Event) => void;
+}
+
+/**
  * Label instance with Three.js object and metadata
  */
 export interface LabelInstance {
@@ -67,6 +77,8 @@ export interface LabelInstance {
   data: LabelData;
   isVisible: boolean;
   transitionTimeoutId?: number;
+  /** Stored event handlers for proper cleanup */
+  _eventHandlers?: LabelEventHandlers;
 }
 
 /**
