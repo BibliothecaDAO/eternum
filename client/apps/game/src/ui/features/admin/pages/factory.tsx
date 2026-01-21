@@ -124,6 +124,11 @@ export const FactoryPage = () => {
   const factoryAddress = FACTORY_ADDRESSES[currentChain] || "";
   const factoryDeployRepeats = getFactoryDeployRepeatsForChain(currentChain);
 
+  const [version, setVersion] = useState<string>(DEFAULT_VERSION);
+  const [namespace, setNamespace] = useState<string>(DEFAULT_NAMESPACE);
+  const [maxActions, setMaxActions] = useState<number>(() => getDefaultMaxActionsForChain(currentChain));
+  const [defaultNamespaceWriterAll, setDefaultNamespaceWriterAll] = useState<boolean>(true);
+
   // State management
   const { state, actions } = useFactoryDeployment();
   const { refreshStatuses, getWorldDeployedAddressLocal } = useFactoryAdmin(currentChain);
@@ -161,12 +166,12 @@ export const FactoryPage = () => {
     if (!parsedManifest) return [];
     return generateFactoryCalldata(
       parsedManifest,
-      DEFAULT_VERSION,
-      DEFAULT_NAMESPACE,
-      getDefaultMaxActionsForChain(currentChain),
-      true,
+      version,
+      namespace,
+      maxActions,
+      defaultNamespaceWriterAll,
     );
-  }, [parsedManifest, currentChain]);
+  }, [parsedManifest, version, namespace, maxActions, defaultNamespaceWriterAll]);
 
   // Check world statuses on mount and when queue changes
   useEffect(() => {
@@ -309,7 +314,7 @@ export const FactoryPage = () => {
       const result = await account.execute({
         contractAddress: factoryAddress,
         entrypoint: "create_game",
-        calldata: [worldNameFelt, DEFAULT_VERSION, series.seriesNameFelt, series.seriesGameNumber],
+        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
       });
 
       actions.setTxState("deploy", { status: "success", hash: result.transaction_hash });
@@ -332,7 +337,7 @@ export const FactoryPage = () => {
     } catch (err: any) {
       actions.setTxState("deploy", { status: "error", error: err.message });
     }
-  }, [account, factoryAddress, state.deployment, buildQueueConfigOverrides, handleConfigureWorld, actions]);
+  }, [account, factoryAddress, state.deployment, buildQueueConfigOverrides, handleConfigureWorld, actions, version]);
 
   const handleAddToQueue = useCallback(() => {
     if (!state.deployment.gameName) return;
@@ -374,7 +379,7 @@ export const FactoryPage = () => {
           const result = await account.execute({
             contractAddress: factoryAddress,
             entrypoint: "create_game",
-            calldata: [worldNameFelt, DEFAULT_VERSION, series.seriesNameFelt, series.seriesGameNumber],
+            calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
           });
 
           await Promise.race([
@@ -415,7 +420,7 @@ export const FactoryPage = () => {
         autoDeployCancelRef.current[worldName] = false;
       }
     },
-    [account, factoryAddress, factoryDeployRepeats, state.worldSeriesMetadata],
+    [account, factoryAddress, factoryDeployRepeats, state.worldSeriesMetadata, version],
   );
 
   const handleSetFactoryConfig = useCallback(async () => {
@@ -463,7 +468,7 @@ export const FactoryPage = () => {
         {
           contractAddress: factoryAddress,
           entrypoint: "create_game",
-          calldata: [worldNameFelt, DEFAULT_VERSION, series.seriesNameFelt, series.seriesGameNumber],
+          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
         },
       ]);
 
@@ -496,6 +501,7 @@ export const FactoryPage = () => {
     buildQueueConfigOverrides,
     handleConfigureWorld,
     actions,
+    version,
   ]);
 
   const handleCreateIndexer = useCallback(
@@ -655,29 +661,57 @@ export const FactoryPage = () => {
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Version</label>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Version</label>
+                    <input
+                      type="text"
+                      value={version}
+                      onChange={(e) => setVersion(e.target.value)}
+                      className="w-full px-4 py-3 bg-brown/50 border border-gold/30 hover:border-gold/50 focus:border-gold rounded-xl text-gold focus:outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Namespace</label>
+                    <input
+                      type="text"
+                      value={namespace}
+                      onChange={(e) => setNamespace(e.target.value)}
+                      className="w-full px-4 py-3 bg-brown/50 border border-gold/30 hover:border-gold/50 focus:border-gold rounded-xl text-gold focus:outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Max Actions</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={maxActions}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        if (!Number.isFinite(next)) return;
+                        setMaxActions(Math.max(1, Math.floor(next)));
+                      }}
+                      className="w-full px-4 py-3 bg-brown/50 border border-gold/30 hover:border-gold/50 focus:border-gold rounded-xl text-gold focus:outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Namespace Writer</label>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-brown/50 border border-gold/30 rounded-xl">
                       <input
-                        type="text"
-                        value={DEFAULT_VERSION}
-                        disabled
-                        className="w-full px-4 py-3 bg-brown/50 border border-gold/30 rounded-xl text-gold/60 cursor-not-allowed"
+                        type="checkbox"
+                        checked={defaultNamespaceWriterAll}
+                        onChange={(e) => setDefaultNamespaceWriterAll(e.target.checked)}
+                        className="h-4 w-4 accent-gold"
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Namespace</label>
-                      <input
-                        type="text"
-                        value={DEFAULT_NAMESPACE}
-                        disabled
-                        className="w-full px-4 py-3 bg-brown/50 border border-gold/30 rounded-xl text-gold/60 cursor-not-allowed"
-                      />
+                      <span className="text-sm text-gold/80">Default namespace writer all</span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    <button
-                      onClick={handleSetFactoryConfig}
-                      disabled={
+                </div>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <button
+                    onClick={handleSetFactoryConfig}
+                    disabled={
                         !account || !factoryAddress || generatedCalldata.length === 0 || factoryConfigTx.status === "running"
                       }
                       className="px-4 py-2 bg-gold hover:bg-gold/80 disabled:bg-brown/50 disabled:text-gold/40 disabled:cursor-not-allowed text-brown text-sm font-semibold rounded-lg transition-colors"
@@ -755,10 +789,10 @@ export const FactoryPage = () => {
                     <pre className="text-xs text-brilliance overflow-x-auto leading-relaxed font-mono">
                       {generateCairoOutput(
                         parsedManifest,
-                        DEFAULT_VERSION,
-                        getDefaultMaxActionsForChain(currentChain),
-                        true,
-                        DEFAULT_NAMESPACE,
+                        version,
+                        maxActions,
+                        defaultNamespaceWriterAll,
+                        namespace,
                       )}
                     </pre>
                   </div>
