@@ -147,6 +147,12 @@ export interface DeploymentState {
   customOverrides: Partial<GamePresetConfigOverrides>;
 }
 
+export interface WorldConfigOverride {
+  preset?: GamePresetType;
+  startTime?: number;
+  customOverrides?: Partial<GamePresetConfigOverrides>;
+}
+
 export interface WorldStatus {
   deployed: boolean;
   configured: boolean;

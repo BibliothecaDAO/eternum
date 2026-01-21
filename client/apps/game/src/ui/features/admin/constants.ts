@@ -10,6 +10,7 @@ export const INDEXER_CREATION_COOLDOWN_KEY = "eternum_indexer_cooldown";
 export const CONFIGURED_WORLDS_KEY = "eternum_configured_worlds";
 export const WORLD_DEPLOYED_ADDRESS_MAP_KEY = "eternum_world_deployed_address_map";
 export const WORLD_SERIES_METADATA_KEY = "eternum_world_series_metadata";
+export const WORLD_CONFIG_OVERRIDES_KEY = "eternum_world_config_overrides";
 
 // Defaults
 export const DEFAULT_VERSION = "180";

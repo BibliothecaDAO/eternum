@@ -6,6 +6,7 @@ import { GameDetailsForm } from "./game-details-form";
 import { ConfigSummary } from "./config-summary";
 import { ConfigEditor } from "./config-editor";
 import { DeployActions } from "./deploy-actions";
+import { isValidDecimalAmount } from "../../utils/preset-to-config";
 
 interface DeploymentReviewStepProps {
   preset: GamePreset;
@@ -41,6 +42,10 @@ export const DeploymentReviewStep = ({
     ...preset.configOverrides,
     ...deployment.customOverrides,
   };
+  const feeError =
+    effectiveConfig.hasFee && !isValidDecimalAmount(effectiveConfig.feeAmount, effectiveConfig.feePrecision)
+      ? `Enter a valid amount with up to ${effectiveConfig.feePrecision} decimals.`
+      : null;
 
   const handleConfigChange = (updates: Partial<GamePresetConfigOverrides>) => {
     onUpdateDeployment({
@@ -93,7 +98,7 @@ export const DeploymentReviewStep = ({
 
       {/* Config editor (shown for custom preset or when editing) */}
       {showConfigEditor ? (
-        <ConfigEditor config={effectiveConfig} onChange={handleConfigChange} />
+        <ConfigEditor config={effectiveConfig} onChange={handleConfigChange} feeError={feeError} />
       ) : (
         <ConfigSummary preset={preset} customOverrides={deployment.customOverrides} />
       )}
@@ -105,6 +110,7 @@ export const DeploymentReviewStep = ({
         txState={txState}
         isWalletConnected={isWalletConnected}
         explorerTxUrl={explorerTxUrl}
+        validationError={feeError}
       />
     </div>
   );

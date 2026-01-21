@@ -6,7 +6,9 @@ import {
   INDEXER_COOLDOWN_MS,
   WORLD_DEPLOYED_ADDRESS_MAP_KEY,
   WORLD_SERIES_METADATA_KEY,
+  WORLD_CONFIG_OVERRIDES_KEY,
 } from "../constants";
+import type { WorldConfigOverride } from "../types/game-presets";
 
 export const getStoredWorldNames = (): string[] => {
   try {
@@ -154,5 +156,32 @@ export const removeWorldSeriesMetadata = (worldName: string) => {
       delete existing[worldName];
       persistWorldSeriesMetadata(existing);
     }
+  } catch {}
+};
+
+export const getStoredWorldConfigOverrides = (): Record<string, WorldConfigOverride> => {
+  try {
+    const stored = localStorage.getItem(WORLD_CONFIG_OVERRIDES_KEY);
+    return stored ? (JSON.parse(stored) as Record<string, WorldConfigOverride>) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const persistWorldConfigOverrides = (map: Record<string, WorldConfigOverride>) => {
+  try {
+    localStorage.setItem(WORLD_CONFIG_OVERRIDES_KEY, JSON.stringify(map));
+  } catch {}
+};
+
+export const updateWorldConfigOverride = (worldName: string, overrides: Partial<WorldConfigOverride> | null) => {
+  try {
+    const existing = getStoredWorldConfigOverrides();
+    if (overrides && Object.keys(overrides).length > 0) {
+      existing[worldName] = { ...(existing[worldName] || {}), ...overrides };
+    } else if (Object.prototype.hasOwnProperty.call(existing, worldName)) {
+      delete existing[worldName];
+    }
+    persistWorldConfigOverrides(existing);
   } catch {}
 };

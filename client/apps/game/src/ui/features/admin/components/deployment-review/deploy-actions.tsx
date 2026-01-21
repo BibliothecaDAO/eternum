@@ -7,6 +7,7 @@ interface DeployActionsProps {
   txState: TxState;
   isWalletConnected: boolean;
   explorerTxUrl?: string;
+  validationError?: string | null;
 }
 
 export const DeployActions = ({
@@ -15,6 +16,7 @@ export const DeployActions = ({
   txState,
   isWalletConnected,
   explorerTxUrl,
+  validationError,
 }: DeployActionsProps) => {
   const isDeploying = txState.status === "running";
   const isSuccess = txState.status === "success";
@@ -35,12 +37,14 @@ export const DeployActions = ({
   };
 
   const getDisabledReason = (): string | null => {
+    if (validationError) return validationError;
     if (isDeploying) return "Transaction in progress";
     if (!isWalletConnected) return "Connect your wallet to deploy";
     return null;
   };
 
   const disabledReason = getDisabledReason();
+  const isAddToQueueDisabled = isDeploying || !!validationError;
 
   return (
     <div className="space-y-4">
@@ -70,9 +74,9 @@ export const DeployActions = ({
 
         <button
           onClick={onAddToQueue}
-          disabled={isDeploying}
+          disabled={isAddToQueueDisabled}
           className="px-6 py-4 rounded-xl font-semibold bg-brown/50 hover:bg-brown/70 text-gold border border-gold/30 hover:border-gold/50 transition-all sm:w-auto"
-          title="Add to queue without deploying"
+          title={validationError ? validationError : "Add to queue without deploying"}
         >
           Add to Queue
         </button>

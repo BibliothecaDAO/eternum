@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import {
   Clock,
   Coins,
@@ -22,12 +23,13 @@ import type { GamePresetConfigOverrides } from "../../types/game-presets";
 interface ConfigEditorProps {
   config: GamePresetConfigOverrides;
   onChange: (updates: Partial<GamePresetConfigOverrides>) => void;
+  feeError?: string | null;
 }
 
 interface CollapsibleSectionProps {
   title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
+  icon: ReactNode;
+  children: ReactNode;
   defaultOpen?: boolean;
 }
 
@@ -65,21 +67,35 @@ const NumberInput = ({
   max?: number;
   step?: number;
   hint?: string;
-}) => (
-  <div className="space-y-1">
-    <label className="text-xs text-gold/70">{label}</label>
-    <input
-      type="number"
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      className="w-full px-3 py-2 bg-brown/50 border border-gold/30 rounded-lg text-gold text-sm focus:border-gold focus:ring-1 focus:ring-gold/30 outline-none transition-all"
-    />
-    {hint && <p className="text-[10px] text-gold/50">{hint}</p>}
-  </div>
-);
+}) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextValue = event.target.valueAsNumber;
+    if (!Number.isFinite(nextValue)) return;
+    let normalized = nextValue;
+    if (Number.isInteger(step)) {
+      normalized = Math.trunc(normalized);
+    }
+    if (min !== undefined) normalized = Math.max(min, normalized);
+    if (max !== undefined) normalized = Math.min(max, normalized);
+    onChange(normalized);
+  };
+
+  return (
+    <div className="space-y-1">
+      <label className="text-xs text-gold/70">{label}</label>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={handleChange}
+        className="w-full px-3 py-2 bg-brown/50 border border-gold/30 rounded-lg text-gold text-sm focus:border-gold focus:ring-1 focus:ring-gold/30 outline-none transition-all"
+      />
+      {hint && <p className="text-[10px] text-gold/50">{hint}</p>}
+    </div>
+  );
+};
 
 const ToggleButton = ({
   label,
@@ -112,7 +128,7 @@ const ToggleButton = ({
   );
 };
 
-export const ConfigEditor = ({ config, onChange }: ConfigEditorProps) => {
+export const ConfigEditor = ({ config, onChange, feeError }: ConfigEditorProps) => {
   return (
     <div className="p-6 panel-wood rounded-xl border border-gold/30 space-y-4">
       <h3 className="text-lg font-bold text-gold">Game Configuration</h3>
@@ -167,13 +183,19 @@ export const ConfigEditor = ({ config, onChange }: ConfigEditorProps) => {
               activeColor="orange"
             />
             {config.hasFee && (
-              <input
-                type="text"
-                value={config.feeAmount}
-                onChange={(e) => onChange({ feeAmount: e.target.value })}
-                placeholder="Amount"
-                className="flex-1 px-3 py-2 bg-brown/50 border border-gold/30 rounded-lg text-gold text-sm focus:border-gold outline-none"
-              />
+              <div className="flex-1 space-y-1">
+                <input
+                  type="text"
+                  value={config.feeAmount}
+                  onChange={(e) => onChange({ feeAmount: e.target.value })}
+                  placeholder="Amount"
+                  aria-invalid={!!feeError}
+                  className={`w-full px-3 py-2 bg-brown/50 border rounded-lg text-gold text-sm focus:border-gold outline-none ${
+                    feeError ? "border-danger focus:border-danger" : "border-gold/30"
+                  }`}
+                />
+                {feeError && <p className="text-[10px] text-danger">{feeError}</p>}
+              </div>
             )}
           </div>
         </div>

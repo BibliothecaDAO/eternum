@@ -28,6 +28,15 @@ const parseDecimalToBigInt = (value: string, precision: number): bigint => {
   return BigInt(combined || "0");
 };
 
+export const isValidDecimalAmount = (value: string, precision: number): boolean => {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const normalized = trimmed.startsWith(".") ? `0${trimmed}` : trimmed;
+  if (!/^\d+(\.\d+)?$/.test(normalized)) return false;
+  const [, fraction = ""] = normalized.split(".");
+  return fraction.length <= precision;
+};
+
 /**
  * Calculate the next hour from now (for default start time)
  */
@@ -69,6 +78,10 @@ export const applyPresetToConfig = (
   const maxAllowed = nowSec + MAX_START_TIME_SECONDS;
   const effectiveStartTime =
     startTime > 0 ? Math.min(Math.max(startTime, nowSec), maxAllowed) : Math.min(getNextHourEpoch(), maxAllowed);
+
+  if (effectiveOverrides.hasFee && !isValidDecimalAmount(effectiveOverrides.feeAmount, effectiveOverrides.feePrecision)) {
+    throw new Error(`Invalid fee amount. Use up to ${effectiveOverrides.feePrecision} decimals.`);
+  }
 
   // Calculate fee amount - only if fees are enabled
   const feeAmount = effectiveOverrides.hasFee
