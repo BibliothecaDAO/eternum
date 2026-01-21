@@ -1,6 +1,6 @@
 // MMR (Matchmaking Rating) Calculation Library
 //
-// This module implements the 7-step rating update formula for the Blitz MMR system.
+// This module implements the 8-step rating update formula for the Blitz MMR system.
 // Uses fixed-point math via cubit library for exponential and transcendental functions.
 //
 // Formula Steps:
@@ -9,12 +9,13 @@
 // 3. Actual Percentile: p_act = (rank - 1) / (N - 1)
 // 4. Raw Delta: Δ_base = K₀ × √(N/6) × [p_exp - p_act]
 // 5. Diminishing Returns: Δ = Δ_max × tanh(Δ_base / Δ_max)
-// 6. Mean Regression: Δ_reg = Δ - λ × (MMR - μ)
-// 7. New Rating: MMR' = max(100, MMR + Δ_reg)
+// 6. Split Lobby Adjustment: Δ_tier = Δ × (1 + w × clamp((M_game - M_global) / D, -0.5, 0.5))
+// 7. Mean Regression: Δ_reg = Δ_tier - λ × (MMR - μ)
+// 8. New Rating: MMR' = max(100, MMR + Δ_reg)
 
+use crate::models::mmr::MMRConfig;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use starknet::ContractAddress;
-use crate::models::mmr::MMRConfig;
 
 
 // ================================
@@ -186,9 +187,67 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         d_max * tanh_ratio
     }
 
-    /// Step 6: Apply mean regression
-    /// Δ_reg = Δ - λ × (MMR - μ)
-    fn apply_mean_regression(delta: Fixed, current_mmr: u128, mean: u128, lambda_scaled: u128) -> Fixed {
+    /// Step 6: Apply split lobby adjustment
+    /// When a large registration lobby is split into multiple games (tiers),
+    /// adjust MMR swings based on relative tier strength.
+    ///
+    /// bias = clamp((M_game - M_global) / D, -0.5, 0.5)
+    /// mult = 1 + w × bias
+    /// Δ_tier = Δ × mult
+    ///
+    /// If M_game == M_global (no split), mult = 1 and delta is unchanged.
+    fn apply_split_lobby_adjustment(
+        delta: Fixed, game_median: u128, global_median: u128, spread_factor: u128, weight_scaled: u128,
+    ) -> Fixed {
+        // If no split (game median equals global), return unchanged
+        if game_median == global_median {
+            return delta;
+        }
+
+        let d = Self::to_fixed(spread_factor);
+
+        // (M_game - M_global) / D
+        let diff = if game_median >= global_median {
+            FixedTrait::new_unscaled(game_median - global_median, false)
+        } else {
+            FixedTrait::new_unscaled(global_median - game_median, true) // negative
+        };
+        let ratio = diff / d;
+
+        // Clamp to [-0.5, 0.5]
+        let half_pos = FixedTrait::new(9223372036854775808, false); // 0.5 in fixed-point
+        let half_neg = FixedTrait::new(9223372036854775808, true); // -0.5 in fixed-point
+
+        let bias = if ratio.sign {
+            // Negative ratio
+            if ratio.mag > half_neg.mag {
+                half_neg // clamp to -0.5
+            } else {
+                ratio
+            }
+        } else {
+            // Positive ratio
+            if ratio.mag > half_pos.mag {
+                half_pos // clamp to 0.5
+            } else {
+                ratio
+            }
+        };
+
+        // w = weight_scaled / 1e6
+        let w = FixedTrait::new_unscaled(weight_scaled, false) / FixedTrait::new_unscaled(PRECISION_SCALE, false);
+
+        // mult = 1 + w × bias
+        let one = FixedTrait::ONE();
+        let mult = one + (w * bias);
+
+        // Δ_tier = Δ × mult
+        delta * mult
+    }
+
+    /// Step 7: Apply mean regression
+    /// Δ_reg = Δ_tier - λ × (MMR - μ)
+    fn apply_mean_regression(delta_tier: Fixed, current_mmr: u128, mean: u128, lambda_scaled: u128) -> Fixed {
         // Convert lambda from scaled (1e6) to fixed
         let lambda = FixedTrait::new_unscaled(lambda_scaled, false) / FixedTrait::new_unscaled(PRECISION_SCALE, false);
 
@@ -202,11 +261,11 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         // λ × (MMR - μ)
         let regression_pull = lambda * deviation;
 
-        // Δ - λ × (MMR - μ)
-        delta - regression_pull
+        // Δ_tier - λ × (MMR - μ)
+        delta_tier - regression_pull
     }
 
-    /// Step 7: Calculate final new MMR with floor enforcement
+    /// Step 8: Calculate final new MMR with floor enforcement
     /// MMR' = max(min_mmr, MMR + Δ_reg)
     fn calculate_new_mmr(current_mmr: u128, delta_reg: Fixed, min_mmr: u128) -> u128 {
         // Convert delta to signed integer change
@@ -244,11 +303,20 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
 
     /// Calculate new MMR for a single player given game results
     /// Returns the new MMR value
+    ///
+    /// Parameters:
+    /// - config: MMR system configuration
+    /// - player_mmr: Player's current MMR
+    /// - rank: Player's finish rank in the game (1 = winner)
+    /// - player_count: Total players in the game
+    /// - game_median: Median MMR of players in this specific game
+    /// - global_median: Median MMR across all registered players (for split lobbies)
+    ///                  Pass same value as game_median if no split occurred
     fn calculate_player_mmr(
-        config: MMRConfig, player_mmr: u128, rank: u16, player_count: u16, median_mmr: u128,
+        config: MMRConfig, player_mmr: u128, rank: u16, player_count: u16, game_median: u128, global_median: u128,
     ) -> u128 {
         // Step 2: Expected percentile
-        let p_exp = Self::expected_percentile(player_mmr, median_mmr, config.spread_factor);
+        let p_exp = Self::expected_percentile(player_mmr, game_median, config.spread_factor);
 
         // Step 3: Actual percentile
         let p_act = Self::actual_percentile(rank, player_count);
@@ -259,24 +327,42 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         // Step 5: Apply diminishing returns
         let delta = Self::apply_diminishing_returns(delta_base, config.max_delta);
 
-        // Step 6: Apply mean regression
-        let delta_reg = Self::apply_mean_regression(
-            delta, player_mmr, config.distribution_mean, config.mean_regression_scaled,
+        // Step 6: Apply split lobby adjustment
+        let delta_tier = Self::apply_split_lobby_adjustment(
+            delta, game_median, global_median, config.spread_factor, config.lobby_split_weight_scaled,
         );
 
-        // Step 7: Calculate new MMR with floor
+        // Step 7: Apply mean regression
+        let delta_reg = Self::apply_mean_regression(
+            delta_tier, player_mmr, config.distribution_mean, config.mean_regression_scaled,
+        );
+
+        // Step 8: Calculate new MMR with floor
         Self::calculate_new_mmr(player_mmr, delta_reg, config.min_mmr)
     }
 
     /// Calculate MMR updates for all players in a game
     /// Returns array of (player, new_mmr) tuples
+    ///
+    /// For non-split games, pass None for global_median_override.
+    /// For split lobby games, pass the median across all registered players.
     fn calculate_game_mmr_updates(
-        config: MMRConfig, players: Span<ContractAddress>, ranks: Span<u16>, current_mmrs: Span<u128>,
+        config: MMRConfig,
+        players: Span<ContractAddress>,
+        ranks: Span<u16>,
+        current_mmrs: Span<u128>,
+        global_median_override: Option<u128>,
     ) -> Array<(ContractAddress, u128)> {
         let player_count: u16 = players.len().try_into().unwrap();
 
-        // Step 1: Calculate median MMR
-        let median_mmr = Self::calculate_median(current_mmrs);
+        // Step 1: Calculate median MMR for this game
+        let game_median = Self::calculate_median(current_mmrs);
+
+        // Use global median if provided (split lobby), otherwise use game median
+        let global_median = match global_median_override {
+            Option::Some(m) => m,
+            Option::None => game_median,
+        };
 
         // Calculate new MMR for each player
         let mut updates: Array<(ContractAddress, u128)> = array![];
@@ -286,7 +372,9 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
             let rank = *ranks.at(i);
             let current_mmr = *current_mmrs.at(i);
 
-            let new_mmr = Self::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
+            let new_mmr = Self::calculate_player_mmr(
+                config, current_mmr, rank, player_count, game_median, global_median,
+            );
 
             updates.append((player, new_mmr));
             i += 1;
@@ -303,9 +391,9 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
 
 #[cfg(test)]
 mod tests {
+    use crate::models::mmr::MMRConfigDefaultImpl;
     use cubit::f128::types::fixed::FixedTrait;
     use starknet::ContractAddress;
-    use crate::models::mmr::MMRConfigDefaultImpl;
     use super::MMRCalculatorImpl;
 
     // ================================
@@ -713,7 +801,10 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1000;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
+        // No split: game_median == global_median
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, rank, player_count, median_mmr, median_mmr,
+        );
 
         // Winner should gain MMR
         assert!(new_mmr > current_mmr, "Winner should gain MMR");
@@ -729,7 +820,10 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1000;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
+        // No split: game_median == global_median
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, rank, player_count, median_mmr, median_mmr,
+        );
 
         // Loser should lose MMR
         assert!(new_mmr < current_mmr, "Loser should lose MMR");
@@ -745,7 +839,10 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1500;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
+        // No split: game_median == global_median
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, rank, player_count, median_mmr, median_mmr,
+        );
 
         // Should not go below floor
         assert!(new_mmr >= config.min_mmr, "MMR should not go below floor");
@@ -762,9 +859,12 @@ mod tests {
         let player_count: u16 = 6;
         let rank: u16 = 1;
 
-        let high_new = MMRCalculatorImpl::calculate_player_mmr(config, high_mmr, rank, player_count, median_mmr);
+        // No split: game_median == global_median
+        let high_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, high_mmr, rank, player_count, median_mmr, median_mmr,
+        );
         let med_new = MMRCalculatorImpl::calculate_player_mmr(
-            config, median_player_mmr, rank, player_count, median_mmr,
+            config, median_player_mmr, rank, player_count, median_mmr, median_mmr,
         );
 
         let high_gain = high_new - high_mmr;
@@ -785,7 +885,10 @@ mod tests {
         let player_count: u16 = 6;
         let rank: u16 = 6; // last place
 
-        let low_new = MMRCalculatorImpl::calculate_player_mmr(config, low_mmr, rank, player_count, median_mmr);
+        // No split: game_median == global_median
+        let low_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, low_mmr, rank, player_count, median_mmr, median_mmr,
+        );
 
         // Low MMR player was expected to lose, so performance matches expectations
         // Mean regression pulls toward 1500, which can actually offset losses
@@ -794,7 +897,9 @@ mod tests {
 
         // Compare to a player with higher MMR losing
         let med_mmr: u128 = 1000;
-        let med_new = MMRCalculatorImpl::calculate_player_mmr(config, med_mmr, rank, player_count, median_mmr);
+        let med_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, med_mmr, rank, player_count, median_mmr, median_mmr,
+        );
 
         // The median player underperformed more, so should lose more
         let low_change = if low_new > low_mmr {
@@ -817,7 +922,10 @@ mod tests {
         let player_count: u16 = 6;
         let median_mmr: u128 = 1000;
 
-        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, rank, player_count, median_mmr);
+        // No split: game_median == global_median
+        let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, rank, player_count, median_mmr, median_mmr,
+        );
 
         // Change should be relatively small
         let change = if new_mmr > current_mmr {
@@ -845,7 +953,8 @@ mod tests {
         let ranks = array![1_u16, 2, 3, 4, 5, 6].span();
         let mmrs = array![1000_u128, 1000, 1000, 1000, 1000, 1000].span();
 
-        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs);
+        // No split lobby
+        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
 
         // Should have 6 updates
         assert!(updates.len() == 6, "Should have 6 updates");
@@ -866,7 +975,8 @@ mod tests {
         let ranks = array![1_u16, 2, 3, 4, 5, 6].span();
         let mmrs = array![800_u128, 900, 1000, 1100, 1200, 1300].span();
 
-        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs);
+        // No split lobby
+        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
 
         // Low MMR player wins (huge upset) - should get significant gain
         let (_, low_winner_new) = *updates.at(0);
@@ -896,7 +1006,8 @@ mod tests {
         let ranks = array![2_u16, 1, 3].span();
         let mmrs = array![1000_u128, 1000, 1000].span();
 
-        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs);
+        // No split lobby
+        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
 
         // Check order is preserved
         let (addr1, _) = *updates.at(0);
@@ -927,10 +1038,15 @@ mod tests {
         let median_mmr: u128 = 1000;
         let player_count: u16 = 2;
 
+        // No split: game_median == global_median
         // Winner
-        let winner_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 1, player_count, median_mmr);
+        let winner_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 1, player_count, median_mmr, median_mmr,
+        );
         // Loser
-        let loser_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 2, player_count, median_mmr);
+        let loser_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 2, player_count, median_mmr, median_mmr,
+        );
 
         assert!(winner_new > current_mmr, "2-player winner should gain");
         assert!(loser_new < current_mmr, "2-player loser should lose");
@@ -945,14 +1061,19 @@ mod tests {
         let median_mmr: u128 = 1000;
         let player_count: u16 = 12;
 
-        let winner_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 1, player_count, median_mmr);
-        let loser_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 12, player_count, median_mmr);
+        // No split: game_median == global_median
+        let winner_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 1, player_count, median_mmr, median_mmr,
+        );
+        let loser_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 12, player_count, median_mmr, median_mmr,
+        );
 
         // Larger lobby should have larger potential changes (sqrt(N/6) scaling)
         assert!(winner_new > current_mmr, "12-player winner should gain");
         assert!(loser_new < current_mmr, "12-player loser should lose");
 
-        let winner_6_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 1, 6, median_mmr);
+        let winner_6_new = MMRCalculatorImpl::calculate_player_mmr(config, current_mmr, 1, 6, median_mmr, median_mmr);
         let winner_12_gain = winner_new - current_mmr;
         let winner_6_gain = winner_6_new - current_mmr;
         assert!(winner_12_gain > winner_6_gain, "12-player winner should gain more than 6-player");
@@ -967,8 +1088,11 @@ mod tests {
         let median_mmr: u128 = 1000;
         let player_count: u16 = 6;
 
+        // No split: game_median == global_median
         // If they win (expected), they may still gain a tiny amount
-        let high_winner = MMRCalculatorImpl::calculate_player_mmr(config, high_mmr, 1, player_count, median_mmr);
+        let high_winner = MMRCalculatorImpl::calculate_player_mmr(
+            config, high_mmr, 1, player_count, median_mmr, median_mmr,
+        );
         // Due to mean regression pulling toward 1500, very high MMR
         // player may actually lose MMR even when winning!
         // This is expected behavior - the system pulls back to mean
@@ -976,7 +1100,9 @@ mod tests {
         assert!(high_winner > 0, "Winner MMR should be positive");
 
         // If they lose (unexpected), they lose MMR
-        let high_loser = MMRCalculatorImpl::calculate_player_mmr(config, high_mmr, 6, player_count, median_mmr);
+        let high_loser = MMRCalculatorImpl::calculate_player_mmr(
+            config, high_mmr, 6, player_count, median_mmr, median_mmr,
+        );
         // Loser should have less MMR than winner
         assert!(high_loser < high_winner, "Loser should have less than winner");
     }
@@ -1031,5 +1157,176 @@ mod tests {
         let neg = FixedTrait::new_unscaled(100, true); // -100
         let result = MMRCalculatorImpl::from_fixed(neg);
         assert!(result == 0, "Negative fixed should convert to 0");
+    }
+
+    // ================================
+    // SPLIT LOBBY ADJUSTMENT TESTS
+    // ================================
+
+    #[test]
+    fn test_split_lobby_no_adjustment_when_equal() {
+        // When game_median == global_median, no adjustment occurs
+        let delta = FixedTrait::new_unscaled(20, false);
+        let game_median: u128 = 1000;
+        let global_median: u128 = 1000;
+        let spread_factor: u128 = 450;
+        let weight_scaled: u128 = 250000; // 0.25
+
+        let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
+            delta, game_median, global_median, spread_factor, weight_scaled,
+        );
+
+        // Should be unchanged
+        let diff = if adjusted > delta {
+            adjusted - delta
+        } else {
+            delta - adjusted
+        };
+        assert!(diff.mag < 1000000000000, "No adjustment when medians equal");
+    }
+
+    #[test]
+    fn test_split_lobby_high_tier_amplifies() {
+        // High-tier game (game_median > global_median) should have amplified delta
+        let delta = FixedTrait::new_unscaled(20, false);
+        let game_median: u128 = 1200; // High-tier game
+        let global_median: u128 = 1000;
+        let spread_factor: u128 = 450;
+        let weight_scaled: u128 = 250000; // 0.25
+
+        let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
+            delta, game_median, global_median, spread_factor, weight_scaled,
+        );
+
+        // mult = 1 + 0.25 * ((1200-1000)/450) = 1 + 0.25 * 0.444 ≈ 1.111
+        // adjusted should be > delta
+        assert!(adjusted > delta, "High-tier game should amplify delta");
+    }
+
+    #[test]
+    fn test_split_lobby_low_tier_dampens() {
+        // Low-tier game (game_median < global_median) should have dampened delta
+        let delta = FixedTrait::new_unscaled(20, false);
+        let game_median: u128 = 800; // Low-tier game
+        let global_median: u128 = 1000;
+        let spread_factor: u128 = 450;
+        let weight_scaled: u128 = 250000; // 0.25
+
+        let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
+            delta, game_median, global_median, spread_factor, weight_scaled,
+        );
+
+        // mult = 1 + 0.25 * ((800-1000)/450) = 1 + 0.25 * (-0.444) ≈ 0.889
+        // adjusted should be < delta
+        assert!(adjusted < delta, "Low-tier game should dampen delta");
+    }
+
+    #[test]
+    fn test_split_lobby_clamps_to_half() {
+        // Extreme difference should be clamped to ±0.5
+        let delta = FixedTrait::new_unscaled(20, false);
+        let game_median: u128 = 2000; // Very high tier
+        let global_median: u128 = 1000;
+        let spread_factor: u128 = 450;
+        let weight_scaled: u128 = 250000; // 0.25
+
+        let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
+            delta, game_median, global_median, spread_factor, weight_scaled,
+        );
+
+        // bias = clamp((2000-1000)/450, -0.5, 0.5) = clamp(2.22, -0.5, 0.5) = 0.5
+        // mult = 1 + 0.25 * 0.5 = 1.125
+        // Max possible mult with w=0.25 is 1.125 (when bias=0.5)
+        let max_mult = FixedTrait::new_unscaled(1125, false) / FixedTrait::new_unscaled(1000, false);
+        let expected_max = delta * max_mult;
+
+        // adjusted should be close to expected_max (not exceeding)
+        let diff = if adjusted > expected_max {
+            adjusted - expected_max
+        } else {
+            expected_max - adjusted
+        };
+        assert!(diff.mag < 1000000000000000, "Should clamp at 0.5 bias");
+    }
+
+    #[test]
+    fn test_split_lobby_negative_delta() {
+        // Split adjustment should work with negative deltas too
+        let delta = FixedTrait::new_unscaled(20, true); // negative
+        let game_median: u128 = 1200; // High-tier game
+        let global_median: u128 = 1000;
+        let spread_factor: u128 = 450;
+        let weight_scaled: u128 = 250000;
+
+        let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
+            delta, game_median, global_median, spread_factor, weight_scaled,
+        );
+
+        // Negative delta in high-tier should become more negative
+        assert!(adjusted.sign, "Should stay negative");
+        assert!(adjusted.mag > delta.mag, "Magnitude should increase for high-tier");
+    }
+
+    #[test]
+    fn test_split_lobby_full_calculation() {
+        let config = MMRConfigDefaultImpl::default();
+
+        // Same player, same rank, but in different tiers
+        let current_mmr: u128 = 1000;
+        let rank: u16 = 1;
+        let player_count: u16 = 6;
+        let global_median: u128 = 1000;
+
+        // High-tier game (median 1200)
+        let high_tier_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, rank, player_count, 1200, global_median,
+        );
+
+        // Low-tier game (median 800)
+        let low_tier_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, rank, player_count, 800, global_median,
+        );
+
+        // Normal game (no split)
+        let normal_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, rank, player_count, global_median, global_median,
+        );
+
+        // High-tier winner should gain more, low-tier winner should gain less
+        // But expected percentile also affects this...
+        // In high-tier game, player at 1000 is below median (1200), so expected to do poorly
+        // Winning should give bigger gain
+        assert!(high_tier_new > normal_new, "High-tier upset win should give bigger gain");
+
+        // In low-tier game, player at 1000 is above median (800), so expected to win
+        // Winning gives smaller gain (meeting expectations)
+        assert!(low_tier_new < normal_new, "Low-tier expected win should give smaller gain");
+    }
+
+    #[test]
+    fn test_split_lobby_game_updates() {
+        let config = MMRConfigDefaultImpl::default();
+
+        let players = array![addr('p1'), addr('p2'), addr('p3')].span();
+        let ranks = array![1_u16, 2, 3].span();
+        let mmrs = array![1200_u128, 1000, 800].span();
+
+        // With split lobby (global median 1000, but this game has median 1000)
+        let global_median: u128 = 1000;
+        let updates_with_split = MMRCalculatorImpl::calculate_game_mmr_updates(
+            config, players, ranks, mmrs, Option::Some(global_median),
+        );
+
+        // Without split (no global median override)
+        let updates_no_split = MMRCalculatorImpl::calculate_game_mmr_updates(
+            config, players, ranks, mmrs, Option::None,
+        );
+
+        // In this case game median == global median, so results should be same
+        let (_, p1_split) = *updates_with_split.at(0);
+        let (_, p1_no_split) = *updates_no_split.at(0);
+
+        // Should be equal since medians match
+        assert!(p1_split == p1_no_split, "Same median should give same result");
     }
 }

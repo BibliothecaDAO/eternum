@@ -8,12 +8,6 @@
 
 use core::dict::Felt252Dict;
 use core::num::traits::Zero;
-use dojo::model::{Model, ModelStorage, ModelStorageTest};
-use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait, world};
-use dojo_cairo_test::{
-    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-};
-use starknet::{ContractAddress, contract_address_const};
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, WORLD_CONFIG_ID};
 use crate::models::config::{WorldConfig, WorldConfigUtilImpl, m_WorldConfig};
 use crate::models::mmr::{
@@ -23,6 +17,12 @@ use crate::models::mmr::{
 use crate::models::rank::{PlayersRankTrial, RankList, RankPrize, m_PlayersRankTrial, m_RankList, m_RankPrize};
 use crate::systems::mmr::contracts::{IMMRSystems, IMMRSystemsDispatcher, IMMRSystemsDispatcherTrait, mmr_systems};
 use crate::systems::utils::mmr::MMRCalculatorImpl;
+use dojo::model::{Model, ModelStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait, world};
+use dojo_cairo_test::{
+    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
+};
+use starknet::{ContractAddress, contract_address_const};
 
 
 // ================================
@@ -117,6 +117,7 @@ fn setup_mmr_config(ref world: WorldStorage) {
         spread_factor: 450,
         max_delta: 45,
         k_factor: 50,
+        lobby_split_weight_scaled: 250000, // 0.25 * 1e6
         mean_regression_scaled: 15000, // 0.015 * 1e6
         min_players: 2, // Lower threshold for testing
         min_entry_fee: 0 // No fee requirement for testing
@@ -278,6 +279,7 @@ fn test_is_game_mmr_eligible_disabled() {
         spread_factor: 450,
         max_delta: 45,
         k_factor: 50,
+        lobby_split_weight_scaled: 250000,
         mean_regression_scaled: 15000,
         min_players: 6,
         min_entry_fee: 0,
@@ -317,6 +319,7 @@ fn test_is_game_mmr_eligible_below_min_players() {
         spread_factor: 450,
         max_delta: 45,
         k_factor: 50,
+        lobby_split_weight_scaled: 250000,
         mean_regression_scaled: 15000,
         min_players: 6,
         min_entry_fee: 0,
@@ -355,6 +358,7 @@ fn test_is_game_mmr_eligible_below_min_fee() {
         spread_factor: 450,
         max_delta: 45,
         k_factor: 50,
+        lobby_split_weight_scaled: 250000,
         mean_regression_scaled: 15000,
         min_players: 2,
         min_entry_fee: 1_000000000000000000 // 1 LORDS (18 decimals)
@@ -402,6 +406,7 @@ fn test_process_game_mmr_disabled() {
         spread_factor: 450,
         max_delta: 45,
         k_factor: 50,
+        lobby_split_weight_scaled: 250000,
         mean_regression_scaled: 15000,
         min_players: 2,
         min_entry_fee: 0,
@@ -691,6 +696,7 @@ fn test_process_game_mmr_from_trial_below_min_players() {
         spread_factor: 450,
         max_delta: 45,
         k_factor: 50,
+        lobby_split_weight_scaled: 250000,
         mean_regression_scaled: 15000,
         min_players: 4, // Require 4 players
         min_entry_fee: 0,
@@ -827,7 +833,8 @@ fn test_mmr_calculator_full_game() {
     let ranks: Span<u16> = array![1_u16, 2, 3, 4, 5, 6].span();
     let mmrs: Span<u128> = array![1000_u128, 1000, 1000, 1000, 1000, 1000].span();
 
-    let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs);
+    // No split lobby
+    let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
     let updates_span = updates.span();
 
     // Should have 6 updates
@@ -849,7 +856,8 @@ fn test_mmr_calculator_upset() {
     let ranks: Span<u16> = array![1_u16, 2].span();
     let mmrs: Span<u128> = array![800_u128, 1500].span(); // Low MMR wins
 
-    let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs);
+    // No split lobby
+    let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
     let updates_span = updates.span();
 
     let (_, low_mmr_winner_new) = *updates_span.at(0);

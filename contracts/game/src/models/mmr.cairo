@@ -31,6 +31,8 @@ pub struct MMRConfig {
     pub max_delta: u128,
     /// Base K-factor (K0) - scaling factor for raw delta (default: 50)
     pub k_factor: u128,
+    /// Split lobby weight (w) - scales tier adjustment (default: 0.25 scaled as 250000)
+    pub lobby_split_weight_scaled: u128,
     /// Mean regression lambda - pull toward distribution mean (default: 0.015 scaled)
     pub mean_regression_scaled: u128,
     /// Minimum players for a game to be rated (default: 6)
@@ -53,6 +55,8 @@ pub impl MMRConfigDefaultImpl of MMRConfigDefaultTrait {
             spread_factor: 450,
             max_delta: 45,
             k_factor: 50,
+            // 0.25 scaled by 1e6 for fixed-point precision (split lobby weight)
+            lobby_split_weight_scaled: 250000,
             // 0.015 scaled by 1e6 for fixed-point precision
             mean_regression_scaled: 15000,
             min_players: 6,
@@ -227,6 +231,7 @@ mod tests {
         assert!(config.spread_factor == 450, "Spread factor should be 450");
         assert!(config.max_delta == 45, "Max delta should be 45");
         assert!(config.k_factor == 50, "K factor should be 50");
+        assert!(config.lobby_split_weight_scaled == 250000, "Split weight scaled should be 250000");
         assert!(config.mean_regression_scaled == 15000, "Lambda scaled should be 15000");
         assert!(config.min_players == 6, "Min players should be 6");
     }

@@ -47,7 +47,7 @@ The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for 
 │  │   MMR Systems       │    │  MMR Calculator     │    │   MMR Token      │  │
 │  │   (Dojo Contract)   │───▶│  (Utils Library)    │    │   (ERC20)        │  │
 │  │                     │    │                     │    │                  │  │
-│  │ • process_game_mmr  │    │ • 7-step formula    │    │ • Soul-bound     │  │
+│  │ • process_game_mmr  │    │ • 8-step formula    │    │ • Soul-bound     │  │
 │  │ • set_series_ranked │    │ • Median calc       │    │ • GAME_ROLE only │  │
 │  │ • get_player_stats  │    │ • Fixed-point math  │    │ • Min floor 100  │  │
 │  └─────────────────────┘    └─────────────────────┘    └──────────────────┘  │
@@ -78,7 +78,7 @@ The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for 
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | **MMR Systems** | `contracts/game/src/systems/mmr/contracts.cairo` | Dojo contract orchestrating MMR processing |
-| **MMR Calculator** | `contracts/game/src/systems/utils/mmr.cairo` | Pure calculation library (7-step formula) |
+| **MMR Calculator** | `contracts/game/src/systems/utils/mmr.cairo` | Pure calculation library (8-step formula) |
 | **MMR Token** | `contracts/mmr/src/contract.cairo` | Soul-bound ERC20 storing actual ratings |
 | **MMR Models** | `contracts/game/src/models/mmr.cairo` | Data structures for stats and records |
 
@@ -100,6 +100,7 @@ struct MMRConfig {
     spread_factor: u128,              // D value for logistic function (default: 450)
     max_delta: u128,                  // Maximum rating change per game (default: 45)
     k_factor: u128,                   // Base scaling factor K₀ (default: 50)
+    lobby_split_weight_scaled: u128,  // w × 1e6 for split-lobby scaling (default: 250000 = 0.25)
     mean_regression_scaled: u128,     // λ × 1e6 for regression (default: 15000 = 0.015)
     min_players: u16,                 // Minimum players for rated game (default: 6)
     min_entry_fee: u256,              // Minimum fee for rated game (in LORDS wei)
@@ -157,7 +158,7 @@ struct SeriesMMRConfig {
 
 ## Rating Algorithm
 
-The MMR system uses a **7-step formula** to calculate rating changes:
+The MMR system uses an **8-step formula** to calculate rating changes:
 
 ### Step 1: Median MMR
 
@@ -230,12 +231,42 @@ Where:
 
 **Effect**: Small deltas pass through mostly unchanged; large deltas asymptotically approach `Δ_max`.
 
-### Step 6: Mean Regression
+### Step 6: Split Lobby Adjustment (if applicable)
+
+When a large registration lobby is split into multiple games (tiers), adjust
+MMR swings to reflect the relative strength of each tier.
+
+Compute the global median of the *entire* registration lobby and the median of
+the specific game the player is assigned to:
+
+```
+M_global = median{MMR₁..MMRₙ}   // across all registered players
+M_game   = median{MMR in this game}
+```
+
+Define a bounded tier bias and a multiplier, then scale the delta from Step 5:
+
+```
+bias = clamp((M_game - M_global) / D, -0.5, 0.5)
+mult = 1 + w × bias
+Δ_tier = Δ × mult
+```
+
+Where:
+- `D` = spread factor (default 450)
+- `w` = lobby_split_weight (default 0.25)
+
+**Effect**:
+- Higher-median games get slightly larger swings (mult > 1)
+- Lower-median games get slightly smaller swings (mult < 1)
+- If there is no split, `M_game == M_global` and `mult = 1`
+
+### Step 7: Mean Regression
 
 Pull ratings toward the distribution mean:
 
 ```
-Δ_reg = Δ - λ × (MMR - μ)
+Δ_reg = Δ_tier - λ × (MMR - μ)
 ```
 
 Where:
@@ -247,7 +278,7 @@ Where:
 - Players below mean lose a bit less / gain a bit more
 - Prevents rating inflation/deflation over time
 
-### Step 7: Final Rating
+### Step 8: Final Rating
 
 Apply the change with floor enforcement:
 
@@ -263,13 +294,31 @@ Where `min_mmr` = 100 (hard floor)
 
 | Step | Calculation | Result |
 |------|-------------|--------|
-| 1. Median | median{1000, 1000, 1000, 1000, 1000, 1000} | M = 1000 |
+| 1. Median | median{1000, 1000, 1000, 1000, 1000, 1000} | M_game = 1000 |
 | 2. Expected | 1 / (1 + e^((1000-1000)/450)) | p_exp = 0.5 |
 | 3. Actual | (1-1) / (6-1) | p_act = 0.0 |
 | 4. Raw Delta | 50 × √(6/6) × [0.5 - 0.0] | Δ_base = 25 |
 | 5. Diminishing | 45 × tanh(25/45) | Δ ≈ 22.4 |
-| 6. Regression | 22.4 - 0.015 × (1000-1500) | Δ_reg ≈ 29.9 |
-| 7. Final | max(100, 1000 + 29.9) | MMR' ≈ 1030 |
+| 6. Split Adjust | M_global = 1000 ⇒ mult = 1 + 0.25 × 0 | Δ_tier ≈ 22.4 |
+| 7. Regression | 22.4 - 0.015 × (1000-1500) | Δ_reg ≈ 29.9 |
+| 8. Final | max(100, 1000 + 29.9) | MMR' ≈ 1030 |
+
+### Split Lobby Handling (MMR)
+
+When a registration lobby exceeds 24 players, split into multiple games by
+descending MMR and distribute players as evenly as possible across games.
+
+**Example (58 players)**:
+- Split into 3 games with sizes 20 / 19 / 19
+- Top-rated players go to Game A (20), next to Game B (19), lowest to Game C (19)
+
+**MMR calculation per game**:
+1. Compute `M_global` across all 58 registered players
+2. Compute `M_game` for each split game
+3. Apply Steps 1-8 using `M_game`, and apply Step 6 with `M_global`
+
+This keeps MMR changes tied to the specific game a player was placed in, while
+slightly favoring higher-tier games via the split adjustment multiplier.
 
 ---
 
@@ -469,6 +518,7 @@ println!("Rank: {}, MMR change: {} -> {}", record.rank, record.mmr_before, recor
 | `spread_factor` | 450 | Logistic function width (D) |
 | `max_delta` | 45 | Maximum rating change per game |
 | `k_factor` | 50 | Base scaling factor (K₀) |
+| `lobby_split_weight_scaled` | 250000 | w × 1e6 (0.25 = 25%) |
 | `mean_regression_scaled` | 15000 | λ × 1e6 (0.015 = 1.5%) |
 | `min_players` | 6 | Minimum for rated game |
 | `min_entry_fee` | 1e18 | $1 in LORDS (18 decimals) |
@@ -504,6 +554,7 @@ let mmr_config = MMRConfig {
     spread_factor: 450,
     max_delta: 45,
     k_factor: 50,
+    lobby_split_weight_scaled: 250000, // 0.25
     mean_regression_scaled: 15000,
     min_players: 6,
     min_entry_fee: 1_000000000000000000, // $1 LORDS
@@ -521,7 +572,7 @@ WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 | Test File | Coverage |
 |-----------|----------|
 | `models/mmr.cairo` | Model unit tests (PlayerMMRStats) |
-| `systems/utils/mmr.cairo` | Algorithm unit tests (all 7 steps) |
+| `systems/utils/mmr.cairo` | Algorithm unit tests (all 8 steps) |
 | `systems/mmr/tests/test_mmr_systems.cairo` | Integration tests |
 
 ### Running Tests
@@ -538,7 +589,7 @@ sozo test -f test_player_stats          # Model tests
 
 ### Test Coverage Summary
 
-- **82 total tests** across all MMR components
+- **89 total tests** across all MMR components
 - **Model tests**: Player stats tracking, streak management
 - **Algorithm tests**: Each formula step, edge cases, upset scenarios
 - **Integration tests**: Full game processing, eligibility checks, idempotency
