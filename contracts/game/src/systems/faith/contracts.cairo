@@ -7,14 +7,14 @@ pub trait IFaithSystems<T> {
 #[dojo::contract]
 pub mod faith_systems {
     use core::num::traits::zero::Zero;
-    use dojo::model::ModelStorage;
+    use dojo::model::{Model, ModelStorage};
     use dojo::world::WorldStorage;
     use starknet::ContractAddress;
 
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ErrorMessages};
     use crate::models::faith::{FollowerAllegiance, FollowerType, WonderFaith};
-    use crate::models::structure::{Structure, StructureCategory, StructureOwnerStoreImpl};
+    use crate::models::structure::{Structure, StructureCategory, StructureMetadata, StructureOwnerStoreImpl};
 
     #[abi(embed_v0)]
     impl FaithSystemsImpl of super::IFaithSystems<ContractState> {
@@ -24,7 +24,7 @@ pub mod faith_systems {
 
             let entity_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
             assert!(entity_owner.is_non_zero(), "Entity not found");
-            assert!(entity_owner == caller, ErrorMessages::NOT_OWNER);
+            assert(entity_owner == caller, ErrorMessages::NOT_OWNER);
 
             let wonder_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
             assert!(wonder_owner.is_non_zero(), "Wonder not found");
@@ -36,12 +36,14 @@ pub mod faith_systems {
             let allegiance: FollowerAllegiance = world.read_model(entity_id);
             assert!(allegiance.wonder_id.is_zero(), "Already pledged");
 
-            let structure: Structure = world.read_model(entity_id);
-            assert!(structure.category.is_non_zero(), "Entity not found");
+            let structure_ptr = Model::<Structure>::ptr_from_keys(entity_id);
+            let category: u8 = world.read_member(structure_ptr, selector!("category"));
+            assert!(category.is_non_zero(), "Entity not found");
+            let metadata: StructureMetadata = world.read_member(structure_ptr, selector!("metadata"));
 
-            let entity_type = if structure.metadata.has_wonder {
+            let entity_type = if metadata.has_wonder {
                 FollowerType::Wonder
-            } else if structure.category == StructureCategory::Village.into() {
+            } else if category == StructureCategory::Village.into() {
                 FollowerType::Village
             } else {
                 FollowerType::Realm
@@ -74,7 +76,7 @@ pub mod faith_systems {
             let caller = starknet::get_caller_address();
             let entity_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
             assert!(entity_owner.is_non_zero(), "Entity not found");
-            assert!(entity_owner == caller, ErrorMessages::NOT_OWNER);
+            assert(entity_owner == caller, ErrorMessages::NOT_OWNER);
 
             let mut allegiance: FollowerAllegiance = world.read_model(entity_id);
             assert!(allegiance.wonder_id.is_non_zero(), "Not pledged");

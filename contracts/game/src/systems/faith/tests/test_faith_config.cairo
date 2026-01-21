@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use core::array::ArrayTrait;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo::world::world_contract::world;
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+    use dojo::world::world;
     use dojo_cairo_test::{ContractDef, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
 
     use crate::alias::ID;

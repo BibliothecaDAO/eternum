@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use dojo::model::ModelStorage;
+    use dojo::model::{Model, ModelStorage};
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo::world::world_contract::world;
+    use dojo::world::world;
     use dojo_cairo_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
@@ -10,14 +10,11 @@ mod tests {
     use starknet::testing::{set_account_contract_address, set_contract_address};
 
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, ErrorMessages};
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
     use crate::models::faith::{
         FollowerAllegiance, FollowerType, WonderFaith, m_FollowerAllegiance, m_WonderFaith,
     };
-    use crate::models::structure::{
-        GuardTroops, Structure, StructureBase, StructureCategory, StructureMetadata, m_Structure,
-    };
-    use crate::models::troop::{TroopBoosts, TroopTier, TroopType, Troops};
+    use crate::models::structure::{Structure, StructureCategory, StructureMetadata, m_Structure};
     use crate::systems::faith::contracts::faith_systems;
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
 
@@ -48,59 +45,16 @@ mod tests {
         world
     }
 
-    fn empty_troops() -> Troops {
-        Troops {
-            category: TroopType::Knight,
-            tier: TroopTier::T1,
-            count: 0,
-            stamina: Default::default(),
-            boosts: TroopBoosts::default(),
-            battle_cooldown_end: 0,
-        }
-    }
-
     fn write_structure(
         ref world: WorldStorage, entity_id: ID, owner: ContractAddress, category: StructureCategory, has_wonder: bool,
     ) {
-        let base = StructureBase {
-            troop_guard_count: 0,
-            troop_explorer_count: 0,
-            troop_max_guard_count: 0,
-            troop_max_explorer_count: 0,
-            created_at: 0,
-            category: category.into(),
-            coord_x: 0,
-            coord_y: 0,
-            level: 1,
-        };
-
+        let structure_ptr = Model::<Structure>::ptr_from_keys(entity_id);
+        world.write_member(structure_ptr, selector!("owner"), owner);
+        let category_u8: u8 = category.into();
+        world.write_member(structure_ptr, selector!("category"), category_u8);
         let mut metadata: StructureMetadata = Default::default();
         metadata.has_wonder = has_wonder;
-
-        let troops = empty_troops();
-        let guards = GuardTroops {
-            delta: troops,
-            charlie: troops,
-            bravo: troops,
-            alpha: troops,
-            delta_destroyed_tick: 0,
-            charlie_destroyed_tick: 0,
-            bravo_destroyed_tick: 0,
-            alpha_destroyed_tick: 0,
-        };
-
-        let structure = Structure {
-            entity_id,
-            owner,
-            base,
-            troop_guards: guards,
-            troop_explorers: array![].span(),
-            resources_packed: 0,
-            metadata,
-            category: category.into(),
-        };
-
-        world.write_model(@structure);
+        world.write_member(structure_ptr, selector!("metadata"), metadata);
     }
 
     fn faith_dispatcher(world: WorldStorage) -> IFaithSystemsDispatcher {
@@ -175,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Cannot pledge to own Wonder", "ENTRYPOINT_FAILED"))]
+    #[should_panic(expected: ("Cannot pledge to own Wonder", 'ENTRYPOINT_FAILED'))]
     fn test_pledge_faith_to_own_wonder_fails() {
         let mut world = spawn_world();
         let realm_id: ID = 7;
@@ -191,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Already pledged", "ENTRYPOINT_FAILED"))]
+    #[should_panic(expected: ("Already pledged", 'ENTRYPOINT_FAILED'))]
     fn test_pledge_faith_when_already_pledged_fails() {
         let mut world = spawn_world();
         let realm_id: ID = 9;
@@ -209,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Not Owner", "ENTRYPOINT_FAILED"))]
+    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn test_pledge_faith_not_owner_fails() {
         let mut world = spawn_world();
         let realm_id: ID = 11;

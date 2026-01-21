@@ -1,4 +1,3 @@
-use dojo::storage::dojo_store::DojoStore;
 use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::WORLD_CONFIG_ID;
@@ -71,7 +70,7 @@ pub struct WonderFaithHistory {
     pub prize_claimed: bool,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct FollowerAllegiance {
     #[key]
