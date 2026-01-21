@@ -62,7 +62,8 @@ export const buildExplorationSnapshot = async ({
       const normalized = new Position({ x: col, y: row }).getNormalized();
 
       if (tile.biome !== 0) {
-        setNestedValue(exploredTiles, normalized.x, normalized.y, tile.biome as BiomeType);
+        const biome = tile.biome as unknown as BiomeType;
+        setNestedValue(exploredTiles, normalized.x, normalized.y, biome);
       }
 
       if (tile.occupier_id && tile.occupier_id !== 0) {
