@@ -79,6 +79,7 @@ pub mod guild {
 }
 
 pub mod faith {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }

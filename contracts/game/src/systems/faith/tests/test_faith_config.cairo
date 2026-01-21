@@ -2,6 +2,7 @@
 mod tests {
     use core::array::ArrayTrait;
     use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo::world::world_contract::world;
     use dojo_cairo_test::{ContractDef, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
 
     use crate::alias::ID;
@@ -23,7 +24,7 @@ mod tests {
     }
 
     fn spawn_world() -> WorldStorage {
-        let mut world = spawn_test_world([namespace_def()].span());
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         let contract_defs: Span<ContractDef> = array![].span();
         world.sync_perms_and_inits(contract_defs);
         world
