@@ -50,6 +50,7 @@ use crate::systems::combat::contracts::troop_movement::{
 use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::utils::realm::iRealmImpl;
 use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
+use crate::models::artificer::{ArtificerConfig, RelicWeightList, ARTIFICER_CONFIG_ID};
 
 
 // ============================================================================
@@ -219,6 +220,31 @@ pub fn tstore_troop_damage_config(ref world: WorldStorage, troop_damage_config: 
 
 pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), config);
+}
+
+pub fn tstore_artificer_config(
+    ref world: WorldStorage, research_cost_per_relic: u128, relic_weights: Span<(u8, u128)>,
+) {
+    // Create relic weight entries
+    let relic_weights_id = world.dispatcher.uuid();
+    let mut index: u8 = 0;
+    for (relic_resource_id, weight) in relic_weights {
+        let (relic_resource_id, weight) = (*relic_resource_id, *weight);
+        world
+            .write_model_test(
+                @RelicWeightList { list_id: relic_weights_id, index, relic_resource_id, weight },
+            );
+        index += 1;
+    };
+
+    // Store artificer config
+    let config = ArtificerConfig {
+        config_id: ARTIFICER_CONFIG_ID,
+        research_cost_per_relic,
+        relic_weights_id,
+        relic_weights_count: relic_weights.len().try_into().unwrap(),
+    };
+    world.write_model_test(@config);
 }
 
 pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {

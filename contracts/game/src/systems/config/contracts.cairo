@@ -223,6 +223,11 @@ pub trait IQuestConfig<T> {
     fn set_quest_config(ref self: T, quest_config: QuestConfig);
 }
 
+#[starknet::interface]
+pub trait IArtificerConfig<T> {
+    fn set_artificer_config(ref self: T, research_cost_per_relic: u128, relic_weights: Span<(u8, u128)>);
+}
+
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
@@ -246,6 +251,7 @@ pub mod config_systems {
     use crate::models::resource::production::building::BuildingCategory;
     use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
     use crate::utils::achievements::index::AchievementTrait;
+    use crate::models::artificer::{ArtificerConfig, RelicWeightList, ARTIFICER_CONFIG_ID};
 
     // Constuctor
 
@@ -980,6 +986,37 @@ pub mod config_systems {
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("victory_points_win_config"), victory_points_win_config,
             );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IArtificerConfigImpl of super::IArtificerConfig<ContractState> {
+        fn set_artificer_config(
+            ref self: ContractState, research_cost_per_relic: u128, relic_weights: Span<(u8, u128)>,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            // Create relic weight entries
+            let relic_weights_id = world.dispatcher.uuid();
+            let mut index: u8 = 0;
+            for (relic_resource_id, weight) in relic_weights {
+                let (relic_resource_id, weight) = (*relic_resource_id, *weight);
+                world
+                    .write_model(
+                        @RelicWeightList { list_id: relic_weights_id, index, relic_resource_id, weight },
+                    );
+                index += 1;
+            };
+
+            // Store artificer config
+            let config = ArtificerConfig {
+                config_id: ARTIFICER_CONFIG_ID,
+                research_cost_per_relic,
+                relic_weights_id,
+                relic_weights_count: relic_weights.len().try_into().unwrap(),
+            };
+            world.write_model(@config);
         }
     }
 }

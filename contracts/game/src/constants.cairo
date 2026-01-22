@@ -49,7 +49,8 @@ pub fn all_resource_ids() -> Array<u8> {
         31, 32, 33, 34, 35, 36, 37, // Essence
         38, // Relics
         39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53,
-        54, 55, 56,
+        54, 55, 56, // Research
+        57,
     ]
 }
 
@@ -122,6 +123,9 @@ pub mod ResourceTypes {
     pub const RELIC_E16: u8 = 54;
     pub const RELIC_E17: u8 = 55;
     pub const RELIC_E18: u8 = 56;
+
+    // Research (Artificer output)
+    pub const RESEARCH: u8 = 57;
 }
 
 
@@ -238,6 +242,8 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
         "RELIC E17"
     } else if resource_type == 56 {
         "RELIC E18"
+    } else if resource_type == 57 {
+        "RESEARCH"
     } else {
         format!("{} (unknown resource name)", resource_type)
     }
@@ -373,6 +379,12 @@ pub fn get_resource_probabilities() -> Span<(u8, u128)> {
         .span();
 }
 
+/// Check if a resource type can be traded between structures.
+/// RESEARCH is not tradable - it must be produced locally and consumed locally.
+pub fn is_resource_tradable(resource_type: u8) -> bool {
+    // Research cannot be traded - it's produced by Artificer and consumed locally for relic crafting
+    resource_type != ResourceTypes::RESEARCH
+}
 
 pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     let mut zipped = get_resource_probabilities();

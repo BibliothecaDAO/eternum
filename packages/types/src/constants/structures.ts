@@ -70,6 +70,8 @@ export enum BuildingType {
   ResourceWheat = 37,
   ResourceFish = 38,
   ResourceEssence = 39,
+  // Artificer Building (produces Research, Realm-only)
+  Artificer = 40,
 }
 
 export const BuildingTypeToString: Record<BuildingType, string> = {
@@ -113,6 +115,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceWheat]: "Farm",
   [BuildingType.ResourceFish]: "Fishing Village",
   [BuildingType.ResourceEssence]: "Essence Mine",
+  [BuildingType.Artificer]: "Artificer",
 };
 
 export function getBuildingCategory(category: BuildingType): CairoCustomEnum {
