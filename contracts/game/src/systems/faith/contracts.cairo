@@ -3,6 +3,17 @@ pub trait IFaithSystems<T> {
     fn pledge_faith(ref self: T, entity_id: u32, wonder_id: u32);
     fn revoke_faith(ref self: T, entity_id: u32);
     fn process_faith(ref self: T, wonder_id: u32, follower_ids: Span<u32>);
+    fn distribute_faith_prize(
+        ref self: T,
+        season_id: u32,
+        wonder_id: u32,
+        rank: u32,
+        total_prize: u128,
+        owner_prize: u128,
+        holders_prize: u128,
+    );
+    fn claim_faith_prize(ref self: T, season_id: u32, wonder_id: u32);
+    fn withdraw_unclaimed_faith_prize(ref self: T, season_id: u32);
 }
 
 #[dojo::contract]
@@ -16,7 +27,10 @@ pub mod faith_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ErrorMessages};
     use crate::models::config::{TickImpl, WorldConfigUtilImpl};
-    use crate::models::faith::{FaithConfig, FollowerAllegiance, FollowerFaithBalance, FollowerType, WonderFaith};
+    use crate::models::faith::{
+        FaithConfig, FaithPrizeBalance, FaithSeasonSnapshot, FaithSeasonState, FollowerAllegiance,
+        FollowerFaithBalance, FollowerType, WonderFaith,
+    };
     use crate::models::structure::{Structure, StructureCategory, StructureMetadata, StructureOwnerStoreImpl};
 
     #[abi(embed_v0)]
@@ -205,6 +219,86 @@ pub mod faith_systems {
             faith.current_owner_fp += owner_share + owner_holder_share;
             faith.last_tick_processed = current_tick;
             world.write_model(@faith);
+        }
+
+        fn distribute_faith_prize(
+            ref self: ContractState,
+            season_id: u32,
+            wonder_id: ID,
+            rank: u32,
+            total_prize: u128,
+            owner_prize: u128,
+            holders_prize: u128,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let current_tick = TickImpl::get_tick_interval(ref world).current();
+            let config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
+
+            let mut state: FaithSeasonState = world.read_model(season_id);
+            if state.season_id == 0 {
+                state.season_id = season_id;
+            }
+            if state.season_end_tick == 0 {
+                state.season_end_tick = current_tick;
+            }
+            if state.claim_window_end_tick == 0 {
+                state.claim_window_end_tick = current_tick + config.claim_window_ticks.into();
+            }
+            state.prize_pool_total = total_prize;
+            state.distributed = true;
+            world.write_model(@state);
+
+            let faith: WonderFaith = world.read_model(wonder_id);
+            let snapshot = FaithSeasonSnapshot {
+                season_id,
+                wonder_id,
+                season_fp: faith.season_fp,
+                total_holder_fp: 0,
+                total_owner_fp: faith.current_owner_fp,
+                rank,
+                total_prize,
+                owner_prize,
+                holders_prize,
+                distributed: true,
+            };
+            world.write_model(@snapshot);
+
+            let wonder_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
+            if wonder_owner.is_non_zero() {
+                let prize = FaithPrizeBalance {
+                    season_id,
+                    wonder_id,
+                    claimant: wonder_owner,
+                    amount: owner_prize,
+                    claimed: false,
+                };
+                world.write_model(@prize);
+            }
+        }
+
+        fn claim_faith_prize(ref self: ContractState, season_id: u32, wonder_id: ID) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let current_tick = TickImpl::get_tick_interval(ref world).current();
+            let state: FaithSeasonState = world.read_model(season_id);
+            assert!(state.distributed, "Not distributed");
+            assert!(current_tick <= state.claim_window_end_tick, "Claim window closed");
+
+            let caller = starknet::get_caller_address();
+            let mut balance: FaithPrizeBalance = world.read_model((season_id, wonder_id, caller));
+            assert!(balance.amount.is_non_zero(), "No prize");
+            assert!(!balance.claimed, "Already claimed");
+            balance.claimed = true;
+            world.write_model(@balance);
+        }
+
+        fn withdraw_unclaimed_faith_prize(ref self: ContractState, season_id: u32) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let current_tick = TickImpl::get_tick_interval(ref world).current();
+            let mut state: FaithSeasonState = world.read_model(season_id);
+            assert!(state.distributed, "Not distributed");
+            assert!(current_tick > state.claim_window_end_tick, "Claim window not ended");
+            state.leftover_withdrawn = true;
+            world.write_model(@state);
         }
     }
 }
