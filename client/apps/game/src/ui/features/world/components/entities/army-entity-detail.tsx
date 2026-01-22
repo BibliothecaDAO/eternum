@@ -191,7 +191,10 @@ export const ArmyEntityDetail = memo(
           </div>
 
           {showButtons && derivedData.isMine && (
-            <ExplorationAutomationSection explorerId={armyEntityId} className={panelClasses()} />
+            <ExplorationAutomationSection
+              explorerId={explorer.explorer_id ?? armyEntityId}
+              className={panelClasses()}
+            />
           )}
 
           {explorerResources ? (
