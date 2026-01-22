@@ -2,30 +2,26 @@
 mod tests {
     use dojo::model::{Model, ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo::world::world;
-    use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-    };
+    use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+    use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
     use starknet::ContractAddress;
-    use starknet::testing::{set_account_contract_address, set_contract_address};
 
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
-    use crate::models::config::{TickConfig, WorldConfigUtilImpl, m_WorldConfig};
-    use crate::models::faith::{FollowerAllegiance, FollowerType, WonderFaith, m_FollowerAllegiance, m_WonderFaith};
-    use crate::models::structure::{Structure, StructureCategory, StructureMetadata, m_Structure};
-    use crate::systems::faith::contracts::faith_systems;
+    use crate::models::config::{TickConfig, WorldConfigUtilImpl};
+    use crate::models::faith::{FollowerAllegiance, FollowerType, WonderFaith};
+    use crate::models::structure::{Structure, StructureCategory, StructureMetadata};
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
 
     fn namespace_def() -> NamespaceDef {
         NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
-                TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_Structure::TEST_CLASS_HASH),
-                TestResource::Model(m_WonderFaith::TEST_CLASS_HASH),
-                TestResource::Model(m_FollowerAllegiance::TEST_CLASS_HASH),
-                TestResource::Contract(faith_systems::TEST_CLASS_HASH),
+                TestResource::Model("WorldConfig"),
+                TestResource::Model("Structure"),
+                TestResource::Model("WonderFaith"),
+                TestResource::Model("FollowerAllegiance"),
+                TestResource::Contract("faith_systems"),
             ]
                 .span(),
         }
@@ -40,7 +36,7 @@ mod tests {
     }
 
     fn spawn_world() -> WorldStorage {
-        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
+        let mut world = spawn_test_world([namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         world
     }
@@ -62,14 +58,9 @@ mod tests {
         world.write_member(structure_ptr, selector!("metadata"), metadata);
     }
 
-    fn faith_dispatcher(world: WorldStorage) -> IFaithSystemsDispatcher {
+    fn faith_dispatcher(ref world: WorldStorage) -> (ContractAddress, IFaithSystemsDispatcher) {
         let (addr, _) = world.dns(@"faith_systems").unwrap();
-        IFaithSystemsDispatcher { contract_address: addr }
-    }
-
-    fn set_caller(address: ContractAddress) {
-        set_contract_address(address);
-        set_account_contract_address(address);
+        (addr, IFaithSystemsDispatcher { contract_address: addr })
     }
 
     #[test]
@@ -84,14 +75,17 @@ mod tests {
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
         set_tick_config(ref world, 1);
 
-        set_caller(realm_owner);
-        let dispatcher = faith_dispatcher(world);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, realm_owner);
         dispatcher.pledge_faith(realm_id, wonder_id);
+        stop_cheat_caller_address(system_addr);
 
         let before: WonderFaith = world.read_model(wonder_id);
         assert!(before.realm_follower_count == 1, "realm follower count should increment");
 
+        start_cheat_caller_address(system_addr, realm_owner);
         dispatcher.revoke_faith(realm_id);
+        stop_cheat_caller_address(system_addr);
 
         let allegiance: FollowerAllegiance = world.read_model(realm_id);
         assert!(allegiance.wonder_id == 0, "allegiance should be cleared");
@@ -112,16 +106,19 @@ mod tests {
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
         set_tick_config(ref world, 1);
 
-        set_caller(realm_owner);
-        let dispatcher = faith_dispatcher(world);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, realm_owner);
         dispatcher.pledge_faith(realm_id, wonder_id);
+        stop_cheat_caller_address(system_addr);
 
         let mut allegiance: FollowerAllegiance = world.read_model(realm_id);
         allegiance.accumulated_fp = 123;
         allegiance.last_fp_tick = 777;
         world.write_model_test(@allegiance);
 
+        start_cheat_caller_address(system_addr, realm_owner);
         dispatcher.revoke_faith(realm_id);
+        stop_cheat_caller_address(system_addr);
 
         let stored: FollowerAllegiance = world.read_model(realm_id);
         assert!(stored.accumulated_fp == 123, "accumulated FP should remain");
@@ -141,8 +138,9 @@ mod tests {
         write_structure(ref world, realm_id, realm_owner, StructureCategory::Realm, false);
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
 
-        set_caller(realm_owner);
-        let dispatcher = faith_dispatcher(world);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, realm_owner);
         dispatcher.revoke_faith(realm_id);
+        stop_cheat_caller_address(system_addr);
     }
 }

@@ -1,4 +1,4 @@
-import { TransactionType } from "@bibliothecadao/provider";
+import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
 import type { TransactionStatus } from "@/hooks/store/use-transaction-store";
 
 const getChain = () => import.meta.env.VITE_PUBLIC_CHAIN as string | undefined;
@@ -678,4 +678,101 @@ export const formatTimeAgo = (timestamp: number): string => {
 export const truncateHash = (hash: string, chars: number = 6): string => {
   if (hash.length <= chars * 2 + 2) return hash;
   return `${hash.slice(0, chars + 2)}...${hash.slice(-chars)}`;
+};
+
+/**
+ * Get a short label for a transaction type (for batch display)
+ */
+export const getTxShortLabel = (type: TransactionType): string => {
+  switch (type) {
+    case TransactionType.EXPLORE:
+      return "Explore";
+    case TransactionType.TRAVEL_HEX:
+      return "Travel";
+    case TransactionType.CREATE_BUILDING:
+      return "Build";
+    case TransactionType.DESTROY_BUILDING:
+      return "Demolish";
+    case TransactionType.LEVEL_UP:
+    case TransactionType.UPGRADE_LEVEL:
+      return "Upgrade";
+    case TransactionType.BUY:
+      return "Buy";
+    case TransactionType.SELL:
+      return "Sell";
+    case TransactionType.SEND:
+      return "Send";
+    case TransactionType.PICKUP:
+      return "Pickup";
+    case TransactionType.CREATE_ORDER:
+      return "Create Order";
+    case TransactionType.ACCEPT_ORDER:
+      return "Accept Order";
+    case TransactionType.CANCEL_ORDER:
+      return "Cancel Order";
+    case TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION:
+      return "Convert";
+    case TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION:
+      return "Produce";
+    case TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION:
+      return "Labor";
+    case TransactionType.GUARD_ADD:
+      return "Add Guard";
+    case TransactionType.GUARD_DELETE:
+      return "Remove Guard";
+    case TransactionType.EXPLORER_CREATE:
+      return "Create Explorer";
+    case TransactionType.EXPLORER_ADD:
+      return "Reinforce";
+    case TransactionType.EXPLORER_DELETE:
+      return "Disband";
+    case TransactionType.ATTACK_EXPLORER_VS_EXPLORER:
+    case TransactionType.ATTACK_EXPLORER_VS_GUARD:
+    case TransactionType.ATTACK_GUARD_VS_EXPLORER:
+      return "Attack";
+    case TransactionType.RAID_EXPLORER_VS_GUARD:
+      return "Raid";
+    case TransactionType.CONTRIBUTE:
+      return "Contribute";
+    case TransactionType.PAUSE_BUILDING_PRODUCTION:
+      return "Pause";
+    case TransactionType.RESUME_BUILDING_PRODUCTION:
+      return "Resume";
+    default:
+      // Fallback: convert enum value to readable format
+      const value = type as string;
+      return value
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .slice(0, 2)
+        .join(" ");
+  }
+};
+
+/**
+ * Format batch details into a summary string
+ * e.g., "2 Explore, 1 Build, 3 Convert"
+ */
+export const formatBatchSummary = (batchDetails: BatchedTransactionDetail[], maxItems: number = 3): string => {
+  if (!batchDetails || batchDetails.length === 0) return "";
+
+  const sortedDetails = [...batchDetails].sort((a, b) => b.count - a.count);
+  const displayItems = sortedDetails.slice(0, maxItems);
+  const remaining = sortedDetails.slice(maxItems).reduce((sum, d) => sum + d.count, 0);
+
+  const parts = displayItems.map((d) => `${d.count} ${getTxShortLabel(d.type)}`);
+
+  if (remaining > 0) {
+    parts.push(`+${remaining} more`);
+  }
+
+  return parts.join(", ");
+};
+
+/**
+ * Get total transaction count from batch details
+ */
+export const getBatchTotalCount = (batchDetails: BatchedTransactionDetail[]): number => {
+  if (!batchDetails || batchDetails.length === 0) return 0;
+  return batchDetails.reduce((sum, d) => sum + d.count, 0);
 };

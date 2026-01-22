@@ -2,21 +2,17 @@
 mod tests {
     use dojo::model::{Model, ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo::world::world;
-    use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-    };
+    use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+    use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
     use starknet::ContractAddress;
-    use starknet::testing::{set_account_contract_address, set_contract_address, set_block_timestamp};
 
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
-    use crate::models::config::{TickConfig, WorldConfigUtilImpl, m_WorldConfig};
+    use crate::models::config::{TickConfig, WorldConfigUtilImpl};
     use crate::models::faith::{
         DEFAULT_FAITH_CONFIG, FaithConfig, FaithPrizeBalance, FaithSeasonSnapshot, FaithSeasonState, WonderFaith,
-        m_FaithPrizeBalance, m_FaithSeasonSnapshot, m_FaithSeasonState, m_WonderFaith,
     };
-    use crate::models::structure::{Structure, StructureCategory, StructureMetadata, m_Structure};
+    use crate::models::structure::{Structure, StructureCategory, StructureMetadata};
     use crate::systems::faith::contracts::faith_systems;
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
 
@@ -24,13 +20,13 @@ mod tests {
         NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
-                TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_Structure::TEST_CLASS_HASH),
-                TestResource::Model(m_WonderFaith::TEST_CLASS_HASH),
-                TestResource::Model(m_FaithSeasonState::TEST_CLASS_HASH),
-                TestResource::Model(m_FaithSeasonSnapshot::TEST_CLASS_HASH),
-                TestResource::Model(m_FaithPrizeBalance::TEST_CLASS_HASH),
-                TestResource::Contract(faith_systems::TEST_CLASS_HASH),
+                TestResource::Model("WorldConfig"),
+                TestResource::Model("Structure"),
+                TestResource::Model("WonderFaith"),
+                TestResource::Model("FaithSeasonState"),
+                TestResource::Model("FaithSeasonSnapshot"),
+                TestResource::Model("FaithPrizeBalance"),
+                TestResource::Contract("faith_systems"),
             ]
                 .span(),
         }
@@ -45,7 +41,7 @@ mod tests {
     }
 
     fn spawn_world() -> WorldStorage {
-        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
+        let mut world = spawn_test_world([namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         world
     }
@@ -73,14 +69,9 @@ mod tests {
         world.write_member(structure_ptr, selector!("metadata"), metadata);
     }
 
-    fn faith_dispatcher(world: WorldStorage) -> IFaithSystemsDispatcher {
+    fn faith_dispatcher(ref world: WorldStorage) -> (ContractAddress, IFaithSystemsDispatcher) {
         let (addr, _) = world.dns(@"faith_systems").unwrap();
-        IFaithSystemsDispatcher { contract_address: addr }
-    }
-
-    fn set_caller(address: ContractAddress) {
-        set_contract_address(address);
-        set_account_contract_address(address);
+        (addr, IFaithSystemsDispatcher { contract_address: addr })
     }
 
     #[test]
@@ -99,9 +90,10 @@ mod tests {
         faith.season_fp = 999;
         world.write_model_test(@faith);
 
-        set_block_timestamp(1000);
-        let dispatcher = faith_dispatcher(world);
-        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        start_cheat_block_timestamp_global(1000);
+        faith_systems::distribute_faith_prize_internal(
+            ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner,
+        );
 
         let snapshot: FaithSeasonSnapshot = world.read_model((season_id, wonder_id));
         assert!(snapshot.season_fp == 999, "snapshot should capture season fp");
@@ -124,13 +116,16 @@ mod tests {
         faith.season_id = season_id;
         world.write_model_test(@faith);
 
-        set_block_timestamp(2000);
-        let dispatcher = faith_dispatcher(world);
-        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        start_cheat_block_timestamp_global(2000);
+        let (_, dispatcher) = faith_dispatcher(ref world);
+        faith_systems::distribute_faith_prize_internal(
+            ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner,
+        );
 
-        set_caller(wonder_owner);
-        set_block_timestamp(2002);
+        start_cheat_caller_address(system_addr, wonder_owner);
+        start_cheat_block_timestamp_global(2002);
         dispatcher.claim_faith_prize(season_id, wonder_id);
+        stop_cheat_caller_address(system_addr);
 
         let balance: FaithPrizeBalance = world.read_model((season_id, wonder_id, wonder_owner));
         assert!(balance.claimed, "prize should be marked claimed");
@@ -152,13 +147,16 @@ mod tests {
         faith.season_id = season_id;
         world.write_model_test(@faith);
 
-        set_block_timestamp(3000);
-        let dispatcher = faith_dispatcher(world);
-        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        start_cheat_block_timestamp_global(3000);
+        let (_, dispatcher) = faith_dispatcher(ref world);
+        faith_systems::distribute_faith_prize_internal(
+            ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner,
+        );
 
-        set_caller(wonder_owner);
-        set_block_timestamp(3003);
+        start_cheat_caller_address(system_addr, wonder_owner);
+        start_cheat_block_timestamp_global(3003);
         dispatcher.claim_faith_prize(season_id, wonder_id);
+        stop_cheat_caller_address(system_addr);
     }
 
     #[test]
@@ -176,11 +174,13 @@ mod tests {
         faith.season_id = season_id;
         world.write_model_test(@faith);
 
-        set_block_timestamp(4000);
-        let dispatcher = faith_dispatcher(world);
-        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        start_cheat_block_timestamp_global(4000);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        faith_systems::distribute_faith_prize_internal(
+            ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner,
+        );
 
-        set_block_timestamp(4003);
+        start_cheat_block_timestamp_global(4003);
         dispatcher.withdraw_unclaimed_faith_prize(season_id);
 
         let state: FaithSeasonState = world.read_model(season_id);

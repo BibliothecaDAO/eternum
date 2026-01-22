@@ -1,11 +1,4 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { TransitionManager } from "@/three/managers/transition-manager";
-import { SceneManager } from "@/three/scene-manager";
-import { CameraView } from "@/three/scenes/hexagon-scene";
-import HexceptionScene from "@/three/scenes/hexception";
-import HUDScene from "@/three/scenes/hud-scene";
-import WorldmapScene from "@/three/scenes/worldmap";
-import { GUIManager } from "@/three/utils/";
 import {
   CAMERA_CONFIG,
   CAMERA_FAR_PLANE,
@@ -13,6 +6,13 @@ import {
   POST_PROCESSING_CONFIG,
   type PostProcessingConfig,
 } from "@/three/constants";
+import { TransitionManager } from "@/three/managers/transition-manager";
+import { SceneManager } from "@/three/scene-manager";
+import { CameraView } from "@/three/scenes/hexagon-scene";
+import HexceptionScene from "@/three/scenes/hexception";
+import HUDScene from "@/three/scenes/hud-scene";
+import WorldmapScene from "@/three/scenes/worldmap";
+import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {

@@ -3,22 +3,17 @@ mod tests {
     use core::array::ArrayTrait;
     use dojo::model::{Model, ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo::world::world;
-    use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-    };
+    use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+    use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
     use starknet::ContractAddress;
-    use starknet::testing::{set_account_contract_address, set_block_timestamp, set_contract_address};
 
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
-    use crate::models::config::{TickConfig, WorldConfigUtilImpl, m_WorldConfig};
+    use crate::models::config::{TickConfig, WorldConfigUtilImpl};
     use crate::models::faith::{
         DEFAULT_FAITH_CONFIG, FaithConfig, FollowerAllegiance, FollowerFaithBalance, WonderFaith,
-        m_FollowerAllegiance, m_FollowerFaithBalance, m_WonderFaith,
     };
-    use crate::models::structure::{Structure, StructureCategory, StructureMetadata, m_Structure};
-    use crate::systems::faith::contracts::faith_systems;
+    use crate::models::structure::{Structure, StructureCategory, StructureMetadata};
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
 
     const MAX_WONDER_ALLEGIANCE_DEPTH: u32 = 16;
@@ -27,12 +22,12 @@ mod tests {
         NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
-                TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_Structure::TEST_CLASS_HASH),
-                TestResource::Model(m_WonderFaith::TEST_CLASS_HASH),
-                TestResource::Model(m_FollowerAllegiance::TEST_CLASS_HASH),
-                TestResource::Model(m_FollowerFaithBalance::TEST_CLASS_HASH),
-                TestResource::Contract(faith_systems::TEST_CLASS_HASH),
+                TestResource::Model("WorldConfig"),
+                TestResource::Model("Structure"),
+                TestResource::Model("WonderFaith"),
+                TestResource::Model("FollowerAllegiance"),
+                TestResource::Model("FollowerFaithBalance"),
+                TestResource::Contract("faith_systems"),
             ]
                 .span(),
         }
@@ -47,7 +42,7 @@ mod tests {
     }
 
     fn spawn_world() -> WorldStorage {
-        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
+        let mut world = spawn_test_world([namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         set_tick_config(ref world, 1);
         world
@@ -79,14 +74,9 @@ mod tests {
         world.write_member(structure_ptr, selector!("metadata"), metadata);
     }
 
-    fn faith_dispatcher(world: WorldStorage) -> IFaithSystemsDispatcher {
+    fn faith_dispatcher(ref world: WorldStorage) -> (ContractAddress, IFaithSystemsDispatcher) {
         let (addr, _) = world.dns(@"faith_systems").unwrap();
-        IFaithSystemsDispatcher { contract_address: addr }
-    }
-
-    fn set_caller(address: ContractAddress) {
-        set_contract_address(address);
-        set_account_contract_address(address);
+        (addr, IFaithSystemsDispatcher { contract_address: addr })
     }
 
     #[test]
@@ -99,12 +89,12 @@ mod tests {
         set_tick_config(ref world, 1);
         set_faith_config(ref world, 50, 10, 1, 50);
 
-        set_block_timestamp(100);
+        start_cheat_block_timestamp_global(100);
         let mut faith: WonderFaith = world.read_model(wonder_id);
         faith.last_tick_processed = 99;
         world.write_model_test(@faith);
 
-        let dispatcher = faith_dispatcher(world);
+        let (_, dispatcher) = faith_dispatcher(ref world);
         dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
@@ -126,17 +116,18 @@ mod tests {
         set_tick_config(ref world, 1);
         set_faith_config(ref world, 50, 10, 1, 50);
 
-        set_block_timestamp(100);
+        start_cheat_block_timestamp_global(100);
         let mut faith: WonderFaith = world.read_model(wonder_id);
         faith.last_tick_processed = 99;
         world.write_model_test(@faith);
 
-        let dispatcher = faith_dispatcher(world);
-        set_caller(realm_owner);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, realm_owner);
         dispatcher.pledge_faith(realm_id, wonder_id);
         dispatcher.revoke_faith(realm_id);
+        stop_cheat_caller_address(system_addr);
 
-        set_block_timestamp(101);
+        start_cheat_block_timestamp_global(101);
         dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
@@ -161,12 +152,14 @@ mod tests {
         write_structure(ref world, wonder_a, owner_a, StructureCategory::Realm, true);
         write_structure(ref world, wonder_b, owner_b, StructureCategory::Realm, true);
 
-        let dispatcher = faith_dispatcher(world);
-        set_caller(owner_a);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, owner_a);
         dispatcher.pledge_faith(wonder_a, wonder_b);
 
-        set_caller(owner_b);
+        stop_cheat_caller_address(system_addr);
+        start_cheat_caller_address(system_addr, owner_b);
         dispatcher.pledge_faith(wonder_b, wonder_a);
+        stop_cheat_caller_address(system_addr);
     }
 
     #[test]
@@ -184,14 +177,17 @@ mod tests {
         write_structure(ref world, wonder_b, owner_b, StructureCategory::Realm, true);
         write_structure(ref world, wonder_c, owner_c, StructureCategory::Realm, true);
 
-        let dispatcher = faith_dispatcher(world);
-        set_caller(owner_a);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, owner_a);
         dispatcher.pledge_faith(wonder_a, wonder_b);
-        set_caller(owner_b);
+        stop_cheat_caller_address(system_addr);
+        start_cheat_caller_address(system_addr, owner_b);
         dispatcher.pledge_faith(wonder_b, wonder_c);
 
-        set_caller(owner_c);
+        stop_cheat_caller_address(system_addr);
+        start_cheat_caller_address(system_addr, owner_c);
         dispatcher.pledge_faith(wonder_c, wonder_a);
+        stop_cheat_caller_address(system_addr);
     }
 
     #[test]
@@ -211,13 +207,16 @@ mod tests {
         write_structure(ref world, wonder_c, owner_c, StructureCategory::Realm, true);
         write_structure(ref world, wonder_d, owner_d, StructureCategory::Realm, true);
 
-        let dispatcher = faith_dispatcher(world);
-        set_caller(owner_a);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, owner_a);
         dispatcher.pledge_faith(wonder_a, wonder_b);
-        set_caller(owner_b);
+        stop_cheat_caller_address(system_addr);
+        start_cheat_caller_address(system_addr, owner_b);
         dispatcher.pledge_faith(wonder_b, wonder_c);
-        set_caller(owner_c);
+        stop_cheat_caller_address(system_addr);
+        start_cheat_caller_address(system_addr, owner_c);
         dispatcher.pledge_faith(wonder_c, wonder_d);
+        stop_cheat_caller_address(system_addr);
 
         let allegiance_a: FollowerAllegiance = world.read_model(wonder_a);
         let allegiance_b: FollowerAllegiance = world.read_model(wonder_b);
@@ -237,12 +236,12 @@ mod tests {
         set_tick_config(ref world, 1);
         set_faith_config(ref world, 1_000_000_000_000_000_000, 0, 0, 0);
 
-        set_block_timestamp(2000);
+        start_cheat_block_timestamp_global(2000);
         let mut faith: WonderFaith = world.read_model(wonder_id);
         faith.last_tick_processed = 1990;
         world.write_model_test(@faith);
 
-        let dispatcher = faith_dispatcher(world);
+        let (_, dispatcher) = faith_dispatcher(ref world);
         dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
@@ -260,9 +259,10 @@ mod tests {
 
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
 
-        let dispatcher = faith_dispatcher(world);
-        set_caller(missing_owner);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, missing_owner);
         dispatcher.pledge_faith(missing_entity, wonder_id);
+        stop_cheat_caller_address(system_addr);
     }
 
     #[test]
@@ -288,7 +288,7 @@ mod tests {
         let extra_owner = owner_b;
         write_structure(ref world, extra_wonder, extra_owner, StructureCategory::Realm, true);
 
-        let dispatcher = faith_dispatcher(world);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
         let mut idx: u32 = 0;
         loop {
             if idx + 1 >= wonders.len() {
@@ -297,13 +297,15 @@ mod tests {
             let follower_id: ID = *wonders.at(idx);
             let target_id: ID = *wonders.at(idx + 1);
             let owner = if idx % 2 == 0 { owner_a } else { owner_b };
-            set_caller(owner);
+            start_cheat_caller_address(system_addr, owner);
             dispatcher.pledge_faith(follower_id, target_id);
+            stop_cheat_caller_address(system_addr);
             idx += 1;
         }
 
-        set_caller(extra_owner);
+        start_cheat_caller_address(system_addr, extra_owner);
         dispatcher.pledge_faith(extra_wonder, *wonders.at(0));
+        stop_cheat_caller_address(system_addr);
     }
 
     #[test]
@@ -317,8 +319,9 @@ mod tests {
         write_structure(ref world, wonder_id, owner, StructureCategory::Realm, true);
         write_structure(ref world, village_id, owner, StructureCategory::Village, false);
 
-        let dispatcher = faith_dispatcher(world);
-        set_caller(owner);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
+        start_cheat_caller_address(system_addr, owner);
         dispatcher.pledge_faith(village_id, wonder_id);
+        stop_cheat_caller_address(system_addr);
     }
 }

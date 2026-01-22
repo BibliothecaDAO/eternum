@@ -5,6 +5,7 @@ import { selectionPulseMaterial, updateSelectionPulseMaterial } from "@/three/sh
 
 /**
  * Manages pulsing selection effects for armies and structures
+ * Optimized to share geometry and material instances where possible
  */
 export class SelectionPulseManager {
   private scene: THREE.Scene;
@@ -13,8 +14,23 @@ export class SelectionPulseManager {
   private isVisible = false;
   private selectedEntityId: number | null = null;
 
+  // Shared geometry for all ownership pulse meshes (created once, reused)
+  private readonly sharedOwnershipGeometry: THREE.ShapeGeometry;
+
+  // Shared material for ownership pulses (separate from main selection)
+  // All ownership pulses animate together so they can share one material
+  private readonly sharedOwnershipMaterial: THREE.ShaderMaterial;
+
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+
+    // Pre-create shared geometry for ownership pulses
+    const hexShape = createHexagonShape(HEX_SIZE * 1.1);
+    this.sharedOwnershipGeometry = new THREE.ShapeGeometry(hexShape);
+
+    // Create shared material for ownership pulses (cloned once from prototype)
+    this.sharedOwnershipMaterial = selectionPulseMaterial.clone();
+
     this.createPulseMesh();
   }
 
@@ -52,13 +68,11 @@ export class SelectionPulseManager {
     }
 
     updateSelectionPulseMaterial(deltaTime);
-    this.ownershipPulseMeshes.forEach((mesh) => {
-      if (!mesh.visible) return;
-      const material = mesh.material as THREE.ShaderMaterial;
-      if (material.uniforms.time) {
-        material.uniforms.time.value += deltaTime;
-      }
-    });
+
+    // Update shared ownership material time (all ownership pulses animate together)
+    if (this.sharedOwnershipMaterial.uniforms.time) {
+      this.sharedOwnershipMaterial.uniforms.time.value += deltaTime;
+    }
   }
 
   /**
@@ -90,19 +104,24 @@ export class SelectionPulseManager {
 
   /**
    * Show ownership pulses for a set of hex coordinates using provided colors
+   * Optimized: Uses shared geometry and material for all ownership pulses
    */
   public showOwnershipPulses(
     positions: Array<{ x: number; z: number }>,
     baseColor: THREE.Color,
     pulseColor: THREE.Color,
   ): void {
-    // Lazy-create ownership meshes up to required count
+    // Update shared material colors (all ownership pulses use same colors)
+    this.sharedOwnershipMaterial.uniforms.color.value.copy(baseColor);
+    this.sharedOwnershipMaterial.uniforms.pulseColor.value.copy(pulseColor);
+    this.sharedOwnershipMaterial.uniforms.time.value = 0;
+
+    // Lazy-create ownership meshes up to required count using shared resources
     positions.forEach((pos, index) => {
       let mesh = this.ownershipPulseMeshes[index];
       if (!mesh) {
-        const hexShape = createHexagonShape(HEX_SIZE * 1.1);
-        const geometry = new THREE.ShapeGeometry(hexShape);
-        mesh = new THREE.Mesh(geometry, selectionPulseMaterial.clone());
+        // Use shared geometry and material instead of creating new ones
+        mesh = new THREE.Mesh(this.sharedOwnershipGeometry, this.sharedOwnershipMaterial);
         mesh.position.y = 0.5;
         mesh.rotation.x = -Math.PI / 2;
         mesh.renderOrder = 99; // Slightly below primary pulse so focus pulse stays on top
@@ -113,12 +132,6 @@ export class SelectionPulseManager {
 
       mesh.visible = true;
       mesh.position.set(pos.x, 0.5, pos.z);
-      const uniforms = (mesh.material as THREE.ShaderMaterial).uniforms;
-      uniforms.color.value.copy(baseColor);
-      uniforms.pulseColor.value.copy(pulseColor);
-      if (uniforms.time) {
-        uniforms.time.value = 0;
-      }
     });
 
     // Hide unused meshes
@@ -184,12 +197,15 @@ export class SelectionPulseManager {
       this.pulseMesh = null;
     }
 
+    // Remove ownership meshes from scene (they share geometry/material)
     this.ownershipPulseMeshes.forEach((mesh) => {
       this.scene.remove(mesh);
-      mesh.geometry.dispose();
-      (mesh.material as THREE.ShaderMaterial).dispose();
     });
     this.ownershipPulseMeshes = [];
+
+    // Dispose shared resources
+    this.sharedOwnershipGeometry.dispose();
+    this.sharedOwnershipMaterial.dispose();
 
     this.isVisible = false;
     this.selectedEntityId = null;

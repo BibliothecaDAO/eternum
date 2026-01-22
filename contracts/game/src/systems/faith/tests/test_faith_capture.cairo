@@ -2,23 +2,17 @@
 mod tests {
     use dojo::model::{Model, ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo::world::world;
-    use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-    };
+    use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+    use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
     use starknet::ContractAddress;
-    use starknet::testing::{set_account_contract_address, set_contract_address, set_block_timestamp};
 
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
-    use crate::models::config::{TickConfig, WorldConfigUtilImpl, m_WorldConfig};
+    use crate::models::config::{TickConfig, WorldConfigUtilImpl};
     use crate::models::faith::{
         DEFAULT_FAITH_CONFIG, FaithConfig, FaithPrizeBalance, WonderFaith, WonderFaithHistory,
-        m_FaithPrizeBalance, m_FaithSeasonSnapshot, m_FaithSeasonState, m_WonderFaith, m_WonderFaithHistory,
     };
-    use crate::models::structure::{
-        Structure, StructureCategory, StructureMetadata, m_Structure, m_StructureOwnerStats,
-    };
+    use crate::models::structure::{Structure, StructureCategory, StructureMetadata};
     use crate::systems::faith::contracts::faith_systems;
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
 
@@ -26,15 +20,15 @@ mod tests {
         NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
-                TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_Structure::TEST_CLASS_HASH),
-                TestResource::Model(m_StructureOwnerStats::TEST_CLASS_HASH),
-                TestResource::Model(m_WonderFaith::TEST_CLASS_HASH),
-                TestResource::Model(m_WonderFaithHistory::TEST_CLASS_HASH),
-                TestResource::Model(m_FaithSeasonState::TEST_CLASS_HASH),
-                TestResource::Model(m_FaithSeasonSnapshot::TEST_CLASS_HASH),
-                TestResource::Model(m_FaithPrizeBalance::TEST_CLASS_HASH),
-                TestResource::Contract(faith_systems::TEST_CLASS_HASH),
+                TestResource::Model("WorldConfig"),
+                TestResource::Model("Structure"),
+                TestResource::Model("StructureOwnerStats"),
+                TestResource::Model("WonderFaith"),
+                TestResource::Model("WonderFaithHistory"),
+                TestResource::Model("FaithSeasonState"),
+                TestResource::Model("FaithSeasonSnapshot"),
+                TestResource::Model("FaithPrizeBalance"),
+                TestResource::Contract("faith_systems"),
             ]
                 .span(),
         }
@@ -49,7 +43,7 @@ mod tests {
     }
 
     fn spawn_world() -> WorldStorage {
-        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
+        let mut world = spawn_test_world([namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         world
     }
@@ -77,14 +71,9 @@ mod tests {
         world.write_member(structure_ptr, selector!("metadata"), metadata);
     }
 
-    fn faith_dispatcher(world: WorldStorage) -> IFaithSystemsDispatcher {
+    fn faith_dispatcher(ref world: WorldStorage) -> (ContractAddress, IFaithSystemsDispatcher) {
         let (addr, _) = world.dns(@"faith_systems").unwrap();
-        IFaithSystemsDispatcher { contract_address: addr }
-    }
-
-    fn set_caller(address: ContractAddress) {
-        set_contract_address(address);
-        set_account_contract_address(address);
+        (addr, IFaithSystemsDispatcher { contract_address: addr })
     }
 
     #[test]
@@ -105,8 +94,8 @@ mod tests {
         faith.last_tick_processed = 42;
         world.write_model_test(@faith);
 
-        set_block_timestamp(100);
-        let dispatcher = faith_dispatcher(world);
+        start_cheat_block_timestamp_global(100);
+        let (_, dispatcher) = faith_dispatcher(ref world);
         dispatcher.record_wonder_capture(wonder_id, new_owner);
 
         let history: WonderFaithHistory = world.read_model((wonder_id, season_id, old_owner));
@@ -130,8 +119,8 @@ mod tests {
         faith.current_owner_fp = 999;
         world.write_model_test(@faith);
 
-        set_block_timestamp(200);
-        let dispatcher = faith_dispatcher(world);
+        start_cheat_block_timestamp_global(200);
+        let (_, dispatcher) = faith_dispatcher(ref world);
         dispatcher.record_wonder_capture(wonder_id, new_owner);
 
         let stored: WonderFaith = world.read_model(wonder_id);
@@ -155,8 +144,8 @@ mod tests {
         faith.wonder_follower_count = 1;
         world.write_model_test(@faith);
 
-        set_block_timestamp(300);
-        let dispatcher = faith_dispatcher(world);
+        start_cheat_block_timestamp_global(300);
+        let (_, dispatcher) = faith_dispatcher(ref world);
         dispatcher.record_wonder_capture(wonder_id, new_owner);
 
         let stored: WonderFaith = world.read_model(wonder_id);
@@ -181,14 +170,17 @@ mod tests {
         faith.season_id = season_id;
         world.write_model_test(@faith);
 
-        set_block_timestamp(400);
-        let dispatcher = faith_dispatcher(world);
+        start_cheat_block_timestamp_global(400);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
         dispatcher.record_wonder_capture(wonder_id, new_owner);
 
-        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, old_owner);
+        faith_systems::distribute_faith_prize_internal(
+            ref world, season_id, wonder_id, 1, 1000, 300, 700, old_owner,
+        );
 
-        set_caller(old_owner);
+        start_cheat_caller_address(system_addr, old_owner);
         dispatcher.claim_faith_prize(season_id, wonder_id);
+        stop_cheat_caller_address(system_addr);
 
         let balance: FaithPrizeBalance = world.read_model((season_id, wonder_id, old_owner));
         assert!(balance.claimed, "original owner should claim historical prize");

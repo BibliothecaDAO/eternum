@@ -2,29 +2,28 @@
 mod tests {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::world::world;
-    use dojo_cairo_test::{ContractDef, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+    use dojo_snf_test::{ContractDef, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
 
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS_STR;
-    use crate::models::config::{WorldConfigUtilImpl, m_WorldConfig};
+    use crate::models::config::WorldConfigUtilImpl;
     use crate::models::faith::{
-        DEFAULT_FAITH_CONFIG, FaithConfig, FaithConfigTrait, WonderFaith, m_WonderFaith,
+        DEFAULT_FAITH_CONFIG, FaithConfig, FaithConfigTrait, WonderFaith,
     };
 
     fn namespace_def() -> NamespaceDef {
         NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
-                TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_WonderFaith::TEST_CLASS_HASH),
+                TestResource::Model("WorldConfig"),
+                TestResource::Model("WonderFaith"),
             ]
                 .span(),
         }
     }
 
     fn spawn_world() -> WorldStorage {
-        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
+        let mut world = spawn_test_world([namespace_def()].span());
         let contract_defs: Span<ContractDef> = array![].span();
         world.sync_perms_and_inits(contract_defs);
         world

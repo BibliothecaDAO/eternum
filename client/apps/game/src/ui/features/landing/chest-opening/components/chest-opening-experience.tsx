@@ -8,10 +8,60 @@ import { ChestEpoch, useChestOpeningFlow } from "../hooks/use-chest-opening-flow
 import { useOpenChest } from "../hooks/use-open-chest";
 import { useOwnedChests } from "../hooks/use-owned-chests";
 import { AssetRarity, getHighestRarity } from "../utils/cosmetics";
+import { MergedNftData } from "../utils/types";
 import { ChestStageContainer, ChestStageContent } from "./chest-stage-container";
 import { getChestOpeningVideo, OpeningStage } from "./opening-stage";
 import { PendingOverlay } from "./pending-overlay";
 import { RevealStage } from "./reveal-stage";
+
+/**
+ * Extract the epoch from a chest's metadata attributes.
+ * Returns "eternum-rewards-s1" for Eternum Season 1 chests, "blitz-rewards-s0" otherwise.
+ *
+ * Uses multiple detection strategies for robustness:
+ * 1. ID + Epoch attributes (primary)
+ * 2. Name-based detection (fallback)
+ * 3. Season/Collection attribute (fallback)
+ */
+function getChestEpoch(chest: MergedNftData): ChestEpoch {
+  const metadata = chest.metadata;
+
+  // Strategy 1: Check ID and Epoch attributes (most reliable)
+  if (metadata?.attributes && Array.isArray(metadata.attributes)) {
+    const idAttr = metadata.attributes.find((a) => a?.trait_type === "ID");
+    const epochAttr = metadata.attributes.find((a) => a?.trait_type === "Epoch");
+
+    if (idAttr?.value && epochAttr?.value) {
+      const idValue = String(idAttr.value).toLowerCase().trim();
+      const epochValue = String(epochAttr.value).toLowerCase().trim();
+      if (idValue.includes("eternum") && idValue.includes("rewards") && epochValue.includes("season 1")) {
+        return "eternum-rewards-s1";
+      }
+    }
+
+    // Strategy 2: Check for Season or Collection attribute as fallback
+    const seasonAttr = metadata.attributes.find(
+      (a) => a?.trait_type?.toLowerCase() === "season" || a?.trait_type?.toLowerCase() === "collection",
+    );
+    if (seasonAttr?.value) {
+      const seasonValue = String(seasonAttr.value).toLowerCase().trim();
+      if (seasonValue.includes("eternum") && (seasonValue.includes("s1") || seasonValue.includes("season 1"))) {
+        return "eternum-rewards-s1";
+      }
+    }
+  }
+
+  // Strategy 3: Check chest name as fallback
+  if (metadata?.name) {
+    const name = String(metadata.name).toLowerCase().trim();
+    if (name.includes("eternum") && (name.includes("s1") || name.includes("season 1"))) {
+      return "eternum-rewards-s1";
+    }
+  }
+
+  // Default to blitz epoch
+  return "blitz-rewards-s0";
+}
 
 interface ChestOpeningExperienceProps {
   /** Called when experience is closed */
@@ -33,7 +83,7 @@ interface ChestOpeningExperienceProps {
  */
 export function ChestOpeningExperience({ onClose, initialChestId, initialEpoch }: ChestOpeningExperienceProps) {
   const { flowState, actions } = useChestOpeningFlow();
-  const { openChest, isLoading: isOpeningChest } = useOpenChest();
+  const { openChest } = useOpenChest();
   const { ownedChests, refetch: refetchChests } = useOwnedChests();
   const { chestOpenTimestamp, setShowLootChestOpening, chestAssets: storeAssets } = useLootChestOpeningStore();
 
@@ -135,11 +185,27 @@ export function ChestOpeningExperience({ onClose, initialChestId, initialEpoch }
     onClose?.();
   }, [actions, setShowLootChestOpening, onClose]);
 
-  // Handle open another chest - close experience and return to ChestGallery
-  const handleOpenAnother = useCallback(() => {
-    refetchChests();
-    handleClose();
-  }, [refetchChests, handleClose]);
+  // Handle open another chest - directly open the next chest in line
+  const handleOpenAnother = useCallback(async () => {
+    // Reset the opening ref to allow the new chest to open
+    hasStartedOpening.current = false;
+
+    // Refetch chests to get updated list and compute next chest from fresh data
+    const freshChests = await refetchChests();
+
+    // Filter out the currently selected chest from fresh data
+    const availableChests = freshChests.filter((c) => c.token_id !== flowState.selectedChestId);
+    if (availableChests.length === 0) return;
+
+    const currentEpoch = flowState.selectedChestEpoch;
+
+    // Try to find a chest with the same epoch first
+    const sameEpochChest = availableChests.find((c) => getChestEpoch(c) === currentEpoch);
+    const selectedChest = sameEpochChest ?? availableChests[0];
+
+    const nextEpoch = getChestEpoch(selectedChest);
+    handleChestSelect(selectedChest.token_id, nextEpoch);
+  }, [refetchChests, flowState.selectedChestId, flowState.selectedChestEpoch, handleChestSelect]);
 
   // On mount: start opening the pre-selected chest directly
   useEffect(() => {
