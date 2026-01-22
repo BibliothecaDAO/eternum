@@ -15,8 +15,9 @@ const computeTimestampState = (): Omit<BlockTimestampState, "tick"> => {
 
   const tickConfigArmies = configManager.getTick(TickIds.Armies);
   const armiesTickDuration = Number(tickConfigArmies);
-  const timePassedInCurrentTick = currentBlockTimestamp % armiesTickDuration;
-  const armiesTickTimeRemaining = armiesTickDuration - timePassedInCurrentTick;
+  const safeArmiesTickDuration = Number.isFinite(armiesTickDuration) && armiesTickDuration > 0 ? armiesTickDuration : 1;
+  const timePassedInCurrentTick = currentBlockTimestamp % safeArmiesTickDuration;
+  const armiesTickTimeRemaining = safeArmiesTickDuration - timePassedInCurrentTick;
 
   return {
     currentBlockTimestamp,
@@ -30,16 +31,3 @@ export const useBlockTimestampStore = create<BlockTimestampState>((set) => ({
   ...computeTimestampState(),
   tick: () => set(computeTimestampState()),
 }));
-
-if (typeof window !== "undefined") {
-  const tickIntervalKey = "__eternumBlockTimestampTickInterval";
-  const target = window as typeof window & {
-    [k: string]: unknown;
-  };
-
-  if (!target[tickIntervalKey]) {
-    target[tickIntervalKey] = window.setInterval(() => {
-      useBlockTimestampStore.getState().tick();
-    }, 10_000);
-  }
-}
