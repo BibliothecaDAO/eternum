@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { TransactionType } from "@bibliothecadao/provider";
+import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
@@ -8,12 +8,14 @@ interface TransactionSubmittedPayload {
   transactionHash: string;
   type: TransactionType;
   transactionCount?: number;
+  batchDetails?: BatchedTransactionDetail[];
 }
 
 interface TransactionPendingPayload {
   transactionHash: string;
   type: TransactionType;
   transactionCount?: number;
+  batchDetails?: BatchedTransactionDetail[];
 }
 
 interface TransactionCompletePayload {
@@ -23,6 +25,7 @@ interface TransactionCompletePayload {
   };
   type: TransactionType;
   transactionCount?: number;
+  batchDetails?: BatchedTransactionDetail[];
 }
 
 interface TransactionFailedPayload {
@@ -30,6 +33,7 @@ interface TransactionFailedPayload {
   type?: TransactionType;
   transactionCount?: number;
   transactionHash?: string;
+  batchDetails?: BatchedTransactionDetail[];
 }
 
 export const useTransactionListener = () => {
@@ -51,6 +55,7 @@ export const useTransactionListener = () => {
         status: "pending",
         description: getTxMessage(payload.type),
         transactionCount: payload.transactionCount,
+        batchDetails: payload.batchDetails,
       });
     };
 
@@ -65,6 +70,7 @@ export const useTransactionListener = () => {
           status: "pending",
           description: getTxMessage(payload.type),
           transactionCount: payload.transactionCount,
+          batchDetails: payload.batchDetails,
         });
       }
     };
@@ -89,6 +95,7 @@ export const useTransactionListener = () => {
           status: "success",
           description: getTxMessage(payload.type),
           transactionCount: payload.transactionCount,
+          batchDetails: payload.batchDetails,
           confirmedAt: Date.now(),
         });
       }
@@ -109,6 +116,9 @@ export const useTransactionListener = () => {
           ? error.transactionCount
           : (meta?.transactionCount ?? undefined);
 
+      const batchDetails =
+        typeof error === "object" && error?.batchDetails ? error.batchDetails : (meta?.batchDetails ?? undefined);
+
       if (transactionHash) {
         // Try to update existing transaction
         const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === transactionHash);
@@ -127,6 +137,7 @@ export const useTransactionListener = () => {
             status: "reverted",
             description: getTxMessage(type),
             transactionCount,
+            batchDetails,
             confirmedAt: Date.now(),
             errorMessage: message,
           });

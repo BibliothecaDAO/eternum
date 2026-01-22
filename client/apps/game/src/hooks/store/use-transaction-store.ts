@@ -1,4 +1,4 @@
-import { TransactionType } from "@bibliothecadao/provider";
+import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
 import { create } from "zustand";
 
 export type TransactionStatus = "pending" | "success" | "reverted";
@@ -12,6 +12,8 @@ export interface Transaction {
   description: string;
   transactionCount?: number;
   errorMessage?: string;
+  /** Details about batched transactions - shows breakdown by type */
+  batchDetails?: BatchedTransactionDetail[];
 }
 
 const MAX_TRANSACTIONS = 50;

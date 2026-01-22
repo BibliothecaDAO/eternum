@@ -33,7 +33,7 @@
 //     }
 
 //     fn REALM_COORD() -> Coord {
-//         Coord { x: 100, y: 100 }
+//         Coord { alt: false, x: 100, y: 100 }
 //     }
 
 //     fn REALM_INITIAL_DONKEY_BALANCE() -> u128 {
@@ -45,7 +45,7 @@
 //     }
 
 //     fn BANK_COORD() -> Coord {
-//         Coord { x: 400, y: 400 }
+//         Coord { alt: false, x: 400, y: 400 }
 //     }
 
 //     fn BANK_BRIDGE_FEE_DPT_PERCENT() -> u16 {
