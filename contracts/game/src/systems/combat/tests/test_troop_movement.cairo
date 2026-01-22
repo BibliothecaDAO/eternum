@@ -91,7 +91,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -253,7 +253,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -348,7 +348,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -447,7 +447,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -570,7 +570,7 @@
 //         tstore_map_config(ref world, map_config);
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -705,7 +705,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -775,7 +775,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -851,7 +851,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -921,7 +921,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -996,7 +996,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -1073,7 +1073,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -1145,7 +1145,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
@@ -1215,7 +1215,7 @@
 //         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
 //         let owner = starknet::contract_address_const::<'structure_owner'>();
-//         let realm_coord = Coord { x: 1, y: 1 };
+//         let realm_coord = Coord { alt: false, x: 1, y: 1 };
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();

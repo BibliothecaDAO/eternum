@@ -1,5 +1,5 @@
-import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertTriangle, Loader2, TrendingUp, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
@@ -7,92 +7,203 @@ import { BigNumberish, Call, uint256 } from "starknet";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
+import { ORACLE_FEE_BPS, PROTOCOL_FEE_BPS } from "@/pm/constants/market-creation-defaults";
+import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useUser } from "@/pm/hooks/dojo/user";
 import { formatUnits } from "@/pm/utils";
+import Button from "@/ui/design-system/atoms/button";
+import Panel from "@/ui/design-system/atoms/panel";
 import { getContractByName } from "@dojoengine/core";
-import { HStack, VStack } from "@pm/ui";
 import { parseLordsToBaseUnits } from "../market-utils";
 import { MaybeController } from "../maybe-controller";
 import { TokenIcon } from "../token-icon";
 import { useMarketRedeem } from "../use-market-redeem";
 
-// Lightweight stand-ins for UI pieces used in the reference implementation.
-const Button = ({
-  children,
-  className,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-}) => (
-  <button
-    className={`rounded-md px-3 py-2 text-sm font-semibold transition ${disabled ? "opacity-60" : ""} ${className || ""}`}
-    onClick={disabled ? undefined : onClick}
-    disabled={disabled}
-  >
-    {children}
-  </button>
-);
+const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
-const Dialog = ({ open, children, onClose }: { open: boolean; children: React.ReactNode; onClose?: () => void }) => {
+/**
+ * Confirmation dialog rendered in a portal
+ */
+const TradeConfirmDialog = ({
+  open,
+  onClose,
+  amount,
+  token,
+  selectedOutcome,
+  potentialWin,
+  userShares,
+  netResult,
+  isProfit,
+  onConfirm,
+  isSubmitting,
+}: {
+  open: boolean;
+  onClose: () => void;
+  amount: string;
+  token: RegisteredToken;
+  selectedOutcome?: MarketOutcome;
+  potentialWin: string | null;
+  userShares: number | null;
+  netResult: string | null;
+  isProfit: boolean;
+  onConfirm: () => void;
+  isSubmitting: boolean;
+}) => {
+  const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState(false);
+  useEffect(() => {
+    if (!open) setHasAcknowledgedRisk(false);
+  }, [open]);
+
   if (!open) return null;
 
   const content = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="relative min-w-[300px] max-w-[360px] rounded-lg border border-white/10 bg-black/90 p-6 shadow-2xl">
-        {onClose ? (
-          <button
-            className="absolute right-3 top-3 rounded-sm bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/20"
-            onClick={onClose}
-            aria-label="Close dialog"
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <Panel
+        tone="wood"
+        padding="lg"
+        radius="xl"
+        border="subtle"
+        className="relative mx-4 w-full max-w-sm animate-fade-in-up shadow-2xl"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-full p-1.5 text-gold/50 transition-colors hover:bg-gold/10 hover:text-gold"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        {/* Header */}
+        <div className="mb-4 text-center">
+          <h3 className="font-cinzel text-lg font-semibold text-gold">Confirm Trade</h3>
+        </div>
+
+        {/* Trade Summary */}
+        <div className="space-y-4">
+          {/* Amount */}
+          <div className="rounded-lg bg-brown/50 p-4 text-center">
+            <p className="text-xs uppercase tracking-wide text-gold/50">You are buying</p>
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <span className="font-cinzel text-2xl font-bold text-white">{Number(amount) > 0 ? amount : "0"}</span>
+              <TokenIcon token={token} size={20} />
+              <span className="text-gold/70">{token?.symbol}</span>
+            </div>
+          </div>
+
+          {/* Selected Outcome */}
+          <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
+            <p className="mb-2 text-xs uppercase tracking-wide text-gold/50">On outcome</p>
+            <div className="flex items-center gap-2">
+              <div
+                className="h-3 w-3 rounded-full"
+                style={{ backgroundColor: getOutcomeColor(selectedOutcome?.index ?? 0) }}
+              />
+              <span className="font-semibold text-gold">
+                <MaybeController address={selectedOutcome?.name ?? ""} />
+              </span>
+              <span className="ml-auto rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">
+                {selectedOutcome?.odds}%
+              </span>
+            </div>
+          </div>
+
+          {/* Payout Summary */}
+          {potentialWin && (
+            <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3">
+              <div className="space-y-2">
+                {/* Shares */}
+                {userShares != null && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gold/60">Your Shares</span>
+                    <span className="font-medium text-white">{userShares.toFixed(2)}%</span>
+                  </div>
+                )}
+                {/* Payout if Win */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gold/60">Payout if Win</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-cinzel text-lg font-bold text-brilliance">{potentialWin}</span>
+                    <TokenIcon token={token} size={16} />
+                  </div>
+                </div>
+                {/* Net Profit */}
+                {netResult && (
+                  <div className="flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
+                    <span className="text-gold/60">Net Profit</span>
+                    <span className={isProfit ? "font-semibold text-brilliance" : "font-semibold text-danger"}>
+                      {isProfit ? "+" : "-"}
+                      {netResult}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Risk Notice */}
+          <div className="rounded-lg border border-orange/30 bg-orange/5 p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-orange">Alpha Release</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-gold/70">
+              Smart contracts are not audited. Loss of funds is possible. Trade at your own risk.
+            </p>
+          </div>
+
+          {/* Acknowledgment */}
+          <label className="flex cursor-pointer items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={hasAcknowledgedRisk}
+              onChange={(e) => setHasAcknowledgedRisk(e.target.checked)}
+              className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-gold"
+            />
+            <span className="text-gold/80">I understand and accept the risks</span>
+          </label>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-6 space-y-2">
+          <Button
+            variant="primary"
+            size="md"
+            className="w-full"
+            onClick={onConfirm}
+            disabled={isSubmitting || !hasAcknowledgedRisk}
+            isLoading={isSubmitting}
+            forceUppercase={false}
           >
-            ✕
-          </button>
-        ) : null}
-        {children}
-      </div>
+            {isSubmitting ? "Confirming..." : "Confirm Trade"}
+          </Button>
+          <Button
+            variant="outline"
+            size="xs"
+            className="w-full"
+            onClick={onClose}
+            disabled={isSubmitting}
+            forceUppercase={false}
+          >
+            Cancel
+          </Button>
+        </div>
+      </Panel>
     </div>
   );
 
-  // Render in a portal so the overlay is not clipped by scrollable parents.
   return typeof document !== "undefined" ? createPortal(content, document.body) : content;
 };
 
-const DialogHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="mb-4 text-center">{children}</div>
-);
-const DialogFooter = ({ children }: { children: React.ReactNode }) => <div className="mt-6">{children}</div>;
-const DialogTitle = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-lg font-semibold">{children}</h3>
-);
-const DialogDescription = ({ children }: { children: React.ReactNode }) => (
-  <div className="text-center text-sm text-gold/70">{children}</div>
-);
-
-const Leo = ({
-  width = "48px",
-  height = "48px",
-  color = "#dfaa54",
-}: {
-  width?: string;
-  height?: string;
-  color?: string;
-}) => (
-  <div
-    className="mx-auto rounded-full"
-    style={{
-      width,
-      height,
-      background: color,
-      opacity: 0.8,
-    }}
-  />
-);
-
+/**
+ * Token amount input with quick-add buttons
+ */
 const TokenAmountInput = ({
   amount,
   setAmount,
@@ -117,81 +228,64 @@ const TokenAmountInput = ({
     setAmount(total.toString());
   };
 
-  const quickAddButtonClass =
-    "rounded-sm border border-white/20 bg-white/5 px-1.5 py-[2px] text-[10px] font-semibold text-gold/80 transition hover:border-gold/60 hover:bg-gold/10 hover:text-gold";
-
   return (
-    <div className="w-full rounded-md border border-white/10 bg-black/60 px-3 py-3 text-xs text-gold/70">
-      <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-gold/60">
-        <span>Amount</span>
-        <span className="flex items-center gap-2 text-[11px] text-gold/60">
-          <TokenIcon token={token} size={16} />
-          <span className="uppercase">{token?.symbol}</span>
-        </span>
-      </div>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-lg text-white outline-none focus:border-gold/60"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      {/* Fix flex overflow for button row in small containers */}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gold/60">
-        <span className="flex-shrink-0 truncate">Balance: {balanceFormatted}</span>
-        <div className="flex flex-wrap items-center gap-1 min-w-0">
-          <button
-            type="button"
-            className={quickAddButtonClass}
-            onClick={() => addToAmount(100)}
-            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
-          >
-            +100
-          </button>
-          <button
-            type="button"
-            className={quickAddButtonClass}
-            onClick={() => addToAmount(1000)}
-            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
-          >
-            +1k
-          </button>
-          <button
-            type="button"
-            className={quickAddButtonClass}
-            onClick={() => addToAmount(10000)}
-            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
-          >
-            +10k
-          </button>
-          <button
-            type="button"
-            className="rounded-sm border border-gold/40 bg-gold/10 px-2 py-[2px] text-[11px] font-semibold text-gold transition hover:border-gold/60 hover:bg-gold/20"
-            onClick={() => setAmount(balanceFormatted)}
-            disabled={balanceNum <= 0}
-          >
-            MAX
-          </button>
+    <div className="space-y-3">
+      {/* Large centered input */}
+      <div className="flex flex-col items-center">
+        <div className="relative flex items-center justify-center">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-[140px] bg-transparent text-center font-cinzel text-3xl text-white outline-none placeholder:text-gold/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            placeholder="0"
+          />
+          <div className="pointer-events-none absolute right-0 top-2 translate-x-full pl-2">
+            <TokenIcon token={token} size={24} />
+          </div>
         </div>
+        <span className="text-sm text-gold/50">{token?.symbol}</span>
       </div>
+
+      {/* Quick-add buttons */}
+      <div className="flex flex-wrap justify-center gap-1.5">
+        {[100, 500, 1000, 5000].map((val) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => addToAmount(val)}
+            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+            className="rounded-md border border-gold/30 bg-brown/50 px-2.5 py-1 text-[10px] font-medium text-gold transition-colors hover:border-gold/50 hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            +{val >= 1000 ? `${val / 1000}k` : val}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => setAmount(balanceFormatted)}
+          disabled={balanceNum <= 0}
+          className="rounded-md border border-gold/50 bg-gold/20 px-2.5 py-1 text-[10px] font-bold text-gold transition-colors hover:bg-gold/30 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          MAX
+        </button>
+      </div>
+
+      {/* Balance */}
+      <p className="text-center text-[10px] text-gold/40">
+        Balance: {balanceFormatted} {token?.symbol}
+      </p>
     </div>
   );
 };
 
 const tryBetterErrorMsg = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
   return "Something went wrong while submitting the trade.";
 };
 
-// Utility to safely get u256 {low, high} from a value.
 function toUint256(val: BigNumberish) {
   const asUint = uint256.bnToUint256(BigInt(val));
   return { low: asUint.low, high: asUint.high };
@@ -206,7 +300,6 @@ export function MarketTrade({
   market: MarketClass;
   selectedOutcome?: MarketOutcome;
   setSelectedOutcome?: (e: MarketOutcome) => void;
-  /** When true, reduces padding and gaps for constrained layouts (e.g., sticky panels) */
   compact?: boolean;
 }) {
   const {
@@ -216,7 +309,6 @@ export function MarketTrade({
   const [amount, setAmount] = useState("0");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState(false);
   const account = useAccountStore((state) => state.account);
 
   const marketContractAddress = getContractByName(manifest, "pm", "Markets")?.address;
@@ -225,6 +317,43 @@ export function MarketTrade({
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
 
   const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
+
+  // Helper to calculate if a trade is profitable for a given outcome index
+  const isProfitableForOutcome = useMemo(() => {
+    return (outcomeIndex: number): boolean => {
+      const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
+      const totalLiquidityRaw = market.vaultDenominator?.value;
+      const outcomeLiquidityRaw = market.vaultNumerators?.find((num) => num.index === outcomeIndex)?.value;
+
+      if (
+        baseAmount == null ||
+        baseAmount <= 0n ||
+        totalLiquidityRaw == null ||
+        outcomeLiquidityRaw == null ||
+        BigInt(totalLiquidityRaw) <= 0n
+      ) {
+        return true; // No data to evaluate, allow by default
+      }
+
+      const baseAmountBig = BigInt(baseAmount);
+      const modelFeeBps = BigInt(market.getModelFees(Date.now()));
+      const creatorFeeBps = BigInt(market.creator_fee || 0);
+      const totalFeeBps = PROTOCOL_FEE_BPS + ORACLE_FEE_BPS + modelFeeBps + creatorFeeBps;
+      const effectiveAmount = (baseAmountBig * (10000n - totalFeeBps)) / 10000n;
+
+      const outcomeLiquidity = BigInt(outcomeLiquidityRaw);
+      const totalLiquidity = BigInt(totalLiquidityRaw);
+      const newOutcomeLiquidity = outcomeLiquidity + effectiveAmount;
+      const newTotalLiquidity = totalLiquidity + effectiveAmount;
+
+      if (newOutcomeLiquidity === 0n || newTotalLiquidity === 0n) {
+        return true;
+      }
+
+      const potentialWinRaw = (effectiveAmount * newTotalLiquidity) / newOutcomeLiquidity;
+      return potentialWinRaw >= baseAmountBig;
+    };
+  }, [amount, collateralDecimals, market]);
 
   const tradePreview = useMemo(() => {
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
@@ -241,34 +370,57 @@ export function MarketTrade({
       BigInt(totalLiquidityRaw) <= 0n
     ) {
       return {
-        averageEntryPercent: null,
+        userShares: null,
         potentialWinFormatted: null,
+        netResultFormatted: null,
+        isProfit: false,
+        isProfitable: true,
       };
     }
 
     const baseAmountBig = BigInt(baseAmount);
+
+    // Calculate total fees in basis points (10000 = 100%)
+    // Fees: protocol (0.3%) + oracle (0.5%) + model/vault fee (time-based) + creator fee
+    const modelFeeBps = BigInt(market.getModelFees(Date.now()));
+    const creatorFeeBps = BigInt(market.creator_fee || 0);
+    const totalFeeBps = PROTOCOL_FEE_BPS + ORACLE_FEE_BPS + modelFeeBps + creatorFeeBps;
+
+    // Deduct fees from the investment amount: effective = amount * (10000 - fees) / 10000
+    const effectiveAmount = (baseAmountBig * (10000n - totalFeeBps)) / 10000n;
+
     const outcomeLiquidity = BigInt(outcomeLiquidityRaw);
     const totalLiquidity = BigInt(totalLiquidityRaw);
-
-    const newOutcomeLiquidity = outcomeLiquidity + baseAmountBig;
-    const newTotalLiquidity = totalLiquidity + baseAmountBig;
+    const newOutcomeLiquidity = outcomeLiquidity + effectiveAmount;
+    const newTotalLiquidity = totalLiquidity + effectiveAmount;
 
     if (newOutcomeLiquidity === 0n || newTotalLiquidity === 0n) {
       return {
-        averageEntryPercent: null,
+        userShares: null,
         potentialWinFormatted: null,
+        netResultFormatted: null,
+        isProfit: false,
+        isProfitable: true,
       };
     }
 
-    // Average execution price equals the post-trade probability in this pari-mutuel model.
-    const averageEntryPercent = Number((newOutcomeLiquidity * 10_000n) / newTotalLiquidity) / 100;
-    const potentialWinRaw = (baseAmountBig * newTotalLiquidity) / newOutcomeLiquidity;
+    // Parimutuel calculation:
+    // User's shares = (effectiveAmount / newOutcomeLiquidity) * 100
+    const userShares = Number((effectiveAmount * 10_000n) / newOutcomeLiquidity) / 100;
+
+    // Payout if win = (shares * totalPool) / 100 = effectiveAmount * totalPool / outcomePool
+    const potentialWinRaw = (effectiveAmount * newTotalLiquidity) / newOutcomeLiquidity;
     const potentialWinFormatted = formatUnits(potentialWinRaw, collateralDecimals, 4);
 
-    return {
-      averageEntryPercent,
-      potentialWinFormatted,
-    };
+    // Net result = payout - initial bet
+    const netResultRaw = potentialWinRaw - baseAmountBig;
+    const netResultFormatted = formatUnits(netResultRaw < 0n ? -netResultRaw : netResultRaw, collateralDecimals, 4);
+    const isProfit = netResultRaw > 0n;
+
+    // Check if potential win is greater than or equal to input amount
+    const isProfitable = potentialWinRaw >= baseAmountBig;
+
+    return { userShares, potentialWinFormatted, netResultFormatted, isProfit, isProfitable };
   }, [amount, collateralDecimals, market, selectedOutcome]);
 
   const onBuy = async (outcomeIndex: number) => {
@@ -276,7 +428,6 @@ export function MarketTrade({
       toast.error("Connect a wallet to trade.");
       return;
     }
-
     if (!marketContractAddress) {
       toast.error("Market contract address is not configured.");
       return;
@@ -294,7 +445,6 @@ export function MarketTrade({
       return;
     }
 
-    // Always encode u256 params as [low, high] (Cairo expects this format).
     const marketIdU256 = toUint256(market.market_id);
     const amountU256 = toUint256(baseAmount);
 
@@ -314,17 +464,14 @@ export function MarketTrade({
       setIsSubmitting(true);
       setIsDialogOpen(false);
 
-      await account.estimateInvokeFee([approveCall, buyCall], {
-        blockIdentifier: "pre_confirmed",
-      });
-
+      await account.estimateInvokeFee([approveCall, buyCall], { blockIdentifier: "pre_confirmed" });
       const resultTx = await account.execute([approveCall, buyCall]);
 
       if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
         await account.waitForTransaction(resultTx.transaction_hash);
       }
 
-      toast.success("Trade submitted.");
+      toast.success("Trade submitted successfully!");
     } catch (error) {
       console.error(error);
       toast.error(tryBetterErrorMsg(error));
@@ -336,197 +483,215 @@ export function MarketTrade({
   const outcomes = market.getMarketOutcomes();
   if (!outcomes) return null;
 
+  // Resolved / Non-tradeable state
   if (!isTradeable) {
     const claimDisabled = isSubmitting || isRedeeming || !isResolved || (!!account && !hasAnythingToClaim);
     const claimMessage = !account
-      ? "Connect a wallet to check if you have claimable amounts."
+      ? "Connect a wallet to check claimable amounts."
       : !isResolved
         ? "Claims unlock once the market is resolved."
         : !hasAnythingToClaim
-          ? "No redeemable positions or vault fees detected in your wallet."
-          : "Claim your position tokens and vault fees.";
+          ? "No redeemable positions detected."
+          : "Claim your winnings below.";
 
     return isResolved ? (
-      <div className="flex flex-col gap-3 rounded-lg border border-progress-bar-good/30 bg-progress-bar-good/5 p-4 text-sm text-gold/80">
+      <Panel tone="wood" padding="md" radius="lg" border="subtle" className="border-brilliance/30 bg-brilliance/5">
         <div className="flex items-center justify-between">
-          <span className="text-xs uppercase tracking-[0.08em] text-progress-bar-good">Resolved — Claim</span>
-          <span className="flex items-center gap-2 text-base font-semibold text-progress-bar-good">
-            <span className="text-lg">+{claimableDisplay}</span>
-            <TokenIcon token={market.collateralToken} size={16} />
-          </span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-brilliance">Resolved</span>
+          <div className="flex items-center gap-2">
+            <span className="font-cinzel text-xl font-bold text-brilliance">+{claimableDisplay}</span>
+            <TokenIcon token={market.collateralToken} size={18} />
+          </div>
         </div>
-        <span className="text-xs text-gold/70">{claimMessage}</span>
+        <p className="mt-2 text-xs text-gold/60">{claimMessage}</p>
         <Button
-          className="w-full bg-progress-bar-good/80 text-white hover:bg-progress-bar-good"
+          variant="success"
+          size="md"
+          className="mt-3 w-full"
           disabled={claimDisabled}
+          isLoading={isRedeeming}
           onClick={() => redeem()}
-          // Show loading feedback while submitting claim
+          forceUppercase={false}
         >
-          <span className="flex items-center justify-center gap-2">
-            {isRedeeming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {isRedeeming ? "Submitting..." : "Claim"}
-          </span>
+          {isRedeeming ? "Claiming..." : "Claim Winnings"}
         </Button>
-      </div>
+      </Panel>
     ) : (
-      <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-gold/70">
-        <span className="font-semibold text-white">Trading unavailable</span>
-        <span>{claimMessage}</span>
-      </div>
+      <Panel tone="neutral" padding="md" radius="lg" border="subtle">
+        <p className="font-semibold text-gold">Trading Unavailable</p>
+        <p className="mt-1 text-xs text-gold/60">{claimMessage}</p>
+      </Panel>
     );
   }
 
   return (
     <>
-      <div
-        className={`w-full rounded-lg border border-white/10 bg-black/40 shadow-inner text-white ${compact ? "p-2" : "p-4"}`}
-      >
-        <VStack className={`items-end ${compact ? "gap-2" : "gap-6"}`}>
+      <Panel tone="wood" padding={compact ? "sm" : "md"} radius="lg" border="subtle">
+        <div className={cx("space-y-4", compact && "space-y-3")}>
+          {/* Amount Input */}
           <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
-          <div className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-gold/70">
-            <div className="flex items-center justify-between">
-              <span className="uppercase tracking-[0.08em] text-gold/60">To win</span>
-              <div className="flex items-center gap-2 text-base font-semibold text-progress-bar-good">
-                <span>{tradePreview.potentialWinFormatted ?? "--"}</span>
-                <TokenIcon token={market.collateralToken} size={16} />
+
+          {/* Payout Summary Display */}
+          <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3">
+            <div className="space-y-2">
+              {/* Your Shares */}
+              {tradePreview.userShares != null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gold/60">Your Shares</span>
+                  <span className="font-medium text-white">{tradePreview.userShares.toFixed(2)}%</span>
+                </div>
+              )}
+
+              {/* Payout if Win */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-brilliance/70">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>Payout if Win</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-cinzel text-xl font-bold text-brilliance">
+                    {tradePreview.potentialWinFormatted ?? "--"}
+                  </span>
+                  <TokenIcon token={market.collateralToken} size={18} />
+                </div>
               </div>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gold/60">
-              <span>If your selected outcome resolves true.</span>
-              <span className="flex items-center gap-1 text-white/80">
-                Avg entry:{" "}
-                <span className="font-semibold text-progress-bar-good">
-                  {tradePreview.averageEntryPercent != null ? `${tradePreview.averageEntryPercent.toFixed(2)}%` : "--"}
-                </span>
-              </span>
+
+              {/* Net Profit/Loss */}
+              {tradePreview.netResultFormatted && (
+                <div className="flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
+                  <span className="text-gold/60">Net Profit</span>
+                  <span
+                    className={tradePreview.isProfit ? "font-semibold text-brilliance" : "font-semibold text-danger"}
+                  >
+                    {tradePreview.isProfit ? "+" : "-"}
+                    {tradePreview.netResultFormatted}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
-          <HStack className="justify-center w-full">
-            {market.typBinary() && (
-              <HStack className="w-full">
+
+          {/* Selected Outcome / Buy Buttons */}
+          {market.typBinary() ? (
+            <div className="space-y-2">
+              <div className="flex gap-2">
                 <Button
-                  className="w-1/2 bg-progress-bar-good text-white hover:bg-progress-bar-good/80 flex items-center justify-center gap-2"
+                  variant="success"
+                  size="md"
+                  className="flex-1"
                   onClick={() => {
                     setSelectedOutcome?.(outcomes[0]);
                     setIsDialogOpen(true);
                   }}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isProfitableForOutcome(0)}
+                  forceUppercase={false}
                 >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {isSubmitting ? "Submitting..." : "BUY YES"}
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : !isProfitableForOutcome(0) ? (
+                    "Odds too low"
+                  ) : (
+                    "Buy YES"
+                  )}
                 </Button>
                 <Button
-                  className="w-1/2 bg-danger text-lightest hover:bg-danger/80 flex items-center justify-center gap-2"
+                  variant="danger"
+                  size="md"
+                  className="flex-1"
                   onClick={() => {
                     setSelectedOutcome?.(outcomes[1]);
                     setIsDialogOpen(true);
                   }}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isProfitableForOutcome(1)}
+                  forceUppercase={false}
                 >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {isSubmitting ? "Submitting..." : "BUY NO"}
-                </Button>
-              </HStack>
-            )}
-
-            {market.typCategorical() && (
-              <VStack className={`w-full ${compact ? "gap-2" : "gap-3"}`}>
-                <div
-                  className={`w-full overflow-hidden rounded-md border border-white/10 bg-white/5 ${compact ? "p-2" : "p-3"}`}
-                >
-                  <div className={`${compact ? "mb-1" : "mb-2"} text-[11px] uppercase tracking-[0.08em] text-gold/60`}>
-                    Selected Outcome
-                  </div>
-                  {selectedOutcome ? (
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-                        <div className="h-2 w-2 flex-shrink-0 rounded-full bg-gold" />
-                        <div className="min-w-0 flex-1 truncate text-sm font-medium text-white">
-                          <MaybeController address={selectedOutcome.name} />
-                        </div>
-                      </div>
-                      <div className="flex flex-shrink-0 items-center gap-2">
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-gold">
-                          {selectedOutcome.odds}%
-                        </span>
-                      </div>
-                    </div>
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : !isProfitableForOutcome(1) ? (
+                    "Odds too low"
                   ) : (
-                    <div className="flex items-center gap-2 text-sm text-gold/50">
-                      <div className="h-2 w-2 rounded-full border border-dashed border-gold/30" />
-                      <span>Click an outcome above to select</span>
-                    </div>
+                    "Buy NO"
                   )}
-                </div>
-                <Button
-                  className="w-full bg-gold/90 text-black hover:bg-gold flex items-center justify-center gap-2 font-bold"
-                  onClick={() => setIsDialogOpen(true)}
-                  disabled={!selectedOutcome || isSubmitting}
-                >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {!selectedOutcome ? "Select an outcome to buy" : isSubmitting ? "Submitting..." : "BUY"}
                 </Button>
-              </VStack>
-            )}
-          </HStack>
-        </VStack>
-
-        <Dialog
-          open={isDialogOpen}
-          onClose={() => {
-            setIsDialogOpen(false);
-            setHasAcknowledgedRisk(false);
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Confirmation</DialogTitle>
-          </DialogHeader>
-
-          <DialogDescription>
-            <div className="my-4 flex items-center justify-center text-xl">
-              <VStack>
-                <Leo width="64px" height="64px" color="#f0b100" />
-                <VStack className="mt-4 items-center">
-                  <span>I want to buy</span>
-                  <HStack className="items-center justify-center">
-                    {Number(amount) > 0 ? `${amount} ${market.collateralToken?.symbol ?? ""}`.trim() : "0"}
-                    <TokenIcon token={market.collateralToken} size={18} className="mx-1" />
-                  </HStack>
-                  <MaybeController address={selectedOutcome?.name ?? ""} />
-                </VStack>
-              </VStack>
+              </div>
+              {(!isProfitableForOutcome(0) || !isProfitableForOutcome(1)) && (
+                <p className="text-center text-xs text-danger">
+                  {!isProfitableForOutcome(0) && !isProfitableForOutcome(1)
+                    ? "Both outcomes have odds too low for this amount."
+                    : "One outcome has odds too low. Choose a lower amount."}
+                </p>
+              )}
             </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Selected Outcome Display */}
+              <div className="rounded-lg border border-gold/20 bg-brown/40 p-2.5">
+                <p className="mb-1.5 text-[10px] uppercase tracking-wide text-gold/50">Selected Outcome</p>
+                {selectedOutcome ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: getOutcomeColor(selectedOutcome.index) }}
+                      />
+                      <span className="text-sm font-semibold text-white">
+                        <MaybeController address={selectedOutcome.name} />
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-gold/20 px-2 py-0.5 text-xs font-bold text-gold">
+                      {selectedOutcome.odds}%
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-gold/40">
+                    <div className="h-2.5 w-2.5 rounded-full border border-dashed border-gold/30" />
+                    <span>Select an outcome above</span>
+                  </div>
+                )}
+              </div>
 
-            <div className="mt-4 rounded-md border border-gold/30 bg-gold/5 px-3 py-2 text-left text-xs text-gold/80">
-              <p className="mb-2 font-semibold uppercase tracking-wide text-gold">Alpha Release Notice</p>
-              <p className="leading-relaxed">
-                This prediction market feature is currently in alpha. Smart contracts have not been formally audited. By
-                proceeding, you acknowledge that loss of funds is possible and you are participating at your own risk.
-              </p>
+              {/* Buy Button */}
+              <Button
+                variant="primary"
+                size="md"
+                className="w-full"
+                onClick={() => setIsDialogOpen(true)}
+                disabled={!selectedOutcome || isSubmitting || !tradePreview.isProfitable}
+                isLoading={isSubmitting}
+                forceUppercase={false}
+              >
+                {!selectedOutcome
+                  ? "Select outcome to trade"
+                  : !tradePreview.isProfitable
+                    ? "Odds too low"
+                    : isSubmitting
+                      ? "Confirming..."
+                      : "Buy Position"}
+              </Button>
+              {!tradePreview.isProfitable && selectedOutcome && (
+                <p className="text-center text-xs text-danger">
+                  Potential win is less than your bet. Choose a lower amount or different outcome.
+                </p>
+              )}
             </div>
+          )}
+        </div>
+      </Panel>
 
-            <label className="mt-4 flex cursor-pointer items-start gap-2 text-left text-xs text-white/80">
-              <input
-                type="checkbox"
-                checked={hasAcknowledgedRisk}
-                onChange={(e) => setHasAcknowledgedRisk(e.target.checked)}
-                className="mt-0.5 h-4 w-4 cursor-pointer accent-gold"
-              />
-              <span>I understand the risks and wish to proceed</span>
-            </label>
-          </DialogDescription>
-          <DialogFooter>
-            <Button
-              className="w-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center gap-2"
-              onClick={() => onBuy(selectedOutcome?.index ?? 0)}
-              disabled={isSubmitting || !hasAcknowledgedRisk}
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {isSubmitting ? "Submitting..." : "BUY"}
-            </Button>
-          </DialogFooter>
-        </Dialog>
-      </div>
+      {/* Confirmation Dialog */}
+      <TradeConfirmDialog
+        open={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        amount={amount}
+        token={market.collateralToken}
+        selectedOutcome={selectedOutcome}
+        potentialWin={tradePreview.potentialWinFormatted}
+        userShares={tradePreview.userShares}
+        netResult={tradePreview.netResultFormatted}
+        isProfit={tradePreview.isProfit}
+        onConfirm={() => onBuy(selectedOutcome?.index ?? 0)}
+        isSubmitting={isSubmitting}
+      />
     </>
   );
 }

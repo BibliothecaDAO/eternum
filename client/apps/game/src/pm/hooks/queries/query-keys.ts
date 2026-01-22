@@ -18,4 +18,4 @@ export const pmQueryKeys = {
 };
 
 // Type helper for query key inference
-export type PmQueryKeys = typeof pmQueryKeys;
+type PmQueryKeys = typeof pmQueryKeys;

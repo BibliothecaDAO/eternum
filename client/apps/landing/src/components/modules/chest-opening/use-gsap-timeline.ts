@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
 // Timeline phase labels
-export type TimelinePhase = "intro" | "shake" | "burst" | "reveal" | "outro";
+type TimelinePhase = "intro" | "shake" | "burst" | "reveal" | "outro";
 
 interface UseGsapTimelineOptions {
   onComplete?: () => void;
@@ -47,7 +47,7 @@ const DEFAULT_DURATIONS = {
   outro: 0.4,
 };
 
-export function useGsapTimeline(options: UseGsapTimelineOptions = {}): UseGsapTimelineReturn {
+function useGsapTimeline(options: UseGsapTimelineOptions = {}): UseGsapTimelineReturn {
   const { onComplete, onPhaseChange, autoPlay = false } = options;
 
   const timelineRef = useRef<gsap.core.Timeline | null>(null);

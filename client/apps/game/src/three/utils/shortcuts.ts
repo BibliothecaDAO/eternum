@@ -6,7 +6,7 @@ import { SceneManager } from "@/three/scene-manager";
 /**
  * Register a shortcut from a Three.js scene or other non-React context
  */
-export const registerShortcut = (config: {
+const registerShortcut = (config: {
   id: string;
   key: string;
   modifiers?: KeyModifiers;
@@ -21,14 +21,14 @@ export const registerShortcut = (config: {
 /**
  * Unregister a shortcut by ID
  */
-export const unregisterShortcut = (shortcutId: string): void => {
+const unregisterShortcut = (shortcutId: string): void => {
   getShortcutManager().unregisterShortcut(shortcutId);
 };
 
 /**
  * Unregister all shortcuts with a specific prefix
  */
-export const unregisterShortcutsByPrefix = (prefix: string): void => {
+const unregisterShortcutsByPrefix = (prefix: string): void => {
   getShortcutManager().unregisterShortcutsByPrefix(prefix);
 };
 
@@ -127,7 +127,7 @@ export class SceneShortcutManager {
 }
 
 // Utility functions for creating shortcuts with the new system
-export class ShortcutUtils {
+class ShortcutUtils {
   static simple(id: string, key: string, description: string, action: () => void) {
     return {
       id,

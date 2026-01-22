@@ -1,6 +1,6 @@
 import type { ServerWebSocket } from "bun";
 
-export interface ZoneRegistry {
+interface ZoneRegistry {
   addSocketToZone(ws: ServerWebSocket<unknown>, zoneId: string): void;
   removeSocketFromZone(ws: ServerWebSocket<unknown>, zoneId: string): void;
   removeSocketFromAllZones(ws: ServerWebSocket<unknown>): void;

@@ -52,7 +52,7 @@ const borderClassMap = {
   strong: "border border-gold/10",
 };
 
-export const Panel = forwardRef<HTMLDivElement, PanelProps>(
+const Panel = forwardRef<HTMLDivElement, PanelProps>(
   (
     {
       as: Component = "div",

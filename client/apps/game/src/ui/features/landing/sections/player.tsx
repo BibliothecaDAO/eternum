@@ -29,8 +29,14 @@ import { toPng } from "html-to-image";
 import { Copy, Loader2, Share2, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import { LandingWorldSelector } from "../components/landing-world-selector";
+import {
+  fetchLandingLeaderboard,
+  fetchLandingLeaderboardEntryByAddress,
+  type LandingLeaderboardEntry,
+} from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
+import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
   const candidate = entry.displayName?.trim();
@@ -60,6 +66,8 @@ const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer
   hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
 });
 
+const LEADERBOARD_LIMIT = 30;
+
 export const LandingPlayer = () => {
   const account = useAccountStore((state) => state.account);
   const accountName = useAccountStore((state) => state.accountName);
@@ -71,6 +79,20 @@ export const LandingPlayer = () => {
   const displayName = accountName || cartridgeUsername || "";
   const hasDisplayName = Boolean(displayName);
   const playerId = playerAddress ?? "";
+
+  // World selection for player section
+  const worldSelection = useLandingWorldSelection({ storageKeyPrefix: "player" });
+
+  // Local state for world-specific data
+  const [worldChampionEntry, setWorldChampionEntry] = useState<LandingLeaderboardEntry | null>(null);
+  const [worldPlayerEntry, setWorldPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
+  const [worldIsFetching, setWorldIsFetching] = useState(false);
+  const [worldPlayerIsFetching, setWorldPlayerIsFetching] = useState(false);
+  const [worldError, setWorldError] = useState<string | null>(null);
+  const [worldLastFetchAt, setWorldLastFetchAt] = useState<number | null>(null);
+  const [worldPlayerLastFetchAt, setWorldPlayerLastFetchAt] = useState<number | null>(null);
+
+  const useCustomWorld = worldSelection.toriiBaseUrl !== null;
 
   // Avatar management
   const [avatarPrompt, setAvatarPrompt] = useState("");
@@ -99,35 +121,127 @@ export const LandingPlayer = () => {
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }, [myAvatar?.nextResetAt]);
 
-  const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
-  const championEntry = useLandingLeaderboardStore((state) => state.championEntry);
-  const isLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
-  const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
-  const playerEntryState = useLandingLeaderboardStore((state) =>
+  const storeFetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  const storeChampionEntry = useLandingLeaderboardStore((state) => state.championEntry);
+  const storeIsLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
+  const storeFetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
+  const storePlayerEntryState = useLandingLeaderboardStore((state) =>
     normalizedPlayerAddress ? state.playerEntries[normalizedPlayerAddress] : undefined,
   );
-  const lastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+  const storeLastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+
+  // Use world-specific or store data depending on selection
+  const championEntry = useCustomWorld ? worldChampionEntry : storeChampionEntry;
+  const isLeaderboardFetching = useCustomWorld ? worldIsFetching : storeIsLeaderboardFetching;
+  const lastLeaderboardFetchAt = useCustomWorld ? worldLastFetchAt : storeLastLeaderboardFetchAt;
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
-  useEffect(() => {
-    void fetchLeaderboard();
-  }, [fetchLeaderboard]);
+  // Fetch world-specific leaderboard (for champion)
+  const fetchWorldLeaderboard = useCallback(async () => {
+    const toriiUrl = worldSelection.toriiBaseUrl;
+    if (!toriiUrl) {
+      return;
+    }
 
+    const now = Date.now();
+    if (worldIsFetching) {
+      return;
+    }
+
+    if (worldLastFetchAt && now - worldLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
+      return;
+    }
+
+    setWorldIsFetching(true);
+    setWorldLastFetchAt(now);
+
+    try {
+      const fetchedEntries = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, toriiUrl);
+      const champion = fetchedEntries[0] ?? null;
+      setWorldChampionEntry(champion);
+      setWorldIsFetching(false);
+      setWorldError(null);
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "Unable to load leaderboard.";
+      setWorldIsFetching(false);
+      setWorldError(message);
+    }
+  }, [worldSelection.toriiBaseUrl, worldIsFetching, worldLastFetchAt]);
+
+  // Fetch world-specific player entry
+  const fetchWorldPlayerEntry = useCallback(
+    async (address: string) => {
+      const toriiUrl = worldSelection.toriiBaseUrl;
+      if (!toriiUrl || !address) {
+        return null;
+      }
+
+      const now = Date.now();
+      if (worldPlayerIsFetching) {
+        return worldPlayerEntry;
+      }
+
+      if (worldPlayerLastFetchAt && now - worldPlayerLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
+        return worldPlayerEntry;
+      }
+
+      setWorldPlayerIsFetching(true);
+      setWorldPlayerLastFetchAt(now);
+
+      try {
+        const entry = await fetchLandingLeaderboardEntryByAddress(address, toriiUrl);
+        setWorldPlayerEntry(entry);
+        setWorldPlayerIsFetching(false);
+        return entry;
+      } catch {
+        setWorldPlayerIsFetching(false);
+        return null;
+      }
+    },
+    [worldSelection.toriiBaseUrl, worldPlayerIsFetching, worldPlayerLastFetchAt, worldPlayerEntry],
+  );
+
+  // Reset world data when world changes
+  useEffect(() => {
+    setWorldChampionEntry(null);
+    setWorldPlayerEntry(null);
+    setWorldError(null);
+    setWorldLastFetchAt(null);
+    setWorldPlayerLastFetchAt(null);
+  }, [worldSelection.toriiBaseUrl]);
+
+  // Fetch leaderboard on mount and when world changes
+  useEffect(() => {
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard();
+    } else {
+      void storeFetchLeaderboard();
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
+
+  // Fetch player entry when address changes or world changes
   useEffect(() => {
     if (!playerAddress) {
       return;
     }
 
-    void fetchPlayerEntry(playerAddress);
-  }, [playerAddress, fetchPlayerEntry]);
+    if (useCustomWorld) {
+      void fetchWorldPlayerEntry(playerAddress);
+    } else {
+      void storeFetchPlayerEntry(playerAddress);
+    }
+  }, [playerAddress, useCustomWorld, fetchWorldPlayerEntry, storeFetchPlayerEntry]);
 
-  const playerEntry = playerEntryState?.data ?? null;
-  const isPlayerLoading = Boolean(playerAddress) && (!playerEntryState || playerEntryState.isFetching);
-  const playerError = playerEntryState?.error ?? null;
-  const playerLastFetchAt = playerEntryState?.lastFetchedAt ?? null;
+  // Derive player entry from world-specific or store data
+  const playerEntry = useCustomWorld ? worldPlayerEntry : (storePlayerEntryState?.data ?? null);
+  const isPlayerLoading = useCustomWorld
+    ? Boolean(playerAddress) && worldPlayerIsFetching
+    : Boolean(playerAddress) && (!storePlayerEntryState || storePlayerEntryState.isFetching);
+  const playerError = useCustomWorld ? worldError : (storePlayerEntryState?.error ?? null);
+  const playerLastFetchAt = useCustomWorld ? worldPlayerLastFetchAt : (storePlayerEntryState?.lastFetchedAt ?? null);
 
   useEffect(() => {
     const updateCooldown = () => {
@@ -197,11 +311,27 @@ export const LandingPlayer = () => {
       return;
     }
 
-    void fetchLeaderboard();
-    if (playerAddress) {
-      void fetchPlayerEntry(playerAddress);
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard();
+      if (playerAddress) {
+        void fetchWorldPlayerEntry(playerAddress);
+      }
+    } else {
+      void storeFetchLeaderboard();
+      if (playerAddress) {
+        void storeFetchPlayerEntry(playerAddress);
+      }
     }
-  }, [fetchLeaderboard, fetchPlayerEntry, playerAddress, isRefreshing, isCooldownActive]);
+  }, [
+    useCustomWorld,
+    fetchWorldLeaderboard,
+    fetchWorldPlayerEntry,
+    storeFetchLeaderboard,
+    storeFetchPlayerEntry,
+    playerAddress,
+    isRefreshing,
+    isCooldownActive,
+  ]);
 
   const handleShareOnX = useCallback(() => {
     if (!highlightPlayer) {
@@ -398,6 +528,24 @@ export const LandingPlayer = () => {
 
   return (
     <section className="w-full mb-2 max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-3xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[70vh] xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-4xl 2xl:p-8">
+      {/* World Selector */}
+      <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4">
+        <LandingWorldSelector
+          selectedChain={worldSelection.selectedChain}
+          selectedWorld={worldSelection.selectedWorld}
+          availableWorlds={worldSelection.availableWorlds}
+          isLoading={worldSelection.isLoading}
+          isCheckingAvailability={worldSelection.isCheckingAvailability}
+          onChainChange={worldSelection.setSelectedChain}
+          onWorldChange={worldSelection.setSelectedWorld}
+        />
+        {worldSelection.selectedWorld && (
+          <p className="mt-2 text-xs text-gold/60">
+            Showing data from: <span className="font-semibold text-gold">{worldSelection.selectedWorld}</span>
+          </p>
+        )}
+      </div>
+
       {/* Avatar Management Section */}
       {playerAddress && showAvatarSection && (
         <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 to-transparent p-4 space-y-4">

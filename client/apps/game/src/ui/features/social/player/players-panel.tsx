@@ -89,7 +89,8 @@ export const PlayersPanel = ({
 
   useEffect(() => {
     void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT });
-  }, [fetchLeaderboardEntries]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch on initial mount - store handles caching/staleness
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order

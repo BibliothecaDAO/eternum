@@ -5,7 +5,7 @@ import { useStaminaManager } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 
-export const StaminaResourceCost = ({
+const StaminaResourceCost = ({
   selectedEntityId,
   isExplored,
   path,

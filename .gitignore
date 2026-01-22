@@ -13,3 +13,4 @@ client/apps/eternum-mobile/dist
 venv/
 __pycache__/
 client/apps/game/minimap
+.claude/ralph-loop.local.md

@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { DEFAULT_SCOPE_RADIUS, DEFAULT_STRATEGY_ID, useExplorationAutomationStore } from "@/hooks/store/use-exploration-automation-store";
+import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -12,12 +13,11 @@ import { EXPLORATION_STRATEGIES } from "@/automation/exploration";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../../armies/army-warning";
-import { dangerActionClasses, standardActionClasses } from "../action-button-classes";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 
-export interface ArmyBannerEntityDetailProps {
+interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
   className?: string;
   compact?: boolean;
@@ -275,18 +275,25 @@ const ExplorationAutomationCompact = ({
           </Select>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
+          <Button
             type="button"
             onClick={handleEnable}
-            className={standardActionClasses}
             disabled={entry?.active && !hasChanges}
+            variant="outline"
+            size={compact ? "xs" : "md"}
           >
             {entry?.active ? "Update" : "Enable"}
-          </button>
+          </Button>
           {entry ? (
-            <button type="button" onClick={handleDisable} className={dangerActionClasses} disabled={!entry.active}>
+            <Button
+              type="button"
+              onClick={handleDisable}
+              disabled={!entry.active}
+              variant="danger"
+              size={compact ? "xs" : "md"}
+            >
               Disable
-            </button>
+            </Button>
           ) : null}
           <span className="text-xxs text-gold/60 uppercase tracking-[0.25em]">{statusLabel}</span>
         </div>

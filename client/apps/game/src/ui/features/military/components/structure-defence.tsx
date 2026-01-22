@@ -63,7 +63,7 @@ export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   );
 };
 
-export const StructureDefence = ({
+const StructureDefence = ({
   maxDefenses,
   troops,
   cooldownSlots,

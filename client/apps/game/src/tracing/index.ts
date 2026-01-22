@@ -66,7 +66,7 @@ export async function cleanupTracing(): Promise<void> {
 }
 
 // Convenience function to wrap async operations with tracing
-export async function tracedOperation<T>(
+async function tracedOperation<T>(
   name: string,
   operation: () => Promise<T>,
   metadata?: Record<string, any>,
@@ -91,7 +91,7 @@ export async function tracedOperation<T>(
 }
 
 // Integration helpers for common patterns
-export const TracingHelpers = {
+const TracingHelpers = {
   // Wrap a function with automatic tracing
   traced<T extends (...args: any[]) => any>(fn: T, name?: string): T {
     const fnName = name || fn.name || "anonymous";
@@ -158,12 +158,12 @@ export const TracingHelpers = {
 };
 
 // Type definitions for instrumented components
-export interface TracedComponent {
+interface TracedComponent {
   displayName: string;
   traceId?: string;
 }
 
-export interface TracedOperation {
+interface TracedOperation {
   name: string;
   startTime: number;
   endTime?: number;
@@ -172,8 +172,8 @@ export interface TracedOperation {
   error?: Error;
 }
 
-// Export a default configuration object
-export const defaultTracingConfig = {
+// Default configuration object (used internally)
+const defaultTracingConfig = {
   enabled: env.VITE_TRACING_ENABLED !== false,
   endpoint: env.VITE_TRACING_ENDPOINT || "http://localhost:4318/v1/traces",
   sampleRate: parseFloat(env.VITE_TRACING_SAMPLE_RATE || "0.1"),
