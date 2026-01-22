@@ -1,4 +1,7 @@
 use core::num::traits::Zero;
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{ResourceTypes, blitz_produceable_resources};
 use crate::models::config::{
@@ -23,9 +26,6 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
 };
 use crate::systems::utils::structure::iStructureImpl;
 use crate::systems::utils::troop::iMercenariesImpl;
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use starknet::ContractAddress;
 
 #[generate_trait]
 pub impl iVillageImpl of iVillageTrait {
@@ -71,28 +71,12 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
 
     fn resources() -> Array<u8> {
         array![
-            ResourceTypes::WOOD,
-            ResourceTypes::STONE,
-            ResourceTypes::COAL,
-            ResourceTypes::COPPER,
-            ResourceTypes::OBSIDIAN,
-            ResourceTypes::SILVER,
-            ResourceTypes::IRONWOOD,
-            ResourceTypes::COLD_IRON,
-            ResourceTypes::GOLD,
-            ResourceTypes::HARTWOOD,
-            ResourceTypes::DIAMONDS,
-            ResourceTypes::SAPPHIRE,
-            ResourceTypes::RUBY,
-            ResourceTypes::DEEP_CRYSTAL,
-            ResourceTypes::IGNIUM,
-            ResourceTypes::ETHEREAL_SILICA,
-            ResourceTypes::TRUE_ICE,
-            ResourceTypes::TWILIGHT_QUARTZ,
-            ResourceTypes::ALCHEMICAL_SILVER,
-            ResourceTypes::ADAMANTINE,
-            ResourceTypes::MITHRAL,
-            ResourceTypes::DRAGONHIDE,
+            ResourceTypes::WOOD, ResourceTypes::STONE, ResourceTypes::COAL, ResourceTypes::COPPER,
+            ResourceTypes::OBSIDIAN, ResourceTypes::SILVER, ResourceTypes::IRONWOOD, ResourceTypes::COLD_IRON,
+            ResourceTypes::GOLD, ResourceTypes::HARTWOOD, ResourceTypes::DIAMONDS, ResourceTypes::SAPPHIRE,
+            ResourceTypes::RUBY, ResourceTypes::DEEP_CRYSTAL, ResourceTypes::IGNIUM, ResourceTypes::ETHEREAL_SILICA,
+            ResourceTypes::TRUE_ICE, ResourceTypes::TWILIGHT_QUARTZ, ResourceTypes::ALCHEMICAL_SILVER,
+            ResourceTypes::ADAMANTINE, ResourceTypes::MITHRAL, ResourceTypes::DRAGONHIDE,
         ]
     }
 

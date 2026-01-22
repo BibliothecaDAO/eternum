@@ -1,4 +1,7 @@
 use core::num::traits::zero::Zero;
+use dojo::event::EventStorage;
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
 use crate::constants::{
     DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, split_blitz_exploration_reward_and_probs,
@@ -32,9 +35,6 @@ use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_libra
 use crate::systems::utils::map::IMapImpl;
 use crate::utils::map::biomes::Biome;
 use crate::utils::math::PercentageValueImpl;
-use dojo::event::EventStorage;
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 
 
 #[generate_trait]
@@ -135,11 +135,7 @@ pub impl iGuardImpl of iGuardTrait {
 pub impl iExplorerImpl of iExplorerTrait {
     fn attempt_move_to_adjacent_tile(ref world: WorldStorage, ref explorer: ExplorerTroops, ref current_tile: Tile) {
         let adjacent_directions = array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
         ];
         let current_coord: Coord = current_tile.into();

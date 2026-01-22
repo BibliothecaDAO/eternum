@@ -2,9 +2,9 @@ use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use core::traits::{Into, TryInto};
+use dojo::world::WorldStorage;
 use crate::models::config::WorldConfigUtilImpl;
 use crate::utils::number::NumberTrait;
-use dojo::world::WorldStorage;
 
 // todo@credence revisit zone calculation
 
@@ -153,11 +153,7 @@ pub enum Direction {
 pub impl DirectionImpl of DirectionTrait {
     fn all() -> Array<Direction> {
         array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
         ]
     }

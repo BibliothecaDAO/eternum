@@ -1,5 +1,5 @@
-use crate::constants::DEFAULT_NS;
 use dojo::world::IWorldDispatcher;
+use crate::constants::DEFAULT_NS;
 
 #[generate_trait]
 pub impl CustomDojoWorldImpl of CustomDojoWorldTrait {

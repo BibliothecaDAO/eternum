@@ -1,11 +1,11 @@
+use dojo::event::EventStorage;
+use dojo::world::WorldStorage;
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{CapacityConfig, WorldConfigUtilImpl};
 use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl};
 use crate::models::weight::Weight;
-use dojo::event::EventStorage;
-use dojo::world::WorldStorage;
-use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::event(historical: false)]

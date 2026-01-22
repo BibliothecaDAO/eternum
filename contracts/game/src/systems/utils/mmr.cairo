@@ -13,9 +13,9 @@
 // 7. Mean Regression: Δ_reg = Δ_tier - λ × (MMR - μ)
 // 8. New Rating: MMR' = max(100, MMR + Δ_reg)
 
-use crate::models::mmr::MMRConfig;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use starknet::ContractAddress;
+use crate::models::mmr::MMRConfig;
 
 
 // ================================
@@ -391,9 +391,9 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::mmr::MMRConfigDefaultImpl;
     use cubit::f128::types::fixed::FixedTrait;
     use starknet::ContractAddress;
+    use crate::models::mmr::MMRConfigDefaultImpl;
     use super::MMRCalculatorImpl;
 
     // ================================

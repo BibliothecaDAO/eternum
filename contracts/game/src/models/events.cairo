@@ -1,7 +1,7 @@
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::position::{Coord, Direction};
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
-use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event(historical: false)]

@@ -15,10 +15,10 @@ mod tests {
     use crate::systems::combat::contracts::troop_battle::{
         ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
     };
-    use crate::utils::testing::snf_helpers::{
-        MOCK_TROOP_LIMIT_CONFIG, snf_attack_explorer_vs_explorer, snf_attack_explorer_vs_guard,
-        snf_attack_guard_vs_explorer, snf_get_combat_systems, snf_get_explorer, snf_setup_explorer_battle,
-        snf_setup_guard_battle, snf_spawn_combat_world, snf_spawn_world_minimal,
+    use crate::utils::testing::helpers::{
+        MOCK_TROOP_LIMIT_CONFIG, attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer,
+        get_combat_systems, get_explorer, setup_explorer_battle, setup_guard_battle, spawn_combat_world,
+        spawn_world_minimal,
     };
 
     // ========================================================================
@@ -27,13 +27,13 @@ mod tests {
 
     #[test]
     fn test_world_spawns() {
-        let world = snf_spawn_world_minimal();
+        let world = spawn_world_minimal();
         assert!(world.dispatcher.contract_address.is_non_zero(), "World should exist");
     }
 
     #[test]
     fn test_explorer_can_be_created() {
-        let mut world = snf_spawn_world_minimal();
+        let mut world = spawn_world_minimal();
 
         let explorer_id: u32 = 1;
         let owner_id: u32 = 100;
@@ -59,8 +59,8 @@ mod tests {
 
     #[test]
     fn test_systems_can_be_deployed() {
-        let mut world = snf_spawn_combat_world();
-        let systems = snf_get_combat_systems(ref world);
+        let mut world = spawn_combat_world();
+        let systems = get_combat_systems(ref world);
 
         assert!(systems.troop_management.is_non_zero(), "Troop management system should be deployed");
         assert!(systems.troop_movement.is_non_zero(), "Troop movement system should be deployed");
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_library_can_be_found() {
-        let world = snf_spawn_combat_world();
+        let world = spawn_combat_world();
 
         let result = world.dns(@"structure_creation_library_v0_1_8");
         assert!(result.is_some(), "structure_creation_library_v0_1_8 should be found");
@@ -85,20 +85,18 @@ mod tests {
     #[test]
     fn test_explorer_vs_explorer_one_dies() {
         // Setup battle: Crossbowman T2 vs Paladin T3 (T3 wins)
-        let (mut world, systems, first_explorer, second_explorer) = snf_setup_explorer_battle(
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
             TroopType::Crossbowman, TroopTier::T2, TroopType::Paladin, TroopTier::T3,
         );
 
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // Attack
-        snf_attack_explorer_vs_explorer(
-            ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West,
-        );
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
 
         // Verify battle results
-        let first = snf_get_explorer(ref world, first_explorer.explorer_id);
-        let second = snf_get_explorer(ref world, second_explorer.explorer_id);
+        let first = get_explorer(ref world, first_explorer.explorer_id);
+        let second = get_explorer(ref world, second_explorer.explorer_id);
 
         assert!(first.troops.count < troop_amount, "First explorer should have taken damage");
         assert!(second.troops.count < troop_amount, "Second explorer should have taken damage");
@@ -119,20 +117,18 @@ mod tests {
     #[test]
     fn test_explorer_vs_explorer_both_live() {
         // Setup battle: Knight T1 vs Knight T1 (same tier = both survive)
-        let (mut world, systems, first_explorer, second_explorer) = snf_setup_explorer_battle(
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // Attack
-        snf_attack_explorer_vs_explorer(
-            ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West,
-        );
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
 
         // Verify both survived with damage
-        let first = snf_get_explorer(ref world, first_explorer.explorer_id);
-        let second = snf_get_explorer(ref world, second_explorer.explorer_id);
+        let first = get_explorer(ref world, first_explorer.explorer_id);
+        let second = get_explorer(ref world, second_explorer.explorer_id);
 
         assert!(first.troops.count < troop_amount, "First explorer should have taken damage");
         assert!(second.troops.count < troop_amount, "Second explorer should have taken damage");
@@ -147,7 +143,7 @@ mod tests {
     #[test]
     #[should_panic(expected: ('Not Owner',))]
     fn test_explorer_vs_explorer__fails_not_owner() {
-        let (mut world, systems, first_explorer, second_explorer) = snf_setup_explorer_battle(
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -166,7 +162,7 @@ mod tests {
     #[test]
     #[should_panic(expected: "explorers are not adjacent")]
     fn test_explorer_vs_explorer__fails_not_adjacent() {
-        let (mut world, systems, first_explorer, second_explorer) = snf_setup_explorer_battle(
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -184,7 +180,7 @@ mod tests {
     #[test]
     #[should_panic(expected: "aggressor has no troops")]
     fn test_explorer_vs_explorer__fails_aggressor_dead() {
-        let (mut world, systems, first_explorer, second_explorer) = snf_setup_explorer_battle(
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -194,15 +190,13 @@ mod tests {
         world.write_model_test(@attacker);
 
         // Try to attack with dead explorer
-        snf_attack_explorer_vs_explorer(
-            ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West,
-        );
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
     }
 
     #[test]
     #[should_panic(expected: "defender has no troops")]
     fn test_explorer_vs_explorer__fails_defender_dead() {
-        let (mut world, systems, first_explorer, second_explorer) = snf_setup_explorer_battle(
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -212,9 +206,7 @@ mod tests {
         world.write_model_test(@defender);
 
         // Try to attack dead defender
-        snf_attack_explorer_vs_explorer(
-            ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West,
-        );
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
     }
 
     // ========================================================================
@@ -224,17 +216,17 @@ mod tests {
     #[test]
     fn test_explorer_vs_guard_battle() {
         // Setup: Explorer T3 vs Guard T1 (Explorer should win)
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Paladin, TroopTier::T3,
         );
 
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // Attack
-        snf_attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
 
         // Verify battle results
-        let explorer_after = snf_get_explorer(ref world, explorer.explorer_id);
+        let explorer_after = get_explorer(ref world, explorer.explorer_id);
         assert!(explorer_after.troops.count < troop_amount, "Explorer should have taken damage");
         assert!(explorer_after.troops.count > 0, "Explorer T3 should survive vs Guard T1");
     }
@@ -242,7 +234,7 @@ mod tests {
     #[test]
     #[should_panic(expected: ('Not Owner',))]
     fn test_explorer_vs_guard__fails_not_owner() {
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -258,7 +250,7 @@ mod tests {
     #[test]
     #[should_panic(expected: "aggressor has no troops")]
     fn test_explorer_vs_guard__fails_aggressor_has_no_troops() {
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -268,18 +260,18 @@ mod tests {
         world.write_model_test(@attacker);
 
         // Try to attack with dead explorer
-        snf_attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
     }
 
     #[test]
     #[should_panic(expected: "explorer is not adjacent to structure")]
     fn test_explorer_vs_guard__fails_not_adjacent() {
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
         // Try to attack with wrong direction (not adjacent)
-        snf_attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::NorthEast);
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::NorthEast);
     }
 
     // ========================================================================
@@ -289,26 +281,24 @@ mod tests {
     #[test]
     fn test_guard_vs_explorer_battle() {
         // Setup: Guard T3 vs Explorer T1 (Guard should win)
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Paladin, TroopTier::T3, TroopType::Knight, TroopTier::T1,
         );
 
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // Attack
-        snf_attack_guard_vs_explorer(
-            ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East,
-        );
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East);
 
         // Verify battle results
-        let explorer_after = snf_get_explorer(ref world, explorer.explorer_id);
+        let explorer_after = get_explorer(ref world, explorer.explorer_id);
         assert!(explorer_after.troops.count < troop_amount, "Explorer should have taken damage");
     }
 
     #[test]
     #[should_panic(expected: ('Not Owner',))]
     fn test_guard_vs_explorer__fails_not_owner() {
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -324,20 +314,18 @@ mod tests {
     #[test]
     #[should_panic(expected: "slot can't be selected")]
     fn test_guard_vs_explorer__fails_guard_slot_not_selectable() {
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
         // Try to attack with an empty guard slot (Alpha instead of Delta)
-        snf_attack_guard_vs_explorer(
-            ref world, systems, realm, GuardSlot::Alpha, explorer.explorer_id, Direction::East,
-        );
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Alpha, explorer.explorer_id, Direction::East);
     }
 
     #[test]
     #[should_panic(expected: "defender has no troops")]
     fn test_guard_vs_explorer__fails_defender_has_no_troops() {
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
@@ -347,20 +335,18 @@ mod tests {
         world.write_model_test(@defender);
 
         // Try to attack dead defender
-        snf_attack_guard_vs_explorer(
-            ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East,
-        );
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East);
     }
 
     #[test]
     #[should_panic(expected: "structure is not adjacent to explorer")]
     fn test_guard_vs_explorer__fails_not_adjacent() {
-        let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
         // Try to attack with wrong direction (not adjacent)
-        snf_attack_guard_vs_explorer(
+        attack_guard_vs_explorer(
             ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::NorthEast,
         );
     }

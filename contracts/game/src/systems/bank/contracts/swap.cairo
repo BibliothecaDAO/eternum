@@ -8,6 +8,10 @@ pub trait ISwapSystems<T> {
 
 #[dojo::contract]
 pub mod swap_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::bank::market::{Market, MarketTrait};
@@ -21,10 +25,6 @@ pub mod swap_systems {
     };
     use crate::models::weight::Weight;
     use crate::systems::utils::resource::iResourceTransferImpl;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]

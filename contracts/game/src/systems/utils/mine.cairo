@@ -1,4 +1,5 @@
 use core::num::traits::zero::Zero;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
     MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
@@ -19,7 +20,6 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
 };
 use crate::systems::utils::structure::iStructureImpl;
 use crate::systems::utils::troop::iMercenariesImpl;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {

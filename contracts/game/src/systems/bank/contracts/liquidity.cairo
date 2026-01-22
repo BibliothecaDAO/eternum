@@ -11,6 +11,10 @@ trait ILiquiditySystems<T> {
 mod liquidity_systems {
     // Extenal imports
     use core::num::traits::Zero;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use starknet::ContractAddress;
     // Eternum imports
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
@@ -30,10 +34,6 @@ mod liquidity_systems {
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
     use crate::systems::utils::resource::iResourceTransferImpl;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]

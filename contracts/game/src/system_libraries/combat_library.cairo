@@ -18,10 +18,10 @@ pub trait ICombatLibrary<T> {
 
 #[dojo::library]
 mod combat_library {
+    use dojo::world::{WorldStorage, WorldStorageTrait};
     use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
     use crate::models::troop::{Troops, TroopsTrait};
     use crate::utils::map::biomes::Biome;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
 
     #[abi(embed_v0)]
     pub impl CombatLibraryImpl of super::ICombatLibrary<ContractState> {

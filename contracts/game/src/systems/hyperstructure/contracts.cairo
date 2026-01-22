@@ -1,6 +1,6 @@
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::hyperstructure::ConstructionAccess;
-use starknet::ContractAddress;
 
 /// # Hyperstructure Systems Interface
 ///
@@ -146,6 +146,10 @@ trait IHyperstructureSystems<T> {
 pub mod hyperstructure_systems {
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
@@ -173,10 +177,6 @@ pub mod hyperstructure_systems {
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use starknet::ContractAddress;
 
 
     const HYPERSTRUCTURE_POINT_MULTIPLIER: u128 = 1_000_000;

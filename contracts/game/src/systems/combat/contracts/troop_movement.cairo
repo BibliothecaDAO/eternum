@@ -12,6 +12,10 @@ pub trait ITroopMovementSystems<TContractState> {
 #[dojo::contract]
 pub mod troop_movement_systems {
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
@@ -41,10 +45,6 @@ pub mod troop_movement_systems {
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
-    use starknet::ContractAddress;
     use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
     // to be removed
@@ -456,6 +456,8 @@ pub trait ITroopMovementUtilSystems<T> {
 
 #[dojo::contract]
 pub mod troop_movement_util_systems {
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
         CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
@@ -471,8 +473,6 @@ pub mod troop_movement_util_systems {
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use dojo::model::ModelStorage;
-    use dojo::world::WorldStorageTrait;
     use super::{
         ITroopMovementUtilSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait,
     };
@@ -641,6 +641,7 @@ pub mod troop_movement_util_systems {
 
 #[dojo::contract]
 pub mod hyperstructure_discovery_systems {
+    use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
@@ -651,7 +652,6 @@ pub mod hyperstructure_discovery_systems {
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use dojo::world::WorldStorageTrait;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -702,6 +702,7 @@ pub mod hyperstructure_discovery_systems {
 
 #[dojo::contract]
 pub mod mine_discovery_systems {
+    use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
@@ -712,7 +713,6 @@ pub mod mine_discovery_systems {
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use dojo::world::WorldStorageTrait;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -759,6 +759,7 @@ pub mod mine_discovery_systems {
 
 #[dojo::contract]
 pub mod village_discovery_systems {
+    use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
@@ -770,7 +771,6 @@ pub mod village_discovery_systems {
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use crate::systems::utils::village::iVillageDiscoveryImpl;
-    use dojo::world::WorldStorageTrait;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -811,6 +811,7 @@ pub mod village_discovery_systems {
 
 #[dojo::contract]
 pub mod agent_discovery_systems {
+    use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::agent::AgentCountImpl;
     use crate::models::config::{
@@ -822,7 +823,6 @@ pub mod agent_discovery_systems {
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use dojo::world::WorldStorageTrait;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -866,6 +866,7 @@ pub mod agent_discovery_systems {
 
 #[dojo::contract]
 pub mod relic_chest_discovery_systems {
+    use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::agent::AgentCountImpl;
     use crate::models::config::{
@@ -876,7 +877,6 @@ pub mod relic_chest_discovery_systems {
     use crate::models::map::Tile;
     use crate::models::record::{RelicRecord, WorldRecordImpl};
     use crate::systems::utils::relic::iRelicChestDiscoveryImpl;
-    use dojo::world::WorldStorageTrait;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]

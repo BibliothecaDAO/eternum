@@ -1,4 +1,7 @@
 use core::num::traits::Zero;
+use dojo::event::EventStorage;
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use crate::alias::ID;
 use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
@@ -29,9 +32,6 @@ use crate::systems::utils::troop::iExplorerImpl;
 use crate::systems::utils::village::iVillageImpl;
 use crate::utils::map::biomes::Biome;
 use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
-use dojo::event::EventStorage;
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 
 #[generate_trait]
 pub impl iStructureImpl of IStructureTrait {
@@ -105,11 +105,7 @@ pub impl iStructureImpl of IStructureTrait {
 
         // explore all tiles around the structure, as well as village spots
         let structure_surrounding = array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
         ];
         let mut possible_village_slots: Array<Direction> = array![];

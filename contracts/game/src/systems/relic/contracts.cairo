@@ -17,6 +17,10 @@ pub trait IRelicSystems<T> {
 
 #[dojo::contract]
 pub mod relic_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, relic_essence_cost};
     use crate::models::config::{
@@ -47,10 +51,6 @@ pub mod relic_systems {
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use crate::utils::random::VRFImpl;
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use starknet::ContractAddress;
     use super::RelicRecipientTypeParam;
 
 

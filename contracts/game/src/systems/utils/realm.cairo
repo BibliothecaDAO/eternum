@@ -1,3 +1,6 @@
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, WorldConfigUtilImpl};
 use crate::models::map::{TileImpl, TileOccupier};
@@ -15,9 +18,6 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,
 };
 use crate::systems::utils::structure::iStructureImpl;
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait ISeasonPass<TState> {

@@ -1,3 +1,5 @@
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
 use crate::constants::{
     RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, relic_level,
@@ -19,8 +21,6 @@ use crate::systems::utils::structure::iStructureImpl;
 use crate::systems::utils::troop::iMercenariesImpl;
 use crate::utils::map::biomes::Biome;
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 
 #[generate_trait]
 pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {

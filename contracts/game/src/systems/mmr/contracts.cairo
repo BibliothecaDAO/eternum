@@ -3,8 +3,8 @@
 // Handles MMR updates for Blitz games after rankings are finalized.
 // Called by prize_distribution_systems when a game completes.
 
-use crate::models::mmr::{GameMMRRecord, PlayerMMRStats};
 use starknet::ContractAddress;
+use crate::models::mmr::{GameMMRRecord, PlayerMMRStats};
 
 /// Interface for the MMR token contract
 #[starknet::interface]
@@ -50,19 +50,18 @@ pub trait IMMRSystems<T> {
 #[dojo::contract]
 pub mod mmr_systems {
     use core::num::traits::Zero;
-    use crate::constants::DEFAULT_NS;
-    use crate::models::config::WorldConfigUtilImpl;
-    use crate::models::mmr::{
-        GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, PlayerMMRStats, PlayerMMRStatsTrait, SeriesMMRConfig,
-    };
-    use crate::models::config::BlitzRegistrationConfig;
-    use crate::models::rank::{PlayersRankTrial, RankList, RankPrize};
-    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
-    use crate::systems::utils::mmr::MMRCalculatorImpl;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{BlitzRegistrationConfig, WorldConfigUtilImpl};
+    use crate::models::mmr::{
+        GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, PlayerMMRStats, PlayerMMRStatsTrait, SeriesMMRConfig,
+    };
+    use crate::models::rank::{PlayersRankTrial, RankList, RankPrize};
+    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::systems::utils::mmr::MMRCalculatorImpl;
     use super::{IMMRSystems, IMMRTokenDispatcher, IMMRTokenDispatcherTrait};
 
     // ================================
@@ -140,8 +139,9 @@ pub mod mmr_systems {
             }
 
             // Check minimum entry fee
-            let blitz_registration_config: BlitzRegistrationConfig =
-                WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
             if blitz_registration_config.fee_amount < mmr_config.min_entry_fee {
                 return;
             }
@@ -291,8 +291,9 @@ pub mod mmr_systems {
             }
 
             // Check minimum entry fee
-            let blitz_registration_config: BlitzRegistrationConfig =
-                WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
             if blitz_registration_config.fee_amount < mmr_config.min_entry_fee {
                 return;
             }

@@ -1,7 +1,7 @@
-use crate::alias::ID;
-use crate::constants::WORLD_CONFIG_ID;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
+use crate::alias::ID;
+use crate::constants::WORLD_CONFIG_ID;
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]

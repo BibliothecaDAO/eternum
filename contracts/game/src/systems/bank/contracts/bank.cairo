@@ -14,6 +14,8 @@ pub trait IBankSystems<T> {
 
 #[dojo::contract]
 pub mod bank_systems {
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
     use crate::alias::ID;
     use crate::constants::{
         DEFAULT_NS, REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_FOUR_ID, REGIONAL_BANK_ONE_ID, REGIONAL_BANK_SIX_ID,
@@ -33,8 +35,6 @@ pub mod bank_systems {
     use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::iMercenariesImpl;
-    use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
 
     const MAX_BANK_COUNT: u8 = 6;
 
@@ -51,12 +51,8 @@ pub mod bank_systems {
 
             let caller = starknet::get_caller_address();
             let mut bank_ids = array![
-                REGIONAL_BANK_ONE_ID,
-                REGIONAL_BANK_TWO_ID,
-                REGIONAL_BANK_THREE_ID,
-                REGIONAL_BANK_FOUR_ID,
-                REGIONAL_BANK_FIVE_ID,
-                REGIONAL_BANK_SIX_ID,
+                REGIONAL_BANK_ONE_ID, REGIONAL_BANK_TWO_ID, REGIONAL_BANK_THREE_ID, REGIONAL_BANK_FOUR_ID,
+                REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_SIX_ID,
             ];
             let structure_creation_library = structure_creation_library::get_dispatcher(@world);
             for bank in banks {

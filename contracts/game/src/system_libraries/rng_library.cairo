@@ -41,12 +41,12 @@ pub trait IRNGlibrary<T> {
 
 #[dojo::library]
 mod rng_library {
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::models::config::WorldConfigUtilImpl;
     use crate::models::rng::RNGImpl;
     use crate::utils::random;
     use crate::utils::random::VRFImpl;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use starknet::ContractAddress;
 
     /// RNG helpers centralizing VRF seeding and weighted choices.
     ///

@@ -14,6 +14,10 @@ pub trait IBlitzRealmSystems<T> {
 #[dojo::contract]
 pub mod blitz_realm_systems {
     use core::num::traits::{Bounded, Zero};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
     use crate::models::config::{
@@ -48,10 +52,6 @@ pub mod blitz_realm_systems {
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::collectibles::iCollectiblesImpl;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
