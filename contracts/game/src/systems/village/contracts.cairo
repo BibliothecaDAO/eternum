@@ -9,6 +9,8 @@ pub trait IVillageSystems<T> {
 #[dojo::contract]
 pub mod village_systems {
     use core::num::traits::zero::Zero;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
@@ -27,8 +29,6 @@ pub mod village_systems {
     use crate::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]

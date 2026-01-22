@@ -1,6 +1,9 @@
 use alexandria_math::BitShift;
 use core::num::traits::zero::Zero;
 use core::traits::Into;
+use dojo::model::{Model, ModelStorage};
+use dojo::world::WorldStorage;
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::config::{
     BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickInterval, TickTrait, WorldConfigUtilImpl,
@@ -8,9 +11,6 @@ use crate::models::config::{
 use crate::models::position::{Coord, Direction};
 use crate::models::stamina::Stamina;
 use crate::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
-use dojo::model::{Model, ModelStorage};
-use dojo::world::WorldStorage;
-use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]

@@ -22,7 +22,7 @@ const sizeClassMap = {
   md: "px-2.5 py-1.5 text-xs",
 };
 
-export const KbdKey = ({ children, className, variant = "modifier", size = "sm", ...props }: KbdKeyProps) => (
+const KbdKey = ({ children, className, variant = "modifier", size = "sm", ...props }: KbdKeyProps) => (
   <kbd className={clsx(baseClass, variantClassMap[variant], sizeClassMap[size], className)} {...props}>
     {children}
   </kbd>

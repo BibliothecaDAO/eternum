@@ -1,6 +1,6 @@
 import { AudioAsset, AudioCategory } from "../types";
 
-export const AUDIO_REGISTRY: Record<string, AudioAsset> = {
+const AUDIO_REGISTRY: Record<string, AudioAsset> = {
   // === UI SOUNDS ===
   "ui.click": {
     id: "ui.click",
@@ -957,11 +957,11 @@ export const AUDIO_REGISTRY: Record<string, AudioAsset> = {
   },
 };
 
-export function getAudioAsset(id: string): AudioAsset | undefined {
+function getAudioAsset(id: string): AudioAsset | undefined {
   return AUDIO_REGISTRY[id];
 }
 
-export function getAssetsByCategory(category: AudioCategory): AudioAsset[] {
+function getAssetsByCategory(category: AudioCategory): AudioAsset[] {
   return Object.values(AUDIO_REGISTRY).filter((asset) => asset.category === category);
 }
 

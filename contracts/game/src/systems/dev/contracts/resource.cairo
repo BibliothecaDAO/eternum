@@ -7,6 +7,7 @@ pub trait IResourceSystems<T> {
 
 #[dojo::contract]
 pub mod dev_resource_systems {
+    use dojo::world::WorldStorage;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::resource::resource::{
@@ -15,7 +16,6 @@ pub mod dev_resource_systems {
     use crate::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
     use crate::models::weight::{Weight, WeightImpl};
     use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
-    use dojo::world::WorldStorage;
 
 
     #[abi(embed_v0)]

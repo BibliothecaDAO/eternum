@@ -11,7 +11,7 @@ const SOFT_LABEL_COLOR = "#f6f1e5";
 /**
  * Clean text by removing null characters and trimming whitespace
  */
-export const cleanText = (text?: string): string => {
+const cleanText = (text?: string): string => {
   if (!text) return "";
   return text
     .toString()
@@ -37,7 +37,7 @@ const GUILD_COLOR_SETS = [
 /**
  * Get guild color set based on guild name
  */
-export const getGuildColorSet = (guildName: string) => {
+const getGuildColorSet = (guildName: string) => {
   const cleanedName = cleanText(guildName);
   const firstChar = cleanedName.length > 0 ? cleanedName.charAt(0).toLowerCase() : "a";
   const charCode = firstChar.charCodeAt(0);
@@ -57,7 +57,7 @@ export const getGuildColorSet = (guildName: string) => {
 /**
  * Tier style configuration
  */
-export const getTierStyle = (tier: number): string => {
+const getTierStyle = (tier: number): string => {
   switch (tier) {
     case 1:
       return "bg-gradient-to-b from-blue-500/30 to-blue-500/10 border-blue-400/40 text-blue-300 shadow-blue-500/10";
@@ -73,13 +73,13 @@ export const getTierStyle = (tier: number): string => {
 /**
  * Troop tier to stars mapping
  */
-export const TIERS_TO_STARS: Record<TroopTier, string> = {
+const TIERS_TO_STARS: Record<TroopTier, string> = {
   [TroopTier.T1]: "⭐",
   [TroopTier.T2]: "⭐⭐",
   [TroopTier.T3]: "⭐⭐⭐",
 };
 
-export const formatCompactNumber = (value?: number | null): string => {
+const formatCompactNumber = (value?: number | null): string => {
   if (value === undefined || value === null) {
     return "";
   }
@@ -111,7 +111,7 @@ const formatStaminaPercent = (current: number, max: number): string => {
 /**
  * Building type to resource icon mapping
  */
-export const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
+const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
   [BuildingType.ResourceWood]: "Wood",
   [BuildingType.ResourceStone]: "Stone",
   [BuildingType.ResourceCoal]: "Coal",
@@ -155,7 +155,7 @@ export const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
 /**
  * Get troop resource ID from category name
  */
-export const getTroopResourceIdFromCategory = (category: string | null): number | null => {
+const getTroopResourceIdFromCategory = (category: string | null): number | null => {
   if (!category) return null;
 
   const lowered = cleanText(category).toLowerCase();
@@ -182,7 +182,7 @@ export const getTroopResourceIdFromCategory = (category: string | null): number 
 /**
  * Create owner display element (name + guild badge)
  */
-export interface OwnerDisplayOptions {
+interface OwnerDisplayOptions {
   owner: {
     address: bigint;
     ownerName?: string;
@@ -195,7 +195,7 @@ export interface OwnerDisplayOptions {
   isDaydreamsAgent?: boolean;
 }
 
-export interface OwnerDisplayOptions {
+interface OwnerDisplayOptions {
   owner: {
     address: bigint;
     ownerName?: string;
@@ -742,7 +742,7 @@ const formatTime = (seconds: number): string => {
 /**
  * Create battle timer component
  */
-export const createBattleTimer = (battleTimerLeft: number): HTMLElement => {
+const createBattleTimer = (battleTimerLeft: number): HTMLElement => {
   const timerDiv = document.createElement("div");
   timerDiv.classList.add(
     "flex",
@@ -776,7 +776,7 @@ export const createBattleTimer = (battleTimerLeft: number): HTMLElement => {
 /**
  * Update battle timer
  */
-export const updateBattleTimer = (timerElement: HTMLElement, battleTimerLeft: number): void => {
+const updateBattleTimer = (timerElement: HTMLElement, battleTimerLeft: number): void => {
   const textElement = timerElement.querySelector("[data-role='timer-text']") as HTMLElement;
   if (textElement) {
     textElement.textContent = formatTime(battleTimerLeft);

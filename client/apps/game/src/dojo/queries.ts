@@ -463,7 +463,7 @@ export const getBuildingsFromTorii = async <S extends Schema>(
   return getEntities(client, query, components as any, [], ["s1_eternum-Building"], EVENT_QUERY_LIMIT, false);
 };
 
-export const getMapFromTorii = async <S extends Schema>(
+const getMapFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   startCol: number,

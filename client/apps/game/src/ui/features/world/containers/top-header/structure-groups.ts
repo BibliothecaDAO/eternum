@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-export const STRUCTURE_GROUPS_STORAGE_KEY = "structureGroups";
+const STRUCTURE_GROUPS_STORAGE_KEY = "structureGroups";
 const STRUCTURE_GROUPS_EVENT = "structureGroups:updated";
 
 export const STRUCTURE_GROUP_COLORS = [
@@ -36,7 +36,7 @@ const sanitizeGroupValue = (value: unknown): StructureGroupColor | undefined => 
   return undefined;
 };
 
-export const loadStructureGroups = (): StructureGroupsMap => {
+const loadStructureGroups = (): StructureGroupsMap => {
   if (typeof window === "undefined") {
     return {} as StructureGroupsMap;
   }
@@ -77,7 +77,7 @@ export const loadStructureGroups = (): StructureGroupsMap => {
   }
 };
 
-export const saveStructureGroups = (groups: StructureGroupsMap): void => {
+const saveStructureGroups = (groups: StructureGroupsMap): void => {
   if (typeof window === "undefined") {
     return;
   }
@@ -90,7 +90,7 @@ export const saveStructureGroups = (groups: StructureGroupsMap): void => {
   }
 };
 
-export const getNextStructureGroupColor = (current: StructureGroupColor | null): StructureGroupColor | null => {
+const getNextStructureGroupColor = (current: StructureGroupColor | null): StructureGroupColor | null => {
   const values = STRUCTURE_GROUP_COLORS.map((config) => config.value);
 
   if (current === null) {

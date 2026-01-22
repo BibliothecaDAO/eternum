@@ -1,7 +1,7 @@
 import { captureError as postHogCaptureError, captureSystemError as postHogCaptureSystemError } from "@/posthog";
 import { getCurrentSpan, recordError as recordSpanError, getCurrentTraceId, addEvent } from "../tracer";
 
-export interface ErrorContext {
+interface ErrorContext {
   component?: string;
   action?: string;
   userId?: string;
@@ -12,7 +12,7 @@ export interface ErrorContext {
   [key: string]: any;
 }
 
-export interface TracedError extends Error {
+interface TracedError extends Error {
   traceId?: string;
   spanId?: string;
   timestamp: number;
@@ -21,7 +21,7 @@ export interface TracedError extends Error {
   breadcrumbs: Breadcrumb[];
 }
 
-export interface Breadcrumb {
+interface Breadcrumb {
   timestamp: number;
   type: "navigation" | "click" | "api" | "state" | "custom";
   category: string;
@@ -309,10 +309,10 @@ class ErrorReporter {
 // Create singleton instance
 export const errorReporter = new ErrorReporter();
 
-// Export convenience functions
-export const reportError = errorReporter.reportError.bind(errorReporter);
+// Convenience functions (some exported, some internal)
+const reportError = errorReporter.reportError.bind(errorReporter);
 export const addBreadcrumb = errorReporter.addBreadcrumb.bind(errorReporter);
-export const reportNetworkError = errorReporter.reportNetworkError.bind(errorReporter);
-export const reportGameError = errorReporter.reportGameError.bind(errorReporter);
-export const reportRenderError = errorReporter.reportRenderError.bind(errorReporter);
-export const reportSystemError = errorReporter.reportSystemError.bind(errorReporter);
+const reportNetworkError = errorReporter.reportNetworkError.bind(errorReporter);
+const reportGameError = errorReporter.reportGameError.bind(errorReporter);
+const reportRenderError = errorReporter.reportRenderError.bind(errorReporter);
+const reportSystemError = errorReporter.reportSystemError.bind(errorReporter);

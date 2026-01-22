@@ -22,7 +22,7 @@ interface GameManifestLike {
   contracts?: ContractManifest[];
 }
 
-export const buildPaymasterActions = (): PaymasterAction[] => {
+const buildPaymasterActions = (): PaymasterAction[] => {
   const chain = env.VITE_PUBLIC_CHAIN as Chain;
   const baseManifest = getGameManifest(chain) as unknown as GameManifestLike;
   const activeWorld = getActiveWorld();

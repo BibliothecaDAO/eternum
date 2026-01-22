@@ -59,7 +59,7 @@ export function incrementRateLimit(username: string): void {
 
 let cleanupIntervalId: NodeJS.Timeout | null = null;
 
-export function startRateLimitCleanup(): void {
+function startRateLimitCleanup(): void {
   if (cleanupIntervalId) {
     return;
   }
@@ -77,7 +77,7 @@ export function startRateLimitCleanup(): void {
   );
 }
 
-export function stopRateLimitCleanup(): void {
+function stopRateLimitCleanup(): void {
   if (cleanupIntervalId) {
     clearInterval(cleanupIntervalId);
     cleanupIntervalId = null;

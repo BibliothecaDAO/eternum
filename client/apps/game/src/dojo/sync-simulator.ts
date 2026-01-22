@@ -498,7 +498,7 @@ export function getSyncSimulator(): SyncSimulator {
   return simulatorInstance;
 }
 
-export function resetSyncSimulator(): void {
+function resetSyncSimulator(): void {
   if (simulatorInstance) {
     simulatorInstance.dispose();
     simulatorInstance = null;

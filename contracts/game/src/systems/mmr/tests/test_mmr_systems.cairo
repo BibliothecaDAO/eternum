@@ -7,19 +7,17 @@
 // - Game record creation
 
 use core::num::traits::Zero;
+use dojo::model::{Model, ModelStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use starknet::{ContractAddress, contract_address_const};
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
 use crate::models::config::{BlitzRegistrationConfig, WorldConfigUtilImpl};
 use crate::models::mmr::{GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, MMRGameMeta, SeriesMMRConfig};
 use crate::models::rank::{PlayerRank, PlayersRankTrial};
 use crate::systems::mmr::contracts::{IMMRSystems, IMMRSystemsDispatcher, IMMRSystemsDispatcherTrait};
 use crate::systems::utils::mmr::MMRCalculatorImpl;
-use dojo::model::{Model, ModelStorage, ModelStorageTest};
-use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-use dojo_snf_test::{
-    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-};
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
-use starknet::{ContractAddress, contract_address_const};
 
 
 // ================================
@@ -64,22 +62,16 @@ fn namespace_def() -> NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
             // Config models
-            TestResource::Model("WorldConfig"),
-            // MMR models
+            TestResource::Model("WorldConfig"), // MMR models
             TestResource::Model("PlayerMMRStats"),
-            TestResource::Model("GameMMRRecord"),
-            TestResource::Model("SeriesMMRConfig"),
-            TestResource::Model("MMRGameMeta"),
-            TestResource::Model("MMRClaimed"),
+            TestResource::Model("GameMMRRecord"), TestResource::Model("SeriesMMRConfig"),
+            TestResource::Model("MMRGameMeta"), TestResource::Model("MMRClaimed"),
             // Rank models (for trial data)
-            TestResource::Model("PlayersRankTrial"),
-            TestResource::Model("PlayerRank"),
+            TestResource::Model("PlayersRankTrial"), TestResource::Model("PlayerRank"),
             // MMR systems contract
-            TestResource::Contract("mmr_systems"),
-            // MMR events
+            TestResource::Contract("mmr_systems"), // MMR events
             TestResource::Event("MMRGameProcessed"),
-            TestResource::Event("MMRGameCommitted"),
-            TestResource::Event("PlayerMMRChanged"),
+            TestResource::Event("MMRGameCommitted"), TestResource::Event("PlayerMMRChanged"),
         ]
             .span(),
     }
@@ -168,7 +160,7 @@ fn setup_mock_trial(ref world: WorldStorage, trial_id: u128, players: Span<Contr
         world.write_model_test(@player_rank);
 
         i += 1;
-    };
+    }
 
     // Create trial
     let trial = PlayersRankTrial {

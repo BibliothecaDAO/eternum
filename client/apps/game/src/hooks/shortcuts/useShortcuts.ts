@@ -84,7 +84,7 @@ const areShortcutsEqual = (a: UseShortcutsConfig["shortcuts"], b: UseShortcutsCo
   return true;
 };
 
-export const useShortcuts = (config: UseShortcutsConfig) => {
+const useShortcuts = (config: UseShortcutsConfig) => {
   const shortcutManager = getShortcutManager();
   const registeredIds = useRef<string[]>([]);
   const [stableShortcuts, setStableShortcuts] = useState(config.shortcuts);
@@ -155,7 +155,7 @@ export const useShortcutManager = () => {
  */
 type SingleShortcutConfig = UseShortcutsConfig["shortcuts"][number];
 
-export const useShortcut = ({ prefix, ...shortcutConfig }: SingleShortcutConfig & { prefix?: string }) => {
+const useShortcut = ({ prefix, ...shortcutConfig }: SingleShortcutConfig & { prefix?: string }) => {
   useShortcuts({
     shortcuts: [shortcutConfig],
     prefix,

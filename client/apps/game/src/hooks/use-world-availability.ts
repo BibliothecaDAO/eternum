@@ -25,20 +25,20 @@ const parseMaybeHexToNumber = (v: unknown): number | null => {
   return null;
 };
 
-export interface WorldConfigMeta {
+interface WorldConfigMeta {
   startMainAt: number | null;
   endAt: number | null;
   registrationCount: number | null;
 }
 
-export interface WorldRef {
+interface WorldRef {
   name: string;
   chain?: string;
 }
 
 export const getWorldKey = (world: WorldRef): string => (world.chain ? `${world.chain}:${world.name}` : world.name);
 
-export interface WorldAvailability {
+interface WorldAvailability {
   worldKey: string;
   worldName: string;
   chain?: string;
@@ -97,7 +97,7 @@ const checkWorldAvailability = async (
  * Hook to check a single world's availability with caching.
  * Results are cached for 5 minutes.
  */
-export const useWorldAvailability = (world: WorldRef | null, enabled = true) => {
+const useWorldAvailability = (world: WorldRef | null, enabled = true) => {
   const worldName = world?.name ?? null;
   const worldKey = world ? getWorldKey(world) : null;
   const query = useQuery({

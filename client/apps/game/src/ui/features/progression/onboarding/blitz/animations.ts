@@ -71,7 +71,7 @@ export const rippleVariants: Variants = {
 };
 
 // Progress step animation
-export const stepVariants: Variants = {
+const stepVariants: Variants = {
   inactive: {
     scale: 1,
     opacity: 0.5,
@@ -111,7 +111,7 @@ export const staggerContainer: Variants = {
 };
 
 // Loader spin animation (for use with animate prop directly)
-export const spinAnimation = {
+const spinAnimation = {
   rotate: 360,
   transition: { duration: 1, repeat: Infinity, ease: "linear" },
 };

@@ -3,8 +3,8 @@
 // Handles MMR updates for Blitz games after rankings are finalized.
 // Uses commit + permissionless per-player claims to avoid lobby-wide loops.
 
-use crate::models::mmr::{GameMMRRecord, MMRGameMeta, PlayerMMRStats};
 use starknet::ContractAddress;
+use crate::models::mmr::{GameMMRRecord, MMRGameMeta, PlayerMMRStats};
 
 /// Interface for the MMR token contract
 #[starknet::interface]
@@ -56,19 +56,18 @@ pub trait IMMRSystems<T> {
 #[dojo::contract]
 pub mod mmr_systems {
     use core::num::traits::Zero;
-    use crate::constants::DEFAULT_NS;
-    use crate::models::config::WorldConfigUtilImpl;
-    use crate::models::mmr::{
-        GameMMRRecord, MMRClaimed, MMRConfig, MMRGameMeta, PlayerMMRStats, PlayerMMRStatsTrait, SeriesMMRConfig,
-    };
-    use crate::models::config::BlitzRegistrationConfig;
-    use crate::models::rank::{PlayerRank, PlayersRankTrial};
-    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
-    use crate::systems::utils::mmr::MMRCalculatorImpl;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{BlitzRegistrationConfig, WorldConfigUtilImpl};
+    use crate::models::mmr::{
+        GameMMRRecord, MMRClaimed, MMRConfig, MMRGameMeta, PlayerMMRStats, PlayerMMRStatsTrait, SeriesMMRConfig,
+    };
+    use crate::models::rank::{PlayerRank, PlayersRankTrial};
+    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::systems::utils::mmr::MMRCalculatorImpl;
     use super::{IMMRSystems, IMMRTokenDispatcher, IMMRTokenDispatcherTrait};
 
     // ================================
@@ -156,8 +155,9 @@ pub mod mmr_systems {
             }
 
             // Check minimum entry fee
-            let blitz_registration_config: BlitzRegistrationConfig =
-                WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
             if blitz_registration_config.fee_amount < mmr_config.min_entry_fee {
                 return;
             }
@@ -186,7 +186,11 @@ pub mod mmr_systems {
             }
 
             assert!(game_median > 0, "MMR: game median must be > 0");
-            let effective_global_median = if global_median == 0 { game_median } else { global_median };
+            let effective_global_median = if global_median == 0 {
+                game_median
+            } else {
+                global_median
+            };
 
             let now = starknet::get_block_timestamp();
             let caller = starknet::get_caller_address();
@@ -200,16 +204,17 @@ pub mod mmr_systems {
             meta.processed_count = 0;
             world.write_model(@meta);
 
-            world.emit_event(
-                @MMRGameCommitted {
-                    trial_id,
-                    player_count: meta.player_count,
-                    game_median,
-                    global_median: effective_global_median,
-                    committed_by: caller,
-                    timestamp: now,
-                },
-            );
+            world
+                .emit_event(
+                    @MMRGameCommitted {
+                        trial_id,
+                        player_count: meta.player_count,
+                        game_median,
+                        global_median: effective_global_median,
+                        committed_by: caller,
+                        timestamp: now,
+                    },
+                );
         }
 
         fn claim_game_mmr(ref self: ContractState, trial_id: u128, player: ContractAddress) {
@@ -267,12 +272,7 @@ pub mod mmr_systems {
             };
 
             let new_mmr = MMRCalculatorImpl::calculate_player_mmr(
-                mmr_config,
-                current_mmr,
-                player_rank.rank,
-                meta.player_count,
-                meta.game_median,
-                meta.global_median,
+                mmr_config, current_mmr, player_rank.rank, meta.player_count, meta.game_median, meta.global_median,
             );
 
             // Store game record
@@ -311,16 +311,12 @@ pub mod mmr_systems {
             world.write_model(@claimed);
 
             // Emit player event
-            world.emit_event(
-                @PlayerMMRChanged {
-                    player,
-                    trial_id,
-                    old_mmr: current_mmr,
-                    new_mmr,
-                    rank: player_rank.rank,
-                    timestamp: now,
-                },
-            );
+            world
+                .emit_event(
+                    @PlayerMMRChanged {
+                        player, trial_id, old_mmr: current_mmr, new_mmr, rank: player_rank.rank, timestamp: now,
+                    },
+                );
 
             // Update processed count + finalize if complete
             if meta.processed_count < meta.player_count {
@@ -331,14 +327,12 @@ pub mod mmr_systems {
             if meta.processed_count == meta.player_count {
                 series_config.mmr_processed = true;
                 world.write_model(@series_config);
-                world.emit_event(
-                    @MMRGameProcessed {
-                        trial_id,
-                        player_count: meta.player_count,
-                        median_mmr: meta.game_median,
-                        timestamp: now,
-                    },
-                );
+                world
+                    .emit_event(
+                        @MMRGameProcessed {
+                            trial_id, player_count: meta.player_count, median_mmr: meta.game_median, timestamp: now,
+                        },
+                    );
             }
         }
 

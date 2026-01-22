@@ -165,4 +165,4 @@ export { env };
 export const hasPublicNodeUrl = Boolean(env.VITE_PUBLIC_NODE_URL);
 
 // Type for your validated env
-export type Env = z.infer<typeof envSchema>;
+type Env = z.infer<typeof envSchema>;

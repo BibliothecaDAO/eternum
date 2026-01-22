@@ -23,13 +23,17 @@ import {
 // Import player odds configuration
 import playerOddsConfig from "../config/player-odds.json";
 
+// Shared fee constants
+import {
+  DEFAULT_CREATOR_FEE,
+  DEFAULT_FEE_CURVE_RANGE,
+  DEFAULT_FEE_SHARE_CURVE_RANGE,
+} from "@/pm/constants/market-creation-defaults";
+
 // Constants
 const MAX_SELECTED_PLAYERS = 5;
 const MIN_SELECTED_PLAYERS = 2;
 const MIN_FUNDING_LORDS = 100;
-const DEFAULT_CREATOR_FEE = "10";
-const DEFAULT_FEE_CURVE_RANGE = { start: 0, end: 2000 };
-const DEFAULT_FEE_SHARE_CURVE_RANGE = { start: 10000, end: 0 };
 const DEFAULT_ORACLE_EXTRA_PARAMS = ["0"];
 const MARKET_CHECK_POLL_INTERVAL = 10_000; // 10 seconds
 
@@ -50,7 +54,7 @@ const checkMarketExists = async (oracleAddress: string): Promise<boolean> => {
   }
 };
 
-export interface UseQuickMarketCreateResult {
+interface UseQuickMarketCreateResult {
   // Market creation
   createMarket: () => Promise<void>;
   isCreating: boolean;
@@ -723,4 +727,4 @@ export const useQuickMarketCreate = (
   );
 };
 
-export type { MarketPlayer, UseQuickMarketCreateResult as UseQuickMarketCreateReturn };
+export type { MarketPlayer };

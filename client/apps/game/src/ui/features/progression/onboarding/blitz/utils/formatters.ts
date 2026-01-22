@@ -31,14 +31,14 @@ export const formatCountdown = (secondsLeft: number): string => {
 /**
  * Format a token amount with decimals (default 18)
  */
-export const formatTokenAmount = (value: bigint, decimals: bigint = 18n): string => {
+const formatTokenAmount = (value: bigint, decimals: bigint = 18n): string => {
   return (value / 10n ** decimals).toString();
 };
 
 /**
  * Format a large number with K/M/B suffixes
  */
-export const formatCompactNumber = (num: number): string => {
+const formatCompactNumber = (num: number): string => {
   if (num >= 1_000_000_000) {
     return (num / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "B";
   }

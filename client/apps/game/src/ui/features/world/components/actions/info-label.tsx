@@ -3,7 +3,7 @@ import clsx from "clsx";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-export type InfoLabelVariant = "ally" | "attack" | "chest" | "default" | "mine" | "quest";
+type InfoLabelVariant = "ally" | "attack" | "chest" | "default" | "mine" | "quest";
 
 const INFO_LABEL_VARIANT_STYLES: Record<
   InfoLabelVariant,

@@ -147,5 +147,3 @@ export const LandingMint = () => {
     </MarketsProviders>
   );
 };
-
-export default LandingMint;

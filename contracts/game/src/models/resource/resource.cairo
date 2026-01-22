@@ -1,5 +1,7 @@
 use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
+use dojo::model::{Model, ModelStorage};
+use dojo::world::WorldStorage;
 use crate::alias::ID;
 use crate::constants::{
     RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, resource_type_name,
@@ -7,8 +9,6 @@ use crate::constants::{
 use crate::models::config::{TickImpl, WeightConfig};
 use crate::models::resource::production::production::{Production, ProductionImpl};
 use crate::models::weight::{Weight, WeightImpl};
-use dojo::model::{Model, ModelStorage};
-use dojo::world::WorldStorage;
 
 
 #[derive(Copy, Drop, Serde)]

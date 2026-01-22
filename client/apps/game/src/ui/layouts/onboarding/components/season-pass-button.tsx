@@ -13,7 +13,7 @@ import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement
 import { env } from "../../../../../env";
 import { mintUrl } from "../constants";
 
-export interface SeasonPassButtonProps {
+interface SeasonPassButtonProps {
   onSettleRealm: () => void;
 }
 

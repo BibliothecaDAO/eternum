@@ -17,14 +17,14 @@ interface RawUpgradeCost {
   amount: number;
 }
 
-export interface UpgradeRequirement {
+interface UpgradeRequirement {
   resource: number;
   amount: number;
   current: number;
   progress: number;
 }
 
-export interface StructureUpgradeResult {
+interface StructureUpgradeResult {
   currentLevel: number;
   currentLevelName: string;
   nextLevel: number | null;

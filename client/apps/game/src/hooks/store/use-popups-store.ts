@@ -40,7 +40,7 @@ export const createPopupsSlice = (set: any, get: any) => ({
  *
  * Instead of: const isOpen = useUIStore((state) => state.isPopupOpen("myPopup"));
  */
-export const useIsPopupOpen = (name: string): boolean => {
+const useIsPopupOpen = (name: string): boolean => {
   return useUIStore(useCallback((state) => state.openedPopups.includes(name), [name]));
 };
 
@@ -48,7 +48,7 @@ export const useIsPopupOpen = (name: string): boolean => {
  * Hook to get popup actions with stable references.
  * Returns memoized open, close, and toggle functions for a specific popup.
  */
-export const usePopupActions = (name: string) => {
+const usePopupActions = (name: string) => {
   const openPopup = useUIStore((state) => state.openPopup);
   const closePopup = useUIStore((state) => state.closePopup);
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -64,7 +64,7 @@ export const usePopupActions = (name: string) => {
  * Combined hook for popup state and actions.
  * Useful when you need both the open state and control functions.
  */
-export const usePopup = (name: string) => {
+const usePopup = (name: string) => {
   const isOpen = useIsPopupOpen(name);
   const actions = usePopupActions(name);
 

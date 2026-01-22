@@ -1,4 +1,5 @@
 use core::num::traits::zero::Zero;
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
@@ -6,7 +7,6 @@ use crate::models::position::Coord;
 use crate::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use crate::utils::map::biomes::Biome;
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 
 #[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect, Default, DojoStore)]

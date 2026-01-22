@@ -150,7 +150,7 @@ export interface LabelManagerConfig {
 /**
  * Camera view transition info
  */
-export interface CameraViewTransition {
+interface CameraViewTransition {
   from: CameraView;
   to: CameraView;
   timestamp: number;

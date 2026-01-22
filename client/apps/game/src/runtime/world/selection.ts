@@ -8,7 +8,7 @@ export interface WorldSelectionInput {
   chain?: Chain;
 }
 
-export interface ApplyWorldSelectionResult {
+interface ApplyWorldSelectionResult {
   profile: WorldProfile;
   currentChain: Chain;
   targetChain: Chain;
