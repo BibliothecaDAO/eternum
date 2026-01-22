@@ -4,6 +4,11 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { toast } from "sonner";
 import { CairoCustomEnum, Call, CallData, uint256, type RawArgsObject, type Uint256 } from "starknet";
 
+import {
+  DEFAULT_CREATOR_FEE,
+  DEFAULT_FEE_CURVE_RANGE,
+  DEFAULT_FEE_SHARE_CURVE_RANGE,
+} from "@/pm/constants/market-creation-defaults";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
@@ -33,16 +38,8 @@ const tryBetterErrorMsg = (error: unknown) => {
   return "Something went wrong while creating the market.";
 };
 
-const CREATOR_FEE = "10";
 const DEFAULT_FUNDING_LORDS = "1000";
-const DEFAULT_FEE_CURVE_RANGE = {
-  start: 0,
-  end: 2000,
-};
-const DEFAULT_FEE_SHARE_CURVE_RANGE = {
-  start: 10000,
-  end: 0,
-};
+
 const getOracleParams = (blitzOracleAddress: string) => [
   "0",
   BigInt(blitzOracleAddress),
@@ -256,7 +253,7 @@ const buildMarketParams = (
       pending_word: questionData.hex,
       pending_word_len: questionData.length,
     },
-    creator_fee: CREATOR_FEE,
+    creator_fee: DEFAULT_CREATOR_FEE,
   }) as RawArgsObject;
 
   return { params, fundingBase };

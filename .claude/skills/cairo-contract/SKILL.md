@@ -6,7 +6,8 @@ allowed-tools: [Bash, Read, Write, Edit, Glob, Grep, TodoWrite]
 
 # Cairo Contract Development (Eternum)
 
-Develop Cairo contracts for the Eternum project using Test-Driven Development. This skill enforces a strict workflow: **Plan -> Test First -> Implement -> Review**.
+Develop Cairo contracts for the Eternum project using Test-Driven Development. This skill enforces a strict workflow:
+**Plan -> Test First -> Implement -> Review**.
 
 ## When to Use This Skill
 
@@ -29,6 +30,7 @@ If you write implementation before tests, delete it and start over.
 ### 1.1 Gather Requirements
 
 Before writing any code, understand:
+
 - What is the business logic? What should happen?
 - What models are needed to store state?
 - What systems will modify that state?
@@ -39,6 +41,7 @@ Before writing any code, understand:
 Create a design:
 
 **Models Needed:**
+
 ```
 [Model Name]
 - #[key] field_name: type  <- what uniquely identifies this?
@@ -46,12 +49,14 @@ Create a design:
 ```
 
 **Systems Needed:**
+
 ```
 [System Name]
 - function_name(params) -> what it does
 ```
 
 **Relationships:**
+
 ```
 System X reads/writes Model A, B
 ```
@@ -286,12 +291,14 @@ Clean up code while keeping tests green. Run tests after each change.
 ### 4.1 Code Quality Checklist
 
 **Models:**
+
 - [ ] Has `#[derive(Introspect, Copy, Drop, Serde)]`
 - [ ] Has `#[dojo::model]`
 - [ ] Keys come before data fields
 - [ ] Uses appropriate types (u8 vs u32 vs u128)
 
 **Systems:**
+
 - [ ] Has `#[starknet::interface]` trait
 - [ ] Has `#[dojo::contract]` module
 - [ ] Checks ownership/authorization
@@ -299,6 +306,7 @@ Clean up code while keeping tests green. Run tests after each change.
 - [ ] Uses `assert!` with clear error messages
 
 **Tests:**
+
 - [ ] Tests happy path
 - [ ] Tests failure cases with `#[should_panic]`
 - [ ] Tests edge cases
@@ -307,6 +315,7 @@ Clean up code while keeping tests green. Run tests after each change.
 ### 4.2 Security Review
 
 Check for:
+
 - Integer overflow/underflow
 - Missing authorization checks
 - State consistency issues
@@ -388,6 +397,7 @@ use crate::utils::testing::helpers::{tspawn_world, MOCK_TICK_CONFIG};
 ### Key Helper Functions
 
 From `utils/testing/helpers.cairo`:
+
 - `tspawn_world(namespace_def, contract_defs)` - Creates test world
 - `MOCK_*_CONFIG()` - Config factory functions
 - `tstore_*_config()` - Store config helpers

@@ -34,9 +34,9 @@ const TimeAgo = ({ date, className }: { date: Date; className?: string }) => {
   return <span className={className}>{label}</span>;
 };
 
-export const MarketActivity = ({ market }: { market: MarketClass }) => {
+export const MarketActivity = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {
   const { account } = useAccount();
-  const { marketBuys, refresh, isLoading, isError } = useMarketActivity(market.market_id);
+  const { marketBuys, isLoading, isError } = useMarketActivity(market.market_id, refreshKey);
 
   // Loading state (only show skeleton on initial load with no data)
   if (isLoading && marketBuys.length === 0) {
@@ -45,7 +45,7 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
 
   // Error state
   if (isError) {
-    return <PMErrorState message="Failed to load activity" onRetry={refresh} />;
+    return <PMErrorState message="Failed to load activity" />;
   }
 
   // Empty state
@@ -61,71 +61,58 @@ export const MarketActivity = ({ market }: { market: MarketClass }) => {
   const outcomes = market.getMarketOutcomes();
 
   return (
-    <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={refresh}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80 transition-colors hover:border-gold/50 hover:text-gold"
-          disabled={isLoading}
-        >
-          {isLoading ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
+    <div className="space-y-3">
+      {marketBuys.map((marketBuy) => {
+        const isSelf = BigInt(marketBuy.account_address) === BigInt(account?.address || 0);
+        const outcome = outcomes[Number(marketBuy.outcome_index)];
+        const amountFormatted = formatUnits(marketBuy.amount, Number(market.collateralToken.decimals), 2);
+        const entryKey = `${marketBuy.account_address}-${marketBuy.timestamp}-${marketBuy.outcome_index}-${marketBuy.amount}`;
 
-      <div className="space-y-3">
-        {marketBuys.map((marketBuy) => {
-          const isSelf = BigInt(marketBuy.account_address) === BigInt(account?.address || 0);
-          const outcome = outcomes[Number(marketBuy.outcome_index)];
-          const amountFormatted = formatUnits(marketBuy.amount, Number(market.collateralToken.decimals), 2);
-          const entryKey = `${marketBuy.account_address}-${marketBuy.timestamp}-${marketBuy.outcome_index}-${marketBuy.amount}`;
+        return (
+          <div
+            key={entryKey}
+            className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${
+              isSelf ? "border-gold/50 bg-gold/5" : "border-white/10 bg-white/5"
+            }`}
+          >
+            <AvatarImage address={marketBuy.account_address} highlight={isSelf} />
 
-          return (
-            <div
-              key={entryKey}
-              className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${
-                isSelf ? "border-gold/50 bg-gold/5" : "border-white/10 bg-white/5"
-              }`}
-            >
-              <AvatarImage address={marketBuy.account_address} highlight={isSelf} />
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gold/70">
+                <div className="flex items-center gap-2">
+                  <MaybeController address={marketBuy.account_address} className="text-white" />
+                  {isSelf && (
+                    <span className="rounded-full bg-gold/20 px-2 py-[2px] text-[10px] font-semibold uppercase text-dark">
+                      You
+                    </span>
+                  )}
+                </div>
+                <TimeAgo date={new Date(Number(marketBuy.timestamp))} className="text-gold/60" />
+              </div>
 
-              <div className="flex flex-1 flex-col gap-2">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gold/70">
-                  <div className="flex items-center gap-2">
-                    <MaybeController address={marketBuy.account_address} className="text-white" />
-                    {isSelf && (
-                      <span className="rounded-full bg-gold/20 px-2 py-[2px] text-[10px] font-semibold uppercase text-dark">
-                        You
-                      </span>
-                    )}
-                  </div>
-                  <TimeAgo date={new Date(Number(marketBuy.timestamp))} className="text-gold/60" />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-white">
+                <span className="rounded-full bg-white/10 px-2 py-[3px] text-[11px] uppercase tracking-wide text-gold/70">
+                  Bought
+                </span>
+
+                <div className="flex items-center gap-2 text-base font-semibold">
+                  <span>{amountFormatted}</span>
+                  <TokenIcon token={market.collateralToken} size={24} />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-white">
-                  <span className="rounded-full bg-white/10 px-2 py-[3px] text-[11px] uppercase tracking-wide text-gold/70">
-                    Bought
-                  </span>
+                <span className="text-gold/60">on</span>
 
-                  <div className="flex items-center gap-2 text-base font-semibold">
-                    <span>{amountFormatted}</span>
-                    <TokenIcon token={market.collateralToken} size={24} />
-                  </div>
-
-                  <span className="text-gold/60">on</span>
-
-                  <div className="flex items-center gap-2 rounded-md bg-white/10 px-2 py-1 text-sm">
-                    <MaybeController
-                      address={outcome?.name ?? `Outcome #${Number(marketBuy.outcome_index) + 1}`}
-                      className="text-white"
-                    />
-                  </div>
+                <div className="flex items-center gap-2 rounded-md bg-white/10 px-2 py-1 text-sm">
+                  <MaybeController
+                    address={outcome?.name ?? `Outcome #${Number(marketBuy.outcome_index) + 1}`}
+                    className="text-white"
+                  />
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
-    </>
+          </div>
+        );
+      })}
+    </div>
   );
 };

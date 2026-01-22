@@ -5,6 +5,7 @@ import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
 import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { useConfig } from "@/pm/providers";
+import { Panel } from "@/ui/design-system/atoms/panel";
 import {
   DojoSdkProviderInitialized,
   MarketStatusFilter,
@@ -54,13 +55,24 @@ export const MarketsProviders = ({ children }: { children: ReactNode }) => {
 export const MarketsSection = ({ children, description }: { children: ReactNode; description?: string }) => (
   <section
     aria-label="Prediction markets"
-    className="relative h-[85vh] w-full max-w-[1400px] space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 text-gold shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl sm:p-6 md:h-[70vh] md:max-h-[80vh] md:p-8"
+    className="relative h-[85vh] w-full max-w-[1400px] overflow-y-auto text-gold sm:p-4 md:h-[70vh] md:max-h-[80vh] md:p-6"
   >
-    <div className="mx-auto flex w-full max-w-[1250px] flex-col gap-4 rounded-2xl border border-gold/30 bg-black/40 p-4 shadow-lg shadow-black/30 md:p-6">
-      {description ? <p className="text-sm text-gold/70">{description}</p> : null}
+    <Panel
+      tone="wood"
+      padding="lg"
+      radius="2xl"
+      border="subtle"
+      blur
+      className="mx-auto w-full max-w-[1250px] shadow-2xl"
+    >
+      {/* Header */}
+      <div className="mb-6 border-b border-gold/10 pb-4">
+        <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">Prediction Markets</h2>
+        {description ? <p className="mt-1 text-sm text-gold/60">{description}</p> : null}
+      </div>
 
       {children}
-    </div>
+    </Panel>
   </section>
 );
 
@@ -88,7 +100,8 @@ export const LandingMarkets = () => {
 
   return (
     <MarketsSection description="Browse live prediction markets, inspect their odds, and hop into the ones that interest you.">
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Tab Navigation */}
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">
           {MARKET_TABS.map((tab) => (
             <TabButton
@@ -101,23 +114,26 @@ export const LandingMarkets = () => {
         </div>
       </div>
 
-      {activeTab === "markets" ? (
-        <>
-          <MarketFilters marketFilters={marketFilters} setMarketFilters={setMarketFilters} />
-          <MarketsList marketFilters={marketFilters} />
-        </>
-      ) : null}
+      {/* Tab Content */}
+      <div className="animate-fade-in-up">
+        {activeTab === "markets" && (
+          <div className="space-y-6">
+            <MarketFilters marketFilters={marketFilters} setMarketFilters={setMarketFilters} />
+            <MarketsList marketFilters={marketFilters} />
+          </div>
+        )}
 
-      {activeTab === "leaderboard" ? <MarketsLeaderboardView /> : null}
+        {activeTab === "leaderboard" && <MarketsLeaderboardView />}
 
-      {activeTab === "player" ? (
-        <PlayerMarketsView
-          isLoading={isStatsLoading}
-          onRefresh={refresh}
-          hasWallet={Boolean(address)}
-          summary={playerSummary}
-        />
-      ) : null}
+        {activeTab === "player" && (
+          <PlayerMarketsView
+            isLoading={isStatsLoading}
+            onRefresh={refresh}
+            hasWallet={Boolean(address)}
+            summary={playerSummary}
+          />
+        )}
+      </div>
     </MarketsSection>
   );
 };
