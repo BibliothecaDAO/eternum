@@ -42,7 +42,6 @@ pub mod prize_distribution_systems {
     use crate::models::season::SeasonPrize;
     use crate::models::series_chest_reward::{GameChestReward, SeriesChestRewardState};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
-    use crate::systems::mmr::contracts::{IMMRSystemsDispatcherTrait, mmr_systems};
     use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use crate::systems::utils::prize::iPrizeDistributionCalcImpl;
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator;
@@ -548,10 +547,9 @@ pub mod prize_distribution_systems {
                 self.blitz_get_or_compute_series_chest_reward_state();
 
                 //////////////////////////////////////////
-                ///  process MMR updates
+                ///  MMR updates are claim-based
+                ///  (client/keepers call commit + per-player claims)
                 //////////////////////////////////////////
-                let mmr_dispatcher = mmr_systems::get_dispatcher(@world);
-                mmr_dispatcher.process_game_mmr_from_trial(trial.trial_id);
 
                 // emit event
                 world

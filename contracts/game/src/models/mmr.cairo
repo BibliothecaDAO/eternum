@@ -204,6 +204,43 @@ pub struct SeriesMMRConfig {
 
 
 // ================================
+// MMR GAME META + CLAIM TRACKING
+// ================================
+
+/// Stores committed MMR metadata for a trial (medians + progress)
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct MMRGameMeta {
+    #[key]
+    pub trial_id: u128,
+    /// Total players in the game
+    pub player_count: u16,
+    /// Median MMR for this game
+    pub game_median: u128,
+    /// Global median across all registered players (for split lobbies)
+    pub global_median: u128,
+    /// When the meta was committed
+    pub committed_at: u64,
+    /// Who committed the meta
+    pub committed_by: ContractAddress,
+    /// Number of players already processed
+    pub processed_count: u16,
+}
+
+/// Tracks whether a player has claimed their MMR update for a trial
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct MMRClaimed {
+    #[key]
+    pub trial_id: u128,
+    #[key]
+    pub player: ContractAddress,
+    pub claimed: bool,
+    pub claimed_at: u64,
+}
+
+
+// ================================
 // TESTS
 // ================================
 
