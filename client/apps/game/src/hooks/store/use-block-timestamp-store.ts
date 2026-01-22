@@ -27,10 +27,7 @@ const computeTimestampState = (): Omit<BlockTimestampState, "tick"> => {
 };
 
 export const useBlockTimestampStore = create<BlockTimestampState>((set) => ({
-  currentBlockTimestamp: Math.floor(Date.now() / 1000),
-  currentDefaultTick: 0,
-  currentArmiesTick: 0,
-  armiesTickTimeRemaining: 0,
+  ...computeTimestampState(),
   tick: () => set(computeTimestampState()),
 }));
 
@@ -41,10 +38,8 @@ if (typeof window !== "undefined") {
   };
 
   if (!target[tickIntervalKey]) {
-    const runTick = () => {
+    target[tickIntervalKey] = window.setInterval(() => {
       useBlockTimestampStore.getState().tick();
-    };
-    runTick();
-    target[tickIntervalKey] = window.setInterval(runTick, 10_000);
+    }, 10_000);
   }
 }
