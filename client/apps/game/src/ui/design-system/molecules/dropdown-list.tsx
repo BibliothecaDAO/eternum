@@ -42,4 +42,3 @@ const DropdownList = ({
     {isEmpty ? emptyState : children}
   </div>
 );
-

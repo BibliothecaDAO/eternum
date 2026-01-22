@@ -4,7 +4,6 @@
 // Defense Components - Used externally
 export { CompactDefenseDisplay } from "./components/compact-defense-display";
 
-
 // Chest System
 export { ChestModal } from "./chest/chest-modal";
 

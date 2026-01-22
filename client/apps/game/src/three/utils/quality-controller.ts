@@ -571,4 +571,3 @@ class QualityController {
 
 // Export singleton accessor
 export const qualityController = QualityController.getInstance();
-

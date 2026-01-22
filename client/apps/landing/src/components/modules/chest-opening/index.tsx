@@ -195,4 +195,3 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
     </>
   );
 }
-

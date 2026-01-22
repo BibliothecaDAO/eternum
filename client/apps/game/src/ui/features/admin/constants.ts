@@ -103,4 +103,3 @@ export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
       return env.VITE_PUBLIC_NODE_URL as string;
   }
 };
-
