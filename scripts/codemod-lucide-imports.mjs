@@ -18,14 +18,16 @@ const TYPE_IMPORTS = ["LucideIcon", "LucideProps", "Icon", "IconNode", "IconProp
 const ICON_IMPORT_PATH = "lucide-react/dist/esm/icons";
 
 function pascalToKebab(str) {
-  return str
-    // Handle transitions from lowercase/number to uppercase
-    .replace(/([a-z])([A-Z])/g, "$1-$2")
-    // Handle transitions from uppercase to uppercase+lowercase (e.g., XMLParser -> XML-Parser)
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
-    // Handle transitions from letter to number (e.g., Loader2 -> Loader-2)
-    .replace(/([a-zA-Z])(\d)/g, "$1-$2")
-    .toLowerCase();
+  return (
+    str
+      // Handle transitions from lowercase/number to uppercase
+      .replace(/([a-z])([A-Z])/g, "$1-$2")
+      // Handle transitions from uppercase to uppercase+lowercase (e.g., XMLParser -> XML-Parser)
+      .replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
+      // Handle transitions from letter to number (e.g., Loader2 -> Loader-2)
+      .replace(/([a-zA-Z])(\d)/g, "$1-$2")
+      .toLowerCase()
+  );
 }
 
 function parseImportSpecifier(spec) {

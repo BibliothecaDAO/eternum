@@ -16,7 +16,7 @@ import {
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
-import Loader2Icon from "lucide-react/dist/esm/icons/loader-2-icon";
+import Loader2Icon from "lucide-react/dist/esm/icons/loader-2";
 import PauseIcon from "lucide-react/dist/esm/icons/pause";
 import PlayIcon from "lucide-react/dist/esm/icons/play";
 import XIcon from "lucide-react/dist/esm/icons/x";

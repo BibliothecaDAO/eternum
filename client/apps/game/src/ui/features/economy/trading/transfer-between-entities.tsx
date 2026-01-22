@@ -18,7 +18,6 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, EntityType, ID, StructureType } from "@bibliothecadao/types";
 import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
-import LucideArrowRight from "lucide-react/dist/esm/icons/lucide-arrow-right";
 import { memo, useEffect, useMemo, useState } from "react";
 import { EntityIdFormat } from "./transfer-view";
 
@@ -172,7 +171,7 @@ const SelectEntitiesStep = memo(
             onClick={() => setSelectedStepId(STEP_ID.SELECT_RESOURCES)}
           >
             Next - Select Resources
-            <LucideArrowRight className="ml-2" />
+            <ArrowRight className="ml-2" />
           </Button>
         </div>
       </>

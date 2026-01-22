@@ -1,5 +1,6 @@
 import svgr from "@svgr/rollup";
 import react from "@vitejs/plugin-react";
+import fs from "node:fs";
 import path, { resolve } from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 import { ConfigEnv, defineConfig, PluginOption, UserConfig } from "vite";
@@ -24,6 +25,14 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
   plugins.push(topLevelAwait() as any);
 
   if (isBuild) {
+    plugins.push({
+      name: "ensure-outdir",
+      apply: "build",
+      configResolved(config) {
+        const outDir = path.resolve(config.root ?? process.cwd(), config.build.outDir ?? "dist");
+        fs.mkdirSync(outDir, { recursive: true });
+      },
+    });
     plugins.push(
       VitePWA({
         selfDestroying: true,
