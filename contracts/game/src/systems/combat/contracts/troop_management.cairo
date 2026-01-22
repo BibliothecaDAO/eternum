@@ -915,7 +915,15 @@ pub mod troop_management_systems {
     }
 }
 
-#[cfg(test)]
+// NOTE: These tests use dojo_cairo_test and starknet::testing::set_contract_address()
+// which only work with `sozo test`, NOT with `snforge test`.
+// The snforge cheatcodes (start_cheat_caller_address) don't propagate get_caller_address()
+// to dojo systems due to how dojo dispatches system calls.
+//
+// Run these tests with: cd contracts/game && sozo test -f troop_management
+//
+// For snforge-compatible tests, see: contracts/game/src/systems/combat/tests/test_troop_battle.cairo
+#[cfg(target: 'test_sozo_only')]
 mod tests {
     use achievement::events::index::e_TrophyProgression;
     use dojo::model::{ModelStorage, ModelStorageTest};
@@ -1160,7 +1168,7 @@ mod tests {
     /// @notice Tests that `guard_add` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn guard_add_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1240,7 +1248,7 @@ mod tests {
     /// payment.
     /// @dev Required by the internal `iTroopImpl::make_payment` call.
     #[test]
-    #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000")]
     fn guard_add_revert_insufficient_resources() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1272,7 +1280,7 @@ mod tests {
     /// troop type (category).
     /// @dev Required by the `assert!(troops.category == category ...)` check within the if block.
     #[test]
-    #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "incorrect category or tier")]
     fn guard_add_revert_mismatched_type() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1322,7 +1330,7 @@ mod tests {
     /// troop tier.
     /// @dev Required by the `assert!(... && troops.tier == tier)` check within the if block.
     #[test]
-    #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "incorrect category or tier")]
     fn guard_add_revert_mismatched_tier() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1371,7 +1379,7 @@ mod tests {
     /// @notice Tests that `guard_add` reverts if adding troops would exceed troop limits.
     /// @dev Required by internal checks within `iGuardImpl::add`.
     #[test]
-    #[should_panic(expected: ("reached limit of structure guard troop count", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "reached limit of structure guard troop count")]
     fn guard_add_revert_exceed_limit() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1458,7 +1466,7 @@ mod tests {
     /// @notice Tests attempting to delete an already empty guard slot.
     /// @dev Verifies that attempting to delete an empty slot throws an error.
     #[test]
-    #[should_panic(expected: ("guard_delete: No troops in specified slot", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "guard_delete: No troops in specified slot")]
     fn guard_delete_empty_slot() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1497,7 +1505,7 @@ mod tests {
     /// @notice Tests that `guard_delete` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn guard_delete_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1657,7 +1665,7 @@ mod tests {
     /// @dev Although the direct assert is in `guard_add`, payment likely enforces non-zero.
     /// Verifies this path.
     #[test]
-    #[should_panic(expected: ("amount must be greater than 0", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "amount must be greater than 0")]
     fn explorer_create_revert_zero_amount() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1687,7 +1695,7 @@ mod tests {
     /// @notice Tests that `explorer_create` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn explorer_create_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1770,7 +1778,7 @@ mod tests {
 
     /// @dev Required by the internal `iTroopImpl::make_payment` call.
     #[test]
-    #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000")]
     fn explorer_create_revert_insufficient_resources() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1801,7 +1809,7 @@ mod tests {
     /// structure.troop_max_explorer_count.into())`
     /// check.
     #[test]
-    #[should_panic(expected: ("reached limit of troops for your structure", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "reached limit of troops for your structure")]
     fn explorer_create_revert_structure_explorer_limit() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1850,7 +1858,7 @@ mod tests {
     /// @dev Required by the `assert!(structure.troop_explorer_count <
     /// troop_limit_config.explorer_max_party_count.into())` check.
     #[test]
-    #[should_panic(expected: ("reached limit of troops per structure", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "reached limit of troops per structure")]
     fn explorer_create_revert_global_explorer_limit() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1893,7 +1901,7 @@ mod tests {
     /// occupied.
     /// @dev Required by the `assert!(tile.not_occupied())` check.
     #[test]
-    #[should_panic(expected: ("explorer spawn location is occupied", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "explorer spawn location is occupied")]
     fn explorer_create_revert_spawn_occupied() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -1995,7 +2003,7 @@ mod tests {
     /// @notice Tests that `explorer_add` reverts if the amount is zero.
     /// @dev Required by the `assert!(amount.is_non_zero())` check.
     #[test]
-    #[should_panic(expected: ("amount must be greater than 0", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "amount must be greater than 0")]
     fn explorer_add_revert_zero_amount() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2035,7 +2043,7 @@ mod tests {
     /// RESOURCE_PRECISION.
     /// @dev Required by the `assert!(amount % RESOURCE_PRECISION == 0)` check.
     #[test]
-    #[should_panic(expected: ("amount must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "amount must be divisible by resource precision")]
     fn explorer_add_revert_invalid_precision() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2074,7 +2082,7 @@ mod tests {
     /// @notice Tests that `explorer_add` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn explorer_add_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2173,7 +2181,7 @@ mod tests {
     /// explorer.coord.neighbor(home_direction))`
     /// check.
     #[test]
-    #[should_panic(expected: ("explorer not adjacent to home structure", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "explorer not adjacent to home structure")]
     fn explorer_add_revert_not_adjacent_home() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2235,7 +2243,7 @@ mod tests {
     /// @notice Tests that `explorer_add` reverts if the structure lacks sufficient resources.
     /// @dev Required by the internal `iTroopImpl::make_payment` call.
     #[test]
-    #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 2000000000", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 2000000000")]
     fn explorer_add_revert_insufficient_resources() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2280,7 +2288,7 @@ mod tests {
     /// limit.
     /// @dev Required by the `assert!(explorer.troops.count <= ...)` check.
     #[test]
-    #[should_panic(expected: ("reached limit of explorers amount per army", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "reached limit of explorers amount per army")]
     fn explorer_add_revert_exceed_limit() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2408,7 +2416,7 @@ mod tests {
     /// @notice Tests that `explorer_delete` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn explorer_delete_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2682,7 +2690,7 @@ mod tests {
     /// @notice Tests that `explorer_explorer_swap` reverts if the count is zero.
     /// @dev Required by the `assert!(count.is_non_zero())` check.
     #[test]
-    #[should_panic(expected: ("count must be greater than 0", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "count must be greater than 0")]
     fn explorer_swap_revert_zero_amount() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2728,7 +2736,7 @@ mod tests {
     /// @notice Tests that `explorer_explorer_swap` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn explorer_swap_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2891,7 +2899,7 @@ mod tests {
     /// @notice Tests that `explorer_explorer_swap` reverts if the explorers are not adjacent.
     /// @dev Required by the `assert!(from_explorer.coord.is_adjacent(to_explorer.coord))` check.
     #[test]
-    #[should_panic(expected: ("to explorer is not at the target coordinate", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "to explorer is not at the target coordinate")]
     fn explorer_swap_revert_not_adjacent() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2937,7 +2945,7 @@ mod tests {
     /// explorer's troops.
     /// @dev Required by the `assert!(count <= from_explorer.troops.count)` check.
     #[test]
-    #[should_panic(expected: ("insufficient troops in source explorer", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "insufficient troops in source explorer")]
     fn explorer_swap_revert_insufficient_troops() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
@@ -2982,7 +2990,7 @@ mod tests {
 
     /// @dev Required by the `assert!(count % RESOURCE_PRECISION == 0)` check.
     #[test]
-    #[should_panic(expected: ("count must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "count must be divisible by resource precision")]
     fn explorer_swap_revert_invalid_precision() {
         // Arrange
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
