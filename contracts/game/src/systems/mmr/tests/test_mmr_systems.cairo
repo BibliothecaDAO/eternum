@@ -1,4 +1,4 @@
-// MMR Systems Integration Tests
+// MMR Systems Integration Tests (snforge/dojo_snf_test)
 //
 // Tests the full MMR game flow including:
 // - Admin controls for ranked series
@@ -8,21 +8,17 @@
 
 use core::dict::Felt252Dict;
 use core::num::traits::Zero;
-use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, WORLD_CONFIG_ID};
-use crate::models::config::{BlitzRegistrationConfig, WorldConfig, WorldConfigUtilImpl, m_WorldConfig};
-use crate::models::mmr::{
-    GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, PlayerMMRStats, SeriesMMRConfig, m_GameMMRRecord, m_PlayerMMRStats,
-    m_SeriesMMRConfig,
-};
-use crate::models::rank::{PlayersRankTrial, RankList, RankPrize, m_PlayersRankTrial, m_RankList, m_RankPrize};
-use crate::systems::mmr::contracts::{IMMRSystems, IMMRSystemsDispatcher, IMMRSystemsDispatcherTrait, mmr_systems};
-use crate::systems::utils::mmr::MMRCalculatorImpl;
-use dojo::model::{Model, ModelStorage, ModelStorageTest};
-use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait, world};
-use dojo_cairo_test::{
-    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-};
+use dojo::model::{ModelStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::{ContractAddress, contract_address_const};
+use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
+use crate::models::config::{BlitzRegistrationConfig, WorldConfigUtilImpl};
+use crate::models::mmr::{GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, SeriesMMRConfig};
+use crate::models::rank::{PlayersRankTrial, RankList, RankPrize};
+use crate::systems::mmr::contracts::{IMMRSystemsDispatcher, IMMRSystemsDispatcherTrait};
+use crate::systems::utils::mmr::MMRCalculatorImpl;
 
 
 // ================================
@@ -67,17 +63,15 @@ fn namespace_def() -> NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
             // Config models
-            TestResource::Model(m_WorldConfig::TEST_CLASS_HASH), // MMR models
-            TestResource::Model(m_PlayerMMRStats::TEST_CLASS_HASH),
-            TestResource::Model(m_GameMMRRecord::TEST_CLASS_HASH),
-            TestResource::Model(m_SeriesMMRConfig::TEST_CLASS_HASH),
+            TestResource::Model("WorldConfig"), // MMR models
+            TestResource::Model("PlayerMMRStats"),
+            TestResource::Model("GameMMRRecord"), TestResource::Model("SeriesMMRConfig"),
             // Rank models (for trial data)
-            TestResource::Model(m_PlayersRankTrial::TEST_CLASS_HASH), TestResource::Model(m_RankPrize::TEST_CLASS_HASH),
-            TestResource::Model(m_RankList::TEST_CLASS_HASH), // MMR systems contract
-            TestResource::Contract(mmr_systems::TEST_CLASS_HASH),
-            // MMR events
-            TestResource::Event(mmr_systems::e_MMRGameProcessed::TEST_CLASS_HASH),
-            TestResource::Event(mmr_systems::e_PlayerMMRChanged::TEST_CLASS_HASH),
+            TestResource::Model("PlayersRankTrial"), TestResource::Model("RankPrize"), TestResource::Model("RankList"),
+            // MMR systems contract
+            TestResource::Contract("mmr_systems"), // MMR events
+            TestResource::Event("MMRGameProcessed"),
+            TestResource::Event("PlayerMMRChanged"),
         ]
             .span(),
     }
@@ -94,7 +88,7 @@ fn contract_defs() -> Span<ContractDef> {
 
 /// Spawn test world with MMR systems
 fn spawn_mmr_test_world() -> WorldStorage {
-    let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
+    let mut world = spawn_test_world([namespace_def()].span());
     world.sync_perms_and_inits(contract_defs());
     world.dispatcher.uuid();
     world
@@ -183,10 +177,10 @@ fn setup_mock_trial(ref world: WorldStorage, trial_id: u128, players: Span<Contr
     };
 }
 
-/// Get MMR systems dispatcher
-fn get_mmr_dispatcher(world: @WorldStorage) -> IMMRSystemsDispatcher {
+/// Get MMR systems dispatcher and contract address
+fn get_mmr_dispatcher(world: @WorldStorage) -> (ContractAddress, IMMRSystemsDispatcher) {
     let (addr, _) = world.dns(@"mmr_systems").unwrap();
-    IMMRSystemsDispatcher { contract_address: addr }
+    (addr, IMMRSystemsDispatcher { contract_address: addr })
 }
 
 
@@ -199,14 +193,14 @@ fn test_set_series_ranked_as_admin() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1;
 
     // Initially not ranked
     assert!(!mmr.is_series_ranked(trial_id), "Should not be ranked initially");
 
     // Set as admin
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
 
     // Now should be ranked
@@ -215,6 +209,7 @@ fn test_set_series_ranked_as_admin() {
     // Can also unset
     mmr.set_series_ranked(trial_id, false);
     assert!(!mmr.is_series_ranked(trial_id), "Should be unranked after admin unsets it");
+    stop_cheat_caller_address(mmr_addr);
 }
 
 #[test]
@@ -223,11 +218,12 @@ fn test_set_series_ranked_as_non_admin() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
 
     // Try to set as non-admin
-    starknet::testing::set_contract_address(NON_ADMIN());
+    start_cheat_caller_address(mmr_addr, NON_ADMIN());
     mmr.set_series_ranked(1, true);
+    stop_cheat_caller_address(mmr_addr);
 }
 
 
@@ -238,7 +234,7 @@ fn test_set_series_ranked_as_non_admin() {
 #[test]
 fn test_is_series_ranked_default() {
     let mut world = spawn_mmr_test_world();
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
 
     // Any trial should default to not ranked
     assert!(!mmr.is_series_ranked(1), "Trial 1 should not be ranked by default");
@@ -255,7 +251,7 @@ fn test_get_player_mmr_uninitialized() {
     let mut world = spawn_mmr_test_world();
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
 
     // Uninitialized player should return initial MMR
     let player_mmr = mmr.get_player_mmr(PLAYER1());
@@ -270,7 +266,7 @@ fn test_get_player_mmr_uninitialized() {
 #[test]
 fn test_get_player_stats_uninitialized() {
     let mut world = spawn_mmr_test_world();
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
 
     let stats = mmr.get_player_stats(PLAYER1());
 
@@ -306,7 +302,7 @@ fn test_is_game_mmr_eligible_disabled() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
 
     // Should not be eligible when disabled
     assert!(!mmr.is_game_mmr_eligible(1, 6, 0), "Should not be eligible when MMR disabled");
@@ -317,7 +313,7 @@ fn test_is_game_mmr_eligible_not_ranked() {
     let mut world = spawn_mmr_test_world();
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1;
 
     // Series not marked as ranked
@@ -346,12 +342,13 @@ fn test_is_game_mmr_eligible_below_min_players() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // 4 players is below min_players of 6
     assert!(!mmr.is_game_mmr_eligible(trial_id, 4, 0), "Should not be eligible below min players");
@@ -385,12 +382,13 @@ fn test_is_game_mmr_eligible_below_min_fee() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // 0 fee should not be eligible
     assert!(!mmr.is_game_mmr_eligible(trial_id, 6, 0), "Should not be eligible with 0 fee");
@@ -433,7 +431,7 @@ fn test_process_game_mmr_disabled() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
 
     // Should not panic, just return early
     let players = array![PLAYER1(), PLAYER2()];
@@ -450,7 +448,7 @@ fn test_process_game_mmr_not_ranked() {
     let mut world = spawn_mmr_test_world();
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
 
     // Series not marked as ranked - should return early
     let players = array![PLAYER1(), PLAYER2()];
@@ -468,12 +466,13 @@ fn test_process_game_mmr_already_processed() {
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Manually mark as processed
     let series_config = SeriesMMRConfig { trial_id, is_ranked: true, mmr_processed: true };
@@ -494,7 +493,7 @@ fn test_process_game_mmr_already_processed() {
 #[test]
 fn test_get_game_mmr_record_not_exists() {
     let mut world = spawn_mmr_test_world();
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
 
     let record = mmr.get_game_mmr_record(1, PLAYER1());
 
@@ -514,9 +513,9 @@ fn test_multiple_series_independent() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
 
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
 
     // Set multiple series with different ranked status
     mmr.set_series_ranked(1, true);
@@ -535,6 +534,8 @@ fn test_multiple_series_independent() {
     assert!(!mmr.is_series_ranked(1), "Series 1 should now be unranked");
     assert!(!mmr.is_series_ranked(2), "Series 2 should still not be ranked");
     assert!(mmr.is_series_ranked(3), "Series 3 should still be ranked");
+
+    stop_cheat_caller_address(mmr_addr);
 }
 
 
@@ -603,12 +604,13 @@ fn test_process_game_mmr_from_trial_success() {
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 100;
 
     // Mark series as ranked (admin only)
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Set up a complete trial with 4 players
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4()].span();
@@ -616,7 +618,7 @@ fn test_process_game_mmr_from_trial_success() {
     setup_complete_trial(ref world, trial_id, players, ranks);
 
     // Set block timestamp for record
-    starknet::testing::set_block_timestamp(1000);
+    start_cheat_block_timestamp_global(1000);
 
     // Process MMR from trial
     mmr.process_game_mmr_from_trial(trial_id);
@@ -649,12 +651,13 @@ fn test_process_game_mmr_from_trial_with_ties() {
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 101;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Set up trial with ties: P1 wins, P2 and P3 tie for 2nd, P4 last
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4()].span();
@@ -662,7 +665,7 @@ fn test_process_game_mmr_from_trial_with_ties() {
 
     setup_complete_trial(ref world, trial_id, players, ranks);
 
-    starknet::testing::set_block_timestamp(2000);
+    start_cheat_block_timestamp_global(2000);
 
     // Process MMR
     mmr.process_game_mmr_from_trial(trial_id);
@@ -683,7 +686,7 @@ fn test_process_game_mmr_from_trial_not_ranked() {
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (_, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 102;
 
     // Do NOT mark series as ranked
@@ -708,12 +711,13 @@ fn test_process_game_mmr_from_trial_incomplete() {
     setup_mmr_config(ref world);
     setup_blitz_registration_fee(ref world, 0);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1025;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Set up a trial then mark it as incomplete (revealed < committed)
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4()].span();
@@ -757,12 +761,13 @@ fn test_process_game_mmr_from_trial_below_min_entry_fee() {
     // Fee amount below min_entry_fee
     setup_blitz_registration_fee(ref world, 0);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1026;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Set up complete trial
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
@@ -799,12 +804,13 @@ fn test_process_game_mmr_from_trial_below_min_players() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 103;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Set up trial with only 2 players (below min)
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
@@ -825,19 +831,20 @@ fn test_process_game_mmr_from_trial_idempotent() {
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 104;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Set up trial
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
     let ranks: Span<u16> = array![1_u16, 2].span();
     setup_complete_trial(ref world, trial_id, players, ranks);
 
-    starknet::testing::set_block_timestamp(3000);
+    start_cheat_block_timestamp_global(3000);
 
     // Process MMR first time
     mmr.process_game_mmr_from_trial(trial_id);
@@ -846,7 +853,7 @@ fn test_process_game_mmr_from_trial_idempotent() {
     let stats_after_first = mmr.get_player_stats(PLAYER1());
 
     // Process MMR second time (should be no-op)
-    starknet::testing::set_block_timestamp(4000);
+    start_cheat_block_timestamp_global(4000);
     mmr.process_game_mmr_from_trial(trial_id);
 
     let record_after_second = mmr.get_game_mmr_record(trial_id, PLAYER1());
@@ -866,12 +873,13 @@ fn test_process_game_mmr_from_trial_six_players() {
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let mmr = get_mmr_dispatcher(@world);
+    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
     let trial_id: u128 = 105;
 
     // Mark series as ranked
-    starknet::testing::set_contract_address(ADMIN());
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Set up trial with 6 players (standard Blitz game)
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4(), PLAYER5(), PLAYER6()]
@@ -879,7 +887,7 @@ fn test_process_game_mmr_from_trial_six_players() {
     let ranks: Span<u16> = array![1_u16, 2, 3, 4, 5, 6].span();
     setup_complete_trial(ref world, trial_id, players, ranks);
 
-    starknet::testing::set_block_timestamp(5000);
+    start_cheat_block_timestamp_global(5000);
 
     // Process MMR
     mmr.process_game_mmr_from_trial(trial_id);
