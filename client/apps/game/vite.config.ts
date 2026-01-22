@@ -1,4 +1,5 @@
 import svgr from "@svgr/rollup";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
 import { visualizer } from "rollup-plugin-visualizer";
@@ -13,6 +14,15 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
   const isServe = command === "serve";
   const isBuild = command === "build";
   const enableAnalyzer = process.env.ANALYZE === "true";
+  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+  const sentryOrg = process.env.SENTRY_ORG;
+  const sentryProject = process.env.SENTRY_PROJECT;
+  const sentryRelease =
+    process.env.SENTRY_RELEASE ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    process.env.VITE_PUBLIC_GAME_VERSION ||
+    undefined;
 
   const plugins = [svgr({ dimensions: false, svgo: false, typescript: true }), react()];
 
@@ -49,6 +59,20 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
         },
       }) as any,
     );
+
+    if (sentryAuthToken && sentryOrg && sentryProject) {
+      plugins.push(
+        sentryVitePlugin({
+          authToken: sentryAuthToken,
+          org: sentryOrg,
+          project: sentryProject,
+          release: sentryRelease,
+          sourcemaps: {
+            assets: "./dist/**",
+          },
+        }),
+      );
+    }
   }
 
   if (enableAnalyzer) {
