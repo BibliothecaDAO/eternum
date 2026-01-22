@@ -40,15 +40,6 @@ source = "registry+https://scarbs.xyz/"
 checksum = "sha256:c4aa04037a0c5029b05b78229dae22bf02269b9912e8a8c12f8af34aa6b72051"
 
 [[package]]
-name = "dojo_cairo_test"
-version = "1.8.0"
-source = "registry+https://scarbs.xyz/"
-checksum = "sha256:0cab4c86390b6ee9c3969b82d27f46ecd7f14e686b9868528506103944638465"
-dependencies = [
- "dojo",
-]
-
-[[package]]
 name = "dojo_snf_test"
 version = "1.8.0"
 source = "registry+https://scarbs.xyz/"
@@ -67,7 +58,6 @@ dependencies = [
  "alexandria_math",
  "cubit",
  "dojo",
- "dojo_cairo_test",
  "dojo_snf_test",
  "openzeppelin",
  "openzeppelin_token",

@@ -589,13 +589,12 @@ pub fn snf_namespace_def_combat() -> NamespaceDef {
         resources: [
             // Core config models
             TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"), // Structure models
-            TestResource::Model("Structure"),
-            TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureVillageSlots"),
-            TestResource::Model("StructureBuildings"), TestResource::Model("Building"),
-            // Troop models
+            TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
+            TestResource::Model("StructureVillageSlots"), TestResource::Model("StructureBuildings"),
+            TestResource::Model("Building"), // Troop models
             TestResource::Model("ExplorerTroops"), // Map models
-            TestResource::Model("TileOpt"),
-            TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"), // Resource models
+            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
+            TestResource::Model("Wonder"), // Resource models
             TestResource::Model("Resource"),
             TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
             // Contracts
@@ -605,10 +604,11 @@ pub fn snf_namespace_def_combat() -> NamespaceDef {
             // Libraries
             TestResource::Library(("structure_creation_library", "0_1_8")),
             TestResource::Library(("biome_library", "0_1_8")), TestResource::Library(("rng_library", "0_1_8")),
-            TestResource::Library(("combat_library", "0_1_8")), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
-            TestResource::Event("StoryEvent"),
-            TestResource::Event("ExplorerMoveEvent"), TestResource::Event("BattleEvent"),
-            TestResource::Event("TrophyProgression"),
+            TestResource::Library(
+                ("combat_library", "0_1_8"),
+            ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
+            TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
+            TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
         ]
             .span(),
     }
@@ -764,6 +764,62 @@ pub fn snf_spawn_test_realm(ref world: WorldStorage, realm_id: u32, owner: Contr
             troop_explorer_count: 0,
             troop_max_guard_count: 1,
             troop_max_explorer_count: 1,
+            created_at: starknet::get_block_timestamp().try_into().unwrap(),
+            category: StructureCategory::Realm.into(),
+            coord_x: coord.x,
+            coord_y: coord.y,
+            level: 1,
+        },
+        troop_guards: GuardTroops {
+            delta: default_troops,
+            charlie: default_troops,
+            bravo: default_troops,
+            alpha: default_troops,
+            delta_destroyed_tick: 0,
+            charlie_destroyed_tick: 0,
+            bravo_destroyed_tick: 0,
+            alpha_destroyed_tick: 0,
+        },
+        troop_explorers: array![].span(),
+        resources_packed: 0,
+        metadata: StructureMetadata {
+            realm_id: realm_id.try_into().unwrap(), order: 1, has_wonder: false, villages_count: 0, village_realm: 0,
+        },
+        category: StructureCategory::Realm.into(),
+    };
+    world.write_model_test(@structure);
+
+    // Initialize resource capacity
+    ResourceImpl::initialize(ref world, structure_id);
+    let structure_capacity: u128 = 1000000000000000 * RESOURCE_PRECISION;
+    let structure_weight: Weight = Weight { capacity: structure_capacity, weight: 0 };
+    ResourceImpl::write_weight(ref world, structure_id, structure_weight);
+
+    structure_id
+}
+
+/// Creates a test realm for guard tests with proper guard limits
+/// Unlike snf_spawn_test_realm, this has troop_max_guard_count: 4 to allow guard testing
+pub fn snf_spawn_guard_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
+    let structure_id = world.dispatcher.uuid();
+
+    let default_troops = Troops {
+        category: TroopType::Knight,
+        tier: TroopTier::T1,
+        count: 0,
+        stamina: Stamina { amount: 0, updated_tick: 0 },
+        battle_cooldown_end: 0,
+        boosts: Default::default(),
+    };
+
+    let structure = Structure {
+        entity_id: structure_id,
+        owner: owner,
+        base: StructureBase {
+            troop_guard_count: 0,
+            troop_explorer_count: 0,
+            troop_max_guard_count: 4, // Higher limit for guard tests
+            troop_max_explorer_count: 20,
             created_at: starknet::get_block_timestamp().try_into().unwrap(),
             category: StructureCategory::Realm.into(),
             coord_x: coord.x,
@@ -1100,13 +1156,12 @@ pub fn snf_namespace_def_troop_management() -> NamespaceDef {
         resources: [
             // Core config models
             TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"), // Structure models
-            TestResource::Model("Structure"),
-            TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureVillageSlots"),
-            TestResource::Model("StructureBuildings"), TestResource::Model("Building"),
-            // Troop models
+            TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
+            TestResource::Model("StructureVillageSlots"), TestResource::Model("StructureBuildings"),
+            TestResource::Model("Building"), // Troop models
             TestResource::Model("ExplorerTroops"), // Map models
-            TestResource::Model("TileOpt"),
-            TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"), // Resource models
+            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
+            TestResource::Model("Wonder"), // Resource models
             TestResource::Model("Resource"),
             TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
             // Events
@@ -1114,10 +1169,11 @@ pub fn snf_namespace_def_troop_management() -> NamespaceDef {
             TestResource::Event("ExplorerMoveEvent"), // Contracts
             TestResource::Contract("troop_management_systems"),
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
-            TestResource::Contract("realm_internal_systems"),
+            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
             TestResource::Library(("structure_creation_library", "0_1_8")),
-            TestResource::Library(("biome_library", "0_1_8")),
+            TestResource::Library(("biome_library", "0_1_8")), TestResource::Library(("rng_library", "0_1_8")),
+            TestResource::Library(("combat_library", "0_1_8")),
         ]
             .span(),
     }
@@ -1133,6 +1189,8 @@ pub fn snf_contract_defs_troop_management() -> Span<ContractDef> {
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"resource_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
     ]
         .span()
 }
@@ -1141,6 +1199,10 @@ pub fn snf_contract_defs_troop_management() -> Span<ContractDef> {
 pub fn snf_setup_troop_management_world() -> WorldStorage {
     let mut world = spawn_test_world([snf_namespace_def_troop_management()].span());
     world.sync_perms_and_inits(snf_contract_defs_troop_management());
-    init_config(ref world);
+    // Initialize UUID counter (first uuid() call starts the counter at 1)
+    world.dispatcher.uuid();
+    // Use snf_setup_combat_configs instead of init_config to avoid deploying village pass mock
+    // which requires class declaration that doesn't work well with snforge tests
+    snf_setup_combat_configs(ref world);
     world
 }
