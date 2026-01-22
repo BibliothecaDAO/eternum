@@ -384,7 +384,7 @@ export function RevealStage({
                 )}
                 {onOpenAnother && remainingChestsCount > 0 && (
                   <Button variant="primary" size="md" onClick={onOpenAnother} className="gap-2">
-                    Choose Next Chest ({remainingChestsCount} available)
+                    Open Next Chest ({remainingChestsCount} remaining)
                   </Button>
                 )}
               </div>

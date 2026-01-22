@@ -9,7 +9,7 @@ interface UseOwnedChestsReturn {
   ownedChests: MergedNftData[];
   isLoading: boolean;
   error: Error | null;
-  refetch: () => void;
+  refetch: () => Promise<MergedNftData[]>;
 }
 
 /**
@@ -74,6 +74,9 @@ export function useOwnedChests(): UseOwnedChestsReturn {
     ownedChests,
     isLoading,
     error: error as Error | null,
-    refetch,
+    refetch: async () => {
+      const result = await refetch();
+      return result.data ?? [];
+    },
   };
 }

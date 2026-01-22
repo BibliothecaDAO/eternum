@@ -1,11 +1,4 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { TransitionManager } from "@/three/managers/transition-manager";
-import { SceneManager } from "@/three/scene-manager";
-import { CameraView } from "@/three/scenes/hexagon-scene";
-import HexceptionScene from "@/three/scenes/hexception";
-import HUDScene from "@/three/scenes/hud-scene";
-import WorldmapScene from "@/three/scenes/worldmap";
-import { GUIManager } from "@/three/utils/";
 import {
   CAMERA_CONFIG,
   CAMERA_FAR_PLANE,
@@ -13,6 +6,13 @@ import {
   POST_PROCESSING_CONFIG,
   type PostProcessingConfig,
 } from "@/three/constants";
+import { TransitionManager } from "@/three/managers/transition-manager";
+import { SceneManager } from "@/three/scene-manager";
+import { CameraView } from "@/three/scenes/hexagon-scene";
+import HexceptionScene from "@/three/scenes/hexception";
+import HUDScene from "@/three/scenes/hud-scene";
+import WorldmapScene from "@/three/scenes/worldmap";
+import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -58,8 +58,25 @@ import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
 let cachedHDRTarget: WebGLRenderTarget | null = null;
 let cachedHDRPromise: Promise<WebGLRenderTarget> | null = null;
+
+// Stats recording types
+interface StatsRecordingSample {
+  timestamp: number;
+  elapsedMs: number;
+  fps: number;
+  frameTime: number;
+  drawCalls: number;
+  triangles: number;
+  geometries: number;
+  textures: number;
+  programs: number;
+  scene: string;
+  heapUsedMB?: number;
+  heapTotalMB?: number;
+}
 
 const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
   [GraphicsSettings.HIGH]: 0.55,
@@ -104,6 +121,16 @@ export default class GameRenderer {
   private memoryMonitor?: MemoryMonitor;
   private memoryStatsElement?: HTMLDivElement;
   private statsDomElement?: HTMLElement;
+
+  // Stats Recording
+  private isRecordingStats = false;
+  private statsRecordingSamples: StatsRecordingSample[] = [];
+  private statsRecordingStartTime = 0;
+  private statsRecordingIndicator?: HTMLDivElement;
+  private lastFps = 0;
+  private frameCount = 0;
+  private fpsAccumulator = 0;
+  private lastFpsUpdateTime = 0;
 
   // Camera settings
   private cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
@@ -305,6 +332,8 @@ export default class GameRenderer {
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.8;
     this.renderer.autoClear = false;
+    // Disable auto-reset of renderer.info so we can capture full frame stats
+    this.renderer.info.autoReset = false;
     //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: HalfFloatType,
@@ -318,6 +347,9 @@ export default class GameRenderer {
 
     // Initialize memory monitoring
     this.initMemoryMonitoring();
+
+    // Setup stats recording keyboard shortcuts
+    this.setupStatsRecordingKeyboardShortcuts();
   }
 
   public initMemoryMonitoring() {
@@ -389,6 +421,11 @@ export default class GameRenderer {
         const materialStats = MaterialPool.getInstance().getStats();
         const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
 
+        // Get renderer draw call stats
+        const drawCalls = this.renderer.info.render.calls;
+        const triangles = this.renderer.info.render.triangles;
+        const drawCallColor = drawCalls > 100 ? "#ff4444" : drawCalls > 50 ? "#ffaa00" : "#00ff00";
+
         // Update display
         this.memoryStatsElement.innerHTML = `
           <strong>Memory Monitor</strong><br>
@@ -398,6 +435,7 @@ export default class GameRenderer {
           Spikes: ${summary.spikeCount} (max: ${summary.largestSpikeMB}MB)<br>
           Resources: G:${stats.geometries} M:${stats.materials} T:${stats.textures}<br>
           Materials: ${materialStats.uniqueMaterials} shared (${sharingRatio.toFixed(1)}:1)<br>
+          <span style="color: ${drawCallColor};">Draw Calls: ${drawCalls} | Triangles: ${(triangles / 1000).toFixed(1)}k</span><br>
           ${stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${stats.spikeIncrease.toFixed(1)}MB</span>` : ""}
         `;
 
@@ -418,6 +456,241 @@ export default class GameRenderer {
 
     // Start monitoring
     updateMemoryStats();
+  }
+
+  // Stats Recording Methods
+  public startStatsRecording() {
+    if (this.isRecordingStats) {
+      console.log("Stats recording already in progress");
+      return;
+    }
+
+    this.isRecordingStats = true;
+    this.statsRecordingSamples = [];
+    this.statsRecordingStartTime = performance.now();
+    this.lastFpsUpdateTime = this.statsRecordingStartTime;
+    this.frameCount = 0;
+    this.fpsAccumulator = 0;
+
+    // Create recording indicator
+    this.statsRecordingIndicator = document.createElement("div");
+    this.statsRecordingIndicator.style.cssText = `
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      z-index: 10001;
+      animation: pulse 1s infinite;
+    `;
+    this.statsRecordingIndicator.innerHTML = "🔴 Recording Stats...";
+
+    // Add pulse animation
+    const style = document.createElement("style");
+    style.id = "stats-recording-pulse";
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(this.statsRecordingIndicator);
+
+    console.log("📊 Stats recording started. Press Ctrl+Shift+S to stop and export.");
+  }
+
+  public stopStatsRecording(): StatsRecordingSample[] {
+    if (!this.isRecordingStats) {
+      console.log("No stats recording in progress");
+      return [];
+    }
+
+    this.isRecordingStats = false;
+
+    // Remove indicator
+    if (this.statsRecordingIndicator) {
+      this.statsRecordingIndicator.remove();
+      this.statsRecordingIndicator = undefined;
+    }
+    const pulseStyle = document.getElementById("stats-recording-pulse");
+    if (pulseStyle) pulseStyle.remove();
+
+    const samples = [...this.statsRecordingSamples];
+    const duration = (performance.now() - this.statsRecordingStartTime) / 1000;
+
+    console.log(`📊 Stats recording stopped. ${samples.length} samples over ${duration.toFixed(1)}s`);
+
+    return samples;
+  }
+
+  private captureStatsSample() {
+    if (!this.isRecordingStats) return;
+
+    const now = performance.now();
+    const elapsedMs = now - this.statsRecordingStartTime;
+
+    // Calculate FPS from frame time
+    this.frameCount++;
+    const timeSinceLastFpsUpdate = now - this.lastFpsUpdateTime;
+
+    if (timeSinceLastFpsUpdate >= 100) {
+      // Update FPS every 100ms
+      this.lastFps = (this.frameCount * 1000) / timeSinceLastFpsUpdate;
+      this.frameCount = 0;
+      this.lastFpsUpdateTime = now;
+    }
+
+    const info = this.renderer.info;
+    const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
+
+    const sample: StatsRecordingSample = {
+      timestamp: Date.now(),
+      elapsedMs,
+      fps: Math.round(this.lastFps * 10) / 10,
+      frameTime: this.lastFps > 0 ? Math.round((1000 / this.lastFps) * 100) / 100 : 0,
+      drawCalls: info.render.calls,
+      triangles: info.render.triangles,
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+      programs: info.programs?.length || 0,
+      scene: currentScene,
+    };
+
+    // Add memory info if available
+    if (this.memoryMonitor) {
+      const memStats = this.memoryMonitor.getCurrentStats(currentScene);
+      sample.heapUsedMB = memStats.heapUsedMB;
+      sample.heapTotalMB = memStats.heapTotalMB;
+    }
+
+    this.statsRecordingSamples.push(sample);
+
+    // Update indicator with sample count
+    if (this.statsRecordingIndicator) {
+      const duration = (elapsedMs / 1000).toFixed(1);
+      this.statsRecordingIndicator.innerHTML = `🔴 Recording: ${this.statsRecordingSamples.length} samples (${duration}s)`;
+    }
+  }
+
+  public exportStatsRecording() {
+    const samples = this.stopStatsRecording();
+
+    if (samples.length === 0) {
+      console.log("No samples to export");
+      return;
+    }
+
+    // Calculate summary statistics
+    const fps = samples.map((s) => s.fps).filter((f) => f > 0);
+    const drawCalls = samples.map((s) => s.drawCalls);
+    const triangles = samples.map((s) => s.triangles);
+    const heapUsed = samples.map((s) => s.heapUsedMB).filter((h): h is number => h !== undefined);
+    const geometries = samples.map((s) => s.geometries);
+    const textures = samples.map((s) => s.textures);
+    const programs = samples.map((s) => s.programs);
+
+    const recordingDurationSec = samples[samples.length - 1].elapsedMs / 1000;
+
+    // Calculate memory growth rate (MB/s) using linear regression for accuracy
+    let memoryGrowthMBPerSecond = 0;
+    if (heapUsed.length >= 2 && recordingDurationSec > 0) {
+      const firstHeap = heapUsed[0];
+      const lastHeap = heapUsed[heapUsed.length - 1];
+      memoryGrowthMBPerSecond = Math.round(((lastHeap - firstHeap) / recordingDurationSec) * 100) / 100;
+    }
+
+    // Calculate resource changes
+    const resourceChanges = {
+      geometries: geometries[geometries.length - 1] - geometries[0],
+      textures: textures[textures.length - 1] - textures[0],
+      programs: programs[programs.length - 1] - programs[0],
+    };
+
+    const summary = {
+      recordingDuration: recordingDurationSec,
+      sampleCount: samples.length,
+      fps: {
+        min: Math.min(...fps),
+        max: Math.max(...fps),
+        avg: Math.round((fps.reduce((a, b) => a + b, 0) / fps.length) * 10) / 10,
+      },
+      drawCalls: {
+        min: Math.min(...drawCalls),
+        max: Math.max(...drawCalls),
+        avg: Math.round(drawCalls.reduce((a, b) => a + b, 0) / drawCalls.length),
+      },
+      triangles: {
+        min: Math.min(...triangles),
+        max: Math.max(...triangles),
+        avg: Math.round(triangles.reduce((a, b) => a + b, 0) / triangles.length),
+      },
+      memory: {
+        heapUsedMB: {
+          start: heapUsed.length > 0 ? heapUsed[0] : 0,
+          end: heapUsed.length > 0 ? heapUsed[heapUsed.length - 1] : 0,
+          min: heapUsed.length > 0 ? Math.min(...heapUsed) : 0,
+          max: heapUsed.length > 0 ? Math.max(...heapUsed) : 0,
+        },
+        growthMBPerSecond: memoryGrowthMBPerSecond,
+        resourceChanges,
+      },
+    };
+
+    const exportData = {
+      summary,
+      samples,
+      exportedAt: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+    };
+
+    // Copy to clipboard
+    const jsonString = JSON.stringify(exportData, null, 2);
+    navigator.clipboard
+      .writeText(jsonString)
+      .then(() => {
+        console.log("📋 Stats copied to clipboard!");
+        console.log("Summary:", summary);
+      })
+      .catch(() => {
+        // Fallback: download as file
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `stats-recording-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        console.log("📁 Stats downloaded as file");
+      });
+  }
+
+  private setupStatsRecordingKeyboardShortcuts() {
+    if (!GRAPHICS_DEV_ENABLED) return;
+
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl+Shift+R to start recording
+      if (e.ctrlKey && e.shiftKey && e.key === "R") {
+        e.preventDefault();
+        this.startStatsRecording();
+      }
+      // Ctrl+Shift+S to stop and export
+      if (e.ctrlKey && e.shiftKey && e.key === "S") {
+        e.preventDefault();
+        this.exportStatsRecording();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+
+    // Store for cleanup
+    (this as any)._statsRecordingKeyHandler = handler;
+
+    console.log("📊 Stats recording shortcuts enabled: Ctrl+Shift+R (start) | Ctrl+Shift+S (stop & export)");
   }
 
   initScene() {
@@ -930,9 +1203,13 @@ export default class GameRenderer {
     this.lastTime = currentTime;
 
     if (this.stats) this.stats.update();
+
     if (this.controls) {
       this.controls.update();
     }
+    // Reset renderer stats at start of frame (since autoReset is disabled)
+    this.renderer.info.reset();
+
     // Clear the renderer at the start of each frame
     this.renderer.clear();
 
@@ -963,6 +1240,9 @@ export default class GameRenderer {
     if (shouldRenderLabels) {
       this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     }
+
+    // Capture stats sample AFTER rendering (to get accurate draw call/triangle counts)
+    this.captureStatsSample();
 
     requestAnimationFrame(() => {
       this.animate();
@@ -1054,6 +1334,17 @@ export default class GameRenderer {
       }
       if (this.labelRendererElement) {
         this.labelRendererElement.replaceChildren();
+      }
+
+      // Clean up stats recording
+      if (this.statsRecordingIndicator) {
+        this.statsRecordingIndicator.remove();
+      }
+      const pulseStyle = document.getElementById("stats-recording-pulse");
+      if (pulseStyle) pulseStyle.remove();
+      const keyHandler = (this as any)._statsRecordingKeyHandler;
+      if (keyHandler) {
+        window.removeEventListener("keydown", keyHandler);
       }
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
