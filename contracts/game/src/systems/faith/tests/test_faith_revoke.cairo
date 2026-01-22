@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Not pledged", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Not pledged")]
     fn test_revoke_faith_when_not_pledged_fails() {
         let mut world = spawn_world();
         let realm_id: ID = 25;

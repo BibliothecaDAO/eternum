@@ -824,7 +824,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: 'Not Owner')]
     fn add_game_not_authorized() {
         // Spawn test world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -957,7 +957,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("must provided at least one level", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "must provided at least one level")]
     fn add_game_zero_levels() {
         // Spawn test world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -978,7 +978,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Explorer is not adjacent to quest tile", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Explorer is not adjacent to quest tile")]
     fn start_quest_not_adjacent_to_tile() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1023,7 +1023,7 @@ mod tests {
 
     // test trying to start a quest using an explorer that the caller does not own
     #[test]
-    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: 'Not Owner')]
     fn start_quest_not_explorer_owner() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1069,7 +1069,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Quest is at capacity for id: 1", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Quest is at capacity for id: 1")]
     fn start_quest_at_capacity() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1151,7 +1151,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Realm or Village has already attempted this quest")]
     fn start_quest_twice_from_realm_different_explorers() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1212,7 +1212,7 @@ mod tests {
 
     // tests trying to start a quest with the same explorer twice
     #[test]
-    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Realm or Village has already attempted this quest")]
     fn start_quest_twice_same_explorer() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1267,7 +1267,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Quest tile not found for id: 999999", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Quest tile not found for id: 999999")]
     fn start_quest_non_existent_tile() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -1487,11 +1487,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected: (
-            "Quest for game token id 1 is not completed. Target score: 200, Current score: 199", 'ENTRYPOINT_FAILED',
-        ),
-    )]
+    #[should_panic(expected: "Quest for game token id 1 is not completed. Target score: 200, Current score: 199")]
     fn claim_reward_score_too_low() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1536,7 +1532,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Explorer is not adjacent to quest tile", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Explorer is not adjacent to quest tile")]
     fn claim_reward_explorer_not_adjacent() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -1587,11 +1583,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected: (
-            "Quest for game token id 1 is not completed. Target score: 200, Current score: 100", 'ENTRYPOINT_FAILED',
-        ),
-    )]
+    #[should_panic(expected: "Quest for game token id 1 is not completed. Target score: 200, Current score: 100")]
     fn claim_reward_score_verification() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -1856,7 +1848,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: 'Not Owner')]
     fn remove_game_not_authorized() {
         // Spawn test world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -1892,7 +1884,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Game is not in registry", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Game is not in registry")]
     fn remove_game_nonexistent() {
         // Spawn test world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -2114,7 +2106,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Quest feature is already enabled", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Quest feature is already enabled")]
     fn enable_quests_already_enabled() {
         // Spawn test world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -2146,7 +2138,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: 'Not Owner')]
     fn disable_quests_not_authorized() {
         // Spawn test world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -2163,7 +2155,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Quest feature is already disabled", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Quest feature is already disabled")]
     fn disable_quests_already_disabled() {
         // Spawn test world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -2206,7 +2198,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Quest feature is disabled", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Quest feature is disabled")]
     fn start_quest_with_feature_disabled() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -2250,7 +2242,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Quest feature is disabled", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Quest feature is disabled")]
     fn claim_reward_quests_disabled() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -2361,7 +2353,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("caller must be the troop movement util systems", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "caller must be the troop movement util systems")]
     fn create_quest_unauthorized_caller() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -2393,7 +2385,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Quest feature is disabled", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Quest feature is disabled")]
     fn create_quest_feature_disabled() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -2431,7 +2423,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Can't create quest on occupied tile",))]
+    #[should_panic(expected: "Can't create quest on occupied tile")]
     fn internal_create_quest_occupied_tile() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -2692,7 +2684,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Realm or Village has already attempted this quest")]
     fn test_start_quest_village_twice_different_explorers() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);

@@ -145,7 +145,7 @@ mod tests {
     // ========================================================================
 
     #[test]
-    #[should_panic(expected: ('Not Owner',))]
+    #[should_panic(expected: 'Not Owner')]
     fn test_explorer_vs_explorer__fails_not_owner() {
         let (mut world, systems, first_explorer, second_explorer) = snf_setup_explorer_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
@@ -240,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('Not Owner',))]
+    #[should_panic(expected: 'Not Owner')]
     fn test_explorer_vs_guard__fails_not_owner() {
         let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
@@ -306,7 +306,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('Not Owner',))]
+    #[should_panic(expected: 'Not Owner')]
     fn test_guard_vs_explorer__fails_not_owner() {
         let (mut world, systems, realm, explorer) = snf_setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,

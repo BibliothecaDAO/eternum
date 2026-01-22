@@ -141,7 +141,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Circular wonder allegiance", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Circular wonder allegiance")]
     fn test_circular_wonder_allegiance_direct_fails() {
         let mut world = spawn_world();
         let wonder_a: ID = 2000;
@@ -163,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Circular wonder allegiance", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Circular wonder allegiance")]
     fn test_circular_wonder_allegiance_transitive_fails() {
         let mut world = spawn_world();
         let wonder_a: ID = 2100;
@@ -249,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Entity not found", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Entity not found")]
     fn test_deleted_entity_pledge_fails() {
         let mut world = spawn_world();
         let wonder_id: ID = 2400;
@@ -266,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Faith chain too deep", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Faith chain too deep")]
     fn test_max_depth_circular_check() {
         let mut world = spawn_world();
         let mut wonders: Array<ID> = ArrayTrait::new();
@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Cannot pledge to own Wonder", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Cannot pledge to own Wonder")]
     fn test_village_owned_by_wonder_owner_cannot_pledge() {
         let mut world = spawn_world();
         let wonder_id: ID = 2700;

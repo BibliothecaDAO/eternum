@@ -117,7 +117,7 @@ mod tests {
         world.write_model_test(@faith);
 
         start_cheat_block_timestamp_global(2000);
-        let (_, dispatcher) = faith_dispatcher(ref world);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
         faith_systems::distribute_faith_prize_internal(
             ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner,
         );
@@ -132,7 +132,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Claim window closed", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Claim window closed")]
     fn test_claim_prize_after_window_fails() {
         let mut world = spawn_world();
         let season_id: u32 = 3;
@@ -148,7 +148,7 @@ mod tests {
         world.write_model_test(@faith);
 
         start_cheat_block_timestamp_global(3000);
-        let (_, dispatcher) = faith_dispatcher(ref world);
+        let (system_addr, dispatcher) = faith_dispatcher(ref world);
         faith_systems::distribute_faith_prize_internal(
             ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner,
         );

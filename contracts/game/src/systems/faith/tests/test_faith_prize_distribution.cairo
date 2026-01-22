@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Season not ended", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Season not ended")]
     fn test_distribute_season_prizes_before_end_fails() {
         let mut world = spawn_world();
         let season_id: u32 = 5;
@@ -295,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Already claimed", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Already claimed")]
     fn test_claim_prize_twice_fails() {
         let mut world = spawn_world();
         let season_id: u32 = 6;

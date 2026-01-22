@@ -60,7 +60,7 @@ mod tests {
         faith_b.season_fp = 100;
         world.write_model_test(@faith_b);
 
-        let dispatcher = faith_dispatcher(world);
+        let dispatcher = faith_dispatcher(ref world);
         dispatcher.update_faith_leaderboard(season_id, array![wonder_a, wonder_b].span());
 
         let rank1: FaithLeaderboardEntry = world.read_model((1_u32, season_id));
@@ -86,7 +86,7 @@ mod tests {
         faith_b.season_fp = 100;
         world.write_model_test(@faith_b);
 
-        let dispatcher = faith_dispatcher(world);
+        let dispatcher = faith_dispatcher(ref world);
         dispatcher.update_faith_leaderboard(season_id, array![wonder_a, wonder_b].span());
 
         let rank_a: WonderRank = world.read_model((wonder_a, season_id));
@@ -118,7 +118,7 @@ mod tests {
         faith_b.season_fp = 100;
         world.write_model_test(@faith_b);
 
-        let dispatcher = faith_dispatcher(world);
+        let dispatcher = faith_dispatcher(ref world);
         dispatcher.update_faith_leaderboard(season_id, array![wonder_a, wonder_b].span());
 
         let rank1: FaithLeaderboardEntry = world.read_model((1_u32, season_id));

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use dojo::model::{Model, ModelStorage};
+    use dojo::model::{Model, ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
     use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Cannot pledge to own Wonder", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Cannot pledge to own Wonder")]
     fn test_pledge_faith_to_own_wonder_fails() {
         let mut world = spawn_world();
         let realm_id: ID = 7;
@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Already pledged", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: "Already pledged")]
     fn test_pledge_faith_when_already_pledged_fails() {
         let mut world = spawn_world();
         let realm_id: ID = 9;
@@ -170,7 +170,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: 'Not Owner')]
     fn test_pledge_faith_not_owner_fails() {
         let mut world = spawn_world();
         let realm_id: ID = 11;
