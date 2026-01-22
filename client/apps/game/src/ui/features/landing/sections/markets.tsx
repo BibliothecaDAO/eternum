@@ -5,7 +5,7 @@ import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
 import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { useConfig } from "@/pm/providers";
-import { Panel } from "@/ui/design-system/atoms/panel";
+import Panel from "@/ui/design-system/atoms/panel";
 import {
   DojoSdkProviderInitialized,
   MarketStatusFilter,

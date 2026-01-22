@@ -7,7 +7,7 @@ import { useMarket } from "@pm/sdk";
 import { ScrollArea } from "@pm/ui";
 
 import Button from "@/ui/design-system/atoms/button";
-import { Panel } from "@/ui/design-system/atoms/panel";
+import Panel from "@/ui/design-system/atoms/panel";
 
 import { MarketActivity } from "@/ui/features/landing/sections/markets/details/market-activity";
 import { MarketHistory } from "@/ui/features/landing/sections/markets/details/market-history";

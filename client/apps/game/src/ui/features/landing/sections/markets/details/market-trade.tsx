@@ -13,7 +13,7 @@ import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useUser } from "@/pm/hooks/dojo/user";
 import { formatUnits } from "@/pm/utils";
 import Button from "@/ui/design-system/atoms/button";
-import { Panel } from "@/ui/design-system/atoms/panel";
+import Panel from "@/ui/design-system/atoms/panel";
 import { getContractByName } from "@dojoengine/core";
 import { parseLordsToBaseUnits } from "../market-utils";
 import { MaybeController } from "../maybe-controller";
@@ -68,7 +68,7 @@ const TradeConfirmDialog = ({
         radius="xl"
         border="subtle"
         className="relative mx-4 w-full max-w-sm animate-fade-in-up shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
