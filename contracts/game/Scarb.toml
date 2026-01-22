@@ -18,7 +18,6 @@ cubit = { git = "https://github.com/credence0x/cubit.git", branch = "feat/cairo-
 
 [dev-dependencies]
 snforge_std = "0.51.2"
-dojo_cairo_test = "1.8.0"
 assert_macros = "2.13"
 dojo_snf_test = "1.8.0"
 openzeppelin_token = "2.0.0"
