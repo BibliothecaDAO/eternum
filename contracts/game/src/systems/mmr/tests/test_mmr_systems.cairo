@@ -1,4 +1,4 @@
-// MMR Systems Integration Tests (snforge/dojo_snf_test)
+// MMR Systems Integration Tests
 //
 // Tests the full MMR game flow including:
 // - Admin controls for ranked series
@@ -6,18 +6,17 @@
 // - Player stats tracking
 // - Game record creation
 
-use core::dict::Felt252Dict;
 use core::num::traits::Zero;
-use dojo::model::{ModelStorage, ModelStorageTest};
+use dojo::model::{Model, ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::{ContractAddress, contract_address_const};
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
 use crate::models::config::{BlitzRegistrationConfig, WorldConfigUtilImpl};
-use crate::models::mmr::{GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, SeriesMMRConfig};
-use crate::models::rank::{PlayersRankTrial, RankList, RankPrize};
-use crate::systems::mmr::contracts::{IMMRSystemsDispatcher, IMMRSystemsDispatcherTrait};
+use crate::models::mmr::{GameMMRRecord, MMRConfig, MMRConfigDefaultImpl, MMRGameMeta, SeriesMMRConfig};
+use crate::models::rank::{PlayerRank, PlayersRankTrial};
+use crate::systems::mmr::contracts::{IMMRSystems, IMMRSystemsDispatcher, IMMRSystemsDispatcherTrait};
 use crate::systems::utils::mmr::MMRCalculatorImpl;
 
 
@@ -66,12 +65,13 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model("WorldConfig"), // MMR models
             TestResource::Model("PlayerMMRStats"),
             TestResource::Model("GameMMRRecord"), TestResource::Model("SeriesMMRConfig"),
+            TestResource::Model("MMRGameMeta"), TestResource::Model("MMRClaimed"),
             // Rank models (for trial data)
-            TestResource::Model("PlayersRankTrial"), TestResource::Model("RankPrize"), TestResource::Model("RankList"),
+            TestResource::Model("PlayersRankTrial"), TestResource::Model("PlayerRank"),
             // MMR systems contract
             TestResource::Contract("mmr_systems"), // MMR events
             TestResource::Event("MMRGameProcessed"),
-            TestResource::Event("PlayerMMRChanged"),
+            TestResource::Event("MMRGameCommitted"), TestResource::Event("PlayerMMRChanged"),
         ]
             .span(),
     }
@@ -142,12 +142,31 @@ fn setup_blitz_registration_fee(ref world: WorldStorage, fee_amount: u256) {
 /// Set up a mock trial with player rankings
 fn setup_mock_trial(ref world: WorldStorage, trial_id: u128, players: Span<ContractAddress>, ranks: Span<u16>) {
     let player_count: u16 = players.len().try_into().unwrap();
+    let mut last_rank: u16 = 0;
+
+    // Create rank entries for each player
+    let mut i: u32 = 0;
+    while i < players.len() {
+        let player = *players.at(i);
+        let rank = *ranks.at(i);
+
+        if rank > last_rank {
+            last_rank = rank;
+        }
+
+        // Create player rank entry
+        let mut player_rank: PlayerRank = world.read_model((trial_id, player));
+        player_rank.rank = rank;
+        world.write_model_test(@player_rank);
+
+        i += 1;
+    }
 
     // Create trial
     let trial = PlayersRankTrial {
         trial_id,
         owner: contract_address_const::<'trial_owner'>(),
-        last_rank: player_count,
+        last_rank,
         last_player_points: 0,
         total_player_points: 0,
         total_player_count_committed: player_count,
@@ -156,31 +175,18 @@ fn setup_mock_trial(ref world: WorldStorage, trial_id: u128, players: Span<Contr
         total_prize_amount_calculated: 0,
     };
     world.write_model_test(@trial);
-
-    // Create rank entries for each player
-    let mut i: u32 = 0;
-    while i < players.len() {
-        let player = *players.at(i);
-        let rank = *ranks.at(i);
-
-        // Get or create rank prize entry
-        let mut rank_prize: RankPrize = world.read_model((trial_id, rank));
-        let index = rank_prize.total_players_same_rank_count;
-        rank_prize.total_players_same_rank_count += 1;
-        world.write_model_test(@rank_prize);
-
-        // Create rank list entry
-        let rank_list = RankList { trial_id, rank, index, player };
-        world.write_model_test(@rank_list);
-
-        i += 1;
-    };
 }
 
-/// Get MMR systems dispatcher and contract address
-fn get_mmr_dispatcher(world: @WorldStorage) -> (ContractAddress, IMMRSystemsDispatcher) {
+/// Get MMR systems dispatcher
+fn get_mmr_dispatcher(world: @WorldStorage) -> IMMRSystemsDispatcher {
     let (addr, _) = world.dns(@"mmr_systems").unwrap();
-    (addr, IMMRSystemsDispatcher { contract_address: addr })
+    IMMRSystemsDispatcher { contract_address: addr }
+}
+
+/// Get MMR systems contract address for cheat calls
+fn get_mmr_contract_address(world: @WorldStorage) -> ContractAddress {
+    let (addr, _) = world.dns(@"mmr_systems").unwrap();
+    addr
 }
 
 
@@ -193,7 +199,8 @@ fn test_set_series_ranked_as_admin() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 1;
 
     // Initially not ranked
@@ -202,14 +209,16 @@ fn test_set_series_ranked_as_admin() {
     // Set as admin
     start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
+    stop_cheat_caller_address(mmr_addr);
 
     // Now should be ranked
     assert!(mmr.is_series_ranked(trial_id), "Should be ranked after admin sets it");
 
     // Can also unset
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, false);
-    assert!(!mmr.is_series_ranked(trial_id), "Should be unranked after admin unsets it");
     stop_cheat_caller_address(mmr_addr);
+    assert!(!mmr.is_series_ranked(trial_id), "Should be unranked after admin unsets it");
 }
 
 #[test]
@@ -218,7 +227,8 @@ fn test_set_series_ranked_as_non_admin() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
 
     // Try to set as non-admin
     start_cheat_caller_address(mmr_addr, NON_ADMIN());
@@ -234,7 +244,7 @@ fn test_set_series_ranked_as_non_admin() {
 #[test]
 fn test_is_series_ranked_default() {
     let mut world = spawn_mmr_test_world();
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
 
     // Any trial should default to not ranked
     assert!(!mmr.is_series_ranked(1), "Trial 1 should not be ranked by default");
@@ -251,7 +261,7 @@ fn test_get_player_mmr_uninitialized() {
     let mut world = spawn_mmr_test_world();
     setup_mmr_config(ref world);
 
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
 
     // Uninitialized player should return initial MMR
     let player_mmr = mmr.get_player_mmr(PLAYER1());
@@ -266,7 +276,7 @@ fn test_get_player_mmr_uninitialized() {
 #[test]
 fn test_get_player_stats_uninitialized() {
     let mut world = spawn_mmr_test_world();
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
 
     let stats = mmr.get_player_stats(PLAYER1());
 
@@ -302,7 +312,7 @@ fn test_is_game_mmr_eligible_disabled() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
 
     // Should not be eligible when disabled
     assert!(!mmr.is_game_mmr_eligible(1, 6, 0), "Should not be eligible when MMR disabled");
@@ -313,7 +323,7 @@ fn test_is_game_mmr_eligible_not_ranked() {
     let mut world = spawn_mmr_test_world();
     setup_mmr_config(ref world);
 
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
     let trial_id: u128 = 1;
 
     // Series not marked as ranked
@@ -342,7 +352,8 @@ fn test_is_game_mmr_eligible_below_min_players() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 1;
 
     // Mark series as ranked
@@ -382,7 +393,8 @@ fn test_is_game_mmr_eligible_below_min_fee() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 1;
 
     // Mark series as ranked
@@ -407,11 +419,11 @@ fn test_is_game_mmr_eligible_below_min_fee() {
 
 
 // ================================
-// PROCESS GAME MMR TESTS
+// COMMIT + CLAIM MMR TESTS
 // ================================
 
 #[test]
-fn test_process_game_mmr_disabled() {
+fn test_commit_mmr_disabled() {
     let mut world = spawn_mmr_test_world();
 
     // Set MMR config as disabled
@@ -431,12 +443,12 @@ fn test_process_game_mmr_disabled() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
 
-    // Should not panic, just return early
-    let players = array![PLAYER1(), PLAYER2()];
-    let ranks = array![1_u16, 2];
-    mmr.process_game_mmr(1, players, ranks);
+    // Commit should no-op
+    mmr.commit_game_mmr_meta(1, 1000, 1000);
+    // Claim should no-op
+    mmr.claim_game_mmr(1, PLAYER1());
 
     // Verify no records were created
     let record: GameMMRRecord = world.read_model((1_u128, PLAYER1()));
@@ -444,16 +456,21 @@ fn test_process_game_mmr_disabled() {
 }
 
 #[test]
-fn test_process_game_mmr_not_ranked() {
+fn test_commit_mmr_not_ranked() {
     let mut world = spawn_mmr_test_world();
     setup_mmr_config(ref world);
 
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
 
-    // Series not marked as ranked - should return early
-    let players = array![PLAYER1(), PLAYER2()];
-    let ranks = array![1_u16, 2];
-    mmr.process_game_mmr(1, players, ranks);
+    // Set up trial but do NOT mark as ranked
+    let players = array![PLAYER1(), PLAYER2()].span();
+    let ranks = array![1_u16, 2].span();
+    setup_mock_trial(ref world, 1, players, ranks);
+
+    // Commit should no-op
+    mmr.commit_game_mmr_meta(1, 1000, 1000);
+    // Claim should no-op
+    mmr.claim_game_mmr(1, PLAYER1());
 
     // Verify no records were created
     let record: GameMMRRecord = world.read_model((1_u128, PLAYER1()));
@@ -461,12 +478,13 @@ fn test_process_game_mmr_not_ranked() {
 }
 
 #[test]
-fn test_process_game_mmr_already_processed() {
+fn test_commit_mmr_already_processed() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 1;
 
     // Mark series as ranked
@@ -478,11 +496,13 @@ fn test_process_game_mmr_already_processed() {
     let series_config = SeriesMMRConfig { trial_id, is_ranked: true, mmr_processed: true };
     world.write_model_test(@series_config);
 
-    // Try to process again - should return early
-    let players = array![PLAYER1(), PLAYER2()];
-    let ranks = array![1_u16, 2];
-    mmr.process_game_mmr(trial_id, players, ranks);
-    // Would need token to actually create records, so we just verify no panic
+    // Set up trial
+    let players = array![PLAYER1(), PLAYER2()].span();
+    let ranks = array![1_u16, 2].span();
+    setup_mock_trial(ref world, trial_id, players, ranks);
+
+    // Commit should return early
+    mmr.commit_game_mmr_meta(trial_id, 1000, 1000);
 }
 
 
@@ -493,7 +513,7 @@ fn test_process_game_mmr_already_processed() {
 #[test]
 fn test_get_game_mmr_record_not_exists() {
     let mut world = spawn_mmr_test_world();
-    let (_, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
 
     let record = mmr.get_game_mmr_record(1, PLAYER1());
 
@@ -513,7 +533,8 @@ fn test_multiple_series_independent() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
 
     start_cheat_caller_address(mmr_addr, ADMIN());
 
@@ -522,89 +543,37 @@ fn test_multiple_series_independent() {
     mmr.set_series_ranked(2, false);
     mmr.set_series_ranked(3, true);
 
+    stop_cheat_caller_address(mmr_addr);
+
     // Verify each series has independent status
     assert!(mmr.is_series_ranked(1), "Series 1 should be ranked");
     assert!(!mmr.is_series_ranked(2), "Series 2 should not be ranked");
     assert!(mmr.is_series_ranked(3), "Series 3 should be ranked");
 
     // Change one series
+    start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(1, false);
+    stop_cheat_caller_address(mmr_addr);
 
     // Others should be unaffected
     assert!(!mmr.is_series_ranked(1), "Series 1 should now be unranked");
     assert!(!mmr.is_series_ranked(2), "Series 2 should still not be ranked");
     assert!(mmr.is_series_ranked(3), "Series 3 should still be ranked");
-
-    stop_cheat_caller_address(mmr_addr);
 }
 
 
 // ================================
-// PROCESS GAME MMR FROM TRIAL TESTS
+// COMMIT + CLAIM FLOW TESTS
 // ================================
-
-/// Helper to set up a complete trial with players and rankings
-fn setup_complete_trial(ref world: WorldStorage, trial_id: u128, players: Span<ContractAddress>, ranks: Span<u16>) {
-    let player_count: u16 = players.len().try_into().unwrap();
-    let last_rank: u16 = *ranks.at(ranks.len() - 1);
-
-    // Create trial with all required fields
-    let trial = PlayersRankTrial {
-        trial_id,
-        owner: contract_address_const::<'trial_owner'>(),
-        last_rank,
-        last_player_points: 0,
-        total_player_points: 0,
-        total_player_count_committed: player_count,
-        total_player_count_revealed: player_count,
-        total_prize_amount: 0,
-        total_prize_amount_calculated: 0,
-    };
-    world.write_model_test(@trial);
-
-    // Track players per rank for RankPrize
-    let mut rank_counts: Felt252Dict<u16> = Default::default();
-
-    // Create rank entries for each player
-    let mut i: u32 = 0;
-    while i < players.len() {
-        let player = *players.at(i);
-        let rank = *ranks.at(i);
-
-        // Get current count for this rank
-        let current_count: u16 = rank_counts.get(rank.into());
-
-        // Create RankList entry
-        let rank_list = RankList { trial_id, rank, index: current_count, player };
-        world.write_model_test(@rank_list);
-
-        // Increment count for this rank
-        rank_counts.insert(rank.into(), current_count + 1);
-
-        i += 1;
-    }
-
-    // Create RankPrize entries for each unique rank
-    let mut rank: u16 = 1;
-    while rank <= last_rank {
-        let count: u16 = rank_counts.get(rank.into());
-        if count > 0 {
-            let rank_prize = RankPrize {
-                trial_id, rank, total_players_same_rank_count: count, total_prize_amount: 0, grant_elite_nft: false,
-            };
-            world.write_model_test(@rank_prize);
-        }
-        rank += 1;
-    };
-}
 
 #[test]
-fn test_process_game_mmr_from_trial_success() {
+fn test_commit_and_claim_success() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 100;
 
     // Mark series as ranked (admin only)
@@ -615,13 +584,16 @@ fn test_process_game_mmr_from_trial_success() {
     // Set up a complete trial with 4 players
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4()].span();
     let ranks: Span<u16> = array![1_u16, 2, 3, 4].span();
-    setup_complete_trial(ref world, trial_id, players, ranks);
+    setup_mock_trial(ref world, trial_id, players, ranks);
 
-    // Set block timestamp for record
     start_cheat_block_timestamp_global(1000);
 
-    // Process MMR from trial
-    mmr.process_game_mmr_from_trial(trial_id);
+    // Commit meta and claim for all players
+    mmr.commit_game_mmr_meta(trial_id, 1000, 1000);
+    mmr.claim_game_mmr(trial_id, PLAYER1());
+    mmr.claim_game_mmr(trial_id, PLAYER2());
+    mmr.claim_game_mmr(trial_id, PLAYER3());
+    mmr.claim_game_mmr(trial_id, PLAYER4());
 
     // Verify game records were created
     let record1 = mmr.get_game_mmr_record(trial_id, PLAYER1());
@@ -643,15 +615,20 @@ fn test_process_game_mmr_from_trial_success() {
     // Winner should have gained, loser should have lost
     assert!(record1.mmr_after > record1.mmr_before, "Winner should gain MMR");
     assert!(record4.mmr_after < record4.mmr_before, "Loser should lose MMR");
+
+    // Series should be marked processed after all claims
+    let series_config: SeriesMMRConfig = world.read_model(trial_id);
+    assert!(series_config.mmr_processed, "Series should be marked processed");
 }
 
 #[test]
-fn test_process_game_mmr_from_trial_with_ties() {
+fn test_claim_idempotent() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 101;
 
     // Mark series as ranked
@@ -659,85 +636,34 @@ fn test_process_game_mmr_from_trial_with_ties() {
     mmr.set_series_ranked(trial_id, true);
     stop_cheat_caller_address(mmr_addr);
 
-    // Set up trial with ties: P1 wins, P2 and P3 tie for 2nd, P4 last
-    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4()].span();
-    let ranks: Span<u16> = array![1_u16, 2, 2, 4].span(); // P2 and P3 tie
-
-    setup_complete_trial(ref world, trial_id, players, ranks);
+    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
+    let ranks: Span<u16> = array![1_u16, 2].span();
+    setup_mock_trial(ref world, trial_id, players, ranks);
 
     start_cheat_block_timestamp_global(2000);
 
-    // Process MMR
-    mmr.process_game_mmr_from_trial(trial_id);
+    mmr.commit_game_mmr_meta(trial_id, 1000, 1000);
+    mmr.claim_game_mmr(trial_id, PLAYER1());
 
-    // Verify tied players have same rank in records
-    let record2 = mmr.get_game_mmr_record(trial_id, PLAYER2());
-    let record3 = mmr.get_game_mmr_record(trial_id, PLAYER3());
+    let record_after_first = mmr.get_game_mmr_record(trial_id, PLAYER1());
+    let stats_after_first = mmr.get_player_stats(PLAYER1());
 
-    assert!(record2.rank == 2, "Player 2 should have rank 2");
-    assert!(record3.rank == 2, "Player 3 should have rank 2 (tied)");
-    assert!(record2.timestamp > 0, "Record 2 should be created");
-    assert!(record3.timestamp > 0, "Record 3 should be created");
+    // Claim again (should be no-op)
+    start_cheat_block_timestamp_global(3000);
+    mmr.claim_game_mmr(trial_id, PLAYER1());
+
+    let record_after_second = mmr.get_game_mmr_record(trial_id, PLAYER1());
+    let stats_after_second = mmr.get_player_stats(PLAYER1());
+
+    assert!(record_after_first.timestamp == record_after_second.timestamp, "Record timestamp should not change");
+    assert!(
+        record_after_first.mmr_after == record_after_second.mmr_after, "Record MMR should not change on second call",
+    );
+    assert!(stats_after_first.games_played == stats_after_second.games_played, "Games played should not increase");
 }
 
 #[test]
-fn test_process_game_mmr_from_trial_not_ranked() {
-    let mut world = spawn_mmr_test_world();
-    setup_world_config(ref world, ADMIN());
-    setup_mmr_config(ref world);
-
-    let (_, mmr) = get_mmr_dispatcher(@world);
-    let trial_id: u128 = 102;
-
-    // Do NOT mark series as ranked
-
-    // Set up trial
-    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
-    let ranks: Span<u16> = array![1_u16, 2].span();
-    setup_complete_trial(ref world, trial_id, players, ranks);
-
-    // Process MMR - should be a no-op since not ranked
-    mmr.process_game_mmr_from_trial(trial_id);
-
-    // Verify no records were created
-    let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
-    assert!(record.timestamp == 0, "No record should be created for unranked trial");
-}
-
-#[test]
-fn test_process_game_mmr_from_trial_incomplete() {
-    let mut world = spawn_mmr_test_world();
-    setup_world_config(ref world, ADMIN());
-    setup_mmr_config(ref world);
-    setup_blitz_registration_fee(ref world, 0);
-
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
-    let trial_id: u128 = 1025;
-
-    // Mark series as ranked
-    start_cheat_caller_address(mmr_addr, ADMIN());
-    mmr.set_series_ranked(trial_id, true);
-    stop_cheat_caller_address(mmr_addr);
-
-    // Set up a trial then mark it as incomplete (revealed < committed)
-    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4()].span();
-    let ranks: Span<u16> = array![1_u16, 2, 3, 4].span();
-    setup_complete_trial(ref world, trial_id, players, ranks);
-
-    let mut trial: PlayersRankTrial = world.read_model(trial_id);
-    trial.total_player_count_revealed = 2;
-    world.write_model_test(@trial);
-
-    // Process MMR - should be a no-op since trial is incomplete
-    mmr.process_game_mmr_from_trial(trial_id);
-
-    // Verify no records were created
-    let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
-    assert!(record.timestamp == 0, "No record should be created for incomplete trial");
-}
-
-#[test]
-fn test_process_game_mmr_from_trial_below_min_entry_fee() {
+fn test_commit_below_min_entry_fee() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
@@ -761,29 +687,28 @@ fn test_process_game_mmr_from_trial_below_min_entry_fee() {
     // Fee amount below min_entry_fee
     setup_blitz_registration_fee(ref world, 0);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
-    let trial_id: u128 = 1026;
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
+    let trial_id: u128 = 102;
 
     // Mark series as ranked
     start_cheat_caller_address(mmr_addr, ADMIN());
     mmr.set_series_ranked(trial_id, true);
     stop_cheat_caller_address(mmr_addr);
 
-    // Set up complete trial
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
     let ranks: Span<u16> = array![1_u16, 2].span();
-    setup_complete_trial(ref world, trial_id, players, ranks);
+    setup_mock_trial(ref world, trial_id, players, ranks);
 
-    // Process MMR - should be a no-op since entry fee is below min
-    mmr.process_game_mmr_from_trial(trial_id);
+    // Commit should no-op since entry fee below min
+    mmr.commit_game_mmr_meta(trial_id, 1000, 1000);
 
-    // Verify no records were created
-    let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
-    assert!(record.timestamp == 0, "No record should be created below min entry fee");
+    let meta: MMRGameMeta = mmr.get_game_mmr_meta(trial_id);
+    assert!(meta.committed_at == 0, "Meta should not be committed below min entry fee");
 }
 
 #[test]
-fn test_process_game_mmr_from_trial_below_min_players() {
+fn test_commit_below_min_players() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
 
@@ -804,7 +729,8 @@ fn test_process_game_mmr_from_trial_below_min_players() {
     };
     WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 103;
 
     // Mark series as ranked
@@ -812,26 +738,24 @@ fn test_process_game_mmr_from_trial_below_min_players() {
     mmr.set_series_ranked(trial_id, true);
     stop_cheat_caller_address(mmr_addr);
 
-    // Set up trial with only 2 players (below min)
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
     let ranks: Span<u16> = array![1_u16, 2].span();
-    setup_complete_trial(ref world, trial_id, players, ranks);
+    setup_mock_trial(ref world, trial_id, players, ranks);
 
-    // Process MMR - should be a no-op since below min players
-    mmr.process_game_mmr_from_trial(trial_id);
+    mmr.commit_game_mmr_meta(trial_id, 1000, 1000);
 
-    // Verify no records were created
-    let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
-    assert!(record.timestamp == 0, "No record should be created below min players");
+    let meta: MMRGameMeta = mmr.get_game_mmr_meta(trial_id);
+    assert!(meta.committed_at == 0, "Meta should not be committed below min players");
 }
 
 #[test]
-fn test_process_game_mmr_from_trial_idempotent() {
+fn test_claim_requires_commit() {
     let mut world = spawn_mmr_test_world();
     setup_world_config(ref world, ADMIN());
     setup_mmr_config(ref world);
 
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
+    let mmr = get_mmr_dispatcher(@world);
+    let mmr_addr = get_mmr_contract_address(@world);
     let trial_id: u128 = 104;
 
     // Mark series as ranked
@@ -839,74 +763,14 @@ fn test_process_game_mmr_from_trial_idempotent() {
     mmr.set_series_ranked(trial_id, true);
     stop_cheat_caller_address(mmr_addr);
 
-    // Set up trial
     let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2()].span();
     let ranks: Span<u16> = array![1_u16, 2].span();
-    setup_complete_trial(ref world, trial_id, players, ranks);
+    setup_mock_trial(ref world, trial_id, players, ranks);
 
-    start_cheat_block_timestamp_global(3000);
-
-    // Process MMR first time
-    mmr.process_game_mmr_from_trial(trial_id);
-
-    let record_after_first = mmr.get_game_mmr_record(trial_id, PLAYER1());
-    let stats_after_first = mmr.get_player_stats(PLAYER1());
-
-    // Process MMR second time (should be no-op)
-    start_cheat_block_timestamp_global(4000);
-    mmr.process_game_mmr_from_trial(trial_id);
-
-    let record_after_second = mmr.get_game_mmr_record(trial_id, PLAYER1());
-    let stats_after_second = mmr.get_player_stats(PLAYER1());
-
-    // Records should be unchanged
-    assert!(record_after_first.timestamp == record_after_second.timestamp, "Record timestamp should not change");
-    assert!(
-        record_after_first.mmr_after == record_after_second.mmr_after, "Record MMR should not change on second call",
-    );
-    assert!(stats_after_first.games_played == stats_after_second.games_played, "Games played should not increase");
-}
-
-#[test]
-fn test_process_game_mmr_from_trial_six_players() {
-    let mut world = spawn_mmr_test_world();
-    setup_world_config(ref world, ADMIN());
-    setup_mmr_config(ref world);
-
-    let (mmr_addr, mmr) = get_mmr_dispatcher(@world);
-    let trial_id: u128 = 105;
-
-    // Mark series as ranked
-    start_cheat_caller_address(mmr_addr, ADMIN());
-    mmr.set_series_ranked(trial_id, true);
-    stop_cheat_caller_address(mmr_addr);
-
-    // Set up trial with 6 players (standard Blitz game)
-    let players: Span<ContractAddress> = array![PLAYER1(), PLAYER2(), PLAYER3(), PLAYER4(), PLAYER5(), PLAYER6()]
-        .span();
-    let ranks: Span<u16> = array![1_u16, 2, 3, 4, 5, 6].span();
-    setup_complete_trial(ref world, trial_id, players, ranks);
-
-    start_cheat_block_timestamp_global(5000);
-
-    // Process MMR
-    mmr.process_game_mmr_from_trial(trial_id);
-
-    // Verify all 6 players have records
-    let record1 = mmr.get_game_mmr_record(trial_id, PLAYER1());
-    let record6 = mmr.get_game_mmr_record(trial_id, PLAYER6());
-
-    assert!(record1.timestamp == 5000, "Player 1 should have record");
-    assert!(record6.timestamp == 5000, "Player 6 should have record");
-    assert!(record1.player_count == 6, "Should show 6 players");
-    assert!(record6.player_count == 6, "Should show 6 players");
-
-    // First place should gain, last place should lose
-    assert!(record1.mmr_after > record1.mmr_before, "1st place should gain");
-    assert!(record6.mmr_after < record6.mmr_before, "6th place should lose");
-
-    // Verify median was calculated (all started at 1000)
-    assert!(record1.median_mmr == 1000, "Median should be 1000");
+    // Claim without commit should no-op
+    mmr.claim_game_mmr(trial_id, PLAYER1());
+    let record = mmr.get_game_mmr_record(trial_id, PLAYER1());
+    assert!(record.timestamp == 0, "No record should be created without commit");
 }
 
 

@@ -47,7 +47,8 @@ The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for 
 │  │   MMR Systems       │    │  MMR Calculator     │    │   MMR Token      │  │
 │  │   (Dojo Contract)   │───▶│  (Utils Library)    │    │   (ERC20)        │  │
 │  │                     │    │                     │    │                  │  │
-│  │ • process_game_mmr  │    │ • 8-step formula    │    │ • Soul-bound     │  │
+│  │ • commit_game_mmr   │    │ • 8-step formula    │    │ • Soul-bound     │  │
+│  │ • claim_game_mmr    │    │                     │    │                 │  │
 │  │ • set_series_ranked │    │ • Median calc       │    │ • GAME_ROLE only │  │
 │  │ • get_player_stats  │    │ • Fixed-point math  │    │ • Min floor 100  │  │
 │  └─────────────────────┘    └─────────────────────┘    └──────────────────┘  │
@@ -68,7 +69,7 @@ The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for 
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                           External Integration                                │
 │                                                                              │
-│  Prize Distribution ──▶ process_game_mmr_from_trial() ──▶ Updates MMR       │
+│  Client/Keeper ───────▶ commit_game_mmr_meta() + claim_game_mmr()          │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -151,6 +152,35 @@ struct SeriesMMRConfig {
     #[key] trial_id: u128,
     is_ranked: bool,                  // Whether this series affects MMR
     mmr_processed: bool,              // Whether MMR has been calculated
+}
+```
+
+### MMRGameMeta
+
+Committed metadata required for permissionless per-player claims.
+
+```cairo
+struct MMRGameMeta {
+    #[key] trial_id: u128,
+    player_count: u16,                // Total players in game
+    game_median: u128,                // Median MMR of this game
+    global_median: u128,              // Global median for split lobbies
+    committed_at: u64,                // When meta was committed
+    committed_by: ContractAddress,    // Who committed the meta
+    processed_count: u16,             // Claims processed so far
+}
+```
+
+### MMRClaimed
+
+Tracks whether a player has claimed their MMR update for a trial.
+
+```cairo
+struct MMRClaimed {
+    #[key] trial_id: u128,
+    #[key] player: ContractAddress,
+    claimed: bool,
+    claimed_at: u64,
 }
 ```
 
@@ -335,16 +365,11 @@ pub trait IMMRSystems<T> {
     /// Check if a series is ranked
     fn is_series_ranked(self: @T, trial_id: u128) -> bool;
 
-    /// Process MMR updates with explicit player/rank arrays
-    fn process_game_mmr(
-        ref self: T,
-        trial_id: u128,
-        players: Array<ContractAddress>,
-        ranks: Array<u16>,
-    );
+    /// Commit MMR metadata (medians) for a completed game
+    fn commit_game_mmr_meta(ref self: T, trial_id: u128, game_median: u128, global_median: u128);
 
-    /// Process MMR updates by reading from trial models (preferred)
-    fn process_game_mmr_from_trial(ref self: T, trial_id: u128);
+    /// Permissionless per-player claim
+    fn claim_game_mmr(ref self: T, trial_id: u128, player: ContractAddress);
 
     /// Get a player's current MMR
     fn get_player_mmr(self: @T, player: ContractAddress) -> u128;
@@ -354,6 +379,12 @@ pub trait IMMRSystems<T> {
 
     /// Get the MMR record for a player in a specific game
     fn get_game_mmr_record(self: @T, trial_id: u128, player: ContractAddress) -> GameMMRRecord;
+
+    /// Get committed MMR metadata for a game
+    fn get_game_mmr_meta(self: @T, trial_id: u128) -> MMRGameMeta;
+
+    /// Check if a player has already claimed
+    fn has_player_claimed_mmr(self: @T, trial_id: u128, player: ContractAddress) -> bool;
 
     /// Check if a game meets MMR eligibility requirements
     fn is_game_mmr_eligible(self: @T, trial_id: u128, player_count: u16, entry_fee: u256) -> bool;
@@ -467,22 +498,37 @@ let mmr_systems = mmr_systems::get_dispatcher(@world);
 mmr_systems.set_series_ranked(trial_id, true);
 ```
 
-### Processing MMR After Game Completion
+### Processing MMR After Game Completion (Commit + Claim)
 
-After rankings are finalized, call `process_game_mmr_from_trial`:
+The MMR flow is claim-based to avoid lobby-wide loops.
+
+**Step 1: Commit meta (medians) once**
 
 ```cairo
-// In prize_distribution_systems after rankings revealed
-mmr_systems.process_game_mmr_from_trial(trial_id);
+// Client/keeper after rankings are finalized
+mmr_systems.commit_game_mmr_meta(trial_id, game_median, global_median);
 ```
 
-This will:
-1. Read player rankings from `PlayersRankTrial` and `RankList` models
-2. Calculate new MMR for each player
-3. Update `PlayerMMRStats` records
-4. Create `GameMMRRecord` entries
-5. Update MMR token balances (if configured)
-6. Emit events
+> Note: medians are computed off-chain and committed once. The contract does not
+> verify medians on-chain to avoid lobby-wide loops.
+
+**Step 2: Permissionless per-player claim**
+
+```cairo
+// Any caller can submit a claim for any player
+mmr_systems.claim_game_mmr(trial_id, player);
+```
+
+Each claim will:
+1. Read the player's rank from `PlayerRank`
+2. Calculate the new MMR for that player
+3. Update `PlayerMMRStats`
+4. Create a `GameMMRRecord`
+5. Update the MMR token (if configured)
+6. Emit `PlayerMMRChanged`
+
+When all players are claimed, `SeriesMMRConfig.mmr_processed` is set and
+`MMRGameProcessed` is emitted.
 
 ### Querying Player Data
 
@@ -501,6 +547,10 @@ println!("Current streak: {}", stats.current_streak);
 // Get specific game record
 let record = mmr_systems.get_game_mmr_record(trial_id, player_address);
 println!("Rank: {}, MMR change: {} -> {}", record.rank, record.mmr_before, record.mmr_after);
+
+// Check committed meta + claim status
+let meta = mmr_systems.get_game_mmr_meta(trial_id);
+let claimed = mmr_systems.has_player_claimed_mmr(trial_id, player_address);
 ```
 
 ---
@@ -583,7 +633,7 @@ cd contracts/game && sozo test -f mmr
 
 # Run specific test groups
 sozo test -f test_mmr_calculator        # Algorithm tests
-sozo test -f test_process_game_mmr      # System tests
+sozo test -f test_commit_and_claim      # System tests
 sozo test -f test_player_stats          # Model tests
 ```
 
