@@ -21,23 +21,34 @@ jobs:
   test-various:
     needs: [setup-environment]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test: [models, troop_management, test_troop_movement, test_troop_battle, quest]
-      fail-fast: false
+    # strategy:
+    #   matrix:
+    #     # Only troop_management has active tests (40 tests)
+    #     # Disabled jobs that run 0 tests:
+    #     # - models: all tests commented out
+    #     # - test_troop_movement: all tests commented out
+    #     # - test_troop_battle: all tests commented out
+    #     # - quest: tests behind #[cfg(feature: 'budokan_tests')] - budokan dependency commented out
+    #     #
+    #     # Note: Parallelization by test group (guard_, explorer_create, etc.) was analyzed
+    #     # but not implemented because compilation overhead (~3min) per job would increase
+    #     # total CI time. With 40 tests in single job, compilation is done once.
+    #     # See contracts/game/src/systems/combat/contracts/TEST_ANALYSIS.md for details.
+    #     test: [troop_management]
+    # fail-fast: false
     steps:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "nightly-2025-05-08"
+          scarb-version: "2.13.1"
       - name: Download Dojo release artifact
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.2/dojo_v1.7.0-alpha.2_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.8.0/dojo_v1.8.0_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
-      - name: Run Dojo Test for ${{ matrix.test }}
+      - name: Run Dojo Test
         run: |
-          cd contracts/game && sozo test -f ${{ matrix.test }}
+          cd contracts/game && scarb test
 
   test-scarb-fmt:
     needs: [setup-environment]
@@ -46,6 +57,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.11.4"
+          scarb-version: "2.13.1"
       - name: Run scarb fmt check
         run: cd contracts/game && scarb fmt --check
