@@ -6,15 +6,16 @@
 mod tests {
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::WorldStorageTrait;
-    use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address, start_cheat_block_timestamp_global};
-
+    use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
     use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
     use crate::models::config::{CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl};
     use crate::models::map::{Tile, TileTrait};
     use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::ResourceImpl;
-    use crate::models::structure::{StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl};
+    use crate::models::structure::{
+        StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+    };
     use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType};
     use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
@@ -22,9 +23,9 @@ mod tests {
     use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
     };
-
     use crate::utils::testing::snf_helpers::{
-        MOCK_TICK_CONFIG, snf_pre_explore_tile, snf_setup_troop_management_world, snf_spawn_guard_test_realm, tgrant_resources,
+        MOCK_TICK_CONFIG, snf_pre_explore_tile, snf_setup_troop_management_world, snf_spawn_guard_test_realm,
+        tgrant_resources,
     };
 
     // Helper to get system dispatcher
@@ -1458,12 +1459,14 @@ mod tests {
 
         // Act: Create the 'from' explorer
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
         stop_cheat_caller_address(system_addr);
 
         // Create the 'to' explorer
         start_cheat_caller_address(system_addr, realm_owner);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Assert 1: Verify initial states
@@ -1528,12 +1531,14 @@ mod tests {
 
         // Act 1: Create the 'from' explorer
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Create the 'to' explorer
         start_cheat_caller_address(system_addr, realm_owner);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Assert 1: Verify initial states
@@ -1593,8 +1598,10 @@ mod tests {
 
         // Act 1: Create the explorers
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap with zero amount (expect panic)
@@ -1635,8 +1642,10 @@ mod tests {
 
         // Act 1: Create the explorers (while season is active)
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Make season inactive
@@ -1691,11 +1700,13 @@ mod tests {
 
         // Act 1: Create the explorers (as owner)
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, other_caller);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap explorers from other_caller who only owns one of the explorers (expect panic)
@@ -1737,10 +1748,12 @@ mod tests {
 
         // Act 1: Create the explorers (as different owners)
         start_cheat_caller_address(system_addr, realm_owner_1);
-        let from_explorer_id = dispatcher.explorer_create(realm_id_1, category, tier, create_amount_from, spawn_direction_from);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id_1, category, tier, create_amount_from, spawn_direction_from);
         stop_cheat_caller_address(system_addr);
         start_cheat_caller_address(system_addr, realm_owner_2);
-        let to_explorer_id = dispatcher.explorer_create(realm_id_2, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm_id_2, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap between different owners (expect panic)
@@ -1781,8 +1794,10 @@ mod tests {
 
         // Act 1: Create the explorers
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap between non-adjacent explorers (expect panic)
@@ -1823,8 +1838,10 @@ mod tests {
 
         // Act 1: Create the explorers
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap with insufficient troops (expect panic)
@@ -1865,8 +1882,10 @@ mod tests {
 
         // Act 1: Create the explorers
         start_cheat_caller_address(system_addr, realm_owner);
-        let from_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher.explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+        let from_explorer_id = dispatcher
+            .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
+        let to_explorer_id = dispatcher
+            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap with invalid precision (expect panic)
