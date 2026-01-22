@@ -104,3 +104,9 @@ Ties: combine tied rank shares and split evenly (Blitz behavior).
 cd contracts/game
 sozo test -f faith
 ```
+
+## TODOs (Post‑Phase Follow‑ups)
+- Wire prize pool funding + distribution into season end pipeline, including DAO handling for unallocated/unclaimed.
+- Add on‑chain events for pledge/revoke/distribution for indexers/UI.
+- Make max wonder‑chain depth a config value (vs constant).
+- UI/graph updates for faith leaderboard + prize breakdown.
