@@ -62,7 +62,9 @@ const saveToStorage = (prefix: string, suffix: string, value: string | null) => 
 
 const buildToriiBaseUrl = (worldName: string): string => `https://api.cartridge.gg/x/${worldName}/torii/sql`;
 
-export const useLandingWorldSelection = ({ storageKeyPrefix }: UseLandingWorldSelectionOptions): LandingWorldSelection => {
+export const useLandingWorldSelection = ({
+  storageKeyPrefix,
+}: UseLandingWorldSelectionOptions): LandingWorldSelection => {
   const [selectedChain, setSelectedChainState] = useState<Chain>(DEFAULT_CHAIN);
   const [selectedWorld, setSelectedWorldState] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
