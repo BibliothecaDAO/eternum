@@ -49,6 +49,9 @@ pub struct WonderFaith {
     pub realm_follower_count: u32,
     pub village_follower_count: u32,
     pub wonder_follower_count: u32,
+    pub realm_fp_index: u128,
+    pub village_fp_index: u128,
+    pub wonder_fp_index: u128,
     pub total_fp_generated: u128,
     pub current_owner_fp: u128,
     pub last_tick_processed: u64,
@@ -78,6 +81,7 @@ pub struct FollowerAllegiance {
     pub wonder_id: ID,
     pub pledge_tick: u64,
     pub last_fp_tick: u64,
+    pub last_fp_index: u128,
     pub accumulated_fp: u128,
     pub entity_type: FollowerType,
 }

@@ -49,6 +49,7 @@ mod tests {
     fn spawn_world() -> WorldStorage {
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
+        set_tick_config(ref world, 1);
         world
     }
 
@@ -104,7 +105,7 @@ mod tests {
         world.write_model_test(@faith);
 
         let dispatcher = faith_dispatcher(world);
-        dispatcher.process_faith(wonder_id, array![].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.total_fp_generated == 50, "baseline FP should be generated");
@@ -136,7 +137,7 @@ mod tests {
         dispatcher.revoke_faith(realm_id);
 
         set_block_timestamp(101);
-        dispatcher.process_faith(wonder_id, array![realm_id].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.season_fp == 100, "baseline should accrue without follower FP");
@@ -242,7 +243,7 @@ mod tests {
         world.write_model_test(@faith);
 
         let dispatcher = faith_dispatcher(world);
-        dispatcher.process_faith(wonder_id, array![].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.total_fp_generated == 10_000_000_000_000_000_000, "large FP should accumulate safely");

@@ -11,6 +11,7 @@ mod tests {
 
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
+    use crate::models::config::{TickConfig, WorldConfigUtilImpl, m_WorldConfig};
     use crate::models::faith::{
         FollowerAllegiance, FollowerType, WonderFaith, m_FollowerAllegiance, m_WonderFaith,
     };
@@ -22,6 +23,7 @@ mod tests {
         NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
+                TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
                 TestResource::Model(m_WonderFaith::TEST_CLASS_HASH),
                 TestResource::Model(m_FollowerAllegiance::TEST_CLASS_HASH),
@@ -43,6 +45,11 @@ mod tests {
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         world
+    }
+
+    fn set_tick_config(ref world: WorldStorage, tick_seconds: u64) {
+        let tick_config = TickConfig { armies_tick_in_seconds: tick_seconds, delivery_tick_in_seconds: tick_seconds };
+        WorldConfigUtilImpl::set_member(ref world, selector!("tick_config"), tick_config);
     }
 
     fn write_structure(
@@ -77,6 +84,7 @@ mod tests {
 
         write_structure(ref world, realm_id, realm_owner, StructureCategory::Realm, false);
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
 
         set_caller(realm_owner);
         let dispatcher = faith_dispatcher(world);
@@ -100,6 +108,7 @@ mod tests {
 
         write_structure(ref world, village_id, village_owner, StructureCategory::Village, false);
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
 
         set_caller(village_owner);
         let dispatcher = faith_dispatcher(world);
@@ -119,6 +128,7 @@ mod tests {
 
         write_structure(ref world, sub_wonder_id, sub_owner, StructureCategory::Realm, true);
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
 
         set_caller(sub_owner);
         let dispatcher = faith_dispatcher(world);
@@ -138,6 +148,7 @@ mod tests {
 
         write_structure(ref world, realm_id, owner, StructureCategory::Realm, false);
         write_structure(ref world, wonder_id, owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
 
         set_caller(owner);
         let dispatcher = faith_dispatcher(world);
@@ -155,6 +166,8 @@ mod tests {
 
         write_structure(ref world, realm_id, owner, StructureCategory::Realm, false);
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
+        set_tick_config(ref world, 1);
 
         set_caller(owner);
         let dispatcher = faith_dispatcher(world);
@@ -178,5 +191,29 @@ mod tests {
         set_caller(other);
         let dispatcher = faith_dispatcher(world);
         dispatcher.pledge_faith(realm_id, wonder_id);
+    }
+
+    #[test]
+    fn test_pledge_sets_last_fp_index() {
+        let mut world = spawn_world();
+        let realm_id: ID = 13;
+        let wonder_id: ID = 14;
+        let realm_owner = starknet::contract_address_const::<'realm_owner_index'>();
+        let wonder_owner = starknet::contract_address_const::<'wonder_owner_index'>();
+
+        write_structure(ref world, realm_id, realm_owner, StructureCategory::Realm, false);
+        write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
+
+        let mut faith: WonderFaith = world.read_model(wonder_id);
+        faith.realm_fp_index = 42;
+        world.write_model_test(@faith);
+
+        set_caller(realm_owner);
+        let dispatcher = faith_dispatcher(world);
+        dispatcher.pledge_faith(realm_id, wonder_id);
+
+        let allegiance: FollowerAllegiance = world.read_model(realm_id);
+        assert!(allegiance.last_fp_index == 42, "last index should match current realm index");
     }
 }

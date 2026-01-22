@@ -103,7 +103,7 @@ mod tests {
         world.write_model_test(@faith);
 
         let dispatcher = faith_dispatcher(world);
-        dispatcher.process_faith(wonder_id, array![].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.total_fp_generated == 50, "baseline FP should be generated");
@@ -132,10 +132,15 @@ mod tests {
         set_caller(realm_owner);
         let dispatcher = faith_dispatcher(world);
         dispatcher.pledge_faith(realm_id, wonder_id);
-        dispatcher.process_faith(wonder_id, array![realm_id].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.total_fp_generated == 60, "base + realm follower FP should be generated");
+        assert!(stored.realm_fp_index == 7, "realm index should track per-follower share");
+
+        dispatcher.settle_faith_balance(realm_id);
+        let realm_balance: FollowerFaithBalance = world.read_model((wonder_id, stored.season_id, realm_owner));
+        assert!(realm_balance.total_fp == 7, "realm holder share should settle from index");
     }
 
     #[test]
@@ -170,7 +175,7 @@ mod tests {
         set_caller(sub_wonder_owner);
         dispatcher.pledge_faith(sub_wonder_id, wonder_id);
 
-        dispatcher.process_faith(wonder_id, array![realm_id, village_id, sub_wonder_id].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.total_fp_generated == 111, "base + mixed followers FP should be generated");
@@ -192,7 +197,7 @@ mod tests {
         world.write_model_test(@faith);
 
         let dispatcher = faith_dispatcher(world);
-        dispatcher.process_faith(wonder_id, array![].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.total_fp_generated == 30, "catch-up should generate per-tick FP");
@@ -214,10 +219,10 @@ mod tests {
         world.write_model_test(@faith);
 
         let dispatcher = faith_dispatcher(world);
-        dispatcher.process_faith(wonder_id, array![].span());
+        dispatcher.process_faith(wonder_id);
         let first: WonderFaith = world.read_model(wonder_id);
 
-        dispatcher.process_faith(wonder_id, array![].span());
+        dispatcher.process_faith(wonder_id);
         let second: WonderFaith = world.read_model(wonder_id);
 
         assert!(first.total_fp_generated == second.total_fp_generated, "idempotent per tick");
@@ -246,14 +251,16 @@ mod tests {
         let dispatcher = faith_dispatcher(world);
         dispatcher.pledge_faith(realm_id, wonder_id);
 
-        dispatcher.process_faith(wonder_id, array![realm_id].span());
+        dispatcher.process_faith(wonder_id);
 
         let stored: WonderFaith = world.read_model(wonder_id);
         assert!(stored.current_owner_fp == 130, "owner gets 30% + holder share");
 
         let owner_balance: FollowerFaithBalance = world.read_model((wonder_id, stored.season_id, wonder_owner));
-        let realm_balance: FollowerFaithBalance = world.read_model((wonder_id, stored.season_id, realm_owner));
         assert!(owner_balance.total_fp == 70, "owner holder share should be 70");
+
+        dispatcher.settle_faith_balance(realm_id);
+        let realm_balance: FollowerFaithBalance = world.read_model((wonder_id, stored.season_id, realm_owner));
         assert!(realm_balance.total_fp == 70, "realm holder share should be 70");
     }
 }

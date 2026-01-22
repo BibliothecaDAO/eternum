@@ -101,7 +101,7 @@ mod tests {
 
         set_block_timestamp(1000);
         let dispatcher = faith_dispatcher(world);
-        dispatcher.distribute_faith_prize(season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
 
         let snapshot: FaithSeasonSnapshot = world.read_model((season_id, wonder_id));
         assert!(snapshot.season_fp == 999, "snapshot should capture season fp");
@@ -126,7 +126,7 @@ mod tests {
 
         set_block_timestamp(2000);
         let dispatcher = faith_dispatcher(world);
-        dispatcher.distribute_faith_prize(season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
 
         set_caller(wonder_owner);
         set_block_timestamp(2002);
@@ -154,7 +154,7 @@ mod tests {
 
         set_block_timestamp(3000);
         let dispatcher = faith_dispatcher(world);
-        dispatcher.distribute_faith_prize(season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
 
         set_caller(wonder_owner);
         set_block_timestamp(3003);
@@ -178,7 +178,7 @@ mod tests {
 
         set_block_timestamp(4000);
         let dispatcher = faith_dispatcher(world);
-        dispatcher.distribute_faith_prize(season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
+        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, wonder_owner);
 
         set_block_timestamp(4003);
         dispatcher.withdraw_unclaimed_faith_prize(season_id);

@@ -4,19 +4,10 @@ use starknet::ContractAddress;
 pub trait IFaithSystems<T> {
     fn pledge_faith(ref self: T, entity_id: u32, wonder_id: u32);
     fn revoke_faith(ref self: T, entity_id: u32);
-    fn process_faith(ref self: T, wonder_id: u32, follower_ids: Span<u32>);
+    fn process_faith(ref self: T, wonder_id: u32);
+    fn settle_faith_balance(ref self: T, entity_id: u32);
     fn fund_faith_prize_pool(ref self: T, season_id: u32, amount: u128);
     fn distribute_faith_season_prizes(ref self: T, season_id: u32, ranked_wonders: Span<u32>);
-    fn distribute_faith_prize(
-        ref self: T,
-        season_id: u32,
-        wonder_id: u32,
-        rank: u32,
-        total_prize: u128,
-        owner_prize: u128,
-        holders_prize: u128,
-        owner_recipient: ContractAddress,
-    );
     fn claim_faith_prize(ref self: T, season_id: u32, wonder_id: u32);
     fn withdraw_unclaimed_faith_prize(ref self: T, season_id: u32);
     fn allocate_faith_holder_prizes(
@@ -31,7 +22,6 @@ pub trait IFaithSystems<T> {
 
 #[dojo::contract]
 pub mod faith_systems {
-    use core::array::ArrayTrait;
     use core::num::traits::zero::Zero;
     use dojo::model::{Model, ModelStorage};
     use dojo::world::WorldStorage;
@@ -130,7 +120,8 @@ pub mod faith_systems {
                         break;
                     }
                     let tied_wonder: ID = *ranked_wonders.at(idx + t);
-                    self.distribute_faith_prize(
+                    distribute_faith_prize_internal(
+                        ref world,
                         season_id,
                         tied_wonder,
                         rank_pos,
@@ -193,19 +184,26 @@ pub mod faith_systems {
                 assert_no_wonder_cycle(ref world, entity_id, wonder_id);
             }
 
-            let now = starknet::get_block_timestamp();
+            let mut faith: WonderFaith = world.read_model(wonder_id);
+            let last_fp_index: u128 = match entity_type {
+                FollowerType::Realm => faith.realm_fp_index,
+                FollowerType::Village => faith.village_fp_index,
+                FollowerType::Wonder => faith.wonder_fp_index,
+                FollowerType::None => 0,
+            };
+            let current_tick = TickImpl::get_tick_interval(ref world).current();
             world.write_model(
                 @FollowerAllegiance {
                     entity_id,
                     wonder_id,
-                    pledge_tick: now,
-                    last_fp_tick: now,
+                    pledge_tick: current_tick,
+                    last_fp_tick: current_tick,
+                    last_fp_index,
                     accumulated_fp: 0,
                     entity_type,
                 },
             );
 
-            let mut faith: WonderFaith = world.read_model(wonder_id);
             match entity_type {
                 FollowerType::Realm => { faith.realm_follower_count += 1; },
                 FollowerType::Village => { faith.village_follower_count += 1; },
@@ -225,6 +223,9 @@ pub mod faith_systems {
             let mut allegiance: FollowerAllegiance = world.read_model(entity_id);
             assert!(allegiance.wonder_id.is_non_zero(), "Not pledged");
             let wonder_id = allegiance.wonder_id;
+
+            self.settle_faith_balance(entity_id);
+            allegiance = world.read_model(entity_id);
 
             let mut faith: WonderFaith = world.read_model(wonder_id);
             match allegiance.entity_type {
@@ -251,7 +252,7 @@ pub mod faith_systems {
             world.write_model(@allegiance);
         }
 
-        fn process_faith(ref self: ContractState, wonder_id: ID, follower_ids: Span<ID>) {
+        fn process_faith(ref self: ContractState, wonder_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let tick_config = TickImpl::get_tick_interval(ref world);
             let current_tick = tick_config.current();
@@ -287,24 +288,14 @@ pub mod faith_systems {
 
             let owner_contribution: u128 = config.wonder_base_fp.into();
             let mut total_contribution: u128 = owner_contribution;
-            let mut contributions: Array<(ID, u128)> = array![];
+            total_contribution += faith.realm_follower_count.into() * config.realm_follower_fp.into();
+            total_contribution += faith.village_follower_count.into() * config.village_follower_fp.into();
+            total_contribution += faith.wonder_follower_count.into() * config.wonder_follower_fp.into();
 
-            for follower_id in follower_ids {
-                let allegiance: FollowerAllegiance = world.read_model(*follower_id);
-                if allegiance.wonder_id != wonder_id {
-                    continue;
-                }
-                let contribution: u128 = match allegiance.entity_type {
-                    FollowerType::Realm => config.realm_follower_fp.into(),
-                    FollowerType::Village => config.village_follower_fp.into(),
-                    FollowerType::Wonder => config.wonder_follower_fp.into(),
-                    FollowerType::None => 0_u128,
-                };
-                if contribution.is_zero() {
-                    continue;
-                }
-                total_contribution += contribution;
-                contributions.append((*follower_id, contribution));
+            if total_contribution.is_zero() {
+                faith.last_tick_processed = current_tick;
+                world.write_model(@faith);
+                return;
             }
 
             let owner_holder_share: u128 = if total_contribution.is_non_zero() {
@@ -321,25 +312,24 @@ pub mod faith_systems {
                 world.write_model(@owner_balance);
             }
 
-            for (follower_id, contribution) in contributions {
-                let share: u128 = follower_pool * contribution / total_contribution;
-                if share.is_non_zero() {
-                    let holder: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, follower_id);
-                    if holder.is_non_zero() {
-                        let mut balance: FollowerFaithBalance = world.read_model((wonder_id, faith.season_id, holder));
-                        balance.total_fp += share;
-                        balance.last_fp_update_tick = current_tick;
-                        world.write_model(@balance);
-                    }
-                }
-
-                let mut allegiance: FollowerAllegiance = world.read_model(follower_id);
-                if allegiance.wonder_id == wonder_id {
-                    allegiance.accumulated_fp += contribution * elapsed_ticks.into();
-                    allegiance.last_fp_tick = current_tick;
-                    world.write_model(@allegiance);
-                }
-            }
+            let realm_share: u128 = if faith.realm_follower_count > 0 {
+                follower_pool * config.realm_follower_fp.into() / total_contribution
+            } else {
+                0_u128
+            };
+            let village_share: u128 = if faith.village_follower_count > 0 {
+                follower_pool * config.village_follower_fp.into() / total_contribution
+            } else {
+                0_u128
+            };
+            let wonder_share: u128 = if faith.wonder_follower_count > 0 {
+                follower_pool * config.wonder_follower_fp.into() / total_contribution
+            } else {
+                0_u128
+            };
+            faith.realm_fp_index += realm_share;
+            faith.village_fp_index += village_share;
+            faith.wonder_fp_index += wonder_share;
 
             faith.total_fp_generated += generated_fp;
             faith.season_fp += generated_fp;
@@ -348,63 +338,37 @@ pub mod faith_systems {
             world.write_model(@faith);
         }
 
-        fn distribute_faith_prize(
-            ref self: ContractState,
-            season_id: u32,
-            wonder_id: ID,
-            rank: u32,
-            total_prize: u128,
-            owner_prize: u128,
-            holders_prize: u128,
-            owner_recipient: ContractAddress,
-        ) {
+        fn settle_faith_balance(ref self: ContractState, entity_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let current_tick = TickImpl::get_tick_interval(ref world).current();
-            let config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
+            let mut allegiance: FollowerAllegiance = world.read_model(entity_id);
+            assert!(allegiance.wonder_id.is_non_zero(), "Not pledged");
 
-            let mut state: FaithSeasonState = world.read_model(season_id);
-            if state.season_id == 0 {
-                state.season_id = season_id;
-            }
-            if state.season_end_tick == 0 {
-                state.season_end_tick = current_tick;
-            }
-            if state.claim_window_end_tick == 0 {
-                state.claim_window_end_tick = current_tick + config.claim_window_ticks.into();
-            }
-            state.prize_pool_total = total_prize;
-            state.distributed = true;
-            world.write_model(@state);
-
-            let faith: WonderFaith = world.read_model(wonder_id);
-            let snapshot = FaithSeasonSnapshot {
-                season_id,
-                wonder_id,
-                season_fp: faith.season_fp,
-                total_holder_fp: 0,
-                total_owner_fp: faith.current_owner_fp,
-                rank,
-                total_prize,
-                owner_prize,
-                holders_prize,
-                distributed: true,
+            let faith: WonderFaith = world.read_model(allegiance.wonder_id);
+            let current_index: u128 = match allegiance.entity_type {
+                FollowerType::Realm => faith.realm_fp_index,
+                FollowerType::Village => faith.village_fp_index,
+                FollowerType::Wonder => faith.wonder_fp_index,
+                FollowerType::None => 0,
             };
-            world.write_model(@snapshot);
+            assert!(current_index >= allegiance.last_fp_index, "Invalid faith index");
+            let delta: u128 = current_index - allegiance.last_fp_index;
+            let current_tick = TickImpl::get_tick_interval(ref world).current();
 
-            let mut recipient: ContractAddress = owner_recipient;
-            if recipient.is_zero() {
-                recipient = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
+            if delta.is_non_zero() {
+                let holder: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
+                if holder.is_non_zero() {
+                    let mut balance: FollowerFaithBalance =
+                        world.read_model((allegiance.wonder_id, faith.season_id, holder));
+                    balance.total_fp += delta;
+                    balance.last_fp_update_tick = current_tick;
+                    world.write_model(@balance);
+                }
+                allegiance.accumulated_fp += delta;
+                allegiance.last_fp_tick = current_tick;
             }
-            if recipient.is_non_zero() {
-                let prize = FaithPrizeBalance {
-                    season_id,
-                    wonder_id,
-                    claimant: recipient,
-                    amount: owner_prize,
-                    claimed: false,
-                };
-                world.write_model(@prize);
-            }
+
+            allegiance.last_fp_index = current_index;
+            world.write_model(@allegiance);
         }
 
         fn claim_faith_prize(ref self: ContractState, season_id: u32, wonder_id: ID) {
@@ -544,6 +508,64 @@ pub mod faith_systems {
 
                 i += 1;
             }
+        }
+    }
+
+    pub(crate) fn distribute_faith_prize_internal(
+        ref world: WorldStorage,
+        season_id: u32,
+        wonder_id: ID,
+        rank: u32,
+        total_prize: u128,
+        owner_prize: u128,
+        holders_prize: u128,
+        owner_recipient: ContractAddress,
+    ) {
+        let current_tick = TickImpl::get_tick_interval(ref world).current();
+        let config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
+
+        let mut state: FaithSeasonState = world.read_model(season_id);
+        if state.season_id == 0 {
+            state.season_id = season_id;
+        }
+        if state.season_end_tick == 0 {
+            state.season_end_tick = current_tick;
+        }
+        if state.claim_window_end_tick == 0 {
+            state.claim_window_end_tick = current_tick + config.claim_window_ticks.into();
+        }
+        state.prize_pool_total = total_prize;
+        state.distributed = true;
+        world.write_model(@state);
+
+        let faith: WonderFaith = world.read_model(wonder_id);
+        let snapshot = FaithSeasonSnapshot {
+            season_id,
+            wonder_id,
+            season_fp: faith.season_fp,
+            total_holder_fp: 0,
+            total_owner_fp: faith.current_owner_fp,
+            rank,
+            total_prize,
+            owner_prize,
+            holders_prize,
+            distributed: true,
+        };
+        world.write_model(@snapshot);
+
+        let mut recipient: ContractAddress = owner_recipient;
+        if recipient.is_zero() {
+            recipient = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
+        }
+        if recipient.is_non_zero() {
+            let prize = FaithPrizeBalance {
+                season_id,
+                wonder_id,
+                claimant: recipient,
+                amount: owner_prize,
+                claimed: false,
+            };
+            world.write_model(@prize);
         }
     }
 

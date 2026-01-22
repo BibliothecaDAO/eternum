@@ -62,6 +62,9 @@ mod tests {
         assert!(faith.realm_follower_count == 0, "realm follower count should default to 0");
         assert!(faith.village_follower_count == 0, "village follower count should default to 0");
         assert!(faith.wonder_follower_count == 0, "wonder follower count should default to 0");
+        assert!(faith.realm_fp_index == 0, "realm index should default to 0");
+        assert!(faith.village_fp_index == 0, "village index should default to 0");
+        assert!(faith.wonder_fp_index == 0, "wonder index should default to 0");
         assert!(faith.total_fp_generated == 0, "total FP should default to 0");
         assert!(faith.current_owner_fp == 0, "owner FP should default to 0");
         assert!(faith.last_tick_processed == 0, "last tick should default to 0");

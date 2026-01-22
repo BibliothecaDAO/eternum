@@ -317,7 +317,7 @@ mod tests {
 
         set_block_timestamp(5000);
         let dispatcher = faith_dispatcher(world);
-        dispatcher.distribute_faith_prize(season_id, wonder_id, 1, 1000, 300, 700, owner);
+        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, owner);
 
         set_caller(owner);
         set_block_timestamp(5001);
@@ -339,7 +339,7 @@ mod tests {
 
         set_block_timestamp(6000);
         let dispatcher = faith_dispatcher(world);
-        dispatcher.distribute_faith_prize(season_id, wonder_id, 1, 1000, 0, 1000, owner);
+        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 0, 1000, owner);
 
         let mut balance_owner: FollowerFaithBalance = world.read_model((wonder_id, season_id, owner));
         balance_owner.total_fp = 3;

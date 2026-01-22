@@ -11,6 +11,7 @@ mod tests {
 
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
+    use crate::models::config::{TickConfig, WorldConfigUtilImpl, m_WorldConfig};
     use crate::models::faith::{FollowerAllegiance, FollowerType, WonderFaith, m_FollowerAllegiance, m_WonderFaith};
     use crate::models::structure::{Structure, StructureCategory, StructureMetadata, m_Structure};
     use crate::systems::faith::contracts::faith_systems;
@@ -20,6 +21,7 @@ mod tests {
         NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
+                TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
                 TestResource::Model(m_WonderFaith::TEST_CLASS_HASH),
                 TestResource::Model(m_FollowerAllegiance::TEST_CLASS_HASH),
@@ -41,6 +43,11 @@ mod tests {
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         world
+    }
+
+    fn set_tick_config(ref world: WorldStorage, tick_seconds: u64) {
+        let tick_config = TickConfig { armies_tick_in_seconds: tick_seconds, delivery_tick_in_seconds: tick_seconds };
+        WorldConfigUtilImpl::set_member(ref world, selector!("tick_config"), tick_config);
     }
 
     fn write_structure(
@@ -75,6 +82,7 @@ mod tests {
 
         write_structure(ref world, realm_id, realm_owner, StructureCategory::Realm, false);
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
 
         set_caller(realm_owner);
         let dispatcher = faith_dispatcher(world);
@@ -102,6 +110,7 @@ mod tests {
 
         write_structure(ref world, realm_id, realm_owner, StructureCategory::Realm, false);
         write_structure(ref world, wonder_id, wonder_owner, StructureCategory::Realm, true);
+        set_tick_config(ref world, 1);
 
         set_caller(realm_owner);
         let dispatcher = faith_dispatcher(world);

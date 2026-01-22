@@ -185,7 +185,7 @@ mod tests {
         let dispatcher = faith_dispatcher(world);
         dispatcher.record_wonder_capture(wonder_id, new_owner);
 
-        dispatcher.distribute_faith_prize(season_id, wonder_id, 1, 1000, 300, 700, old_owner);
+        faith_systems::distribute_faith_prize_internal(ref world, season_id, wonder_id, 1, 1000, 300, 700, old_owner);
 
         set_caller(old_owner);
         dispatcher.claim_faith_prize(season_id, wonder_id);
