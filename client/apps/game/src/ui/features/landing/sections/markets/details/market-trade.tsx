@@ -1,5 +1,5 @@
 import { AlertTriangle, Loader2, TrendingUp, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
@@ -51,6 +51,9 @@ const TradeConfirmDialog = ({
   isSubmitting: boolean;
 }) => {
   const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState(false);
+  useEffect(() => {
+    if (!open) setHasAcknowledgedRisk(false);
+  }, [open]);
 
   if (!open) return null;
 
@@ -261,7 +264,7 @@ const TokenAmountInput = ({
         ))}
         <button
           type="button"
-          onClick={() => setAmount(balanceNum.toString())}
+          onClick={() => setAmount(balanceFormatted)}
           disabled={balanceNum <= 0}
           className="rounded-md border border-gold/50 bg-gold/20 px-2.5 py-1 text-[10px] font-bold text-gold transition-colors hover:bg-gold/30 disabled:cursor-not-allowed disabled:opacity-50"
         >

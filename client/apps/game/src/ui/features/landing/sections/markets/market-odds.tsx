@@ -104,7 +104,7 @@ export const MarketOdds = ({
         const poolAmount = formatUnits(poolAmountRaw, Number(decimals), 0);
 
         // Calculate pool share percentage for visual bar
-        const totalPool = Number(market.vaultDenominator ?? 0n);
+        const totalPool = Number(market.vaultDenominator?.value ?? 0n);
         const outcomePool = Number(poolAmountRaw);
         const poolSharePercent = totalPool > 0 ? (outcomePool / totalPool) * 100 : 0;
 
