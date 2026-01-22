@@ -10,7 +10,7 @@ interface FloatingOpenButtonProps {
   disabled?: boolean;
 }
 
-export function FloatingOpenButton({ chestCount, onClick, disabled = false }: FloatingOpenButtonProps) {
+function FloatingOpenButton({ chestCount, onClick, disabled = false }: FloatingOpenButtonProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
 

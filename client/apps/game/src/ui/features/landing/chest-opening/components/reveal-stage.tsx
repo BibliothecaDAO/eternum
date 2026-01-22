@@ -403,7 +403,7 @@ interface CollectionSummaryProps {
   collectionSize?: number;
 }
 
-export function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 }: CollectionSummaryProps) {
+function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 }: CollectionSummaryProps) {
   // Group by rarity
   const byRarity = assets.reduce(
     (acc, asset) => {

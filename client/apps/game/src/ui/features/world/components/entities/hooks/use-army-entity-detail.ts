@@ -184,7 +184,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   };
 };
 
-export const useBannerArmyInfo = (
+const useBannerArmyInfo = (
   explorer: NonNullable<ReturnType<typeof useArmyEntityDetail>["explorer"]> | undefined,
   derivedData: DerivedArmyData | undefined,
   armyEntityId: ID,

@@ -1,4 +1,4 @@
-export interface WorldChunkConfig {
+interface WorldChunkConfig {
   /** Stride in hexes for world chunk keys */
   stride: number;
   /** Render window size (hexes) centered on a stride chunk */

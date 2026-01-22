@@ -53,7 +53,7 @@ export const getMockRevealAssets = (count: number = 3): ChestAsset[] => {
 };
 
 // Get mock assets weighted by a specific rarity (for testing specific rarity videos)
-export const getMockRevealAssetsByRarity = (targetRarity: AssetRarity, count: number = 3): ChestAsset[] => {
+const getMockRevealAssetsByRarity = (targetRarity: AssetRarity, count: number = 3): ChestAsset[] => {
   const allAssets = getAllChestAssets();
   const targetAssets = allAssets.filter((a) => a.rarity === targetRarity);
   const otherAssets = allAssets.filter((a) => a.rarity !== targetRarity);
@@ -79,7 +79,7 @@ export const simulatePendingDelay = (): Promise<void> => {
 };
 
 // Determine chest rarity from metadata (for video selection)
-export const getChestRarityFromMetadata = (metadata?: MergedNftData["metadata"]): AssetRarity => {
+const getChestRarityFromMetadata = (metadata?: MergedNftData["metadata"]): AssetRarity => {
   if (!metadata?.attributes) return AssetRarity.Common;
 
   const rarityAttr = metadata.attributes.find((attr) => attr.trait_type.toLowerCase() === "rarity");

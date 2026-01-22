@@ -21,7 +21,7 @@ export const formatUnits = (value: string | number | bigint, decimals: number, p
   return scaled.toFixed(precision);
 };
 
-export const formatCurrency = (value: string, _decimals: number) => {
+const formatCurrency = (value: string, _decimals: number) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return "0";
   return num.toLocaleString(undefined, { maximumFractionDigits: 4 });

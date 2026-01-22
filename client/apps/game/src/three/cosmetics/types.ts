@@ -5,7 +5,6 @@ import type { ModelType } from "../types/army";
 export type CosmeticCategory = "army-skin" | "structure-skin" | "attachment";
 
 export enum CosmeticTraitType {
-  RealmTitle = 1,
   RealmAura = 2,
   RealmSkin = 3,
   TroopAura = 4,
@@ -57,12 +56,12 @@ export interface CosmeticRegistryEntry {
   attachmentSlot?: string;
 }
 
-export interface ArmyCosmeticSelection {
+interface ArmyCosmeticSelection {
   skin?: string;
   attachments?: string[];
 }
 
-export interface StructureCosmeticSelection {
+interface StructureCosmeticSelection {
   skin?: string;
   attachments?: string[];
 }

@@ -86,7 +86,7 @@ export const parseLordsToBaseUnits = (value: string, decimals = 18): bigint | nu
   return whole * 10n ** BigInt(decimals) + fraction;
 };
 
-export const parseLordsToUint256 = (value: string): Uint256 | null => {
+const parseLordsToUint256 = (value: string): Uint256 | null => {
   const base = parseLordsToBaseUnits(value);
   if (base == null) return null;
   return uint256.bnToUint256(base);

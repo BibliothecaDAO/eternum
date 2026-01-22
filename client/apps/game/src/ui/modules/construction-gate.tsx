@@ -65,5 +65,3 @@ export const ConstructionGate = () => {
     </div>
   );
 };
-
-export default ConstructionGate;

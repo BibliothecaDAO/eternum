@@ -6,7 +6,7 @@ import manifestSlottest from "@manifests/manifest_slottest.json";
 
 export type ChainType = "local" | "sepolia" | "mainnet" | "slot" | "slottest";
 
-export interface ManifestContract {
+interface ManifestContract {
   class_hash: string;
   tag: string;
   selector: string;
@@ -14,19 +14,19 @@ export interface ManifestContract {
   address?: string;
 }
 
-export interface ManifestModel {
+interface ManifestModel {
   class_hash: string;
   tag: string;
   selector: string;
 }
 
-export interface ManifestEvent {
+interface ManifestEvent {
   class_hash: string;
   tag: string;
   selector: string;
 }
 
-export interface ManifestData {
+interface ManifestData {
   world: {
     class_hash: string;
     seed: string;
@@ -46,7 +46,7 @@ const MANIFESTS: Record<ChainType, ManifestData> = {
   slottest: manifestSlottest as ManifestData,
 };
 
-export const loadManifestFromSource = (chain: ChainType): ManifestData | null => {
+const loadManifestFromSource = (chain: ChainType): ManifestData | null => {
   return MANIFESTS[chain] || null;
 };
 

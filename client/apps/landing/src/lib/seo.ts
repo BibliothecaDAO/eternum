@@ -1,4 +1,4 @@
-export const OG_IMAGE_URL = "https://empire.realms.world/empire-og-image.jpg";
+const OG_IMAGE_URL = "https://empire.realms.world/empire-og-image.jpg";
 
 type MetaTag = JSX.IntrinsicElements["meta"];
 

@@ -1,4 +1,4 @@
-import { ActionPath, ActionPaths, getFeltCenterOffset } from "@bibliothecadao/eternum";
+import { ActionPath, ActionPaths, FELT_CENTER } from "@bibliothecadao/eternum";
 import { HexPosition } from "@bibliothecadao/types";
 
 export interface SelectionSlice {
@@ -63,16 +63,16 @@ export const createSelectionSlice = (set: any, get: any) => ({
   },
 
   hasActionAt: (col: number, row: number) => {
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     const state = get();
-    const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+    const key = ActionPaths.posKey({ col: col + feltCenter, row: row + feltCenter });
     return state.actionPaths.has(key);
   },
 
   getActionPath: (col: number, row: number) => {
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     const state = get();
-    const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+    const key = ActionPaths.posKey({ col: col + feltCenter, row: row + feltCenter });
     return state.actionPaths.get(key);
   },
 

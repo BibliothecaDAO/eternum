@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import { MOCK_CHEST_OPENING, simulatePendingDelay } from "./mock-data";
 
 // State machine states for the chest opening flow
-export type ChestOpeningState = "idle" | "selecting" | "pending" | "opening" | "reveal" | "done";
+type ChestOpeningState = "idle" | "selecting" | "pending" | "opening" | "reveal" | "done";
 
 // Chest epoch types for video selection
 export type ChestEpoch = "eternum-rewards-s1" | "blitz-rewards-s0";

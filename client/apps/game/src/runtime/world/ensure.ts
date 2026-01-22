@@ -11,7 +11,7 @@ const promptWorldName = (suggestions: string[]): string | null => {
  * Ensure there is an active world profile. If not, prompt the user to select or enter a name.
  * Confirms using the existing active world if present.
  */
-export const ensureActiveWorldProfile = async (chain: Chain) => {
+const ensureActiveWorldProfile = async (chain: Chain) => {
   // If an active world exists and looks valid, confirm usage
   const activeName = getActiveWorldName();
   const savedNames = listWorldNames();

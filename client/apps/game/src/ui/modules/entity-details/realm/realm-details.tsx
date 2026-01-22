@@ -22,7 +22,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { ProductionModal } from "@/ui/features/settlement";
 import { Crown as CrownIcon } from "lucide-react";
 
-export const RealmVillageDetails = () => {
+const RealmVillageDetails = () => {
   const dojo = useDojo();
   const { currentBlockTimestamp } = useBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);

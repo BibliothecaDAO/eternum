@@ -1,6 +1,6 @@
 import type { Entity } from "@dojoengine/torii-wasm";
 
-export type SyncWorkerBatch = {
+type SyncWorkerBatch = {
   batchId: number;
   upserts: Entity[];
   deletions: string[];

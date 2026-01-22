@@ -30,7 +30,7 @@ interface CreateConstructionMenuParams {
   selectConstructionBuilding: (building: BuildingType, view: LeftView, resource?: ResourcesIds) => void;
 }
 
-export interface ConstructionMenuResult {
+interface ConstructionMenuResult {
   constructionAction: ContextMenuAction;
   radialOptions: ContextMenuRadialOptions;
 }
