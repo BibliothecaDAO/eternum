@@ -165,5 +165,3 @@ export const useLandingWorldSelection = ({
   };
 };
 
-export { CHAIN_OPTIONS };
-export type { LandingWorldSelection };
