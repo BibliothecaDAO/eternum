@@ -4,7 +4,8 @@ import {
   type RealmInfo as RealmInfoType,
   type ResourcesIds,
 } from "@bibliothecadao/types";
-import { Bot, Hammer } from "lucide-react";
+import Bot from "lucide-react/dist/esm/icons/bot";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
 import { useEffect, useRef, useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";

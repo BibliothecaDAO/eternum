@@ -49,21 +49,19 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
-import {
-  Castle,
-  ChevronsUp,
-  ChevronUp,
-  Crown,
-  Info,
-  Loader2,
-  MessageCircle,
-  Pencil,
-  Pickaxe,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  Tent,
-} from "lucide-react";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import Crown from "lucide-react/dist/esm/icons/crown";
+import Info from "lucide-react/dist/esm/icons/info";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import Pencil from "lucide-react/dist/esm/icons/pencil";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Star from "lucide-react/dist/esm/icons/star";
+import Tent from "lucide-react/dist/esm/icons/tent";
 import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 

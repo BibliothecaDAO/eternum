@@ -15,7 +15,8 @@ import {
 import { displayAddress } from "@/ui/utils/utils";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { toPng } from "html-to-image";
-import { Copy, Share2 } from "lucide-react";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import Share2 from "lucide-react/dist/esm/icons/share-2";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 

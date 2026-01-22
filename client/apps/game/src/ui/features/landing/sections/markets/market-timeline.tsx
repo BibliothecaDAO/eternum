@@ -1,6 +1,7 @@
 import type { MarketClass } from "@/pm/class";
 import { HStack, VStack } from "@pm/ui";
-import { Flag, Snail } from "lucide-react";
+import Flag from "lucide-react/dist/esm/icons/flag";
+import Snail from "lucide-react/dist/esm/icons/snail";
 
 const toDate = (value: unknown) => {
   const num = Number(value);

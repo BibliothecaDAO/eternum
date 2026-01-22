@@ -20,7 +20,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { PlayerStructure } from "@bibliothecadao/torii";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
-import { MapPin } from "lucide-react";
+import MapPin from "lucide-react/dist/esm/icons/map-pin";
 import { useEffect, useMemo, useState } from "react";
 
 export const PlayerId = ({

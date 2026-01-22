@@ -13,7 +13,7 @@ import { ContractAddress, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Plus } from "lucide-react";
+import Plus from "lucide-react/dist/esm/icons/plus";
 import { useMemo, useState } from "react";
 import { CoOwnersWithTimestamp } from "./types";
 

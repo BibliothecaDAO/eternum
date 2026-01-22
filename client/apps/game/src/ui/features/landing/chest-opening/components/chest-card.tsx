@@ -1,6 +1,6 @@
 import Button from "@/ui/design-system/atoms/button";
 import gsap from "gsap";
-import { Package } from "lucide-react";
+import Package from "lucide-react/dist/esm/icons/package";
 import { useEffect, useRef, useState } from "react";
 import { MergedNftData } from "../utils/types";
 import { CHEST_OPENING_ENABLED } from "./index";

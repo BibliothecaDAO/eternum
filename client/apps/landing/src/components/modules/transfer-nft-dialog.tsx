@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
-import { Check, Copy } from "lucide-react";
+import Check from "lucide-react/dist/esm/icons/check";
+import Copy from "lucide-react/dist/esm/icons/copy";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -13,7 +14,8 @@ import { marketplaceCollections } from "@/config";
 import { displayAddress } from "@/lib/utils";
 import { MergedNftData, RealmMetadata } from "@/types";
 import { useCartridgeAddress, useDebounce } from "@bibliothecadao/react";
-import { AlertCircle, AlertTriangle } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import { TypeH3 } from "../typography/type-h3";
 
 interface TransferNftDialogProps {

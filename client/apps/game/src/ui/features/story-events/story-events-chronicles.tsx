@@ -4,28 +4,26 @@ import { sqlApi } from "@/services/api";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import clsx from "clsx";
-import {
-  BookOpen,
-  CalendarDays,
-  Castle,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  Coins,
-  Compass,
-  Factory,
-  Filter,
-  Flame,
-  Hammer,
-  Navigation,
-  Package,
-  ScrollText,
-  Search,
-  Shield,
-  Sparkles,
-  Sword,
-  Trophy,
-} from "lucide-react";
+import BookOpen from "lucide-react/dist/esm/icons/book-open";
+import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Compass from "lucide-react/dist/esm/icons/compass";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import Filter from "lucide-react/dist/esm/icons/filter";
+import Flame from "lucide-react/dist/esm/icons/flame";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
+import Navigation from "lucide-react/dist/esm/icons/navigation";
+import Package from "lucide-react/dist/esm/icons/package";
+import ScrollText from "lucide-react/dist/esm/icons/scroll-text";
+import Search from "lucide-react/dist/esm/icons/search";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Sword from "lucide-react/dist/esm/icons/sword";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
 import React, { memo, type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
 
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";

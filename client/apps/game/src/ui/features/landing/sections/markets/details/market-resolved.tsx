@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { MarketClass } from "@/pm/class";
 import { formatUint256 } from "@/pm/utils";
 import { HStack, VStack } from "@pm/ui";
-import { CheckCircle2, TrendingUp } from "lucide-react";
+import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2";
+import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
 
 import { MaybeController } from "../maybe-controller";
 

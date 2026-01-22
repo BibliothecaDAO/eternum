@@ -12,7 +12,9 @@ import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import CirclePlus from "lucide-react/dist/esm/icons/circle-plus";
+import LucideArrowRight from "lucide-react/dist/esm/icons/lucide-arrow-right";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";

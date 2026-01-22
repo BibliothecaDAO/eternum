@@ -15,7 +15,11 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { ChevronDownIcon, Loader2Icon, PauseIcon, PlayIcon, XIcon } from "lucide-react";
+import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
+import Loader2Icon from "lucide-react/dist/esm/icons/loader-2-icon";
+import PauseIcon from "lucide-react/dist/esm/icons/pause";
+import PlayIcon from "lucide-react/dist/esm/icons/play";
+import XIcon from "lucide-react/dist/esm/icons/x";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface LaborDrawerProps {

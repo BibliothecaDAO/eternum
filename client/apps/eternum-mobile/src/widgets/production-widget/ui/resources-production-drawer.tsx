@@ -14,7 +14,10 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getBuildingFromResource, RealmInfo, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { Loader2Icon, PauseIcon, PlayIcon, Trash2Icon } from "lucide-react";
+import Loader2Icon from "lucide-react/dist/esm/icons/loader-2-icon";
+import PauseIcon from "lucide-react/dist/esm/icons/pause";
+import PlayIcon from "lucide-react/dist/esm/icons/play";
+import Trash2Icon from "lucide-react/dist/esm/icons/trash-2-icon";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LaborBuilding } from "../model/types";
 

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Package } from "lucide-react";
+import Package from "lucide-react/dist/esm/icons/package";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 

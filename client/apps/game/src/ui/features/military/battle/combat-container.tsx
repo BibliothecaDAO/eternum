@@ -39,7 +39,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { Users } from "lucide-react";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";

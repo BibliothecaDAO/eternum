@@ -2,7 +2,10 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import Button from "@/ui/design-system/atoms/button";
 import { motion } from "framer-motion";
-import { Check, Coins, Loader2, UserPlus } from "lucide-react";
+import Check from "lucide-react/dist/esm/icons/check";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import UserPlus from "lucide-react/dist/esm/icons/user-plus";
 import { fadeInUp } from "../animations";
 import { RegistrationStage } from "../types";
 

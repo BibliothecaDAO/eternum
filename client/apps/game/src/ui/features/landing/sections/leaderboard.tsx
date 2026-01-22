@@ -11,7 +11,7 @@ import {
 
 import { useNavigate } from "react-router-dom";
 
-import { Download } from "lucide-react";
+import Download from "lucide-react/dist/esm/icons/download";
 
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";

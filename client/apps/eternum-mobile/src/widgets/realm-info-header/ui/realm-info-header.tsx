@@ -9,7 +9,8 @@ import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
 import { FELT_CENTER, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { getLevelName, ResourcesIds } from "@bibliothecadao/types";
-import { ChevronDown, Copy } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Copy from "lucide-react/dist/esm/icons/copy";
 import { useMemo } from "react";
 
 export const RealmInfoHeader = () => {

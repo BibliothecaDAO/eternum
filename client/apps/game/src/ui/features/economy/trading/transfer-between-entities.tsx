@@ -17,7 +17,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, EntityType, ID, StructureType } from "@bibliothecadao/types";
-import { ArrowRight, LucideArrowRight } from "lucide-react";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+import LucideArrowRight from "lucide-react/dist/esm/icons/lucide-arrow-right";
 import { memo, useEffect, useMemo, useState } from "react";
 import { EntityIdFormat } from "./transfer-view";
 

@@ -1,6 +1,9 @@
 import { ROUTES } from "@/shared/consts/routes";
 import { Link, useMatches } from "@tanstack/react-router";
-import { Home, Map, MessageCircle, Settings } from "lucide-react";
+import Home from "lucide-react/dist/esm/icons/home";
+import Map from "lucide-react/dist/esm/icons/map";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import Settings from "lucide-react/dist/esm/icons/settings";
 
 export const Footer = () => {
   const matches = useMatches();
