@@ -1,4 +1,3 @@
-pub mod helpers;
 pub mod snf_helpers;
 pub mod contracts {
     pub mod erc20mock;
