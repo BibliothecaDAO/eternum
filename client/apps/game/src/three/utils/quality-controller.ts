@@ -1,4 +1,4 @@
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 
 /**
  * Quality feature flags that can be individually toggled
@@ -43,7 +43,7 @@ interface QualityPreset extends QualityFeatures {
 /**
  * Quality presets for LOW, MID, HIGH settings
  */
-const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
+const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
   [GraphicsSettings.LOW]: {
     name: "Low",
     targetFPS: 30,
@@ -120,6 +120,60 @@ const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     chunkLoadRadius: 3,
   },
 };
+
+const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
+  [GraphicsSettings.LOW]: {
+    ...BASE_QUALITY_PRESETS[GraphicsSettings.LOW],
+    name: "Low (Mobile)",
+    animationFPS: 8,
+    maxVisibleArmies: 60,
+    maxVisibleStructures: 40,
+    maxVisibleLabels: 50,
+    labelRenderDistance: 35,
+    animationCullDistance: 50,
+  },
+  [GraphicsSettings.MID]: {
+    ...BASE_QUALITY_PRESETS[GraphicsSettings.MID],
+    name: "Medium (Mobile)",
+    targetFPS: 40,
+    shadows: false,
+    shadowMapSize: 0,
+    pixelRatio: 1.25,
+    bloom: false,
+    bloomIntensity: 0,
+    vignette: false,
+    fxaa: false,
+    morphAnimations: false,
+    animationFPS: 15,
+    maxVisibleArmies: 200,
+    maxVisibleStructures: 100,
+    maxVisibleLabels: 120,
+    labelRenderDistance: 80,
+    animationCullDistance: 90,
+    chunkLoadRadius: 2,
+  },
+  [GraphicsSettings.HIGH]: {
+    ...BASE_QUALITY_PRESETS[GraphicsSettings.HIGH],
+    name: "High (Mobile)",
+    targetFPS: 45,
+    shadowMapSize: 1024,
+    pixelRatio: 1.5,
+    bloomIntensity: 0.12,
+    vignette: false,
+    fxaa: false,
+    animationFPS: 20,
+    maxVisibleArmies: 500,
+    maxVisibleStructures: 250,
+    maxVisibleLabels: 250,
+    labelRenderDistance: 140,
+    animationCullDistance: 120,
+    chunkLoadRadius: 2,
+  },
+};
+
+const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = IS_MOBILE
+  ? MOBILE_QUALITY_PRESETS
+  : BASE_QUALITY_PRESETS;
 
 /**
  * Degradation steps - features to disable in order when FPS drops
