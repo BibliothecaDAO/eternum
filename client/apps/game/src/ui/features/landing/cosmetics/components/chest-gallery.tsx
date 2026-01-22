@@ -1,7 +1,11 @@
 import { ChestCard } from "@/ui/features/landing/chest-opening/components";
 import { ChestEpoch } from "@/ui/features/landing/chest-opening/hooks/use-chest-opening-flow";
 import { MergedNftData } from "@/ui/features/landing/chest-opening/utils/types";
-import { ArrowUpDown, ChevronDown, Filter, Package, X } from "lucide-react";
+import ArrowUpDown from "lucide-react/dist/esm/icons/arrow-up-down";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Filter from "lucide-react/dist/esm/icons/filter";
+import Package from "lucide-react/dist/esm/icons/package";
+import X from "lucide-react/dist/esm/icons/x";
 import { useMemo, useState } from "react";
 
 type SortMode = "id-asc" | "id-desc";

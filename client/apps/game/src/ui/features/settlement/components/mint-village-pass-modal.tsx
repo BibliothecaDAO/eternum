@@ -14,7 +14,7 @@ import { VillageResourceReveal } from "./village-resource-reveal";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getVillagePassAddress } from "@/utils/addresses";
-import { ArrowRightIcon } from "lucide-react";
+import ArrowRightIcon from "lucide-react/dist/esm/icons/arrow-right";
 import RealmJson from "../../../../../../../public/jsons/realms.json";
 import { env } from "../../../../../env";
 

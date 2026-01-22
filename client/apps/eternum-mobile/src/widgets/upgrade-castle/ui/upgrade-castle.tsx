@@ -3,7 +3,9 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/ui/card";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { ArrowRight, Castle, Sparkles } from "lucide-react";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useState } from "react";
 import { UpgradeDrawer } from "./upgrade-drawer";
 

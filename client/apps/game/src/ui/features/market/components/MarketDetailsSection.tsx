@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, History, RefreshCw, Users } from "lucide-react";
+import BarChart3 from "lucide-react/dist/esm/icons/bar-chart-3";
+import History from "lucide-react/dist/esm/icons/history";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Users from "lucide-react/dist/esm/icons/users";
 import type { LucideIcon } from "lucide-react";
 
 import type { MarketClass, MarketOutcome } from "@/pm/class";

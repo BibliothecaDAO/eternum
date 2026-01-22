@@ -3,7 +3,8 @@ import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle, Timer } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Timer from "lucide-react/dist/esm/icons/timer";
 import { TransferDirection } from "../help-container";
 
 interface SlotTroopInfo {

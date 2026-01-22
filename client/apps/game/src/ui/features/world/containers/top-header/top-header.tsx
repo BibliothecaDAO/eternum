@@ -18,7 +18,8 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { EyeIcon, Swords } from "lucide-react";
+import EyeIcon from "lucide-react/dist/esm/icons/eye";
+import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo } from "react";
 
 const slideDown = {

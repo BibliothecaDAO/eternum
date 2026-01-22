@@ -3,7 +3,7 @@ import { useDojo } from "@/hooks/context/dojo-context";
 import { AugmentedRealm } from "@/routes/mint.lazy";
 import { RealmMetadata } from "@/types";
 import { useAccount } from "@starknet-react/core";
-import { CheckCircle2 } from "lucide-react";
+import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 

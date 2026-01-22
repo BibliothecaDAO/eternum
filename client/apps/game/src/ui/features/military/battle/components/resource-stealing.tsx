@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { resources } from "@bibliothecadao/types";
-import { Coins, Package } from "lucide-react";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Package from "lucide-react/dist/esm/icons/package";
 
 interface ResourceStealingProps {
   stealableResources: Array<{ resourceId: number; amount: number }>;

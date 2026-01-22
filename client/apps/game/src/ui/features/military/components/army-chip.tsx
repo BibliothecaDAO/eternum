@@ -12,7 +12,9 @@ import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+import CirclePlus from "lucide-react/dist/esm/icons/circle-plus";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
@@ -144,7 +146,7 @@ export const ArmyChip = ({
         <>
           <Button className="my-2" size="xs" variant="red" onClick={() => setEditMode(!editMode)}>
             <div className="flex flex-row">
-              <LucideArrowRight className="w-4 h-4 rotate-180 mr-1" />
+              <ArrowRight className="w-4 h-4 rotate-180 mr-1" />
               <span> Add Troops</span>
             </div>
           </Button>

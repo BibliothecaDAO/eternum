@@ -5,7 +5,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { Sparkles } from "lucide-react";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useMemo, useState } from "react";
 import { RelicActivationPopup } from "./relic-activation-popup";
 

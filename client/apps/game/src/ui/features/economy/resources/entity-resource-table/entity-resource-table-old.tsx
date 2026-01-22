@@ -13,7 +13,8 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
+import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
 

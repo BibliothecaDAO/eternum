@@ -14,7 +14,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ID, RelicEffectWithEndTick, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
-import { Factory, Sparkles } from "lucide-react";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 

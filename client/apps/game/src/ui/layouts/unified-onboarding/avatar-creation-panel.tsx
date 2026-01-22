@@ -8,7 +8,9 @@ import {
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
-import { Loader2, SkipForward, Sparkles } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import SkipForward from "lucide-react/dist/esm/icons/skip-forward";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
