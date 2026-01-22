@@ -319,8 +319,7 @@ export const WorldSelectorModal = ({
 
   const handleRefresh = useCallback(async () => {
     setPlayerRegistration({});
-    await refetchFactoryWorlds();
-    await refetchFactory();
+    await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
   }, [refetchFactoryWorlds, refetchFactory]);
 
   const handleSwitchChain = useCallback(
