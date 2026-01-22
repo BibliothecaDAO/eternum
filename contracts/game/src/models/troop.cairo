@@ -770,12 +770,12 @@ pub impl TroopsImpl of TroopsTrait {
 // TDD Phase 3: Pure unit tests for troop combat - no world state or caller impersonation needed
 #[cfg(test)]
 mod tests {
-    use cubit::f128::types::fixed::{FixedTrait};
-    use crate::constants::{RESOURCE_PRECISION};
+    use cubit::f128::types::fixed::FixedTrait;
+    use crate::constants::RESOURCE_PRECISION;
     use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
-    use crate::models::stamina::{Stamina};
+    use crate::models::stamina::Stamina;
     use crate::models::troop::{TroopBoosts, TroopTier, TroopType, Troops, TroopsTrait};
-    use crate::utils::map::biomes::{Biome};
+    use crate::utils::map::biomes::Biome;
 
     const KNIGHT_MAX_STAMINA: u16 = 120;
     const CROSSBOWMAN_MAX_STAMINA: u16 = 120;
@@ -847,7 +847,8 @@ mod tests {
             battle_cooldown_end: 0,
         };
 
-        // Updated attack signature: (ref bravo, biome, stamina_config, damage_config, current_tick, current_tick_interval)
+        // Updated attack signature: (ref bravo, biome, stamina_config, damage_config, current_tick,
+        // current_tick_interval)
         alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1, 1);
 
         assert_eq!(alpha.count, 0);
@@ -874,7 +875,8 @@ mod tests {
             battle_cooldown_end: 0,
         };
 
-        // Updated attack signature: (ref bravo, biome, stamina_config, damage_config, current_tick, current_tick_interval)
+        // Updated attack signature: (ref bravo, biome, stamina_config, damage_config, current_tick,
+        // current_tick_interval)
         alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1, 1);
 
         // Note: These assertions may need adjustment based on updated combat formulas
@@ -886,5 +888,4 @@ mod tests {
         assert!(bravo.count >= 0, "Bravo count should be non-negative");
     }
 }
-
 

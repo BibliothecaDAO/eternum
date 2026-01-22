@@ -12,13 +12,11 @@
 
 use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{ModelStorage, ModelStorageTest};
-use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait, WorldStorage};
-use dojo_snf_test::{
-    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
 use snforge_std::{
-    start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address,
-    start_cheat_chain_id_global,
+    start_cheat_block_timestamp_global, start_cheat_caller_address, start_cheat_chain_id_global,
+    stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 use starknet::syscalls::deploy_syscall;
@@ -578,9 +576,7 @@ pub fn snf_namespace_def_minimal() -> NamespaceDef {
     NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
-            TestResource::Model("WorldConfig"),
-            TestResource::Model("Structure"),
-            TestResource::Model("ExplorerTroops"),
+            TestResource::Model("WorldConfig"), TestResource::Model("Structure"), TestResource::Model("ExplorerTroops"),
         ]
             .span(),
     }
@@ -592,40 +588,26 @@ pub fn snf_namespace_def_combat() -> NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
             // Core config models
-            TestResource::Model("WorldConfig"),
-            TestResource::Model("WeightConfig"),
-            // Structure models
+            TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"), // Structure models
             TestResource::Model("Structure"),
-            TestResource::Model("StructureOwnerStats"),
-            TestResource::Model("StructureVillageSlots"),
-            TestResource::Model("StructureBuildings"),
-            TestResource::Model("Building"),
+            TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureVillageSlots"),
+            TestResource::Model("StructureBuildings"), TestResource::Model("Building"),
             // Troop models
-            TestResource::Model("ExplorerTroops"),
-            // Map models
+            TestResource::Model("ExplorerTroops"), // Map models
             TestResource::Model("TileOpt"),
-            TestResource::Model("BiomeDiscovered"),
-            TestResource::Model("Wonder"),
-            // Resource models
+            TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"), // Resource models
             TestResource::Model("Resource"),
-            TestResource::Model("ResourceList"),
-            TestResource::Model("ResourceFactoryConfig"),
+            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
             // Contracts
-            TestResource::Contract("troop_management_systems"),
-            TestResource::Contract("troop_movement_systems"),
-            TestResource::Contract("troop_battle_systems"),
-            TestResource::Contract("village_systems"),
-            TestResource::Contract("realm_internal_systems"),
-            TestResource::Contract("resource_systems"),
+            TestResource::Contract("troop_management_systems"), TestResource::Contract("troop_movement_systems"),
+            TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
+            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
             TestResource::Library(("structure_creation_library", "0_1_8")),
-            TestResource::Library(("biome_library", "0_1_8")),
-            TestResource::Library(("rng_library", "0_1_8")),
-            TestResource::Library(("combat_library", "0_1_8")),
-            // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
+            TestResource::Library(("biome_library", "0_1_8")), TestResource::Library(("rng_library", "0_1_8")),
+            TestResource::Library(("combat_library", "0_1_8")), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"),
-            TestResource::Event("ExplorerMoveEvent"),
-            TestResource::Event("BattleEvent"),
+            TestResource::Event("ExplorerMoveEvent"), TestResource::Event("BattleEvent"),
             TestResource::Event("TrophyProgression"),
         ]
             .span(),
@@ -725,10 +707,8 @@ pub fn snf_setup_combat_configs(ref world: WorldStorage) {
     tstore_weight_config(
         ref world,
         array![
-            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::PALADIN_T3),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::PALADIN_T3), MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
             MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
         ]
             .span(),
@@ -764,12 +744,7 @@ pub fn snf_setup_battle_world() -> (WorldStorage, CombatSystemAddresses) {
 
 /// Creates a test realm with proper resource capacity initialized
 /// This is a simplified version that bypasses village NFT minting
-pub fn snf_spawn_test_realm(
-    ref world: WorldStorage,
-    realm_id: u32,
-    owner: ContractAddress,
-    coord: Coord,
-) -> u32 {
+pub fn snf_spawn_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
     let structure_id = world.dispatcher.uuid();
 
     let default_troops = Troops {
@@ -808,11 +783,7 @@ pub fn snf_spawn_test_realm(
         troop_explorers: array![].span(),
         resources_packed: 0,
         metadata: StructureMetadata {
-            realm_id: realm_id.try_into().unwrap(),
-            order: 1,
-            has_wonder: false,
-            villages_count: 0,
-            village_realm: 0,
+            realm_id: realm_id.try_into().unwrap(), order: 1, has_wonder: false, villages_count: 0, village_realm: 0,
         },
         category: StructureCategory::Realm.into(),
     };
@@ -892,9 +863,8 @@ pub fn snf_create_explorer(
     let dispatcher = ITroopManagementSystemsDispatcher { contract_address: systems.troop_management };
 
     start_cheat_caller_address(systems.troop_management, realm.owner);
-    let explorer_id = dispatcher.explorer_create(
-        realm.entity_id, troop_type, troop_tier, troop_amount, spawn_direction,
-    );
+    let explorer_id = dispatcher
+        .explorer_create(realm.entity_id, troop_type, troop_tier, troop_amount, spawn_direction);
     stop_cheat_caller_address(systems.troop_management);
 
     ExplorerTestContext { explorer_id, owner: realm.owner, realm_id: realm.entity_id }
@@ -1129,32 +1099,21 @@ pub fn snf_namespace_def_troop_management() -> NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
             // Core config models
-            TestResource::Model("WorldConfig"),
-            TestResource::Model("WeightConfig"),
-            // Structure models
+            TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"), // Structure models
             TestResource::Model("Structure"),
-            TestResource::Model("StructureOwnerStats"),
-            TestResource::Model("StructureVillageSlots"),
-            TestResource::Model("StructureBuildings"),
-            TestResource::Model("Building"),
+            TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureVillageSlots"),
+            TestResource::Model("StructureBuildings"), TestResource::Model("Building"),
             // Troop models
-            TestResource::Model("ExplorerTroops"),
-            // Map models
+            TestResource::Model("ExplorerTroops"), // Map models
             TestResource::Model("TileOpt"),
-            TestResource::Model("BiomeDiscovered"),
-            TestResource::Model("Wonder"),
-            // Resource models
+            TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"), // Resource models
             TestResource::Model("Resource"),
-            TestResource::Model("ResourceList"),
-            TestResource::Model("ResourceFactoryConfig"),
+            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
             // Events
-            TestResource::Event("TrophyProgression"),
-            TestResource::Event("StoryEvent"),
-            TestResource::Event("ExplorerMoveEvent"),
-            // Contracts
+            TestResource::Event("TrophyProgression"), TestResource::Event("StoryEvent"),
+            TestResource::Event("ExplorerMoveEvent"), // Contracts
             TestResource::Contract("troop_management_systems"),
-            TestResource::Contract("troop_movement_systems"),
-            TestResource::Contract("village_systems"),
+            TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"),
             // Libraries
             TestResource::Library(("structure_creation_library", "0_1_8")),
