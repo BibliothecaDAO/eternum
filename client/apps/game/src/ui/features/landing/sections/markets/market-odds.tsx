@@ -2,16 +2,18 @@ import { useMemo } from "react";
 
 import { MarketClass, MarketOutcome } from "@/pm/class";
 import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
+import { formatUnits } from "@/pm/utils";
 import { MaybeController } from "./maybe-controller";
+import { TokenIcon } from "./token-icon";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
 const formatOdds = (value: unknown) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return null;
-  if (num > 0 && num <= 1) return `${(num * 100).toFixed(1)}%`;
-  if (num >= 1 && num <= 100) return `${num.toFixed(num % 1 === 0 ? 0 : 1)}%`;
-  return num.toFixed(2);
+  // Values from MarketClass are already percentages (e.g., 0.95 = 0.95%, 95.23 = 95.23%)
+  if (num < 1) return `${num.toFixed(2)}%`; // Show 2 decimals for small percentages
+  return `${num.toFixed(num % 1 === 0 ? 0 : 1)}%`;
 };
 
 const getOddsValue = (outcome: MarketOutcome) =>
@@ -94,14 +96,26 @@ export const MarketOdds = ({
         const color = getOutcomeColor(order);
         const isWinner = market.isResolved() && winningOutcomeOrdersSet.size > 0 && winningOutcomeOrdersSet.has(order);
 
+        // Get pool amount for this outcome
+        const vaultNumerators = market.vaultNumerators ?? [];
+        const numeratorEntry = vaultNumerators.find((entry) => Number(entry.index) === order);
+        const poolAmountRaw = numeratorEntry?.value ?? 0n;
+        const decimals = market.collateralToken?.decimals ?? 18;
+        const poolAmount = formatUnits(poolAmountRaw, Number(decimals), 0);
+
+        // Calculate pool share percentage for visual bar
+        const totalPool = Number(market.vaultDenominator?.value ?? 0n);
+        const outcomePool = Number(poolAmountRaw);
+        const poolSharePercent = totalPool > 0 ? (outcomePool / totalPool) * 100 : 0;
+
         return (
           <button
             key={(outcome as any)?.id ?? order}
             className={cx(
-              "flex min-h-[52px] items-center justify-between rounded-sm border px-3 py-2 text-left text-xs transition",
+              "group relative flex min-h-[56px] items-center justify-between overflow-hidden rounded-sm border px-3 py-2.5 text-left text-xs transition-all duration-200",
               isWinner ? "border-progress-bar-good/60 bg-progress-bar-good/10" : "border-gold/20 bg-brown/40",
               "text-lightest",
-              isSelectable ? "cursor-pointer hover:border-gold/60 hover:bg-gold/10" : "cursor-default",
+              isSelectable ? "cursor-pointer hover:border-gold/50 hover:bg-gold/10" : "cursor-default",
               isSelected ? "border-gold/70 bg-gold/15 ring-1 ring-gold/40" : null,
             )}
             type="button"
@@ -113,14 +127,45 @@ export const MarketOdds = ({
                 : undefined
             }
           >
-            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-lightest">
-              <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
-              <span className="min-w-0 flex-1 truncate">
+            {/* Pool share background bar */}
+            <div
+              className="pointer-events-none absolute inset-y-0 left-0 opacity-20 transition-all duration-500"
+              style={{
+                width: `${Math.min(poolSharePercent, 100)}%`,
+                backgroundColor: color,
+              }}
+            />
+
+            {/* Content */}
+            <div className="relative flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-lightest">
+              <span
+                className="h-2.5 w-2.5 flex-shrink-0 rounded-full ring-2 ring-white/10"
+                style={{ backgroundColor: color }}
+              />
+              <span className="min-w-0 flex-1 truncate font-medium">
                 <MaybeController address={outcome.name} />
               </span>
             </div>
-            <div className="flex flex-shrink-0 items-center gap-2 pl-2">
-              <span className={isWinner ? "text-progress-bar-good" : "text-gold"}>{odds ?? "--"}</span>
+
+            {/* Pool amount & Odds */}
+            <div className="relative flex flex-shrink-0 items-center gap-2 pl-2">
+              {/* Pool amount pill */}
+              <div className="flex items-center gap-1 rounded-full bg-black/20 px-2 py-0.5 backdrop-blur-sm">
+                <span className="text-[10px] font-medium tabular-nums text-gold/70">{poolAmount}</span>
+                <TokenIcon token={market.collateralToken} size={11} />
+              </div>
+
+              {/* Odds badge */}
+              <div
+                className={cx(
+                  "min-w-[48px] rounded px-2 py-1 text-center text-sm font-bold tabular-nums",
+                  isWinner
+                    ? "bg-progress-bar-good/20 text-progress-bar-good"
+                    : "bg-gold/10 text-gold group-hover:bg-gold/20",
+                )}
+              >
+                {odds ?? "--"}
+              </div>
             </div>
           </button>
         );

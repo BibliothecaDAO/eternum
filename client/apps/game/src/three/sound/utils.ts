@@ -3,7 +3,7 @@ import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 
 const DEFAULT_RESOURCE_SOUND_ID = "ui.click";
 
-export const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
+const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
   [ResourcesIds.Stone]: "resource.collect.stone",
   [ResourcesIds.Coal]: "resource.collect.coal",
   [ResourcesIds.Wood]: "resource.collect.wood",
@@ -72,7 +72,7 @@ export const getResourceSoundId = (resourceId?: ResourcesIds): string => {
 /**
  * @deprecated Use AudioManager.getInstance().play() directly. This function bypasses the audio system.
  */
-export const playSound = (sound: string, hasSound: boolean, volume: number) => {
+const playSound = (sound: string, hasSound: boolean, volume: number) => {
   const audio = new Audio("/sound/" + sound);
   if (!hasSound) {
     audio.volume = 0;

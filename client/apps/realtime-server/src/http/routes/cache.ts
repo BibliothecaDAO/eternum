@@ -198,7 +198,7 @@ const cleanupExpiredEntries = <T>(cache: Map<string, CacheEntry<T>>, staleMs: nu
 
 let cacheCleanupIntervalId: NodeJS.Timeout | null = null;
 
-export const startCacheCleanup = () => {
+const startCacheCleanup = () => {
   if (cacheCleanupIntervalId) {
     return;
   }
@@ -215,7 +215,7 @@ export const startCacheCleanup = () => {
   );
 };
 
-export const stopCacheCleanup = () => {
+const stopCacheCleanup = () => {
   if (cacheCleanupIntervalId) {
     clearInterval(cacheCleanupIntervalId);
     cacheCleanupIntervalId = null;
@@ -470,7 +470,7 @@ const resolveToriiSqlBaseUrl = (c: Context): string | null => {
   return normalizeToriiBaseUrl(process.env.TORII_SQL_BASE_URL, false);
 };
 
-export const cacheRoutes = new Hono<AppEnv>();
+const cacheRoutes = new Hono<AppEnv>();
 
 cacheRoutes.get("/leaderboard", async (c) => {
   const start = Date.now();

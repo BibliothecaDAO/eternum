@@ -6,7 +6,7 @@ import { MergedNftData } from "@/types";
 export const MOCK_CHEST_OPENING = env.VITE_PUBLIC_CHEST_DEBUG_MODE === true;
 
 // Mock chest data for testing the UI without blockchain interaction
-export const MOCK_CHESTS: Partial<MergedNftData>[] = [
+const MOCK_CHESTS: Partial<MergedNftData>[] = [
   {
     token_id: "1",
     metadata: {
@@ -53,7 +53,7 @@ export const getMockRevealAssets = (count: number = 3): ChestAsset[] => {
 };
 
 // Get mock assets weighted by a specific rarity (for testing specific rarity videos)
-export const getMockRevealAssetsByRarity = (targetRarity: AssetRarity, count: number = 3): ChestAsset[] => {
+const getMockRevealAssetsByRarity = (targetRarity: AssetRarity, count: number = 3): ChestAsset[] => {
   const allAssets = getAllChestAssets();
   // Include at least one asset of the target rarity
   const targetAssets = allAssets.filter((a) => a.rarity === targetRarity);
@@ -82,7 +82,7 @@ export const simulatePendingDelay = (): Promise<void> => {
 };
 
 // Determine chest rarity from metadata (for video selection)
-export const getChestRarityFromMetadata = (metadata?: MergedNftData["metadata"]): AssetRarity => {
+const getChestRarityFromMetadata = (metadata?: MergedNftData["metadata"]): AssetRarity => {
   if (!metadata?.attributes) return AssetRarity.Common;
 
   const rarityAttr = metadata.attributes.find((attr) => attr.trait_type.toLowerCase() === "rarity");

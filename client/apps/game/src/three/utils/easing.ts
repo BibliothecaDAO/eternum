@@ -18,7 +18,7 @@ export enum EasingType {
 /**
  * Linear easing (no change) - current behavior
  */
-export function easeLinear(t: number): number {
+function easeLinear(t: number): number {
   return t;
 }
 
@@ -26,7 +26,7 @@ export function easeLinear(t: number): number {
  * Ease-out (fast start, slow end) - RECOMMENDED for army movement
  * Creates satisfying "arrive at destination" feeling
  */
-export function easeOut(t: number): number {
+function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 2);
 }
 
@@ -34,7 +34,7 @@ export function easeOut(t: number): number {
  * Ease-in (slow start, fast end)
  * Good for dramatic departures
  */
-export function easeIn(t: number): number {
+function easeIn(t: number): number {
   return t * t;
 }
 
@@ -42,7 +42,7 @@ export function easeIn(t: number): number {
  * Ease-in-out (slow start, fast middle, slow end)
  * Most natural feeling for long movements
  */
-export function easeInOut(t: number): number {
+function easeInOut(t: number): number {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
@@ -50,7 +50,7 @@ export function easeInOut(t: number): number {
  * Ease-out cubic (more dramatic slow-down)
  * Great for "heavy" units that need time to stop
  */
-export function easeOutCubic(t: number): number {
+function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
@@ -58,7 +58,7 @@ export function easeOutCubic(t: number): number {
  * Ease-out quartic (very dramatic slow-down)
  * Perfect for large armies or important movements
  */
-export function easeOutQuart(t: number): number {
+function easeOutQuart(t: number): number {
   return 1 - Math.pow(1 - t, 4);
 }
 
@@ -66,7 +66,7 @@ export function easeOutQuart(t: number): number {
  * Ease-out back (slight overshoot then settle)
  * Adds extra juice - armies "lean into" their destination
  */
-export function easeOutBack(t: number): number {
+function easeOutBack(t: number): number {
   const c1 = 1.70158;
   const c3 = c1 + 1;
 
@@ -104,7 +104,7 @@ export function applyEasing(progress: number, easingType: EasingType = EasingTyp
 /**
  * Get easing function description for debugging
  */
-export function getEasingDescription(easingType: EasingType): string {
+function getEasingDescription(easingType: EasingType): string {
   const descriptions = {
     [EasingType.Linear]: "Constant speed (current behavior)",
     [EasingType.EaseOut]: "Fast start → slow finish (RECOMMENDED)",

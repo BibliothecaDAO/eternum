@@ -1,6 +1,6 @@
 export type FeatureType = "feature" | "improvement" | "balance" | "fix";
 
-export interface LatestFeature {
+interface LatestFeature {
   date: string;
   title: string;
   description: string;

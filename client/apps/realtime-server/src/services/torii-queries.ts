@@ -222,7 +222,7 @@ export const buildLeaderboardQuery = (limit?: number): string => {
 `;
 };
 
-export const STORY_EVENT_SELECT_FIELDS = `
+const STORY_EVENT_SELECT_FIELDS = `
       "owner.Some" as owner,
       "entity_id.Some" as entity_id,
       tx_hash,

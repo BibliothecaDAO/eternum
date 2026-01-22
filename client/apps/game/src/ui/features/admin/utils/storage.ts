@@ -65,7 +65,7 @@ export const setCurrentWorldName = (worldName: string) => {
   } catch {}
 };
 
-export const getIndexerCooldown = (worldName: string): number | null => {
+const getIndexerCooldown = (worldName: string): number | null => {
   try {
     const stored = localStorage.getItem(`${INDEXER_CREATION_COOLDOWN_KEY}_${worldName}`);
     return stored ? parseInt(stored, 10) : null;
@@ -101,7 +101,7 @@ export const getDeployedAddressMap = (): Record<string, string> => {
   }
 };
 
-export const setDeployedAddressMap = (map: Record<string, string>) => {
+const setDeployedAddressMap = (map: Record<string, string>) => {
   try {
     localStorage.setItem(WORLD_DEPLOYED_ADDRESS_MAP_KEY, JSON.stringify(map));
   } catch {}
@@ -129,7 +129,7 @@ export const getStoredWorldSeriesMetadata = (): Record<string, WorldSeriesMetada
   }
 };
 
-export const persistWorldSeriesMetadata = (map: Record<string, WorldSeriesMetadata>) => {
+const persistWorldSeriesMetadata = (map: Record<string, WorldSeriesMetadata>) => {
   try {
     localStorage.setItem(WORLD_SERIES_METADATA_KEY, JSON.stringify(map));
   } catch {}
@@ -147,7 +147,7 @@ export const updateWorldSeriesMetadata = (worldName: string, metadata: WorldSeri
   } catch {}
 };
 
-export const removeWorldSeriesMetadata = (worldName: string) => {
+const removeWorldSeriesMetadata = (worldName: string) => {
   try {
     const existing = getStoredWorldSeriesMetadata();
     if (Object.prototype.hasOwnProperty.call(existing, worldName)) {

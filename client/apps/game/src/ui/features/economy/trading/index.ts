@@ -10,5 +10,4 @@ export { AllResourceArrivals as ResourceArrivals } from "./resource-arrivals";
 export { SelectEntityFromList } from "./select-entity-from-list";
 export { SelectResources } from "./select-resources";
 export { TradeHistoryEvent, TradeHistoryRowHeader } from "./trade-history-event";
-export { TransferBetweenEntities } from "./transfer-between-entities";
 export { TransferView } from "./transfer-view";

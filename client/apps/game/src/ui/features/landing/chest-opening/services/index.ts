@@ -117,7 +117,7 @@ export async function fetchLootChestBalances(
 /**
  * Fetch collectible claimed events for a specific player
  */
-export async function fetchCollectibleClaimed(
+async function fetchCollectibleClaimed(
   contractAddress: string,
   playerAddress: string,
   minTimestamp: number = 0,

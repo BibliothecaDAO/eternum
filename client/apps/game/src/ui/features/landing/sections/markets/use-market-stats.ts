@@ -17,8 +17,8 @@ const TIMEFRAME_WINDOWS_MS: Record<MarketLeaderboardRange, number | null> = {
   all: null,
 };
 
-export type EnrichedMarketBuy = MarketBuy & { timestampMs: number };
-export type EnrichedPayoutRedemption = PayoutRedemption & { timestampMs: number };
+type EnrichedMarketBuy = MarketBuy & { timestampMs: number };
+type EnrichedPayoutRedemption = PayoutRedemption & { timestampMs: number };
 
 const normalizeHex = (value: unknown): string | null => {
   try {

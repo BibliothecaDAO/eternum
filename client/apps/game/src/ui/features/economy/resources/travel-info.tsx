@@ -93,7 +93,7 @@ export const TravelInfo = ({
   );
 };
 
-export const ResourceWeight = ({ className }: { className?: string }) => {
+const ResourceWeight = ({ className }: { className?: string }) => {
   return (
     <div className={`text-xs text-gray-200 mx-auto ${className}`}>
       <p className="italic text-xs">Resource weights per unit:</p>

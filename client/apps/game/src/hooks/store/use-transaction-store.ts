@@ -188,7 +188,7 @@ const getTxDescription = (type: TransactionType): string => {
   return descriptions[type] ?? "Transaction in progress";
 };
 
-export interface TransactionDebugUtils {
+interface TransactionDebugUtils {
   addMockPending: (type?: TransactionType) => string;
   addMockSuccess: (type?: TransactionType) => string;
   addMockReverted: (type?: TransactionType, errorMessage?: string) => string;

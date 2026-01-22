@@ -18,7 +18,7 @@ export interface CosmeticMetadata {
   name?: string;
 }
 
-export interface ToriiCosmeticAsset {
+interface ToriiCosmeticAsset {
   accountAddress: string;
   tokenName: string;
   tokenSymbol: string;

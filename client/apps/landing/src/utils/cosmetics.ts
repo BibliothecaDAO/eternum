@@ -66,12 +66,12 @@ const NFT_IMAGES_BASE_PATH = "/images/nft-images";
  * @param attributesRaw - Hex string like "0x2030601"
  * @returns Local image path
  */
-export function getLocalImageFromAttributesRaw(attributesRaw: string): string {
+function getLocalImageFromAttributesRaw(attributesRaw: string): string {
   return `${NFT_IMAGES_BASE_PATH}/${attributesRaw}.png`;
 }
 
 // IPFS CID mapping from attributesRaw hex values (fallback source)
-export const ATTRIBUTES_TO_IPFS: Record<string, string> = {
+const ATTRIBUTES_TO_IPFS: Record<string, string> = {
   "0x3040101": "bafybeifhxkjcyepmn2io6xs6a25d2yend3mvl2acorptgb3fqzweolmuyy",
   "0x107050201": "bafybeih2qvpsnwqaj36poj7a4smwngda3eovkkio6csrapeb2m24fliona",
   "0x4050301": "bafybeidtfplezzaqil2txiuuukre4ul3drkdgtcrt4l4yhxhc66xaz35mu",
@@ -101,7 +101,7 @@ export const ATTRIBUTES_TO_IPFS: Record<string, string> = {
  * @param attributesRaw - Hex string like "0x2030601"
  * @returns IPFS CID or undefined if not found
  */
-export function getIpfsCidFromAttributesRaw(attributesRaw: string): string | undefined {
+function getIpfsCidFromAttributesRaw(attributesRaw: string): string | undefined {
   return ATTRIBUTES_TO_IPFS[attributesRaw];
 }
 
@@ -111,7 +111,7 @@ export function getIpfsCidFromAttributesRaw(attributesRaw: string): string | und
  * @param gateway - IPFS gateway URL (defaults to dweb.link)
  * @returns Full IPFS URL or undefined if not found
  */
-export function getIpfsUrlFromAttributesRaw(
+function getIpfsUrlFromAttributesRaw(
   attributesRaw: string,
   gateway: string = "https://dweb.link/ipfs/",
 ): string | undefined {
@@ -124,7 +124,7 @@ export function getIpfsUrlFromAttributesRaw(
  * @param attributesRaw - Hex string like "0x2030601"
  * @returns Cosmetic name or undefined if not found
  */
-export function getCosmeticNameFromAttributesRaw(attributesRaw: string): string | undefined {
+function getCosmeticNameFromAttributesRaw(attributesRaw: string): string | undefined {
   const cosmetic = COSMETIC_NAMES.find((c) => c.attributesRaw === attributesRaw);
   return cosmetic?.name;
 }
@@ -219,7 +219,7 @@ const TRAIT_VALUES: Record<number, Record<number, string>> = {
   4: { 1: "Knight", 2: "Crossbowman", 3: "Paladin" },
 };
 
-export interface TraitAttribute {
+interface TraitAttribute {
   trait_type: string;
   value: string;
 }
@@ -237,7 +237,7 @@ export interface TraitAttribute {
  * @param attributesRaw - Hex string like "0x2030601" or "2030601"
  * @returns Array of trait attributes with trait_type and value
  */
-export function getTraitValuesFromAttributesRaw(attributesRaw: string): TraitAttribute[] {
+function getTraitValuesFromAttributesRaw(attributesRaw: string): TraitAttribute[] {
   // Remove "0x" prefix if present and parse as BigInt
   const cleanHex = attributesRaw.startsWith("0x") ? attributesRaw.slice(2) : attributesRaw;
   const rawValue = BigInt("0x" + cleanHex);

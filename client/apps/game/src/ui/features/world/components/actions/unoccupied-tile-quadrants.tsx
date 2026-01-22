@@ -33,7 +33,7 @@ const unoccupiedTileTroopConfig: Record<
   },
 };
 
-export const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
+const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
   const label = biome.toString();
   return label
     .replace(/_/g, " ")
@@ -43,7 +43,7 @@ export const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
     .trim();
 };
 
-export const getQuadrantBonusStyles = (bonus: number) => {
+const getQuadrantBonusStyles = (bonus: number) => {
   if (bonus > 1) {
     return {
       containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
