@@ -55,6 +55,17 @@ export const useExplorationAutomationRunner = () => {
   const timeoutIdRef = useRef<number | null>(null);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
+  const debugEnabled =
+    typeof window !== "undefined" && window.localStorage.getItem("debugExplorationAutomation") === "true";
+  const logDebug = useCallback(
+    (...args: unknown[]) => {
+      if (debugEnabled) {
+        // eslint-disable-next-line no-console
+        console.debug("[exploration-automation]", ...args);
+      }
+    },
+    [debugEnabled],
+  );
 
   const stopAutomation = useCallback(() => {
     if (timeoutIdRef.current !== null) {
@@ -87,6 +98,7 @@ export const useExplorationAutomationRunner = () => {
 
   const scheduleNextCheck = useCallback(() => {
     if (isSeasonOver()) {
+      logDebug("season-over");
       stopAutomation();
       return;
     }
@@ -101,23 +113,27 @@ export const useExplorationAutomationRunner = () => {
     timeoutIdRef.current = window.setTimeout(() => {
       void processRef.current();
     }, delay);
-  }, [isSeasonOver, stopAutomation]);
+  }, [isSeasonOver, logDebug, stopAutomation]);
 
   useEffect(() => {
     processRef.current = async () => {
       if (isSeasonOver()) {
+        logDebug("season-over");
         stopAutomation();
         return;
       }
       if (processingRef.current) {
+        logDebug("skip-processing");
         scheduleNextCheck();
         return;
       }
       if (!components || !network?.toriiClient || !network?.contractComponents) {
+        logDebug("missing-deps", { hasComponents: Boolean(components), hasTorii: Boolean(network?.toriiClient) });
         scheduleNextCheck();
         return;
       }
       if (!account || !account.address || account.address === "0x0") {
+        logDebug("missing-account");
         scheduleNextCheck();
         return;
       }
@@ -137,10 +153,12 @@ export const useExplorationAutomationRunner = () => {
       });
 
       if (!due.length) {
+        logDebug("no-due-entries", { active: activeEntries.length, nowMs });
         scheduleNextCheck();
         return;
       }
 
+      logDebug("processing", { due: due.length, active: activeEntries.length, nowMs });
       processingRef.current = true;
 
       try {
@@ -149,6 +167,7 @@ export const useExplorationAutomationRunner = () => {
             const explorerId = Number(entry.explorerId);
             if (!Number.isFinite(explorerId) || explorerId <= 0) {
               update(entry.id, { blockedReason: "invalid-explorer", lastError: null });
+              logDebug("invalid-explorer", { entryId: entry.id, explorerId: entry.explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -157,6 +176,7 @@ export const useExplorationAutomationRunner = () => {
             const explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
             if (!explorer) {
               update(entry.id, { blockedReason: "missing-explorer", lastError: null });
+              logDebug("missing-explorer", { entryId: entry.id, explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -169,6 +189,7 @@ export const useExplorationAutomationRunner = () => {
                 lastAction: "disabled",
                 nextRunAt: null,
               });
+              logDebug("blocked-battle", { entryId: entry.id, explorerId, battleCooldownEnd, currentArmiesTick });
               continue;
             }
 
@@ -179,6 +200,7 @@ export const useExplorationAutomationRunner = () => {
                 lastAction: "disabled",
                 nextRunAt: null,
               });
+              logDebug("blocked-not-owned", { entryId: entry.id, explorerOwner: explorer.owner, account: account.address });
               continue;
             }
 
@@ -192,6 +214,7 @@ export const useExplorationAutomationRunner = () => {
 
             if (!snapshot) {
               update(entry.id, { blockedReason: "no-snapshot", lastError: null });
+              logDebug("blocked-no-snapshot", { entryId: entry.id, explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -217,6 +240,7 @@ export const useExplorationAutomationRunner = () => {
 
             if (!selection) {
               update(entry.id, { blockedReason: "no-paths", lastError: null });
+              logDebug("blocked-no-paths", { entryId: entry.id, explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -230,6 +254,7 @@ export const useExplorationAutomationRunner = () => {
               blockedReason: null,
               lastError: null,
             });
+            logDebug("moved", { entryId: entry.id, explorerId, reason: selection.reason });
             scheduleNext(entry.id, nowMs);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -237,6 +262,7 @@ export const useExplorationAutomationRunner = () => {
               lastError: message,
               blockedReason: "error",
             });
+            logDebug("error", { entryId: entry.id, message });
             toast.error("Exploration automation failed. Check console for details.");
             scheduleNext(entry.id, nowMs);
           }
@@ -258,6 +284,7 @@ export const useExplorationAutomationRunner = () => {
     stopAutomation,
     systemCalls,
     toggleActive,
+    logDebug,
     update,
   ]);
 

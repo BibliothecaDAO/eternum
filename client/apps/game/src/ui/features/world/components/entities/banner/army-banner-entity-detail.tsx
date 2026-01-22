@@ -231,6 +231,23 @@ const ExplorationAutomationCompact = ({
   const statusLabel = entry ? (entry.active ? "Active" : "Paused") : "Not configured";
   const inputClass = compact ? "h-8 text-sm" : "h-9";
   const labelClass = compact ? "text-xxs" : "text-xs";
+  const debugEnabled =
+    typeof window !== "undefined" && window.localStorage.getItem("debugExplorationAutomation") === "true";
+  const formatTimestamp = (value?: number | null) => {
+    if (!value) return "never";
+    try {
+      return new Date(value).toLocaleTimeString();
+    } catch {
+      return String(value);
+    }
+  };
+  const formatDelta = (value?: number | null) => {
+    if (!value) return "";
+    const deltaSeconds = Math.round((value - Date.now()) / 1000);
+    if (!Number.isFinite(deltaSeconds)) return "";
+    const sign = deltaSeconds >= 0 ? "+" : "";
+    return `${sign}${deltaSeconds}s`;
+  };
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-gold/20 bg-black/30 p-2">
@@ -273,6 +290,15 @@ const ExplorationAutomationCompact = ({
         </div>
         {entry?.blockedReason ? (
           <div className="text-xxs text-warning uppercase tracking-[0.25em]">Blocked: {entry.blockedReason}</div>
+        ) : null}
+        {debugEnabled && entry ? (
+          <div className="text-xxs text-gold/60 uppercase tracking-[0.2em]">
+            <div>Entry: {entry.id}</div>
+            <div>Last run: {formatTimestamp(entry.lastRunAt)}</div>
+            <div>Next run: {formatTimestamp(entry.nextRunAt)} {formatDelta(entry.nextRunAt)}</div>
+            {entry.lastAction ? <div>Last action: {entry.lastAction}</div> : null}
+            {entry.lastError ? <div>Error: {entry.lastError}</div> : null}
+          </div>
         ) : null}
       </div>
     </div>
