@@ -1,3 +1,5 @@
+use starknet::ContractAddress;
+
 #[starknet::interface]
 pub trait IFaithSystems<T> {
     fn pledge_faith(ref self: T, entity_id: u32, wonder_id: u32);
@@ -11,9 +13,11 @@ pub trait IFaithSystems<T> {
         total_prize: u128,
         owner_prize: u128,
         holders_prize: u128,
+        owner_recipient: ContractAddress,
     );
     fn claim_faith_prize(ref self: T, season_id: u32, wonder_id: u32);
     fn withdraw_unclaimed_faith_prize(ref self: T, season_id: u32);
+    fn record_wonder_capture(ref self: T, wonder_id: u32, new_owner: ContractAddress);
 }
 
 #[dojo::contract]
@@ -29,7 +33,7 @@ pub mod faith_systems {
     use crate::models::config::{TickImpl, WorldConfigUtilImpl};
     use crate::models::faith::{
         FaithConfig, FaithPrizeBalance, FaithSeasonSnapshot, FaithSeasonState, FollowerAllegiance,
-        FollowerFaithBalance, FollowerType, WonderFaith,
+        FollowerFaithBalance, FollowerType, WonderFaith, WonderFaithHistory,
     };
     use crate::models::structure::{Structure, StructureCategory, StructureMetadata, StructureOwnerStoreImpl};
 
@@ -229,6 +233,7 @@ pub mod faith_systems {
             total_prize: u128,
             owner_prize: u128,
             holders_prize: u128,
+            owner_recipient: ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let current_tick = TickImpl::get_tick_interval(ref world).current();
@@ -263,12 +268,15 @@ pub mod faith_systems {
             };
             world.write_model(@snapshot);
 
-            let wonder_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
-            if wonder_owner.is_non_zero() {
+            let mut recipient: ContractAddress = owner_recipient;
+            if recipient.is_zero() {
+                recipient = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
+            }
+            if recipient.is_non_zero() {
                 let prize = FaithPrizeBalance {
                     season_id,
                     wonder_id,
-                    claimant: wonder_owner,
+                    claimant: recipient,
                     amount: owner_prize,
                     claimed: false,
                 };
@@ -299,6 +307,32 @@ pub mod faith_systems {
             assert!(current_tick > state.claim_window_end_tick, "Claim window not ended");
             state.leftover_withdrawn = true;
             world.write_model(@state);
+        }
+
+        fn record_wonder_capture(ref self: ContractState, wonder_id: ID, new_owner: ContractAddress) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let old_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
+            assert!(old_owner.is_non_zero(), "Wonder not found");
+
+            let mut faith: WonderFaith = world.read_model(wonder_id);
+            let current_tick = TickImpl::get_tick_interval(ref world).current();
+            let history = WonderFaithHistory {
+                wonder_id,
+                season_id: faith.season_id,
+                original_owner: old_owner,
+                fp_earned_while_owner: faith.current_owner_fp,
+                ownership_start_tick: faith.last_tick_processed,
+                ownership_end_tick: current_tick,
+                prize_claimed: false,
+            };
+            world.write_model(@history);
+
+            faith.current_owner_fp = 0;
+            world.write_model(@faith);
+
+            if new_owner.is_non_zero() && new_owner != old_owner {
+                StructureOwnerStoreImpl::store(new_owner, ref world, wonder_id);
+            }
         }
     }
 }
