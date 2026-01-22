@@ -23,14 +23,6 @@ export const CardContent = ({ className, ...props }: DivProps) => (
   <div {...props} className={cx("flex flex-col gap-2", className)} />
 );
 
-export const CardDescription = ({ className, ...props }: DivProps) => (
-  <div {...props} className={cx("text-sm text-white/70", className)} />
-);
-
-const Container = ({ className, ...props }: DivProps) => (
-  <div {...props} className={cx("flex flex-col w-full", className)} />
-);
-
 export const HStack = ({ className, ...props }: DivProps) => (
   <div {...props} className={cx("flex items-center", className)} />
 );
