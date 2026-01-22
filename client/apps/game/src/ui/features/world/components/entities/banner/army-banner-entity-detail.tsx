@@ -1,4 +1,5 @@
-import { Loader, Trash2 } from "lucide-react";
+import Loader from "lucide-react/dist/esm/icons/loader";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { memo, useMemo } from "react";
 
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";

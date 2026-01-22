@@ -4,7 +4,7 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Dialog, DialogContent } from "@/shared/ui/dialog";
 import { getIsBlitz } from "@bibliothecadao/eternum";
-import { AlertCircle } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
 import { useEffect, useState } from "react";
 import { BlitzOnboarding } from "./blitz-onboarding";
 import { TermsOfService } from "./terms-of-service";

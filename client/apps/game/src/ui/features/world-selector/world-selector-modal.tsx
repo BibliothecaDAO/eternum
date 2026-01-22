@@ -14,7 +14,16 @@ import {
 import type { WorldSelectionInput } from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
-import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2, UserCheck, UserX, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import UserCheck from "lucide-react/dist/esm/icons/user-check";
+import UserX from "lucide-react/dist/esm/icons/user-x";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chain } from "@contracts";
 import { env } from "../../../../env";

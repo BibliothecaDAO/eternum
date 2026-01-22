@@ -11,7 +11,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
-import { ChevronRight, Download } from "lucide-react";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
+import Download from "lucide-react/dist/esm/icons/download";
 import { useMemo, useState } from "react";
 
 export const Guilds = ({

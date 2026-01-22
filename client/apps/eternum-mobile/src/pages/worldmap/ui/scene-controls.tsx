@@ -8,7 +8,14 @@ import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
 import { FELT_CENTER, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { getLevelName } from "@bibliothecadao/types";
-import { ChevronDown, Copy, Eye, EyeOff, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import Eye from "lucide-react/dist/esm/icons/eye";
+import EyeOff from "lucide-react/dist/esm/icons/eye-off";
+import Map from "lucide-react/dist/esm/icons/map";
+import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
+import ZoomIn from "lucide-react/dist/esm/icons/zoom-in";
+import ZoomOut from "lucide-react/dist/esm/icons/zoom-out";
 import { RefObject, useEffect, useMemo, useState } from "react";
 import { ThreeCanvasRef } from "./three-canvas";
 

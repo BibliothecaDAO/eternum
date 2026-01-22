@@ -32,7 +32,11 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Loader, MessageCircle, RefreshCw, Shield } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Loader from "lucide-react/dist/esm/icons/loader";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { memo, useCallback, useMemo, useState } from "react";
 
 interface MobileStructureEntityDetailProps {

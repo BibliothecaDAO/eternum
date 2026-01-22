@@ -1,4 +1,7 @@
-import { AlertTriangle, Loader2, TrendingUp, X } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";

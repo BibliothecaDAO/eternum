@@ -10,7 +10,7 @@ import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
-import { User } from "lucide-react";
+import User from "lucide-react/dist/esm/icons/user";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";

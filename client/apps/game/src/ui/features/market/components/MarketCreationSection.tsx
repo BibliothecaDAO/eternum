@@ -1,4 +1,10 @@
-import { AlertCircle, Check, ChevronDown, ChevronRight, Plus, RefreshCw, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useMemo, useState } from "react";
 
 import Button from "@/ui/design-system/atoms/button";

@@ -15,7 +15,9 @@ import { getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum"
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import Search from "lucide-react/dist/esm/icons/search";
 import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 // TODO: big limit for now, we need to paginate this

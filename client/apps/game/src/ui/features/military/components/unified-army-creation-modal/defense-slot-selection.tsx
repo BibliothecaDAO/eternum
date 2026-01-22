@@ -3,7 +3,8 @@ import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle, Shield } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { useMemo } from "react";
 
 import type { GuardSummary, SelectedTroopCombo } from "./types";

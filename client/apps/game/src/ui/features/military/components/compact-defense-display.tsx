@@ -15,7 +15,8 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { ArrowLeft, Plus } from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
+import Plus from "lucide-react/dist/esm/icons/plus";
 import type { KeyboardEvent } from "react";
 import { useMemo } from "react";
 

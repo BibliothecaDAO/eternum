@@ -1,7 +1,13 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, divideByPrecision, getTroopResourceId } from "@bibliothecadao/eternum";
 import { BiomeType, resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
-import { AlertCircle, Shield, ShieldOff, Sparkles, Sword, Timer, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import ShieldOff from "lucide-react/dist/esm/icons/shield-off";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Sword from "lucide-react/dist/esm/icons/sword";
+import Timer from "lucide-react/dist/esm/icons/timer";
+import Users from "lucide-react/dist/esm/icons/users";
 import { formatTypeAndBonuses } from "../combat-utils";
 
 interface TroopDisplayProps {

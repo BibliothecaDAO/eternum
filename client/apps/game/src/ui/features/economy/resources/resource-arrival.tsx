@@ -6,7 +6,8 @@ import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
-import { Loader2, Clock3 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import { memo, useMemo } from "react";
 
 export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {

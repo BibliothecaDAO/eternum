@@ -1,6 +1,6 @@
 import { useLootChestOpeningStore } from "@/hooks/store/use-loot-chest-opening-store";
 import Button from "@/ui/design-system/atoms/button";
-import { Package } from "lucide-react";
+import Package from "lucide-react/dist/esm/icons/package";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getMockRevealAssets, MOCK_CHEST_OPENING } from "../hooks/mock-data";
 import { useChestContent } from "../hooks/use-chest-content";

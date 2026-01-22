@@ -25,7 +25,12 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Castle, Crown, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import Crown from "lucide-react/dist/esm/icons/crown";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Star from "lucide-react/dist/esm/icons/star";
+import Tent from "lucide-react/dist/esm/icons/tent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 

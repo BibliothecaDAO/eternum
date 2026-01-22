@@ -27,7 +27,9 @@ import { MergedNftData } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
+import Badge from "lucide-react/dist/esm/icons/badge";
+import Grid2X2 from "lucide-react/dist/esm/icons/grid-2x2";
+import Grid3X3 from "lucide-react/dist/esm/icons/grid-3x3";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 
