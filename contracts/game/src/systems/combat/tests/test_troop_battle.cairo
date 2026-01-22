@@ -21,8 +21,8 @@ mod tests {
         snf_spawn_world_minimal, snf_spawn_combat_world, snf_get_combat_systems,
         snf_attack_explorer_vs_explorer, snf_setup_explorer_battle, snf_get_explorer,
         snf_setup_guard_battle, snf_attack_explorer_vs_guard, snf_attack_guard_vs_explorer,
+        MOCK_TROOP_LIMIT_CONFIG,
     };
-    use crate::utils::testing::helpers::MOCK_TROOP_LIMIT_CONFIG;
 
     // ========================================================================
     // Basic World Tests
