@@ -44,6 +44,9 @@ build-external-contracts = [
 [tool.scarb]
 allow-prebuilt-plugins = ["dojo_cairo_macros"]
 
+[scripts]
+test = "snforge test"
+
 [tool.fmt]
 sort-module-level-items = true
 max-line-length = 120
