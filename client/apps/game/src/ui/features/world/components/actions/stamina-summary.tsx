@@ -8,7 +8,7 @@ import { useMemo } from "react";
 
 import { formatAmount } from "./format-amount";
 
-export interface StaminaSummaryProps {
+interface StaminaSummaryProps {
   selectedEntityId: ID | undefined;
   isExplored: boolean;
   path: ActionPath[];

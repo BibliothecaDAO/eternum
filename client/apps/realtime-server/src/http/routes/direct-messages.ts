@@ -21,7 +21,7 @@ import type { AppEnv } from "../middleware/auth";
 import { requirePlayerSession } from "../middleware/auth";
 import { formatZodError } from "../utils/zod";
 
-export const directMessageRoutes = new Hono<AppEnv>();
+const directMessageRoutes = new Hono<AppEnv>();
 
 directMessageRoutes.use("/*", requirePlayerSession);
 

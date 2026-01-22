@@ -44,7 +44,7 @@ interface MetricThresholds {
   [key: string]: { warning: number; critical: number };
 }
 
-export class MetricsCollector {
+class MetricsCollector {
   private static instance: MetricsCollector;
   private performanceMetrics: PerformanceMetrics[] = [];
   private gameMetrics: GameMetrics[] = [];
@@ -407,10 +407,10 @@ export class MetricsCollector {
 // Export singleton instance
 export const metricsCollector = MetricsCollector.getInstance();
 
-// Export convenience functions
-export const startMetricsCollection = metricsCollector.startCollection.bind(metricsCollector);
-export const stopMetricsCollection = metricsCollector.stopCollection.bind(metricsCollector);
-export const recordGameMetric = metricsCollector.recordGameMetric.bind(metricsCollector);
-export const measureOperation = metricsCollector.measureOperation.bind(metricsCollector);
-export const getLatestMetrics = metricsCollector.getLatestMetrics.bind(metricsCollector);
-export const onMetricAlert = metricsCollector.onAlert.bind(metricsCollector);
+// Convenience functions (used internally)
+const startMetricsCollection = metricsCollector.startCollection.bind(metricsCollector);
+const stopMetricsCollection = metricsCollector.stopCollection.bind(metricsCollector);
+const recordGameMetric = metricsCollector.recordGameMetric.bind(metricsCollector);
+const measureOperation = metricsCollector.measureOperation.bind(metricsCollector);
+const getLatestMetrics = metricsCollector.getLatestMetrics.bind(metricsCollector);
+const onMetricAlert = metricsCollector.onAlert.bind(metricsCollector);

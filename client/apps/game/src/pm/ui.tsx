@@ -23,14 +23,6 @@ export const CardContent = ({ className, ...props }: DivProps) => (
   <div {...props} className={cx("flex flex-col gap-2", className)} />
 );
 
-export const CardDescription = ({ className, ...props }: DivProps) => (
-  <div {...props} className={cx("text-sm text-white/70", className)} />
-);
-
-export const Container = ({ className, ...props }: DivProps) => (
-  <div {...props} className={cx("flex flex-col w-full", className)} />
-);
-
 export const HStack = ({ className, ...props }: DivProps) => (
   <div {...props} className={cx("flex items-center", className)} />
 );
@@ -44,7 +36,7 @@ export const ScrollArea = ({ className, ...props }: DivProps) => (
 );
 
 // Chart primitives (adapted from the PM web UI library)
-export type ChartConfig = {
+type ChartConfig = {
   [k in string]: {
     label?: React.ReactNode;
     icon?: React.ComponentType;

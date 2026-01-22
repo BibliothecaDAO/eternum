@@ -2,7 +2,7 @@ import { AlertCircle, Check, ChevronDown, ChevronRight, Plus, RefreshCw, Users }
 import { useMemo, useState } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
-import { Panel } from "@/ui/design-system/atoms/panel";
+import Panel from "@/ui/design-system/atoms/panel";
 
 import { useQuickMarketCreate, type MarketPlayer } from "../hooks/use-quick-market-create";
 

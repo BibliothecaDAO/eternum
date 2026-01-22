@@ -8,7 +8,7 @@ import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import type { TokenBalance } from "@dojoengine/torii-wasm";
 
-import { Panel } from "@/ui/design-system/atoms/panel";
+import Panel from "@/ui/design-system/atoms/panel";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { MarketImage } from "./market-image";
 import { MarketQuickStats } from "./market-quick-stats";

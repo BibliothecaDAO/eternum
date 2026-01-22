@@ -180,14 +180,14 @@ export function initTracing(config: TracingConfig = {}): void {
   console.log("Tracing initialized with config:", finalConfig);
 }
 
-export function getTracer(): Tracer {
+function getTracer(): Tracer {
   if (!tracer) {
     initTracing();
   }
   return tracer || trace.getTracer("eternum-game");
 }
 
-export function startSpan(
+function startSpan(
   name: string,
   options?: {
     kind?: SpanKind;
@@ -284,7 +284,7 @@ export function getCurrentTraceId(): string | undefined {
   return span?.spanContext().traceId;
 }
 
-export function createChildSpan(name: string, attributes?: Record<string, any>): Span {
+function createChildSpan(name: string, attributes?: Record<string, any>): Span {
   return startSpan(name, {
     attributes,
     parent: getCurrentSpan(),
@@ -292,7 +292,7 @@ export function createChildSpan(name: string, attributes?: Record<string, any>):
 }
 
 // Utility function to measure async operations
-export async function measureAsync<T>(
+async function measureAsync<T>(
   name: string,
   operation: () => Promise<T>,
   attributes?: Record<string, any>,

@@ -30,7 +30,7 @@ const normalizeTokenIds = (attrs: Iterable<bigint> | undefined): string[] => {
 /**
  * Simple in-memory store seeded from the recs component. Phase 2 will connect real data.
  */
-export class PlayerCosmeticsStore {
+class PlayerCosmeticsStore {
   private snapshots = new Map<string, PlayerCosmeticsSnapshot>();
   private readyPromise: Promise<void> = Promise.resolve();
 

@@ -32,7 +32,7 @@ export interface ExpandableOSInterface extends OSInterface {
   isExpanded?: boolean;
 }
 
-export const hyperstructures: OSWindows = "Hyperstructures";
+const hyperstructures: OSWindows = "Hyperstructures";
 export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";
 export const trade: OSWindows = "Trade";

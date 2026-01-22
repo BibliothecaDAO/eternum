@@ -90,7 +90,7 @@ const resolvePrizeAddressForWorld = async (
   }
 };
 
-export const resolveMarketWorldName = async (market: MarketClass): Promise<string | null> => {
+const resolveMarketWorldName = async (market: MarketClass): Promise<string | null> => {
   const chain = env.VITE_PUBLIC_CHAIN as Chain;
   const fallbackName = (market.title || "").replace(/<br\s*\/?>/gi, " ").trim() || null;
   const prizeAddress = getPrizeDistributionAddress(market);

@@ -28,5 +28,3 @@ export const db = new Proxy({} as ReturnType<typeof drizzle>, {
     return dbInstance[prop as keyof typeof dbInstance];
   },
 });
-
-export { schema };

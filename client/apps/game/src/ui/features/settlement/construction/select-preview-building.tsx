@@ -1335,7 +1335,7 @@ const BuildingCard = ({
   );
 };
 
-export const ResourceInfo = ({
+const ResourceInfo = ({
   resourceId,
   buildingId,
   entityId,
@@ -1500,7 +1500,7 @@ export const ResourceInfo = ({
   );
 };
 
-export const BuildingInfo = ({
+const BuildingInfo = ({
   buildingId,
   entityId,
   name = BuildingTypeToString[buildingId as keyof typeof BuildingTypeToString],

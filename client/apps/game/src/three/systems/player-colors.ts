@@ -467,15 +467,14 @@ class PlayerColorManager {
 export const playerColorManager = new PlayerColorManager();
 
 // Export preset colors for backward compatibility
-export const PLAYER_COLOR_PRESETS = COLOR_PALETTE;
+const PLAYER_COLOR_PRESETS = COLOR_PALETTE;
 
 // Export utility functions
-export { generateEnemyColor, hslToHex };
 
 /**
  * Debug utilities for visualizing and testing the player color system
  */
-export const playerColorDebug = {
+const playerColorDebug = {
   /**
    * Generate a visual preview of the color palette for N players
    * Returns an HTML string that can be injected into the DOM for testing

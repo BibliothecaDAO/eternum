@@ -53,7 +53,6 @@ import { AdminHeader } from "../components/admin-header";
 import {
   CARTRIDGE_API_BASE,
   DEFAULT_NAMESPACE,
-  DEFAULT_TORII_NAMESPACE,
   DEFAULT_VERSION,
   FACTORY_ADDRESSES,
   getDefaultBlitzRegistrationConfig,
@@ -669,7 +668,7 @@ export const FactoryPage = () => {
       await createIndexerService({
         env: envName,
         rpc_url: getRpcUrlForChain(currentChain),
-        torii_namespaces: DEFAULT_TORII_NAMESPACE,
+        torii_namespaces: DEFAULT_NAMESPACE,
         torii_prefix: worldName,
         torii_world_address: deployedWorldAddress,
         external_contracts: [],

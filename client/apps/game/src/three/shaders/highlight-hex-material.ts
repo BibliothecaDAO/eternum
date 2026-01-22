@@ -70,7 +70,7 @@ void main() {
 const greenColor = new Color("darkgreen");
 greenColor.multiplyScalar(12);
 
-export const highlightHexMaterial = new ShaderMaterial({
+const highlightHexMaterial = new ShaderMaterial({
   vertexShader,
   fragmentShader,
   uniforms: {

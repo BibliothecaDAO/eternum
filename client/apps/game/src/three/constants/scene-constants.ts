@@ -227,8 +227,8 @@ export const biomeModelPaths: Record<string, string> = {
   Empty: BIOMES_MODELS_PATH + BiomeFilenames.Empty,
 };
 
-export const PROGRESS_HALF_THRESHOLD = 50;
-export const PROGRESS_FINAL_THRESHOLD = 100;
+const PROGRESS_HALF_THRESHOLD = 50;
+const PROGRESS_FINAL_THRESHOLD = 100;
 
 export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, string[]> {
   return {

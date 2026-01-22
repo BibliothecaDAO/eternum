@@ -2,7 +2,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { resources, TroopTier, TroopType } from "@bibliothecadao/types";
 
-export const getTroopResourceTrait = (category?: TroopType | string, tier?: TroopTier | string) => {
+const getTroopResourceTrait = (category?: TroopType | string, tier?: TroopTier | string) => {
   if (!category || tier === undefined) return "";
   return (
     resources.find(

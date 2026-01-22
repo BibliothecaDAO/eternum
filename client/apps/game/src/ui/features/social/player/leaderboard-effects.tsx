@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { EffectIntensity, PlayerEffect, PointDeltas } from "./use-leaderboard-effects";
 
 // Category color mapping for per-category deltas
-export const CATEGORY_COLORS = {
+const CATEGORY_COLORS = {
   tilesExploredPoints: "#60a5fa", // blue
   cratesOpenedPoints: "#c084fc", // purple
   riftsTakenPoints: "#4ade80", // green

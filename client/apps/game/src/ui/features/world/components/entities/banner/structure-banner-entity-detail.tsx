@@ -19,7 +19,7 @@ import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 import { StructureProductionPanel } from "../structure-production-panel";
 
-export interface StructureBannerEntityDetailProps {
+interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
   className?: string;
   compact?: boolean;

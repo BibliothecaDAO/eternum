@@ -119,7 +119,7 @@ const RelicGrid = ({ relics, gridClass, iconSize, onRelicClick }: RelicGridProps
   </div>
 );
 
-export const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTrayProps = {}) => {
+const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTrayProps = {}) => {
   const playerRelics = useUIStore((state) => state.playerRelics);
   const playerRelicsLoading = useUIStore((state) => state.playerRelicsLoading);
   const toggleModal = useUIStore((state) => state.toggleModal);
