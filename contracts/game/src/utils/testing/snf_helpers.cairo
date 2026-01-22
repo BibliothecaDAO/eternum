@@ -1117,3 +1117,71 @@ pub fn snf_setup_guard_battle(
 
     (world, systems, first_realm, explorer)
 }
+
+
+// ============================================================================
+// Troop Management Test Setup Helpers
+// ============================================================================
+
+/// Namespace for troop management tests (includes quest/production models)
+pub fn snf_namespace_def_troop_management() -> NamespaceDef {
+    NamespaceDef {
+        namespace: DEFAULT_NS_STR(),
+        resources: [
+            // Core config models
+            TestResource::Model("WorldConfig"),
+            TestResource::Model("WeightConfig"),
+            // Structure models
+            TestResource::Model("Structure"),
+            TestResource::Model("StructureOwnerStats"),
+            TestResource::Model("StructureVillageSlots"),
+            TestResource::Model("StructureBuildings"),
+            TestResource::Model("Building"),
+            // Troop models
+            TestResource::Model("ExplorerTroops"),
+            // Map models
+            TestResource::Model("TileOpt"),
+            TestResource::Model("BiomeDiscovered"),
+            TestResource::Model("Wonder"),
+            // Resource models
+            TestResource::Model("Resource"),
+            TestResource::Model("ResourceList"),
+            TestResource::Model("ResourceFactoryConfig"),
+            // Events
+            TestResource::Event("TrophyProgression"),
+            TestResource::Event("StoryEvent"),
+            TestResource::Event("ExplorerMoveEvent"),
+            // Contracts
+            TestResource::Contract("troop_management_systems"),
+            TestResource::Contract("troop_movement_systems"),
+            TestResource::Contract("village_systems"),
+            TestResource::Contract("realm_internal_systems"),
+            // Libraries
+            TestResource::Library(("structure_creation_library", "0_1_8")),
+            TestResource::Library(("biome_library", "0_1_8")),
+        ]
+            .span(),
+    }
+}
+
+pub fn snf_contract_defs_troop_management() -> Span<ContractDef> {
+    [
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"village_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+    ]
+        .span()
+}
+
+/// Full setup for troop management tests
+pub fn snf_setup_troop_management_world() -> WorldStorage {
+    let mut world = spawn_test_world([snf_namespace_def_troop_management()].span());
+    world.sync_perms_and_inits(snf_contract_defs_troop_management());
+    init_config(ref world);
+    world
+}
