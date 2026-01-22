@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -59,14 +59,20 @@ export const NavigateToPositionIcon = ({
   );
 };
 
+const EMPTY_TICK = {
+  currentArmiesTick: 0,
+};
+
 export const ArmyChip = ({
   army,
   className,
   showButtons,
+  currentArmiesTick: currentArmiesTickProp,
 }: {
   army: ArmyInfo;
   className?: string;
   showButtons?: boolean;
+  currentArmiesTick?: number;
 }) => {
   const {
     setup: { components },
@@ -87,7 +93,11 @@ export const ArmyChip = ({
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
 
-  const { currentArmiesTick } = useBlockTimestamp();
+  const needsTick = currentArmiesTickProp === undefined;
+  const storeTick = useBlockTimestampStore((state) =>
+    needsTick ? { currentArmiesTick: state.currentArmiesTick } : EMPTY_TICK,
+  );
+  const currentArmiesTick = currentArmiesTickProp ?? storeTick.currentArmiesTick;
 
   const relicEffects = useMemo(() => {
     return getArmyRelicEffects(army.troops, currentArmiesTick).map((relic) => relic.id);

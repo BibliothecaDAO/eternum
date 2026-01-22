@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -18,9 +18,19 @@ interface ArmyWarningProps {
   army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   explorerResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
   structureResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  currentArmiesTick?: number;
 }
 
-export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
+const EMPTY_TICK = {
+  currentArmiesTick: 0,
+};
+
+export const ArmyWarning = ({
+  army,
+  explorerResources,
+  structureResources,
+  currentArmiesTick: currentArmiesTickProp,
+}: ArmyWarningProps) => {
   const food = useMemo(() => {
     // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
     const { balance: wheat } = ResourceManager.balanceWithProduction(
@@ -48,7 +58,11 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
     return { missingWheat, missingFish, notEnoughFood };
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
-  const { currentArmiesTick } = useBlockTimestamp();
+  const needsTick = currentArmiesTickProp === undefined;
+  const storeTick = useBlockTimestampStore((state) =>
+    needsTick ? { currentArmiesTick: state.currentArmiesTick } : EMPTY_TICK,
+  );
+  const currentArmiesTick = currentArmiesTickProp ?? storeTick.currentArmiesTick;
 
   const stamina = useMemo(() => {
     return StaminaManager.getStamina(army.troops, currentArmiesTick);

@@ -1,6 +1,6 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
-  getBlockTimestamp,
   getBuildingCount,
   getEntityIdFromKeys,
   getStructureArmyRelicEffects,
@@ -61,7 +61,7 @@ export const EntityResourceTableOld = React.memo(
 
     const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
 
-    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
     const currentTick = currentDefaultTick || 0;
 
     const activeRelicEffects = useMemo(() => {
@@ -224,6 +224,9 @@ export const EntityResourceTableOld = React.memo(
                           activeRelicEffects={activeRelicEffects}
                           canOpenProduction={hasProductionBuilding}
                           disableButtons={disableButtons}
+                          currentDefaultTick={currentDefaultTick}
+                          currentArmiesTick={currentArmiesTick}
+                          armiesTickTimeRemaining={armiesTickTimeRemaining}
                         />
                       );
                     })}

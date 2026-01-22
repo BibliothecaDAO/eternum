@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
@@ -18,6 +18,12 @@ import { Factory, Sparkles } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+const EMPTY_TICKS = {
+  currentDefaultTick: 0,
+  currentArmiesTick: 0,
+  armiesTickTimeRemaining: 0,
+};
+
 export const ResourceChip = ({
   resourceId,
   resourceManager,
@@ -30,6 +36,9 @@ export const ResourceChip = ({
   canOpenProduction = false,
   disableButtons = false,
   onManageProduction,
+  currentDefaultTick: currentDefaultTickProp,
+  currentArmiesTick: currentArmiesTickProp,
+  armiesTickTimeRemaining: armiesTickTimeRemainingProp,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
@@ -42,6 +51,9 @@ export const ResourceChip = ({
   canOpenProduction?: boolean;
   disableButtons?: boolean;
   onManageProduction?: (resourceId: ResourcesIds) => void;
+  currentDefaultTick?: number;
+  currentArmiesTick?: number;
+  armiesTickTimeRemaining?: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -54,7 +66,22 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const needsTick =
+    currentDefaultTickProp === undefined ||
+    currentArmiesTickProp === undefined ||
+    armiesTickTimeRemainingProp === undefined;
+  const storeTicks = useBlockTimestampStore((state) =>
+    needsTick
+      ? {
+          currentDefaultTick: state.currentDefaultTick,
+          currentArmiesTick: state.currentArmiesTick,
+          armiesTickTimeRemaining: state.armiesTickTimeRemaining,
+        }
+      : EMPTY_TICKS,
+  );
+  const currentDefaultTick = currentDefaultTickProp ?? storeTicks.currentDefaultTick;
+  const currentArmiesTick = currentArmiesTickProp ?? storeTicks.currentArmiesTick;
+  const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeTicks.armiesTickTimeRemaining;
   const currentTick = currentDefaultTick || 0;
   const resourceEnumId = resourceId as ResourcesIds;
 
