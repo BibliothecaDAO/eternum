@@ -27,7 +27,7 @@ Level 2: Wonder Prize → Owner (30%) + FP Holders (70% proportional)
 ```
 Ties: combine tied rank shares and split evenly (Blitz behavior).
 
-## Phase Breakdown (46 tests)
+## Phase Breakdown (45 tests)
 
 ### Phase 1 — Config & Models (3)
 - `test_faith_config_storage`
@@ -72,15 +72,14 @@ Ties: combine tied rank shares and split evenly (Blitz behavior).
 - `test_leaderboard_rank_change_event`
 - `test_leaderboard_tiebreaker` (deterministic ordering; prize ties handled in Phase 8)
 
-### Phase 8 — Prizes (8)
-- `test_fund_prize_pool`
-- `test_season_prize_distribution_top_10_curve`
-- `test_season_prize_distribution_two_level_split` (owner can also receive holder share)
-- `test_season_prize_distribution_fewer_than_10` (unused to DAO)
-- `test_season_prize_distribution_tie_combines_shares`
-- `test_season_prize_distribution_before_end_fails`
-- `test_double_claim_prize_fails`
-- `test_fp_holder_claims_proportional_share` (owner as holder)
+### Phase 8 — Prizes (7)
+- `test_fund_prize_pool_accumulates`
+- `test_distribute_season_prizes_rank_share_and_owner_split` (top‑10 curve + owner/holder split)
+- `test_unallocated_prize_for_missing_ranks` (unused to DAO)
+- `test_distribute_season_prizes_tie_combines_ranks`
+- `test_distribute_season_prizes_before_end_fails`
+- `test_claim_prize_twice_fails`
+- `test_allocate_holder_prizes_proportional` (owner as holder)
 
 ### Phase 9 — Edge & Security (9)
 - `test_zero_followers_generates_baseline_only`

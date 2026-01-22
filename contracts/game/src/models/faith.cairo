@@ -110,6 +110,7 @@ pub struct FaithSeasonState {
     #[key]
     pub season_id: u32,
     pub prize_pool_total: u128,
+    pub unallocated_prize: u128,
     pub season_end_tick: u64,
     pub claim_window_end_tick: u64,
     pub distributed: bool,
