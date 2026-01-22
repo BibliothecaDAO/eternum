@@ -232,17 +232,23 @@ const fetchLeaderboardWithClient = async (
 export const fetchLandingLeaderboard = async (
   limit: number = DEFAULT_LIMIT,
   offset: number = 0,
-): Promise<PlayerLeaderboardData[]> => fetchLeaderboardWithClient(sqlApi, limit, offset);
+  toriiBaseUrl?: string,
+): Promise<PlayerLeaderboardData[]> => {
+  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  return fetchLeaderboardWithClient(client, limit, offset);
+};
 
 export const fetchLandingLeaderboardEntryByAddress = async (
   playerAddress: string,
+  toriiBaseUrl?: string,
 ): Promise<PlayerLeaderboardData | null> => {
   const normalizedAddress = normaliseAddress(playerAddress);
   if (!normalizedAddress) {
     return null;
   }
 
-  const rawRow = await sqlApi.fetchPlayerLeaderboardByAddress(normalizedAddress);
+  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  const rawRow = await client.fetchPlayerLeaderboardByAddress(normalizedAddress);
 
   if (!rawRow) {
     return null;

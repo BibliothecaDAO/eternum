@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -10,8 +10,10 @@ import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
 
-import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import { LandingWorldSelector } from "../components/landing-world-selector";
+import { fetchLandingLeaderboard, type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
+import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
 import { useScoreToBeat } from "../lib/use-score-to-beat";
 
 const LEADERBOARD_LIMIT = 30;
@@ -296,10 +298,26 @@ export const LandingLeaderboard = () => {
   const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [runsToAggregate, setRunsToAggregate] = useState<number>(DEFAULT_RUNS_TO_AGGREGATE);
 
-  // Fetch available games from factory
+  // World selection for "Current Leaderboard" tab
+  const worldSelection = useLandingWorldSelection({ storageKeyPrefix: "leaderboard" });
+
+  // Local state for world-specific leaderboard data
+  const [worldEntries, setWorldEntries] = useState<LandingLeaderboardEntry[]>([]);
+  const [worldIsFetching, setWorldIsFetching] = useState(false);
+  const [worldError, setWorldError] = useState<string | null>(null);
+  const [worldLastUpdatedAt, setWorldLastUpdatedAt] = useState<number | null>(null);
+  const [worldLastFetchAt, setWorldLastFetchAt] = useState<number | null>(null);
+  const worldFetchAbortRef = useRef<AbortController | null>(null);
+
+  // Fetch available games from factory (for Score to Beat tab)
   const { worlds: availableGames, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
 
-  const entries = useLandingLeaderboardStore((state) => state.entries);
+  // Store data (used when no custom world is selected)
+  const storeEntries = useLandingLeaderboardStore((state) => state.entries);
+
+  // Determine which data source to use
+  const useCustomWorld = worldSelection.toriiBaseUrl !== null;
+  const entries = useCustomWorld ? worldEntries : storeEntries;
   const { data: avatarProfiles } = useAvatarProfiles(entries.map((entry) => entry.address));
   const avatarMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -321,11 +339,17 @@ export const LandingLeaderboard = () => {
     [avatarMap],
   );
 
-  const isFetching = useLandingLeaderboardStore((state) => state.isFetching);
-  const error = useLandingLeaderboardStore((state) => state.error);
-  const lastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
-  const lastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
-  const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  const storeIsFetching = useLandingLeaderboardStore((state) => state.isFetching);
+  const storeError = useLandingLeaderboardStore((state) => state.error);
+  const storeLastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
+  const storeLastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+  const storeFetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+
+  // Use world-specific or store data depending on selection
+  const isFetching = useCustomWorld ? worldIsFetching : storeIsFetching;
+  const error = useCustomWorld ? worldError : storeError;
+  const lastUpdatedAt = useCustomWorld ? worldLastUpdatedAt : storeLastUpdatedAt;
+  const lastFetchAt = useCustomWorld ? worldLastFetchAt : storeLastFetchAt;
 
   useEffect(() => {
     const storedChain = loadStoredChain();
@@ -420,17 +444,82 @@ export const LandingLeaderboard = () => {
     return () => window.clearInterval(interval);
   }, [lastFetchAt]);
 
+  // Fetch world-specific leaderboard data
+  const fetchWorldLeaderboard = useCallback(
+    async (force = false) => {
+      const toriiUrl = worldSelection.toriiBaseUrl;
+      if (!toriiUrl) {
+        return;
+      }
+
+      const now = Date.now();
+      if (worldIsFetching) {
+        return;
+      }
+
+      if (!force && worldLastFetchAt && now - worldLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
+        return;
+      }
+
+      // Cancel any in-flight request
+      if (worldFetchAbortRef.current) {
+        worldFetchAbortRef.current.abort();
+      }
+      worldFetchAbortRef.current = new AbortController();
+
+      setWorldIsFetching(true);
+      setWorldError(force ? null : worldError);
+      setWorldLastFetchAt(now);
+
+      try {
+        const fetchedEntries = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, toriiUrl);
+        const timestamp = Date.now();
+        setWorldEntries(fetchedEntries);
+        setWorldLastUpdatedAt(timestamp);
+        setWorldLastFetchAt(timestamp);
+        setWorldIsFetching(false);
+        setWorldError(null);
+      } catch (caughtError) {
+        if (caughtError instanceof Error && caughtError.name === "AbortError") {
+          return;
+        }
+        const message = caughtError instanceof Error ? caughtError.message : "Unable to load leaderboard.";
+        setWorldIsFetching(false);
+        setWorldError(message);
+        setWorldLastFetchAt(Date.now());
+      }
+    },
+    [worldSelection.toriiBaseUrl, worldIsFetching, worldLastFetchAt, worldError],
+  );
+
+  // Reset world data when world changes
   useEffect(() => {
-    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
-  }, [fetchLeaderboard]);
+    setWorldEntries([]);
+    setWorldError(null);
+    setWorldLastUpdatedAt(null);
+    setWorldLastFetchAt(null);
+  }, [worldSelection.toriiBaseUrl]);
+
+  // Initial fetch and auto-refresh for both modes
+  useEffect(() => {
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard();
+    } else {
+      void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+      if (useCustomWorld) {
+        void fetchWorldLeaderboard();
+      } else {
+        void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+      }
     }, REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(interval);
-  }, [fetchLeaderboard]);
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -470,8 +559,12 @@ export const LandingLeaderboard = () => {
       return;
     }
 
-    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
-  }, [fetchLeaderboard, isFetching, refreshCooldownMs]);
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard(true);
+    } else {
+      void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard, isFetching, refreshCooldownMs]);
 
   const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.currentTarget.value);
@@ -967,23 +1060,53 @@ export const LandingLeaderboard = () => {
   };
 
   const renderLeaderboardContent = () => {
+    const worldSelectorUI = (
+      <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4 mb-4">
+        <LandingWorldSelector
+          selectedChain={worldSelection.selectedChain}
+          selectedWorld={worldSelection.selectedWorld}
+          availableWorlds={worldSelection.availableWorlds}
+          isLoading={worldSelection.isLoading}
+          isCheckingAvailability={worldSelection.isCheckingAvailability}
+          onChainChange={worldSelection.setSelectedChain}
+          onWorldChange={worldSelection.setSelectedWorld}
+        />
+        {worldSelection.selectedWorld && (
+          <p className="mt-2 text-xs text-gold/60">
+            Showing data from: <span className="font-semibold text-gold">{worldSelection.selectedWorld}</span>
+          </p>
+        )}
+      </div>
+    );
+
     if (isInitialLoading) {
-      return renderSkeleton();
+      return (
+        <>
+          {worldSelectorUI}
+          {renderSkeleton()}
+        </>
+      );
     }
 
     if (entries.length === 0) {
       return (
-        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
-          No ranked players yet. Check back soon once battles begin.
-        </div>
+        <>
+          {worldSelectorUI}
+          <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+            No ranked players yet. Check back soon once battles begin.
+          </div>
+        </>
       );
     }
 
     if (isFiltering && filteredEntries.length === 0) {
       return (
-        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
-          No players match "{searchQuery.trim()}".
-        </div>
+        <>
+          {worldSelectorUI}
+          <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+            No players match "{searchQuery.trim()}".
+          </div>
+        </>
       );
     }
 
@@ -991,6 +1114,7 @@ export const LandingLeaderboard = () => {
 
     return (
       <div className="space-y-6">
+        {worldSelectorUI}
         <div className="flex flex-col gap-2 rounded-3xl border border-gold/20 bg-gold/5 px-4 py-3 text-xs text-gold/70 sm:flex-row sm:items-center sm:justify-between">
           <span className="tracking-wide">Download the current view (filters included).</span>
           <button
