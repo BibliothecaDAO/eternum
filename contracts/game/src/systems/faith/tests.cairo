@@ -4,3 +4,4 @@ mod test_faith_revoke;
 mod test_faith_generation;
 mod test_faith_snapshot_claim;
 mod test_faith_capture;
+mod test_faith_leaderboard;

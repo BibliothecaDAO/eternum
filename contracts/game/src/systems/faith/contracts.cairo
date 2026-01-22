@@ -18,6 +18,7 @@ pub trait IFaithSystems<T> {
     fn claim_faith_prize(ref self: T, season_id: u32, wonder_id: u32);
     fn withdraw_unclaimed_faith_prize(ref self: T, season_id: u32);
     fn record_wonder_capture(ref self: T, wonder_id: u32, new_owner: ContractAddress);
+    fn update_faith_leaderboard(ref self: T, season_id: u32, wonder_ids: Span<u32>);
 }
 
 #[dojo::contract]
@@ -33,7 +34,7 @@ pub mod faith_systems {
     use crate::models::config::{TickImpl, WorldConfigUtilImpl};
     use crate::models::faith::{
         FaithConfig, FaithPrizeBalance, FaithSeasonSnapshot, FaithSeasonState, FollowerAllegiance,
-        FollowerFaithBalance, FollowerType, WonderFaith, WonderFaithHistory,
+        FaithLeaderboardEntry, FollowerFaithBalance, FollowerType, WonderFaith, WonderFaithHistory, WonderRank,
     };
     use crate::models::structure::{Structure, StructureCategory, StructureMetadata, StructureOwnerStoreImpl};
 
@@ -332,6 +333,61 @@ pub mod faith_systems {
 
             if new_owner.is_non_zero() && new_owner != old_owner {
                 StructureOwnerStoreImpl::store(new_owner, ref world, wonder_id);
+            }
+        }
+
+        fn update_faith_leaderboard(ref self: ContractState, season_id: u32, wonder_ids: Span<ID>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let mut i: u32 = 0;
+            let total: u32 = wonder_ids.len();
+            loop {
+                if i >= total {
+                    break;
+                }
+                let wonder_id: ID = *wonder_ids.at(i);
+                let faith: WonderFaith = world.read_model(wonder_id);
+                if faith.season_id != season_id {
+                    i += 1;
+                    continue;
+                }
+
+                let mut rank: u32 = 1;
+                let mut j: u32 = 0;
+                loop {
+                    if j >= total {
+                        break;
+                    }
+                    if j != i {
+                        let other_id: ID = *wonder_ids.at(j);
+                        let other_faith: WonderFaith = world.read_model(other_id);
+                        if other_faith.season_id == season_id {
+                            if (other_faith.season_fp > faith.season_fp)
+                                || ((other_faith.season_fp == faith.season_fp) && (other_id < wonder_id)) {
+                                rank += 1;
+                            }
+                        }
+                    }
+                    j += 1;
+                }
+
+                let follower_count: u32 =
+                    faith.realm_follower_count + faith.village_follower_count + faith.wonder_follower_count;
+                let entry = FaithLeaderboardEntry {
+                    rank,
+                    season_id,
+                    wonder_id,
+                    total_season_fp: faith.season_fp,
+                    follower_count,
+                };
+                world.write_model(@entry);
+
+                let mut stored_rank: WonderRank = world.read_model((wonder_id, season_id));
+                stored_rank.wonder_id = wonder_id;
+                stored_rank.season_id = season_id;
+                stored_rank.current_rank = rank;
+                world.write_model(@stored_rank);
+
+                i += 1;
             }
         }
     }
