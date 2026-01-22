@@ -15,7 +15,7 @@ export type { SettlementLocation } from "./utils/settlement-types";
 export { generateSettlementLocations, getBanksLocations, getOccupiedLocations } from "./utils/settlement-utils";
 
 // Construction System - Exports used externally
-export { BuildingInfo, ResourceInfo, SelectPreviewBuildingMenu } from "./construction/select-preview-building";
+export { SelectPreviewBuildingMenu } from "./construction/select-preview-building";
 
 // Production System - Exports used externally
 export { ProductionModal } from "./production/production-modal";

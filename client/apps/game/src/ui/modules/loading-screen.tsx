@@ -10,6 +10,6 @@ export const LoadingScreen = ({ backgroundImage, progress }: LoadingScreenProps)
   return <OnboardingLoadingOverlay backgroundImage={backgroundImage} progress={progress} />;
 };
 
-export function CountdownTimer({ backgroundImage }: { backgroundImage: string }) {
+function CountdownTimer({ backgroundImage }: { backgroundImage: string }) {
   return <OnboardingCountdownOverlay backgroundImage={backgroundImage} />;
 }

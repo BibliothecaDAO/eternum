@@ -22,8 +22,8 @@ export const TORII_CREATOR_URL =
   env.VITE_PUBLIC_TORII_CREATOR_URL || "https://torii-creator.zerocredence.workers.dev/dispatch/torii";
 
 // Explorer helpers
-export const EXPLORER_MAINNET = env.VITE_PUBLIC_EXPLORER_MAINNET || "https://voyager.online";
-export const EXPLORER_SEPOLIA = env.VITE_PUBLIC_EXPLORER_SEPOLIA || "https://sepolia.voyager.online";
+const EXPLORER_MAINNET = env.VITE_PUBLIC_EXPLORER_MAINNET || "https://voyager.online";
+const EXPLORER_SEPOLIA = env.VITE_PUBLIC_EXPLORER_SEPOLIA || "https://sepolia.voyager.online";
 
 export const getExplorerTxUrl = (chain: Chain | ChainType, txHash: string) => {
   const base = chain === "sepolia" ? EXPLORER_SEPOLIA : EXPLORER_MAINNET;
@@ -40,7 +40,7 @@ export const FACTORY_ADDRESSES: Record<ChainType, string> = {
 };
 
 // Default max actions per chain (mirrors FACTORY_ADDRESSES pattern)
-export const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
+const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
   mainnet: 5,
   sepolia: 20,
   slot: 300,
@@ -57,7 +57,7 @@ const parsePositiveInt = (value?: string): number | null => {
   return Math.floor(parsed);
 };
 
-export const DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN: Record<ChainType, number> = {
+const DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN: Record<ChainType, number> = {
   mainnet: 39,
   sepolia: 1,
   slot: 1,
@@ -70,7 +70,7 @@ export const getFactoryDeployRepeatsForChain = (chain: ChainType): number => {
   return override ?? DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN[chain];
 };
 
-export interface BlitzRegistrationDefaults {
+interface BlitzRegistrationDefaults {
   amount: string;
   precision: number;
   token: string;
@@ -103,5 +103,3 @@ export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
       return env.VITE_PUBLIC_NODE_URL as string;
   }
 };
-
-export const DEFAULT_TORII_NAMESPACE = DEFAULT_NAMESPACE;

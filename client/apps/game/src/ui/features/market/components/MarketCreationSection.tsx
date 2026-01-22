@@ -1,17 +1,19 @@
-import { AlertCircle, Check, Plus, RefreshCw, Users } from "lucide-react";
-import { useMemo } from "react";
+import { AlertCircle, Check, ChevronDown, ChevronRight, Plus, RefreshCw, Users } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
+import Panel from "@/ui/design-system/atoms/panel";
 
 import { useQuickMarketCreate, type MarketPlayer } from "../hooks/use-quick-market-create";
+
+const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
 /**
  * Format LORDS balance for display.
  */
 const formatLordsBalance = (balance: bigint): string => {
-  // LORDS has 18 decimals
   const wholePart = balance / 10n ** 18n;
-  const fracPart = (balance % 10n ** 18n) / 10n ** 16n; // 2 decimal places
+  const fracPart = (balance % 10n ** 18n) / 10n ** 16n;
   if (fracPart === 0n) return wholePart.toString();
   return `${wholePart}.${fracPart.toString().padStart(2, "0")}`;
 };
@@ -33,26 +35,101 @@ interface MarketCreationSectionProps {
   oracleAddress: string | null;
   gameEndTime: number | null;
   onRefresh: () => void;
-  /** Called when a market is discovered (either via polling or pre-creation check) */
   onMarketFound?: () => void;
 }
 
 /**
- * Player selection item component with editable weight and % chance.
+ * Collapsible section wrapper for creation steps
  */
-const PlayerSelectionItem = ({
+const CreationStep = ({
+  stepNumber,
+  title,
+  subtitle,
+  isExpanded,
+  isComplete,
+  isDisabled,
+  onToggle,
+  children,
+}: {
+  stepNumber: number;
+  title: string;
+  subtitle: string;
+  isExpanded: boolean;
+  isComplete: boolean;
+  isDisabled?: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) => (
+  <Panel
+    tone={isComplete ? "wood" : "neutral"}
+    padding="none"
+    radius="md"
+    border={isComplete ? "subtle" : "subtle"}
+    className={cx(
+      "overflow-hidden transition-all",
+      isDisabled && "opacity-50",
+      isComplete && "ring-1 ring-brilliance/20",
+    )}
+  >
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={isDisabled}
+      className={cx(
+        "flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors",
+        !isDisabled && "hover:bg-gold/5",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        {/* Step indicator */}
+        <div
+          className={cx(
+            "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors",
+            isComplete ? "bg-brilliance text-brown" : "bg-brown/50 text-gold/60",
+          )}
+        >
+          {isComplete ? <Check className="h-3.5 w-3.5" /> : stepNumber}
+        </div>
+        <div>
+          <p className={cx("text-sm font-semibold", isComplete ? "text-brilliance" : "text-gold")}>{title}</p>
+          <p className="text-[10px] text-gold/50">{subtitle}</p>
+        </div>
+      </div>
+      {isExpanded ? (
+        <ChevronDown className="h-4 w-4 text-gold/50" />
+      ) : (
+        <ChevronRight className="h-4 w-4 text-gold/50" />
+      )}
+    </button>
+
+    {/* Expandable content */}
+    <div
+      className={cx(
+        "overflow-hidden transition-all duration-200",
+        isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0",
+      )}
+    >
+      <div className="border-t border-gold/10 p-3">{children}</div>
+    </div>
+  </Panel>
+);
+
+/**
+ * Grid-based player selection card
+ */
+const PlayerCard = ({
   player,
   isSelected,
-  oddsWeight,
   chancePercent,
+  oddsWeight,
   onToggle,
   onWeightChange,
   disabled,
 }: {
   player: MarketPlayer;
   isSelected: boolean;
-  oddsWeight: number;
   chancePercent: number;
+  oddsWeight: number;
   onToggle: () => void;
   onWeightChange: (weight: number) => void;
   disabled: boolean;
@@ -61,59 +138,53 @@ const PlayerSelectionItem = ({
 
   return (
     <div
-      className={`flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-xs transition ${
+      onClick={disabled && !isSelected ? undefined : onToggle}
+      className={cx(
+        "relative cursor-pointer rounded-lg border p-2.5 text-center transition-all",
         isSelected
-          ? "border-gold/60 bg-gold/20 text-white"
+          ? "border-gold/60 bg-gold/15 ring-1 ring-gold/30"
           : disabled
-            ? "cursor-not-allowed border-white/5 bg-white/5 text-gold/30"
-            : "border-white/10 bg-white/5 text-gold/70 hover:border-gold/30 hover:bg-gold/10"
-      }`}
+            ? "cursor-not-allowed border-gold/10 bg-brown/30 opacity-50"
+            : "border-gold/20 bg-brown/40 hover:border-gold/40 hover:bg-gold/10",
+      )}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={disabled && !isSelected}
-        className="flex items-center gap-2 overflow-hidden"
-      >
-        <div
-          className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm border ${
-            isSelected ? "border-gold bg-gold" : "border-white/30 bg-transparent"
-          }`}
-        >
-          {isSelected && <Check className="h-3 w-3 text-black" />}
+      {/* Selection indicator */}
+      {isSelected && (
+        <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold">
+          <Check className="h-3 w-3 text-brown" />
         </div>
-        <span className="truncate">{displayName}</span>
-      </button>
-      <div className="flex flex-shrink-0 items-center gap-2">
-        <span className={`text-[10px] font-medium ${isSelected ? "text-progress-bar-good" : "text-gold/40"}`}>
-          {chancePercent.toFixed(1)}%
-        </span>
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-gold/60">wt:</span>
+      )}
+
+      {/* Player name */}
+      <p className={cx("truncate text-xs font-semibold", isSelected ? "text-gold" : "text-gold/70")}>{displayName}</p>
+
+      {/* Odds display (only when selected) */}
+      {isSelected && (
+        <div className="mt-2 flex items-center justify-center gap-2">
+          <span className="text-sm font-bold text-brilliance">{chancePercent.toFixed(1)}%</span>
           <input
             type="number"
             min="1"
             max="100"
             value={oddsWeight}
-            onChange={(e) => onWeightChange(parseInt(e.target.value) || 1)}
+            onChange={(e) => {
+              e.stopPropagation();
+              onWeightChange(parseInt(e.target.value) || 1);
+            }}
             onClick={(e) => e.stopPropagation()}
-            disabled={!isSelected}
-            className={`w-10 rounded border bg-black/40 px-1 py-0.5 text-center text-[10px] outline-none ${
-              isSelected
-                ? "border-white/20 text-gold/80 focus:border-gold/60"
-                : "cursor-not-allowed border-white/10 text-gold/30"
-            }`}
+            className="w-12 rounded border border-gold/30 bg-brown/50 px-1.5 py-0.5 text-center text-[10px] text-gold outline-none focus:border-gold/60"
+            placeholder="wt"
           />
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
 /**
- * Amount input component for LORDS funding.
+ * Funding amount input with quick-add buttons
  */
-const FundingAmountInput = ({
+const FundingInput = ({
   amount,
   setAmount,
   minAmount,
@@ -134,69 +205,59 @@ const FundingAmountInput = ({
     setAmount(total.toString());
   };
 
-  const quickAddButtonClass =
-    "rounded-sm border border-white/20 bg-white/5 px-1.5 py-[2px] text-[10px] font-semibold text-gold/80 transition hover:border-gold/60 hover:bg-gold/10 hover:text-gold disabled:opacity-50 disabled:cursor-not-allowed";
-
   return (
-    <div className="w-full rounded-md border border-white/10 bg-black/60 px-3 py-2 text-xs text-gold/70">
-      <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.08em] text-gold/60">
-        <span>Initial Liquidity (LORDS)</span>
-        <span className="text-gold/50">Min: {minAmount}</span>
+    <div className="space-y-3">
+      {/* Large centered amount display */}
+      <div className="text-center">
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          min={minAmount}
+          step="100"
+          className={cx(
+            "w-full bg-transparent text-center font-cinzel text-3xl text-white outline-none placeholder:text-gold/30",
+            !isValid && amount && "text-danger",
+          )}
+          placeholder="0"
+        />
+        <span className="text-sm text-gold/50">LORDS</span>
       </div>
-      <input
-        type="number"
-        min={minAmount}
-        step="100"
-        className={`w-full rounded-md border bg-black/40 px-2 py-1.5 text-base text-white outline-none ${
-          isValid ? "border-white/10 focus:border-gold/60" : "border-danger/50 focus:border-danger"
-        }`}
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-gold/60">
-        <span className="flex-shrink-0">Balance: {formatLordsBalance(balance)}</span>
-        <div className="flex flex-wrap items-center gap-1">
+
+      {/* Quick-add buttons */}
+      <div className="flex flex-wrap justify-center gap-2">
+        {[100, 500, 1000, 5000].map((val) => (
           <button
+            key={val}
             type="button"
-            className={quickAddButtonClass}
-            onClick={() => addToAmount(100)}
+            onClick={() => addToAmount(val)}
             disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
+            className="rounded-md border border-gold/30 bg-brown/50 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:border-gold/50 hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            +100
+            +{val >= 1000 ? `${val / 1000}k` : val}
           </button>
-          <button
-            type="button"
-            className={quickAddButtonClass}
-            onClick={() => addToAmount(1000)}
-            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
-          >
-            +1k
-          </button>
-          <button
-            type="button"
-            className={quickAddButtonClass}
-            onClick={() => addToAmount(5000)}
-            disabled={balanceNum <= 0 || parseFloat(amount) >= balanceNum}
-          >
-            +5k
-          </button>
-          <button
-            type="button"
-            className="rounded-sm border border-gold/40 bg-gold/10 px-1.5 py-[2px] text-[10px] font-semibold text-gold transition hover:border-gold/60 hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={() => setAmount(balanceNum.toString())}
-            disabled={balanceNum <= 0}
-          >
-            MAX
-          </button>
-        </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setAmount(balanceNum.toString())}
+          disabled={balanceNum <= 0}
+          className="rounded-md border border-gold/50 bg-gold/20 px-3 py-1.5 text-xs font-bold text-gold transition-colors hover:bg-gold/30 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          MAX
+        </button>
+      </div>
+
+      {/* Balance info */}
+      <div className="flex items-center justify-between text-[10px] text-gold/50">
+        <span>Balance: {formatLordsBalance(balance)} LORDS</span>
+        <span>Min: {minAmount} LORDS</span>
       </div>
     </div>
   );
 };
 
 /**
- * Market creation UI shown when no market exists for the current game.
- * Handles player selection, funding amount, and creation.
+ * Market creation UI with collapsible step-based flow.
  */
 export const MarketCreationSection = ({
   worldName,
@@ -205,8 +266,8 @@ export const MarketCreationSection = ({
   onRefresh,
   onMarketFound,
 }: MarketCreationSectionProps) => {
-  // Use onRefresh as the default handler for onMarketFound (will refresh and show existing market)
   const handleMarketFound = onMarketFound ?? onRefresh;
+  const [expandedStep, setExpandedStep] = useState<"players" | "funding" | null>("players");
 
   const {
     createMarket,
@@ -236,7 +297,6 @@ export const MarketCreationSection = ({
     preconditions,
   } = useQuickMarketCreate(worldName, oracleAddress, gameEndTime, handleMarketFound);
 
-  // Determine status message for market creation
   const statusMessage = useMemo(() => {
     if (loadingPlayers) return "Loading registered players...";
     if (playerError) return playerError;
@@ -245,9 +305,6 @@ export const MarketCreationSection = ({
     if (!preconditions.hasWallet) return "Connect wallet to create";
     if (!preconditions.hasGameEndTime) return "Game end time not available or game has ended";
     if (!preconditions.hasValidSelection) {
-      if (selectedPlayers.length === 0) {
-        return `Select ${minSelectedPlayers}-${maxSelectedPlayers} players`;
-      }
       return `Select ${minSelectedPlayers}-${maxSelectedPlayers} players (${selectedPlayers.length} selected)`;
     }
     if (!preconditions.hasValidFunding) return `Minimum funding: ${minFundingAmount} LORDS`;
@@ -284,7 +341,6 @@ export const MarketCreationSection = ({
     );
   }
 
-  // Limit reached for selection
   const selectionLimitReached = selectedPlayers.length >= maxSelectedPlayers;
 
   return (
@@ -292,137 +348,140 @@ export const MarketCreationSection = ({
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {/* Header */}
         <div className="text-center">
-          <h3 className="mb-0.5 text-sm font-semibold">Create Prediction Market</h3>
-          <p className="text-xs text-gold/60">Who will win this game?</p>
+          <h3 className="font-cinzel text-base font-semibold text-gold">Create Prediction Market</h3>
+          <p className="text-xs text-gold/50">Who will win this game?</p>
         </div>
 
         {/* Time Info */}
         {gameEndTime && (
-          <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[10px] text-gold/60">
-            <div className="flex items-center justify-between">
-              <span>Trading ends:</span>
-              <span className="text-gold/80">{formatTimestamp(gameEndTime)}</span>
-            </div>
-          </div>
+          <Panel tone="neutral" padding="sm" radius="md" className="text-center">
+            <p className="text-[10px] uppercase tracking-wide text-gold/50">Trading ends</p>
+            <p className="font-cinzel text-sm text-gold">{formatTimestamp(gameEndTime)}</p>
+          </Panel>
         )}
 
-        {/* Player Selection Section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-gold/80">
-              <Users className="h-3.5 w-3.5" />
-              <span>
-                Players ({selectedPlayers.length}/{maxSelectedPlayers} max)
-              </span>
-            </div>
-            <span className={`text-[10px] ${selectionComplete ? "text-progress-bar-good" : "text-gold/50"}`}>
-              {selectionComplete ? "Ready" : `Select ${minSelectedPlayers}-${maxSelectedPlayers}`}
-            </span>
-          </div>
-
+        {/* Step 1: Player Selection */}
+        <CreationStep
+          stepNumber={1}
+          title="Select Players"
+          subtitle={`${selectedPlayers.length}/${maxSelectedPlayers} selected`}
+          isExpanded={expandedStep === "players"}
+          isComplete={selectionComplete}
+          onToggle={() => setExpandedStep(expandedStep === "players" ? null : "players")}
+        >
           {loadingPlayers ? (
-            <div className="flex items-center justify-center py-4">
-              <RefreshCw className="h-4 w-4 animate-spin text-gold/50" />
-              <span className="ml-2 text-xs text-gold/50">Loading players...</span>
+            <div className="flex items-center justify-center py-6">
+              <RefreshCw className="h-5 w-5 animate-spin text-gold/50" />
+              <span className="ml-2 text-sm text-gold/50">Loading players...</span>
             </div>
           ) : allPlayers.length === 0 ? (
-            <div className="rounded-md border border-white/10 bg-white/5 p-3 text-center text-xs text-gold/50">
-              No players registered yet
+            <div className="py-6 text-center">
+              <Users className="mx-auto mb-2 h-8 w-8 text-gold/30" />
+              <p className="text-sm text-gold/50">No players registered yet</p>
             </div>
           ) : (
-            <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-white/10 bg-black/40 p-2">
-              {allPlayers.map((player) => {
-                const isSelected = selectedPlayers.some((p) => p.address === player.address);
-                return (
-                  <PlayerSelectionItem
-                    key={player.address}
-                    player={player}
-                    isSelected={isSelected}
-                    oddsWeight={getPlayerOddsWeight(player)}
-                    chancePercent={getPlayerChancePercent(player)}
-                    onToggle={() => togglePlayerSelection(player)}
-                    onWeightChange={(weight) => setPlayerWeight(player.address, weight)}
-                    disabled={selectionLimitReached && !isSelected}
-                  />
-                );
-              })}
+            <>
+              {/* Player grid */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {allPlayers.map((player) => {
+                  const isSelected = selectedPlayers.some((p) => p.address === player.address);
+                  return (
+                    <PlayerCard
+                      key={player.address}
+                      player={player}
+                      isSelected={isSelected}
+                      chancePercent={getPlayerChancePercent(player)}
+                      oddsWeight={getPlayerOddsWeight(player)}
+                      onToggle={() => togglePlayerSelection(player)}
+                      onWeightChange={(weight) => setPlayerWeight(player.address, weight)}
+                      disabled={selectionLimitReached && !isSelected}
+                    />
+                  );
+                })}
+              </div>
 
-              {/* "None of the above" option - always shown when players exist */}
-              <div className="mt-2 border-t border-white/10 pt-2">
-                <div className="flex w-full items-center justify-between rounded-md border border-gold/40 bg-gold/10 px-2 py-1.5 text-xs">
-                  <span className="text-gold/80">None of the above</span>
-                  <div className="flex flex-shrink-0 items-center gap-2">
-                    <span className="text-[10px] font-medium text-progress-bar-good">
-                      {noneChancePercent.toFixed(1)}%
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-gold/60">wt:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={noneWeight}
-                        onChange={(e) => setNoneWeight(parseInt(e.target.value) || 1)}
-                        className="w-10 rounded border border-white/20 bg-black/40 px-1 py-0.5 text-center text-[10px] text-gold/80 outline-none focus:border-gold/60"
-                      />
-                    </div>
+              {/* "None of the above" option */}
+              <div className="mt-3 border-t border-gold/10 pt-3">
+                <div className="flex items-center justify-between rounded-lg border border-gold/30 bg-gold/10 px-3 py-2">
+                  <span className="text-xs font-medium text-gold">None of the above</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-brilliance">{noneChancePercent.toFixed(1)}%</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={noneWeight}
+                      onChange={(e) => setNoneWeight(parseInt(e.target.value) || 1)}
+                      className="w-12 rounded border border-gold/30 bg-brown/50 px-1.5 py-0.5 text-center text-[10px] text-gold outline-none focus:border-gold/60"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
-        </div>
+        </CreationStep>
 
-        {/* Funding Amount Input */}
-        {preconditions.hasWallet && (
-          <FundingAmountInput
+        {/* Step 2: Funding */}
+        <CreationStep
+          stepNumber={2}
+          title="Set Funding"
+          subtitle={isFundingValid ? `${fundingAmount} LORDS` : `Min ${minFundingAmount} LORDS`}
+          isExpanded={expandedStep === "funding"}
+          isComplete={isFundingValid && preconditions.hasSufficientBalance}
+          isDisabled={!selectionComplete || !preconditions.hasWallet}
+          onToggle={() => setExpandedStep(expandedStep === "funding" ? null : "funding")}
+        >
+          <FundingInput
             amount={fundingAmount}
             setAmount={setFundingAmount}
             minAmount={minFundingAmount}
             balance={balance}
             isValid={isFundingValid}
           />
-        )}
+        </CreationStep>
 
-        {/* Selected Players Summary */}
-        {selectedPlayers.length > 0 && (
-          <div className="rounded-md border border-gold/20 bg-gold/5 p-2 text-[10px]">
-            <div className="mb-1 font-medium text-gold/70">Selected for market:</div>
-            <div className="flex flex-wrap gap-1">
+        {/* Market Preview (when ready) */}
+        {selectionComplete && isFundingValid && (
+          <Panel tone="wood" padding="sm" radius="md" border="subtle" className="animate-fade-in-up">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gold/50">Market Preview</p>
+            <div className="flex flex-wrap gap-1.5">
               {selectedPlayers.map((player) => (
-                <span key={player.address} className="rounded-full bg-gold/20 px-2 py-0.5 text-gold/90">
-                  {player.name || `${player.address.slice(0, 6)}...`}{" "}
-                  <span className="text-progress-bar-good">{getPlayerChancePercent(player).toFixed(1)}%</span>
+                <span
+                  key={player.address}
+                  className="inline-flex items-center gap-1 rounded-full bg-gold/20 px-2 py-0.5 text-[10px] text-gold"
+                >
+                  {player.name || `${player.address.slice(0, 6)}...`}
+                  <span className="font-bold text-brilliance">{getPlayerChancePercent(player).toFixed(0)}%</span>
                 </span>
               ))}
-              <span className="rounded-full bg-gold/30 px-2 py-0.5 text-gold/90">
-                None <span className="text-progress-bar-good">{noneChancePercent.toFixed(1)}%</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-gold/30 px-2 py-0.5 text-[10px] text-gold">
+                None
+                <span className="font-bold text-brilliance">{noneChancePercent.toFixed(0)}%</span>
               </span>
             </div>
-          </div>
+          </Panel>
         )}
       </div>
 
       {/* Fixed Footer */}
-      <div className="flex-shrink-0 space-y-2 border-t border-gold/10 bg-black/80 p-3">
+      <div className="flex-shrink-0 space-y-2 border-t border-gold/10 bg-brown/80 p-3">
         <Button
           onClick={createMarket}
           disabled={!canCreate}
           isLoading={isCreating || loadingPlayers || isBalanceLoading}
+          variant="primary"
           size="md"
           className="w-full"
           forceUppercase={false}
         >
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          <Plus className="mr-1.5 h-4 w-4" />
           Create Market
         </Button>
 
-        {/* Status/precondition message */}
         {statusMessage && !isCreating && <p className="text-center text-[10px] text-gold/40">{statusMessage}</p>}
 
-        {/* Creation error display */}
         {createError && !isCreating && (
-          <div className="flex items-start gap-2 rounded bg-danger/10 p-2 text-danger/80">
+          <div className="flex items-start gap-2 rounded-lg bg-danger/10 p-2 text-danger/80">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
             <p className="text-[10px]">{createError}</p>
           </div>

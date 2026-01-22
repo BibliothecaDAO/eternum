@@ -1,4 +1,5 @@
 {
+  "ignoreDependencies": ["@videos/.*"],
   "ignore": [
     "eliza/**",
 
@@ -6,7 +7,6 @@
     "**/vitest**",
 
     "packages/**",
-
 
     "client/apps/landing/src/routeTree.gen.ts",
     "client/apps/landing/src/components/ui/**",

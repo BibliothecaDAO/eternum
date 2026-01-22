@@ -636,5 +636,5 @@ export class PathRenderer {
   }
 }
 
-// Export singleton accessor
-export const pathRenderer = PathRenderer.getInstance();
+// Singleton accessor
+const pathRenderer = PathRenderer.getInstance();

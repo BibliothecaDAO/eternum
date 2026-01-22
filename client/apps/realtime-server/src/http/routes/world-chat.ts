@@ -10,7 +10,7 @@ import type { AppEnv } from "../middleware/auth";
 import { requirePlayerSession } from "../middleware/auth";
 import { formatZodError } from "../utils/zod";
 
-export const worldChatRoutes = new Hono<AppEnv>();
+const worldChatRoutes = new Hono<AppEnv>();
 
 worldChatRoutes.use("/*", requirePlayerSession);
 

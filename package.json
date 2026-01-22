@@ -157,9 +157,6 @@
     "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
     "manifest:copy-abis": "node scripts/copy-abis.mjs"
   },
-  "bin": {
-    "dispatch-torii": "scripts/dispatch-torii.mjs"
-  },
   "dependencies": {
     "@cartridge/connector": "catalog:",
     "@cartridge/controller": "catalog:",

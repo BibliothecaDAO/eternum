@@ -64,7 +64,7 @@ const NFT_IMAGES_BASE_PATH = "/images/nft-images";
  * Maps attributesRaw hex values to GLB model paths (low-res only).
  * Files are named by their attributesRaw value (e.g., 0x3040101.glb).
  */
-export const COSMETIC_MODEL_BY_ATTRIBUTES_RAW: Record<string, string | null> = {
+const COSMETIC_MODEL_BY_ATTRIBUTES_RAW: Record<string, string | null> = {
   "0x3040101": "/models/cosmetics/low-res/0x3040101.glb", // Legacy Keep
   "0x107050201": "/models/cosmetics/low-res/0x107050201.glb", // Legacy Guardian
   "0x4050301": "/models/cosmetics/low-res/0x4050301.glb", // Aura of the Legacy Warrior
@@ -111,7 +111,7 @@ export function getLocalImageFromAttributesRaw(attributesRaw: string): string {
 }
 
 // IPFS CID mapping from attributesRaw hex values (fallback source)
-export const ATTRIBUTES_TO_IPFS: Record<string, string> = {
+const ATTRIBUTES_TO_IPFS: Record<string, string> = {
   "0x3040101": "bafybeifhxkjcyepmn2io6xs6a25d2yend3mvl2acorptgb3fqzweolmuyy",
   "0x107050201": "bafybeih2qvpsnwqaj36poj7a4smwngda3eovkkio6csrapeb2m24fliona",
   "0x4050301": "bafybeidtfplezzaqil2txiuuukre4ul3drkdgtcrt4l4yhxhc66xaz35mu",
@@ -141,7 +141,7 @@ export const ATTRIBUTES_TO_IPFS: Record<string, string> = {
  * @param attributesRaw - Hex string like "0x2030601"
  * @returns IPFS CID or undefined if not found
  */
-export function getIpfsCidFromAttributesRaw(attributesRaw: string): string | undefined {
+function getIpfsCidFromAttributesRaw(attributesRaw: string): string | undefined {
   return ATTRIBUTES_TO_IPFS[attributesRaw];
 }
 
@@ -151,7 +151,7 @@ export function getIpfsCidFromAttributesRaw(attributesRaw: string): string | und
  * @param gateway - IPFS gateway URL (defaults to dweb.link)
  * @returns Full IPFS URL or undefined if not found
  */
-export function getIpfsUrlFromAttributesRaw(
+function getIpfsUrlFromAttributesRaw(
   attributesRaw: string,
   gateway: string = "https://dweb.link/ipfs/",
 ): string | undefined {
@@ -164,7 +164,7 @@ export function getIpfsUrlFromAttributesRaw(
  * @param attributesRaw - Hex string like "0x2030601"
  * @returns Cosmetic name or undefined if not found
  */
-export function getCosmeticNameFromAttributesRaw(attributesRaw: string): string | undefined {
+function getCosmeticNameFromAttributesRaw(attributesRaw: string): string | undefined {
   const cosmetic = COSMETIC_NAMES.find((c) => c.attributesRaw === attributesRaw);
   return cosmetic?.name;
 }

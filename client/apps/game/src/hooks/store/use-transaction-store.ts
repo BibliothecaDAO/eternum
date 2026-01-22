@@ -1,4 +1,4 @@
-import { TransactionType } from "@bibliothecadao/provider";
+import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
 import { create } from "zustand";
 
 export type TransactionStatus = "pending" | "success" | "reverted";
@@ -12,6 +12,8 @@ export interface Transaction {
   description: string;
   transactionCount?: number;
   errorMessage?: string;
+  /** Details about batched transactions - shows breakdown by type */
+  batchDetails?: BatchedTransactionDetail[];
 }
 
 const MAX_TRANSACTIONS = 50;
@@ -186,7 +188,7 @@ const getTxDescription = (type: TransactionType): string => {
   return descriptions[type] ?? "Transaction in progress";
 };
 
-export interface TransactionDebugUtils {
+interface TransactionDebugUtils {
   addMockPending: (type?: TransactionType) => string;
   addMockSuccess: (type?: TransactionType) => string;
   addMockReverted: (type?: TransactionType, errorMessage?: string) => string;

@@ -41,7 +41,7 @@ export interface ResourceAutomationPercentages {
   laborToResource: number;
 }
 
-export interface ResourceConsumptionRecord {
+interface ResourceConsumptionRecord {
   resourceId: ResourcesIds;
   amount: number;
 }
@@ -75,7 +75,7 @@ export interface RealmAutomationConfig {
   lastExecution?: RealmAutomationExecutionSummary;
 }
 
-export enum ProductionType {
+enum ProductionType {
   ResourceToResource = "resource-to-resource",
   LaborToResource = "labor-to-resource",
   ResourceToLabor = "resource-to-labor",

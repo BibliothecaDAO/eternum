@@ -382,84 +382,84 @@ export interface StarknetOracleParams {
 }
 
 // Type definition for `markets::core::models::curve::Curve` enum
-export const curve = [
+const curve = [
 	'Linear',
 ] as const;
-export type Curve = { 
+type Curve = {
 	Linear: CurveRange,
 };
 export type CurveEnum = CairoCustomEnum;
 
 // Type definition for `markets::core::models::market_model::MarketModel` enum
-export const marketModel = [
+const marketModel = [
 	'Vault',
 	'Amm',
 ] as const;
-export type MarketModel = { 
+type MarketModel = {
 	Vault: MarketModelVault,
 	Amm: MarketModelAmm,
 };
 export type MarketModelEnum = CairoCustomEnum;
 
 // Type definition for `markets::core::models::market_type::CompValueOperator` enum
-export const compValueOperator = [
+const compValueOperator = [
 	'Eq',
 	'Lt',
 	'Gt',
 	'Lte',
 	'Gte',
 ] as const;
-export type CompValueOperator = { 
+type CompValueOperator = {
 	Eq: BigNumberish,
 	Lt: BigNumberish,
 	Gt: BigNumberish,
 	Lte: BigNumberish,
 	Gte: BigNumberish,
 };
-export type CompValueOperatorEnum = CairoCustomEnum;
+type CompValueOperatorEnum = CairoCustomEnum;
 
 // Type definition for `markets::core::models::market_type::MarketType` enum
-export const marketType = [
+const marketType = [
 	'Binary',
 	'Categorical',
 ] as const;
-export type MarketType = { 
+type MarketType = {
 	Binary: MarketTypeBinaryEnum,
 	Categorical: MarketTypeCategoricalEnum,
 };
 export type MarketTypeEnum = CairoCustomEnum;
 
 // Type definition for `markets::core::models::market_type::MarketTypeBinary` enum
-export const marketTypeBinary = [
+const marketTypeBinary = [
 	'Value',
 	'Range',
 	'Scalar',
 ] as const;
-export type MarketTypeBinary = { 
+type MarketTypeBinary = {
 	Value: CompValueOperatorEnum,
 	Range: Range,
 	Scalar: Range,
 };
-export type MarketTypeBinaryEnum = CairoCustomEnum;
+type MarketTypeBinaryEnum = CairoCustomEnum;
 
 // Type definition for `markets::core::models::market_type::MarketTypeCategorical` enum
-export const marketTypeCategorical = [
+const marketTypeCategorical = [
 	'ValueEq',
 	'Ranges',
 ] as const;
-export type MarketTypeCategorical = { 
+type MarketTypeCategorical = {
 	ValueEq: Array<BigNumberish>,
 	Ranges: Array<BigNumberish>,
 };
-export type MarketTypeCategoricalEnum = CairoCustomEnum;
+type MarketTypeCategoricalEnum = CairoCustomEnum;
 
 // Type definition for `markets::oracles::types::oracle_value_type::OracleValueType` enum
-export const oracleValueType = [
+const oracleValueType = [
 	'u256',
 	'ContractAddress',
 	'felt252',
 ] as const;
-export type OracleValueType = { [key in typeof oracleValueType[number]]: string };
+type OracleValueType = { [key in typeof oracleValueType[number]]: string };
 export type OracleValueTypeEnum = CairoCustomEnum;
 
 export interface SchemaType extends ISchemaType {
@@ -513,7 +513,7 @@ export interface SchemaType extends ISchemaType {
 		StarknetOracleParams: StarknetOracleParams,
 	},
 }
-export const schema: SchemaType = {
+const schema: SchemaType = {
 	workspace: {
 		Condition: {
 		condition_id: 0,
@@ -855,7 +855,7 @@ export const schema: SchemaType = {
 		},
 	},
 };
-export enum ModelsMapping {
+enum ModelsMapping {
 	Condition = 'conditional_tokens-Condition',
 	PayoutDenominator = 'conditional_tokens-PayoutDenominator',
 	PayoutNumerator = 'conditional_tokens-PayoutNumerator',

@@ -4,7 +4,7 @@ import type { GameModeId } from "@/config/game-modes";
 /**
  * Lightweight description of the current routing context used to map pages to curated music pools.
  */
-export interface RouteMatchContext {
+interface RouteMatchContext {
   pathname: string;
   modeId: GameModeId;
 }

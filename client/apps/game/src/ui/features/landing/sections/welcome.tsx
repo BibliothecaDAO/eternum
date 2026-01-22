@@ -51,11 +51,7 @@ export const LandingWelcome = () => {
             <EternumWordsLogo className="mx-auto lg:w-72 xl:w-[360px]" />
             {/* Buttons */}
             <div className="mt-10 px-10 sm:px-0 sm:mt-14 flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
-              <Button
-                variant={activeWorld ? "opaque" : "default"}
-                className={`${buttonClasses} hidden sm:block`}
-                onClick={handleSelectGame}
-              >
+              <Button variant={activeWorld ? "opaque" : "default"} className={buttonClasses} onClick={handleSelectGame}>
                 {activeWorld ? "Change Game" : "Select Game"}
               </Button>
               {activeWorld && (

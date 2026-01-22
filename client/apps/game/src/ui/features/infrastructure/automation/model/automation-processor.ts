@@ -24,7 +24,7 @@ export type RealmResourceSnapshot = Map<ResourcesIds, RealmResourceSnapshotEntry
 
 const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((value) => typeof value === "number") as ResourcesIds[];
 
-export interface ResourceCycleCall {
+interface ResourceCycleCall {
   resourceId: ResourcesIds;
   cycles: number;
 }
@@ -47,7 +47,7 @@ export interface RealmProductionPlan {
   evaluatedResourceIds: ResourcesIds[];
 }
 
-export interface BuildRealmProductionPlanArgs {
+interface BuildRealmProductionPlanArgs {
   realmConfig: RealmAutomationConfig;
   snapshot: RealmResourceSnapshot;
 }
@@ -85,7 +85,7 @@ const DEFAULT_PLAN_CALLSET: RealmProductionCallset = {
   laborToResource: [],
 };
 
-export interface BuildRealmResourceSnapshotArgs {
+interface BuildRealmResourceSnapshotArgs {
   components: ClientComponents | null | undefined;
   realmId: number;
   currentTick?: number;
