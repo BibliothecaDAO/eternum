@@ -47,6 +47,8 @@ pub mod faith_systems {
     };
     use crate::models::structure::{Structure, StructureCategory, StructureMetadata, StructureOwnerStoreImpl};
 
+    const MAX_WONDER_ALLEGIANCE_DEPTH: u32 = 16;
+
     #[abi(embed_v0)]
     impl FaithSystemsImpl of super::IFaithSystems<ContractState> {
         fn fund_faith_prize_pool(ref self: ContractState, season_id: u32, amount: u128) {
@@ -186,6 +188,10 @@ pub mod faith_systems {
             } else {
                 FollowerType::Realm
             };
+
+            if entity_type == FollowerType::Wonder {
+                assert_no_wonder_cycle(ref world, entity_id, wonder_id);
+            }
 
             let now = starknet::get_block_timestamp();
             world.write_model(
@@ -554,6 +560,23 @@ pub mod faith_systems {
             9 => config.rank_9_share_bps,
             10 => config.rank_10_share_bps,
             _ => 0,
+        }
+    }
+
+    fn assert_no_wonder_cycle(ref world: WorldStorage, follower_id: ID, target_wonder_id: ID) {
+        let mut current: ID = target_wonder_id;
+        let mut depth: u32 = 0;
+        loop {
+            if current == follower_id {
+                panic!("Circular wonder allegiance");
+            }
+            let allegiance: FollowerAllegiance = world.read_model(current);
+            if allegiance.wonder_id.is_zero() {
+                break;
+            }
+            depth += 1;
+            assert!(depth < MAX_WONDER_ALLEGIANCE_DEPTH, "Faith chain too deep");
+            current = allegiance.wonder_id;
         }
     }
 }
