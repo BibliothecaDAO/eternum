@@ -32,7 +32,7 @@ const pmQueryClient = new QueryClient({
   },
 });
 
-export const MARKET_FILTERS_ALL: MarketFiltersParams = {
+const MARKET_FILTERS_ALL: MarketFiltersParams = {
   status: MarketStatusFilter.All,
   type: MarketTypeFilter.All,
   oracle: "All",

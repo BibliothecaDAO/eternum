@@ -536,7 +536,7 @@ interface BlitzHighlightCardProps {
   highlight?: BlitzHighlightPlayer | null;
 }
 
-export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(
+const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(
   ({ title, subtitle, highlight }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
     const theme = resolveCardTheme(highlight?.rank);

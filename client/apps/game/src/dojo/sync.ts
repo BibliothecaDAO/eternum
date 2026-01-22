@@ -163,7 +163,7 @@ const createWorkerQueueProcessor = (
   }
 };
 
-export const syncEntitiesDebounced = async (
+const syncEntitiesDebounced = async (
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: Clause | undefined | null,
@@ -334,7 +334,7 @@ export const initialSync = async (
   updateProgress(100);
 };
 
-export const resubscribeEntityStream = async (
+const resubscribeEntityStream = async (
   setup: SetupResult,
   state: AppStore,
   setInitialSyncProgress: (progress: number) => void,

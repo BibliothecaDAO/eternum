@@ -35,7 +35,7 @@ export interface QualityFeatures {
 /**
  * Complete quality preset with all configurable options
  */
-export interface QualityPreset extends QualityFeatures {
+interface QualityPreset extends QualityFeatures {
   name: string;
   targetFPS: number;
 }
@@ -149,7 +149,7 @@ const DEGRADATION_STEPS: DegradationStep[] = [
 /**
  * Event types emitted by QualityController
  */
-export type QualityChangeEvent = {
+type QualityChangeEvent = {
   type: "quality-change";
   previousFeatures: QualityFeatures;
   currentFeatures: QualityFeatures;
@@ -158,12 +158,12 @@ export type QualityChangeEvent = {
   description?: string;
 };
 
-export type QualityEventListener = (event: QualityChangeEvent) => void;
+type QualityEventListener = (event: QualityChangeEvent) => void;
 
 /**
  * Configuration for the QualityController
  */
-export interface QualityControllerConfig {
+interface QualityControllerConfig {
   /** Enable automatic quality adjustment based on FPS */
   autoAdjustEnabled?: boolean;
   /** Number of frames to average for FPS calculation */
@@ -227,7 +227,7 @@ const DEFAULT_CONFIG: Required<QualityControllerConfig> = {
  * }
  * ```
  */
-export class QualityController {
+class QualityController {
   private static instance: QualityController | null = null;
 
   private config: Required<QualityControllerConfig>;
@@ -572,5 +572,3 @@ export class QualityController {
 // Export singleton accessor
 export const qualityController = QualityController.getInstance();
 
-// Export preset for external use
-export { QUALITY_PRESETS };

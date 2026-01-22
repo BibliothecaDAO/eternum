@@ -29,4 +29,3 @@ export const db = new Proxy({} as ReturnType<typeof drizzle>, {
   },
 });
 
-export { schema };

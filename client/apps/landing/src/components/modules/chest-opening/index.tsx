@@ -17,8 +17,6 @@ import { ChestEpoch, useChestOpeningFlow } from "./use-chest-opening-flow";
 
 // Re-export components for external use
 export { FloatingOpenButton } from "./floating-open-button";
-export { TiltCard } from "./tilt-card";
-export type { ChestOpeningState } from "./use-chest-opening-flow";
 
 interface ChestOpeningExperienceProps {
   ownedChests: MergedNftData[];
@@ -198,5 +196,3 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
   );
 }
 
-// Legacy export for backwards compatibility
-export { ChestOpeningExperience as ChestOpeningModal };

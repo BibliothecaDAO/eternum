@@ -1,7 +1,7 @@
 import posthog from "posthog-js";
 import { env } from "../env";
 
-export const initPostHog = () => {
+const initPostHog = () => {
   // Only initialize if we have a project API key
   if (!env.VITE_PUBLIC_POSTHOG_KEY) {
     console.log("PostHog API key not configured, skipping initialization");

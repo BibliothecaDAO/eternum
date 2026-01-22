@@ -53,7 +53,7 @@ export interface ScoreToBeatResult {
   generatedAt: number;
 }
 
-export interface ScoreToBeatOptions {
+interface ScoreToBeatOptions {
   perEndpointLimit?: number;
   runsToAggregate?: number;
   maxPlayers?: number;

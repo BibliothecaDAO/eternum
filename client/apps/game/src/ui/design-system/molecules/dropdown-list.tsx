@@ -23,7 +23,7 @@ const paddingClassMap = {
   sm: "p-2",
 };
 
-export const DropdownList = ({
+const DropdownList = ({
   children,
   className,
   maxHeight = "md",
@@ -43,4 +43,3 @@ export const DropdownList = ({
   </div>
 );
 
-export default DropdownList;

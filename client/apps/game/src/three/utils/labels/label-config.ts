@@ -66,7 +66,7 @@ export const HOVER_STYLES: Record<string, LabelStyle> = {
 /**
  * Base configuration shared by all label types
  */
-export const BASE_LABEL_CONFIG: LabelConfig = {
+const BASE_LABEL_CONFIG: LabelConfig = {
   baseClasses: [
     "rounded-md",
     "p-0.5",
@@ -92,7 +92,7 @@ export const BASE_LABEL_CONFIG: LabelConfig = {
 /**
  * Camera view specific configurations
  */
-export const CAMERA_VIEW_CONFIGS: Record<number, Partial<LabelConfig>> = {
+const CAMERA_VIEW_CONFIGS: Record<number, Partial<LabelConfig>> = {
   1: {
     // CameraView.Close
     transitions: {
@@ -167,7 +167,7 @@ export function getOwnershipStyle(isMine: boolean, isDaydreams?: boolean): { def
  * @param isDaydreams - Is this an AI agent?
  * @param ownerAddress - Owner's wallet address for enemy color assignment
  */
-export function getPlayerOwnershipStyle(
+function getPlayerOwnershipStyle(
   isMine: boolean,
   isAlly: boolean,
   isDaydreams: boolean,

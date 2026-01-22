@@ -14,7 +14,7 @@ import { MarketClass } from "../../class";
 import { useConfig } from "../../providers";
 import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
-export interface UseMarketResult {
+interface UseMarketResult {
   market: MarketClass | undefined;
   refresh: () => Promise<void>;
   isLoading: boolean;

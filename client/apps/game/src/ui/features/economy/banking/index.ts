@@ -6,5 +6,4 @@ export { BankPanel as BankList } from "./bank-list";
 export { ConfirmationPopup } from "./confirmation-popup";
 export { LiquidityResourceRow } from "./liquidity-resource-row";
 export { LiquidityTable, LiquidityTableHeader } from "./liquidity-table";
-export { ResourceBar } from "./resource-bar";
 export { ResourceSwap as Swap } from "./swap";

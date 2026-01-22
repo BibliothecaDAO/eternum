@@ -50,7 +50,7 @@ const checkMarketExists = async (oracleAddress: string): Promise<boolean> => {
   }
 };
 
-export interface UseQuickMarketCreateResult {
+interface UseQuickMarketCreateResult {
   // Market creation
   createMarket: () => Promise<void>;
   isCreating: boolean;
@@ -723,4 +723,4 @@ export const useQuickMarketCreate = (
   );
 };
 
-export type { MarketPlayer, UseQuickMarketCreateResult as UseQuickMarketCreateReturn };
+export type { MarketPlayer };

@@ -221,7 +221,7 @@ export function TiltCard({
 }
 
 // Smaller variant for selection grids
-export function TiltCardMini({
+function TiltCardMini({
   asset,
   selected = false,
   onClick,

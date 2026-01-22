@@ -18,7 +18,7 @@ const spacingClassMap = {
   relaxed: "space-y-3",
 };
 
-export const FormField = ({
+const FormField = ({
   label,
   htmlFor,
   description,
@@ -52,4 +52,3 @@ export const FormField = ({
   );
 };
 
-export default FormField;

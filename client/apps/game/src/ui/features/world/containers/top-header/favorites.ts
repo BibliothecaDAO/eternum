@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 
-export const FAVORITE_STRUCTURES_STORAGE_KEY = "favoriteStructures";
-export const FAVORITE_STRUCTURES_UPDATED_EVENT = "favoriteStructuresUpdated";
+const FAVORITE_STRUCTURES_STORAGE_KEY = "favoriteStructures";
+const FAVORITE_STRUCTURES_UPDATED_EVENT = "favoriteStructuresUpdated";
 
-export const loadFavoriteStructures = (): number[] => {
+const loadFavoriteStructures = (): number[] => {
   if (typeof window === "undefined") {
     return [];
   }
@@ -36,7 +36,7 @@ export const loadFavoriteStructures = (): number[] => {
   return [];
 };
 
-export const saveFavoriteStructures = (favorites: number[]): void => {
+const saveFavoriteStructures = (favorites: number[]): void => {
   if (typeof window === "undefined") {
     return;
   }
@@ -49,7 +49,7 @@ export const saveFavoriteStructures = (favorites: number[]): void => {
   }
 };
 
-export const toggleFavoriteStructure = (favorites: number[], entityId: number): number[] => {
+const toggleFavoriteStructure = (favorites: number[], entityId: number): number[] => {
   return favorites.includes(entityId) ? favorites.filter((id) => id !== entityId) : [...favorites, entityId];
 };
 

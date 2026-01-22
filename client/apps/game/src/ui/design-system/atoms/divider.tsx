@@ -38,4 +38,3 @@ export const Divider = ({
   />
 );
 
-export default Divider;

@@ -263,5 +263,3 @@ export const LandingMarketDetails = () => {
     </MarketsProviders>
   );
 };
-
-export default LandingMarketDetails;

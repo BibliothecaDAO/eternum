@@ -1,11 +1,11 @@
 import type { Chain } from "@contracts";
 
 // Hex helpers
-export const strip0x = (v: string) => (v.startsWith("0x") || v.startsWith("0X") ? v.slice(2) : v);
+const strip0x = (v: string) => (v.startsWith("0x") || v.startsWith("0X") ? v.slice(2) : v);
 
-export const toLowerHex = (v: string) => `0x${strip0x(v).toLowerCase()}`;
+const toLowerHex = (v: string) => `0x${strip0x(v).toLowerCase()}`;
 
-export const leftPadHex = (hexWithout0x: string, width: number) => hexWithout0x.padStart(width, "0");
+const leftPadHex = (hexWithout0x: string, width: number) => hexWithout0x.padStart(width, "0");
 
 // Normalize any hex to 0x + 64-char lowercase body
 export const normalizeHex = (v: string) => {
