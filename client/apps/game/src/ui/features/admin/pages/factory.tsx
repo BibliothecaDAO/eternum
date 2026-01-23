@@ -1593,7 +1593,7 @@ export const FactoryPage = () => {
                                                   profile.worldAddress,
                                                   profile.contractsBySelector,
                                                 );
-                                                let localProvider: any = new EternumProvider(
+                                                const localProvider: any = new EternumProvider(
                                                   patched,
                                                   env.VITE_PUBLIC_NODE_URL,
                                                   env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,

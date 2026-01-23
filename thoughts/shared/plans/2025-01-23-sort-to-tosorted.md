@@ -1,16 +1,16 @@
 # Implementation Plan: Replace .sort() with .toSorted()
 
-**Issue:** #4076
-**Branch:** `ponderingdemocritus/issue-4076-impl`
-**Created:** 2025-01-23
+**Issue:** #4076 **Branch:** `ponderingdemocritus/issue-4076-impl` **Created:** 2025-01-23
 
 ## Summary
 
-Replace all 164 occurrences of `.sort()` across 106 files with `.toSorted()` to prevent array mutation bugs and broken memoization in React.
+Replace all 164 occurrences of `.sort()` across 106 files with `.toSorted()` to prevent array mutation bugs and broken
+memoization in React.
 
 ## Problem
 
 `.sort()` mutates arrays in place, causing:
+
 - Stale closure bugs in React
 - Broken `useMemo`/`useCallback` memoization
 - Hard-to-debug re-render issues
@@ -20,21 +20,22 @@ Replace all 164 occurrences of `.sort()` across 106 files with `.toSorted()` to 
 
 ### Total Occurrences by Area
 
-| Area | Files | Occurrences |
-|------|-------|-------------|
-| `client/apps/game/` | 63 | ~110 |
-| `client/apps/landing/` | 11 | ~20 |
-| `client/apps/eternum-mobile/` | 7 | ~10 |
-| `client/apps/game-docs/` | 4 | ~9 |
-| `client/apps/realtime-server/` | 2 | ~2 |
-| `packages/core/` | 2 | ~3 |
-| `packages/react/` | 1 | ~1 |
-| `packages/torii/` | 2 | ~2 |
-| `scripts/` | 1 | ~1 |
+| Area                           | Files | Occurrences |
+| ------------------------------ | ----- | ----------- |
+| `client/apps/game/`            | 63    | ~110        |
+| `client/apps/landing/`         | 11    | ~20         |
+| `client/apps/eternum-mobile/`  | 7     | ~10         |
+| `client/apps/game-docs/`       | 4     | ~9          |
+| `client/apps/realtime-server/` | 2     | ~2          |
+| `packages/core/`               | 2     | ~3          |
+| `packages/react/`              | 1     | ~1          |
+| `packages/torii/`              | 2     | ~2          |
+| `scripts/`                     | 1     | ~1          |
 
 ### Pattern Categories
 
 1. **Spread-then-sort (26 occurrences)** - Already safe but verbose:
+
    ```typescript
    // Current - works but verbose
    const sorted = [...arr].sort((a, b) => a - b);
@@ -44,6 +45,7 @@ Replace all 164 occurrences of `.sort()` across 106 files with `.toSorted()` to 
    ```
 
 2. **In-place mutation (majority)** - Bug-prone:
+
    ```typescript
    // Current - mutates original array!
    items.sort((a, b) => a.name.localeCompare(b.name));
@@ -53,6 +55,7 @@ Replace all 164 occurrences of `.sort()` across 106 files with `.toSorted()` to 
    ```
 
 3. **Mutation for side effect** - Rare, intentional mutation:
+
    ```typescript
    // Current - sorts array for ordering only
    participants.sort();
@@ -66,9 +69,11 @@ Replace all 164 occurrences of `.sort()` across 106 files with `.toSorted()` to 
 ## Implementation Phases
 
 ### Phase 1: High-Impact Game Client Files
+
 **Target:** `client/apps/game/src/ui/features/`
 
 Key files (4+ occurrences):
+
 - `bridge/bridge.tsx` (4)
 - `world-selector/world-selector-modal.tsx` (4)
 - `landing/sections/markets/use-market-stats.ts` (4)
@@ -78,47 +83,50 @@ Key files (4+ occurrences):
 - `economy/transfers/transfer-automation-panel.tsx` (3)
 - `military/components/transfer-troops-container.tsx` (3)
 
-**Files:** ~35
-**Occurrences:** ~70
+**Files:** ~35 **Occurrences:** ~70
 
 ### Phase 2: Remaining Game Client
+
 **Target:** `client/apps/game/src/` (excluding ui/features)
 
 Key areas:
+
 - `three/managers/` (army-manager, path-renderer, etc.)
 - `pm/hooks/markets/`
 - `hooks/`
 - `utils/`
 - `audio/`
 
-**Files:** ~15
-**Occurrences:** ~25
+**Files:** ~15 **Occurrences:** ~25
 
 ### Phase 3: Landing & Mobile Apps
+
 **Target:** `client/apps/landing/`, `client/apps/eternum-mobile/`
 
 Landing key files:
+
 - `hooks/services/index.ts` (2)
 - `components/modules/trait-filter-ui.tsx` (3)
 - `components/modules/chest-opening/chest-selection-modal.tsx` (3)
 
 Mobile key files:
+
 - `widgets/hex-entity-details-drawer/ui/army-entity-detail.tsx` (2)
 
-**Files:** ~18
-**Occurrences:** ~30
+**Files:** ~18 **Occurrences:** ~30
 
 ### Phase 4: Packages & Supporting Code
+
 **Target:** `packages/`, `client/apps/game-docs/`, `client/apps/realtime-server/`, `scripts/`
 
 Package files:
+
 - `packages/core/src/managers/leaderboard-manager.ts` (2)
 - `packages/core/src/managers/army-action-manager.ts` (1)
 - `packages/react/src/hooks/helpers/use-structures.ts` (1)
 - `packages/torii/src/queries/sql/*.ts` (2)
 
-**Files:** ~10
-**Occurrences:** ~15
+**Files:** ~10 **Occurrences:** ~15
 
 ### Phase 5: ESLint Rule & Verification
 
@@ -145,6 +153,7 @@ rules: {
 ## Transformation Patterns
 
 ### Pattern A: Spread-then-sort to toSorted
+
 ```typescript
 // Before
 const sorted = [...items].sort((a, b) => a.value - b.value);
@@ -154,6 +163,7 @@ const sorted = items.toSorted((a, b) => a.value - b.value);
 ```
 
 ### Pattern B: In-place sort to toSorted with reassignment
+
 ```typescript
 // Before
 myArray.sort((a, b) => a - b);
@@ -165,6 +175,7 @@ const sortedArray = myArray.toSorted((a, b) => a - b);
 ```
 
 ### Pattern C: Sort in return statement
+
 ```typescript
 // Before
 return items.sort((a, b) => a.name.localeCompare(b.name));
@@ -174,16 +185,13 @@ return items.toSorted((a, b) => a.name.localeCompare(b.name));
 ```
 
 ### Pattern D: Chained operations
+
 ```typescript
 // Before
-return items
-  .filter(x => x.active)
-  .sort((a, b) => a.priority - b.priority);
+return items.filter((x) => x.active).sort((a, b) => a.priority - b.priority);
 
 // After
-return items
-  .filter(x => x.active)
-  .toSorted((a, b) => a.priority - b.priority);
+return items.filter((x) => x.active).toSorted((a, b) => a.priority - b.priority);
 ```
 
 ---
@@ -191,6 +199,7 @@ return items
 ## Testing Strategy
 
 1. **Lint verification:**
+
    ```bash
    pnpm --dir client/apps/game lint
    pnpm --dir client/apps/landing lint
@@ -198,11 +207,13 @@ return items
    ```
 
 2. **Type checking:**
+
    ```bash
    pnpm --dir client/apps/game tsc --noEmit
    ```
 
 3. **Build verification:**
+
    ```bash
    pnpm build
    ```
@@ -214,6 +225,7 @@ return items
 ## Browser Support
 
 `.toSorted()` is supported in:
+
 - Chrome 110+ (March 2023)
 - Safari 16+ (September 2022)
 - Firefox 115+ (July 2023)
@@ -225,11 +237,11 @@ Given the game client targets modern browsers, this is safe to use.
 
 ## Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Behavioral regression | Low | Medium | Preserve exact sort comparison logic |
-| Variable reassignment issues | Low | Low | Review mutation patterns carefully |
-| Build failures | Very Low | Low | TypeScript will catch type errors |
+| Risk                         | Likelihood | Impact | Mitigation                           |
+| ---------------------------- | ---------- | ------ | ------------------------------------ |
+| Behavioral regression        | Low        | Medium | Preserve exact sort comparison logic |
+| Variable reassignment issues | Low        | Low    | Review mutation patterns carefully   |
+| Build failures               | Very Low   | Low    | TypeScript will catch type errors    |
 
 ---
 
@@ -249,5 +261,6 @@ Given the game client targets modern browsers, this is safe to use.
 ## Notes
 
 - Some files use spread-then-sort (`[...arr].sort()`) which is already safe but verbose; simplify to `toSorted()`
-- Pay attention to files where sorted result is used for side effects (e.g., `participants.sort()` at line 85 in store.ts)
+- Pay attention to files where sorted result is used for side effects (e.g., `participants.sort()` at line 85 in
+  store.ts)
 - The `store.ts` file has 6 occurrences - careful review needed for Zustand state mutations

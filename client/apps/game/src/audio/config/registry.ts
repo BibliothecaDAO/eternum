@@ -957,11 +957,11 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
   },
 };
 
-function getAudioAsset(id: string): AudioAsset | undefined {
+export function getAudioAsset(id: string): AudioAsset | undefined {
   return AUDIO_REGISTRY[id];
 }
 
-function getAssetsByCategory(category: AudioCategory): AudioAsset[] {
+export function getAssetsByCategory(category: AudioCategory): AudioAsset[] {
   return Object.values(AUDIO_REGISTRY).filter((asset) => asset.category === category);
 }
 

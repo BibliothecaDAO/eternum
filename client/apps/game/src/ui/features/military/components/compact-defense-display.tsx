@@ -265,9 +265,7 @@ export const CompactDefenseDisplay = ({
           </div>
         )}
         <div className="grid grid-cols-2 gap-2 pb-1 justify-items-stretch w-full">
-          {displayedTroops
-            .toSorted((a, b) => b.slot - a.slot)
-            .map((defense) => renderSlot(defense))}
+          {displayedTroops.toSorted((a, b) => b.slot - a.slot).map((defense) => renderSlot(defense))}
         </div>
       </div>
     );
@@ -308,9 +306,7 @@ export const CompactDefenseDisplay = ({
         </div>
       )}
       <div className={cn("grid grid-cols-2", "gap-2", "justify-items-stretch", isBanner ? "pb-0" : "pb-1", "w-full")}>
-        {displayedTroops
-          .toSorted((a, b) => b.slot - a.slot)
-          .map((defense) => renderSlot(defense))}
+        {displayedTroops.toSorted((a, b) => b.slot - a.slot).map((defense) => renderSlot(defense))}
         {!isBanner && (
           <div
             className={cn(

@@ -990,7 +990,9 @@ export class ArmyManager {
 
     // Recompute after async work to capture any armies added during preload
     visibleArmies = computeVisibleArmies();
-    const sortedVisibleArmies = visibleArmies.toSorted((a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId));
+    const sortedVisibleArmies = visibleArmies.toSorted(
+      (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
+    );
     ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
 
     let buffersDirty = false;

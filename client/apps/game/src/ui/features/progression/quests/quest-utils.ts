@@ -9,7 +9,7 @@ export const useGetQuests = (gameAddress: string, questTileId: number) => {
   } = useDojo();
   const gameIdsQueryFrament = useMemo(
     () =>
-      !!questTileId
+      questTileId
         ? [
             Has(components.Quest),
             HasValue(components.Quest, {

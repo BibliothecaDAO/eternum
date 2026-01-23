@@ -264,7 +264,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     }
 
-    const sortedEligible = eligible.toSorted((a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0));
+    const sortedEligible = eligible.toSorted(
+      (a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0),
+    );
     return sortedEligible;
   }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 

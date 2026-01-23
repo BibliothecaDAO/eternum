@@ -167,7 +167,7 @@ class MetricsCollector {
   private calculateFPS(): number {
     // Use requestAnimationFrame to calculate FPS
     let fps = 60;
-    let lastTime = performance.now();
+    const lastTime = performance.now();
 
     requestAnimationFrame(() => {
       const currentTime = performance.now();

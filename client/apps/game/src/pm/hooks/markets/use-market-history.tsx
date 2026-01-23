@@ -158,7 +158,10 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
     // Sort each group by timestamp ascending for efficient "find last <= timestamp" lookups
     // Use toSorted for immutability then reassign to maintain map structure
     for (const [key, arr] of map.entries()) {
-      map.set(key, arr.toSorted((a, b) => Number(a.timestamp) - Number(b.timestamp)));
+      map.set(
+        key,
+        arr.toSorted((a, b) => Number(a.timestamp) - Number(b.timestamp)),
+      );
     }
 
     return map;

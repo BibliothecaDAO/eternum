@@ -302,7 +302,7 @@ const OrderRow = memo(
         setLoading(true);
         setConfirmOrderModal(false);
 
-        let v = !isBuy ? calculatedResourceAmount : calculatedLords;
+        const v = !isBuy ? calculatedResourceAmount : calculatedLords;
         await dojo.setup.systemCalls.accept_order({
           signer: dojo.account.account,
           taker_id: entityId,

@@ -34,7 +34,7 @@ export const replaceAndFormat = (template?: string) => {
   const regex = /\{(.*?)\}/g;
   const toReplace = Array.from((template || "").matchAll(regex));
 
-  for (let variable of toReplace) {
+  for (const variable of toReplace) {
     if (variable[1].startsWith("DateTime:")) {
       const timestamp = variable[1].split(":")[1];
       const date = new Date(Number(timestamp) * 1_000);
