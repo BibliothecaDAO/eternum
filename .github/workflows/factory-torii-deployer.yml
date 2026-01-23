@@ -14,7 +14,7 @@ on:
       torii_version:
         description: "Torii version to deploy"
         required: false
-        default: "v1.7.0-alpha.5"
+        default: "v1.8.11"
       slot_team:
         description: "Cartridge Slot team name"
         required: false
