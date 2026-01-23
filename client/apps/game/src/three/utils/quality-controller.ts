@@ -135,7 +135,7 @@ const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
   [GraphicsSettings.MID]: {
     ...BASE_QUALITY_PRESETS[GraphicsSettings.MID],
     name: "Medium (Mobile)",
-    targetFPS: 40,
+    targetFPS: 30,
     shadows: false,
     shadowMapSize: 0,
     pixelRatio: 1.25,
