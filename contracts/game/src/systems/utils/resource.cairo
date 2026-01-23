@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
-use crate::constants::{all_resource_ids, is_bank};
+use crate::constants::{all_resource_ids, is_bank, is_resource_tradable};
 use crate::models::config::{SpeedImpl, WorldConfigUtilImpl};
 use crate::models::events::{
     ResourceBurnStory, ResourceReceiveArrivalStory, ResourceTransferStory, Story, StoryEvent, TransferType,
@@ -198,6 +198,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         mut resources: Span<(u8, u128)>,
         mint: bool,
     ) {
+        Self::ensure_tradable_resources(resources);
         let mut resources_clone = resources.clone();
         loop {
             match resources_clone.pop_front() {
@@ -275,6 +276,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
+        Self::ensure_tradable_resources(resources);
         let mut resources_clone = resources.clone();
         loop {
             match resources_clone.pop_front() {
@@ -350,6 +352,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         mut resources: Span<(u8, u128)>,
         mint: bool,
     ) {
+        Self::ensure_tradable_resources(resources);
         let mut resources_clone = resources.clone();
         loop {
             match resources_clone.pop_front() {
@@ -440,6 +443,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         mint: bool,
         pickup: bool,
     ) {
+        Self::ensure_tradable_resources(resources);
         assert!(from_id != 0, "from entity does not exist");
         assert!(to_id != 0, "to_structure does not exist");
         assert!(to_id != from_id, "from_structure and to_structure are the same");
@@ -703,6 +707,13 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         }
     }
 
+    fn ensure_tradable_resources(mut resources: Span<(u8, u128)>) {
+        for i in 0..resources.len() {
+            let (resource_type, _) = resources.at(i);
+            assert!(is_resource_tradable(*resource_type), "Resource not tradable");
+        }
+    }
+
     fn _emit_event(
         ref world: WorldStorage, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
     ) { // let mut sending_realm_id = 0;
@@ -724,5 +735,22 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     //             timestamp: starknet::get_block_timestamp(),
     //         },
     //     );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::iResourceTransferImpl;
+    use crate::constants::ResourceTypes;
+
+    #[test]
+    #[should_panic(expected: "Resource not tradable")]
+    fn test_research_transfer_is_blocked() {
+        iResourceTransferImpl::ensure_tradable_resources(array![(ResourceTypes::RESEARCH, 1)].span());
+    }
+
+    #[test]
+    fn test_standard_resource_transfer_is_allowed() {
+        iResourceTransferImpl::ensure_tradable_resources(array![(ResourceTypes::WOOD, 1)].span());
     }
 }

@@ -72,4 +72,6 @@ export enum ResourcesIds {
   LaborProductionRelic2 = 54,
   TroopProductionRelic1 = 55,
   TroopProductionRelic2 = 56,
+  // Research (Artificer output - not tradable)
+  Research = 57,
 }

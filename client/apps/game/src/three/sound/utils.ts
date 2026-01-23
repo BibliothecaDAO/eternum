@@ -60,6 +60,7 @@ const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
   [ResourcesIds.LaborProductionRelic2]: "ui.shovel",
   [ResourcesIds.TroopProductionRelic1]: "unit.drum",
   [ResourcesIds.TroopProductionRelic2]: "unit.drum",
+  [ResourcesIds.Research]: "resource.collect.mithral",
 };
 
 export const getResourceSoundId = (resourceId?: ResourcesIds): string => {

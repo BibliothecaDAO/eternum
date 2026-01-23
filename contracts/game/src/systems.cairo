@@ -124,3 +124,17 @@ pub mod points {
 pub mod relic {
     pub mod contracts;
 }
+
+pub mod artificer {
+    pub mod contracts;
+    pub mod interface;
+    #[cfg(test)]
+    mod tests {
+        mod test_artificer_foundation;
+        mod test_artificer_config;
+        mod test_artificer_building;
+        mod test_research_production;
+        mod test_relic_crafting;
+        mod test_research_restrictions;
+    }
+}

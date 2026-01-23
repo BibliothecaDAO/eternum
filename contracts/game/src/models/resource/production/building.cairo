@@ -196,9 +196,11 @@ pub enum BuildingCategory {
     ResourceWheat,
     ResourceFish,
     ResourceEssence,
+    // Artificer produces Research (realm-only, active conversion)
+    Artificer,
 }
 
-const LAST_RESOURCE_BUILDING: u8 = 39;
+const LAST_RESOURCE_BUILDING: u8 = 40;
 pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     fn into(self: BuildingCategory) -> felt252 {
         match self {
@@ -243,7 +245,8 @@ pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::ResourcePaladinT3 => 36,
             BuildingCategory::ResourceWheat => 37,
             BuildingCategory::ResourceFish => 38,
-            BuildingCategory::ResourceEssence => LAST_RESOURCE_BUILDING.into(),
+            BuildingCategory::ResourceEssence => 39,
+            BuildingCategory::Artificer => LAST_RESOURCE_BUILDING.into(),
         }
     }
 }
@@ -301,6 +304,7 @@ pub impl BuildingCategoryFromU8 of Into<u8, BuildingCategory> {
             37 => BuildingCategory::ResourceWheat,
             38 => BuildingCategory::ResourceFish,
             39 => BuildingCategory::ResourceEssence,
+            40 => BuildingCategory::Artificer,
             _ => BuildingCategory::None,
         }
     }
@@ -374,7 +378,12 @@ pub impl BuildingPerksImpl of BuildingPerksTrait {
 #[generate_trait]
 pub impl BuildingProductionImpl of BuildingProductionTrait {
     fn is_resource_producer(self: Building) -> bool {
-        self.produced_resource().is_non_zero()
+        let category: BuildingCategory = self.category.into();
+        match category {
+            // Artificer produces Research via active conversion, not passive production
+            BuildingCategory::Artificer => false,
+            _ => self.produced_resource().is_non_zero(),
+        }
     }
 
     fn allowed_for_all_realms_and_villages(self: Building) -> bool {
@@ -420,7 +429,19 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::ResourceWheat => true,
             BuildingCategory::ResourceFish => true,
             BuildingCategory::ResourceEssence => true,
+            // Artificer is realm-only (not allowed for villages)
+            BuildingCategory::Artificer => false,
             //  NEVER ALLOW LORDS TO BE BUILT
+        }
+    }
+
+    /// Check if a building category is restricted to realms only (not villages)
+    fn is_realm_only(self: Building) -> bool {
+        let category: BuildingCategory = self.category.into();
+        match category {
+            // Artificer is the only realm-only building currently
+            BuildingCategory::Artificer => true,
+            _ => false,
         }
     }
 
@@ -467,6 +488,8 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::ResourceWheat => ResourceTypes::WHEAT,
             BuildingCategory::ResourceFish => ResourceTypes::FISH,
             BuildingCategory::ResourceEssence => ResourceTypes::ESSENCE,
+            // Artificer produces Research via active conversion (not passive production)
+            BuildingCategory::Artificer => ResourceTypes::RESEARCH,
             //  NEVER ALLOW LORDS TO BE BUILT
         }
     }

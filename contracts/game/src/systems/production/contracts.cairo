@@ -4,7 +4,7 @@ use crate::models::resource::production::building::BuildingCategory;
 use crate::models::resource::production::production::ProductionStrategyImpl;
 
 #[starknet::interface]
-trait IProductionContract<TContractState> {
+pub trait IProductionContract<TContractState> {
     /// Create and Destroy Buildings
     fn create_building(
         ref self: TContractState,
@@ -109,8 +109,15 @@ mod production_systems {
                 building_coord,
             );
 
+            // ensure realm-only buildings are only built on realms
+            if building.is_realm_only() {
+                assert!(
+                    structure_base.category == StructureCategory::Realm.into(), "building is realm-only",
+                );
+            }
+
             // ensure that the structure produces the resource
-            if !building.allowed_for_all_realms_and_villages() {
+            if !building.allowed_for_all_realms_and_villages() && !building.is_realm_only() {
                 let building_produces_resource: u8 = building.produced_resource();
                 let structure_resources_packed: u128 = StructureResourcesPackedStoreImpl::retrieve(
                     ref world, structure_id,

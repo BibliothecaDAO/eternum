@@ -26,7 +26,7 @@ pub mod trade_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::DEFAULT_NS;
+    use crate::constants::{DEFAULT_NS, is_resource_tradable};
     use crate::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::resource::arrivals::ResourceArrivalImpl;
@@ -117,6 +117,10 @@ pub mod trade_systems {
 
             // ensure maker resource is not taker resource
             assert!(maker_gives_resource_type != taker_pays_resource_type, "maker resource is taker resource");
+
+            // ensure resources are tradable (e.g., RESEARCH cannot be traded)
+            assert!(is_resource_tradable(maker_gives_resource_type), "Resource not tradable");
+            assert!(is_resource_tradable(taker_pays_resource_type), "Resource not tradable");
 
             // ensure amounts are valid
             assert!(maker_gives_resource_type.is_non_zero(), "maker gives resource type is 0");

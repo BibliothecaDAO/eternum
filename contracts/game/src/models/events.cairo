@@ -51,6 +51,8 @@ pub enum Story {
     // Prize Distribution
     PrizeDistributionFinalStory: PrizeDistributionFinalStory,
     PrizeDistributedStory: PrizeDistributedStory,
+    // Artificer
+    RelicCraftedStory: RelicCraftedStory,
 }
 
 ///////////////////////////////////////////////
@@ -327,4 +329,17 @@ pub struct PrizeDistributedStory {
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct PrizeDistributionFinalStory {
     pub trial_id: u128,
+}
+
+///////////////////////////////////////////////
+///  Artificer - Relic Crafting
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct RelicCraftedStory {
+    /// The resource ID of the crafted relic (39-56 range)
+    pub relic_id: u8,
+    /// Amount of Research burned for crafting
+    pub research_cost: u128,
 }

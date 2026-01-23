@@ -1,4 +1,5 @@
 pub mod agent;
+pub mod artificer;
 pub mod config;
 pub mod events;
 pub mod guild;
