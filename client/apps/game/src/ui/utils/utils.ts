@@ -168,9 +168,9 @@ export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortK
   };
 
   if (activeSort.sort !== "none") {
-    return items.sort((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
+    return items.toSorted((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
   } else {
-    return items.sort((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
+    return items.toSorted((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
   }
 }
 

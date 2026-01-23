@@ -188,7 +188,7 @@ export const TokenCard = ({
             <div className="flex flex-wrap gap-2 mt-2">
               {attributes
                 ?.filter((attribute) => attribute.trait_type === "Resource")
-                .sort((a, b) => {
+                .toSorted((a, b) => {
                   const aWithoutSpace = a.value.toString().replace(/\s/g, "");
                   const bWithoutSpace = b.value.toString().replace(/\s/g, "");
                   const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];

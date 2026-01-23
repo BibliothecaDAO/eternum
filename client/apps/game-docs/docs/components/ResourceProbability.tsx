@@ -159,7 +159,7 @@ const componentStyles = {
 
 const ResourceProbability = () => {
   // Sort resources by probability (highest to lowest)
-  const sortedResources = [...resourceProbabilities].sort((a, b) => b.probability - a.probability);
+  const sortedResources = resourceProbabilities.toSorted((a, b) => b.probability - a.probability);
 
   // Get bar color based on rarity - using more distinct gold/metallic tones
   const getTierColor = (rarityTier: string) => {

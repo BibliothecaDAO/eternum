@@ -447,7 +447,7 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
       { label: "Game starts", value: status.gameStartAt },
       { label: "Game ends", value: status.gameEndAt },
     ];
-    return items.filter((item) => typeof item.value === "number").sort((a, b) => a.value! - b.value!);
+    return items.filter((item) => typeof item.value === "number").toSorted((a, b) => a.value! - b.value!);
   }, [status.gameEndAt, status.gameStartAt, status.registrationEndAt, status.registrationStartAt]);
 
   const countdownData = useMemo((): { label: string; target?: number } => {

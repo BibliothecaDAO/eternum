@@ -141,8 +141,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
 
     return markets
       .filter(Boolean)
-      .slice()
-      .sort((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
+      .toSorted((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
   }, [markets]);
 
   // Calculate pagination info

@@ -96,15 +96,15 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
     }
 
     // Sort each category
-    upcoming.sort((a, b) => (a.startMainAt ?? Infinity) - (b.startMainAt ?? Infinity));
-    ongoing.sort((a, b) => {
+    const sortedUpcoming = upcoming.toSorted((a, b) => (a.startMainAt ?? Infinity) - (b.startMainAt ?? Infinity));
+    const sortedOngoing = ongoing.toSorted((a, b) => {
       const aEnd = a.endAt && a.endAt > nowSec ? a.endAt : Infinity;
       const bEnd = b.endAt && b.endAt > nowSec ? b.endAt : Infinity;
       return aEnd - bEnd;
     });
-    ended.sort((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0));
+    const sortedEnded = ended.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0));
 
-    return { ongoing, upcoming, ended, offline };
+    return { ongoing: sortedOngoing, upcoming: sortedUpcoming, ended: sortedEnded, offline };
   };
 
   const { ongoing, upcoming, ended } = categorizeGames();

@@ -454,7 +454,7 @@ export class ThunderBoltManager {
       currentLayer = nextLayer;
     }
 
-    const shuffled = positions.sort(() => Math.random() - 0.5);
+    const shuffled = positions.toSorted(() => Math.random() - 0.5);
     return shuffled.slice(0, Math.min(count, shuffled.length));
   }
 

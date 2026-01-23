@@ -771,7 +771,7 @@ const groupEventsByDate = (events: ProcessedStoryEvent[]) => {
   });
 
   Array.from(bucket.entries())
-    .sort((a, b) => Number(b[0]) - Number(a[0]))
+    .toSorted((a, b) => Number(b[0]) - Number(a[0]))
     .forEach(([key, dayEvents]) => {
       groups.push({
         dateKey: key,
@@ -858,10 +858,9 @@ export const StoryEventsChronicles: React.FC = () => {
   );
 
   const sortedEvents = useMemo(() => {
-    const copy = [...allEvents];
-    copy.sort((a, b) => b.timestampMs - a.timestampMs);
-    if (filterState.sortOrder === "oldest") copy.reverse();
-    return copy;
+    const sorted = allEvents.toSorted((a, b) => b.timestampMs - a.timestampMs);
+    if (filterState.sortOrder === "oldest") return sorted.toReversed();
+    return sorted;
   }, [allEvents, filterState.sortOrder]);
 
   const storyCounts = useMemo(() => {

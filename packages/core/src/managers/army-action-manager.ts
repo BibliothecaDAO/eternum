@@ -216,8 +216,10 @@ export class ArmyActionManager {
     }
 
     while (priorityQueue.length > 0) {
-      priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed);
-      const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
+      const sortedQueue = priorityQueue.toSorted((a, b) => a.staminaUsed - b.staminaUsed);
+      priorityQueue.length = 0;
+      priorityQueue.push(...sortedQueue.slice(1));
+      const { position: current, staminaUsed, distance, path } = sortedQueue[0];
       const currentKey = ActionPaths.posKey(current);
 
       if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {

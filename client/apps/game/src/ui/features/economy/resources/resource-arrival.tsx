@@ -23,7 +23,7 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
     () =>
       arrivals
         .filter((arrival) => arrival.resources.some(Boolean))
-        .sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
+        .toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
     [arrivals],
   );
 

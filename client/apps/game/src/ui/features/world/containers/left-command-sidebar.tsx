@@ -310,7 +310,7 @@ const LeftPanelHeader = memo(
         currentTab?.categories?.length === 0
           ? structuresWithMetadata
           : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-      return [...filtered].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
+      return filtered.toSorted((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
     }, [activeTab, structureTabs, structuresWithMetadata]);
 
     const categoryCounts = useMemo(() => {

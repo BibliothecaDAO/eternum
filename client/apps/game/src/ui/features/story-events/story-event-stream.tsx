@@ -207,7 +207,7 @@ export function StoryEventStream() {
     const deduped: ProcessedStoryEvent[] = [];
     const sorted = storyEventLog
       .filter((event) => event.story === "BattleStory" && event.timestampMs >= now - 20_000)
-      .sort((a, b) => b.timestampMs - a.timestampMs);
+      .toSorted((a, b) => b.timestampMs - a.timestampMs);
     for (const event of sorted) {
       const key = event.tx_hash ?? event.id;
       if (key && seenKeys.has(key)) {

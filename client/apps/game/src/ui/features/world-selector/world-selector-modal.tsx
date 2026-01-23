@@ -723,10 +723,10 @@ export const WorldSelectorModal = ({
                       const online = factoryGames.filter((fg) => fg.status === "ok");
                       const upcoming = online
                         .filter((fg) => isUpcoming(fg.startMainAt))
-                        .sort((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
+                        .toSorted((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
                       const ongoing = online
                         .filter((fg) => isOngoing(fg.startMainAt, fg.endAt))
-                        .sort((a, b) => {
+                        .toSorted((a, b) => {
                           // Infinite games (endAt === 0 or null) should be sorted by start time
                           if ((a.endAt === 0 || a.endAt == null) && (b.endAt === 0 || b.endAt == null)) {
                             return (a.startMainAt as number) - (b.startMainAt as number);
@@ -738,10 +738,10 @@ export const WorldSelectorModal = ({
                         });
                       const ended = online
                         .filter((fg) => isEnded(fg.startMainAt, fg.endAt))
-                        .sort((a, b) => (b.endAt as number) - (a.endAt as number));
+                        .toSorted((a, b) => (b.endAt as number) - (a.endAt as number));
                       const unknown = online
                         .filter((fg) => fg.startMainAt == null)
-                        .sort((a, b) => a.name.localeCompare(b.name));
+                        .toSorted((a, b) => a.name.localeCompare(b.name));
 
                       return (
                         <>

@@ -79,7 +79,7 @@ export const useMarket = (marketId: bigint): UseMarketResult => {
           index: Number(n.index),
           value: BigInt(n.value),
         }))
-        .sort((a, b) => a.index - b.index);
+        .toSorted((a, b) => a.index - b.index);
 
       setVaultNumerators(numerators as VaultNumerator[]);
 

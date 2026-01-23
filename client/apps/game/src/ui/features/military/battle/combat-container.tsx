@@ -134,7 +134,7 @@ export const CombatContainer = ({
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
     return structure
       ? getGuardsByStructure(structure)
-          .sort((a, b) => a.slot - b.slot)
+          .toSorted((a, b) => a.slot - b.slot)
           .filter((guard) => guard.troops.count > 0n)
       : [];
   }, [attackerType, attackerEntityId, Structure]);
@@ -533,7 +533,7 @@ export const CombatContainer = ({
         <h2 className="text-lg font-semibold text-gold mb-3">Select Attacking Troops</h2>
         <div className="flex flex-wrap gap-2 sm:gap-3" role="group" aria-label="Select troop to attack with">
           {structureGuards
-            .sort((a, b) => b.slot - a.slot)
+            .toSorted((a, b) => b.slot - a.slot)
             .map((guard) => (
               <button
                 key={guard.slot}

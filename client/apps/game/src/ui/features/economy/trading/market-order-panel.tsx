@@ -89,13 +89,13 @@ export const MarketOrderPanel = memo(
     const selectedResourceBidOffers = useMemo(() => {
       return resourceBidOffers
         .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
-        .sort((a, b) => b.ratio - a.ratio);
+        .toSorted((a, b) => b.ratio - a.ratio);
     }, [resourceBidOffers, resourceId]);
 
     const selectedResourceAskOffers = useMemo(() => {
       return resourceAskOffers
         .filter((offer) => offer.takerGets[0].resourceId === resourceId)
-        .sort((a, b) => b.ratio - a.ratio);
+        .toSorted((a, b) => b.ratio - a.ratio);
     }, [resourceAskOffers, resourceId]);
 
     return (

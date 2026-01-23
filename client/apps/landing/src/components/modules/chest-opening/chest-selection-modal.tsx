@@ -300,7 +300,7 @@ export function ChestSelectionModal({
     // Convert Sets to sorted arrays
     const result: Record<string, string[]> = {};
     Object.entries(traits).forEach(([traitType, values]) => {
-      result[traitType] = Array.from(values).sort((a, b) => {
+      result[traitType] = Array.from(values).toSorted((a, b) => {
         // Try numeric sort first
         const numA = Number(a);
         const numB = Number(b);
@@ -315,7 +315,7 @@ export function ChestSelectionModal({
   }, [chests]);
 
   // Get list of trait types
-  const traitTypes = useMemo(() => Object.keys(traitOptions).sort(), [traitOptions]);
+  const traitTypes = useMemo(() => Object.keys(traitOptions).toSorted(), [traitOptions]);
 
   // Filter and sort chests
   const filteredAndSortedChests = useMemo(() => {
@@ -332,7 +332,7 @@ export function ChestSelectionModal({
     });
 
     // Apply sorting
-    result.sort((a, b) => {
+    const sorted = result.toSorted((a, b) => {
       if (sortMode === "id-asc") {
         return Number(a.token_id) - Number(b.token_id);
       } else {
@@ -340,7 +340,7 @@ export function ChestSelectionModal({
       }
     });
 
-    return result;
+    return sorted;
   }, [chests, filters, sortMode]);
 
   // Count active filters
