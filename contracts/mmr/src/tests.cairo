@@ -1,21 +1,26 @@
 // MMR Token Contract Tests
 //
 // Tests for the soul-bound MMR token contract using snforge.
-
-use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, spy_events, start_cheat_caller_address,
-    stop_cheat_caller_address,
-};
-use starknet::ContractAddress;
+// Token uses 18 decimals. balance_of returns INITIAL_MMR for uninitialized players,
+// update_mmr auto-initializes and enforces floor.
 
 use mmr::contract::{
-    GAME_ROLE, IERC20BalanceDispatcher, IERC20BalanceDispatcherTrait, IMMRTokenDispatcher, IMMRTokenDispatcherTrait,
-    INITIAL_MMR, MIN_MMR, MMR_PRECISION, UPGRADER_ROLE,
+    IERC20ViewDispatcher, IERC20ViewDispatcherTrait, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, INITIAL_MMR,
+    MIN_MMR,
 };
+use snforge_std::{ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address};
+use starknet::ContractAddress;
 
 // ================================
 // TEST HELPERS
 // ================================
+
+// Helper to scale MMR values to 18 decimals
+const PRECISION: u256 = 1_000000000000000000; // 1e18
+
+fn e18(val: u256) -> u256 {
+    val * PRECISION
+}
 
 fn ADMIN() -> ContractAddress {
     'admin'.try_into().unwrap()
@@ -48,85 +53,35 @@ fn deploy_mmr_token() -> ContractAddress {
     contract_address
 }
 
-fn setup() -> (IMMRTokenDispatcher, IERC20BalanceDispatcher, ContractAddress) {
+fn setup() -> (IMMRTokenDispatcher, IERC20ViewDispatcher, ContractAddress) {
     let contract_address = deploy_mmr_token();
     let mmr = IMMRTokenDispatcher { contract_address };
-    let erc20 = IERC20BalanceDispatcher { contract_address };
+    let erc20 = IERC20ViewDispatcher { contract_address };
     (mmr, erc20, contract_address)
 }
 
 // ================================
-// INITIALIZATION TESTS
+// BALANCE_OF TESTS
 // ================================
 
 #[test]
-fn test_initialize_player() {
-    let (mmr, erc20, contract_address) = setup();
-
-    // Initially player should not have MMR
-    assert!(!mmr.has_mmr(PLAYER1()), "Player should not have MMR yet");
-    assert!(erc20.balance_of(PLAYER1()) == 0, "Balance should be 0");
-
-    // Initialize player (must be called by GAME)
-    start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-    stop_cheat_caller_address(contract_address);
-
-    // Now player should have MMR
-    assert!(mmr.has_mmr(PLAYER1()), "Player should have MMR");
-    assert!(mmr.get_mmr(PLAYER1()) == 1000, "MMR should be 1000");
-    assert!(erc20.balance_of(PLAYER1()) == INITIAL_MMR, "Balance should match initial");
-}
-
-#[test]
-fn test_initialize_player_idempotent() {
-    let (mmr, erc20, contract_address) = setup();
-
-    start_cheat_caller_address(contract_address, GAME());
-
-    // Initialize twice
-    mmr.initialize_player(PLAYER1());
-    mmr.initialize_player(PLAYER1());
-
-    stop_cheat_caller_address(contract_address);
-
-    // Should still have same MMR (not doubled)
-    assert!(mmr.get_mmr(PLAYER1()) == 1000, "MMR should be 1000, not doubled");
-    assert!(erc20.balance_of(PLAYER1()) == INITIAL_MMR, "Balance should not double");
-}
-
-#[test]
-#[should_panic(expected: ('Caller is missing role',))]
-fn test_initialize_player_unauthorized() {
-    let (mmr, _, contract_address) = setup();
-
-    // Try to initialize without GAME role
-    start_cheat_caller_address(contract_address, PLAYER1());
-    mmr.initialize_player(PLAYER2());
-    stop_cheat_caller_address(contract_address);
-}
-
-// ================================
-// GET MMR TESTS
-// ================================
-
-#[test]
-fn test_get_mmr_uninitialized() {
+fn test_balance_of_uninitialized_returns_initial_mmr() {
     let (mmr, _, _) = setup();
 
-    // Uninitialized player should have 0 MMR
-    assert!(mmr.get_mmr(PLAYER1()) == 0, "Uninitialized should have 0 MMR");
+    // Uninitialized player should get INITIAL_MMR from balance_of
+    assert!(mmr.balance_of(PLAYER1()) == INITIAL_MMR, "Uninitialized should return INITIAL_MMR");
+    assert!(mmr.balance_of(PLAYER1()) == e18(1000), "Should be 1000e18");
 }
 
 #[test]
-fn test_get_mmr_after_init() {
+fn test_balance_of_after_update() {
     let (mmr, _, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
+    mmr.update_mmr(PLAYER1(), e18(1500));
     stop_cheat_caller_address(contract_address);
 
-    assert!(mmr.get_mmr(PLAYER1()) == 1000, "Should have initial 1000 MMR");
+    assert!(mmr.balance_of(PLAYER1()) == e18(1500), "Should have 1500e18 MMR");
 }
 
 // ================================
@@ -134,49 +89,57 @@ fn test_get_mmr_after_init() {
 // ================================
 
 #[test]
-fn test_update_mmr_increase() {
-    let (mmr, erc20, contract_address) = setup();
+fn test_update_mmr_auto_initializes() {
+    let (mmr, _, contract_address) = setup();
+
+    // Player not yet updated - balance_of returns INITIAL_MMR
+    assert!(mmr.balance_of(PLAYER1()) == INITIAL_MMR, "Should return initial");
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-
-    // Increase MMR to 1500
-    mmr.update_mmr(PLAYER1(), 1500);
+    // First update auto-initializes
+    mmr.update_mmr(PLAYER1(), e18(1200));
     stop_cheat_caller_address(contract_address);
 
-    assert!(mmr.get_mmr(PLAYER1()) == 1500, "MMR should be 1500");
-    assert!(erc20.balance_of(PLAYER1()) == 1500 * MMR_PRECISION, "Balance should match");
+    assert!(mmr.balance_of(PLAYER1()) == e18(1200), "Should have 1200e18 MMR");
+}
+
+#[test]
+fn test_update_mmr_increase() {
+    let (mmr, _, contract_address) = setup();
+
+    start_cheat_caller_address(contract_address, GAME());
+    // Initialize with 1000e18, then increase to 1500e18
+    mmr.update_mmr(PLAYER1(), e18(1000));
+    mmr.update_mmr(PLAYER1(), e18(1500));
+    stop_cheat_caller_address(contract_address);
+
+    assert!(mmr.balance_of(PLAYER1()) == e18(1500), "MMR should be 1500e18");
 }
 
 #[test]
 fn test_update_mmr_decrease() {
-    let (mmr, erc20, contract_address) = setup();
+    let (mmr, _, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-
-    // Decrease MMR to 800
-    mmr.update_mmr(PLAYER1(), 800);
+    mmr.update_mmr(PLAYER1(), e18(1000));
+    mmr.update_mmr(PLAYER1(), e18(800));
     stop_cheat_caller_address(contract_address);
 
-    assert!(mmr.get_mmr(PLAYER1()) == 800, "MMR should be 800");
-    assert!(erc20.balance_of(PLAYER1()) == 800 * MMR_PRECISION, "Balance should match");
+    assert!(mmr.balance_of(PLAYER1()) == e18(800), "MMR should be 800e18");
 }
 
 #[test]
 fn test_update_mmr_floor_enforced() {
-    let (mmr, erc20, contract_address) = setup();
+    let (mmr, _, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-
-    // Try to set below floor (50)
-    mmr.update_mmr(PLAYER1(), 50);
+    // Try to set below floor (50e18)
+    mmr.update_mmr(PLAYER1(), e18(50));
     stop_cheat_caller_address(contract_address);
 
-    // Should be clamped to MIN_MMR (100)
-    assert!(mmr.get_mmr(PLAYER1()) == 100, "MMR should be floor (100)");
-    assert!(erc20.balance_of(PLAYER1()) == MIN_MMR, "Balance should be MIN_MMR");
+    // Should be clamped to MIN_MMR (100e18)
+    assert!(mmr.balance_of(PLAYER1()) == MIN_MMR, "MMR should be floor (100e18)");
+    assert!(mmr.balance_of(PLAYER1()) == e18(100), "Should be 100e18");
 }
 
 #[test]
@@ -184,41 +147,28 @@ fn test_update_mmr_zero_to_floor() {
     let (mmr, _, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-
     // Try to set to 0
     mmr.update_mmr(PLAYER1(), 0);
     stop_cheat_caller_address(contract_address);
 
-    // Should be clamped to MIN_MMR (100)
-    assert!(mmr.get_mmr(PLAYER1()) == 100, "MMR should be floor (100)");
+    // Should be clamped to MIN_MMR (100e18)
+    assert!(mmr.balance_of(PLAYER1()) == MIN_MMR, "MMR should be floor (100e18)");
 }
 
 #[test]
 fn test_update_mmr_no_change() {
-    let (mmr, erc20, contract_address) = setup();
-
-    start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-
-    let balance_before = erc20.balance_of(PLAYER1());
-
-    // Update to same value
-    mmr.update_mmr(PLAYER1(), 1000);
-    stop_cheat_caller_address(contract_address);
-
-    assert!(erc20.balance_of(PLAYER1()) == balance_before, "Balance should not change");
-}
-
-#[test]
-#[should_panic(expected: ('MMRToken: Player not initialized',))]
-fn test_update_mmr_uninitialized() {
     let (mmr, _, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    // Try to update without initializing first
-    mmr.update_mmr(PLAYER1(), 1500);
+    mmr.update_mmr(PLAYER1(), e18(1000));
+
+    let balance_before = mmr.balance_of(PLAYER1());
+
+    // Update to same value
+    mmr.update_mmr(PLAYER1(), e18(1000));
     stop_cheat_caller_address(contract_address);
+
+    assert!(mmr.balance_of(PLAYER1()) == balance_before, "Balance should not change");
 }
 
 #[test]
@@ -226,13 +176,9 @@ fn test_update_mmr_uninitialized() {
 fn test_update_mmr_unauthorized() {
     let (mmr, _, contract_address) = setup();
 
-    start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-    stop_cheat_caller_address(contract_address);
-
     // Try to update without GAME role
     start_cheat_caller_address(contract_address, PLAYER2());
-    mmr.update_mmr(PLAYER1(), 1500);
+    mmr.update_mmr(PLAYER1(), e18(1500));
     stop_cheat_caller_address(contract_address);
 }
 
@@ -245,16 +191,17 @@ fn test_update_mmr_batch() {
     let (mmr, _, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-    mmr.initialize_player(PLAYER2());
+    // Initialize players first
+    mmr.update_mmr(PLAYER1(), e18(1000));
+    mmr.update_mmr(PLAYER2(), e18(1000));
 
     // Batch update
-    let updates = array![(PLAYER1(), 1200), (PLAYER2(), 800)];
+    let updates = array![(PLAYER1(), e18(1200)), (PLAYER2(), e18(800))];
     mmr.update_mmr_batch(updates);
     stop_cheat_caller_address(contract_address);
 
-    assert!(mmr.get_mmr(PLAYER1()) == 1200, "Player1 should have 1200 MMR");
-    assert!(mmr.get_mmr(PLAYER2()) == 800, "Player2 should have 800 MMR");
+    assert!(mmr.balance_of(PLAYER1()) == e18(1200), "Player1 should have 1200e18 MMR");
+    assert!(mmr.balance_of(PLAYER2()) == e18(800), "Player2 should have 800e18 MMR");
 }
 
 #[test]
@@ -264,15 +211,13 @@ fn test_update_mmr_batch_auto_initialize() {
     start_cheat_caller_address(contract_address, GAME());
 
     // Batch update with uninitialized players - should auto-initialize
-    let updates = array![(PLAYER1(), 1200), (PLAYER2(), 800)];
+    let updates = array![(PLAYER1(), e18(1200)), (PLAYER2(), e18(800))];
     mmr.update_mmr_batch(updates);
     stop_cheat_caller_address(contract_address);
 
-    // Both players should be initialized and have correct MMR
-    assert!(mmr.has_mmr(PLAYER1()), "Player1 should be initialized");
-    assert!(mmr.has_mmr(PLAYER2()), "Player2 should be initialized");
-    assert!(mmr.get_mmr(PLAYER1()) == 1200, "Player1 should have 1200 MMR");
-    assert!(mmr.get_mmr(PLAYER2()) == 800, "Player2 should have 800 MMR");
+    // Both players should have correct MMR
+    assert!(mmr.balance_of(PLAYER1()) == e18(1200), "Player1 should have 1200e18 MMR");
+    assert!(mmr.balance_of(PLAYER2()) == e18(800), "Player2 should have 800e18 MMR");
 }
 
 #[test]
@@ -282,12 +227,12 @@ fn test_update_mmr_batch_floor_enforced() {
     start_cheat_caller_address(contract_address, GAME());
 
     // Batch update with one below floor
-    let updates = array![(PLAYER1(), 50), (PLAYER2(), 1500)];
+    let updates = array![(PLAYER1(), e18(50)), (PLAYER2(), e18(1500))];
     mmr.update_mmr_batch(updates);
     stop_cheat_caller_address(contract_address);
 
-    assert!(mmr.get_mmr(PLAYER1()) == 100, "Player1 should be at floor");
-    assert!(mmr.get_mmr(PLAYER2()) == 1500, "Player2 should have 1500");
+    assert!(mmr.balance_of(PLAYER1()) == MIN_MMR, "Player1 should be at floor");
+    assert!(mmr.balance_of(PLAYER2()) == e18(1500), "Player2 should have 1500e18");
 }
 
 #[test]
@@ -308,7 +253,7 @@ fn test_update_mmr_batch_unauthorized() {
     let (mmr, _, contract_address) = setup();
 
     // Try batch update without GAME role
-    let updates = array![(PLAYER1(), 1200)];
+    let updates = array![(PLAYER1(), e18(1200))];
 
     start_cheat_caller_address(contract_address, PLAYER2());
     mmr.update_mmr_batch(updates);
@@ -316,32 +261,32 @@ fn test_update_mmr_batch_unauthorized() {
 }
 
 // ================================
-// ERC20 BALANCE TESTS
+// TOTAL SUPPLY TESTS
 // ================================
 
 #[test]
-fn test_balance_of() {
+fn test_total_supply_after_first_update() {
     let (mmr, erc20, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
+    mmr.update_mmr(PLAYER1(), e18(1000));
     stop_cheat_caller_address(contract_address);
 
-    // Balance should be in wei (18 decimals)
-    assert!(erc20.balance_of(PLAYER1()) == INITIAL_MMR, "Balance should be 1000e18");
+    // Total supply should reflect the stored value
+    assert!(erc20.total_supply() == e18(1000), "Total supply should be 1000e18");
 }
 
 #[test]
-fn test_total_supply() {
+fn test_total_supply_multiple_players() {
     let (mmr, erc20, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-    mmr.initialize_player(PLAYER2());
+    mmr.update_mmr(PLAYER1(), e18(1000));
+    mmr.update_mmr(PLAYER2(), e18(1000));
     stop_cheat_caller_address(contract_address);
 
     // Total supply should be sum of all balances
-    assert!(erc20.total_supply() == 2 * INITIAL_MMR, "Total supply should be 2000e18");
+    assert!(erc20.total_supply() == e18(2000), "Total supply should be 2000e18");
 }
 
 #[test]
@@ -349,16 +294,29 @@ fn test_total_supply_after_updates() {
     let (mmr, erc20, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-    mmr.initialize_player(PLAYER2());
+    mmr.update_mmr(PLAYER1(), e18(1000));
+    mmr.update_mmr(PLAYER2(), e18(1000));
 
     // Update one up, one down
-    mmr.update_mmr(PLAYER1(), 1200); // +200
-    mmr.update_mmr(PLAYER2(), 800); // -200
+    mmr.update_mmr(PLAYER1(), e18(1200)); // +200e18
+    mmr.update_mmr(PLAYER2(), e18(800)); // -200e18
     stop_cheat_caller_address(contract_address);
 
     // Total supply should remain the same
-    assert!(erc20.total_supply() == 2 * INITIAL_MMR, "Total supply should be unchanged");
+    assert!(erc20.total_supply() == e18(2000), "Total supply should be unchanged");
+}
+
+// ================================
+// ERC20 VIEW TESTS
+// ================================
+
+#[test]
+fn test_erc20_metadata() {
+    let (_, erc20, _) = setup();
+
+    assert!(erc20.name() == "Blitz MMR", "Name should be Blitz MMR");
+    assert!(erc20.symbol() == "MMR", "Symbol should be MMR");
+    assert!(erc20.decimals() == 18, "Decimals should be 18");
 }
 
 // ================================
@@ -379,23 +337,23 @@ fn test_six_player_game_simulation() {
 
     start_cheat_caller_address(contract_address, GAME());
 
-    // Batch initialize and update in one call (simulating game end)
+    // Batch update in one call (simulating game end)
     let updates = array![
-        (p1, 1025), // Winner gains
-        (p2, 1010),
-        (p3, 1000), // Middle stays same
-        (p4, 990),
-        (p5, 975),
-        (p6, 950), // Loser loses most
+        (p1, e18(1025)), // Winner gains
+        (p2, e18(1010)), (p3, e18(1000)), // Middle stays same
+        (p4, e18(990)),
+        (p5, e18(975)), (p6, e18(950)) // Loser loses most
     ];
     mmr.update_mmr_batch(updates);
     stop_cheat_caller_address(contract_address);
 
-    // Verify all players initialized and have correct MMR
-    assert!(mmr.has_mmr(p1), "P1 should have MMR");
-    assert!(mmr.has_mmr(p6), "P6 should have MMR");
-    assert!(mmr.get_mmr(p1) == 1025, "P1 should have 1025");
-    assert!(mmr.get_mmr(p6) == 950, "P6 should have 950");
+    // Verify all players have correct MMR
+    assert!(mmr.balance_of(p1) == e18(1025), "P1 should have 1025e18");
+    assert!(mmr.balance_of(p2) == e18(1010), "P2 should have 1010e18");
+    assert!(mmr.balance_of(p3) == e18(1000), "P3 should have 1000e18");
+    assert!(mmr.balance_of(p4) == e18(990), "P4 should have 990e18");
+    assert!(mmr.balance_of(p5) == e18(975), "P5 should have 975e18");
+    assert!(mmr.balance_of(p6) == e18(950), "P6 should have 950e18");
 }
 
 #[test]
@@ -405,19 +363,17 @@ fn test_multiple_games_same_players() {
     start_cheat_caller_address(contract_address, GAME());
 
     // Game 1
-    mmr.initialize_player(PLAYER1());
-    mmr.initialize_player(PLAYER2());
-    mmr.update_mmr(PLAYER1(), 1025);
-    mmr.update_mmr(PLAYER2(), 975);
+    mmr.update_mmr(PLAYER1(), e18(1025));
+    mmr.update_mmr(PLAYER2(), e18(975));
 
     // Game 2
-    mmr.update_mmr(PLAYER1(), 1000); // P1 loses, back to 1000
-    mmr.update_mmr(PLAYER2(), 1000); // P2 wins, back to 1000
+    mmr.update_mmr(PLAYER1(), e18(1000)); // P1 loses, back to 1000
+    mmr.update_mmr(PLAYER2(), e18(1000)); // P2 wins, back to 1000
 
     stop_cheat_caller_address(contract_address);
 
-    assert!(mmr.get_mmr(PLAYER1()) == 1000, "P1 should be at 1000");
-    assert!(mmr.get_mmr(PLAYER2()) == 1000, "P2 should be at 1000");
+    assert!(mmr.balance_of(PLAYER1()) == e18(1000), "P1 should be at 1000e18");
+    assert!(mmr.balance_of(PLAYER2()) == e18(1000), "P2 should be at 1000e18");
 }
 
 #[test]
@@ -425,13 +381,11 @@ fn test_large_mmr_values() {
     let (mmr, _, contract_address) = setup();
 
     start_cheat_caller_address(contract_address, GAME());
-    mmr.initialize_player(PLAYER1());
-
     // Set very high MMR
-    mmr.update_mmr(PLAYER1(), 5000);
+    mmr.update_mmr(PLAYER1(), e18(5000));
     stop_cheat_caller_address(contract_address);
 
-    assert!(mmr.get_mmr(PLAYER1()) == 5000, "Should handle large MMR");
+    assert!(mmr.balance_of(PLAYER1()) == e18(5000), "Should handle large MMR");
 }
 
 // ================================
@@ -440,8 +394,7 @@ fn test_large_mmr_values() {
 
 #[test]
 fn test_constants() {
-    // Verify constants are correct
+    // Verify constants are correct (with 18 decimal scaling)
     assert!(INITIAL_MMR == 1000_000000000000000000, "INITIAL_MMR should be 1000e18");
     assert!(MIN_MMR == 100_000000000000000000, "MIN_MMR should be 100e18");
-    assert!(MMR_PRECISION == 1_000000000000000000, "MMR_PRECISION should be 1e18");
 }
