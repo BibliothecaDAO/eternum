@@ -6,28 +6,22 @@
 // Key features:
 // - Non-transferable: All transfer functions revert (soul-bound)
 // - Only authorized game contracts can update MMR
-// - Balance represents MMR rating (18 decimals, 1000 MMR = 1000e18)
-// - Minimum MMR floor of 100 enforced on updates
+// - balance_of returns INITIAL_MMR for uninitialized players (balance == 0)
+// - Minimum MMR floor enforced on updates
 
 use starknet::ContractAddress;
 
 /// MMR-specific interface for the token
 #[starknet::interface]
 pub trait IMMRToken<TContractState> {
-    /// Get player's current MMR (returns raw balance / 1e18 for display)
-    fn get_mmr(self: @TContractState, player: ContractAddress) -> u256;
-
-    /// Check if player has been initialized with MMR
-    fn has_mmr(self: @TContractState, player: ContractAddress) -> bool;
-
-    /// Initialize a new player with starting MMR (1000)
-    /// Can only be called by authorized game contract
-    /// Does nothing if player already has MMR
-    fn initialize_player(ref self: TContractState, player: ContractAddress);
+    /// Get player's current MMR balance
+    /// Returns INITIAL_MMR if player has never been initialized (balance is 0)
+    fn balance_of(self: @TContractState, player: ContractAddress) -> u256;
 
     /// Update a player's MMR to a new value
     /// Can only be called by authorized game contract
-    /// Enforces minimum MMR floor of 100
+    /// Enforces minimum MMR floor
+    /// Auto-initializes if this is the player's first update
     fn update_mmr(ref self: TContractState, player: ContractAddress, new_mmr: u256);
 
     /// Batch update multiple players' MMR
@@ -36,60 +30,52 @@ pub trait IMMRToken<TContractState> {
 }
 
 /// Minimal ERC20 view interface (no transfers)
-/// Note: decimals() is provided by ERC20MetadataImpl
 #[starknet::interface]
-pub trait IERC20Balance<TContractState> {
-    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
+pub trait IERC20View<TContractState> {
     fn total_supply(self: @TContractState) -> u256;
+    fn name(self: @TContractState) -> ByteArray;
+    fn symbol(self: @TContractState) -> ByteArray;
+    fn decimals(self: @TContractState) -> u8;
 }
 
 // Role constants
 pub const GAME_ROLE: felt252 = selector!("GAME_ROLE");
 pub const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
 
-// MMR Constants (in wei, 18 decimals)
-pub const INITIAL_MMR: u256 = 1000_000000000000000000; // 1000 MMR
-pub const MIN_MMR: u256 = 100_000000000000000000; // 100 MMR (hard floor)
-pub const MMR_PRECISION: u256 = 1_000000000000000000; // 1e18
+// MMR Constants (with 18 decimals like standard ERC20)
+pub const INITIAL_MMR: u256 = 1000_000000000000000000; // 1000e18 - Starting MMR for new players
+pub const MIN_MMR: u256 = 100_000000000000000000; // 100e18 - Hard floor - MMR cannot go below this
 
 
 #[starknet::contract]
 pub mod MMRToken {
     use core::num::traits::Zero;
-    use openzeppelin::access::accesscontrol::AccessControlComponent;
-    use openzeppelin::access::accesscontrol::DEFAULT_ADMIN_ROLE;
+    use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin::token::erc20::ERC20Component;
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
-    use super::{GAME_ROLE, IERC20Balance, IMMRToken, INITIAL_MMR, MIN_MMR, MMR_PRECISION, UPGRADER_ROLE};
+    use super::{GAME_ROLE, IERC20View, IMMRToken, INITIAL_MMR, MIN_MMR, UPGRADER_ROLE};
 
-    component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
-
-    // ERC20 view functions only (no transfer functions exposed)
-    #[abi(embed_v0)]
-    impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
 
     // Access control
     #[abi(embed_v0)]
     impl AccessControlMixinImpl = AccessControlComponent::AccessControlMixinImpl<ContractState>;
 
     // Internal implementations
-    impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
-        /// Tracks which players have been initialized with MMR
-        initialized: Map<ContractAddress, bool>,
-        #[substorage(v0)]
-        erc20: ERC20Component::Storage,
+        /// MMR balances (0 means uninitialized, will return INITIAL_MMR)
+        balances: Map<ContractAddress, u256>,
+        /// Total supply tracking
+        total_supply: u256,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         #[substorage(v0)]
@@ -102,24 +88,12 @@ pub mod MMRToken {
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
-        ERC20Event: ERC20Component::Event,
-        #[flat]
         SRC5Event: SRC5Component::Event,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
-        MMRInitialized: MMRInitialized,
         MMRUpdated: MMRUpdated,
-    }
-
-    /// Emitted when a player is initialized with starting MMR
-    #[derive(Drop, starknet::Event)]
-    struct MMRInitialized {
-        #[key]
-        player: ContractAddress,
-        initial_mmr: u256,
-        timestamp: u64,
     }
 
     /// Emitted when a player's MMR is updated
@@ -132,40 +106,6 @@ pub mod MMRToken {
         timestamp: u64,
     }
 
-    /// Soul-bound implementation: Block ALL transfers
-    /// This hook is called before any token movement (transfer, mint, burn)
-    /// We allow mints (from = 0) and burns (to = 0) but block transfers
-    impl ERC20HooksImpl of ERC20Component::ERC20HooksTrait<ContractState> {
-        fn before_update(
-            ref self: ERC20Component::ComponentState<ContractState>,
-            from: ContractAddress,
-            recipient: ContractAddress,
-            amount: u256,
-        ) {
-            // Allow mints (from is zero address)
-            if Zero::is_zero(@from) {
-                return;
-            }
-
-            // Allow burns (recipient is zero address)
-            if Zero::is_zero(@recipient) {
-                return;
-            }
-
-            // Block all transfers between non-zero addresses
-            panic!("MMRToken: Soul-bound token cannot be transferred");
-        }
-
-        fn after_update(
-            ref self: ERC20Component::ComponentState<ContractState>,
-            from: ContractAddress,
-            recipient: ContractAddress,
-            amount: u256,
-        ) {
-            // No-op
-        }
-    }
-
     #[constructor]
     fn constructor(
         ref self: ContractState,
@@ -173,9 +113,6 @@ pub mod MMRToken {
         game_contract: ContractAddress,
         upgrader: ContractAddress,
     ) {
-        // Initialize ERC20 with name and symbol
-        self.erc20.initializer("Blitz MMR", "MMR");
-
         // Initialize access control
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, default_admin);
@@ -193,46 +130,30 @@ pub mod MMRToken {
 
     #[abi(embed_v0)]
     impl MMRTokenImpl of IMMRToken<ContractState> {
-        fn get_mmr(self: @ContractState, player: ContractAddress) -> u256 {
-            // Return balance divided by precision for human-readable MMR
-            // e.g., 1500e18 balance -> 1500 MMR
-            self._get_balance(player) / MMR_PRECISION
-        }
-
-        fn has_mmr(self: @ContractState, player: ContractAddress) -> bool {
-            self.initialized.entry(player).read()
-        }
-
-        fn initialize_player(ref self: ContractState, player: ContractAddress) {
-            // Only game contract can initialize players
-            self.accesscontrol.assert_only_role(GAME_ROLE);
-
-            // Skip if already initialized
-            if self.initialized.entry(player).read() {
-                return;
+        fn balance_of(self: @ContractState, player: ContractAddress) -> u256 {
+            let stored = self.balances.entry(player).read();
+            // Return INITIAL_MMR if player has never been set (stored is 0)
+            if stored.is_zero() {
+                INITIAL_MMR
+            } else {
+                stored
             }
-
-            // Mark as initialized
-            self.initialized.entry(player).write(true);
-
-            // Mint initial MMR tokens
-            self.erc20.mint(player, INITIAL_MMR);
-
-            // Emit event
-            self
-                .emit(
-                    MMRInitialized {
-                        player, initial_mmr: INITIAL_MMR, timestamp: starknet::get_block_timestamp(),
-                    },
-                );
         }
 
         fn update_mmr(ref self: ContractState, player: ContractAddress, new_mmr: u256) {
             // Only game contract can update MMR
             self.accesscontrol.assert_only_role(GAME_ROLE);
 
-            // Player must be initialized
-            assert!(self.initialized.entry(player).read(), "MMRToken: Player not initialized");
+            // Check if this is first time (before reading balance_of which returns INITIAL_MMR)
+            let stored_before = self.balances.entry(player).read();
+            let was_uninitialized = stored_before.is_zero();
+
+            // Get current MMR (returns INITIAL_MMR if uninitialized)
+            let old_mmr = if was_uninitialized {
+                INITIAL_MMR
+            } else {
+                stored_before
+            };
 
             // Enforce minimum MMR floor
             let final_mmr = if new_mmr < MIN_MMR {
@@ -241,32 +162,25 @@ pub mod MMRToken {
                 new_mmr
             };
 
-            // Get current balance
-            let current_balance = self._get_balance(player);
+            // Update balance
+            self.balances.entry(player).write(final_mmr);
 
-            // Convert MMR to token amount (multiply by precision)
-            let new_balance = final_mmr * MMR_PRECISION;
-
-            // Update balance via mint/burn
-            if new_balance > current_balance {
-                // Mint the difference
-                self.erc20.mint(player, new_balance - current_balance);
-            } else if new_balance < current_balance {
-                // Burn the difference
-                self.erc20.burn(player, current_balance - new_balance);
+            // Update total supply
+            let current_total = self.total_supply.read();
+            if was_uninitialized {
+                // First time being set - add full amount to total supply
+                self.total_supply.write(current_total + final_mmr);
+            } else {
+                // Already had balance - adjust total supply by delta
+                if final_mmr > old_mmr {
+                    self.total_supply.write(current_total + (final_mmr - old_mmr));
+                } else if final_mmr < old_mmr {
+                    self.total_supply.write(current_total - (old_mmr - final_mmr));
+                }
             }
-            // If equal, no change needed
 
             // Emit event
-            self
-                .emit(
-                    MMRUpdated {
-                        player,
-                        old_mmr: current_balance / MMR_PRECISION,
-                        new_mmr: final_mmr,
-                        timestamp: starknet::get_block_timestamp(),
-                    },
-                );
+            self.emit(MMRUpdated { player, old_mmr, new_mmr: final_mmr, timestamp: starknet::get_block_timestamp() });
         }
 
         fn update_mmr_batch(ref self: ContractState, updates: Array<(ContractAddress, u256)>) {
@@ -274,71 +188,57 @@ pub mod MMRToken {
             self.accesscontrol.assert_only_role(GAME_ROLE);
 
             for (player, new_mmr) in updates {
-                // Initialize if needed
-                if !self.initialized.entry(player).read() {
-                    self.initialized.entry(player).write(true);
-                    self.erc20.mint(player, INITIAL_MMR);
-                    self
-                        .emit(
-                            MMRInitialized {
-                                player,
-                                initial_mmr: INITIAL_MMR,
-                                timestamp: starknet::get_block_timestamp(),
-                            },
-                        );
-                }
-
-                // Update MMR
+                let old_mmr = self.balance_of(player);
                 let final_mmr = if new_mmr < MIN_MMR {
                     MIN_MMR
                 } else {
                     new_mmr
                 };
 
-                let current_balance = self._get_balance(player);
-                let new_balance = final_mmr * MMR_PRECISION;
+                // Track if this is first time
+                let stored_before = self.balances.entry(player).read();
+                let was_zero = stored_before.is_zero();
 
-                if new_balance > current_balance {
-                    self.erc20.mint(player, new_balance - current_balance);
-                } else if new_balance < current_balance {
-                    self.erc20.burn(player, current_balance - new_balance);
+                // Update balance
+                self.balances.entry(player).write(final_mmr);
+
+                // Update total supply
+                if was_zero {
+                    self.total_supply.write(self.total_supply.read() + final_mmr);
+                } else {
+                    let current_total = self.total_supply.read();
+                    if final_mmr > old_mmr {
+                        self.total_supply.write(current_total + (final_mmr - old_mmr));
+                    } else if final_mmr < old_mmr {
+                        self.total_supply.write(current_total - (old_mmr - final_mmr));
+                    }
                 }
 
                 self
                     .emit(
-                        MMRUpdated {
-                            player,
-                            old_mmr: current_balance / MMR_PRECISION,
-                            new_mmr: final_mmr,
-                            timestamp: starknet::get_block_timestamp(),
-                        },
+                        MMRUpdated { player, old_mmr, new_mmr: final_mmr, timestamp: starknet::get_block_timestamp() },
                     );
             }
         }
     }
 
-    /// Expose balance_of for ERC20 compatibility (returns raw balance with 18 decimals)
-    /// Note: decimals() and name()/symbol() are provided by ERC20MetadataImpl
+    /// ERC20-like view functions for compatibility
     #[abi(embed_v0)]
-    impl ERC20BalanceImpl of IERC20Balance<ContractState> {
-        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
-            self._get_balance(account)
-        }
-
+    impl ERC20ViewImpl of IERC20View<ContractState> {
         fn total_supply(self: @ContractState) -> u256 {
-            self._get_total_supply()
-        }
-    }
-
-    /// Internal helper functions
-    #[generate_trait]
-    impl InternalImpl of InternalTrait {
-        fn _get_balance(self: @ContractState, account: ContractAddress) -> u256 {
-            self.erc20.ERC20_balances.entry(account).read()
+            self.total_supply.read()
         }
 
-        fn _get_total_supply(self: @ContractState) -> u256 {
-            self.erc20.ERC20_total_supply.read()
+        fn name(self: @ContractState) -> ByteArray {
+            "Blitz MMR"
+        }
+
+        fn symbol(self: @ContractState) -> ByteArray {
+            "MMR"
+        }
+
+        fn decimals(self: @ContractState) -> u8 {
+            18 // Standard ERC20 decimals
         }
     }
 }

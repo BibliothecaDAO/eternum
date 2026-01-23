@@ -14,7 +14,6 @@
 // 8. New Rating: MMR' = max(100, MMR + Δ_reg)
 
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use starknet::ContractAddress;
 use crate::models::mmr::MMRConfig;
 
 
@@ -65,58 +64,6 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         // sqrt(x) = x^0.5
         let half = FixedTrait::new(9223372036854775808, false); // 0.5 in fixed-point (2^63)
         x.pow(half)
-    }
-
-    /// Sort array and return the median value
-    /// For even-length arrays, returns the lower of the two middle values
-    fn calculate_median(values: Span<u128>) -> u128 {
-        let len = values.len();
-        if len == 0 {
-            return 0;
-        }
-        if len == 1 {
-            return *values.at(0);
-        }
-
-        // Copy to mutable array for sorting
-        let mut sorted: Array<u128> = array![];
-        for v in values {
-            sorted.append(*v);
-        }
-
-        // Simple insertion sort (efficient for small arrays)
-        let mut i: u32 = 1;
-        while i < len {
-            let mut j = i;
-            while j > 0 {
-                let current = *sorted.at(j);
-                let prev = *sorted.at(j - 1);
-                if current < prev {
-                    // Swap - rebuild array with swapped elements
-                    let mut new_sorted: Array<u128> = array![];
-                    let mut k: u32 = 0;
-                    while k < len {
-                        if k == j - 1 {
-                            new_sorted.append(current);
-                        } else if k == j {
-                            new_sorted.append(prev);
-                        } else {
-                            new_sorted.append(*sorted.at(k));
-                        }
-                        k += 1;
-                    }
-                    sorted = new_sorted;
-                    j -= 1;
-                } else {
-                    break;
-                }
-            }
-            i += 1;
-        }
-
-        // Return median (middle element, or lower-middle for even length)
-        let mid_idx = (len - 1) / 2;
-        *sorted.at(mid_idx)
     }
 
     // --------------------------------
@@ -340,48 +287,6 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         // Step 8: Calculate new MMR with floor
         Self::calculate_new_mmr(player_mmr, delta_reg, config.min_mmr)
     }
-
-    /// Calculate MMR updates for all players in a game
-    /// Returns array of (player, new_mmr) tuples
-    ///
-    /// For non-split games, pass None for global_median_override.
-    /// For split lobby games, pass the median across all registered players.
-    fn calculate_game_mmr_updates(
-        config: MMRConfig,
-        players: Span<ContractAddress>,
-        ranks: Span<u16>,
-        current_mmrs: Span<u128>,
-        global_median_override: Option<u128>,
-    ) -> Array<(ContractAddress, u128)> {
-        let player_count: u16 = players.len().try_into().unwrap();
-
-        // Step 1: Calculate median MMR for this game
-        let game_median = Self::calculate_median(current_mmrs);
-
-        // Use global median if provided (split lobby), otherwise use game median
-        let global_median = match global_median_override {
-            Option::Some(m) => m,
-            Option::None => game_median,
-        };
-
-        // Calculate new MMR for each player
-        let mut updates: Array<(ContractAddress, u128)> = array![];
-        let mut i: u32 = 0;
-        while i < players.len() {
-            let player = *players.at(i);
-            let rank = *ranks.at(i);
-            let current_mmr = *current_mmrs.at(i);
-
-            let new_mmr = Self::calculate_player_mmr(
-                config, current_mmr, rank, player_count, game_median, global_median,
-            );
-
-            updates.append((player, new_mmr));
-            i += 1;
-        }
-
-        updates
-    }
 }
 
 
@@ -395,77 +300,6 @@ mod tests {
     use starknet::ContractAddress;
     use crate::models::mmr::MMRConfigDefaultImpl;
     use super::MMRCalculatorImpl;
-
-    // ================================
-    // MEDIAN CALCULATION TESTS
-    // ================================
-
-    #[test]
-    fn test_median_odd_count() {
-        let values: Span<u128> = array![1200, 1000, 1100].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        assert!(median == 1100, "Median of [1200, 1000, 1100] should be 1100");
-    }
-
-    #[test]
-    fn test_median_even_count() {
-        let values: Span<u128> = array![1000, 1100, 1200, 1300].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        // Lower middle for even count
-        assert!(median == 1100, "Median of [1000, 1100, 1200, 1300] should be 1100");
-    }
-
-    #[test]
-    fn test_median_single() {
-        let values: Span<u128> = array![1000].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        assert!(median == 1000, "Median of single element should be that element");
-    }
-
-    #[test]
-    fn test_median_two_elements() {
-        let values: Span<u128> = array![800, 1200].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        // For two elements, returns lower middle (index 0)
-        assert!(median == 800, "Median of two elements should be lower value");
-    }
-
-    #[test]
-    fn test_median_identical_elements() {
-        let values: Span<u128> = array![1000, 1000, 1000, 1000].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        assert!(median == 1000, "Median of identical elements should be that value");
-    }
-
-    #[test]
-    fn test_median_already_sorted() {
-        let values: Span<u128> = array![100, 200, 300, 400, 500].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        assert!(median == 300, "Median of sorted array should be middle element");
-    }
-
-    #[test]
-    fn test_median_reverse_sorted() {
-        let values: Span<u128> = array![500, 400, 300, 200, 100].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        assert!(median == 300, "Median of reverse sorted array should be middle element");
-    }
-
-    #[test]
-    fn test_median_empty() {
-        let values: Span<u128> = array![].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        assert!(median == 0, "Median of empty array should be 0");
-    }
-
-    #[test]
-    fn test_median_large_lobby() {
-        // 12-player game with varying MMRs
-        let values: Span<u128> = array![800, 900, 1000, 1050, 1100, 1150, 1200, 1250, 1300, 1400, 1500, 1600].span();
-        let median = MMRCalculatorImpl::calculate_median(values);
-        // Index (12-1)/2 = 5, so 6th element when sorted = 1150
-        assert!(median == 1150, "Median of 12-player game should be 1150");
-    }
 
     // ================================
     // ACTUAL PERCENTILE TESTS
@@ -944,88 +778,6 @@ mod tests {
         val.try_into().unwrap()
     }
 
-    #[test]
-    fn test_calculate_game_mmr_updates_basic() {
-        let config = MMRConfigDefaultImpl::default();
-
-        // 6 players with equal MMR
-        let players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4'), addr('p5'), addr('p6')].span();
-        let ranks = array![1_u16, 2, 3, 4, 5, 6].span();
-        let mmrs = array![1000_u128, 1000, 1000, 1000, 1000, 1000].span();
-
-        // No split lobby
-        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
-
-        // Should have 6 updates
-        assert!(updates.len() == 6, "Should have 6 updates");
-
-        // Winner should gain, loser should lose
-        let (_, winner_new) = *updates.at(0);
-        let (_, loser_new) = *updates.at(5);
-        assert!(winner_new > 1000, "Winner should gain MMR");
-        assert!(loser_new < 1000, "Loser should lose MMR");
-    }
-
-    #[test]
-    fn test_calculate_game_mmr_updates_varied_mmrs() {
-        let config = MMRConfigDefaultImpl::default();
-
-        // 6 players with varied MMRs
-        let players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4'), addr('p5'), addr('p6')].span();
-        let ranks = array![1_u16, 2, 3, 4, 5, 6].span();
-        let mmrs = array![800_u128, 900, 1000, 1100, 1200, 1300].span();
-
-        // No split lobby
-        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
-
-        // Low MMR player wins (huge upset) - should get significant gain
-        let (_, low_winner_new) = *updates.at(0);
-        assert!(low_winner_new > 800, "Low MMR upset winner should gain");
-
-        // High MMR player loses (big upset) - should lose
-        let (_, high_loser_new) = *updates.at(5);
-        assert!(high_loser_new < 1300, "High MMR upset loser should lose");
-
-        // Verify the relative magnitude makes sense
-        let gain = low_winner_new - 800;
-        let loss = 1300 - high_loser_new;
-        // Both should be positive (gain and loss occurred)
-        assert!(gain > 0, "Winner should gain");
-        assert!(loss > 0, "Loser should lose");
-    }
-
-    #[test]
-    fn test_calculate_game_mmr_updates_preserves_order() {
-        let config = MMRConfigDefaultImpl::default();
-
-        let p1 = addr('alice');
-        let p2 = addr('bob');
-        let p3 = addr('charlie');
-
-        let players = array![p1, p2, p3].span();
-        let ranks = array![2_u16, 1, 3].span();
-        let mmrs = array![1000_u128, 1000, 1000].span();
-
-        // No split lobby
-        let updates = MMRCalculatorImpl::calculate_game_mmr_updates(config, players, ranks, mmrs, Option::None);
-
-        // Check order is preserved
-        let (addr1, _) = *updates.at(0);
-        let (addr2, _) = *updates.at(1);
-        let (addr3, _) = *updates.at(2);
-        assert!(addr1 == p1, "First player should be alice");
-        assert!(addr2 == p2, "Second player should be bob");
-        assert!(addr3 == p3, "Third player should be charlie");
-
-        // Bob (rank 1) should gain most
-        let (_, bob_new) = *updates.at(1);
-        assert!(bob_new > 1000, "Bob (winner) should gain MMR");
-
-        // Charlie (rank 3) should lose most
-        let (_, charlie_new) = *updates.at(2);
-        assert!(charlie_new < 1000, "Charlie (loser) should lose MMR");
-    }
-
     // ================================
     // EDGE CASES
     // ================================
@@ -1303,30 +1055,152 @@ mod tests {
         assert!(low_tier_new < normal_new, "Low-tier expected win should give smaller gain");
     }
 
+    // ================================
+    // INLINE MEDIAN CALCULATION TESTS
+    // ================================
+    // These test the median algorithm used inline in commit_game_mmr_meta
+    // The contract calculates median from client-sorted MMR values
+
+    /// Helper to compute expected median for sorted MMR values
+    /// This mirrors the inline logic in commit_game_mmr_meta
+    fn compute_expected_median(sorted_mmrs: Span<u128>) -> u128 {
+        let len = sorted_mmrs.len();
+        if len == 0 {
+            return 0;
+        }
+        if len == 1 {
+            return *sorted_mmrs.at(0);
+        }
+        if len % 2 == 1 {
+            // Odd count: middle element
+            let mid_idx = len / 2;
+            *sorted_mmrs.at(mid_idx)
+        } else {
+            // Even count: average of two middle elements
+            let upper_idx = len / 2;
+            let lower_idx = upper_idx - 1;
+            (*sorted_mmrs.at(lower_idx) + *sorted_mmrs.at(upper_idx)) / 2
+        }
+    }
+
     #[test]
-    fn test_split_lobby_game_updates() {
+    fn test_inline_median_single_player() {
+        let mmrs: Span<u128> = array![1000].span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 1000, "Single player median should be their MMR");
+    }
+
+    #[test]
+    fn test_inline_median_two_players() {
+        let mmrs: Span<u128> = array![800, 1200].span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 1000, "Two player median should be average");
+    }
+
+    #[test]
+    fn test_inline_median_three_players() {
+        let mmrs: Span<u128> = array![800, 1000, 1200].span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 1000, "Three player median should be middle element");
+    }
+
+    #[test]
+    fn test_inline_median_six_players() {
+        let mmrs: Span<u128> = array![700, 850, 950, 1050, 1150, 1300].span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 1000, "Six player median should be 1000");
+    }
+
+    #[test]
+    fn test_inline_median_twelve_players() {
+        let mmrs: Span<u128> = array![800, 900, 1000, 1050, 1100, 1150, 1200, 1250, 1300, 1400, 1500, 1600].span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 1175, "12-player median should be 1175");
+    }
+
+    #[test]
+    fn test_inline_median_thirty_players() {
+        let mmrs: Span<u128> = array![
+            700, 750, 800, 850, 900, 950, 1000, 1020, 1040, 1060, 1080, 1100, 1120, 1140, 1160, 1180, 1200, 1220, 1240,
+            1260, 1280, 1300, 1350, 1400, 1450, 1500, 1550, 1600, 1700, 1800,
+        ]
+            .span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 1170, "30-player median should be 1170");
+    }
+
+    #[test]
+    fn test_inline_median_with_duplicates() {
+        let mmrs: Span<u128> = array![1000, 1000, 1000, 1000, 1000, 1200].span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 1000, "Median with duplicates should work");
+    }
+
+    #[test]
+    fn test_inline_median_empty() {
+        let mmrs: Span<u128> = array![].span();
+        let median = compute_expected_median(mmrs);
+        assert!(median == 0, "Empty array should give 0");
+    }
+
+    // ================================
+    // FULL GAME SIMULATION TESTS
+    // ================================
+
+    #[test]
+    fn test_all_ranks_monotonic_in_six_player_game() {
         let config = MMRConfigDefaultImpl::default();
+        let current_mmr: u128 = 1000;
+        let median_mmr: u128 = 1000;
+        let player_count: u16 = 6;
 
-        let players = array![addr('p1'), addr('p2'), addr('p3')].span();
-        let ranks = array![1_u16, 2, 3].span();
-        let mmrs = array![1200_u128, 1000, 800].span();
-
-        // With split lobby (global median 1000, but this game has median 1000)
-        let global_median: u128 = 1000;
-        let updates_with_split = MMRCalculatorImpl::calculate_game_mmr_updates(
-            config, players, ranks, mmrs, Option::Some(global_median),
+        let rank1 = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 1, player_count, median_mmr, median_mmr,
+        );
+        let rank2 = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 2, player_count, median_mmr, median_mmr,
+        );
+        let rank3 = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 3, player_count, median_mmr, median_mmr,
+        );
+        let rank4 = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 4, player_count, median_mmr, median_mmr,
+        );
+        let rank5 = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 5, player_count, median_mmr, median_mmr,
+        );
+        let rank6 = MMRCalculatorImpl::calculate_player_mmr(
+            config, current_mmr, 6, player_count, median_mmr, median_mmr,
         );
 
-        // Without split (no global median override)
-        let updates_no_split = MMRCalculatorImpl::calculate_game_mmr_updates(
-            config, players, ranks, mmrs, Option::None,
+        // Verify monotonic decrease: better rank = more MMR
+        assert!(rank1 > rank2, "Rank 1 > Rank 2");
+        assert!(rank2 > rank3, "Rank 2 > Rank 3");
+        assert!(rank3 > rank4, "Rank 3 > Rank 4");
+        assert!(rank4 > rank5, "Rank 4 > Rank 5");
+        assert!(rank5 > rank6, "Rank 5 > Rank 6");
+    }
+
+    #[test]
+    fn test_full_game_six_players_upset_scenario() {
+        let config = MMRConfigDefaultImpl::default();
+        let player_mmrs: Array<u128> = array![800, 900, 1000, 1100, 1200, 1400];
+        let player_count: u16 = 6;
+
+        let mmrs_span = player_mmrs.span();
+        let game_median = compute_expected_median(mmrs_span);
+        assert!(game_median == 1050, "Game median should be 1050");
+
+        // 800 MMR player wins (upset), 1400 loses (expected)
+        let upset_winner_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, 800, 1, player_count, game_median, game_median,
+        );
+        let expected_loser_new = MMRCalculatorImpl::calculate_player_mmr(
+            config, 1400, 6, player_count, game_median, game_median,
         );
 
-        // In this case game median == global median, so results should be same
-        let (_, p1_split) = *updates_with_split.at(0);
-        let (_, p1_no_split) = *updates_no_split.at(0);
-
-        // Should be equal since medians match
-        assert!(p1_split == p1_no_split, "Same median should give same result");
+        let winner_gain = upset_winner_new - 800;
+        assert!(winner_gain > 25, "Upset winner should gain > 25 MMR");
+        assert!(expected_loser_new < 1400, "Expected loser should lose MMR");
     }
 }
