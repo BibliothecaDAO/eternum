@@ -10,7 +10,7 @@ import {
 } from "@bibliothecadao/eternum";
 import type { Account, AccountInterface } from "starknet";
 import { ContractAddress } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, getEntityString } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -21,7 +21,6 @@ import {
 } from "@/hooks/store/use-exploration-automation-store";
 import { buildExplorationSnapshot } from "@/automation/exploration/map-cache";
 import { getExplorationStrategy } from "@/automation/exploration";
-import { getEntitiesFromTorii } from "@/dojo/queries";
 
 const normalizeOwnerValue = (owner: unknown): string | null => {
   if (typeof owner === "string") return owner.trim().toLowerCase();
@@ -36,8 +35,6 @@ const isOwnedByAccount = (owner: unknown, accountAddress: string | undefined): b
   const normalizedAccount = normalizeOwnerValue(accountAddress);
   return Boolean(normalizedOwner && normalizedAccount && normalizedOwner === normalizedAccount);
 };
-
-const EXPLORER_SYNC_COOLDOWN_MS = 30_000;
 
 export const useExplorationAutomationRunner = () => {
   const {
@@ -56,7 +53,6 @@ export const useExplorationAutomationRunner = () => {
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
-  const lastSyncRef = useRef<Map<string, number>>(new Map());
 
   const normalizeNextRunAt = useCallback((value: unknown): number | null => {
     if (value === null || value === undefined) return null;
@@ -77,32 +73,32 @@ export const useExplorationAutomationRunner = () => {
     [debugEnabled],
   );
 
-  const syncExplorer = useCallback(
-    async (explorerId: number, entryId: string) => {
-      if (!components || !network?.toriiClient) return false;
-      const now = Date.now();
-      const lastSync = lastSyncRef.current.get(entryId) ?? 0;
-      if (now - lastSync < EXPLORER_SYNC_COOLDOWN_MS) {
-        return false;
+  const resolveExplorerEntity = useCallback(
+    (explorerId: number) => {
+      if (!components) {
+        return { explorer: undefined };
       }
 
-      lastSyncRef.current.set(entryId, now);
-      try {
-        await getEntitiesFromTorii(
-          network.toriiClient,
-          components as any,
-          [explorerId],
-          ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
-        );
-        logDebug("sync-explorer", { entryId, explorerId });
-        return true;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logDebug("sync-explorer-error", { entryId, explorerId, message });
-        return false;
+      const primaryEntity = getEntityIdFromKeys([BigInt(explorerId)]);
+      let explorer = getComponentValue(components.ExplorerTroops, primaryEntity);
+      if (explorer) {
+        return { explorer };
       }
+
+      const explorerIdMap = components.ExplorerTroops.values.explorer_id;
+      for (const [entitySymbol, value] of explorerIdMap.entries()) {
+        if (Number(value) === explorerId) {
+          const entityId = getEntityString(entitySymbol);
+          explorer = getComponentValue(components.ExplorerTroops, entityId);
+          if (explorer) {
+            return { explorer };
+          }
+        }
+      }
+
+      return { explorer: undefined };
     },
-    [components, logDebug, network?.toriiClient],
+    [components],
   );
 
   const stopAutomation = useCallback(() => {
@@ -218,17 +214,10 @@ export const useExplorationAutomationRunner = () => {
               continue;
             }
 
-            const explorerEntity = getEntityIdFromKeys([BigInt(explorerId)]);
-            let explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
-            if (!explorer) {
-              logDebug("missing-explorer", { entryId: entry.id, explorerId });
-              const synced = await syncExplorer(explorerId, entry.id);
-              if (synced) {
-                explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
-              }
-            }
+            const { explorer } = resolveExplorerEntity(explorerId);
             if (!explorer) {
               update(entry.id, { blockedReason: "missing-explorer", lastError: null });
+              logDebug("missing-explorer", { entryId: entry.id, explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -338,7 +327,7 @@ export const useExplorationAutomationRunner = () => {
     systemCalls,
     toggleActive,
     logDebug,
-    syncExplorer,
+    resolveExplorerEntity,
     update,
   ]);
 
