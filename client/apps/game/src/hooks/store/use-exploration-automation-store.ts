@@ -66,6 +66,12 @@ const normalizeScopeRadius = (value: number | undefined): number => {
   return Math.max(1, numeric);
 };
 
+const normalizeTimestamp = (value: unknown, fallback: number | null = null): number | null => {
+  if (value === null || value === undefined) return fallback;
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+};
+
 export const useExplorationAutomationStore = create<ExplorationAutomationState>()(
   persist(
     (set) => ({
@@ -102,6 +108,8 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
             ...patch,
             scopeRadius: normalizeScopeRadius(patch.scopeRadius ?? prev.scopeRadius),
             strategyId: (patch.strategyId ?? prev.strategyId) as ExplorationStrategyId,
+            lastRunAt: normalizeTimestamp(patch.lastRunAt ?? prev.lastRunAt, prev.lastRunAt ?? null) ?? undefined,
+            nextRunAt: normalizeTimestamp(patch.nextRunAt ?? prev.nextRunAt, prev.nextRunAt ?? null),
           };
           return { entries: { ...state.entries, [id]: next } };
         });
@@ -163,12 +171,12 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
             id,
             explorerId: String(entry.explorerId ?? ""),
             active: Boolean(entry.active),
-            createdAt: typeof entry.createdAt === "number" ? entry.createdAt : Date.now(),
+            createdAt: normalizeTimestamp(entry.createdAt, Date.now()) ?? Date.now(),
             gameId: typeof entry.gameId === "string" ? entry.gameId : resolveCurrentGameId(),
             scopeRadius: normalizeScopeRadius(entry.scopeRadius),
             strategyId: (entry.strategyId ?? DEFAULT_STRATEGY_ID) as ExplorationStrategyId,
-            lastRunAt: entry.lastRunAt,
-            nextRunAt: entry.nextRunAt ?? null,
+            lastRunAt: normalizeTimestamp(entry.lastRunAt, null) ?? undefined,
+            nextRunAt: normalizeTimestamp(entry.nextRunAt, null),
             lastAction: entry.lastAction,
             blockedReason: entry.blockedReason ?? null,
             lastError: entry.lastError ?? null,

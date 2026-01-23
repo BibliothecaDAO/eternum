@@ -54,6 +54,12 @@ export const useExplorationAutomationRunner = () => {
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
 
+  const normalizeNextRunAt = useCallback((value: unknown): number | null => {
+    if (value === null || value === undefined) return null;
+    const numeric = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }, []);
+
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
   const debugEnabled =
     typeof window !== "undefined" && window.localStorage.getItem("debugExplorationAutomation") === "true";
@@ -146,14 +152,22 @@ export const useExplorationAutomationRunner = () => {
 
       const nowMs = currentBlockTimestamp * 1000;
       const due = activeEntries.filter((entry) => {
-        if (typeof entry.nextRunAt === "number") {
-          return entry.nextRunAt <= nowMs;
-        }
-        return entry.nextRunAt == null;
+        const nextRunAt = normalizeNextRunAt(entry.nextRunAt);
+        if (nextRunAt === null) return true;
+        return nextRunAt <= nowMs;
       });
 
       if (!due.length) {
-        logDebug("no-due-entries", { active: activeEntries.length, nowMs });
+        logDebug("no-due-entries", {
+          active: activeEntries.length,
+          nowMs,
+          entries: activeEntries.map((entry) => ({
+            id: entry.id,
+            nextRunAt: entry.nextRunAt,
+            nextRunAtType: typeof entry.nextRunAt,
+            normalizedNextRunAt: normalizeNextRunAt(entry.nextRunAt),
+          })),
+        });
         scheduleNextCheck();
         return;
       }
@@ -279,6 +293,7 @@ export const useExplorationAutomationRunner = () => {
     isSeasonOver,
     network?.contractComponents,
     network?.toriiClient,
+    normalizeNextRunAt,
     scheduleNext,
     scheduleNextCheck,
     stopAutomation,
