@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { EXPLORATION_STRATEGIES } from "@/automation/exploration";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../../armies/army-warning";
 import { CompactEntityInventory } from "../compact-entity-inventory";
@@ -235,6 +235,7 @@ const ExplorationAutomationCompact = ({
   const labelClass = compact ? "text-xxs" : "text-xs";
   const debugEnabled =
     typeof window !== "undefined" && window.localStorage.getItem("debugExplorationAutomation") === "true";
+  const [chainNowMs, setChainNowMs] = useState(() => getBlockTimestamp().currentBlockTimestamp * 1000);
   const formatTimestamp = (value?: number | null) => {
     if (!value) return "never";
     try {
@@ -245,11 +246,19 @@ const ExplorationAutomationCompact = ({
   };
   const formatDelta = (value?: number | null) => {
     if (!value) return "";
-    const deltaSeconds = Math.round((value - Date.now()) / 1000);
+    const deltaSeconds = Math.round((value - chainNowMs) / 1000);
     if (!Number.isFinite(deltaSeconds)) return "";
     const sign = deltaSeconds >= 0 ? "+" : "";
     return `${sign}${deltaSeconds}s`;
   };
+
+  useEffect(() => {
+    if (!debugEnabled) return;
+    const intervalId = window.setInterval(() => {
+      setChainNowMs(getBlockTimestamp().currentBlockTimestamp * 1000);
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [debugEnabled]);
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-gold/20 bg-black/30 p-2">
