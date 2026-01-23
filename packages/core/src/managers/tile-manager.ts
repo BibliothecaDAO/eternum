@@ -28,7 +28,7 @@ import {
 import { configManager } from "./config-manager";
 
 // Global const to flick optimistic building on or off
-export const OPTIMISTIC_BUILDING_ENABLED = false;
+export const OPTIMISTIC_BUILDING_ENABLED = true;
 
 // Module-level Set to track pending builds across TileManager instances
 // This prevents race conditions between optimistic updates and Torii sync
