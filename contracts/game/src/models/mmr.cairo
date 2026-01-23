@@ -20,11 +20,8 @@ pub struct MMRConfig {
     /// Whether MMR tracking is enabled
     pub enabled: bool,
     /// Address of the MMR token contract (soul-bound ERC20)
+    /// The token contract handles initial_mmr and min_mmr enforcement
     pub mmr_token_address: ContractAddress,
-    /// Initial MMR for new players (default: 1000, max: 65535)
-    pub initial_mmr: u16,
-    /// Hard floor - minimum MMR a player can have (default: 100, max: 65535)
-    pub min_mmr: u16,
     /// Distribution mean (mu) - center of Gaussian (default: 1500, max: 65535)
     pub distribution_mean: u16,
     /// Spread factor (D) - controls expected percentile spread (default: 450, max: 65535)
@@ -49,8 +46,6 @@ pub impl MMRConfigDefaultImpl of MMRConfigDefaultTrait {
         MMRConfig {
             enabled: false,
             mmr_token_address: Zero::zero(),
-            initial_mmr: 1000,
-            min_mmr: 100,
             distribution_mean: 1500,
             spread_factor: 450,
             max_delta: 45,
@@ -102,8 +97,6 @@ mod tests {
         let config = MMRConfigDefaultImpl::default();
 
         assert!(config.enabled == false, "Default should be disabled");
-        assert!(config.initial_mmr == 1000, "Initial MMR should be 1000");
-        assert!(config.min_mmr == 100, "Min MMR should be 100");
         assert!(config.distribution_mean == 1500, "Mean should be 1500");
         assert!(config.spread_factor == 450, "Spread factor should be 450");
         assert!(config.max_delta == 45, "Max delta should be 45");

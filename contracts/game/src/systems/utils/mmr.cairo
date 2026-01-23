@@ -207,9 +207,10 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         delta_tier - regression_pull
     }
 
-    /// Step 8: Calculate final new MMR with floor enforcement
-    /// MMR' = max(min_mmr, MMR + Δ_reg)
-    fn calculate_new_mmr(current_mmr: u128, delta_reg: Fixed, min_mmr: u128) -> u128 {
+    /// Step 8: Calculate final new MMR
+    /// MMR' = MMR + Δ_reg
+    /// Note: The MMR token contract enforces min_mmr floor in update_mmr()
+    fn calculate_new_mmr(current_mmr: u128, delta_reg: Fixed) -> u128 {
         // Convert delta to signed integer change
         let delta_magnitude = Self::from_fixed(
             if delta_reg.sign {
@@ -219,7 +220,7 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
             },
         );
 
-        let new_mmr = if delta_reg.sign {
+        if delta_reg.sign {
             // Negative delta - subtract
             if current_mmr > delta_magnitude {
                 current_mmr - delta_magnitude
@@ -229,13 +230,6 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         } else {
             // Positive delta - add
             current_mmr + delta_magnitude
-        };
-
-        // Enforce floor
-        if new_mmr < min_mmr {
-            min_mmr
-        } else {
-            new_mmr
         }
     }
 
@@ -264,7 +258,6 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         let lobby_split_weight_scaled: u128 = config.lobby_split_weight_scaled.into();
         let distribution_mean: u128 = config.distribution_mean.into();
         let mean_regression_scaled: u128 = config.mean_regression_scaled.into();
-        let min_mmr: u128 = config.min_mmr.into();
 
         // Step 2: Expected percentile
         let p_exp = Self::expected_percentile(player_mmr, game_median, spread_factor);
@@ -286,8 +279,8 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         // Step 7: Apply mean regression
         let delta_reg = Self::apply_mean_regression(delta_tier, player_mmr, distribution_mean, mean_regression_scaled);
 
-        // Step 8: Calculate new MMR with floor
-        Self::calculate_new_mmr(player_mmr, delta_reg, min_mmr)
+        // Step 8: Calculate new MMR (token contract enforces min_mmr floor)
+        Self::calculate_new_mmr(player_mmr, delta_reg)
     }
 }
 
@@ -585,9 +578,8 @@ mod tests {
     fn test_new_mmr_positive_delta() {
         let current_mmr: u128 = 1000;
         let delta_reg = FixedTrait::new_unscaled(25, false);
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
         assert!(new_mmr == 1025, "New MMR should be current + delta");
     }
 
@@ -595,32 +587,31 @@ mod tests {
     fn test_new_mmr_negative_delta() {
         let current_mmr: u128 = 1000;
         let delta_reg = FixedTrait::new_unscaled(25, true); // negative
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
         assert!(new_mmr == 975, "New MMR should be current - delta");
     }
 
     #[test]
-    fn test_new_mmr_floor_enforcement() {
+    fn test_new_mmr_allows_zero() {
+        // Token contract enforces min_mmr floor, not the game contract
         let current_mmr: u128 = 150;
         let delta_reg = FixedTrait::new_unscaled(100, true); // negative
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
-        // 150 - 100 = 50, but floor is 100
-        assert!(new_mmr == 100, "New MMR should not go below floor");
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
+        // 150 - 100 = 50 (no floor enforcement in game contract)
+        assert!(new_mmr == 50, "New MMR should be 50 (token contract enforces floor)");
     }
 
     #[test]
-    fn test_new_mmr_floor_when_delta_exceeds_current() {
+    fn test_new_mmr_clamps_at_zero_not_negative() {
+        // When delta exceeds current, result is 0 (not negative)
         let current_mmr: u128 = 50;
         let delta_reg = FixedTrait::new_unscaled(100, true); // negative
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
-        // 50 - 100 would be negative, should floor at min
-        assert!(new_mmr == 100, "New MMR should be floor when delta exceeds current");
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
+        // 50 - 100 would be negative, should be 0
+        assert!(new_mmr == 0, "New MMR should be 0 when delta exceeds current");
     }
 
     // ================================
@@ -666,10 +657,11 @@ mod tests {
     }
 
     #[test]
-    fn test_floor_enforcement() {
+    fn test_low_mmr_player_in_high_tier_lobby() {
         let config = MMRConfigDefaultImpl::default();
 
-        // Player with very low MMR loses
+        // Player with very low MMR (100) loses in a high-tier lobby (median 1500)
+        // Mean regression strongly pulls toward 1500, which may offset the loss
         let current_mmr: u128 = 100;
         let rank: u16 = 6;
         let player_count: u16 = 6;
@@ -680,9 +672,12 @@ mod tests {
             config, current_mmr, rank, player_count, median_mmr, median_mmr,
         );
 
-        // Should not go below floor (convert u16 to u128 for comparison)
-        let min_mmr: u128 = config.min_mmr.into();
-        assert!(new_mmr >= min_mmr, "MMR should not go below floor");
+        // With current_mmr so far below distribution_mean (1500), mean regression
+        // adds a positive adjustment. The player was expected to lose (high expected
+        // percentile), so performance meets expectations. Net result depends on
+        // which effect dominates. The key test is that calculation completes.
+        // Note: Token contract enforces min_mmr floor (100e18)
+        assert!(new_mmr > 0, "MMR calculation should complete");
     }
 
     #[test]
@@ -729,9 +724,7 @@ mod tests {
 
         // Low MMR player was expected to lose, so performance matches expectations
         // Mean regression pulls toward 1500, which can actually offset losses
-        // Key behavior: floor is enforced and result is reasonable
-        let min_mmr: u128 = config.min_mmr.into();
-        assert!(low_new >= min_mmr, "Should not go below floor");
+        // Note: Token contract enforces min_mmr floor, so we just verify result is reasonable
 
         // Compare to a player with higher MMR losing
         let med_mmr: u128 = 1000;
