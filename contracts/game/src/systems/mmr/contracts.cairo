@@ -106,8 +106,9 @@ pub mod mmr_systems {
             let trial: PlayersRankTrial = world.read_model(final_trial_id);
             assert!(!trial.total_player_count_revealed.is_zero(), "Eternum: no players");
 
-            // Check minimum players
-            assert!(trial.total_player_count_revealed >= mmr_config.min_players, "Eternum: not enough players");
+            // Check minimum players (convert u8 to u16 for comparison)
+            let min_players: u16 = mmr_config.min_players.into();
+            assert!(trial.total_player_count_revealed >= min_players, "Eternum: not enough players");
 
             // Avoid overwriting an existing commit
             let mut meta: MMRGameMeta = world.read_model(final_trial_id);
