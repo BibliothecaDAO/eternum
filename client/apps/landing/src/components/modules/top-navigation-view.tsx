@@ -1,7 +1,14 @@
 import { displayAddress } from "@/lib/utils";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount } from "@starknet-react/core";
-import { ArrowDownUp, ChevronDown, CoinsIcon, LogIn, LogOut, PlayIcon, Sparkles, Wallet } from "lucide-react";
+import ArrowDownUp from "lucide-react/dist/esm/icons/arrow-down-up";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import CoinsIcon from "lucide-react/dist/esm/icons/coins";
+import LogIn from "lucide-react/dist/esm/icons/log-in";
+import LogOut from "lucide-react/dist/esm/icons/log-out";
+import PlayIcon from "lucide-react/dist/esm/icons/play";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Wallet from "lucide-react/dist/esm/icons/wallet";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,

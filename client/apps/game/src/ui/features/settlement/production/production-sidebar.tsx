@@ -6,7 +6,8 @@ import { getProducedResource, ID, RealmInfo, ResourcesIds, StructureType } from 
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
-import { CheckCircle2Icon, SparklesIcon } from "lucide-react";
+import CheckCircle2Icon from "lucide-react/dist/esm/icons/check-circle-2";
+import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";

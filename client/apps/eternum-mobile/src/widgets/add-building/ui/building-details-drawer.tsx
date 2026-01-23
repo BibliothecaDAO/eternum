@@ -23,7 +23,10 @@ import {
   CapacityConfig,
   findResourceById,
 } from "@bibliothecadao/types";
-import { Clock, Loader2, Users, Warehouse } from "lucide-react";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Users from "lucide-react/dist/esm/icons/users";
+import Warehouse from "lucide-react/dist/esm/icons/warehouse";
 import React, { useCallback, useMemo, useState } from "react";
 
 // Building category enum

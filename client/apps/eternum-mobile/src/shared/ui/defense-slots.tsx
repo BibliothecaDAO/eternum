@@ -4,7 +4,10 @@ import { cn } from "@/shared/lib/utils";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { divideByPrecision, getTroopResourceId } from "@bibliothecadao/eternum";
 import { GUARD_SLOT_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { Clock, Edit, Plus, Shield } from "lucide-react";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Edit from "lucide-react/dist/esm/icons/edit";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { useState } from "react";
 
 export interface DefenseTroop {

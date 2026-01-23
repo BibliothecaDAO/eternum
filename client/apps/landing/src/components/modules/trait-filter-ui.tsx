@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
 interface TraitFilterUIProps {

@@ -4,7 +4,9 @@ import { Link, useParams } from "react-router-dom";
 import { MarketClass, type MarketOutcome } from "@/pm/class";
 import { useMarket } from "@pm/sdk";
 import { ScrollArea } from "@pm/ui";
-import { ArrowLeft, Play, RefreshCw } from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
+import Play from "lucide-react/dist/esm/icons/play";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 
 import Button from "@/ui/design-system/atoms/button";
 

@@ -1,7 +1,7 @@
 // import { useResourceBalance } from "@/hooks/helpers/use-resources";
 // import { divideByPrecision } from "@bibliothecadao/eternum";
 // import { ID, resources } from "@bibliothecadao/types";
-// import { XIcon } from "lucide-react";
+// import XIcon from "lucide-react/dist/esm/icons/x";
 // import { useEffect, useMemo } from "react";
 // import { Button } from "./button";
 // import ListSelect from "./elements/list-select";

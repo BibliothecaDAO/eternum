@@ -1,5 +1,11 @@
 import { motion } from "framer-motion";
-import { Check, Globe, Loader2, User, Gamepad2, Play, Sparkles } from "lucide-react";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import User from "lucide-react/dist/esm/icons/user";
+import Gamepad2 from "lucide-react/dist/esm/icons/gamepad-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 import type { OnboardingPhase } from "@/hooks/context/use-unified-onboarding";
 

@@ -4,7 +4,10 @@ import { useMarketplace } from "@/hooks/use-marketplace";
 import { useMarketplaceApproval } from "@/hooks/use-marketplace-approval";
 import { MergedNftData } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Minus, Plus } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
+import Minus from "lucide-react/dist/esm/icons/minus";
+import Plus from "lucide-react/dist/esm/icons/plus";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import {

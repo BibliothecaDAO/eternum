@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { useCallback } from "react";
 
 interface ChestStageContainerProps {

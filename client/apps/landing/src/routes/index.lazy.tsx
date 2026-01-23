@@ -23,7 +23,14 @@ import { useAccount } from "@starknet-react/core";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion, Variants } from "framer-motion";
-import { AlertTriangle, Boxes, Castle, CirclePlayIcon, Clock, Swords, Trophy, UserRoundPlus } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Boxes from "lucide-react/dist/esm/icons/boxes";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import CirclePlayIcon from "lucide-react/dist/esm/icons/circle-play";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Swords from "lucide-react/dist/esm/icons/swords";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
+import UserRoundPlus from "lucide-react/dist/esm/icons/user-round-plus";
 import { memo, useEffect, useMemo, useState } from "react";
 
 interface LeaderboardCardEntry {

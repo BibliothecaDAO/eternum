@@ -1,4 +1,4 @@
-import { Navigation } from "lucide-react";
+import Navigation from "lucide-react/dist/esm/icons/navigation";
 import { ButtonHTMLAttributes } from "react";
 
 interface NavigationButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

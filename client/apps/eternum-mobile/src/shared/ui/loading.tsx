@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib/utils";
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 
 interface LoadingProps {
   className?: string;

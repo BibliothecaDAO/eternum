@@ -13,7 +13,15 @@ import { marketplaceCollections } from "@/config";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import { Coins, Crown, Map, Package, PawPrint, ShoppingBag, Sparkles, UserRound, X } from "lucide-react";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Crown from "lucide-react/dist/esm/icons/crown";
+import Map from "lucide-react/dist/esm/icons/map";
+import Package from "lucide-react/dist/esm/icons/package";
+import PawPrint from "lucide-react/dist/esm/icons/paw-print";
+import ShoppingBag from "lucide-react/dist/esm/icons/shopping-bag";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import UserRound from "lucide-react/dist/esm/icons/user-round";
+import X from "lucide-react/dist/esm/icons/x";
 import { TypeH2 } from "../typography/type-h2";
 
 type CollectionKey = keyof typeof marketplaceCollections;

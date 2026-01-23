@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/shared/ui/card";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { configManager, divideByPrecision, formatTime, ResourceManager } from "@bibliothecadao/eternum";
 import { ID, resources, TickIds } from "@bibliothecadao/types";
-import { Settings2 } from "lucide-react";
+import Settings2 from "lucide-react/dist/esm/icons/settings-2";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LaborBuildingProps } from "../model/types";
 import { ProductionDrawer } from "./production-drawer";

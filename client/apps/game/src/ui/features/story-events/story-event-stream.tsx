@@ -1,16 +1,14 @@
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  AlertTriangle,
-  Castle,
-  Coins,
-  Factory,
-  Hammer,
-  Navigation,
-  ScrollText,
-  Shield,
-  Swords,
-  Trophy,
-} from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
+import Navigation from "lucide-react/dist/esm/icons/navigation";
+import ScrollText from "lucide-react/dist/esm/icons/scroll-text";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Swords from "lucide-react/dist/esm/icons/swords";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
 import { type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
 
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";

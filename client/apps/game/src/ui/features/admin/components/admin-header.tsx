@@ -1,4 +1,5 @@
-import { ChevronLeft, RefreshCw } from "lucide-react";
+import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 
 interface AdminHeaderProps {
   network: string;

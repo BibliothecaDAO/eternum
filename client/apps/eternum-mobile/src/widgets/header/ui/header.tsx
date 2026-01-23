@@ -2,7 +2,7 @@ import { ROUTES } from "@/shared/consts/routes";
 import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { useMatches } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
 import { useEffect, useState } from "react";
 
 // Route to title mapping

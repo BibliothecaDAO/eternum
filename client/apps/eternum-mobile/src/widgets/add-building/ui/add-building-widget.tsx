@@ -20,7 +20,9 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import { Shield, Warehouse, Wheat } from "lucide-react";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Warehouse from "lucide-react/dist/esm/icons/warehouse";
+import Wheat from "lucide-react/dist/esm/icons/wheat";
 import { useState } from "react";
 import { BuildingPreviewCard } from "./building-preview-card";
 

@@ -27,7 +27,8 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeftRight } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { TransferDirection } from "./help-container";

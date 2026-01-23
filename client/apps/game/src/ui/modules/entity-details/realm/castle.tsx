@@ -11,7 +11,12 @@ import { sqlApi } from "@/services/api";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { useComponentValue } from "@dojoengine/react";
-import { AlertCircleIcon, ArrowUpRightIcon, ChevronDownIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
+import AlertCircleIcon from "lucide-react/dist/esm/icons/alert-circle";
+import ArrowUpRightIcon from "lucide-react/dist/esm/icons/arrow-up-right";
+import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
+import CrownIcon from "lucide-react/dist/esm/icons/crown";
+import PlusIcon from "lucide-react/dist/esm/icons/plus";
+import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 
 const WONDER_BONUS_DISTANCE = 12;
 
