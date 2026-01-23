@@ -1,5 +1,6 @@
 pub mod agent;
 pub mod config;
+pub mod faith;
 pub mod events;
 pub mod guild;
 pub mod hyperstructure;

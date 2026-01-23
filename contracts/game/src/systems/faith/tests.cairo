@@ -1,0 +1,9 @@
+mod test_faith_config;
+mod test_faith_pledge;
+mod test_faith_revoke;
+mod test_faith_generation;
+mod test_faith_snapshot_claim;
+mod test_faith_capture;
+mod test_faith_leaderboard;
+mod test_faith_prize_distribution;
+mod test_faith_edge_security;
