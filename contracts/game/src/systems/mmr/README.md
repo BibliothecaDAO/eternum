@@ -314,7 +314,7 @@ Apply the change:
 MMR' = MMR + Δ_reg
 ```
 
-Note: The MMR token contract enforces the `min_mmr` floor (100) in `update_mmr()` and returns `initial_mmr` (1000) for uninitialized players in `balance_of()`.
+Note: The MMR token contract enforces the `min_mmr` floor (100) in `update_mmr()` and returns `initial_mmr` (1000) for uninitialized players in `get_player_mmr()`.
 
 ### Example Calculation
 

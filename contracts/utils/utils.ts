@@ -38,6 +38,8 @@ export interface SeasonAddresses {
   marketplace: string;
   /** Address of the cosmetics claim contract */
   cosmeticsClaim: string;
+  /** Address of the MMR token contract */
+  mmrToken: string;
 }
 
 /** Valid chain identifiers */

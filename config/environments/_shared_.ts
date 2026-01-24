@@ -237,7 +237,8 @@ const BLITZ_COLLECTIBLE_ELITENFT_ADDRESS = await getSeasonAddresses(process.env.
 // Soul-bound ERC20 token tracking player skill ratings
 // Note: initial_mmr and min_mmr are handled by the token contract, not the game contract
 const MMR_ENABLED = true;
-const MMR_TOKEN_ADDRESS = "0x0"; // Set to actual MMR token contract address when deployed
+const MMR_TOKEN_ADDRESS =
+  (await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.mmrToken) || "0x0";
 const MMR_DISTRIBUTION_MEAN = 1500; // Target center of distribution for mean regression
 const MMR_SPREAD_FACTOR = 450; // Controls expected percentile spread in logistic function
 const MMR_MAX_DELTA = 45; // Cap on rating change per game
