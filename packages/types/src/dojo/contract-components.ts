@@ -1687,6 +1687,17 @@ export function defineContractComponents(world: World) {
             points_for_win: RecsType.BigInt,
           },
           factory_address: RecsType.BigInt,
+          mmr_config: {
+            enabled: RecsType.Boolean,
+            mmr_token_address: RecsType.BigInt,
+            distribution_mean: RecsType.Number,
+            spread_factor: RecsType.Number,
+            max_delta: RecsType.Number,
+            k_factor: RecsType.Number,
+            lobby_split_weight_scaled: RecsType.Number,
+            mean_regression_scaled: RecsType.Number,
+            min_players: RecsType.Number,
+          },
         },
         {
           metadata: {
@@ -1836,6 +1847,15 @@ export function defineContractComponents(world: World) {
               "u32", // VictoryPointsGrantConfig relic_open_points
               "u128", // VictoryPointsWinConfig points_for_win
               "ContractAddress", // factory address
+              "bool", // MMRConfig enabled
+              "ContractAddress", // MMRConfig mmr_token_address
+              "u16", // MMRConfig distribution_mean
+              "u16", // MMRConfig spread_factor
+              "u8", // MMRConfig max_delta
+              "u8", // MMRConfig k_factor
+              "u16", // MMRConfig lobby_split_weight_scaled
+              "u16", // MMRConfig mean_regression_scaled
+              "u8", // MMRConfig min_players
             ],
             customTypes: [],
           },
