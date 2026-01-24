@@ -460,16 +460,17 @@ pub mod troop_movement_util_systems {
     use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
-        CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
     use crate::models::events::ExploreFind;
     use crate::models::map::Tile;
     use crate::models::position::Coord;
-    use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry};
+    // use crate::models::config::{QuestConfig};
+    // use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry};
     use crate::models::structure::StructureReservation;
-    use crate::systems::quest::constants::VERSION;
-    use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl};
+    // use crate::systems::quest::constants::VERSION;
+    // use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl};
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
@@ -610,25 +611,25 @@ pub mod troop_movement_util_systems {
                         if found_agent {
                             return (true, ExploreFind::Agent);
                         } else {
-                            let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
-                                world, selector!("quest_config"),
-                            );
-                            let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
-                            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
-                            let quest_game_count = quest_game_registry.games.len();
-                            if quest_game_count > 0 && feature_toggle.enabled {
-                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
-                                    quest_config, vrf_seed, world,
-                                );
-                                if quest_lottery_won {
-                                    let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
-                                    let quest_system = IQuestSystemsDispatcher {
-                                        contract_address: quest_system_address,
-                                    };
-                                    quest_system.create_quest(tile, vrf_seed);
-                                    return (true, ExploreFind::Quest);
-                                }
-                            }
+                            // let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
+                            //     world, selector!("quest_config"),
+                            // );
+                            // let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
+                            // let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+                            // let quest_game_count = quest_game_registry.games.len();
+                            // if quest_game_count > 0 && feature_toggle.enabled {
+                            //     let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
+                            //         quest_config, vrf_seed, world,
+                            //     );
+                            //     if quest_lottery_won {
+                            //         let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
+                            //         let quest_system = IQuestSystemsDispatcher {
+                            //             contract_address: quest_system_address,
+                            //         };
+                            //         quest_system.create_quest(tile, vrf_seed);
+                            //         return (true, ExploreFind::Quest);
+                            //     }
+                            // }
                             return (false, ExploreFind::None);
                         }
                     }

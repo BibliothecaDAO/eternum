@@ -109,10 +109,10 @@ pub mod utils {
     pub mod village;
 }
 
-pub mod quest {
-    pub mod constants;
-    pub mod contracts;
-}
+// pub mod quest {
+//     pub mod constants;
+//     pub mod contracts;
+// }
 
 pub mod prize_distribution {
     pub mod contracts;
