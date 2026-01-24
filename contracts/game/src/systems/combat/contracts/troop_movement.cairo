@@ -470,7 +470,8 @@ pub mod troop_movement_util_systems {
     // use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry};
     use crate::models::structure::StructureReservation;
     // use crate::systems::quest::constants::VERSION;
-    // use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl};
+    // use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait,
+    // iQuestDiscoveryImpl};
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
