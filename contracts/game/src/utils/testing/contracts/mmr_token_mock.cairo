@@ -4,7 +4,8 @@
 //! the MMR systems without needing a full token deployment.
 //!
 //! Key behavior:
-//! - balance_of returns INITIAL_MMR (1000e18) if player has never been set
+//! - balance_of returns actual stored value (0 if player has never been set)
+//! - get_player_mmr returns INITIAL_MMR (1000e18) if player has never been set
 //! - update_mmr stores the new value (with floor enforcement)
 //! - set_mmr is a test helper to set MMR directly
 
@@ -17,8 +18,13 @@ pub const MIN_MMR: u256 = 100_000000000000000000; // 100e18
 /// Mock MMR token interface for testing
 #[starknet::interface]
 pub trait IMockMMRToken<T> {
-    /// Get player's MMR balance (returns INITIAL_MMR if not set)
+    /// Get player's actual stored balance (standard ERC20 behavior)
+    /// Returns 0 if player has never been initialized
     fn balance_of(self: @T, player: ContractAddress) -> u256;
+
+    /// Get player's effective MMR for game logic
+    /// Returns INITIAL_MMR (1000e18) if player has never been initialized
+    fn get_player_mmr(self: @T, player: ContractAddress) -> u256;
 
     /// Update a player's MMR (enforces floor)
     fn update_mmr(ref self: T, player: ContractAddress, new_mmr: u256);
@@ -39,13 +45,18 @@ pub mod MockMMRToken {
 
     #[storage]
     struct Storage {
-        /// MMR values (0 means uninitialized, balance_of returns INITIAL_MMR)
+        /// MMR values (0 means uninitialized)
         mmr_values: Map<ContractAddress, u256>,
     }
 
     #[abi(embed_v0)]
     impl MockMMRTokenImpl of super::IMockMMRToken<ContractState> {
         fn balance_of(self: @ContractState, player: ContractAddress) -> u256 {
+            // Standard ERC20 behavior: return actual stored balance (0 if never set)
+            self.mmr_values.read(player)
+        }
+
+        fn get_player_mmr(self: @ContractState, player: ContractAddress) -> u256 {
             let stored = self.mmr_values.read(player);
             // Return INITIAL_MMR if player has never been set
             if stored.is_zero() {

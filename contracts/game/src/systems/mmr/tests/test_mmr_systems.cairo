@@ -487,17 +487,17 @@ mod tests {
         stop_cheat_caller_address(system_addr);
 
         // Verify winner gained and loser lost (values are in 18 decimals)
-        let winner_mmr: u256 = token.balance_of(p1);
-        let loser_mmr: u256 = token.balance_of(p6);
+        let winner_mmr: u256 = token.get_player_mmr(p1);
+        let loser_mmr: u256 = token.get_player_mmr(p6);
 
         assert!(winner_mmr > e18(1000), "Rank 1 should gain MMR");
         assert!(loser_mmr < e18(1000), "Rank 6 should lose MMR");
 
         // Verify monotonic: better rank = higher final MMR
-        let mmr2: u256 = token.balance_of(p2);
-        let mmr3: u256 = token.balance_of(p3);
-        let mmr4: u256 = token.balance_of(p4);
-        let mmr5: u256 = token.balance_of(p5);
+        let mmr2: u256 = token.get_player_mmr(p2);
+        let mmr3: u256 = token.get_player_mmr(p3);
+        let mmr4: u256 = token.get_player_mmr(p4);
+        let mmr5: u256 = token.get_player_mmr(p5);
 
         assert!(winner_mmr > mmr2, "Rank 1 > Rank 2");
         assert!(mmr2 > mmr3, "Rank 2 > Rank 3");
@@ -741,8 +741,8 @@ mod tests {
         stop_cheat_caller_address(system_addr);
 
         // Verify results (values are in 18 decimals)
-        let winner_new_mmr: u256 = token.balance_of(p1);
-        let loser_new_mmr: u256 = token.balance_of(p6);
+        let winner_new_mmr: u256 = token.get_player_mmr(p1);
+        let loser_new_mmr: u256 = token.get_player_mmr(p6);
 
         // Underdog won - should gain significant MMR (was 800e18)
         let winner_gain: u256 = winner_new_mmr - e18(800);
