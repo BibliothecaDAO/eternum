@@ -6,7 +6,8 @@
 // Key features:
 // - Non-transferable: All transfer functions revert (soul-bound)
 // - Only authorized game contracts can update MMR
-// - balance_of returns INITIAL_MMR for uninitialized players (balance == 0)
+// - balance_of returns actual stored balance (0 for uninitialized)
+// - get_player_mmr returns INITIAL_MMR for uninitialized players
 // - Minimum MMR floor enforced on updates
 
 use starknet::ContractAddress;
@@ -14,9 +15,13 @@ use starknet::ContractAddress;
 /// MMR-specific interface for the token
 #[starknet::interface]
 pub trait IMMRToken<TContractState> {
-    /// Get player's current MMR balance
-    /// Returns INITIAL_MMR if player has never been initialized (balance is 0)
+    /// Get player's actual stored balance (standard ERC20 behavior)
+    /// Returns 0 if player has never been initialized
     fn balance_of(self: @TContractState, player: ContractAddress) -> u256;
+
+    /// Get player's effective MMR for game logic
+    /// Returns INITIAL_MMR if player has never been initialized (balance is 0)
+    fn get_player_mmr(self: @TContractState, player: ContractAddress) -> u256;
 
     /// Update a player's MMR to a new value
     /// Can only be called by authorized game contract
@@ -131,6 +136,11 @@ pub mod MMRToken {
     #[abi(embed_v0)]
     impl MMRTokenImpl of IMMRToken<ContractState> {
         fn balance_of(self: @ContractState, player: ContractAddress) -> u256 {
+            // Standard ERC20 behavior: return actual stored balance (0 if never set)
+            self.balances.entry(player).read()
+        }
+
+        fn get_player_mmr(self: @ContractState, player: ContractAddress) -> u256 {
             let stored = self.balances.entry(player).read();
             // Return INITIAL_MMR if player has never been set (stored is 0)
             if stored.is_zero() {
@@ -188,7 +198,7 @@ pub mod MMRToken {
             self.accesscontrol.assert_only_role(GAME_ROLE);
 
             for (player, new_mmr) in updates {
-                let old_mmr = self.balance_of(player);
+                let old_mmr = self.get_player_mmr(player);
                 let final_mmr = if new_mmr < MIN_MMR {
                     MIN_MMR
                 } else {

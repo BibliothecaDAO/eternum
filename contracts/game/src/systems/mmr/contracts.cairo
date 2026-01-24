@@ -6,12 +6,11 @@
 use starknet::ContractAddress;
 
 /// Interface for the MMR token contract
-/// Simplified: balance_of returns INITIAL_MMR if player has never been set
 #[starknet::interface]
 pub trait IMMRToken<T> {
-    /// Get player's current MMR balance
-    /// Returns INITIAL_MMR (1000) if player has never been initialized
-    fn balance_of(self: @T, player: ContractAddress) -> u256;
+    /// Get player's effective MMR for game logic
+    /// Returns INITIAL_MMR (1000e18) if player has never been initialized
+    fn get_player_mmr(self: @T, player: ContractAddress) -> u256;
 
     /// Update a player's MMR to a new value
     /// Enforces minimum MMR floor, auto-initializes if first update
@@ -106,8 +105,9 @@ pub mod mmr_systems {
             let trial: PlayersRankTrial = world.read_model(final_trial_id);
             assert!(!trial.total_player_count_revealed.is_zero(), "Eternum: no players");
 
-            // Check minimum players
-            assert!(trial.total_player_count_revealed >= mmr_config.min_players, "Eternum: not enough players");
+            // Check minimum players (convert u8 to u16 for comparison)
+            let min_players: u16 = mmr_config.min_players.into();
+            assert!(trial.total_player_count_revealed >= min_players, "Eternum: not enough players");
 
             // Avoid overwriting an existing commit
             let mut meta: MMRGameMeta = world.read_model(final_trial_id);
@@ -139,9 +139,9 @@ pub mod mmr_systems {
                 let player_rank: PlayerRank = world.read_model((final_trial_id, player));
                 assert!(player_rank.rank > 0, "MMR: player {:?} has no rank in trial", player);
 
-                // Get player's current MMR (balance_of returns INITIAL_MMR if uninitialized)
+                // Get player's current MMR (get_player_mmr returns INITIAL_MMR if uninitialized)
                 // Token stores with 18 decimals, divide to get logical value
-                let player_mmr: u128 = (mmr_token.balance_of(player) / MMR_PRECISION).try_into().unwrap();
+                let player_mmr: u128 = (mmr_token.get_player_mmr(player) / MMR_PRECISION).try_into().unwrap();
 
                 // Verify ascending MMR order (client must sort by MMR)
                 assert!(player_mmr >= last_mmr, "MMR: players must be sorted by MMR ascending");
@@ -237,9 +237,9 @@ pub mod mmr_systems {
                 let player_rank: PlayerRank = world.read_model((final_trial_id, player));
                 assert!(player_rank.rank.is_non_zero(), "Eternum: player zero rank");
 
-                // Load current MMR (balance_of returns INITIAL_MMR if uninitialized)
+                // Load current MMR (get_player_mmr returns INITIAL_MMR if uninitialized)
                 // Token stores with 18 decimals, divide to get logical value
-                let current_mmr: u128 = (mmr_token.balance_of(player) / MMR_PRECISION).try_into().unwrap();
+                let current_mmr: u128 = (mmr_token.get_player_mmr(player) / MMR_PRECISION).try_into().unwrap();
 
                 // Calculate new MMR (works with logical values like 1000)
                 let new_mmr = MMRCalculatorImpl::calculate_player_mmr(

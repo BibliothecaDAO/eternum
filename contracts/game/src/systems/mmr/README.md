@@ -95,16 +95,14 @@ Configuration for the MMR system, stored in WorldConfig.
 struct MMRConfig {
     enabled: bool,                    // Master switch for MMR tracking
     mmr_token_address: ContractAddress, // Address of MMR token contract
-    initial_mmr: u128,                // Starting MMR for new players (default: 1000)
-    min_mmr: u128,                    // Hard floor (default: 100)
-    distribution_mean: u128,          // Target mean μ (default: 1500)
-    spread_factor: u128,              // D value for logistic function (default: 450)
-    max_delta: u128,                  // Maximum rating change per game (default: 45)
-    k_factor: u128,                   // Base scaling factor K₀ (default: 50)
-    lobby_split_weight_scaled: u128,  // w × 1e6 for split-lobby scaling (default: 250000 = 0.25)
-    mean_regression_scaled: u128,     // λ × 1e6 for regression (default: 15000 = 0.015)
-    min_players: u16,                 // Minimum players for rated game (default: 6)
-    min_entry_fee: u256,              // Minimum fee for rated game (in LORDS wei)
+    // Note: initial_mmr and min_mmr are handled by the token contract
+    distribution_mean: u16,           // Target mean μ (default: 1500)
+    spread_factor: u16,               // D value for logistic function (default: 450)
+    max_delta: u8,                    // Maximum rating change per game (default: 45)
+    k_factor: u8,                     // Base scaling factor K₀ (default: 50)
+    lobby_split_weight_scaled: u16,   // w × 10000 for split-lobby scaling (default: 2500 = 0.25)
+    mean_regression_scaled: u16,      // λ × 10000 for regression (default: 150 = 0.015)
+    min_players: u8,                  // Minimum players for rated game (default: 6)
 }
 ```
 
@@ -310,13 +308,13 @@ Where:
 
 ### Step 8: Final Rating
 
-Apply the change with floor enforcement:
+Apply the change:
 
 ```
-MMR' = max(min_mmr, MMR + Δ_reg)
+MMR' = MMR + Δ_reg
 ```
 
-Where `min_mmr` = 100 (hard floor)
+Note: The MMR token contract enforces the `min_mmr` floor (100) in `update_mmr()` and returns `initial_mmr` (1000) for uninitialized players in `get_player_mmr()`.
 
 ### Example Calculation
 
@@ -562,16 +560,15 @@ let claimed = mmr_systems.has_player_claimed_mmr(trial_id, player_address);
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `enabled` | false | Master switch (disabled by default) |
-| `initial_mmr` | 1000 | Starting rating for new players |
-| `min_mmr` | 100 | Hard floor (cannot go below) |
 | `distribution_mean` | 1500 | Target population mean |
 | `spread_factor` | 450 | Logistic function width (D) |
 | `max_delta` | 45 | Maximum rating change per game |
 | `k_factor` | 50 | Base scaling factor (K₀) |
-| `lobby_split_weight_scaled` | 250000 | w × 1e6 (0.25 = 25%) |
-| `mean_regression_scaled` | 15000 | λ × 1e6 (0.015 = 1.5%) |
+| `lobby_split_weight_scaled` | 2500 | w × 10000 (0.25 = 25%) |
+| `mean_regression_scaled` | 150 | λ × 10000 (0.015 = 1.5%) |
 | `min_players` | 6 | Minimum for rated game |
-| `min_entry_fee` | 1e18 | $1 in LORDS (18 decimals) |
+
+Note: `initial_mmr` (1000) and `min_mmr` (100) are handled by the MMR token contract.
 
 ### Tuning Guidelines
 
@@ -598,16 +595,13 @@ let claimed = mmr_systems.has_player_claimed_mmr(trial_id, player_address);
 let mmr_config = MMRConfig {
     enabled: true,
     mmr_token_address: token_address,
-    initial_mmr: 1000,
-    min_mmr: 100,
     distribution_mean: 1500,
     spread_factor: 450,
     max_delta: 45,
     k_factor: 50,
-    lobby_split_weight_scaled: 250000, // 0.25
-    mean_regression_scaled: 15000,
+    lobby_split_weight_scaled: 2500, // 0.25
+    mean_regression_scaled: 150, // 0.015
     min_players: 6,
-    min_entry_fee: 1_000000000000000000, // $1 LORDS
 };
 
 WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);

@@ -2703,6 +2703,37 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_mmr_config(props: SystemProps.SetMMRConfigProps) {
+    const {
+      enabled,
+      mmr_token_address,
+      distribution_mean,
+      spread_factor,
+      max_delta,
+      k_factor,
+      lobby_split_weight_scaled,
+      mean_regression_scaled,
+      min_players,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_mmr_config",
+      calldata: [
+        enabled,
+        mmr_token_address,
+        distribution_mean,
+        spread_factor,
+        max_delta,
+        k_factor,
+        lobby_split_weight_scaled,
+        mean_regression_scaled,
+        min_players,
+      ],
+    });
+  }
+
   public async set_travel_food_cost_config(props: SystemProps.SetTravelFoodCostConfigProps) {
     const {
       config_id,

@@ -15,14 +15,7 @@
 
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use crate::models::mmr::MMRConfig;
-
-
-// ================================
-// CONSTANTS
-// ================================
-
-// Fixed-point precision constants
-const PRECISION_SCALE: u128 = 1_000_000; // 1e6 for config values
+use crate::utils::math::PercentageValueImpl;
 
 
 // ================================
@@ -181,8 +174,9 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
             }
         };
 
-        // w = weight_scaled / 1e6
-        let w = FixedTrait::new_unscaled(weight_scaled, false) / FixedTrait::new_unscaled(PRECISION_SCALE, false);
+        // w = weight_scaled / 10000 (PercentageValueImpl::_100())
+        let precision: u128 = PercentageValueImpl::_100().into();
+        let w = FixedTrait::new_unscaled(weight_scaled, false) / FixedTrait::new_unscaled(precision, false);
 
         // mult = 1 + w × bias
         let one = FixedTrait::ONE();
@@ -195,8 +189,9 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
     /// Step 7: Apply mean regression
     /// Δ_reg = Δ_tier - λ × (MMR - μ)
     fn apply_mean_regression(delta_tier: Fixed, current_mmr: u128, mean: u128, lambda_scaled: u128) -> Fixed {
-        // Convert lambda from scaled (1e6) to fixed
-        let lambda = FixedTrait::new_unscaled(lambda_scaled, false) / FixedTrait::new_unscaled(PRECISION_SCALE, false);
+        // Convert lambda from scaled (10000) to fixed
+        let precision: u128 = PercentageValueImpl::_100().into();
+        let lambda = FixedTrait::new_unscaled(lambda_scaled, false) / FixedTrait::new_unscaled(precision, false);
 
         // (MMR - μ) - can be positive or negative
         let deviation = if current_mmr >= mean {
@@ -212,9 +207,10 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         delta_tier - regression_pull
     }
 
-    /// Step 8: Calculate final new MMR with floor enforcement
-    /// MMR' = max(min_mmr, MMR + Δ_reg)
-    fn calculate_new_mmr(current_mmr: u128, delta_reg: Fixed, min_mmr: u128) -> u128 {
+    /// Step 8: Calculate final new MMR
+    /// MMR' = MMR + Δ_reg
+    /// Note: The MMR token contract enforces min_mmr floor in update_mmr()
+    fn calculate_new_mmr(current_mmr: u128, delta_reg: Fixed) -> u128 {
         // Convert delta to signed integer change
         let delta_magnitude = Self::from_fixed(
             if delta_reg.sign {
@@ -224,7 +220,7 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
             },
         );
 
-        let new_mmr = if delta_reg.sign {
+        if delta_reg.sign {
             // Negative delta - subtract
             if current_mmr > delta_magnitude {
                 current_mmr - delta_magnitude
@@ -234,13 +230,6 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
         } else {
             // Positive delta - add
             current_mmr + delta_magnitude
-        };
-
-        // Enforce floor
-        if new_mmr < min_mmr {
-            min_mmr
-        } else {
-            new_mmr
         }
     }
 
@@ -262,30 +251,36 @@ pub impl MMRCalculatorImpl of MMRCalculatorTrait {
     fn calculate_player_mmr(
         config: MMRConfig, player_mmr: u128, rank: u16, player_count: u16, game_median: u128, global_median: u128,
     ) -> u128 {
+        // Convert config values to u128 for fixed-point math
+        let spread_factor: u128 = config.spread_factor.into();
+        let k_factor: u128 = config.k_factor.into();
+        let max_delta: u128 = config.max_delta.into();
+        let lobby_split_weight_scaled: u128 = config.lobby_split_weight_scaled.into();
+        let distribution_mean: u128 = config.distribution_mean.into();
+        let mean_regression_scaled: u128 = config.mean_regression_scaled.into();
+
         // Step 2: Expected percentile
-        let p_exp = Self::expected_percentile(player_mmr, game_median, config.spread_factor);
+        let p_exp = Self::expected_percentile(player_mmr, game_median, spread_factor);
 
         // Step 3: Actual percentile
         let p_act = Self::actual_percentile(rank, player_count);
 
         // Step 4: Raw delta
-        let delta_base = Self::raw_delta(p_exp, p_act, config.k_factor, player_count);
+        let delta_base = Self::raw_delta(p_exp, p_act, k_factor, player_count);
 
         // Step 5: Apply diminishing returns
-        let delta = Self::apply_diminishing_returns(delta_base, config.max_delta);
+        let delta = Self::apply_diminishing_returns(delta_base, max_delta);
 
         // Step 6: Apply split lobby adjustment
         let delta_tier = Self::apply_split_lobby_adjustment(
-            delta, game_median, global_median, config.spread_factor, config.lobby_split_weight_scaled,
+            delta, game_median, global_median, spread_factor, lobby_split_weight_scaled,
         );
 
         // Step 7: Apply mean regression
-        let delta_reg = Self::apply_mean_regression(
-            delta_tier, player_mmr, config.distribution_mean, config.mean_regression_scaled,
-        );
+        let delta_reg = Self::apply_mean_regression(delta_tier, player_mmr, distribution_mean, mean_regression_scaled);
 
-        // Step 8: Calculate new MMR with floor
-        Self::calculate_new_mmr(player_mmr, delta_reg, config.min_mmr)
+        // Step 8: Calculate new MMR (token contract enforces min_mmr floor)
+        Self::calculate_new_mmr(player_mmr, delta_reg)
     }
 }
 
@@ -537,7 +532,7 @@ mod tests {
         let delta = FixedTrait::new_unscaled(20, false);
         let current_mmr: u128 = 1700;
         let mean: u128 = 1500;
-        let lambda_scaled: u128 = 15000; // 0.015 * 1e6
+        let lambda_scaled: u128 = 150; // 0.015 * 10000
 
         let adjusted = MMRCalculatorImpl::apply_mean_regression(delta, current_mmr, mean, lambda_scaled);
         // Δ_reg = 20 - 0.015 * (1700 - 1500) = 20 - 0.015 * 200 = 20 - 3 = 17
@@ -551,7 +546,7 @@ mod tests {
         let delta = FixedTrait::new_unscaled(20, false);
         let current_mmr: u128 = 1300;
         let mean: u128 = 1500;
-        let lambda_scaled: u128 = 15000; // 0.015 * 1e6
+        let lambda_scaled: u128 = 150; // 0.015 * 10000
 
         let adjusted = MMRCalculatorImpl::apply_mean_regression(delta, current_mmr, mean, lambda_scaled);
         // Δ_reg = 20 - 0.015 * (1300 - 1500) = 20 - 0.015 * (-200) = 20 + 3 = 23
@@ -564,7 +559,7 @@ mod tests {
         let delta = FixedTrait::new_unscaled(20, false);
         let current_mmr: u128 = 1500;
         let mean: u128 = 1500;
-        let lambda_scaled: u128 = 15000;
+        let lambda_scaled: u128 = 150;
 
         let adjusted = MMRCalculatorImpl::apply_mean_regression(delta, current_mmr, mean, lambda_scaled);
         let diff = if adjusted > delta {
@@ -583,9 +578,8 @@ mod tests {
     fn test_new_mmr_positive_delta() {
         let current_mmr: u128 = 1000;
         let delta_reg = FixedTrait::new_unscaled(25, false);
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
         assert!(new_mmr == 1025, "New MMR should be current + delta");
     }
 
@@ -593,32 +587,31 @@ mod tests {
     fn test_new_mmr_negative_delta() {
         let current_mmr: u128 = 1000;
         let delta_reg = FixedTrait::new_unscaled(25, true); // negative
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
         assert!(new_mmr == 975, "New MMR should be current - delta");
     }
 
     #[test]
-    fn test_new_mmr_floor_enforcement() {
+    fn test_new_mmr_allows_zero() {
+        // Token contract enforces min_mmr floor, not the game contract
         let current_mmr: u128 = 150;
         let delta_reg = FixedTrait::new_unscaled(100, true); // negative
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
-        // 150 - 100 = 50, but floor is 100
-        assert!(new_mmr == 100, "New MMR should not go below floor");
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
+        // 150 - 100 = 50 (no floor enforcement in game contract)
+        assert!(new_mmr == 50, "New MMR should be 50 (token contract enforces floor)");
     }
 
     #[test]
-    fn test_new_mmr_floor_when_delta_exceeds_current() {
+    fn test_new_mmr_clamps_at_zero_not_negative() {
+        // When delta exceeds current, result is 0 (not negative)
         let current_mmr: u128 = 50;
         let delta_reg = FixedTrait::new_unscaled(100, true); // negative
-        let min_mmr: u128 = 100;
 
-        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg, min_mmr);
-        // 50 - 100 would be negative, should floor at min
-        assert!(new_mmr == 100, "New MMR should be floor when delta exceeds current");
+        let new_mmr = MMRCalculatorImpl::calculate_new_mmr(current_mmr, delta_reg);
+        // 50 - 100 would be negative, should be 0
+        assert!(new_mmr == 0, "New MMR should be 0 when delta exceeds current");
     }
 
     // ================================
@@ -664,10 +657,11 @@ mod tests {
     }
 
     #[test]
-    fn test_floor_enforcement() {
+    fn test_low_mmr_player_in_high_tier_lobby() {
         let config = MMRConfigDefaultImpl::default();
 
-        // Player with very low MMR loses
+        // Player with very low MMR (100) loses in a high-tier lobby (median 1500)
+        // Mean regression strongly pulls toward 1500, which may offset the loss
         let current_mmr: u128 = 100;
         let rank: u16 = 6;
         let player_count: u16 = 6;
@@ -678,8 +672,12 @@ mod tests {
             config, current_mmr, rank, player_count, median_mmr, median_mmr,
         );
 
-        // Should not go below floor
-        assert!(new_mmr >= config.min_mmr, "MMR should not go below floor");
+        // With current_mmr so far below distribution_mean (1500), mean regression
+        // adds a positive adjustment. The player was expected to lose (high expected
+        // percentile), so performance meets expectations. Net result depends on
+        // which effect dominates. The key test is that calculation completes.
+        // Note: Token contract enforces min_mmr floor (100e18)
+        assert!(new_mmr > 0, "MMR calculation should complete");
     }
 
     #[test]
@@ -726,8 +724,7 @@ mod tests {
 
         // Low MMR player was expected to lose, so performance matches expectations
         // Mean regression pulls toward 1500, which can actually offset losses
-        // Key behavior: floor is enforced and result is reasonable
-        assert!(low_new >= config.min_mmr, "Should not go below floor");
+        // Note: Token contract enforces min_mmr floor, so we just verify result is reasonable
 
         // Compare to a player with higher MMR losing
         let med_mmr: u128 = 1000;
@@ -922,7 +919,7 @@ mod tests {
         let game_median: u128 = 1000;
         let global_median: u128 = 1000;
         let spread_factor: u128 = 450;
-        let weight_scaled: u128 = 250000; // 0.25
+        let weight_scaled: u128 = 2500; // 0.25 * 10000
 
         let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
             delta, game_median, global_median, spread_factor, weight_scaled,
@@ -944,7 +941,7 @@ mod tests {
         let game_median: u128 = 1200; // High-tier game
         let global_median: u128 = 1000;
         let spread_factor: u128 = 450;
-        let weight_scaled: u128 = 250000; // 0.25
+        let weight_scaled: u128 = 2500; // 0.25 * 10000
 
         let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
             delta, game_median, global_median, spread_factor, weight_scaled,
@@ -962,7 +959,7 @@ mod tests {
         let game_median: u128 = 800; // Low-tier game
         let global_median: u128 = 1000;
         let spread_factor: u128 = 450;
-        let weight_scaled: u128 = 250000; // 0.25
+        let weight_scaled: u128 = 2500; // 0.25 * 10000
 
         let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
             delta, game_median, global_median, spread_factor, weight_scaled,
@@ -980,7 +977,7 @@ mod tests {
         let game_median: u128 = 2000; // Very high tier
         let global_median: u128 = 1000;
         let spread_factor: u128 = 450;
-        let weight_scaled: u128 = 250000; // 0.25
+        let weight_scaled: u128 = 2500; // 0.25 * 10000
 
         let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
             delta, game_median, global_median, spread_factor, weight_scaled,
@@ -1008,7 +1005,7 @@ mod tests {
         let game_median: u128 = 1200; // High-tier game
         let global_median: u128 = 1000;
         let spread_factor: u128 = 450;
-        let weight_scaled: u128 = 250000;
+        let weight_scaled: u128 = 2500;
 
         let adjusted = MMRCalculatorImpl::apply_split_lobby_adjustment(
             delta, game_median, global_median, spread_factor, weight_scaled,

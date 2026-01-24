@@ -643,6 +643,17 @@ export interface Config {
   factory: {
     address: string;
   };
+  mmr?: {
+    enabled: boolean;
+    mmr_token_address: string;
+    distribution_mean: number;
+    spread_factor: number;
+    max_delta: number;
+    k_factor: number;
+    lobby_split_weight_scaled: number;
+    mean_regression_scaled: number;
+    min_players: number;
+  };
 
   // Config for calling the setup function
   setup?: {
