@@ -13,15 +13,12 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
+import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
 let entityStreamSubscription: { cancel: () => void } | null = null;
-
-function isToriiDeleteNotification(entity: ToriiEntity): boolean {
-  return Object.keys(entity.models).length === 0;
-}
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 
@@ -76,12 +73,12 @@ const createMainThreadQueueProcessor = (
     if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
 
     itemsToProcess.forEach(({ entityId, data }) => {
-      const isEntityDelete = isToriiDeleteNotification(data);
+      const isEntityDelete = isDeletionPayload(data);
       if (isEntityDelete) {
         batchRecord[entityId] = data;
       }
       if (batchRecord[entityId]) {
-        const entityHasBeenDeleted = isToriiDeleteNotification(batchRecord[entityId]);
+        const entityHasBeenDeleted = isDeletionPayload(batchRecord[entityId]);
         if (entityHasBeenDeleted) return;
         batchRecord[entityId] = mergeDeep(batchRecord[entityId], data);
       } else {
@@ -93,9 +90,9 @@ const createMainThreadQueueProcessor = (
     if (entityIds.length > 0) {
       try {
         if (logging) console.log("Applying batch update", batchRecord);
-        const deletions = entityIds.filter((id) => isToriiDeleteNotification(batchRecord[id]));
+        const deletions = entityIds.filter((id) => isDeletionPayload(batchRecord[id]));
         const upserts = entityIds
-          .filter((id) => !isToriiDeleteNotification(batchRecord[id]))
+          .filter((id) => !isDeletionPayload(batchRecord[id]))
           .map((id) => batchRecord[id]);
 
         applyBatch({ upserts, deletions });
