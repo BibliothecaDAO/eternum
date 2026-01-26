@@ -957,14 +957,6 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
   },
 };
 
-export function getAudioAsset(id: string): AudioAsset | undefined {
-  return AUDIO_REGISTRY[id];
-}
-
-export function getAssetsByCategory(category: AudioCategory): AudioAsset[] {
-  return Object.values(AUDIO_REGISTRY).filter((asset) => asset.category === category);
-}
-
 export function getAllAssets(): AudioAsset[] {
   return Object.values(AUDIO_REGISTRY);
 }
