@@ -3,9 +3,9 @@ import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 
 export const useBlockTimestamp = () => {
-  return useBlockTimestampStore((state) => ({
-    currentDefaultTick: state.currentDefaultTick,
-  }));
+  const currentDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
+
+  return { currentDefaultTick };
 };
 
 export const getBlockTimestamp = () => {

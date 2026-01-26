@@ -121,8 +121,7 @@ const envSchema = z.object({
   VITE_PUBLIC_SENTRY_DSN: z
     .string()
     .url()
-    .optional()
-    .default("https://2693e253c76a173feb3650a0010b530f@o4509533021536256.ingest.us.sentry.io/4510756553293824"),
+    .optional(),
   VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
   VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
     .string()

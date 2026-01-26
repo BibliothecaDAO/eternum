@@ -5,10 +5,6 @@ import { useStaminaManager } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 
-const EMPTY_TICK = {
-  currentArmiesTick: 0,
-};
-
 const StaminaResourceCost = ({
   selectedEntityId,
   isExplored,
@@ -20,11 +16,9 @@ const StaminaResourceCost = ({
   path: ActionPath[];
   currentArmiesTick?: number;
 }) => {
-  const needsTick = currentArmiesTickProp === undefined;
-  const storeTick = useBlockTimestampStore((state) =>
-    needsTick ? { currentArmiesTick: state.currentArmiesTick } : EMPTY_TICK,
-  );
-  const currentArmiesTick = currentArmiesTickProp ?? storeTick.currentArmiesTick;
+  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
+
   const staminaManager = useStaminaManager(selectedEntityId || 0);
 
   const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);

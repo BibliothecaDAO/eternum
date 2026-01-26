@@ -21,10 +21,6 @@ interface ArmyWarningProps {
   currentArmiesTick?: number;
 }
 
-const EMPTY_TICK = {
-  currentArmiesTick: 0,
-};
-
 export const ArmyWarning = ({
   army,
   explorerResources,
@@ -58,11 +54,8 @@ export const ArmyWarning = ({
     return { missingWheat, missingFish, notEnoughFood };
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
-  const needsTick = currentArmiesTickProp === undefined;
-  const storeTick = useBlockTimestampStore((state) =>
-    needsTick ? { currentArmiesTick: state.currentArmiesTick } : EMPTY_TICK,
-  );
-  const currentArmiesTick = currentArmiesTickProp ?? storeTick.currentArmiesTick;
+  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
 
   const stamina = useMemo(() => {
     return StaminaManager.getStamina(army.troops, currentArmiesTick);

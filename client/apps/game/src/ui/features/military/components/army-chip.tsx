@@ -61,10 +61,6 @@ export const NavigateToPositionIcon = ({
   );
 };
 
-const EMPTY_TICK = {
-  currentArmiesTick: 0,
-};
-
 export const ArmyChip = ({
   army,
   className,
@@ -95,11 +91,8 @@ export const ArmyChip = ({
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
 
-  const needsTick = currentArmiesTickProp === undefined;
-  const storeTick = useBlockTimestampStore((state) =>
-    needsTick ? { currentArmiesTick: state.currentArmiesTick } : EMPTY_TICK,
-  );
-  const currentArmiesTick = currentArmiesTickProp ?? storeTick.currentArmiesTick;
+  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
 
   const relicEffects = useMemo(() => {
     return getArmyRelicEffects(army.troops, currentArmiesTick).map((relic) => relic.id);

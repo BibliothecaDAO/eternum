@@ -19,12 +19,6 @@ import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const EMPTY_TICKS = {
-  currentDefaultTick: 0,
-  currentArmiesTick: 0,
-  armiesTickTimeRemaining: 0,
-};
-
 export const ResourceChip = ({
   resourceId,
   resourceManager,
@@ -67,22 +61,13 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const needsTick =
-    currentDefaultTickProp === undefined ||
-    currentArmiesTickProp === undefined ||
-    armiesTickTimeRemainingProp === undefined;
-  const storeTicks = useBlockTimestampStore((state) =>
-    needsTick
-      ? {
-          currentDefaultTick: state.currentDefaultTick,
-          currentArmiesTick: state.currentArmiesTick,
-          armiesTickTimeRemaining: state.armiesTickTimeRemaining,
-        }
-      : EMPTY_TICKS,
-  );
-  const currentDefaultTick = currentDefaultTickProp ?? storeTicks.currentDefaultTick;
-  const currentArmiesTick = currentArmiesTickProp ?? storeTicks.currentArmiesTick;
-  const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeTicks.armiesTickTimeRemaining;
+  const storeDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
+  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const storeArmiesTickTimeRemaining = useBlockTimestampStore((state) => state.armiesTickTimeRemaining);
+
+  const currentDefaultTick = currentDefaultTickProp ?? storeDefaultTick;
+  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
+  const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeArmiesTickTimeRemaining;
   const currentTick = currentDefaultTick || 0;
   const resourceEnumId = resourceId as ResourcesIds;
 

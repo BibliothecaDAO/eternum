@@ -1,10 +1,10 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 
 export const useBlockTimestamp = () => {
-  return useBlockTimestampStore((state) => ({
-    currentBlockTimestamp: state.currentBlockTimestamp,
-    currentDefaultTick: state.currentDefaultTick,
-    currentArmiesTick: state.currentArmiesTick,
-    armiesTickTimeRemaining: state.armiesTickTimeRemaining,
-  }));
+  const currentBlockTimestamp = useBlockTimestampStore((state) => state.currentBlockTimestamp);
+  const currentDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
+  const currentArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const armiesTickTimeRemaining = useBlockTimestampStore((state) => state.armiesTickTimeRemaining);
+
+  return { currentBlockTimestamp, currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining };
 };
