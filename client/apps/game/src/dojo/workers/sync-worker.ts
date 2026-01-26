@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import { isToriiDeleteNotification } from "../sync-utils";
+
 interface ToriiPayload {
   hashed_keys: string;
   models: Record<string, unknown>;
@@ -69,8 +71,6 @@ const post = (message: OutboundMessage, transfer?: Transferable[]) => {
   ctx.postMessage(message, transfer ?? []);
 };
 
-const isDeletionPayload = (payload: ToriiPayload) => !payload.models || Object.keys(payload.models).length === 0;
-
 const mergeDeep = (target: ToriiPayload, source: ToriiPayload): ToriiPayload => {
   const output: Record<string, unknown> = { ...target };
 
@@ -106,7 +106,7 @@ const scheduleFlush = () => {
 };
 
 const enqueueUpdate = (entityId: string, payload: ToriiPayload) => {
-  const deletion = isDeletionPayload(payload);
+  const deletion = isToriiDeleteNotification(payload);
   const existing = pending.get(entityId);
 
   if (existing) {

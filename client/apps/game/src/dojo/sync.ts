@@ -13,15 +13,12 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
+import { isToriiDeleteNotification } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
 let entityStreamSubscription: { cancel: () => void } | null = null;
-
-function isToriiDeleteNotification(entity: ToriiEntity): boolean {
-  return Object.keys(entity.models).length === 0;
-}
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 
