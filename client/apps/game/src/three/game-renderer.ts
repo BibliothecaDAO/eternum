@@ -13,7 +13,7 @@ import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
 import { GUIManager } from "@/three/utils/";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   BloomEffect,
@@ -35,11 +35,13 @@ import {
   HalfFloatType,
   LinearToneMapping,
   NoToneMapping,
+  PCFShadowMap,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
   Raycaster,
   ReinhardToneMapping,
+  UnsignedByteType,
   Vector2,
   WebGLRenderer,
   WebGLRenderTarget,
@@ -152,6 +154,7 @@ export default class GameRenderer {
   private environmentTarget?: WebGLRenderTarget;
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
+  private readonly isMobileDevice = IS_MOBILE;
   private readonly handleWindowResize = () => this.onWindowResize();
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -327,7 +330,7 @@ export default class GameRenderer {
 
     this.renderer.setPixelRatio(this.getTargetPixelRatio());
     this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.shadowMap.type = this.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.8;
@@ -335,8 +338,9 @@ export default class GameRenderer {
     // Disable auto-reset of renderer.info so we can capture full frame stats
     this.renderer.info.autoReset = false;
     //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const frameBufferType = this.isMobileDevice ? UnsignedByteType : HalfFloatType;
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: HalfFloatType,
+      frameBufferType,
     });
   }
 
@@ -820,7 +824,7 @@ export default class GameRenderer {
   }
 
   private setupPostProcessingEffects() {
-    const effectsConfig = POST_PROCESSING_CONFIG[this.graphicsSetting];
+    const effectsConfig = this.getPostProcessingConfig();
     if (!effectsConfig) {
       return; // Skip post-processing for low graphics settings
     }
@@ -858,6 +862,19 @@ export default class GameRenderer {
     folder.close();
 
     return effect;
+  }
+
+  private getPostProcessingConfig(): PostProcessingConfig | null {
+    const effectsConfig = POST_PROCESSING_CONFIG[this.graphicsSetting];
+    if (!effectsConfig) {
+      return null;
+    }
+
+    if (this.isMobileDevice && this.graphicsSetting !== GraphicsSettings.HIGH) {
+      return null;
+    }
+
+    return effectsConfig;
   }
 
   private setupPostProcessingGUI(config: PostProcessingConfig): void {
@@ -1007,18 +1024,30 @@ export default class GameRenderer {
 
   private getTargetPixelRatio() {
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
+    const mobileCap = this.getMobilePixelRatioCap();
 
     switch (this.graphicsSetting) {
       case GraphicsSettings.HIGH:
-        return Math.min(devicePixelRatio, 2);
+        return Math.min(devicePixelRatio, 2, mobileCap);
       case GraphicsSettings.MID:
-        return Math.min(devicePixelRatio, 1.5);
+        return Math.min(devicePixelRatio, 1.5, mobileCap);
       default:
-        return 1;
+        return Math.min(1, mobileCap);
     }
   }
 
   private getTargetFPS(): number | null {
+    if (this.isMobileDevice) {
+      switch (this.graphicsSetting) {
+        case GraphicsSettings.HIGH:
+          return 45;
+        case GraphicsSettings.MID:
+          return 30;
+        default:
+          return 30;
+      }
+    }
+
     switch (this.graphicsSetting) {
       case GraphicsSettings.LOW:
         return 30;
@@ -1027,6 +1056,26 @@ export default class GameRenderer {
       default:
         return null;
     }
+  }
+
+  private getMobilePixelRatioCap(): number {
+    if (!this.isMobileDevice) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    switch (this.graphicsSetting) {
+      case GraphicsSettings.HIGH:
+        return 1.5;
+      case GraphicsSettings.MID:
+        return 1.25;
+      default:
+        return 1;
+    }
+  }
+
+  private resolvePixelRatio(pixelRatio: number): number {
+    const mobileCap = this.getMobilePixelRatioCap();
+    return Math.min(pixelRatio, mobileCap);
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
@@ -1126,16 +1175,28 @@ export default class GameRenderer {
   }
 
   private getLabelRenderIntervalMs(view?: CameraView): number {
-    switch (view) {
-      case CameraView.Close:
-        return 0;
-      case CameraView.Medium:
-        return 33;
-      case CameraView.Far:
-        return 100;
-      default:
-        return 33;
+    const baseInterval = (() => {
+      switch (view) {
+        case CameraView.Close:
+          return 0;
+        case CameraView.Medium:
+          return 33;
+        case CameraView.Far:
+          return 100;
+        default:
+          return 33;
+      }
+    })();
+
+    if (!this.isMobileDevice) {
+      return baseInterval;
     }
+
+    if (baseInterval === 0) {
+      return 33;
+    }
+
+    return Math.round(baseInterval * 1.5);
   }
 
   private shouldRenderLabels(now: number): boolean {
@@ -1365,7 +1426,7 @@ export default class GameRenderer {
     this.lastAppliedQuality = { ...features };
 
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
-    const resolvedPixelRatio = Math.min(devicePixelRatio, features.pixelRatio);
+    const resolvedPixelRatio = this.resolvePixelRatio(Math.min(devicePixelRatio, features.pixelRatio));
     this.renderer.setPixelRatio(resolvedPixelRatio);
     this.renderer.shadowMap.enabled = features.shadows;
 
