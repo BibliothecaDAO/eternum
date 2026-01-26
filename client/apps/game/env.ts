@@ -118,10 +118,7 @@ const envSchema = z.object({
   VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
 
   // Sentry
-  VITE_PUBLIC_SENTRY_DSN: z
-    .string()
-    .url()
-    .optional(),
+  VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
   VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
   VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
     .string()
