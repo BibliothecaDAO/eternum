@@ -51,7 +51,7 @@ export const PrizePanel = () => {
     const mine = trials.filter((t) => String(t.owner).toLowerCase() === String(account.address).toLowerCase());
     if (mine.length === 0) return undefined;
     // pick the latest by trial_id
-    return mine.sort((a, b) => ((b.trial_id as bigint) > (a.trial_id as bigint) ? 1 : -1))[0];
+    return mine.toSorted((a, b) => ((b.trial_id as bigint) > (a.trial_id as bigint) ? 1 : -1))[0];
   }, [trials, account.address]);
   const finalTrial = useMemo(() => {
     if (!finalTrialId) return undefined;
@@ -66,7 +66,7 @@ export const PrizePanel = () => {
       .filter((p): p is NonNullable<typeof p> => Boolean(p))
       .filter((p) => (p.registered_points as bigint) > 0n)
       .map((p) => ({ address: p!.address as unknown as bigint, points: p!.registered_points as bigint }))
-      .sort((a, b) => (a.points === b.points ? 0 : a.points < b.points ? 1 : -1));
+      .toSorted((a, b) => (a.points === b.points ? 0 : a.points < b.points ? 1 : -1));
   }, [registeredPlayersEntities, components.PlayerRegisteredPoints]);
 
   const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);

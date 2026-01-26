@@ -96,7 +96,7 @@ export const PlayersPanel = ({
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order
-    const sortedPlayers = [...players].sort((a, b) => (b.points || 0) - (a.points || 0));
+    const sortedPlayers = players.toSorted((a, b) => (b.points || 0) - (a.points || 0));
 
     const playersWithStructures = sortedPlayers
       // filter out players with no address

@@ -59,13 +59,13 @@ export const fetchRegisteredPlayers = async (
       })
       .filter((p): p is { address: string; name: string | null } => Boolean(p));
 
-    players.sort((a, b) => {
+    const sortedPlayers = players.toSorted((a, b) => {
       const aLabel = (a.name || a.address).toLowerCase();
       const bLabel = (b.name || b.address).toLowerCase();
       return aLabel.localeCompare(bLabel);
     });
 
-    return players;
+    return sortedPlayers;
   } catch (error: any) {
     const message = error?.message ?? "Failed to fetch players";
     throw new Error(message);
@@ -160,13 +160,13 @@ export const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFak
       const workers = Array.from({ length: limit }, () => worker());
       await Promise.all(workers);
 
-      nextServers.sort((a, b) => {
+      const sortedServers = nextServers.toSorted((a, b) => {
         const aStart = a.startAt ?? Infinity;
         const bStart = b.startAt ?? Infinity;
         return aStart - bStart;
       });
 
-      setServers(nextServers);
+      setServers(sortedServers);
     } catch (e: any) {
       setError(e?.message ?? String(e));
       setServers([]);

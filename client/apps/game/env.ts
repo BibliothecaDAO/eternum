@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getSelectedChain } from "./src/runtime/world/store";
 
-const rawEnv = import.meta.env as Record<string, string | undefined>;
+const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
 const envSchema = z.object({
   // Master account
@@ -163,6 +163,3 @@ if (storedChain) {
 
 export { env };
 export const hasPublicNodeUrl = Boolean(env.VITE_PUBLIC_NODE_URL);
-
-// Type for your validated env
-type Env = z.infer<typeof envSchema>;

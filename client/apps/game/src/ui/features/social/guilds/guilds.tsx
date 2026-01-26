@@ -114,7 +114,7 @@ export const Guilds = ({
           memberCount: stats.memberCount,
         };
       })
-      .sort((a, b) => b.points - a.points)
+      .toSorted((a, b) => b.points - a.points)
       .map((guild, index) => {
         const rank = index + 1;
         return {

@@ -229,7 +229,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
     if (activeCategory === BuildingCategory.ECONOMIC) {
       buildingTypes
         .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
-        .sort((a, b) => {
+        .toSorted((a, b) => {
           const buildingA = BuildingType[a as keyof typeof BuildingType];
           const buildingB = BuildingType[b as keyof typeof BuildingType];
 

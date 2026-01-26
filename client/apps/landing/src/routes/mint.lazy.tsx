@@ -131,7 +131,7 @@ function MintSeasonPasses() {
       .filter((realm): realm is AugmentedRealm => realm !== null);
 
     // 2. Sort the augmented array - Can probably move to sql ordering
-    return augmented.sort((a, b) => {
+    return augmented.toSorted((a, b) => {
       // Sort by minted status first (false/unminted comes first)
       if (a.seasonPassMinted !== b.seasonPassMinted) {
         return a.seasonPassMinted ? 1 : -1;

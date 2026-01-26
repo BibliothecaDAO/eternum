@@ -41,7 +41,7 @@ export const NearbyEnemies = ({ onView }: NearbyEnemiesProps) => {
   const { armies, count, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, 20);
 
   const closestEnemy = useMemo(() => {
-    return armies.sort((a, b) => a.distance - b.distance)[0];
+    return armies.toSorted((a, b) => a.distance - b.distance)[0];
   }, [armies]);
   const { color, bgColor, icon: Icon } = getDangerLevel(closestEnemy ? closestEnemy.distance : 100);
 

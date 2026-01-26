@@ -104,7 +104,7 @@ export function MilitaryTab({}: MilitaryTabProps) {
     }
   };
 
-  const sortedArmies = armies.sort((a, b) => a.distance - b.distance);
+  const sortedArmies = armies.toSorted((a, b) => a.distance - b.distance);
 
   const handleCreateArmy = (type: "explorer" | "defense") => {
     setArmyCreationType(type);

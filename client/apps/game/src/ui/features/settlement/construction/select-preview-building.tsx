@@ -737,7 +737,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
               .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
-              .sort((a, b) => {
+              .toSorted((a, b) => {
                 const buildingA = BuildingType[a as keyof typeof BuildingType];
                 const buildingB = BuildingType[b as keyof typeof BuildingType];
 
@@ -910,8 +910,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     >
                       <div className="grid grid-cols-2 gap-2 p-2">
                         {group.buildings
-                          .slice()
-                          .sort((a, b) => {
+                          .toSorted((a, b) => {
                             const buildingA = BuildingType[a as keyof typeof BuildingType];
                             const buildingB = BuildingType[b as keyof typeof BuildingType];
                             const infoA = getMilitaryBuildingInfo(buildingA);

@@ -79,7 +79,7 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
         name: mode.structure.getName(hyperstructure.structure).name,
         isFavorite: favorites.includes(Number(hyperstructure.entity_id)),
       }))
-      .sort((a, b) => Number(a.entity_id) - Number(b.entity_id));
+      .toSorted((a, b) => Number(a.entity_id) - Number(b.entity_id));
   }, [hyperstructures, favorites, mode]);
 
   const myGuild = useComponentValue(components.GuildMember, getEntityIdFromKeys([ContractAddress(account.address)]));

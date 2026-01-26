@@ -105,7 +105,7 @@ export const BlitzHyperstructuresMenu = () => {
       activeTab === "bandits" ? processedHyperstructures.filter((h) => h.isBanditOwned) : processedHyperstructures;
 
     // Sort by distance (closest first)
-    return filtered.sort((a, b) => a.distance - b.distance);
+    return filtered.toSorted((a, b) => a.distance - b.distance);
   }, [processedHyperstructures, activeTab]);
 
   const handleRefresh = async () => {

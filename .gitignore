@@ -14,3 +14,6 @@ venv/
 __pycache__/
 client/apps/game/minimap
 .claude/ralph-loop.local.md
+.claude/tsc-cache/
+**/.claude/tsc-cache/
+thoughts/

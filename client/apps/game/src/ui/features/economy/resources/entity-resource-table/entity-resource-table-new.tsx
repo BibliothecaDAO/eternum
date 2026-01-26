@@ -185,7 +185,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           isSelected: selectedStructureId ? Number(structure.entityId) === selectedStructureId : false,
         };
       })
-      .sort((a, b) => a.entityId - b.entityId);
+      .toSorted((a, b) => a.entityId - b.entityId);
 
     // If pin is enabled and there's a selected column, move it to the front
     if (pinSelectedColumn && selectedStructureId) {

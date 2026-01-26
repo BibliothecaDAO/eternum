@@ -73,7 +73,7 @@ export class AudioPool {
     // Disconnect the used node
     try {
       node.disconnect();
-    } catch (error) {
+    } catch {
       // Node may already be disconnected, ignore error
     }
 
@@ -95,7 +95,7 @@ export class AudioPool {
       try {
         node.stop();
         node.disconnect();
-      } catch (error) {
+      } catch {
         // Node may already be stopped, ignore error
       }
     });
@@ -104,7 +104,7 @@ export class AudioPool {
     this.availableNodes.forEach((node) => {
       try {
         node.disconnect();
-      } catch (error) {
+      } catch {
         // Node may already be disconnected, ignore error
       }
     });
@@ -145,7 +145,7 @@ export class AudioPool {
       excessNodes.forEach((node) => {
         try {
           node.disconnect();
-        } catch (error) {
+        } catch {
           // Ignore disconnect errors
         }
       });

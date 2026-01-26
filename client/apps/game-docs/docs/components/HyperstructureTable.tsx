@@ -53,7 +53,7 @@ export const HyperstructureConstructionCostTable = () => {
   const hyperstructureConstructionCost = config.hyperstructures.hyperstructureConstructionCost;
 
   // Get all hyperstructure IDs and sort them for consistent display
-  const resourceIds = Object.keys(hyperstructureConstructionCost).sort((a, b) => {
+  const resourceIds = Object.keys(hyperstructureConstructionCost).toSorted((a, b) => {
     const aId = parseInt(a);
     const bId = parseInt(b);
     return aId - bId;

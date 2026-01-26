@@ -264,8 +264,10 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     }
 
-    eligible.sort((a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0));
-    return eligible;
+    const sortedEligible = eligible.toSorted(
+      (a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0),
+    );
+    return sortedEligible;
   }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
   const selectedSource = useMemo(() => {
@@ -319,7 +321,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           }
           return norm(name).includes(norm(q));
         });
-    return [...searched].sort((a, b) => {
+    return searched.toSorted((a, b) => {
       const aFav = favoriteDestinationIds.has(Number(a.entityId));
       const bFav = favoriteDestinationIds.has(Number(b.entityId));
       if (aFav && !bFav) return -1;
@@ -443,7 +445,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
         return true;
       })
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const ra = a as ResourcesIds;
         const rb = b as ResourcesIds;
         const priA = getResourcePriority(ra);

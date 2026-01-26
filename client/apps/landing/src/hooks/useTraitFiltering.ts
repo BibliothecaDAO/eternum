@@ -65,7 +65,7 @@ export function useTraitFiltering<T>(
     // Convert Sets to sorted arrays
     const sortedTraits: Record<string, string[]> = {};
     for (const type in traitsMap) {
-      sortedTraits[type] = Array.from(traitsMap[type]).sort((a, b) => {
+      sortedTraits[type] = Array.from(traitsMap[type]).toSorted((a, b) => {
         // Try numeric sort first, fallback to locale string sort
         const numA = parseFloat(a);
         const numB = parseFloat(b);

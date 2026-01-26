@@ -44,7 +44,7 @@ export const InventoryResources = ({
 
     if (!activateRelics) {
       return {
-        regularResources: balances.sort((a, b) => b.amount - a.amount),
+        regularResources: balances.toSorted((a, b) => b.amount - a.amount),
         relics: [],
       };
     }
@@ -61,8 +61,8 @@ export const InventoryResources = ({
     });
 
     return {
-      regularResources: regular.sort((a, b) => b.amount - a.amount),
-      relics: relicList.sort((a, b) => b.amount - a.amount),
+      regularResources: regular.toSorted((a, b) => b.amount - a.amount),
+      relics: relicList.toSorted((a, b) => b.amount - a.amount),
     };
   }, [resources, activateRelics]);
 

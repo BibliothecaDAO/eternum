@@ -98,7 +98,7 @@ export const VillageResourceReveal = ({
     const resourcePool = [...COMMON_RESOURCES, ...COMMON_RESOURCES, ...RARE_RESOURCES];
 
     // Shuffle and take 20 random resources
-    const shuffled = [...resourcePool].sort(() => 0.5 - Math.random());
+    const shuffled = resourcePool.toSorted(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 20);
 
     // Add the revealed resource at the end (this will be where it stops)

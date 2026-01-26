@@ -48,7 +48,7 @@ export const MOCK_CHESTS: Partial<MergedNftData>[] = [
 // Get a random subset of chest assets for mock reveals
 export const getMockRevealAssets = (count: number = 3): ChestAsset[] => {
   const allAssets = getAllChestAssets();
-  const shuffled = [...allAssets].sort(() => Math.random() - 0.5);
+  const shuffled = allAssets.toSorted(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };
 
@@ -64,7 +64,7 @@ const getMockRevealAssetsByRarity = (targetRarity: AssetRarity, count: number = 
     result.push(targetAssets[Math.floor(Math.random() * targetAssets.length)]);
   }
 
-  const shuffledOthers = otherAssets.sort(() => Math.random() - 0.5);
+  const shuffledOthers = otherAssets.toSorted(() => Math.random() - 0.5);
   while (result.length < count && shuffledOthers.length > 0) {
     result.push(shuffledOthers.pop()!);
   }

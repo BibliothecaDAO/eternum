@@ -56,7 +56,7 @@ export function AppSidebar() {
 
   const sortedCollectionEntries = Object.entries(marketplaceCollections)
     .filter(([, config]) => config.address !== "")
-    .sort(([keyA, configA], [keyB, configB]) => {
+    .toSorted(([keyA, configA], [keyB, configB]) => {
       const indexA = preferredCollectionOrder.indexOf(keyA as CollectionKey);
       const indexB = preferredCollectionOrder.indexOf(keyB as CollectionKey);
 

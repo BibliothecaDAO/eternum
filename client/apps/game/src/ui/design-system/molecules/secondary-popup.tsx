@@ -30,7 +30,7 @@ export const SecondaryPopup = ({
 
   const handleStop = (_: any, data: any) => {
     if (data.y < -200 || data.y > window.innerHeight - 220 || data.x < -450 || data.x > window.innerWidth - 520) {
-      return false as false;
+      return false as const;
     }
     if (name) {
       localStorage.setItem(name, JSON.stringify({ x: data.x, y: data.y }));
@@ -39,7 +39,7 @@ export const SecondaryPopup = ({
 
   const handleDrag = (_: any, data: any) => {
     if (data.y < -200 || data.y > window.innerHeight - 220 || data.x < -450 || data.x > window.innerWidth - 520) {
-      return false as false;
+      return false as const;
     }
   };
 

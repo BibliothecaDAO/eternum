@@ -61,7 +61,7 @@ function getRoundPoints(points: Vector2[], radius: number, pointsCount: number):
 
   for (let i = 0; i < points.length; i++) {
     let p1Index = i - 1;
-    let angPIndex = i;
+    const angPIndex = i;
     let p2Index = i + 1;
 
     if (p1Index < 0) p1Index = points.length - 1;
@@ -130,7 +130,7 @@ function getOneRoundedCorner(
   const circlePoint = getProportionPoint(angularPoint, d, L, dx, dy);
 
   // StartAngle and EndAngle of arc
-  let startAngle = Math.atan2(p1Cross.y - circlePoint.y, p1Cross.x - circlePoint.x);
+  const startAngle = Math.atan2(p1Cross.y - circlePoint.y, p1Cross.x - circlePoint.x);
   const endAngle = Math.atan2(p2Cross.y - circlePoint.y, p2Cross.x - circlePoint.x);
 
   // Sweep angle

@@ -1848,9 +1848,9 @@ export class ArmyModel {
     });
 
     // Sort by cached distance (avoids repeated raycast calls in comparator)
-    results.sort((a, b) => a.distance - b.distance);
+    const sortedResults = results.toSorted((a, b) => a.distance - b.distance);
 
-    return results;
+    return sortedResults;
   }
 
   /**

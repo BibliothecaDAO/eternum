@@ -99,7 +99,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     });
 
     // Sort by rank ascending
-    return withPrize.sort((a, b) => a.rank - b.rank);
+    return withPrize.toSorted((a, b) => a.rank - b.rank);
   }, [
     playerRankEntities,
     components.PlayerRank,

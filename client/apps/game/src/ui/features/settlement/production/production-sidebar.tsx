@@ -228,8 +228,8 @@ const SidebarRealm = ({
 
         <div className="flex flex-wrap items-center gap-2">
           {hasProduction ? (
-            [...resourceProductionSummary]
-              .sort((a, b) => {
+            resourceProductionSummary
+              .toSorted((a, b) => {
                 // Wheat first, then by resource id ascending
                 if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
                 if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;

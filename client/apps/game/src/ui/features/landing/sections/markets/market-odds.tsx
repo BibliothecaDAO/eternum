@@ -53,12 +53,12 @@ export const MarketOdds = ({
       .filter((idx): idx is number => idx !== null);
     const winningSet = new Set(winningOutcomeOrders);
 
-    const baseSorted = [...outcomes]
+    const baseSorted = outcomes
       .map((outcome, idx) => {
         const normalizedOrder = Number((outcome as any)?.index);
         return { outcome, order: Number.isFinite(normalizedOrder) ? normalizedOrder : idx };
       })
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const aOdds = parseNumericOdds(a.outcome);
         const bOdds = parseNumericOdds(b.outcome);
 

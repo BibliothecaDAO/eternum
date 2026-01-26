@@ -34,7 +34,7 @@ export const DefenseSlotSelection = ({
 }: DefenseSlotSelectionProps) => {
   const sortedSlots = useMemo(
     () =>
-      [...availableSlots].sort(
+      availableSlots.toSorted(
         (a, b) =>
           DISPLAYED_SLOT_NUMBER_MAP[a as keyof typeof DISPLAYED_SLOT_NUMBER_MAP] -
           DISPLAYED_SLOT_NUMBER_MAP[b as keyof typeof DISPLAYED_SLOT_NUMBER_MAP],

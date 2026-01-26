@@ -16,7 +16,7 @@ export const TORII_SETTING = async (): Promise<string> => {
 
   let toriiUrl = settingToUrl(toriiSetting);
 
-  let isAlive = await doAliveCheck(toriiUrl);
+  const isAlive = await doAliveCheck(toriiUrl);
 
   if (!isAlive) {
     const newSetting = getOppositeSetting(toriiSetting);

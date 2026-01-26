@@ -83,7 +83,7 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
             styles,
           };
         })
-        .sort((a, b) => a.bonus - b.bonus),
+        .toSorted((a, b) => a.bonus - b.bonus),
     [biome],
   );
 

@@ -176,7 +176,7 @@ export const SimpleResourceProduction = () => {
     .filter((id) => id !== ResourcesIds.Labor && resourceInputSimpleMode[id]?.length > 0)
     .filter((id) => !isMilitary(id))
     .filter((id) => id !== ResourcesIds.Donkey)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       // Sort by resource rarity (if available)
       const rarityA = RESOURCE_RARITY[a] || 0;
       const rarityB = RESOURCE_RARITY[b] || 0;
@@ -386,7 +386,7 @@ export const StandardResourceProduction = () => {
     .filter((id) => id !== ResourcesIds.Labor && resourceInputComplexMode[id]?.length > 0)
     .filter((id) => !isMilitary(id))
     .filter((id) => id !== ResourcesIds.Donkey)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       // Sort by resource rarity (if available)
       const rarityA = RESOURCE_RARITY[a] || 0;
       const rarityB = RESOURCE_RARITY[b] || 0;
@@ -461,7 +461,7 @@ export const SimpleTroopProduction = () => {
     .map(Number)
     .filter((id) => troopInputSimpleMode[id]?.length > 0)
     .filter((id) => isMilitary(id))
-    .sort((a, b) => a - b);
+    .toSorted((a, b) => a - b);
 
   return (
     <div style={styles.sectionStyle}>
@@ -531,7 +531,7 @@ export const StandardTroopProduction = () => {
     .map(Number)
     .filter((id) => troopInputComplexMode[id]?.length > 0)
     .filter((id) => isMilitary(id))
-    .sort((a, b) => a - b);
+    .toSorted((a, b) => a - b);
 
   // Group troops by tier
   const tier1Troops = complexTroopIds.filter((id) =>
@@ -662,7 +662,7 @@ export const LaborProduction = () => {
   const laborProducingResources = Object.keys(laborOutputPerResource)
     .map(Number)
     .filter((id) => laborOutputPerResource[id] > 0)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       // Sort by resource rarity (if available)
       const rarityA = RESOURCE_RARITY[a] || 0;
       const rarityB = RESOURCE_RARITY[b] || 0;

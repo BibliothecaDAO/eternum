@@ -94,7 +94,7 @@ export const UnifiedArmyCreationModal = ({
         const maxDefense = realm.structure.base.troop_max_guard_count || 0;
         return maxAttack > 0 || maxDefense > 0;
       })
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const nameA = mode.structure.getName(a.structure).name;
         const nameB = mode.structure.getName(b.structure).name;
         return nameA.localeCompare(nameB);
@@ -486,7 +486,7 @@ export const UnifiedArmyCreationModal = ({
       }
 
       if (!occupiedSlots.includes(guardSlot)) {
-        const fallbackSlot = [...occupiedSlots].sort((a, b) => a - b)[0];
+        const fallbackSlot = occupiedSlots.toSorted((a, b) => a - b)[0];
         if (fallbackSlot !== undefined) {
           setGuardSlot(fallbackSlot);
         }

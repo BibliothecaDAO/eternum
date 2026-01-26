@@ -138,8 +138,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       .replace(/[^a-z0-9]/g, "");
   }, [searchTerm]);
   const structuresForTransfer = useMemo(() => {
-    return [...playerStructuresFiltered]
-      .sort((a, b) => {
+    return playerStructuresFiltered
+      .toSorted((a, b) => {
         if (!sortByDistance) {
           return a.name.localeCompare(b.name);
         }

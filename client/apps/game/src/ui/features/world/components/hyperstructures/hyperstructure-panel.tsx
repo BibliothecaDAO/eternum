@@ -222,7 +222,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
     const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
 
     return Object.values(requiredAmounts)
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         // Sort by rarity, so that the least rare resources are at the top
         const rarityA = RESOURCE_RARITY[a.resource] || Number.MAX_SAFE_INTEGER;
         const rarityB = RESOURCE_RARITY[b.resource] || Number.MAX_SAFE_INTEGER;
