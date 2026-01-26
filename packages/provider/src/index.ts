@@ -3251,6 +3251,26 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call, TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME);
   }
 
+  // MMR system calls - commit and claim in a single transaction
+  public async commit_and_claim_game_mmr(props: SystemProps.CommitGameMMRProps) {
+    const { players, signer } = props;
+
+    const calls = [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-mmr_systems`),
+        entrypoint: "commit_game_mmr_meta",
+        calldata: [players.length, ...players],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-mmr_systems`),
+        entrypoint: "claim_game_mmr",
+        calldata: [players.length, ...players],
+      },
+    ];
+
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls), TransactionType.COMMIT_AND_CLAIM_MMR);
+  }
+
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
     const { hyperstructure_ids, player, signer } = props;
 

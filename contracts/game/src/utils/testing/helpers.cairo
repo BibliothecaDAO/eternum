@@ -47,7 +47,7 @@ use crate::systems::combat::contracts::troop_management::{
 use crate::systems::combat::contracts::troop_movement::{
     ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
 };
-use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
+// use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::utils::realm::iRealmImpl;
 use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
 
@@ -419,21 +419,21 @@ pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     explorer_id
 }
 
-pub fn tspawn_quest_tile(
-    ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
-) -> @QuestTile {
-    let id = world.dispatcher.uuid();
-    let resource_type = ResourceTypes::WHEAT;
-    let amount = MOCK_MAP_CONFIG().reward_resource_amount.into()
-        * QUEST_REWARD_BASE_MULTIPLIER.into()
-        * RESOURCE_PRECISION
-        * (level + 1).into();
-    let quest_details = @QuestTile {
-        id, coord, game_address, level, resource_type, amount, capacity, participant_count: 0,
-    };
-    world.write_model_test(quest_details);
-    quest_details
-}
+// pub fn tspawn_quest_tile(
+//     ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
+// ) -> @QuestTile {
+//     let id = world.dispatcher.uuid();
+//     let resource_type = ResourceTypes::WHEAT;
+//     let amount = MOCK_MAP_CONFIG().reward_resource_amount.into()
+//         * QUEST_REWARD_BASE_MULTIPLIER.into()
+//         * RESOURCE_PRECISION
+//         * (level + 1).into();
+//     let quest_details = @QuestTile {
+//         id, coord, game_address, level, resource_type, amount, capacity, participant_count: 0,
+//     };
+//     world.write_model_test(quest_details);
+//     quest_details
+// }
 
 pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: Coord) -> ID {
     let mut uuid = world.dispatcher.uuid();
@@ -602,10 +602,10 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_8")),
-            TestResource::Library(("biome_library", "0_1_8")), TestResource::Library(("rng_library", "0_1_8")),
+            TestResource::Library(("structure_creation_library", "0_1_9")),
+            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
             TestResource::Library(
-                ("combat_library", "0_1_8"),
+                ("combat_library", "0_1_9"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
             TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
@@ -1171,9 +1171,9 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_8")),
-            TestResource::Library(("biome_library", "0_1_8")), TestResource::Library(("rng_library", "0_1_8")),
-            TestResource::Library(("combat_library", "0_1_8")),
+            TestResource::Library(("structure_creation_library", "0_1_9")),
+            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
+            TestResource::Library(("combat_library", "0_1_9")),
         ]
             .span(),
     }
