@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Repository Guidelines
 
 ## Project Structure & Module Organization
@@ -30,6 +34,65 @@ TypeScript and React use two-space indentation and ES module imports. Components
 in desktop and `client/apps/eternum-mobile/src` in mobile. Run `pnpm --dir client/apps/game lint` before sending
 patches; fixable issues can be auto-corrected with `lint:fix`. Formatting is enforced through Prettier (`format` /
 `format:check`).
+
+## Cairo Contract Guidelines
+
+When modifying Cairo contracts in `contracts/game/`:
+
+### Toolchain
+
+- **Scarb 2.13.1** and **Dojo 1.8.0** - CI uses these specific versions
+- If tests fail locally, verify toolchain: `scarb --version` should show 2.13.1
+
+### Commands
+
+```bash
+cd contracts/game
+scarb fmt                    # Format code (required before commit)
+scarb fmt --check            # Check formatting (CI runs this)
+sozo test -f <test_name>     # Run specific test(s)
+sozo test                    # Run all tests
+sozo build                   # Build contracts
+```
+
+### Patterns
+
+- **Models**: `#[dojo::model]` in `src/models/<name>.cairo`, register in `src/models.cairo`
+- **Systems**: `#[dojo::contract]` in `src/systems/<name>/contracts.cairo`, register in `src/systems.cairo`
+- **Events**: `#[dojo::event]` inside system contracts
+- **Tests**: `#[cfg(test)] mod tests { mod test_<name>; }` in system module, file at
+  `src/systems/<name>/tests/test_<name>.cairo`
+
+### WorldConfig Pattern
+
+Global configuration is stored via `WorldConfigUtilImpl`. To add new config:
+
+```cairo
+// Define struct in models
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct MyConfig { pub enabled: bool, pub value: u128 }
+
+// Read/write in systems
+let config: MyConfig = WorldConfigUtilImpl::get_member(world, selector!("my_config"));
+WorldConfigUtilImpl::set_member(ref world, selector!("my_config"), config);
+```
+
+### Test World Setup
+
+For integration tests with Dojo models:
+
+```cairo
+fn namespace_def() -> NamespaceDef {
+    NamespaceDef {
+        namespace: DEFAULT_NS_STR(),
+        resources: [
+            TestResource::Model(m_MyModel::TEST_CLASS_HASH),
+            TestResource::Contract(my_systems::TEST_CLASS_HASH),
+            TestResource::Event(my_systems::e_MyEvent::TEST_CLASS_HASH),
+        ].span(),
+    }
+}
+```
 
 ## Mobile Specific Guidelines
 

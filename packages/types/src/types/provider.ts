@@ -408,6 +408,18 @@ export interface SetFactoryAddressProps extends SystemSigner {
   factory_address: BigNumberish;
 }
 
+export interface SetMMRConfigProps extends SystemSigner {
+  enabled: boolean;
+  mmr_token_address: BigNumberish;
+  distribution_mean: BigNumberish;
+  spread_factor: BigNumberish;
+  max_delta: BigNumberish;
+  k_factor: BigNumberish;
+  lobby_split_weight_scaled: BigNumberish;
+  mean_regression_scaled: BigNumberish;
+  min_players: BigNumberish;
+}
+
 export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSigner {
   resources: {
     resource: ResourcesIds;
@@ -684,6 +696,15 @@ export interface BlitzPrizeClaimProps extends SystemSigner {
 
 export interface BlitzPrizeClaimNoGameProps extends SystemSigner {
   registered_player: BigNumberish; // ContractAddress of the only registered player
+}
+
+// MMR system calls
+export interface CommitGameMMRProps extends SystemSigner {
+  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
+}
+
+export interface ClaimGameMMRProps extends SystemSigner {
+  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
 }
 
 export interface SetStaminaConfigProps extends SystemSigner {

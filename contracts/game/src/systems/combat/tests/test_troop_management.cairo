@@ -23,9 +23,8 @@ mod tests {
     use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
     };
-    use crate::utils::testing::snf_helpers::{
-        MOCK_TICK_CONFIG, snf_pre_explore_tile, snf_setup_troop_management_world, snf_spawn_guard_test_realm,
-        tgrant_resources,
+    use crate::utils::testing::helpers::{
+        MOCK_TICK_CONFIG, pre_explore_tile, setup_troop_management_world, spawn_guard_test_realm, tgrant_resources,
     };
 
     // Helper to get system dispatcher
@@ -66,11 +65,11 @@ mod tests {
     #[test]
     fn test_guard_add_success_empty_slot() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
@@ -124,11 +123,11 @@ mod tests {
     #[test]
     fn test_guard_add_success_existing_slot() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
@@ -195,7 +194,7 @@ mod tests {
     #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn test_guard_add_revert_season_inactive() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         // NOW, overwrite SeasonConfig to make it inactive
         let current_time = starknet::get_block_timestamp();
@@ -212,7 +211,7 @@ mod tests {
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for the call
         let amount = 1 * RESOURCE_PRECISION;
@@ -237,12 +236,12 @@ mod tests {
     #[should_panic(expected: 'Not Owner')]
     fn test_guard_add_revert_not_owner() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let other_caller = starknet::contract_address_const::<'other_caller'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources to the realm, though ownership check should happen first
         let amount = 1 * RESOURCE_PRECISION;
@@ -268,12 +267,12 @@ mod tests {
     #[should_panic(expected: "Insufficient Balance: T1 KNIGHT (id: 1, balance: 0) < 1000000000")]
     fn test_guard_add_revert_insufficient_resources() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Spawn realm without granting resources
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // DO NOT grant resources
 
@@ -298,11 +297,11 @@ mod tests {
     #[should_panic(expected: "incorrect category or tier")]
     fn test_guard_add_revert_mismatched_type() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant enough resources for both types
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -347,11 +346,11 @@ mod tests {
     #[should_panic(expected: "incorrect category or tier")]
     fn test_guard_add_revert_mismatched_tier() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant enough resources for both tiers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -395,11 +394,11 @@ mod tests {
     #[should_panic(expected: "reached limit of structure guard troop count")]
     fn test_guard_add_revert_exceed_limit() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Get the limit from config
         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
@@ -432,11 +431,11 @@ mod tests {
     #[test]
     fn test_guard_delete_success() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
@@ -481,11 +480,11 @@ mod tests {
     #[should_panic(expected: "guard_delete: No troops in specified slot")]
     fn test_guard_delete_empty_slot() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -511,7 +510,7 @@ mod tests {
     #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn test_guard_delete_revert_season_inactive() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         // Overwrite SeasonConfig to make it inactive
         let current_time = starknet::get_block_timestamp();
@@ -528,7 +527,7 @@ mod tests {
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         // No need to add troops, check should happen before slot logic
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
@@ -548,12 +547,12 @@ mod tests {
     #[should_panic(expected: 'Not Owner')]
     fn test_guard_delete_revert_not_owner() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let other_caller = starknet::contract_address_const::<'other_caller'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Add some troops to a slot first (as owner)
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
@@ -583,11 +582,11 @@ mod tests {
     #[test]
     fn test_explorer_create_success() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
@@ -662,11 +661,11 @@ mod tests {
     #[should_panic(expected: "amount must be greater than 0")]
     fn test_explorer_create_revert_zero_amount() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -687,11 +686,11 @@ mod tests {
     #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn test_explorer_create_revert_season_inactive() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -735,12 +734,12 @@ mod tests {
     #[should_panic(expected: 'Not Owner')]
     fn test_explorer_create_revert_not_owner() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let other_caller = starknet::contract_address_const::<'other_caller'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for the call
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -765,12 +764,12 @@ mod tests {
     #[should_panic(expected: "Insufficient Balance: T1 KNIGHT (id: 1, balance: 0) < 1000000000")]
     fn test_explorer_create_revert_insufficient_resources() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         // Spawn realm WITHOUT granting any resources
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -791,11 +790,11 @@ mod tests {
     #[should_panic(expected: "reached limit of troops for your structure")]
     fn test_explorer_create_revert_structure_explorer_limit() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Set the structure's specific explorer limit to 1
         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
@@ -835,11 +834,11 @@ mod tests {
     #[should_panic(expected: "reached limit of troops per structure")]
     fn test_explorer_create_revert_global_explorer_limit() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Now, set global explorer limit config to 0 *after* realm creation
         let mut troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
@@ -869,11 +868,11 @@ mod tests {
     #[should_panic(expected: "explorer spawn location is occupied")]
     fn test_explorer_create_revert_spawn_occupied() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Increase structure explorer limit to avoid hitting it first
         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
@@ -911,11 +910,11 @@ mod tests {
     #[test]
     fn test_explorer_add_success() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources for creation and addition
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -964,11 +963,11 @@ mod tests {
     #[should_panic(expected: "amount must be greater than 0")]
     fn test_explorer_add_revert_zero_amount() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1000,11 +999,11 @@ mod tests {
     #[should_panic(expected: "amount must be divisible by resource precision")]
     fn test_explorer_add_revert_invalid_precision() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation and attempt
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1036,11 +1035,11 @@ mod tests {
     #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn test_explorer_add_revert_season_inactive() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1084,12 +1083,12 @@ mod tests {
     #[should_panic(expected: 'Not Owner')]
     fn test_explorer_add_revert_not_owner() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let other_caller = starknet::contract_address_const::<'other_caller'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for creation and addition
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1121,11 +1120,11 @@ mod tests {
     #[should_panic(expected: "explorer not adjacent to home structure")]
     fn test_explorer_add_revert_not_adjacent_home() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for creation and attempted addition
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1160,7 +1159,7 @@ mod tests {
 
         // Pre-explore the tile we're moving to (needed for explore=false)
         let target_coord = realm_coord.neighbor(spawn_direction).neighbor(spawn_direction);
-        snf_pre_explore_tile(ref world, target_coord);
+        pre_explore_tile(ref world, target_coord);
 
         // Move the explorer away from home
         let move_direction = array![spawn_direction].span();
@@ -1186,11 +1185,11 @@ mod tests {
     #[should_panic(expected: "Insufficient Balance: T1 KNIGHT (id: 1, balance: 0) < 2000000000")]
     fn test_explorer_add_revert_insufficient_resources() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         let category = TroopType::Knight;
         let tier = TroopTier::T1;
@@ -1225,11 +1224,11 @@ mod tests {
     #[should_panic(expected: "reached limit of explorers amount per army")]
     fn test_explorer_add_revert_exceed_limit() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Get the limit from config
         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
@@ -1272,11 +1271,11 @@ mod tests {
     #[test]
     fn test_explorer_delete_success() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources for creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1345,11 +1344,11 @@ mod tests {
     #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn test_explorer_delete_revert_season_inactive() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1392,12 +1391,12 @@ mod tests {
     #[should_panic(expected: 'Not Owner')]
     fn test_explorer_delete_revert_not_owner() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let other_caller = starknet::contract_address_const::<'other_caller'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
         // Grant resources needed for creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1430,7 +1429,7 @@ mod tests {
     #[test]
     fn test_explorer_swap_success() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         // Verify config directly
         let troop_limit_config_check: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
@@ -1438,9 +1437,9 @@ mod tests {
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers and the swap
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1506,13 +1505,13 @@ mod tests {
     #[test]
     fn test_explorer_swap_success_delete_source() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers and the swap
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1573,13 +1572,13 @@ mod tests {
     #[should_panic(expected: "count must be greater than 0")]
     fn test_explorer_swap_revert_zero_amount() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1617,13 +1616,13 @@ mod tests {
     #[should_panic(expected: "The game starts in 0 hours 33 minutes, 20 seconds")]
     fn test_explorer_swap_revert_season_inactive() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1674,14 +1673,14 @@ mod tests {
     #[should_panic(expected: 'Not Owner')]
     fn test_explorer_swap_revert_not_owner() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let other_caller = starknet::contract_address_const::<'other_caller'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1722,14 +1721,14 @@ mod tests {
     #[should_panic(expected: 'Not Owner')]
     fn test_explorer_swap_revert_different_owners() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner_1 = starknet::contract_address_const::<'realm_owner_1'>();
         let realm_owner_2 = starknet::contract_address_const::<'realm_owner_2'>();
         let realm_coord_1 = Coord { alt: false, x: 10, y: 10 };
         let realm_coord_2 = Coord { alt: false, x: 13, y: 10 };
-        let realm_id_1 = snf_spawn_guard_test_realm(ref world, 1, realm_owner_1, realm_coord_1);
-        let realm_id_2 = snf_spawn_guard_test_realm(ref world, 2, realm_owner_2, realm_coord_2);
+        let realm_id_1 = spawn_guard_test_realm(ref world, 1, realm_owner_1, realm_coord_1);
+        let realm_id_2 = spawn_guard_test_realm(ref world, 2, realm_owner_2, realm_coord_2);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1769,13 +1768,13 @@ mod tests {
     #[should_panic(expected: "to explorer is not at the target coordinate")]
     fn test_explorer_swap_revert_not_adjacent() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         let realm2_coord = Coord { alt: false, x: 15, y: 10 };
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1813,13 +1812,13 @@ mod tests {
     #[should_panic(expected: "insufficient troops in source explorer")]
     fn test_explorer_swap_revert_insufficient_troops() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1857,13 +1856,13 @@ mod tests {
     #[should_panic(expected: "count must be divisible by resource precision")]
     fn test_explorer_swap_revert_invalid_precision() {
         // Arrange
-        let mut world = snf_setup_troop_management_world();
+        let mut world = setup_troop_management_world();
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
-        let realm_id = snf_spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
         let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = snf_spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
+        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;

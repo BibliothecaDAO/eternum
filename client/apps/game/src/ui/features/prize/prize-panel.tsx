@@ -1,8 +1,8 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
@@ -14,6 +14,7 @@ import Users from "lucide-react/dist/esm/icons/users";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ClaimBlitzPrizeButton } from "./components/claim-blitz-prize-button";
+import { CommitClaimMMRButton } from "./components/commit-claim-mmr-button";
 import { WinnersTable } from "./components/winners-table";
 
 type RegisteredPlayer = { address: bigint; points: bigint };
@@ -73,6 +74,17 @@ export const PrizePanel = () => {
     () => (worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined),
     [worldCfgEntities, components.WorldConfig],
   );
+
+  // Check if MMR has been committed (game_median is non-zero)
+  const mmrGameMetaEntities = useEntityQuery([Has(components.MMRGameMeta)]);
+  const isMMRCommitted = useMemo(() => {
+    console.log({ mmrGameMetaEntities });
+    const meta = mmrGameMetaEntities[0] ? getComponentValue(components.MMRGameMeta, mmrGameMetaEntities[0]) : undefined;
+    const gameMedian = meta?.game_median as bigint | undefined;
+    return gameMedian !== undefined && gameMedian !== 0n;
+  }, [mmrGameMetaEntities, components.MMRGameMeta]);
+
+  const mmrEnabled = Boolean(worldCfg?.mmr_config?.enabled);
 
   // All registered players (by registration status), regardless of points
   const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
@@ -304,7 +316,6 @@ export const PrizePanel = () => {
               <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
                 <span>Ranking Reference</span>
                 <div className="flex items-center gap-4 text-gold/80">
-                  {/* <span className="font-mono">ID: {String(finalTrialId)}</span> */}
                   <span className="font-mono">Total Pot: {formatTokenAmount(finalTotalPot)}</span>
                 </div>
               </div>
@@ -315,6 +326,17 @@ export const PrizePanel = () => {
               <ClaimBlitzPrizeButton />
               <div className="text-xs text-gold/70">Each ranked player can now claim their reward.</div>
             </div>
+
+            {/* Show MMR commit button only if MMR is enabled but not yet committed */}
+            {mmrEnabled && !isMMRCommitted && (
+              <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 mt-3">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="text-sm text-gold font-medium">MMR Update</div>
+                  <div className="text-xs text-gold/70">Update skill ratings based on game results</div>
+                </div>
+                <CommitClaimMMRButton />
+              </div>
+            )}
           </div>
         </div>
       </div>

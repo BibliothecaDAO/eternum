@@ -13,6 +13,7 @@
   "marketplace": "",
   "cosmetics": "",
   "cosmeticsClaim": "",
+  "mmrToken": "0x13a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49",
   "resources": {
     "STONE": [1, "0x1d0e42592e69ce773e4af49ebc806e8e4b18d68349675a720b310f524bc1047"],
     "COAL": [2, "0x116e5c167e15ce74d6ceabab3ee1d654ba7d715cc3e313f0a7644460d930647"],

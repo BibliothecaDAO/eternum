@@ -17,6 +17,7 @@ declare module "@config-deployer/config" {
   export const setResourceBridgeFeesConfig: any;
   export const setSpeedConfig: any;
   export const setFactoryAddress: any;
+  export const setMMRConfig: any;
   export const setBlitzRegistrationConfig: any;
   export const setBuildingConfig: any;
   export const setCapacityConfig: any;

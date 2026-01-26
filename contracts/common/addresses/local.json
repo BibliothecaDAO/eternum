@@ -13,6 +13,7 @@
   "lootChests": "",
   "cosmetics": "",
   "cosmeticsClaim": "",
+  "mmrToken": "",
   "resources": {
     "STONE": [1,"0x71843023d1b7f297d175b1d0edcd554dd834b42dbc9d7fa02ba09a233eee529"],
     "COAL": [2,"0x20ad02ce479ed93abb98c432550aa81bed57902d8de648100049f764797d862"],

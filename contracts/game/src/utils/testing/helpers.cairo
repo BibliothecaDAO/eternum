@@ -47,7 +47,7 @@ use crate::systems::combat::contracts::troop_management::{
 use crate::systems::combat::contracts::troop_movement::{
     ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
 };
-use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
+// use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::utils::realm::iRealmImpl;
 use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
 
@@ -419,21 +419,21 @@ pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     explorer_id
 }
 
-pub fn tspawn_quest_tile(
-    ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
-) -> @QuestTile {
-    let id = world.dispatcher.uuid();
-    let resource_type = ResourceTypes::WHEAT;
-    let amount = MOCK_MAP_CONFIG().reward_resource_amount.into()
-        * QUEST_REWARD_BASE_MULTIPLIER.into()
-        * RESOURCE_PRECISION
-        * (level + 1).into();
-    let quest_details = @QuestTile {
-        id, coord, game_address, level, resource_type, amount, capacity, participant_count: 0,
-    };
-    world.write_model_test(quest_details);
-    quest_details
-}
+// pub fn tspawn_quest_tile(
+//     ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
+// ) -> @QuestTile {
+//     let id = world.dispatcher.uuid();
+//     let resource_type = ResourceTypes::WHEAT;
+//     let amount = MOCK_MAP_CONFIG().reward_resource_amount.into()
+//         * QUEST_REWARD_BASE_MULTIPLIER.into()
+//         * RESOURCE_PRECISION
+//         * (level + 1).into();
+//     let quest_details = @QuestTile {
+//         id, coord, game_address, level, resource_type, amount, capacity, participant_count: 0,
+//     };
+//     world.write_model_test(quest_details);
+//     quest_details
+// }
 
 pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: Coord) -> ID {
     let mut uuid = world.dispatcher.uuid();
@@ -572,7 +572,7 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
 // ============================================================================
 
 /// Minimal namespace for basic model tests (no contracts)
-pub fn snf_namespace_def_minimal() -> NamespaceDef {
+pub fn namespace_def_minimal() -> NamespaceDef {
     NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
@@ -583,7 +583,7 @@ pub fn snf_namespace_def_minimal() -> NamespaceDef {
 }
 
 /// Full namespace with all models and contracts needed for combat tests
-pub fn snf_namespace_def_combat() -> NamespaceDef {
+pub fn namespace_def_combat() -> NamespaceDef {
     NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
@@ -602,10 +602,10 @@ pub fn snf_namespace_def_combat() -> NamespaceDef {
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_8")),
-            TestResource::Library(("biome_library", "0_1_8")), TestResource::Library(("rng_library", "0_1_8")),
+            TestResource::Library(("structure_creation_library", "0_1_9")),
+            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
             TestResource::Library(
-                ("combat_library", "0_1_8"),
+                ("combat_library", "0_1_9"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
             TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
@@ -615,7 +615,7 @@ pub fn snf_namespace_def_combat() -> NamespaceDef {
 }
 
 /// Contract definitions with namespace write permissions
-pub fn snf_contract_defs_combat() -> Span<ContractDef> {
+pub fn contract_defs_combat() -> Span<ContractDef> {
     [
         ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
@@ -678,21 +678,21 @@ pub struct BattleTestContext {
 // ============================================================================
 
 /// Spawns a minimal world for basic model tests
-pub fn snf_spawn_world_minimal() -> WorldStorage {
-    spawn_test_world([snf_namespace_def_minimal()].span())
+pub fn spawn_world_minimal() -> WorldStorage {
+    spawn_test_world([namespace_def_minimal()].span())
 }
 
 /// Spawns a full combat world with all systems and configs
-pub fn snf_spawn_combat_world() -> WorldStorage {
-    let mut world = spawn_test_world([snf_namespace_def_combat()].span());
-    world.sync_perms_and_inits(snf_contract_defs_combat());
+pub fn spawn_combat_world() -> WorldStorage {
+    let mut world = spawn_test_world([namespace_def_combat()].span());
+    world.sync_perms_and_inits(contract_defs_combat());
     world.dispatcher.uuid();
     world
 }
 
 /// Sets up all combat-related configs with 0 food costs for travel
 /// This is a workaround for cross-boundary state issues in snforge tests
-pub fn snf_setup_combat_configs(ref world: WorldStorage) {
+pub fn setup_combat_configs(ref world: WorldStorage) {
     tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
     tstore_tick_config(ref world, MOCK_TICK_CONFIG());
     tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
@@ -717,7 +717,7 @@ pub fn snf_setup_combat_configs(ref world: WorldStorage) {
 }
 
 /// Gets combat system addresses from world
-pub fn snf_get_combat_systems(ref world: WorldStorage) -> CombatSystemAddresses {
+pub fn get_combat_systems(ref world: WorldStorage) -> CombatSystemAddresses {
     let (troop_management, _) = world.dns(@"troop_management_systems").unwrap();
     let (troop_movement, _) = world.dns(@"troop_movement_systems").unwrap();
     let (troop_battle, _) = world.dns(@"troop_battle_systems").unwrap();
@@ -726,13 +726,13 @@ pub fn snf_get_combat_systems(ref world: WorldStorage) -> CombatSystemAddresses 
 }
 
 /// Full setup: spawns world, sets up configs, gets system addresses, sets chain_id
-pub fn snf_setup_battle_world() -> (WorldStorage, CombatSystemAddresses) {
+pub fn setup_battle_world() -> (WorldStorage, CombatSystemAddresses) {
     // Set chain_id for VRF bypass in tests
     start_cheat_chain_id_global('SN_TEST');
 
-    let mut world = snf_spawn_combat_world();
-    snf_setup_combat_configs(ref world);
-    let systems = snf_get_combat_systems(ref world);
+    let mut world = spawn_combat_world();
+    setup_combat_configs(ref world);
+    let systems = get_combat_systems(ref world);
 
     (world, systems)
 }
@@ -744,7 +744,7 @@ pub fn snf_setup_battle_world() -> (WorldStorage, CombatSystemAddresses) {
 
 /// Creates a test realm with proper resource capacity initialized
 /// This is a simplified version that bypasses village NFT minting
-pub fn snf_spawn_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
+pub fn spawn_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
     let structure_id = world.dispatcher.uuid();
 
     let default_troops = Troops {
@@ -799,8 +799,8 @@ pub fn snf_spawn_test_realm(ref world: WorldStorage, realm_id: u32, owner: Contr
 }
 
 /// Creates a test realm for guard tests with proper guard limits
-/// Unlike snf_spawn_test_realm, this has troop_max_guard_count: 4 to allow guard testing
-pub fn snf_spawn_guard_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
+/// Unlike spawn_test_realm, this has troop_max_guard_count: 4 to allow guard testing
+pub fn spawn_guard_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
     let structure_id = world.dispatcher.uuid();
 
     let default_troops = Troops {
@@ -855,14 +855,14 @@ pub fn snf_spawn_guard_test_realm(ref world: WorldStorage, realm_id: u32, owner:
 }
 
 /// Creates two standard test realms at positions (80,80) and (84,80)
-pub fn snf_create_two_realms(ref world: WorldStorage) -> (RealmTestContext, RealmTestContext) {
+pub fn create_two_realms(ref world: WorldStorage) -> (RealmTestContext, RealmTestContext) {
     let first_owner = starknet::contract_address_const::<'first_realm_owner'>();
     let first_coord = Coord { alt: false, x: 80, y: 80 };
-    let first_id = snf_spawn_test_realm(ref world, 1, first_owner, first_coord);
+    let first_id = spawn_test_realm(ref world, 1, first_owner, first_coord);
 
     let second_owner = starknet::contract_address_const::<'second_realm_owner'>();
     let second_coord = Coord { alt: false, x: 84, y: 80 };
-    let second_id = snf_spawn_test_realm(ref world, 2, second_owner, second_coord);
+    let second_id = spawn_test_realm(ref world, 2, second_owner, second_coord);
 
     let first_realm = RealmTestContext { entity_id: first_id, owner: first_owner, coord: first_coord };
     let second_realm = RealmTestContext { entity_id: second_id, owner: second_owner, coord: second_coord };
@@ -877,7 +877,7 @@ pub fn snf_create_two_realms(ref world: WorldStorage) -> (RealmTestContext, Real
 
 /// Pre-explores a tile (marks as discovered with a biome)
 /// Required when using explore=false for movement
-pub fn snf_pre_explore_tile(ref world: WorldStorage, coord: Coord) {
+pub fn pre_explore_tile(ref world: WorldStorage, coord: Coord) {
     let tile = Tile {
         alt: coord.alt,
         col: coord.x,
@@ -893,11 +893,11 @@ pub fn snf_pre_explore_tile(ref world: WorldStorage, coord: Coord) {
 }
 
 /// Pre-explores multiple tiles along a path
-pub fn snf_pre_explore_path(ref world: WorldStorage, start: Coord, directions: Span<Direction>) {
+pub fn pre_explore_path(ref world: WorldStorage, start: Coord, directions: Span<Direction>) {
     let mut current = start;
     for direction in directions {
         current = current.neighbor(*direction);
-        snf_pre_explore_tile(ref world, current);
+        pre_explore_tile(ref world, current);
     }
 }
 
@@ -907,7 +907,7 @@ pub fn snf_pre_explore_path(ref world: WorldStorage, start: Coord, directions: S
 // ============================================================================
 
 /// Creates an explorer for a realm with proper caller mocking
-pub fn snf_create_explorer(
+pub fn create_explorer(
     ref world: WorldStorage,
     systems: CombatSystemAddresses,
     realm: RealmTestContext,
@@ -928,7 +928,7 @@ pub fn snf_create_explorer(
 
 /// Moves an explorer with proper caller mocking
 /// Note: Use explore=false to avoid TrophyProgression events
-pub fn snf_move_explorer(
+pub fn move_explorer(
     ref world: WorldStorage,
     systems: CombatSystemAddresses,
     explorer: ExplorerTestContext,
@@ -943,7 +943,7 @@ pub fn snf_move_explorer(
 }
 
 /// Attacks another explorer with proper caller mocking
-pub fn snf_attack_explorer_vs_explorer(
+pub fn attack_explorer_vs_explorer(
     ref world: WorldStorage,
     systems: CombatSystemAddresses,
     attacker: ExplorerTestContext,
@@ -964,16 +964,16 @@ pub fn snf_attack_explorer_vs_explorer(
 
 /// Sets up a complete battle scenario with two realms and explorers
 /// Returns a BattleTestContext ready for combat testing
-pub fn snf_setup_explorer_battle(
+pub fn setup_explorer_battle(
     first_troop_type: TroopType,
     first_troop_tier: TroopTier,
     second_troop_type: TroopType,
     second_troop_tier: TroopTier,
 ) -> (WorldStorage, CombatSystemAddresses, ExplorerTestContext, ExplorerTestContext) {
-    let (mut world, systems) = snf_setup_battle_world();
+    let (mut world, systems) = setup_battle_world();
 
     // Create realms
-    let (first_realm, second_realm) = snf_create_two_realms(ref world);
+    let (first_realm, second_realm) = create_two_realms(ref world);
 
     // Grant resources based on troop types
     let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
@@ -997,19 +997,19 @@ pub fn snf_setup_explorer_battle(
     start_cheat_block_timestamp_global(current_tick);
 
     // Create explorers
-    let first_explorer = snf_create_explorer(
+    let first_explorer = create_explorer(
         ref world, systems, first_realm, first_troop_type, first_troop_tier, troop_amount, Direction::East,
     );
-    let second_explorer = snf_create_explorer(
+    let second_explorer = create_explorer(
         ref world, systems, second_realm, second_troop_type, second_troop_tier, troop_amount, Direction::West,
     );
 
     // Pre-explore tile for movement
     let target_coord = Coord { alt: false, x: 82, y: 80 };
-    snf_pre_explore_tile(ref world, target_coord);
+    pre_explore_tile(ref world, target_coord);
 
     // Move second explorer towards first
-    snf_move_explorer(ref world, systems, second_explorer, array![Direction::West].span(), false);
+    move_explorer(ref world, systems, second_explorer, array![Direction::West].span(), false);
 
     // Advance time for stamina
     let attack_tick = current_tick * 5;
@@ -1024,12 +1024,12 @@ pub fn snf_setup_explorer_battle(
 // ============================================================================
 
 /// Reads explorer troops from world
-pub fn snf_get_explorer(ref world: WorldStorage, explorer_id: ID) -> ExplorerTroops {
+pub fn get_explorer(ref world: WorldStorage, explorer_id: ID) -> ExplorerTroops {
     world.read_model(explorer_id)
 }
 
 /// Gets the tile at a coordinate
-pub fn snf_get_tile(ref world: WorldStorage, coord: Coord) -> Tile {
+pub fn get_tile(ref world: WorldStorage, coord: Coord) -> Tile {
     let tile_opt: TileOpt = world.read_model((coord.x, coord.y));
     tile_opt.into()
 }
@@ -1040,7 +1040,7 @@ pub fn snf_get_tile(ref world: WorldStorage, coord: Coord) -> Tile {
 // ============================================================================
 
 /// Adds troops to a guard slot
-pub fn snf_add_guard(
+pub fn add_guard(
     ref world: WorldStorage,
     systems: CombatSystemAddresses,
     realm: RealmTestContext,
@@ -1057,7 +1057,7 @@ pub fn snf_add_guard(
 }
 
 /// Attacks a structure's guard with an explorer
-pub fn snf_attack_explorer_vs_guard(
+pub fn attack_explorer_vs_guard(
     ref world: WorldStorage,
     systems: CombatSystemAddresses,
     explorer: ExplorerTestContext,
@@ -1072,7 +1072,7 @@ pub fn snf_attack_explorer_vs_guard(
 }
 
 /// Attacks an explorer with a structure's guard
-pub fn snf_attack_guard_vs_explorer(
+pub fn attack_guard_vs_explorer(
     ref world: WorldStorage,
     systems: CombatSystemAddresses,
     realm: RealmTestContext,
@@ -1088,16 +1088,16 @@ pub fn snf_attack_guard_vs_explorer(
 }
 
 /// Sets up a guard battle scenario: a realm with guards and an adjacent explorer
-pub fn snf_setup_guard_battle(
+pub fn setup_guard_battle(
     guard_troop_type: TroopType,
     guard_troop_tier: TroopTier,
     explorer_troop_type: TroopType,
     explorer_troop_tier: TroopTier,
 ) -> (WorldStorage, CombatSystemAddresses, RealmTestContext, ExplorerTestContext) {
-    let (mut world, systems) = snf_setup_battle_world();
+    let (mut world, systems) = setup_battle_world();
 
     // Create two realms
-    let (first_realm, second_realm) = snf_create_two_realms(ref world);
+    let (first_realm, second_realm) = create_two_realms(ref world);
 
     // Grant resources based on troop types
     let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
@@ -1121,21 +1121,21 @@ pub fn snf_setup_guard_battle(
     start_cheat_block_timestamp_global(current_tick);
 
     // Add guard to first realm
-    snf_add_guard(ref world, systems, first_realm, GuardSlot::Delta, guard_troop_type, guard_troop_tier, troop_amount);
+    add_guard(ref world, systems, first_realm, GuardSlot::Delta, guard_troop_type, guard_troop_tier, troop_amount);
 
     // Create explorer from second realm
-    let explorer = snf_create_explorer(
+    let explorer = create_explorer(
         ref world, systems, second_realm, explorer_troop_type, explorer_troop_tier, troop_amount, Direction::West,
     );
 
     // Pre-explore tiles for movement path
     let tile1 = Coord { alt: false, x: 82, y: 80 };
     let tile2 = Coord { alt: false, x: 81, y: 80 };
-    snf_pre_explore_tile(ref world, tile1);
-    snf_pre_explore_tile(ref world, tile2);
+    pre_explore_tile(ref world, tile1);
+    pre_explore_tile(ref world, tile2);
 
     // Move explorer adjacent to first realm
-    snf_move_explorer(ref world, systems, explorer, array![Direction::West, Direction::West].span(), false);
+    move_explorer(ref world, systems, explorer, array![Direction::West, Direction::West].span(), false);
 
     // Advance time for stamina
     let attack_tick = current_tick * 5;
@@ -1150,7 +1150,7 @@ pub fn snf_setup_guard_battle(
 // ============================================================================
 
 /// Namespace for troop management tests (includes quest/production models)
-pub fn snf_namespace_def_troop_management() -> NamespaceDef {
+pub fn namespace_def_troop_management() -> NamespaceDef {
     NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
@@ -1171,15 +1171,15 @@ pub fn snf_namespace_def_troop_management() -> NamespaceDef {
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_8")),
-            TestResource::Library(("biome_library", "0_1_8")), TestResource::Library(("rng_library", "0_1_8")),
-            TestResource::Library(("combat_library", "0_1_8")),
+            TestResource::Library(("structure_creation_library", "0_1_9")),
+            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
+            TestResource::Library(("combat_library", "0_1_9")),
         ]
             .span(),
     }
 }
 
-pub fn snf_contract_defs_troop_management() -> Span<ContractDef> {
+pub fn contract_defs_troop_management() -> Span<ContractDef> {
     [
         ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
@@ -1196,13 +1196,13 @@ pub fn snf_contract_defs_troop_management() -> Span<ContractDef> {
 }
 
 /// Full setup for troop management tests
-pub fn snf_setup_troop_management_world() -> WorldStorage {
-    let mut world = spawn_test_world([snf_namespace_def_troop_management()].span());
-    world.sync_perms_and_inits(snf_contract_defs_troop_management());
+pub fn setup_troop_management_world() -> WorldStorage {
+    let mut world = spawn_test_world([namespace_def_troop_management()].span());
+    world.sync_perms_and_inits(contract_defs_troop_management());
     // Initialize UUID counter (first uuid() call starts the counter at 1)
     world.dispatcher.uuid();
-    // Use snf_setup_combat_configs instead of init_config to avoid deploying village pass mock
+    // Use setup_combat_configs instead of init_config to avoid deploying village pass mock
     // which requires class declaration that doesn't work well with snforge tests
-    snf_setup_combat_configs(ref world);
+    setup_combat_configs(ref world);
     world
 }
