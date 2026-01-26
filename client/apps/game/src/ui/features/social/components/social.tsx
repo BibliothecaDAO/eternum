@@ -7,6 +7,7 @@ import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { PrizePanel } from "@/ui/features/prize";
+import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
@@ -14,7 +15,9 @@ import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { Shapes, Users } from "lucide-react";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
+import { Shapes, TrendingUp, Users } from "lucide-react";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
@@ -60,6 +63,13 @@ export const Social = () => {
   const mode = useGameModeConfig();
 
   const players = usePlayers();
+
+  // Check if MMR is enabled
+  const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);
+  const mmrEnabled = useMemo(() => {
+    const worldCfg = worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined;
+    return Boolean(worldCfg?.mmr_config?.enabled);
+  }, [worldCfgEntities, components.WorldConfig]);
 
   const refreshPlayerData = usePlayerStore((state) => state.refreshPlayerData);
   const lastPlayerDataRefreshTime = usePlayerStore((state) => state.lastRefreshTime);
@@ -203,8 +213,41 @@ export const Social = () => {
       expandedContent: null,
     });
 
+    if (mmrEnabled) {
+      baseTabs.push({
+        key: "Blitz MMR",
+        label: (
+          <div className="flex items-center gap-2">
+            <TrendingUp size={16} />
+            <span>MMR</span>
+          </div>
+        ),
+        component: (
+          <div className="h-full p-4">
+            <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)] h-full">
+              <div className="flex flex-col gap-3 h-full">
+                <div className="flex items-center gap-2 text-gold">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-gold/15">
+                    <TrendingUp size={16} />
+                  </span>
+                  <div>
+                    <span className="text-lg font-semibold tracking-wide uppercase">Blitz MMR</span>
+                    <div className="text-xs text-gold/70">Player skill ratings</div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex-1 overflow-auto">
+                  <BlitzMMRTable />
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+        expandedContent: null,
+      });
+    }
+
     return baseTabs;
-  }, [mode, isExpanded, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded]);
+  }, [mode, isExpanded, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded, mmrEnabled]);
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));

@@ -1950,6 +1950,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    // MMR System Models
+    MMRGameMeta: (() => {
+      return defineComponent(
+        world,
+        {
+          world_id: RecsType.Number,
+          game_median: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "MMRGameMeta",
+            types: ["u32", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ...eventsComponents(world),
   };
 }

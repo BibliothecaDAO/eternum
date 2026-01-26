@@ -698,6 +698,15 @@ export interface BlitzPrizeClaimNoGameProps extends SystemSigner {
   registered_player: BigNumberish; // ContractAddress of the only registered player
 }
 
+// MMR system calls
+export interface CommitGameMMRProps extends SystemSigner {
+  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
+}
+
+export interface ClaimGameMMRProps extends SystemSigner {
+  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
+}
+
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: BigNumberish;
   max_stamina: BigNumberish;
