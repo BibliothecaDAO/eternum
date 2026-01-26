@@ -63,13 +63,33 @@ export const CommitClaimMMRButton = ({ className }: { className?: string }) => {
 
   // Get registered players from BlitzRealmPlayerRegister
   const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
-  const registeredPlayers = useMemo(() => {
+  const registeredPlayerAddresses = useMemo(() => {
     return blitzRegEntities
       .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
       .filter((v): v is NonNullable<typeof v> => Boolean(v))
       .filter((v) => Boolean(v.once_registered))
       .map((v) => v.player as unknown as bigint);
   }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
+
+  // Get player points and filter to only players with non-zero points
+  const playerRegisteredPointsEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);
+  const playerPointsByPlayer = useMemo(() => {
+    const points = new Map<bigint, bigint>();
+    playerRegisteredPointsEntities.forEach((eid) => {
+      const value = getComponentValue(components.PlayerRegisteredPoints, eid);
+      if (!value) return;
+      points.set(value.address as unknown as bigint, value.registered_points as bigint);
+    });
+    return points;
+  }, [playerRegisteredPointsEntities, components.PlayerRegisteredPoints]);
+
+  // Only include registered players with non-zero points
+  const registeredPlayers = useMemo(() => {
+    return registeredPlayerAddresses.filter((addr) => {
+      const points = playerPointsByPlayer.get(addr);
+      return points !== undefined && points > 0n;
+    });
+  }, [registeredPlayerAddresses, playerPointsByPlayer]);
 
   // Check if final ranking exists (MMR can only be claimed after final ranking)
   const finalEntities = useEntityQuery([Has(components.PlayersRankFinal)]);

@@ -8,6 +8,7 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
+import { CommitClaimMMRButton } from "@/ui/features/prize/components/commit-claim-mmr-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
@@ -238,6 +239,7 @@ export const Social = () => {
                 <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex-1 overflow-auto">
                   <BlitzMMRTable />
                 </div>
+                <CommitClaimMMRButton className="mt-2" />
               </div>
             </div>
           </div>
