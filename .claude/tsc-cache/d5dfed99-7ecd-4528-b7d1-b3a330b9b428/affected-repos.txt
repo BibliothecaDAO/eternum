@@ -1,4 +1,0 @@
-client
-packages/react
-packages/core
-packages/torii

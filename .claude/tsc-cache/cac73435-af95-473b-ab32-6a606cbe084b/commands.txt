@@ -1,2 +1,0 @@
-client:build:cd /Users/os/conductor/workspaces/eternum/santo-domingo/client && npm run build
-client:tsc:cd /Users/os/conductor/workspaces/eternum/santo-domingo/client && npx tsc --noEmit
