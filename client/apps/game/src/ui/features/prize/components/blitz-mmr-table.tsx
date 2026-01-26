@@ -46,13 +46,33 @@ export const BlitzMMRTable = () => {
 
   // Get registered players from BlitzRealmPlayerRegister
   const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
-  const registeredPlayers = useMemo(() => {
+  const registeredPlayerAddresses = useMemo(() => {
     return blitzRegEntities
       .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
       .filter((v): v is NonNullable<typeof v> => Boolean(v))
       .filter((v) => Boolean(v.once_registered))
       .map((v) => v.player as unknown as bigint);
   }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
+
+  // Get player points and filter to only players with non-zero points
+  const playerRegisteredPointsEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);
+  const playerPointsByPlayer = useMemo(() => {
+    const points = new Map<bigint, bigint>();
+    playerRegisteredPointsEntities.forEach((eid) => {
+      const value = getComponentValue(components.PlayerRegisteredPoints, eid);
+      if (!value) return;
+      points.set(value.address as unknown as bigint, value.registered_points as bigint);
+    });
+    return points;
+  }, [playerRegisteredPointsEntities, components.PlayerRegisteredPoints]);
+
+  // Only include registered players with non-zero points
+  const registeredPlayers = useMemo(() => {
+    return registeredPlayerAddresses.filter((addr) => {
+      const points = playerPointsByPlayer.get(addr);
+      return points !== undefined && points > 0n;
+    });
+  }, [registeredPlayerAddresses, playerPointsByPlayer]);
 
   /**
    * Fetch MMRs for a batch of players using JSON-RPC batch request
@@ -183,7 +203,7 @@ export const BlitzMMRTable = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="max-h-[300px] overflow-y-auto">
+      <div className="max-h-[700px] overflow-y-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-dark/90">
             <tr className="text-gold/70 border-b border-gold/10">
