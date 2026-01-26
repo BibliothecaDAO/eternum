@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
@@ -31,6 +31,9 @@ export const ResourceChip = ({
   canOpenProduction = false,
   disableButtons = false,
   onManageProduction,
+  currentDefaultTick: currentDefaultTickProp,
+  currentArmiesTick: currentArmiesTickProp,
+  armiesTickTimeRemaining: armiesTickTimeRemainingProp,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
@@ -43,6 +46,9 @@ export const ResourceChip = ({
   canOpenProduction?: boolean;
   disableButtons?: boolean;
   onManageProduction?: (resourceId: ResourcesIds) => void;
+  currentDefaultTick?: number;
+  currentArmiesTick?: number;
+  armiesTickTimeRemaining?: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -55,7 +61,13 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const storeDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
+  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const storeArmiesTickTimeRemaining = useBlockTimestampStore((state) => state.armiesTickTimeRemaining);
+
+  const currentDefaultTick = currentDefaultTickProp ?? storeDefaultTick;
+  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
+  const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeArmiesTickTimeRemaining;
   const currentTick = currentDefaultTick || 0;
   const resourceEnumId = resourceId as ResourcesIds;
 

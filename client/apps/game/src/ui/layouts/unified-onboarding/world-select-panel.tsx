@@ -21,6 +21,11 @@ const normalizeFactoryChain = (chain: Chain): Chain => {
   return chain;
 };
 
+const areListsEqual = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+};
+
 interface WorldSelectPanelProps {
   onSelect: (worldName: string) => void;
 }
@@ -88,7 +93,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
     if (offlineGames.length > 0) {
       offlineGames.forEach((n) => deleteWorldProfile(n));
       const updatedList = listWorldNames();
-      setSaved(updatedList);
+      setSaved((prev) => (areListsEqual(prev, updatedList) ? prev : updatedList));
     }
   }, [savedChecksDone, saved, savedAvailability, savedWorldRefs]);
 
