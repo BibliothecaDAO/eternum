@@ -74,7 +74,6 @@ export const PrizePanel = () => {
     [worldCfgEntities, components.WorldConfig],
   );
 
-
   // All registered players (by registration status), regardless of points
   const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
   const registeredAddresses = useMemo(() => {
