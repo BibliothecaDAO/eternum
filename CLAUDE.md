@@ -40,10 +40,12 @@ patches; fixable issues can be auto-corrected with `lint:fix`. Formatting is enf
 When modifying Cairo contracts in `contracts/game/`:
 
 ### Toolchain
+
 - **Scarb 2.13.1** and **Dojo 1.8.0** - CI uses these specific versions
 - If tests fail locally, verify toolchain: `scarb --version` should show 2.13.1
 
 ### Commands
+
 ```bash
 cd contracts/game
 scarb fmt                    # Format code (required before commit)
@@ -54,13 +56,17 @@ sozo build                   # Build contracts
 ```
 
 ### Patterns
+
 - **Models**: `#[dojo::model]` in `src/models/<name>.cairo`, register in `src/models.cairo`
 - **Systems**: `#[dojo::contract]` in `src/systems/<name>/contracts.cairo`, register in `src/systems.cairo`
 - **Events**: `#[dojo::event]` inside system contracts
-- **Tests**: `#[cfg(test)] mod tests { mod test_<name>; }` in system module, file at `src/systems/<name>/tests/test_<name>.cairo`
+- **Tests**: `#[cfg(test)] mod tests { mod test_<name>; }` in system module, file at
+  `src/systems/<name>/tests/test_<name>.cairo`
 
 ### WorldConfig Pattern
+
 Global configuration is stored via `WorldConfigUtilImpl`. To add new config:
+
 ```cairo
 // Define struct in models
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -72,7 +78,9 @@ WorldConfigUtilImpl::set_member(ref world, selector!("my_config"), config);
 ```
 
 ### Test World Setup
+
 For integration tests with Dojo models:
+
 ```cairo
 fn namespace_def() -> NamespaceDef {
     NamespaceDef {

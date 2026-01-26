@@ -166,11 +166,7 @@ export const BlitzMMRTable = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-4 text-gold/60 text-sm">
-        Loading player MMRs...
-      </div>
-    );
+    return <div className="flex items-center justify-center p-4 text-gold/60 text-sm">Loading player MMRs...</div>;
   }
 
   if (error) {
@@ -182,11 +178,7 @@ export const BlitzMMRTable = () => {
   }
 
   if (playerMMRs.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-4 text-gold/60 text-sm">
-        No player MMRs available
-      </div>
-    );
+    return <div className="flex items-center justify-center p-4 text-gold/60 text-sm">No player MMRs available</div>;
   }
 
   return (
@@ -204,12 +196,8 @@ export const BlitzMMRTable = () => {
             {playerMMRs.map((player, idx) => (
               <tr key={toHexString(player.address)} className="border-b border-gold/5 hover:bg-gold/5">
                 <td className="py-2 px-2 text-gold/50">{idx + 1}</td>
-                <td className="py-2 px-2 text-gold/80">
-                  {getPlayerDisplayName(player.address)}
-                </td>
-                <td className="py-2 px-2 text-right text-gold font-medium">
-                  {formatMMR(player.mmr)}
-                </td>
+                <td className="py-2 px-2 text-gold/80">{getPlayerDisplayName(player.address)}</td>
+                <td className="py-2 px-2 text-right text-gold font-medium">{formatMMR(player.mmr)}</td>
               </tr>
             ))}
           </tbody>

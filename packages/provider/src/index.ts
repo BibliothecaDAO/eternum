@@ -3268,7 +3268,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       },
     ];
 
-    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls), TransactionType.COMMIT_AND_CLAIM_MMR);
+    return await this.promiseQueue.enqueue(
+      this.createProviderCall(signer, calls),
+      TransactionType.COMMIT_AND_CLAIM_MMR,
+    );
   }
 
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {

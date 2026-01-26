@@ -16,7 +16,8 @@
 
 ## Overview
 
-The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for competitive Blitz games in Eternum. It provides persistent player ratings that reflect relative skill levels across games.
+The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for competitive Blitz games in Eternum. It
+provides persistent player ratings that reflect relative skill levels across games.
 
 ### Key Features
 
@@ -76,12 +77,12 @@ The **Blitz MMR (Matchmaking Rating) System** is a skill-tracking framework for 
 
 ### Component Responsibilities
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **MMR Systems** | `contracts/game/src/systems/mmr/contracts.cairo` | Dojo contract orchestrating MMR processing |
-| **MMR Calculator** | `contracts/game/src/systems/utils/mmr.cairo` | Pure calculation library (8-step formula) |
-| **MMR Token** | `contracts/mmr/src/contract.cairo` | Soul-bound ERC20 storing actual ratings |
-| **MMR Models** | `contracts/game/src/models/mmr.cairo` | Data structures for stats and records |
+| Component          | Location                                         | Purpose                                    |
+| ------------------ | ------------------------------------------------ | ------------------------------------------ |
+| **MMR Systems**    | `contracts/game/src/systems/mmr/contracts.cairo` | Dojo contract orchestrating MMR processing |
+| **MMR Calculator** | `contracts/game/src/systems/utils/mmr.cairo`     | Pure calculation library (8-step formula)  |
+| **MMR Token**      | `contracts/mmr/src/contract.cairo`               | Soul-bound ERC20 storing actual ratings    |
+| **MMR Models**     | `contracts/game/src/models/mmr.cairo`            | Data structures for stats and records      |
 
 ---
 
@@ -207,11 +208,13 @@ p_exp = 1 / (1 + e^((MMR - M) / D))
 ```
 
 Where:
+
 - `MMR` = player's current rating
 - `M` = median from Step 1
 - `D` = spread factor (default 450)
 
 **Interpretation**:
+
 - High MMR → Low `p_exp` (expected to place well)
 - Low MMR → High `p_exp` (expected to place poorly)
 - At median → `p_exp = 0.5`
@@ -225,6 +228,7 @@ p_act = (rank - 1) / (N - 1)
 ```
 
 Where:
+
 - `rank` = final placement (1 = winner)
 - `N` = total players
 
@@ -239,6 +243,7 @@ Calculate the base rating change:
 ```
 
 Where:
+
 - `K₀` = base K-factor (default 50)
 - `N` = player count
 - `√(N/6)` = lobby size scaling (larger lobbies → bigger swings)
@@ -254,6 +259,7 @@ Apply soft cap using hyperbolic tangent:
 ```
 
 Where:
+
 - `Δ_max` = maximum delta (default 45)
 - `tanh` smoothly caps extreme values
 
@@ -261,11 +267,11 @@ Where:
 
 ### Step 6: Split Lobby Adjustment (if applicable)
 
-When a large registration lobby is split into multiple games (tiers), adjust
-MMR swings to reflect the relative strength of each tier.
+When a large registration lobby is split into multiple games (tiers), adjust MMR swings to reflect the relative strength
+of each tier.
 
-Compute the global median of the *entire* registration lobby and the median of
-the specific game the player is assigned to:
+Compute the global median of the _entire_ registration lobby and the median of the specific game the player is assigned
+to:
 
 ```
 M_global = median{MMR₁..MMRₙ}   // across all registered players
@@ -281,10 +287,12 @@ mult = 1 + w × bias
 ```
 
 Where:
+
 - `D` = spread factor (default 450)
 - `w` = lobby_split_weight (default 0.25)
 
 **Effect**:
+
 - Higher-median games get slightly larger swings (mult > 1)
 - Lower-median games get slightly smaller swings (mult < 1)
 - If there is no split, `M_game == M_global` and `mult = 1`
@@ -298,10 +306,12 @@ Pull ratings toward the distribution mean:
 ```
 
 Where:
+
 - `λ` = regression factor (default 0.015)
 - `μ` = distribution mean (default 1500)
 
 **Effect**:
+
 - Players above mean lose a bit more / gain a bit less
 - Players below mean lose a bit less / gain a bit more
 - Prevents rating inflation/deflation over time
@@ -314,39 +324,42 @@ Apply the change:
 MMR' = MMR + Δ_reg
 ```
 
-Note: The MMR token contract enforces the `min_mmr` floor (100) in `update_mmr()` and returns `initial_mmr` (1000) for uninitialized players in `get_player_mmr()`.
+Note: The MMR token contract enforces the `min_mmr` floor (100) in `update_mmr()` and returns `initial_mmr` (1000) for
+uninitialized players in `get_player_mmr()`.
 
 ### Example Calculation
 
 **Scenario**: 6-player game, all at 1000 MMR, player finishes 1st
 
-| Step | Calculation | Result |
-|------|-------------|--------|
-| 1. Median | median{1000, 1000, 1000, 1000, 1000, 1000} | M_game = 1000 |
-| 2. Expected | 1 / (1 + e^((1000-1000)/450)) | p_exp = 0.5 |
-| 3. Actual | (1-1) / (6-1) | p_act = 0.0 |
-| 4. Raw Delta | 50 × √(6/6) × [0.5 - 0.0] | Δ_base = 25 |
-| 5. Diminishing | 45 × tanh(25/45) | Δ ≈ 22.4 |
-| 6. Split Adjust | M_global = 1000 ⇒ mult = 1 + 0.25 × 0 | Δ_tier ≈ 22.4 |
-| 7. Regression | 22.4 - 0.015 × (1000-1500) | Δ_reg ≈ 29.9 |
-| 8. Final | max(100, 1000 + 29.9) | MMR' ≈ 1030 |
+| Step            | Calculation                                | Result        |
+| --------------- | ------------------------------------------ | ------------- |
+| 1. Median       | median{1000, 1000, 1000, 1000, 1000, 1000} | M_game = 1000 |
+| 2. Expected     | 1 / (1 + e^((1000-1000)/450))              | p_exp = 0.5   |
+| 3. Actual       | (1-1) / (6-1)                              | p_act = 0.0   |
+| 4. Raw Delta    | 50 × √(6/6) × [0.5 - 0.0]                  | Δ_base = 25   |
+| 5. Diminishing  | 45 × tanh(25/45)                           | Δ ≈ 22.4      |
+| 6. Split Adjust | M_global = 1000 ⇒ mult = 1 + 0.25 × 0      | Δ_tier ≈ 22.4 |
+| 7. Regression   | 22.4 - 0.015 × (1000-1500)                 | Δ_reg ≈ 29.9  |
+| 8. Final        | max(100, 1000 + 29.9)                      | MMR' ≈ 1030   |
 
 ### Split Lobby Handling (MMR)
 
-When a registration lobby exceeds 24 players, split into multiple games by
-descending MMR and distribute players as evenly as possible across games.
+When a registration lobby exceeds 24 players, split into multiple games by descending MMR and distribute players as
+evenly as possible across games.
 
 **Example (58 players)**:
+
 - Split into 3 games with sizes 20 / 19 / 19
 - Top-rated players go to Game A (20), next to Game B (19), lowest to Game C (19)
 
 **MMR calculation per game**:
+
 1. Compute `M_global` across all 58 registered players
 2. Compute `M_game` for each split game
 3. Apply Steps 1-8 using `M_game`, and apply Step 6 with `M_global`
 
-This keeps MMR changes tied to the specific game a player was placed in, while
-slightly favoring higher-tier games via the split adjustment multiplier.
+This keeps MMR changes tied to the specific game a player was placed in, while slightly favoring higher-tier games via
+the split adjustment multiplier.
 
 ---
 
@@ -414,6 +427,7 @@ pub struct PlayerMMRChanged {
 ### Eligibility Requirements
 
 A game is eligible for MMR updates when:
+
 1. `mmr_config.enabled == true`
 2. Series is marked as ranked (`is_ranked == true`)
 3. Game has not been processed yet (`mmr_processed == false`)
@@ -428,14 +442,14 @@ The MMR Token is a **soul-bound ERC20** token that represents player ratings.
 
 ### Key Properties
 
-| Property | Value |
-|----------|-------|
-| Name | "Blitz MMR" |
-| Symbol | "MMR" |
-| Decimals | 18 |
-| Initial MMR | 1000 (stored as 1000e18) |
-| Minimum MMR | 100 (hard floor) |
-| Transferable | No (soul-bound) |
+| Property     | Value                    |
+| ------------ | ------------------------ |
+| Name         | "Blitz MMR"              |
+| Symbol       | "MMR"                    |
+| Decimals     | 18                       |
+| Initial MMR  | 1000 (stored as 1000e18) |
+| Minimum MMR  | 100 (hard floor)         |
+| Transferable | No (soul-bound)          |
 
 ### Interface
 
@@ -461,11 +475,11 @@ pub trait IMMRToken<T> {
 
 ### Access Control
 
-| Role | Can Do |
-|------|--------|
-| `DEFAULT_ADMIN_ROLE` | Grant/revoke roles |
-| `GAME_ROLE` | Initialize players, update MMR |
-| `UPGRADER_ROLE` | Upgrade contract |
+| Role                 | Can Do                         |
+| -------------------- | ------------------------------ |
+| `DEFAULT_ADMIN_ROLE` | Grant/revoke roles             |
+| `GAME_ROLE`          | Initialize players, update MMR |
+| `UPGRADER_ROLE`      | Upgrade contract               |
 
 ### Soul-Bound Implementation
 
@@ -507,8 +521,8 @@ The MMR flow is claim-based to avoid lobby-wide loops.
 mmr_systems.commit_game_mmr_meta(trial_id, game_median, global_median);
 ```
 
-> Note: medians are computed off-chain and committed once. The contract does not
-> verify medians on-chain to avoid lobby-wide loops.
+> Note: medians are computed off-chain and committed once. The contract does not verify medians on-chain to avoid
+> lobby-wide loops.
 
 **Step 2: Permissionless per-player claim**
 
@@ -518,6 +532,7 @@ mmr_systems.claim_game_mmr(trial_id, player);
 ```
 
 Each claim will:
+
 1. Read the player's rank from `PlayerRank`
 2. Calculate the new MMR for that player
 3. Update `PlayerMMRStats`
@@ -525,8 +540,7 @@ Each claim will:
 5. Update the MMR token (if configured)
 6. Emit `PlayerMMRChanged`
 
-When all players are claimed, `SeriesMMRConfig.mmr_processed` is set and
-`MMRGameProcessed` is emitted.
+When all players are claimed, `SeriesMMRConfig.mmr_processed` is set and `MMRGameProcessed` is emitted.
 
 ### Querying Player Data
 
@@ -557,35 +571,39 @@ let claimed = mmr_systems.has_player_claimed_mmr(trial_id, player_address);
 
 ### Default Values
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `enabled` | false | Master switch (disabled by default) |
-| `distribution_mean` | 1500 | Target population mean |
-| `spread_factor` | 450 | Logistic function width (D) |
-| `max_delta` | 45 | Maximum rating change per game |
-| `k_factor` | 50 | Base scaling factor (K₀) |
-| `lobby_split_weight_scaled` | 2500 | w × 10000 (0.25 = 25%) |
-| `mean_regression_scaled` | 150 | λ × 10000 (0.015 = 1.5%) |
-| `min_players` | 6 | Minimum for rated game |
+| Parameter                   | Default | Description                         |
+| --------------------------- | ------- | ----------------------------------- |
+| `enabled`                   | false   | Master switch (disabled by default) |
+| `distribution_mean`         | 1500    | Target population mean              |
+| `spread_factor`             | 450     | Logistic function width (D)         |
+| `max_delta`                 | 45      | Maximum rating change per game      |
+| `k_factor`                  | 50      | Base scaling factor (K₀)            |
+| `lobby_split_weight_scaled` | 2500    | w × 10000 (0.25 = 25%)              |
+| `mean_regression_scaled`    | 150     | λ × 10000 (0.015 = 1.5%)            |
+| `min_players`               | 6       | Minimum for rated game              |
 
 Note: `initial_mmr` (1000) and `min_mmr` (100) are handled by the MMR token contract.
 
 ### Tuning Guidelines
 
 **Want more rating volatility?**
+
 - Increase `k_factor` (more swing per game)
 - Increase `max_delta` (allow larger changes)
 
 **Want more stable ratings?**
+
 - Decrease `k_factor`
 - Decrease `max_delta`
 - Increase `spread_factor` (flatter expected percentile curve)
 
 **Want faster convergence to true skill?**
+
 - Increase `mean_regression_scaled` (stronger pull to mean)
 - Be careful: too high and ratings feel "sticky"
 
 **Want to exclude casual games?**
+
 - Increase `min_players`
 - Increase `min_entry_fee`
 
@@ -613,11 +631,11 @@ WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
 
 ### Test Organization
 
-| Test File | Coverage |
-|-----------|----------|
-| `models/mmr.cairo` | Model unit tests (PlayerMMRStats) |
-| `systems/utils/mmr.cairo` | Algorithm unit tests (all 8 steps) |
-| `systems/mmr/tests/test_mmr_systems.cairo` | Integration tests |
+| Test File                                  | Coverage                           |
+| ------------------------------------------ | ---------------------------------- |
+| `models/mmr.cairo`                         | Model unit tests (PlayerMMRStats)  |
+| `systems/utils/mmr.cairo`                  | Algorithm unit tests (all 8 steps) |
+| `systems/mmr/tests/test_mmr_systems.cairo` | Integration tests                  |
 
 ### Running Tests
 
@@ -654,6 +672,7 @@ test: [troop_management, mmr]
 ### Rating Distribution
 
 With default parameters:
+
 - Mean: μ = 1500
 - Players start at 1000, naturally migrate toward 1500
 - Hard floor at 100 prevents negative-like ratings

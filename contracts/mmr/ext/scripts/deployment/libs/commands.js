@@ -65,8 +65,7 @@ export const saveContractAddressToCommonFolder = async (contractName, contractAd
     const existingData = JSON.parse(fileContent);
 
     // Convert contractAddress to hex string if it's a bigint
-    const addressValue =
-      typeof contractAddress === "bigint" ? "0x" + contractAddress.toString(16) : contractAddress;
+    const addressValue = typeof contractAddress === "bigint" ? "0x" + contractAddress.toString(16) : contractAddress;
 
     // Use regex to replace existing key or add new key
     const keyPattern = new RegExp(`"${contractName}"\\s*:\\s*"[^"]*"`);
