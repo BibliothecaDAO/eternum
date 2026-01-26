@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Connector } from "@starknet-react/core";
-import { Wallet } from "lucide-react";
+import Wallet from "lucide-react/dist/esm/icons/wallet";
 
 interface ConnectWalletPromptProps {
   connectors: Connector[];

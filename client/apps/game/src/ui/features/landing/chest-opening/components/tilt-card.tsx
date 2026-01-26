@@ -1,5 +1,11 @@
 import { AssetType, ChestAsset, RARITY_STYLES } from "../utils/cosmetics";
-import { Castle, Crown, Diamond, Hexagon, Shield, Sparkles, Sword } from "lucide-react";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import Crown from "lucide-react/dist/esm/icons/crown";
+import Diamond from "lucide-react/dist/esm/icons/diamond";
+import Hexagon from "lucide-react/dist/esm/icons/hexagon";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Sword from "lucide-react/dist/esm/icons/sword";
 import { useCallback, useRef, useState } from "react";
 
 interface TiltCardProps {

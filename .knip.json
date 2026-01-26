@@ -27,6 +27,7 @@
     "client/apps/eternum-mobile/**",
 
     "client/apps/gg-xyz/**",
+    "scripts/codemod-lucide-imports.mjs",
     "config/**",
     "contracts/**",
 

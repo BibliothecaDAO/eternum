@@ -2,7 +2,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useRef, useState } from "react";
 import Draggable from "react-draggable";
 

@@ -26,7 +26,11 @@ import {
 } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
 import { toPng } from "html-to-image";
-import { Copy, Loader2, Share2, Sparkles, Trash2 } from "lucide-react";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Share2 from "lucide-react/dist/esm/icons/share-2";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
 import { LandingWorldSelector } from "../components/landing-world-selector";

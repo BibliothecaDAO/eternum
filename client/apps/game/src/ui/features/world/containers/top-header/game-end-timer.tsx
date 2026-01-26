@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import { Clock } from "lucide-react";
+import Clock from "lucide-react/dist/esm/icons/clock";
 import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 
 const DEBUG_URGENCY_MODE = false; // Flip to true and tweak the value below to preview urgency states quickly.

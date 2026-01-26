@@ -16,7 +16,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { TargetType } from "./types";

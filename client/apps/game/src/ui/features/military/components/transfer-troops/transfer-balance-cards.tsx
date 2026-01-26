@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
 
 import { formatNumber } from "@/ui/utils/utils";
 import { TroopTier, TroopType } from "@bibliothecadao/types";

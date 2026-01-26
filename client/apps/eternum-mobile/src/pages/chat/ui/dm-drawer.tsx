@@ -2,7 +2,7 @@ import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { Search } from "lucide-react";
+import Search from "lucide-react/dist/esm/icons/search";
 import { useState } from "react";
 
 interface User {

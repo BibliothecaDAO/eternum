@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Users from "lucide-react/dist/esm/icons/users";
 
 import { useFactoryWorlds, type FactoryWorld } from "@/hooks/use-factory-worlds";
 import { useWorldsAvailability, getAvailabilityStatus, getWorldKey } from "@/hooks/use-world-availability";

@@ -22,7 +22,11 @@ import {
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useSendTransaction } from "@starknet-react/core";
-import { ArrowDown, ArrowLeftRight, Info, Star, X } from "lucide-react";
+import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import Info from "lucide-react/dist/esm/icons/info";
+import Star from "lucide-react/dist/esm/icons/star";
+import X from "lucide-react/dist/esm/icons/x";
 import React, { useCallback, useMemo, useState } from "react";
 import { formatEther, parseEther } from "viem";
 

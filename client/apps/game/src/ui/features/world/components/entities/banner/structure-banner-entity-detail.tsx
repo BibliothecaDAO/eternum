@@ -1,4 +1,8 @@
-import { ArrowLeftRight, Coins, Factory, Loader, Shield } from "lucide-react";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import Loader from "lucide-react/dist/esm/icons/loader";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { memo, useCallback, useMemo } from "react";
 
 import Button from "@/ui/design-system/atoms/button";

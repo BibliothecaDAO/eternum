@@ -3,7 +3,12 @@ import { Card, CardContent } from "@/shared/ui/card";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { AlertTriangle, Home, Plus, Shield, Warehouse, X } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Home from "lucide-react/dist/esm/icons/home";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Warehouse from "lucide-react/dist/esm/icons/warehouse";
+import X from "lucide-react/dist/esm/icons/x";
 import { useState } from "react";
 import { BuildingDetailsDrawer } from "./building-details-drawer";
 
