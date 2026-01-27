@@ -34,7 +34,7 @@ export const normalizeUint256 = (value: unknown): bigint => {
 /**
  * Decode a padded felt ASCII hex string to a readable string
  */
-export const decodePaddedFeltAscii = (hex: string): string => {
+const decodePaddedFeltAscii = (hex: string): string => {
   try {
     if (!hex) return "";
     const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
@@ -59,7 +59,7 @@ export const decodePaddedFeltAscii = (hex: string): string => {
 /**
  * Parse a value that might be hex or decimal to a number
  */
-export const parseMaybeHexToNumber = (v: unknown): number | null => {
+const parseMaybeHexToNumber = (v: unknown): number | null => {
   if (v == null) return null;
   if (typeof v === "number") return v;
   if (typeof v === "string") {

@@ -22,7 +22,9 @@ use alexandria_math::{U256BitShift, U32BitShift, U64BitShift};
 /// * `div_round(9, 5)` returns `2` (9/5 = 1.8 → 2)
 /// * `div_round(10, 0)` returns `0` (safe guard)
 pub fn div_round(n: u128, d: u128) -> u128 {
-    if d == 0_u128 { return 0_u128; }
+    if d == 0_u128 {
+        return 0_u128;
+    }
     let half = d / 2_u128;
     (n + half) / d
 }
@@ -158,7 +160,7 @@ pub impl PercentageValueImpl of PercentageValueTrait {
     fn _15() -> u64 {
         1_500
     }
-    
+
     fn _20() -> u64 {
         2_000
     }

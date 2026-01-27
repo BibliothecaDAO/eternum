@@ -1,6 +1,6 @@
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::hyperstructure::ConstructionAccess;
-use starknet::ContractAddress;
 
 /// # Hyperstructure Systems Interface
 ///
@@ -144,34 +144,32 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 pub mod hyperstructure_systems {
-    use dojo::event::EventStorage;
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
         HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
-    use crate::models::events::{Story, StoryEvent, PointsRegisteredStory, PointsActivity};
-
+    use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
     use crate::models::guild::GuildMember;
     use crate::models::hyperstructure::{
         ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
         HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
     };
     use crate::models::map::Tile;
-    use crate::models::map2::{TileOpt};
+    use crate::models::map2::TileOpt;
     use crate::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
     use crate::models::position::Coord;
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use crate::models::season::SeasonPrize;
-    use crate::models::structure::{
-        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
-    };
+    use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
     use crate::models::weight::{Weight, WeightImpl};
     use crate::systems::utils::hyperstructure::iHyperstructureBlitzImpl;
     use crate::systems::utils::map::IMapImpl;
@@ -179,7 +177,6 @@ pub mod hyperstructure_systems {
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;
-    use starknet::ContractAddress;
 
 
     const HYPERSTRUCTURE_POINT_MULTIPLIER: u128 = 1_000_000;
@@ -246,7 +243,8 @@ pub mod hyperstructure_systems {
 
             // update structure tile
             let hyperstructure_coord = Coord { alt: false, x: structure.coord_x, y: structure.coord_y };
-            let hyperstructure_tile_opt: TileOpt = world.read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
+            let hyperstructure_tile_opt: TileOpt = world
+                .read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
             let mut hyperstructure_tile: Tile = hyperstructure_tile_opt.into();
             let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(1);
             IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
@@ -373,7 +371,8 @@ pub mod hyperstructure_systems {
 
                 // update structure tile
                 let hyperstructure_coord = Coord { alt: false, x: structure_base.coord_x, y: structure_base.coord_y };
-                let hyperstructure_tile_opt: TileOpt = world.read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
+                let hyperstructure_tile_opt: TileOpt = world
+                    .read_model((hyperstructure_coord.alt, hyperstructure_coord.x, hyperstructure_coord.y));
                 let mut hyperstructure_tile: Tile = hyperstructure_tile_opt.into();
                 let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(2);
                 IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
@@ -561,6 +560,7 @@ pub mod hyperstructure_systems {
                         world
                             .emit_event(
                                 @StoryEvent {
+                                    id: world.dispatcher.uuid(),
                                     owner: Option::Some(*shareholder_address),
                                     entity_id: Option::Some(hyperstructure_id),
                                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -568,7 +568,7 @@ pub mod hyperstructure_systems {
                                     timestamp: starknet::get_block_timestamp(),
                                 },
                             );
-                        }
+                    }
                 }
 
                 // update global total registered points

@@ -471,6 +471,7 @@ export function defineContractComponents(world: World) {
           connected_realm_entity_id: RecsType.Number,
           connected_realm_id: RecsType.Number,
           connected_realm_coord: {
+            alt: RecsType.Boolean,
             x: RecsType.Number,
             y: RecsType.Number,
           },
@@ -584,6 +585,7 @@ export function defineContractComponents(world: World) {
           id: RecsType.Number,
           game_address: RecsType.String,
           coord: {
+            alt: RecsType.Boolean,
             x: RecsType.Number,
             y: RecsType.Number,
           },
@@ -1148,6 +1150,7 @@ export function defineContractComponents(world: World) {
             battle_cooldown_end: RecsType.Number,
           },
           coord: {
+            alt: RecsType.Boolean,
             x: RecsType.Number,
             y: RecsType.Number,
           },
@@ -1683,6 +1686,18 @@ export function defineContractComponents(world: World) {
           victory_points_win_config: {
             points_for_win: RecsType.BigInt,
           },
+          factory_address: RecsType.BigInt,
+          mmr_config: {
+            enabled: RecsType.Boolean,
+            mmr_token_address: RecsType.BigInt,
+            distribution_mean: RecsType.Number,
+            spread_factor: RecsType.Number,
+            max_delta: RecsType.Number,
+            k_factor: RecsType.Number,
+            lobby_split_weight_scaled: RecsType.Number,
+            mean_regression_scaled: RecsType.Number,
+            min_players: RecsType.Number,
+          },
         },
         {
           metadata: {
@@ -1831,6 +1846,16 @@ export function defineContractComponents(world: World) {
               "u32", // VictoryPointsGrantConfig explore_tiles_points
               "u32", // VictoryPointsGrantConfig relic_open_points
               "u128", // VictoryPointsWinConfig points_for_win
+              "ContractAddress", // factory address
+              "bool", // MMRConfig enabled
+              "ContractAddress", // MMRConfig mmr_token_address
+              "u16", // MMRConfig distribution_mean
+              "u16", // MMRConfig spread_factor
+              "u8", // MMRConfig max_delta
+              "u8", // MMRConfig k_factor
+              "u16", // MMRConfig lobby_split_weight_scaled
+              "u16", // MMRConfig mean_regression_scaled
+              "u8", // MMRConfig min_players
             ],
             customTypes: [],
           },
@@ -1925,6 +1950,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    // MMR System Models
+    MMRGameMeta: (() => {
+      return defineComponent(
+        world,
+        {
+          world_id: RecsType.Number,
+          game_median: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "MMRGameMeta",
+            types: ["u32", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ...eventsComponents(world),
   };
 }
@@ -1932,6 +1975,25 @@ export function defineContractComponents(world: World) {
 const eventsComponents = (world: World) => {
   return {
     events: {
+      CollectibleClaimed: (() => {
+        return defineComponent(
+          world,
+          {
+            token_address: RecsType.BigInt,
+            attributes_raw: RecsType.BigInt,
+            token_recipient: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "CollectibleClaimed",
+              types: ["ContractAddress", "u128", "ContractAddress", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
       SeasonEnded: (() => {
         return defineComponent(
           world,
@@ -2018,6 +2080,7 @@ const eventsComponents = (world: World) => {
         return defineComponent(
           world,
           {
+            id: RecsType.Number,
             owner: RecsType.OptionalString,
             entity_id: RecsType.OptionalNumber,
             tx_hash: RecsType.String,
@@ -2028,7 +2091,7 @@ const eventsComponents = (world: World) => {
             metadata: {
               namespace: "s1_eternum",
               name: "StoryEvent",
-              types: ["Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
+              types: ["u32", "Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
               customTypes: ["Story"],
             },
           },
@@ -2160,6 +2223,7 @@ const eventsComponents = (world: World) => {
           {
             explorer_id: RecsType.Number,
             chest_coord: {
+              alt: RecsType.Boolean,
               x: RecsType.Number,
               y: RecsType.Number,
             },

@@ -116,7 +116,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
       map.set(balance.account_address, holder);
     });
 
-    return Array.from(map.values()).sort((a, b) => (a.totalRaw < b.totalRaw ? 1 : -1));
+    return Array.from(map.values()).toSorted((a, b) => (a.totalRaw < b.totalRaw ? 1 : -1));
   }, [balances, tokens, positionTokenIds, outcomes, market.collateralToken.decimals]);
 
   const symbol = market.collateralToken.symbol || "";

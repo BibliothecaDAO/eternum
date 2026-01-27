@@ -1,5 +1,5 @@
-use crate::alias::ID;
 use starknet::ContractAddress;
+use crate::alias::ID;
 
 #[derive(Copy, Drop, Serde)]
 pub struct RealmSettlement {
@@ -23,7 +23,8 @@ pub trait IRealmSystems<T> {
 pub mod realm_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use starknet::{ContractAddress, TxInfo};
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
@@ -47,7 +48,6 @@ pub mod realm_systems {
     use crate::systems::utils::realm::iRealmImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
-    use starknet::{ContractAddress, TxInfo};
     use super::RealmSettlement;
 
 
@@ -156,6 +156,7 @@ pub mod realm_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(owner),
                         entity_id: Option::Some(structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

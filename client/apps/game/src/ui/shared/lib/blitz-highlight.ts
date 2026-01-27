@@ -27,9 +27,9 @@ export const BLITZ_CARD_DIMENSIONS = {
   height: 540,
 };
 
-export const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
+const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
 
-export const BLITZ_COVER_IMAGES = [
+const BLITZ_COVER_IMAGES = [
   "/images/covers/blitz/01.png",
   "/images/covers/blitz/02.png",
   "/images/covers/blitz/03.png",
@@ -40,7 +40,7 @@ export const BLITZ_COVER_IMAGES = [
   "/images/covers/blitz/08.png",
 ] as const;
 
-export const getBlitzCoverImage = (rank: number | null | undefined): string => {
+const getBlitzCoverImage = (rank: number | null | undefined): string => {
   if (!rank || rank < 1) {
     return BLITZ_COVER_IMAGES[0];
   }
@@ -84,7 +84,7 @@ export const getSecondaryLabel = (player: BlitzHighlightPlayer): string => {
   return displayAddress(player.address);
 };
 
-export interface BlitzShareMessageOptions {
+interface BlitzShareMessageOptions {
   rank?: number | null;
   points?: number | null;
   eventLabel?: string;

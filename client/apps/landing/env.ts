@@ -27,6 +27,18 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
+
+  VITE_PUBLIC_CHEST_DEBUG_MODE: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
+
+  VITE_PUBLIC_BLOCK_CHEST_OPENING: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
 });
 
 let env: z.infer<typeof envSchema>;

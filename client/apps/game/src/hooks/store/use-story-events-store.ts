@@ -17,7 +17,7 @@ interface StoryEventsState {
   setLastRefreshTimestamp: (timestamp: number) => void;
 }
 
-export const useStoryEventsStore = create<StoryEventsState>((set) => ({
+const useStoryEventsStore = create<StoryEventsState>((set) => ({
   lastRefreshTimestamp: 0,
   setLastRefreshTimestamp: (timestamp: number) => set({ lastRefreshTimestamp: timestamp }),
 }));
@@ -73,7 +73,7 @@ export const useStoryEvents = (limit: number = 100) => {
  * Selector hook for story events loading state.
  * Uses the same query as useStoryEvents - just returns isLoading.
  */
-export const useStoryEventsLoading = (limit: number = 100) => {
+const useStoryEventsLoading = (limit: number = 100) => {
   return useStoryEvents(limit).isLoading;
 };
 
@@ -81,7 +81,7 @@ export const useStoryEventsLoading = (limit: number = 100) => {
  * Selector hook for story events error state.
  * Uses the same query as useStoryEvents - just returns error message.
  */
-export const useStoryEventsError = (limit: number = 100) => {
+const useStoryEventsError = (limit: number = 100) => {
   return useStoryEvents(limit).error?.message;
 };
 
@@ -89,7 +89,7 @@ export const useStoryEventsError = (limit: number = 100) => {
  * Selector hook for story events data only.
  * Uses the same query as useStoryEvents - just returns data array.
  */
-export const useStoryEventsData = (limit: number = 100) => {
+const useStoryEventsData = (limit: number = 100) => {
   return useStoryEvents(limit).data ?? [];
 };
 

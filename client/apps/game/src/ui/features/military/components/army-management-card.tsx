@@ -33,7 +33,8 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
-import { LockIcon, Pen } from "lucide-react";
+import LockIcon from "lucide-react/dist/esm/icons/lock";
+import Pen from "lucide-react/dist/esm/icons/pen";
 import { useEffect, useMemo, useState } from "react";
 
 type ArmyManagementCardProps = {

@@ -163,7 +163,7 @@ function createDefaultUniforms() {
 /**
  * Create the path line shader material
  */
-export function createPathLineMaterial(): ShaderMaterial {
+function createPathLineMaterial(): ShaderMaterial {
   return new ShaderMaterial({
     vertexShader,
     fragmentShader,
@@ -217,7 +217,7 @@ export function updatePathLineProgress(progress: number): void {
 /**
  * Set line thickness
  */
-export function setPathLineThickness(thickness: number): void {
+function setPathLineThickness(thickness: number): void {
   if (sharedMaterial) {
     sharedMaterial.uniforms.thickness.value = thickness;
   }
@@ -236,7 +236,7 @@ export function disposePathLineMaterial(): void {
 /**
  * Get default path color based on owner type
  */
-export function getPathColor(ownerType: "self" | "ally" | "enemy"): Color {
+function getPathColor(ownerType: "self" | "ally" | "enemy"): Color {
   switch (ownerType) {
     case "self":
       return new Color(0.2, 0.8, 1.0); // Bright cyan/blue

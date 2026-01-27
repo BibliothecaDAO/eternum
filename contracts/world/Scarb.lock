@@ -3,24 +3,24 @@ version = 1
 
 [[package]]
 name = "dojo"
-version = "1.0.3"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.3#c65c25788d900325fa5e6e9d464da633cfabc468"
+version = "1.3.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.3.1#d2436c78d9b86f4392a645b52ee3893fc01ca165"
 dependencies = [
  "dojo_plugin",
 ]
 
 [[package]]
 name = "dojo_cairo_test"
-version = "1.0.0-rc.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.3#c65c25788d900325fa5e6e9d464da633cfabc468"
+version = "1.0.12"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.3.1#d2436c78d9b86f4392a645b52ee3893fc01ca165"
 dependencies = [
  "dojo",
 ]
 
 [[package]]
 name = "dojo_plugin"
-version = "2.8.4"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.3#c65c25788d900325fa5e6e9d464da633cfabc468"
+version = "2.9.2"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.3.1#d2436c78d9b86f4392a645b52ee3893fc01ca165"
 
 [[package]]
 name = "s1_eternum"

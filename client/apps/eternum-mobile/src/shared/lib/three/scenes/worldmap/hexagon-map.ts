@@ -3,7 +3,7 @@ import {
   ActionPaths,
   ActionType,
   ExplorerRewardSystemUpdate,
-  getFeltCenterOffset,
+  FELT_CENTER,
   Position,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
@@ -160,9 +160,7 @@ export class HexagonMap {
     this.systemManager.RelicEffect.onStructureProductionUpdate((update) =>
       this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
     );
-    this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) =>
-      this.handleExplorerRewardEvent(update),
-    );
+    this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
   }
 
   private initializeGUI(): void {
@@ -845,9 +843,9 @@ export class HexagonMap {
   }
 
   private async computeTileEntities(chunkKey: string) {
-    const FELT_CENTER = getFeltCenterOffset();
-    const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
-    const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
+    const feltCenter = FELT_CENTER();
+    const startCol = parseInt(chunkKey.split(",")[1]) + feltCenter;
+    const startRow = parseInt(chunkKey.split(",")[0]) + feltCenter;
 
     const range = this.chunkLoadRadiusX * HexagonMap.CHUNK_SIZE;
 

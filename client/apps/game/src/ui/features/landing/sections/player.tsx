@@ -1,9 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
+import {
+  getAvatarUrl,
+  useAvatarGallery,
+  useAvatarHistory,
+  useDeleteAvatar,
+  useGenerateAvatar,
+  useMyAvatar,
+  useSelectAvatar,
+} from "@/hooks/use-player-avatar";
+import TextInput from "@/ui/design-system/atoms/text-input";
 
 import { Button } from "@/ui/design-system/atoms";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
+import { Tabs } from "@/ui/design-system/atoms/tab";
+import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
 import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
@@ -13,11 +26,21 @@ import {
 } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
 import { toPng } from "html-to-image";
-import { Copy, Share2 } from "lucide-react";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Share2 from "lucide-react/dist/esm/icons/share-2";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
-import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import { LandingWorldSelector } from "../components/landing-world-selector";
+import {
+  fetchLandingLeaderboard,
+  fetchLandingLeaderboardEntryByAddress,
+  type LandingLeaderboardEntry,
+} from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
+import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
   const candidate = entry.displayName?.trim();
@@ -47,41 +70,182 @@ const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer
   hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
 });
 
+const LEADERBOARD_LIMIT = 30;
+
 export const LandingPlayer = () => {
   const account = useAccountStore((state) => state.account);
+  const accountName = useAccountStore((state) => state.accountName);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
 
   const normalizedPlayerAddress = playerAddress?.toLowerCase() ?? null;
 
-  const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
-  const championEntry = useLandingLeaderboardStore((state) => state.championEntry);
-  const isLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
-  const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
-  const playerEntryState = useLandingLeaderboardStore((state) =>
+  const { username: cartridgeUsername, isLoading: isCartridgeUsernameLoading } = useCartridgeUsername();
+  const displayName = accountName || cartridgeUsername || "";
+  const hasDisplayName = Boolean(displayName);
+  const playerId = playerAddress ?? "";
+
+  // World selection for player section
+  const worldSelection = useLandingWorldSelection({ storageKeyPrefix: "player" });
+
+  // Local state for world-specific data
+  const [worldChampionEntry, setWorldChampionEntry] = useState<LandingLeaderboardEntry | null>(null);
+  const [worldPlayerEntry, setWorldPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
+  const [worldIsFetching, setWorldIsFetching] = useState(false);
+  const [worldPlayerIsFetching, setWorldPlayerIsFetching] = useState(false);
+  const [worldError, setWorldError] = useState<string | null>(null);
+  const [worldLastFetchAt, setWorldLastFetchAt] = useState<number | null>(null);
+  const [worldPlayerLastFetchAt, setWorldPlayerLastFetchAt] = useState<number | null>(null);
+
+  const useCustomWorld = worldSelection.toriiBaseUrl !== null;
+
+  // Avatar management
+  const [avatarPrompt, setAvatarPrompt] = useState("");
+  const [showAvatarSection, setShowAvatarSection] = useState(true);
+  const [avatarTabIndex, setAvatarTabIndex] = useState(0);
+  const [lastGeneratedImages, setLastGeneratedImages] = useState<string[]>([]);
+  const { data: myAvatar, isLoading: isLoadingAvatar } = useMyAvatar(playerId, playerId, displayName);
+  const { data: avatarHistory } = useAvatarHistory(playerId, playerId, displayName, 1);
+  const { data: galleryItems, isLoading: isGalleryLoading } = useAvatarGallery(40);
+
+  const generateAvatar = useGenerateAvatar(playerId, playerId, displayName);
+  const deleteAvatar = useDeleteAvatar(playerId, playerId, displayName);
+  const selectAvatar = useSelectAvatar(playerId, playerId, displayName);
+  const dailyGenerationLimit = 1;
+  const hasReachedDailyLimit = (myAvatar?.generationCount ?? 0) >= dailyGenerationLimit;
+  const resetCountdownLabel = useMemo(() => {
+    if (!myAvatar?.nextResetAt) return null;
+    const resetAt = new Date(myAvatar.nextResetAt);
+    if (Number.isNaN(resetAt.getTime())) return null;
+    const diffMs = resetAt.getTime() - Date.now();
+    if (diffMs <= 0) return null;
+    const totalMinutes = Math.ceil(diffMs / (60 * 1000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours <= 0) return `${minutes}m`;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }, [myAvatar?.nextResetAt]);
+
+  const storeFetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  const storeChampionEntry = useLandingLeaderboardStore((state) => state.championEntry);
+  const storeIsLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
+  const storeFetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
+  const storePlayerEntryState = useLandingLeaderboardStore((state) =>
     normalizedPlayerAddress ? state.playerEntries[normalizedPlayerAddress] : undefined,
   );
-  const lastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+  const storeLastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+
+  // Use world-specific or store data depending on selection
+  const championEntry = useCustomWorld ? worldChampionEntry : storeChampionEntry;
+  const isLeaderboardFetching = useCustomWorld ? worldIsFetching : storeIsLeaderboardFetching;
+  const lastLeaderboardFetchAt = useCustomWorld ? worldLastFetchAt : storeLastLeaderboardFetchAt;
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
-  useEffect(() => {
-    void fetchLeaderboard();
-  }, [fetchLeaderboard]);
+  // Fetch world-specific leaderboard (for champion)
+  const fetchWorldLeaderboard = useCallback(async () => {
+    const toriiUrl = worldSelection.toriiBaseUrl;
+    if (!toriiUrl) {
+      return;
+    }
 
+    const now = Date.now();
+    if (worldIsFetching) {
+      return;
+    }
+
+    if (worldLastFetchAt && now - worldLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
+      return;
+    }
+
+    setWorldIsFetching(true);
+    setWorldLastFetchAt(now);
+
+    try {
+      const fetchedEntries = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, toriiUrl);
+      const champion = fetchedEntries[0] ?? null;
+      setWorldChampionEntry(champion);
+      setWorldIsFetching(false);
+      setWorldError(null);
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "Unable to load leaderboard.";
+      setWorldIsFetching(false);
+      setWorldError(message);
+    }
+  }, [worldSelection.toriiBaseUrl, worldIsFetching, worldLastFetchAt]);
+
+  // Fetch world-specific player entry
+  const fetchWorldPlayerEntry = useCallback(
+    async (address: string) => {
+      const toriiUrl = worldSelection.toriiBaseUrl;
+      if (!toriiUrl || !address) {
+        return null;
+      }
+
+      const now = Date.now();
+      if (worldPlayerIsFetching) {
+        return worldPlayerEntry;
+      }
+
+      if (worldPlayerLastFetchAt && now - worldPlayerLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
+        return worldPlayerEntry;
+      }
+
+      setWorldPlayerIsFetching(true);
+      setWorldPlayerLastFetchAt(now);
+
+      try {
+        const entry = await fetchLandingLeaderboardEntryByAddress(address, toriiUrl);
+        setWorldPlayerEntry(entry);
+        setWorldPlayerIsFetching(false);
+        return entry;
+      } catch {
+        setWorldPlayerIsFetching(false);
+        return null;
+      }
+    },
+    [worldSelection.toriiBaseUrl, worldPlayerIsFetching, worldPlayerLastFetchAt, worldPlayerEntry],
+  );
+
+  // Reset world data when world changes
+  useEffect(() => {
+    setWorldChampionEntry(null);
+    setWorldPlayerEntry(null);
+    setWorldError(null);
+    setWorldLastFetchAt(null);
+    setWorldPlayerLastFetchAt(null);
+  }, [worldSelection.toriiBaseUrl]);
+
+  // Fetch leaderboard on mount and when world changes
+  useEffect(() => {
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard();
+    } else {
+      void storeFetchLeaderboard();
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
+
+  // Fetch player entry when address changes or world changes
   useEffect(() => {
     if (!playerAddress) {
       return;
     }
 
-    void fetchPlayerEntry(playerAddress);
-  }, [playerAddress, fetchPlayerEntry]);
+    if (useCustomWorld) {
+      void fetchWorldPlayerEntry(playerAddress);
+    } else {
+      void storeFetchPlayerEntry(playerAddress);
+    }
+  }, [playerAddress, useCustomWorld, fetchWorldPlayerEntry, storeFetchPlayerEntry]);
 
-  const playerEntry = playerEntryState?.data ?? null;
-  const isPlayerLoading = Boolean(playerAddress) && (!playerEntryState || playerEntryState.isFetching);
-  const playerError = playerEntryState?.error ?? null;
-  const playerLastFetchAt = playerEntryState?.lastFetchedAt ?? null;
+  // Derive player entry from world-specific or store data
+  const playerEntry = useCustomWorld ? worldPlayerEntry : (storePlayerEntryState?.data ?? null);
+  const isPlayerLoading = useCustomWorld
+    ? Boolean(playerAddress) && worldPlayerIsFetching
+    : Boolean(playerAddress) && (!storePlayerEntryState || storePlayerEntryState.isFetching);
+  const playerError = useCustomWorld ? worldError : (storePlayerEntryState?.error ?? null);
+  const playerLastFetchAt = useCustomWorld ? worldPlayerLastFetchAt : (storePlayerEntryState?.lastFetchedAt ?? null);
 
   useEffect(() => {
     const updateCooldown = () => {
@@ -151,11 +315,27 @@ export const LandingPlayer = () => {
       return;
     }
 
-    void fetchLeaderboard();
-    if (playerAddress) {
-      void fetchPlayerEntry(playerAddress);
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard();
+      if (playerAddress) {
+        void fetchWorldPlayerEntry(playerAddress);
+      }
+    } else {
+      void storeFetchLeaderboard();
+      if (playerAddress) {
+        void storeFetchPlayerEntry(playerAddress);
+      }
     }
-  }, [fetchLeaderboard, fetchPlayerEntry, playerAddress, isRefreshing, isCooldownActive]);
+  }, [
+    useCustomWorld,
+    fetchWorldLeaderboard,
+    fetchWorldPlayerEntry,
+    storeFetchLeaderboard,
+    storeFetchPlayerEntry,
+    playerAddress,
+    isRefreshing,
+    isCooldownActive,
+  ]);
 
   const handleShareOnX = useCallback(() => {
     if (!highlightPlayer) {
@@ -265,8 +445,305 @@ export const LandingPlayer = () => {
     }
   }, [shareMessage]);
 
+  const handleGenerateAvatar = useCallback(async () => {
+    if (!avatarPrompt.trim()) {
+      toast.error("Please enter a description for your avatar.");
+      return;
+    }
+    if (hasReachedDailyLimit) {
+      toast.error("Daily avatar generation limit reached. Try again later.");
+      return;
+    }
+
+    try {
+      const result = await generateAvatar.mutateAsync({ prompt: avatarPrompt.trim() });
+      toast.success("Avatar generated successfully!");
+      setLastGeneratedImages(result.imageUrls ?? []);
+      setAvatarPrompt("");
+    } catch (error: any) {
+      console.error("Failed to generate avatar:", error);
+      toast.error(error?.message || "Failed to generate avatar. Please try again.");
+    }
+  }, [avatarPrompt, generateAvatar, hasReachedDailyLimit]);
+
+  const handleDeleteAvatar = useCallback(async () => {
+    try {
+      await deleteAvatar.mutateAsync();
+      toast.success("Avatar deleted. Using default avatar now.");
+    } catch (error) {
+      console.error("Failed to delete avatar:", error);
+      toast.error("Failed to delete avatar. Please try again.");
+    }
+  }, [deleteAvatar]);
+
+  const handleSelectAvatar = useCallback(
+    async (imageUrl: string) => {
+      if (!imageUrl || imageUrl === myAvatar?.avatarUrl) {
+        return;
+      }
+
+      if (!playerAddress || !hasDisplayName) {
+        toast.error("Connect with Cartridge to select an avatar.");
+        return;
+      }
+
+      try {
+        await selectAvatar.mutateAsync(imageUrl);
+        toast.success("Avatar updated.");
+      } catch (error: any) {
+        console.error("Failed to set avatar:", error);
+        toast.error(error?.message || "Failed to set avatar. Please try again.");
+      }
+    },
+    [hasDisplayName, myAvatar?.avatarUrl, playerAddress, selectAvatar],
+  );
+
+  // Check if we're waiting for account name to load or avatar query to complete
+  const isLoadingAvatarOrAccount =
+    isLoadingAvatar || (Boolean(playerAddress) && !hasDisplayName && isCartridgeUsernameLoading);
+
+  const currentAvatarUrl = useMemo(
+    () => getAvatarUrl(playerAddress || "", myAvatar?.avatarUrl),
+    [playerAddress, myAvatar?.avatarUrl],
+  );
+  const hasCustomAvatar = !!myAvatar?.avatarUrl;
+  const latestGeneratedImages = useMemo(() => {
+    if (lastGeneratedImages.length > 0) {
+      return lastGeneratedImages;
+    }
+
+    const historyEntry = avatarHistory?.[0];
+    if (!historyEntry) {
+      return [];
+    }
+
+    if (historyEntry.imageUrls && historyEntry.imageUrls.length > 0) {
+      return historyEntry.imageUrls;
+    }
+
+    if (historyEntry.imageUrl) {
+      return [historyEntry.imageUrl];
+    }
+
+    return [];
+  }, [avatarHistory, lastGeneratedImages]);
+
+  const canSelectFromGallery = Boolean(playerAddress && hasDisplayName);
+
   return (
     <section className="w-full mb-2 max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-3xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[70vh] xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-4xl 2xl:p-8">
+      {/* World Selector */}
+      <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4">
+        <LandingWorldSelector
+          selectedChain={worldSelection.selectedChain}
+          selectedWorld={worldSelection.selectedWorld}
+          availableWorlds={worldSelection.availableWorlds}
+          isLoading={worldSelection.isLoading}
+          isCheckingAvailability={worldSelection.isCheckingAvailability}
+          onChainChange={worldSelection.setSelectedChain}
+          onWorldChange={worldSelection.setSelectedWorld}
+        />
+        {worldSelection.selectedWorld && (
+          <p className="mt-2 text-xs text-gold/60">
+            Showing data from: <span className="font-semibold text-gold">{worldSelection.selectedWorld}</span>
+          </p>
+        )}
+      </div>
+
+      {/* Avatar Management Section */}
+      {playerAddress && showAvatarSection && (
+        <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 to-transparent p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gold flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              Personalized Avatar
+            </h3>
+            <button
+              onClick={() => setShowAvatarSection(false)}
+              className="text-white/40 hover:text-white/70 transition-colors text-xs"
+            >
+              Hide
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+            {/* Avatar Preview */}
+            <div className="flex-shrink-0 mx-auto sm:mx-0">
+              <div className="w-48 h-48 rounded-xl overflow-hidden border-2 border-gold/30 shadow-xl bg-brown/30">
+                {isLoadingAvatarOrAccount ? (
+                  <div className="h-full w-full flex items-center justify-center bg-gold/10">
+                    <Loader2 className="w-8 h-8 animate-spin text-gold" />
+                  </div>
+                ) : (
+                  <img className="h-full w-full object-cover" src={currentAvatarUrl} alt="Your avatar" />
+                )}
+              </div>
+              {myAvatar && myAvatar.generationCount !== undefined && (
+                <p className="text-sm text-white/50 text-center mt-3">
+                  {myAvatar.generationCount} / {dailyGenerationLimit} daily generation
+                </p>
+              )}
+              {hasReachedDailyLimit && (
+                <p className="text-xs text-amber-200/80 text-center mt-1">
+                  Daily generation limit reached. <br />
+                  {resetCountdownLabel ? ` Next reset in ${resetCountdownLabel}.` : ""}
+                </p>
+              )}
+            </div>
+
+            {/* Avatar Controls */}
+            <div className="flex-1 space-y-3 w-full">
+              <Tabs
+                variant="selection"
+                selectedIndex={avatarTabIndex}
+                onChange={(index) => setAvatarTabIndex(index)}
+                className="space-y-3"
+              >
+                <Tabs.List className="grid grid-cols-2 gap-2">
+                  <Tabs.Tab className="!mx-0 text-xs">Generate</Tabs.Tab>
+                  <Tabs.Tab className="!mx-0 text-xs">Gallery</Tabs.Tab>
+                </Tabs.List>
+
+                <Tabs.Panels className="flex-1">
+                  <Tabs.Panel className="space-y-3">
+                    <div>
+                      <label className="text-xs text-white/60 block mb-1.5">
+                        Describe your avatar (e.g., \"cyberpunk warrior\")
+                      </label>
+                      <TextInput
+                        value={avatarPrompt}
+                        onChange={(value) => setAvatarPrompt(value)}
+                        placeholder="Enter description..."
+                        className="w-full"
+                        disabled={generateAvatar.isPending}
+                        maxLength={500}
+                      />
+                    </div>
+
+                    {generateAvatar.isError && (
+                      <div className="text-xs text-red-400 bg-red-900/20 border border-red-700/30 rounded px-2 py-1.5">
+                        {(generateAvatar.error as any)?.message || "Failed to generate avatar"}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleGenerateAvatar}
+                        variant="gold"
+                        className="flex-1 justify-center gap-2 !px-3 !py-1.5"
+                        forceUppercase={false}
+                        isLoading={generateAvatar.isPending}
+                        disabled={
+                          generateAvatar.isPending || !avatarPrompt.trim() || !hasDisplayName || hasReachedDailyLimit
+                        }
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>
+                          {generateAvatar.isPending ? "Generating..." : hasCustomAvatar ? "Regenerate" : "Generate"}
+                        </span>
+                      </Button>
+
+                      {hasCustomAvatar && (
+                        <Button
+                          onClick={handleDeleteAvatar}
+                          variant="outline"
+                          className="justify-center gap-2 !px-3 !py-1.5"
+                          forceUppercase={false}
+                          isLoading={deleteAvatar.isPending}
+                          disabled={deleteAvatar.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </Button>
+                      )}
+                    </div>
+
+                    {latestGeneratedImages.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-white/50">Latest generation</p>
+                        <AvatarImageGrid
+                          images={latestGeneratedImages}
+                          selectedUrl={myAvatar?.avatarUrl}
+                          onSelect={handleSelectAvatar}
+                          isSelecting={selectAvatar.isPending}
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-xs text-white/50">Generate an avatar to see your options.</p>
+                    )}
+
+                    {!hasDisplayName && (
+                      <p className="text-xs text-yellow-400/80">Connect with Cartridge to create a custom avatar</p>
+                    )}
+                  </Tabs.Panel>
+
+                  <Tabs.Panel className="space-y-3">
+                    {isGalleryLoading ? (
+                      <div className="flex items-center justify-center rounded-lg border border-gold/20 bg-gold/5 py-6">
+                        <Loader2 className="w-5 h-5 animate-spin text-gold" />
+                      </div>
+                    ) : galleryItems && galleryItems.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {galleryItems.map((item, index) => {
+                          const isOwnImage = Boolean(item.cartridgeUsername && item.cartridgeUsername === displayName);
+                          const isSelected = myAvatar?.avatarUrl === item.imageUrl;
+                          const canSelect = canSelectFromGallery && isOwnImage;
+
+                          return (
+                            <div key={`${item.imageUrl}-${index}`} className="space-y-1">
+                              <button
+                                type="button"
+                                className={`group relative w-full overflow-hidden rounded-lg border bg-black/20 transition ${
+                                  isSelected ? "border-gold/70" : "border-gold/20 hover:border-gold/40"
+                                } ${!canSelect || isSelected ? "cursor-default" : ""}`}
+                                onClick={() => {
+                                  if (!canSelect || isSelected) return;
+                                  void handleSelectAvatar(item.imageUrl);
+                                }}
+                                disabled={!canSelect || isSelected || selectAvatar.isPending}
+                                aria-pressed={isSelected}
+                              >
+                                <img className="h-24 w-full object-cover" src={item.imageUrl} alt={item.prompt} />
+                                {canSelect && (
+                                  <div
+                                    className={`absolute inset-0 flex items-end justify-center pb-2 text-[11px] font-semibold uppercase tracking-wide ${
+                                      isSelected
+                                        ? "bg-black/55 text-gold"
+                                        : "bg-black/0 text-transparent group-hover:bg-black/40 group-hover:text-gold"
+                                    }`}
+                                  >
+                                    {isSelected ? "Active" : "Use"}
+                                  </div>
+                                )}
+                              </button>
+                              <p className="text-[11px] text-white/50 truncate">{item.prompt}</p>
+                              {item.cartridgeUsername && (
+                                <p className="text-[10px] text-white/40">@{item.cartridgeUsername}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-white/50">No creations yet. Be the first to generate.</p>
+                    )}
+                  </Tabs.Panel>
+                </Tabs.Panels>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!showAvatarSection && playerAddress && (
+        <button
+          onClick={() => setShowAvatarSection(true)}
+          className="w-full text-center text-sm text-gold/60 hover:text-gold transition-colors py-2 rounded-lg border border-gold/10 hover:border-gold/30 bg-gold/5 hover:bg-gold/10"
+        >
+          Show Avatar Management
+        </button>
+      )}
+
       {isPlayerLoading ? (
         <div className="space-y-4" aria-busy aria-live="polite">
           <div className="h-20 animate-pulse rounded-2xl border border-white/5 bg-white/5" />

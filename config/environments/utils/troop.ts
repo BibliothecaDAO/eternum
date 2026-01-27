@@ -20,7 +20,7 @@ export const TROOP_STAMINA_BIOME_BONUS_VALUE = 10; // give 1 tick worth of stami
 export const TROOP_STAMINA_MAX = {
   [ResourcesIds.Knight]: 120,
   [ResourcesIds.Crossbowman]: 120,
-  [ResourcesIds.Paladin]: 140,
+  [ResourcesIds.Paladin]: 120,
 };
 
 // Combat stamina requirements
@@ -40,7 +40,7 @@ export const TROOP_EXPLORE_STAMINA_COST = 30;
 export const TROOP_EXPLORER_MAX_PARTY_COUNT = 10;
 export const TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT = 30_000;
 export const TROOP_GUARD_RESURRECTION_DELAY = 60 * 10; // 10 minutes
-export const TROOP_MERCENARIES_TROOP_LOWER_BOUND = 1_000;
-export const TROOP_MERCENARIES_TROOP_UPPER_BOUND = 2_000;
+export const TROOP_MERCENARIES_TROOP_LOWER_BOUND = 800;
+export const TROOP_MERCENARIES_TROOP_UPPER_BOUND = 1_600;
 export const TROOP_AGENTS_TROOP_LOWER_BOUND = 500;
 export const TROOP_AGENTS_TROOP_UPPER_BOUND = 15_000;

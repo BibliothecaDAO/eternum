@@ -64,6 +64,25 @@ export async function fetchWithErrorHandling<T>(url: string, errorMessage: strin
 }
 
 /**
+ * Generic function to handle JSON responses with error checking.
+ *
+ * @template T The type of the JSON response
+ * @param url The API URL to fetch from
+ * @param errorMessage Error message to throw if request fails
+ * @returns Promise resolving to the parsed JSON response
+ * @throws Error if the request fails or response is not ok
+ */
+export async function fetchJsonWithErrorHandling<T>(url: string, errorMessage: string): Promise<T> {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`${errorMessage}: ${response.statusText}`);
+  }
+
+  return (await response.json()) as T;
+}
+
+/**
  * Helper function to safely extract the first item from a SQL result array.
  * Use this when you expect a single result from a SQL query.
  *

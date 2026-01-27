@@ -1,6 +1,8 @@
 import Button from "@/ui/design-system/atoms/button";
 import clsx from "clsx";
-import { AlertTriangle, Shield, Users } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Users from "lucide-react/dist/esm/icons/users";
 
 interface ArmyTypeToggleProps {
   armyType: boolean;

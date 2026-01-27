@@ -48,6 +48,8 @@
     "cmdk": "1.0.0",
     "graphql": "^16.9.0",
     "graphql-tag": "^2.12.6",
+    "gsap": "^3.12.5",
+    "html-to-image": "^1.11.13",
     "jotai": "^2.10.1",
     "nuqs": "^2.0.4",
     "open": "catalog:",
@@ -56,6 +58,8 @@
     "starknet": "catalog:",
     "starknetkit": "catalog:",
     "storybook": "^8.3.2",
+    "three": "^0.166.0",
+    "three-stdlib": "^2.29.5",
     "vaul": "^1.1.2",
     "vite-plugin-vercel": "^9.0.3",
     "zustand": "^4.5.2"
@@ -63,6 +67,7 @@
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.16",
     "@chromatic-com/storybook": "^1.6.1",
+    "@eslint/js": "^9.39.2",
     "@graphql-codegen/cli": "5.0.3",
     "@graphql-codegen/client-preset": "4.4.0",
     "@graphql-codegen/introspection": "4.0.3",
@@ -79,7 +84,11 @@
     "@tanstack/router-devtools": "^1.74.0",
     "@tanstack/router-plugin": "^1.73.1",
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:"
+    "@types/react-dom": "catalog:",
+    "@types/three": "^0.163.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "typescript-eslint": "^8.53.1"
   },
   "peerDependencies": {
     "starknet": "catalog:"

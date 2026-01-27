@@ -1,5 +1,11 @@
 import { motion } from "framer-motion";
-import { Check, Globe, Loader2, User, Gamepad2, Play } from "lucide-react";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import User from "lucide-react/dist/esm/icons/user";
+import Gamepad2 from "lucide-react/dist/esm/icons/gamepad-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 import type { OnboardingPhase } from "@/hooks/context/use-unified-onboarding";
 
@@ -17,6 +23,7 @@ type Step = {
 const STEPS: Step[] = [
   { id: "world-select", label: "World", icon: Globe },
   { id: "account", label: "Account", icon: User },
+  { id: "avatar", label: "Avatar", icon: Sparkles },
   { id: "loading", label: "Setup", icon: Gamepad2 },
   { id: "settlement", label: "Settlement", icon: Play },
 ];
@@ -26,7 +33,7 @@ const getStepStatus = (
   currentPhase: OnboardingPhase,
   isBootstrapRunning: boolean,
 ): "complete" | "current" | "pending" | "running" => {
-  const phaseOrder: OnboardingPhase[] = ["world-select", "account", "loading", "settlement", "ready"];
+  const phaseOrder: OnboardingPhase[] = ["world-select", "account", "avatar", "loading", "settlement", "ready"];
   const currentIndex = phaseOrder.indexOf(currentPhase);
   const stepIndex = phaseOrder.indexOf(step.id as OnboardingPhase);
 
@@ -35,15 +42,15 @@ const getStepStatus = (
   }
 
   if (stepIndex === currentIndex) {
-    // Special case: if we're in account phase but bootstrap is running
-    if (currentPhase === "account" && step.id === "loading" && isBootstrapRunning) {
+    // Special case: if we're in account/avatar phase but bootstrap is running
+    if ((currentPhase === "account" || currentPhase === "avatar") && step.id === "loading" && isBootstrapRunning) {
       return "running";
     }
     return "current";
   }
 
-  // Show loading step as running even when in account phase if bootstrap is active
-  if (step.id === "loading" && isBootstrapRunning && currentPhase === "account") {
+  // Show loading step as running even when in account/avatar phase if bootstrap is active
+  if (step.id === "loading" && isBootstrapRunning && (currentPhase === "account" || currentPhase === "avatar")) {
     return "running";
   }
 
@@ -52,7 +59,7 @@ const getStepStatus = (
 
 export const StepIndicator = ({ currentPhase, isBootstrapRunning }: StepIndicatorProps) => {
   return (
-    <div className="flex items-center justify-center gap-1 py-3 px-2 flex-wrap">
+    <div className="flex items-center justify-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-2 flex-wrap">
       {STEPS.map((step, index) => {
         const status = getStepStatus(step, currentPhase, isBootstrapRunning);
         const Icon = step.icon;
@@ -60,7 +67,7 @@ export const StepIndicator = ({ currentPhase, isBootstrapRunning }: StepIndicato
         return (
           <div key={step.id} className="flex items-center">
             <motion.div
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all duration-300 ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-medium transition-all duration-300 ${
                 status === "complete"
                   ? "bg-brilliance/20 text-brilliance border border-brilliance/30"
                   : status === "current"
@@ -87,7 +94,7 @@ export const StepIndicator = ({ currentPhase, isBootstrapRunning }: StepIndicato
 
             {index < STEPS.length - 1 && (
               <div
-                className={`w-4 h-0.5 mx-0.5 transition-colors duration-300 ${
+                className={`w-2 sm:w-4 h-0.5 mx-0.5 transition-colors duration-300 ${
                   getStepStatus(STEPS[index + 1], currentPhase, isBootstrapRunning) !== "pending"
                     ? "bg-gold/30"
                     : "bg-white/10"

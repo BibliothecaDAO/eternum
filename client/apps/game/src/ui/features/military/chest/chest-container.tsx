@@ -459,6 +459,7 @@ export const ChestContainer = ({
           signer: account,
           explorer_id: explorerEntityId,
           chest_coord: {
+            alt: DEFAULT_COORD_ALT,
             x: chestHex.x,
             y: chestHex.y,
           },

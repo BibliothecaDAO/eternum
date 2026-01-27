@@ -50,7 +50,9 @@ function extractField(data: bigint, shift: number, mask: bigint): bigint {
  * @returns Unpacked Tile with all fields extracted
  */
 export function tileOptToTile(tileOpt?: TileOpt): Tile {
-  if (!tileOpt) {return null as unknown as Tile;}
+  if (!tileOpt) {
+    return null as unknown as Tile;
+  }
 
   const { data } = tileOpt;
 
@@ -84,10 +86,7 @@ export function tileOptToTile(tileOpt?: TileOpt): Tile {
  * @param entity - The entity to query
  * @returns The unpacked Tile or undefined if not found
  */
-export function getTileComponentValue(
-  components: ClientComponents,
-  entity: Entity,
-): Tile | undefined {
+export function getTileComponentValue(components: ClientComponents, entity: Entity): Tile | undefined {
   const tileOpt = getComponentValue(components.TileOpt, entity) as TileOpt | undefined;
   return tileOpt ? tileOptToTile(tileOpt) : undefined;
 }
@@ -102,12 +101,7 @@ export function getTileComponentValue(
  * @param row - The row coordinate
  * @returns The unpacked Tile or undefined if not found
  */
-export function getTileAt(
-  components: ClientComponents,
-  alt: boolean,
-  col: number,
-  row: number,
-): Tile | undefined {
+export function getTileAt(components: ClientComponents, alt: boolean, col: number, row: number): Tile | undefined {
   const entity = getEntityIdFromKeys([BigInt(alt ? 1 : 0), BigInt(col), BigInt(row)]);
   return getTileComponentValue(components, entity);
 }

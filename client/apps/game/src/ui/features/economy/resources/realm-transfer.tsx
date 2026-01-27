@@ -25,7 +25,11 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { ChevronDown, Flame, Search, ShieldCheck, X } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Flame from "lucide-react/dist/esm/icons/flame";
+import Search from "lucide-react/dist/esm/icons/search";
+import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
+import X from "lucide-react/dist/esm/icons/x";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
 
@@ -134,8 +138,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       .replace(/[^a-z0-9]/g, "");
   }, [searchTerm]);
   const structuresForTransfer = useMemo(() => {
-    return [...playerStructuresFiltered]
-      .sort((a, b) => {
+    return playerStructuresFiltered
+      .toSorted((a, b) => {
         if (!sortByDistance) {
           return a.name.localeCompare(b.name);
         }
@@ -410,8 +414,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 <div className="py-8 text-center text-sm text-gold/60">
                   <div className="mb-2 text-lg">No valid destinations</div>
                   <p>
-                    {mode.structure.getName(selectedStructure).name} cannot transfer troops. Only Realms can
-                    transfer military units.
+                    {mode.structure.getName(selectedStructure).name} cannot transfer troops. Only Realms can transfer
+                    military units.
                   </p>
                 </div>
               ) : structuresForTransfer.length === 0 ? (
@@ -630,9 +634,7 @@ const RealmTransferBalance = memo(
       <div className="flex flex-col gap-2 border-b-2 mt-2 pb-2 border-gold/20">
         <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
-            <div className="uppercase font-bold h4 truncate">
-              {mode.structure.getName(structure.structure).name}
-            </div>
+            <div className="uppercase font-bold h4 truncate">{mode.structure.getName(structure.structure).name}</div>
           </div>
         </div>
         <div className="w-full">
@@ -646,9 +648,7 @@ const RealmTransferBalance = memo(
                 !canCarry || relevantDonkeyBalance === 0 ? "text-red" : "text-green"
               }`}
             >
-              {type === "send"
-                ? "Your Donkeys:"
-                : `${mode.structure.getName(structure.structure).name}'s Donkeys:`}{" "}
+              {type === "send" ? "Your Donkeys:" : `${mode.structure.getName(structure.structure).name}'s Donkeys:`}{" "}
               {currencyFormat(relevantDonkeyBalance, 0).toLocaleString()} / <br /> Needs:{" "}
               {neededDonkeysForThisTransfer.toLocaleString()} 🐴
             </div>

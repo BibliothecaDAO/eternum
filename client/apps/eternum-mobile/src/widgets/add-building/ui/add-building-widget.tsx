@@ -20,7 +20,9 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import { Shield, Warehouse, Wheat } from "lucide-react";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Warehouse from "lucide-react/dist/esm/icons/warehouse";
+import Wheat from "lucide-react/dist/esm/icons/wheat";
 import { useState } from "react";
 import { BuildingPreviewCard } from "./building-preview-card";
 
@@ -227,7 +229,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
     if (activeCategory === BuildingCategory.ECONOMIC) {
       buildingTypes
         .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
-        .sort((a, b) => {
+        .toSorted((a, b) => {
           const buildingA = BuildingType[a as keyof typeof BuildingType];
           const buildingB = BuildingType[b as keyof typeof BuildingType];
 

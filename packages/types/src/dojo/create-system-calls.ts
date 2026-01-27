@@ -276,6 +276,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_prize_claim_no_game(props);
   };
 
+  const commit_and_claim_game_mmr = async (
+    props: SystemProps.CommitGameMMRProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.commit_and_claim_game_mmr(props);
+  };
+
   const remove_guild_member = async (props: SystemProps.RemoveGuildMember): Promise<GetTransactionReceiptResponse> => {
     return await provider.remove_guild_member(props);
   };
@@ -353,6 +359,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.explorer_move(props);
   };
 
+  const explorer_travel = async (props: SystemProps.ExplorerTravelProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.explorer_travel(props);
+  };
+
+  const explorer_explore = async (props: SystemProps.ExplorerExploreProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.explorer_explore(props);
+  };
+
   const attack_explorer_vs_explorer = async (
     props: SystemProps.AttackExplorerVsExplorerProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -397,6 +411,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const create_village = async (props: SystemProps.CreateVillageProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_village(props);
+  };
+
+  const open_loot_chest = async (props: SystemProps.OpenLootChestProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.open_loot_chest(props);
   };
 
   const create_marketplace_orders = async (
@@ -520,6 +538,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     blitz_prize_player_rank: withAuth(blitz_prize_player_rank),
     blitz_prize_claim: withAuth(blitz_prize_claim),
     blitz_prize_claim_no_game: withAuth(blitz_prize_claim_no_game),
+    commit_and_claim_game_mmr: withAuth(commit_and_claim_game_mmr),
 
     mint_resources: withAuth(mint_resources),
 
@@ -551,6 +570,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     explorer_guard_swap: withAuth(explorer_guard_swap),
     guard_explorer_swap: withAuth(guard_explorer_swap),
     explorer_move: withAuth(explorer_move),
+    explorer_travel: withAuth(explorer_travel),
+    explorer_explore: withAuth(explorer_explore),
     attack_explorer_vs_explorer: withAuth(attack_explorer_vs_explorer),
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
@@ -560,6 +581,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
 
+    // Loot Chest
+    open_loot_chest: withAuth(open_loot_chest),
+
+    // Marketplace
     create_marketplace_orders: withAuth(create_marketplace_orders),
     accept_marketplace_orders: withAuth(accept_marketplace_order),
     cancel_marketplace_order: withAuth(cancel_marketplace_order),

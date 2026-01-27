@@ -216,8 +216,10 @@ export class ArmyActionManager {
     }
 
     while (priorityQueue.length > 0) {
-      priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed);
-      const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
+      const sortedQueue = priorityQueue.toSorted((a, b) => a.staminaUsed - b.staminaUsed);
+      priorityQueue.length = 0;
+      priorityQueue.push(...sortedQueue.slice(1));
+      const { position: current, staminaUsed, distance, path } = sortedQueue[0];
       const currentKey = ActionPaths.posKey(current);
 
       if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
@@ -294,10 +296,9 @@ export class ArmyActionManager {
     }
 
     try {
-      return await this.systemCalls.explorer_move({
+      return await this.systemCalls.explorer_explore({
         explorer_id: this.entityId,
         directions: [direction],
-        explore: true,
         signer,
       });
     } catch (e) {
@@ -321,11 +322,10 @@ export class ArmyActionManager {
       .filter((d) => d !== undefined) as number[];
 
     try {
-      return await this.systemCalls.explorer_move({
+      return await this.systemCalls.explorer_travel({
         signer,
         explorer_id: this.entityId,
         directions,
-        explore: false,
       });
     } catch (e) {
       console.log({ e });

@@ -9,7 +9,7 @@ import {
   ResourcesIds,
   StructureType,
   TroopTier,
-  TroopType
+  TroopType,
 } from "@bibliothecadao/types";
 import type { ActiveProduction, GuardArmy } from "../stores/map-data-store";
 import { Position } from "./position";

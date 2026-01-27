@@ -5,7 +5,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { Sparkles } from "lucide-react";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useMemo, useState } from "react";
 import { RelicActivationPopup } from "./relic-activation-popup";
 
@@ -44,7 +44,7 @@ export const InventoryResources = ({
 
     if (!activateRelics) {
       return {
-        regularResources: balances.sort((a, b) => b.amount - a.amount),
+        regularResources: balances.toSorted((a, b) => b.amount - a.amount),
         relics: [],
       };
     }
@@ -61,8 +61,8 @@ export const InventoryResources = ({
     });
 
     return {
-      regularResources: regular.sort((a, b) => b.amount - a.amount),
-      relics: relicList.sort((a, b) => b.amount - a.amount),
+      regularResources: regular.toSorted((a, b) => b.amount - a.amount),
+      relics: relicList.toSorted((a, b) => b.amount - a.amount),
     };
   }, [resources, activateRelics]);
 

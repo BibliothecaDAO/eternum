@@ -28,7 +28,7 @@ const bodyText: Record<LayoutScale, string> = {
 
 const getScale = (compact: boolean): LayoutScale => (compact ? "compact" : "default");
 
-export interface EntityDetailSectionProps {
+interface EntityDetailSectionProps {
   title?: ReactNode;
   description?: ReactNode;
   className?: string;
@@ -69,7 +69,7 @@ export const EntityDetailSection = ({
   );
 };
 
-export interface EntityDetailStatListProps {
+interface EntityDetailStatListProps {
   className?: string;
   columns?: 1 | 2 | 3;
   children: ReactNode;
@@ -99,7 +99,7 @@ export const EntityDetailStatList = ({
   );
 };
 
-export interface EntityDetailStatProps {
+interface EntityDetailStatProps {
   label: ReactNode;
   value: ReactNode;
   emphasizeValue?: boolean;

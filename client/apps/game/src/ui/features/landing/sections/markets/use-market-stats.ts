@@ -17,8 +17,8 @@ const TIMEFRAME_WINDOWS_MS: Record<MarketLeaderboardRange, number | null> = {
   all: null,
 };
 
-export type EnrichedMarketBuy = MarketBuy & { timestampMs: number };
-export type EnrichedPayoutRedemption = PayoutRedemption & { timestampMs: number };
+type EnrichedMarketBuy = MarketBuy & { timestampMs: number };
+type EnrichedPayoutRedemption = PayoutRedemption & { timestampMs: number };
 
 const normalizeHex = (value: unknown): string | null => {
   try {
@@ -117,7 +117,7 @@ export const useMarketEventsSnapshot = () => {
             },
           ];
         })
-        .sort((a, b) => b.timestampMs - a.timestampMs);
+        .toSorted((a, b) => b.timestampMs - a.timestampMs);
     },
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -142,7 +142,7 @@ export const useMarketEventsSnapshot = () => {
             },
           ];
         })
-        .sort((a, b) => b.timestampMs - a.timestampMs);
+        .toSorted((a, b) => b.timestampMs - a.timestampMs);
     },
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -278,7 +278,7 @@ export const buildLeaderboard = ({
       pnl: entry.earned - entry.volume,
       markets: marketsByAddress.get(entry.address)?.size ?? entry.markets,
     }))
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       if (b.earned !== a.earned) return b.earned - a.earned;
       return b.volume - a.volume;
     })
@@ -397,6 +397,6 @@ export const buildPlayerSummary = ({
     pnl: totalEarned - totalVolume,
     marketsParticipated: knownMarkets.length,
     activeMarkets,
-    markets: knownMarkets.sort((a, b) => b.lastActivity - a.lastActivity),
+    markets: knownMarkets.toSorted((a, b) => b.lastActivity - a.lastActivity),
   };
 };

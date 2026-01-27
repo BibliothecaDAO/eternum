@@ -11,7 +11,7 @@ pub mod alt_movement_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorageTrait;
+    use dojo::world::IWorldDispatcherTrait;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::SeasonConfigImpl;
@@ -76,6 +76,7 @@ pub mod alt_movement_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_owner),
                         entity_id: Option::Some(explorer_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

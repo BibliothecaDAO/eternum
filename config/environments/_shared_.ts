@@ -94,8 +94,8 @@ export const BASE_POPULATION_CAPACITY = 6;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_WIN_PROBABILITY = 2; // 2/100 = 2% (1/50)
-export const SHARDS_MINES_FAIL_PROBABILITY = 98; // 98/100 = 98%
+export const SHARDS_MINES_WIN_PROBABILITY = 1_000; // 2/100 = 2% (1/50)
+export const SHARDS_MINES_FAIL_PROBABILITY = 49_000; // 98/100 = 98%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
@@ -107,8 +107,8 @@ export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 export const AGENT_FIND_PROBABILITY = 0; // 0/100 = 0%
 export const AGENT_FIND_FAIL_PROBABILITY = 100; // 100/100 = 100%
 
-export const VILLAGE_FIND_PROBABILITY = 3; // 3/100 = 3%
-export const VILLAGE_FIND_FAIL_PROBABILITY = 97; // 97/100 = 97%
+export const VILLAGE_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
+export const VILLAGE_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 2_000; // 2_000 / 100_000 = 2%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 98_000; // 98_000 / 100_000 = 98%
@@ -211,9 +211,9 @@ export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.V
 const BLITZ_REGISTRATION_FEE_TOKEN = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords!;
 const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8";
 const BLITZ_REGISTRATION_FEE_AMOUNT = 10n * 10n ** 18n; // 10 LORDS/STRK
-const BLITZ_REGISTRATION_COUNT_MAX = 5_000;
+const BLITZ_REGISTRATION_COUNT_MAX = 30;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
-const BLITZ_REGISTRATION_PERIOD_SECONDS = 15 * ONE_HOUR_IN_SECONDS;
+const BLITZ_REGISTRATION_PERIOD_SECONDS = 3 * ONE_HOUR_IN_SECONDS;
 
 const BLITZ_ENTRY_TOKEN_IPFS_CID = "Qm123idkmaybe";
 const BLITZ_ENTRY_TOKEN_CLASS_HASH = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
@@ -232,6 +232,20 @@ const BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS = await getSeasonAddresses(process.env
 const BLITZ_COLLECTIBLE_ELITENFT_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
   "Collectibles: Realms: Elite Invite"
 ];
+
+// ----- MMR (Matchmaking Rating) ----- //
+// Soul-bound ERC20 token tracking player skill ratings
+// Note: initial_mmr and min_mmr are handled by the token contract, not the game contract
+const MMR_ENABLED = true;
+const MMR_TOKEN_ADDRESS = (await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.mmrToken) || "0x0";
+const MMR_DISTRIBUTION_MEAN = 1500; // Target center of distribution for mean regression
+const MMR_SPREAD_FACTOR = 450; // Controls expected percentile spread in logistic function
+const MMR_MAX_DELTA = 45; // Cap on rating change per game
+const MMR_K_FACTOR = 50; // Base scaling factor for raw delta
+const MMR_LOBBY_SPLIT_WEIGHT_SCALED = 2500; // 0.25 scaled by 10000 (split lobby adjustment weight)
+const MMR_MEAN_REGRESSION_SCALED = 150; // 0.015 scaled by 10000 (pull toward distribution mean)
+const MMR_MIN_PLAYERS = 6; // Minimum players for a game to be rated
+
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -441,6 +455,20 @@ export const EternumGlobalConfig: Config = {
       collectibles_lootchest_address: BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS,
       collectibles_elitenft_address: BLITZ_COLLECTIBLE_ELITENFT_ADDRESS,
     },
+  },
+  factory: {
+    address: "0",
+  },
+  mmr: {
+    enabled: MMR_ENABLED,
+    mmr_token_address: MMR_TOKEN_ADDRESS,
+    distribution_mean: MMR_DISTRIBUTION_MEAN,
+    spread_factor: MMR_SPREAD_FACTOR,
+    max_delta: MMR_MAX_DELTA,
+    k_factor: MMR_K_FACTOR,
+    lobby_split_weight_scaled: MMR_LOBBY_SPLIT_WEIGHT_SCALED,
+    mean_regression_scaled: MMR_MEAN_REGRESSION_SCALED,
+    min_players: MMR_MIN_PLAYERS,
   },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,

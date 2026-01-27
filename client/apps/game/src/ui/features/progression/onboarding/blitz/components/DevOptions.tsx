@@ -1,6 +1,6 @@
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import Button from "@/ui/design-system/atoms/button";
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { useState } from "react";
 
 interface DevOptionsProps {

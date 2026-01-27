@@ -260,7 +260,7 @@ export const TransferResourcesContainer = ({
       let remainingCapacity = explorerCapacity.remainingCapacityKg;
 
       // Sort resources by weight (lightest first) to maximize the number of resources we can transfer
-      const sortedResources = [...availableResources].sort((a, b) => {
+      const sortedResources = availableResources.toSorted((a, b) => {
         const weightA = configManager.resourceWeightsKg[a.resourceId] || 0;
         const weightB = configManager.resourceWeightsKg[b.resourceId] || 0;
         return weightA - weightB;

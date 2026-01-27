@@ -83,6 +83,56 @@ export const MaxStaminaTable = () => {
   );
 };
 
+export const BlitzMaxStaminaTable = () => {
+  const troopTypes = [ResourcesIds.Paladin, ResourcesIds.Knight, ResourcesIds.Crossbowman];
+  const baseStamina = 120;
+
+  return (
+    <div style={section.commonCard}>
+      <div style={section.commonHeader}>
+        <span>⚡️</span> Max Stamina Comparison
+      </div>
+
+      <table style={table.compareTable}>
+        <thead style={table.tableHead}>
+          <tr>
+            <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
+            {troopTypes.map((troopId) => (
+              <th key={troopId} style={table.tableHeaderCell}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={icon.wrapper}>{getTroopIcon(troopId)}</span>
+                  {getTroopName(troopId)}
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3].map((tier) => {
+            const tierStamina = baseStamina + (tier - 1) * 20;
+
+            return (
+              <tr key={tier} style={table.tableRow}>
+                <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
+                  <div style={table.tableTierCell}>
+                    <span style={table.tierBadge}>T{tier}</span>
+                    {tier > 1 ? `+${(tier - 1) * 20} bonus` : "Base"}
+                  </div>
+                </td>
+                {troopTypes.map((troopId) => (
+                  <td key={troopId} style={{ ...table.tableCell, textAlign: "center", fontWeight: "bold" }}>
+                    {tierStamina}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 // Reusable component for stat items
 const StatItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div style={stats.item}>
@@ -176,7 +226,7 @@ export default function TroopMovementTable() {
       </div>
 
       {/* Using the separate MaxStaminaTable component */}
-      <MaxStaminaTable />
+      <BlitzMaxStaminaTable />
     </div>
   );
 }
@@ -213,7 +263,7 @@ export function BlitzTroopMovementTable() {
             </div>
             <div style={section.sectionGrid}>
               <StatItem label="Stamina on Deployment" value={config.troop.stamina.staminaInitial} />
-              <StatItem label="Gain Per Eternum Day" value={60} />
+              <StatItem label="Gain Per Phase" value={20} />
             </div>
           </div>
         </div>

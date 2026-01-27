@@ -58,6 +58,7 @@ pub mod combat {
     #[cfg(test)]
     mod tests {
         mod test_troop_battle;
+        mod test_troop_management;
         mod test_troop_movement;
     }
     pub mod contracts {
@@ -97,21 +98,21 @@ pub mod utils {
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
+    pub mod mmr;
     pub mod prize;
     pub mod realm;
     pub mod relic;
     pub mod resource;
+    pub mod series_chest_reward;
     pub mod structure;
     pub mod troop;
     pub mod village;
-    pub mod series_chest_reward;
-
 }
 
-pub mod quest {
-    pub mod constants;
-    pub mod contracts;
-}
+// pub mod quest {
+//     pub mod constants;
+//     pub mod contracts;
+// }
 
 pub mod alt_movement {
     pub mod contracts;
@@ -123,10 +124,20 @@ pub mod spire {
 
 pub mod prize_distribution {
     pub mod contracts;
-    #[cfg(test)]
-    pub mod tests;
+}
+
+pub mod points {
+    pub mod contracts;
 }
 
 pub mod relic {
     pub mod contracts;
+}
+
+pub mod mmr {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests {
+        mod test_mmr_systems;
+    }
 }

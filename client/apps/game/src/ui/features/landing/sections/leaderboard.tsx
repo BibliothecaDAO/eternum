@@ -1,17 +1,31 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 
 import { useNavigate } from "react-router-dom";
 
-import { Download } from "lucide-react";
+import Download from "lucide-react/dist/esm/icons/download";
 
+import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import type { Chain } from "@contracts";
 
-import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import { LandingWorldSelector } from "../components/landing-world-selector";
+import { fetchLandingLeaderboard, type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
+import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
 import { useScoreToBeat } from "../lib/use-score-to-beat";
 
-const LEADERBOARD_LIMIT = 25;
+const LEADERBOARD_LIMIT = 30;
 const REFRESH_INTERVAL_MS = 60_000;
 
 const podiumStyles = [
@@ -41,17 +55,15 @@ const getRelativeTimeLabel = (timestamp: number | null, fallback: string) => {
   return relative.format(-minutesAgo, "minute");
 };
 
-const SCORE_TO_BEAT_STORAGE_KEY = "landing-score-to-beat-endpoints";
-const DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES: string[] = [
-  "warr-game-1",
-  "warr-game-2",
-  "warr-game-3",
-  "warr-game-4",
-  "warr-game-5",
-  "warr-game-6",
-];
+const SCORE_TO_BEAT_GAMES_STORAGE_KEY = "landing-score-to-beat-games";
+const SCORE_TO_BEAT_RUNS_STORAGE_KEY = "landing-score-to-beat-runs";
+const SCORE_TO_BEAT_CHAIN_STORAGE_KEY = "landing-score-to-beat-chain";
+const MAX_GAMES = 10;
+const DEFAULT_RUNS_TO_AGGREGATE = 3;
+const RUNS_TO_AGGREGATE_OPTIONS = [2, 3, 4] as const;
+const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
 
-const SCORE_TO_BEAT_TAB_ENABLED = true; // Temporarily hide the Score to Beat tab until it's ready again.
+const SCORE_TO_BEAT_TAB_ENABLED = true;
 
 const describeEndpoint = (endpoint: string) => {
   if (!endpoint) {
@@ -72,33 +84,14 @@ const describeEndpoint = (endpoint: string) => {
   }
 };
 
-const buildEndpointUrl = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
+const buildToriiSqlUrl = (gameName: string) => `https://api.cartridge.gg/x/${gameName}/torii/sql`;
 
-  const hasProtocol = /^https?:\/\//i.test(trimmed);
-  return hasProtocol ? trimmed : `https://api.cartridge.gg/x/${trimmed}/torii/sql`;
-};
-
-const parseEndpointInput = (value: string) => {
-  return Array.from(
-    new Set(
-      value
-        .split(/[\n,]+/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-    ),
-  );
-};
-
-const loadStoredEndpointNames = (): string[] | null => {
+const loadStoredSelectedGames = (): string[] | null => {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const stored = window.localStorage.getItem(SCORE_TO_BEAT_STORAGE_KEY);
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY);
   if (!stored) {
     return null;
   }
@@ -113,6 +106,71 @@ const loadStoredEndpointNames = (): string[] | null => {
   }
 
   return null;
+};
+
+const loadStoredChain = (): Chain | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_CHAIN_STORAGE_KEY);
+  if (stored && CHAIN_OPTIONS.includes(stored as Chain)) {
+    return stored as Chain;
+  }
+
+  return null;
+};
+
+const loadStoredRunsToAggregate = (): number | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_RUNS_STORAGE_KEY);
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const parsed = parseInt(stored, 10);
+    if (RUNS_TO_AGGREGATE_OPTIONS.includes(parsed as (typeof RUNS_TO_AGGREGATE_OPTIONS)[number])) {
+      return parsed;
+    }
+  } catch {
+    // Ignore malformed data and fall back to defaults.
+  }
+
+  return null;
+};
+
+const getRunsLabel = (count: number): string => {
+  switch (count) {
+    case 1:
+      return "single-run";
+    case 2:
+      return "two-run";
+    case 3:
+      return "three-run";
+    case 4:
+      return "four-run";
+    default:
+      return `${count}-run`;
+  }
+};
+
+const getBestRunsLabel = (count: number): string => {
+  switch (count) {
+    case 1:
+      return "Best run";
+    case 2:
+      return "Best two runs";
+    case 3:
+      return "Best three runs";
+    case 4:
+      return "Best four runs";
+    default:
+      return `Best ${count} runs`;
+  }
 };
 
 type LeaderboardTab = "score-to-beat" | "leaderboard";
@@ -245,77 +303,124 @@ export const LandingLeaderboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const navigate = useNavigate();
-  const [configuredEndpointNames, setConfiguredEndpointNames] = useState<string[]>(
-    DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES,
-  );
-  const [endpointEditorValue, setEndpointEditorValue] = useState<string>(
-    DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES.join("\n"),
+  const [selectedChain, setSelectedChain] = useState<Chain>("mainnet");
+  const [selectedGames, setSelectedGames] = useState<string[]>([]);
+  const [runsToAggregate, setRunsToAggregate] = useState<number>(DEFAULT_RUNS_TO_AGGREGATE);
+
+  // World selection for "Current Leaderboard" tab
+  const worldSelection = useLandingWorldSelection({ storageKeyPrefix: "leaderboard" });
+
+  // Local state for world-specific leaderboard data
+  const [worldEntries, setWorldEntries] = useState<LandingLeaderboardEntry[]>([]);
+  const [worldIsFetching, setWorldIsFetching] = useState(false);
+  const [worldError, setWorldError] = useState<string | null>(null);
+  const [worldLastUpdatedAt, setWorldLastUpdatedAt] = useState<number | null>(null);
+  const [worldLastFetchAt, setWorldLastFetchAt] = useState<number | null>(null);
+  const worldFetchAbortRef = useRef<AbortController | null>(null);
+
+  // Fetch available games from factory (for Score to Beat tab)
+  const { worlds: availableGames, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
+
+  // Store data (used when no custom world is selected)
+  const storeEntries = useLandingLeaderboardStore((state) => state.entries);
+
+  // Determine which data source to use
+  const useCustomWorld = worldSelection.toriiBaseUrl !== null;
+  const entries = useCustomWorld ? worldEntries : storeEntries;
+  const { data: avatarProfiles } = useAvatarProfiles(entries.map((entry) => entry.address));
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalized = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalized) return;
+      if (profile.avatarUrl) {
+        map.set(normalized, profile.avatarUrl);
+      }
+    });
+    return map;
+  }, [avatarProfiles]);
+  const getEntryAvatarUrl = useCallback(
+    (entry: LandingLeaderboardEntry) => {
+      const normalized = normalizeAvatarAddress(entry.address);
+      const avatarUrl = normalized ? avatarMap.get(normalized) : undefined;
+      return getAvatarUrl(entry.address, avatarUrl);
+    },
+    [avatarMap],
   );
 
-  const entries = useLandingLeaderboardStore((state) => state.entries);
+  const storeIsFetching = useLandingLeaderboardStore((state) => state.isFetching);
+  const storeError = useLandingLeaderboardStore((state) => state.error);
+  const storeLastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
+  const storeLastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+  const storeFetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
 
-  const isFetching = useLandingLeaderboardStore((state) => state.isFetching);
-  const error = useLandingLeaderboardStore((state) => state.error);
-  const lastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
-  const lastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
-  const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  // Use world-specific or store data depending on selection
+  const isFetching = useCustomWorld ? worldIsFetching : storeIsFetching;
+  const error = useCustomWorld ? worldError : storeError;
+  const lastUpdatedAt = useCustomWorld ? worldLastUpdatedAt : storeLastUpdatedAt;
+  const lastFetchAt = useCustomWorld ? worldLastFetchAt : storeLastFetchAt;
 
   useEffect(() => {
-    const stored = loadStoredEndpointNames();
-    if (stored) {
-      setConfiguredEndpointNames(stored);
-      setEndpointEditorValue(stored.join("\n"));
+    const storedChain = loadStoredChain();
+    if (storedChain) {
+      setSelectedChain(storedChain);
+    }
+    const storedGames = loadStoredSelectedGames();
+    if (storedGames) {
+      setSelectedGames(storedGames.slice(0, MAX_GAMES));
+    }
+    const storedRuns = loadStoredRunsToAggregate();
+    if (storedRuns) {
+      setRunsToAggregate(storedRuns);
     }
   }, []);
 
   const resolvedScoreToBeatEndpoints = useMemo(
-    () =>
-      configuredEndpointNames
-        .map((name) => buildEndpointUrl(name))
-        .filter((endpoint): endpoint is string => Boolean(endpoint)),
-    [configuredEndpointNames],
+    () => selectedGames.map((name) => buildToriiSqlUrl(name)),
+    [selectedGames],
   );
-
-  const editedEndpointNames = useMemo(() => parseEndpointInput(endpointEditorValue), [endpointEditorValue]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    window.localStorage.setItem(SCORE_TO_BEAT_STORAGE_KEY, JSON.stringify(configuredEndpointNames));
-  }, [configuredEndpointNames]);
+    window.localStorage.setItem(SCORE_TO_BEAT_CHAIN_STORAGE_KEY, selectedChain);
+  }, [selectedChain]);
 
-  const handleApplyScoreToBeatEndpoints = useCallback(() => {
-    setConfiguredEndpointNames(editedEndpointNames);
-    setEndpointEditorValue(editedEndpointNames.join("\n"));
-  }, [editedEndpointNames]);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
-  const handleClearScoreToBeatEndpoints = useCallback(() => {
-    setConfiguredEndpointNames([]);
-    setEndpointEditorValue("");
-  }, []);
+    window.localStorage.setItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY, JSON.stringify(selectedGames));
+  }, [selectedGames]);
 
-  const handleRemoveEndpointName = useCallback((name: string) => {
-    setConfiguredEndpointNames((current) => {
-      const updated = current.filter((item) => item !== name);
-      setEndpointEditorValue(updated.join("\n"));
-      return updated;
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(SCORE_TO_BEAT_RUNS_STORAGE_KEY, String(runsToAggregate));
+  }, [runsToAggregate]);
+
+  const handleToggleGame = useCallback((gameName: string) => {
+    setSelectedGames((current) => {
+      if (current.includes(gameName)) {
+        return current.filter((name) => name !== gameName);
+      }
+      if (current.length >= MAX_GAMES) {
+        return current; // Don't add if at limit
+      }
+      return [...current, gameName];
     });
   }, []);
 
-  const isEndpointEditorDirty = useMemo(
-    () =>
-      editedEndpointNames.length !== configuredEndpointNames.length ||
-      editedEndpointNames.some((name, index) => name !== configuredEndpointNames[index]),
-    [configuredEndpointNames, editedEndpointNames],
-  );
-  const isSaveEndpointsDisabled = !isEndpointEditorDirty;
-  const [isEndpointEditorOpen, setIsEndpointEditorOpen] = useState(false);
+  const handleClearSelectedGames = useCallback(() => {
+    setSelectedGames([]);
+  }, []);
 
-  useEffect(() => {
-    console.log("entries", entries);
-  }, [entries]);
+  const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(true);
 
   const {
     entries: scoreToBeatEntries,
@@ -326,7 +431,7 @@ export const LandingLeaderboard = () => {
     error: scoreToBeatError,
     refresh: refreshScoreToBeat,
     hasEndpointsConfigured: hasScoreToBeatConfiguration,
-  } = useScoreToBeat(resolvedScoreToBeatEndpoints);
+  } = useScoreToBeat(resolvedScoreToBeatEndpoints, runsToAggregate);
 
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
@@ -348,17 +453,82 @@ export const LandingLeaderboard = () => {
     return () => window.clearInterval(interval);
   }, [lastFetchAt]);
 
+  // Fetch world-specific leaderboard data
+  const fetchWorldLeaderboard = useCallback(
+    async (force = false) => {
+      const toriiUrl = worldSelection.toriiBaseUrl;
+      if (!toriiUrl) {
+        return;
+      }
+
+      const now = Date.now();
+      if (worldIsFetching) {
+        return;
+      }
+
+      if (!force && worldLastFetchAt && now - worldLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
+        return;
+      }
+
+      // Cancel any in-flight request
+      if (worldFetchAbortRef.current) {
+        worldFetchAbortRef.current.abort();
+      }
+      worldFetchAbortRef.current = new AbortController();
+
+      setWorldIsFetching(true);
+      setWorldError(force ? null : worldError);
+      setWorldLastFetchAt(now);
+
+      try {
+        const fetchedEntries = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, toriiUrl);
+        const timestamp = Date.now();
+        setWorldEntries(fetchedEntries);
+        setWorldLastUpdatedAt(timestamp);
+        setWorldLastFetchAt(timestamp);
+        setWorldIsFetching(false);
+        setWorldError(null);
+      } catch (caughtError) {
+        if (caughtError instanceof Error && caughtError.name === "AbortError") {
+          return;
+        }
+        const message = caughtError instanceof Error ? caughtError.message : "Unable to load leaderboard.";
+        setWorldIsFetching(false);
+        setWorldError(message);
+        setWorldLastFetchAt(Date.now());
+      }
+    },
+    [worldSelection.toriiBaseUrl, worldIsFetching, worldLastFetchAt, worldError],
+  );
+
+  // Reset world data when world changes
   useEffect(() => {
-    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
-  }, [fetchLeaderboard]);
+    setWorldEntries([]);
+    setWorldError(null);
+    setWorldLastUpdatedAt(null);
+    setWorldLastFetchAt(null);
+  }, [worldSelection.toriiBaseUrl]);
+
+  // Initial fetch and auto-refresh for both modes
+  useEffect(() => {
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard();
+    } else {
+      void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+      if (useCustomWorld) {
+        void fetchWorldLeaderboard();
+      } else {
+        void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+      }
     }, REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(interval);
-  }, [fetchLeaderboard]);
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -398,8 +568,12 @@ export const LandingLeaderboard = () => {
       return;
     }
 
-    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
-  }, [fetchLeaderboard, isFetching, refreshCooldownMs]);
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard(true);
+    } else {
+      void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard, isFetching, refreshCooldownMs]);
 
   const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.currentTarget.value);
@@ -494,13 +668,13 @@ export const LandingLeaderboard = () => {
     document.body.removeChild(downloadLink);
     window.URL.revokeObjectURL(url);
   }, [filteredEntries]);
-  const totalScoreGames = resolvedScoreToBeatEndpoints.length;
+  const totalScoreGames = selectedGames.length;
   const failedScoreGames = scoreToBeatFailedEndpoints.length;
   const activeSyncedGames = scoreToBeatSyncedEndpoints.length || totalScoreGames;
   const syncedScoreGames = Math.max(0, activeSyncedGames - failedScoreGames);
   const scoreGameLabel =
-    totalScoreGames > 0 ? `${syncedScoreGames}/${totalScoreGames} games syncing` : "Waiting for games";
-  const showScoreToBeatSection = SCORE_TO_BEAT_TAB_ENABLED && hasScoreToBeatConfiguration;
+    totalScoreGames > 0 ? `${syncedScoreGames}/${totalScoreGames} games selected` : "No games selected";
+  const showScoreToBeatSection = SCORE_TO_BEAT_TAB_ENABLED;
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(showScoreToBeatSection ? "score-to-beat" : "leaderboard");
   const [expandedScoreToBeatAddress, setExpandedScoreToBeatAddress] = useState<string | null>(null);
   const [expandedEntryAddress, setExpandedEntryAddress] = useState<string | null>(null);
@@ -555,17 +729,17 @@ export const LandingLeaderboard = () => {
         {[0, 1, 2].map((item) => (
           <div
             key={item}
-            className="h-36 animate-pulse rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/30 to-black/70"
+            className="h-36 animate-pulse rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/30 to-black/70"
           />
         ))}
       </div>
-      <div className="h-80 animate-pulse rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/30 to-black/70" />
+      <div className="h-80 animate-pulse rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/30 to-black/70" />
     </div>
   );
   const renderScoreToBeatContent = () => {
     if (!showScoreToBeatSection) {
       return (
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
           Score to beat tracking isn't configured yet. Check back soon.
         </div>
       );
@@ -593,7 +767,7 @@ export const LandingLeaderboard = () => {
               </>
             ) : (
               <p className="mt-2 text-sm text-white/70">
-                Chain two monster runs back-to-back and you become the number everyone else has to chase.
+                Chain your best {runsToAggregate} runs and you become the number everyone else has to chase.
               </p>
             )}
           </div>
@@ -634,49 +808,125 @@ export const LandingLeaderboard = () => {
         <div className="rounded-2xl border border-amber-100/20 bg-black/40 p-4 shadow-inner shadow-amber-500/5">
           <button
             type="button"
-            onClick={() => setIsEndpointEditorOpen((current) => !current)}
-            aria-expanded={isEndpointEditorOpen}
+            onClick={() => setIsGameSelectorOpen((current) => !current)}
+            aria-expanded={isGameSelectorOpen}
             className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-start sm:justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
           >
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-white/60">
               <span>{scoreGameLabel}</span>
               {isScoreToBeatLoading ? <span className="text-amber-100">• syncing</span> : null}
               <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/70">
-                {isEndpointEditorOpen ? "Hide" : "Edit"}
+                {isGameSelectorOpen ? "Hide" : "Select games"}
               </span>
             </div>
           </button>
-          {isEndpointEditorOpen ? (
+          {isGameSelectorOpen ? (
             <div className="mt-3 space-y-3">
-              <textarea
-                value={endpointEditorValue}
-                onChange={(event) => setEndpointEditorValue(event.currentTarget.value)}
-                spellCheck={false}
-                rows={3}
-                placeholder="warr-game-1\nwarr-game-2"
-                className="w-full rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-200/70 focus:bg-black/70"
-              />
+              {/* Chain selector */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs text-white/60">Chain:</span>
+                <div className="flex gap-1">
+                  {CHAIN_OPTIONS.map((chain) => (
+                    <button
+                      key={chain}
+                      type="button"
+                      onClick={() => setSelectedChain(chain)}
+                      className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 ${
+                        selectedChain === chain
+                          ? "border border-amber-200/60 bg-amber-200/30 text-amber-50"
+                          : "border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
+                      }`}
+                    >
+                      {chain}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Best of selector */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs text-white/60">Best of:</span>
+                <div className="flex gap-1">
+                  {RUNS_TO_AGGREGATE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setRunsToAggregate(option)}
+                      className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 ${
+                        runsToAggregate === option
+                          ? "border border-amber-200/60 bg-amber-200/30 text-amber-50"
+                          : "border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Available games from factory */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/60">
+                    Available games {isLoadingGames ? "(loading...)" : `(${availableGames.length})`}
+                  </span>
+                  <span className="text-xs text-white/50">
+                    {selectedGames.length}/{MAX_GAMES} selected
+                  </span>
+                </div>
+                {isLoadingGames ? (
+                  <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
+                    Loading games from {selectedChain}...
+                  </div>
+                ) : availableGames.length === 0 ? (
+                  <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
+                    No games found on {selectedChain}
+                  </div>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2">
+                    <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+                      {availableGames.map((game) => {
+                        const isSelected = selectedGames.includes(game.name);
+                        const isDisabled = !isSelected && selectedGames.length >= MAX_GAMES;
+                        return (
+                          <button
+                            key={game.name}
+                            type="button"
+                            onClick={() => handleToggleGame(game.name)}
+                            disabled={isDisabled}
+                            className={`rounded-lg px-2 py-1.5 text-left text-xs transition ${
+                              isSelected
+                                ? "border border-amber-200/60 bg-amber-200/20 text-amber-50"
+                                : isDisabled
+                                  ? "cursor-not-allowed border border-white/5 bg-white/5 text-white/30"
+                                  : "border border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:bg-white/10"
+                            }`}
+                          >
+                            <span className="block truncate">{game.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Selected games and clear button */}
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleApplyScoreToBeatEndpoints}
-                  disabled={isSaveEndpointsDisabled}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-200/50 bg-amber-200/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-amber-50 transition hover:border-amber-200/70 hover:bg-amber-200/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Save games
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClearScoreToBeatEndpoints}
-                  disabled={configuredEndpointNames.length === 0 && endpointEditorValue.trim().length === 0}
+                  onClick={handleClearSelectedGames}
+                  disabled={selectedGames.length === 0}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:border-white/40 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Clear list
+                  Clear selection
                 </button>
               </div>
-              {configuredEndpointNames.length ? (
+
+              {/* Show selected games as chips */}
+              {selectedGames.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {configuredEndpointNames.map((name) => (
+                  {selectedGames.map((name) => (
                     <span
                       key={name}
                       className="inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-200/10 px-3 py-1 text-xs font-semibold text-amber-50"
@@ -684,9 +934,9 @@ export const LandingLeaderboard = () => {
                       {name}
                       <button
                         type="button"
-                        onClick={() => handleRemoveEndpointName(name)}
+                        onClick={() => handleToggleGame(name)}
                         className="rounded-full border border-white/20 bg-white/10 px-1 text-[10px] font-bold text-white/80 transition hover:border-white/40 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
-                        aria-label={`Remove ${name} from tracked games`}
+                        aria-label={`Remove ${name} from selection`}
                       >
                         ×
                       </button>
@@ -694,13 +944,13 @@ export const LandingLeaderboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-white/60">No games selected. Add at least one to see the score to beat.</p>
+                <p className="text-xs text-white/60">
+                  No games selected. Select games above to see the combined leaderboard.
+                </p>
               )}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-white/60">
-              Expand to define the games you want to track for score to beat.
-            </p>
+            <p className="mt-3 text-xs text-white/60">Expand to select games for the combined leaderboard.</p>
           )}
         </div>
 
@@ -718,21 +968,23 @@ export const LandingLeaderboard = () => {
             ))
           ) : (
             <div className="col-span-2 rounded-2xl border border-dashed border-white/20 bg-black/20 p-4 text-sm text-white/60">
-              Waiting for back-to-back runs before we crown a pace setter.
+              Waiting for runs before we crown a pace setter.
             </div>
           )}
         </div>
 
         {scoreToBeatTopTen.length ? (
           <div>
-            <p className="text-xs uppercase tracking-wide text-white/50">Top 10 two-run totals</p>
+            <p className="text-xs uppercase tracking-wide text-white/50">
+              Top 10 {getRunsLabel(runsToAggregate)} totals
+            </p>
             <ol className="mt-3 divide-y divide-white/10 rounded-2xl border border-white/10 bg-black/30 text-sm">
               {scoreToBeatTopTen.map((entry, index) => {
                 const rank = index + 1;
                 const challengerLabel = displayAddress(entry.address);
                 const isLeader = rank === 1;
                 const isExpanded = expandedScoreToBeatAddress === entry.address;
-                const runSummaryLabel = entry.runs.length >= 2 ? "Best two runs" : "Best run";
+                const runSummaryLabel = getBestRunsLabel(Math.min(entry.runs.length, runsToAggregate));
                 const panelId = getScoreToBeatRunsPanelId(entry.address);
 
                 return (
@@ -817,23 +1069,53 @@ export const LandingLeaderboard = () => {
   };
 
   const renderLeaderboardContent = () => {
+    const worldSelectorUI = (
+      <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4 mb-4">
+        <LandingWorldSelector
+          selectedChain={worldSelection.selectedChain}
+          selectedWorld={worldSelection.selectedWorld}
+          availableWorlds={worldSelection.availableWorlds}
+          isLoading={worldSelection.isLoading}
+          isCheckingAvailability={worldSelection.isCheckingAvailability}
+          onChainChange={worldSelection.setSelectedChain}
+          onWorldChange={worldSelection.setSelectedWorld}
+        />
+        {worldSelection.selectedWorld && (
+          <p className="mt-2 text-xs text-gold/60">
+            Showing data from: <span className="font-semibold text-gold">{worldSelection.selectedWorld}</span>
+          </p>
+        )}
+      </div>
+    );
+
     if (isInitialLoading) {
-      return renderSkeleton();
+      return (
+        <>
+          {worldSelectorUI}
+          {renderSkeleton()}
+        </>
+      );
     }
 
     if (entries.length === 0) {
       return (
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
-          No ranked players yet. Check back soon once battles begin.
-        </div>
+        <>
+          {worldSelectorUI}
+          <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+            No ranked players yet. Check back soon once battles begin.
+          </div>
+        </>
       );
     }
 
     if (isFiltering && filteredEntries.length === 0) {
       return (
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
-          No players match "{searchQuery.trim()}".
-        </div>
+        <>
+          {worldSelectorUI}
+          <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+            No players match "{searchQuery.trim()}".
+          </div>
+        </>
       );
     }
 
@@ -841,13 +1123,14 @@ export const LandingLeaderboard = () => {
 
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/70 sm:flex-row sm:items-center sm:justify-between">
+        {worldSelectorUI}
+        <div className="flex flex-col gap-2 rounded-3xl border border-gold/20 bg-gold/5 px-4 py-3 text-xs text-gold/70 sm:flex-row sm:items-center sm:justify-between">
           <span className="tracking-wide">Download the current view (filters included).</span>
           <button
             type="button"
             onClick={handleDownloadLeaderboardData}
             disabled={filteredEntries.length === 0}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:border-gold/50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gold/30 bg-gold/10 px-3 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             aria-label="Download current leaderboard"
           >
             <Download className="h-4 w-4" aria-hidden="true" />
@@ -858,6 +1141,7 @@ export const LandingLeaderboard = () => {
             <div className="grid gap-4 md:grid-cols-3">
               {podiumEntries.map((entry, index) => {
                 const addressLabel = displayAddress(entry.address);
+                const avatarUrl = getEntryAvatarUrl(entry);
                 const isExpanded = expandedEntryAddress === entry.address;
                 const panelId = getActivityPanelId(entry.address);
                 const handleToggle = () => toggleEntryExpansion(entry.address);
@@ -873,44 +1157,51 @@ export const LandingLeaderboard = () => {
                       aria-controls={panelId}
                       onClick={handleToggle}
                       onKeyDown={handleCardKeyDown}
-                      className={`group relative flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 p-6 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold/60 ${
+                      className={`group relative flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/80 p-6 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold/60 ${
                         podiumStyles[index] ?? podiumStyles[2]
                       } ${isExpanded ? "ring-1 ring-gold/50" : ""}`}
                     >
-                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
+                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gold/60">
                         <span>Rank</span>
                         <span className="text-2xl font-semibold text-gold">#{entry.rank}</span>
                       </div>
 
-                      <div className="mt-4 space-y-1">
-                        <p className="text-lg font-semibold text-white" title={entry.displayName ?? addressLabel}>
-                          {entry.displayName ?? addressLabel}
-                        </p>
-                        <p className="text-xs text-white/60" title={entry.address}>
-                          {entry.displayName ? addressLabel : entry.address}
-                        </p>
+                      <div className="mt-4 flex items-center gap-3">
+                        <img
+                          className="h-12 w-12 rounded-full border border-gold/20 object-cover"
+                          src={avatarUrl}
+                          alt={`${entry.displayName ?? addressLabel} avatar`}
+                        />
+                        <div className="space-y-1">
+                          <p className="text-lg font-semibold text-gold" title={entry.displayName ?? addressLabel}>
+                            {entry.displayName ?? addressLabel}
+                          </p>
+                          <p className="text-xs text-gold/60" title={entry.address}>
+                            {entry.displayName ? addressLabel : entry.address}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="mt-4 space-y-1">
-                        <p className="text-3xl font-bold text-white">{formatPoints(entry.points)}</p>
-                        <p className="text-xs text-white/60">{currencyIntlFormat(entry.points, 1)} pts</p>
+                        <p className="text-3xl font-bold text-gold">{formatPoints(entry.points)}</p>
+                        <p className="text-xs text-gold/60">{currencyIntlFormat(entry.points, 1)} pts</p>
                       </div>
 
-                      <div className="mt-5 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
+                      <div className="mt-5 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gold/60">
                         <span>Status</span>
                         <span
                           className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                            entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/70"
+                            entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-gold/10 text-gold/70"
                           }`}
                         >
                           {entry.prizeClaimed ? "Prize claimed" : "Unclaimed"}
                         </span>
                       </div>
 
-                      <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.35em] text-white/50">
+                      <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.35em] text-gold/50">
                         <span>{isExpanded ? "Hide activity" : "View activity"}</span>
                         <svg
-                          className={`h-3.5 w-3.5 text-white/60 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          className={`h-3.5 w-3.5 text-gold/60 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                           viewBox="0 0 16 16"
                           fill="none"
                           aria-hidden
@@ -932,7 +1223,7 @@ export const LandingLeaderboard = () => {
             {expandedPodiumEntry ? (
               <div
                 id={getActivityPanelId(expandedPodiumEntry.address)}
-                className="rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white/80 shadow-[0_15px_35px_-25px_rgba(10,12,30,0.9)]"
+                className="rounded-3xl border border-gold/20 bg-black/60 px-4 py-3 text-sm text-gold/80 shadow-[0_15px_35px_-25px_rgba(10,12,30,0.9)]"
               >
                 <PlayerActivityBreakdown entry={expandedPodiumEntry} />
               </div>
@@ -940,11 +1231,11 @@ export const LandingLeaderboard = () => {
           </div>
         ) : null}
         {remainingEntries.length > 0 ? (
-          <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 shadow-[0_25px_50px_-25px_rgba(10,12,30,0.75)] backdrop-blur-sm">
+          <div className="overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/80 shadow-[0_25px_50px_-25px_rgba(10,12,30,0.75)] backdrop-blur-sm">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/5 text-left">
+              <table className="min-w-full divide-y divide-gold/10 text-left">
                 <thead>
-                  <tr className="text-xs uppercase tracking-wide text-white/60">
+                  <tr className="text-xs uppercase tracking-wide text-gold/60">
                     <th scope="col" className="px-4 py-3 font-medium">
                       Rank
                     </th>
@@ -959,9 +1250,10 @@ export const LandingLeaderboard = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-sm">
+                <tbody className="divide-y divide-gold/10 text-sm">
                   {remainingEntries.map((entry) => {
                     const addressLabel = displayAddress(entry.address);
+                    const avatarUrl = getEntryAvatarUrl(entry);
                     const isExpanded = expandedEntryAddress === entry.address;
                     const panelId = getActivityPanelId(entry.address);
                     const handleToggle = () => toggleEntryExpansion(entry.address);
@@ -971,7 +1263,7 @@ export const LandingLeaderboard = () => {
                     return (
                       <Fragment key={entry.address}>
                         <tr
-                          className={`transition-colors hover:bg-white/10 ${isExpanded ? "bg-white/10" : ""}`}
+                          className={`transition-colors hover:bg-gold/10 ${isExpanded ? "bg-gold/10" : ""}`}
                           role="button"
                           tabIndex={0}
                           aria-expanded={isExpanded}
@@ -979,33 +1271,38 @@ export const LandingLeaderboard = () => {
                           onClick={handleToggle}
                           onKeyDown={handleRowKeyDown}
                         >
-                          <td className="px-4 py-3 text-white/70">#{entry.rank}</td>
+                          <td className="px-4 py-3 text-gold/70">#{entry.rank}</td>
                           <td className="px-4 py-3">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-white" title={entry.displayName ?? addressLabel}>
-                                {entry.displayName ?? addressLabel}
-                              </span>
-                              <span className="text-xs text-white/50" title={entry.address}>
-                                {entry.displayName ? addressLabel : entry.address}
-                              </span>
+                            <div className="flex items-center gap-3">
+                              <img
+                                className="h-9 w-9 rounded-full border border-gold/20 object-cover"
+                                src={avatarUrl}
+                                alt={`${entry.displayName ?? addressLabel} avatar`}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium text-gold" title={entry.displayName ?? addressLabel}>
+                                  {entry.displayName ?? addressLabel}
+                                </span>
+                                <span className="text-xs text-gold/50" title={entry.address}>
+                                  {entry.displayName ? addressLabel : entry.address}
+                                </span>
+                              </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-right text-white">
+                          <td className="px-4 py-3 text-right text-gold">
                             <span className="font-semibold">{formatPoints(entry.points)}</span>
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="ml-auto flex max-w-full items-center justify-end gap-2">
                               <span
                                 className={`inline-flex items-center justify-end rounded-full px-2.5 py-1 text-xs font-medium ${
-                                  entry.prizeClaimed
-                                    ? "bg-emerald-500/15 text-emerald-300"
-                                    : "bg-white/10 text-white/60"
+                                  entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-gold/10 text-gold/60"
                                 }`}
                               >
                                 {entry.prizeClaimed ? "Prize claimed" : "In play"}
                               </span>
                               <svg
-                                className={`h-3 w-3 text-white/50 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                className={`h-3 w-3 text-gold/50 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                                 viewBox="0 0 16 16"
                                 fill="none"
                                 aria-hidden
@@ -1041,17 +1338,22 @@ export const LandingLeaderboard = () => {
   };
 
   return (
-    <section className="relative h-[70vh] w-full max-w-5xl space-y-8 overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl md:max-h-[80vh]">
+    <section className="relative h-[90vh] w-full max-w-5xl space-y-8 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-gold shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl md:max-h-[80vh]">
       <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-none">
+          {error ? (
+            <span className="rounded-full bg-red-500/10 px-3 py-1 text-xxs font-medium text-red-300" role="alert">
+              {error}
+            </span>
+          ) : null}
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <div className="w-full sm:w-72">
               <label htmlFor="landing-leaderboard-search" className="sr-only">
                 Search players or addresses
               </label>
-              <div className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 shadow-[0_16px_40px_-25px_rgba(12,10,35,0.85)] transition focus-within:border-gold/60 focus-within:text-white focus-within:shadow-[0_20px_50px_-20px_rgba(255,215,128,0.45)]">
+              <div className="group flex items-center gap-3 rounded-2xl border border-gold/20 bg-gold/5 px-4 py-2 text-sm text-gold/70 shadow-[0_16px_40px_-25px_rgba(12,10,35,0.85)] transition focus-within:border-gold/60 focus-within:text-gold focus-within:shadow-[0_20px_50px_-20px_rgba(255,215,128,0.45)]">
                 <svg
-                  className="h-4 w-4 shrink-0 text-white/50 transition group-focus-within:text-gold"
+                  className="h-4 w-4 shrink-0 text-gold/50 transition group-focus-within:text-gold"
                   viewBox="0 0 20 20"
                   fill="none"
                   aria-hidden
@@ -1078,7 +1380,7 @@ export const LandingLeaderboard = () => {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search players or addresses"
-                  className="w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
+                  className="w-full bg-transparent text-sm text-gold placeholder:text-gold/40 focus:outline-none"
                   spellCheck={false}
                   autoComplete="off"
                 />
@@ -1086,7 +1388,7 @@ export const LandingLeaderboard = () => {
                   <button
                     type="button"
                     onClick={handleClearSearch}
-                    className="rounded-full p-1 text-white/50 transition hover:bg-white/10 hover:text-white"
+                    className="rounded-full p-1 text-gold/50 transition hover:bg-gold/10 hover:text-gold"
                     aria-label="Clear search"
                   >
                     <svg className="h-3.5 w-3.5" viewBox="0 0 12 12" fill="none" aria-hidden>
@@ -1102,28 +1404,24 @@ export const LandingLeaderboard = () => {
                 ) : null}
               </div>
             </div>
+
             <div className="flex flex-col gap-2 self-end sm:flex-row sm:items-center sm:gap-3 sm:self-auto">
               <button
                 type="button"
                 onClick={handleViewScoreCard}
-                className="inline-flex w-full items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:border-gold/50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 sm:w-auto"
               >
                 Check your score card
               </button>
               <div className="flex items-center justify-end gap-3">
-                {error ? (
-                  <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300" role="alert">
-                    {error}
-                  </span>
-                ) : null}
                 <div className="flex flex-col items-end gap-1 text-right">
                   <div className="flex items-center gap-2">
                     {isFetching ? (
-                      <span className="text-xs text-white/70" aria-live="polite">
+                      <span className="text-xs text-gold/70" aria-live="polite">
                         Refreshing…
                       </span>
                     ) : isCooldownActive ? (
-                      <span className="text-xs text-white/50" aria-live="polite">
+                      <span className="text-xs text-gold/50" aria-live="polite">
                         Wait {refreshSecondsLeft}s
                       </span>
                     ) : null}
@@ -1135,9 +1433,7 @@ export const LandingLeaderboard = () => {
                       aria-label="Refresh leaderboard"
                     />
                   </div>
-                  <span className="text-[11px] uppercase tracking-[0.28em] text-white/40">
-                    Last updated {lastUpdatedLabel}
-                  </span>
+                  <span className="text-[11px] uppercase  text-gold/40">Last updated {lastUpdatedLabel}</span>
                 </div>
               </div>
             </div>
@@ -1150,7 +1446,7 @@ export const LandingLeaderboard = () => {
           role="tablist"
           aria-label="Leaderboard sections"
           aria-orientation="horizontal"
-          className="flex gap-2 rounded-3xl border border-white/10 bg-white/5 p-1 text-sm font-semibold"
+          className="flex gap-2 rounded-3xl border border-gold/20 bg-gold/5 p-1 text-sm font-semibold"
         >
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -1166,8 +1462,8 @@ export const LandingLeaderboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 rounded-2xl px-4 py-2 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 ${
                   isActive
-                    ? "bg-white text-black shadow-[0_20px_45px_-25px_rgba(255,255,255,0.85)]"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                    ? "bg-gold text-black shadow-[0_20px_45px_-25px_rgba(255,215,128,0.85)]"
+                    : "text-gold/70 hover:bg-gold/10 hover:text-gold"
                 }`}
               >
                 {tab.label}
@@ -1201,8 +1497,8 @@ const PlayerActivityBreakdown = ({ entry }: PlayerActivityBreakdownProps) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-        <span className="font-semibold text-white">{formatPoints(entry.points)} pts</span>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-gold/60">
+        <span className="font-semibold text-gold">{formatPoints(entry.points)} pts</span>
         <span>Total points</span>
       </div>
       {hasBreakdown ? (
@@ -1210,21 +1506,21 @@ const PlayerActivityBreakdown = ({ entry }: PlayerActivityBreakdownProps) => {
           {breakdown.map((item) => (
             <div
               key={item.id}
-              className="rounded-2xl border border-white/10 bg-black/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+              className="rounded-2xl border border-gold/20 bg-black/40 p-3 shadow-[inset_0_1px_0_rgba(255,215,128,0.04)]"
             >
-              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-white/60">
+              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-gold/60">
                 <span>{item.label}</span>
-                {item.pointsLabel ? <span className="text-sm font-semibold text-white">{item.pointsLabel}</span> : null}
+                {item.pointsLabel ? <span className="text-sm font-semibold text-gold">{item.pointsLabel}</span> : null}
               </div>
-              {item.countLabel ? <p className="mt-1 text-sm text-white/80">{item.countLabel}</p> : null}
+              {item.countLabel ? <p className="mt-1 text-sm text-gold/80">{item.countLabel}</p> : null}
               {item.helper ? (
-                <p className="text-[10px] uppercase tracking-[0.35em] text-white/35">{item.helper}</p>
+                <p className="text-[10px] uppercase tracking-[0.35em] text-gold/35">{item.helper}</p>
               ) : null}
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-white/20 bg-black/30 px-4 py-3 text-xs text-white/70">
+        <div className="rounded-2xl border border-dashed border-gold/20 bg-black/30 px-4 py-3 text-xs text-gold/70">
           Blitz activity for this player is still syncing.
         </div>
       )}

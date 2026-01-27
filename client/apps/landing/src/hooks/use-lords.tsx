@@ -14,7 +14,7 @@ export const useLords = ({ disabled }: { disabled?: boolean } = {}) => {
     address: lordsAddress as `0x${string}`,
     args: [(account?.address as `0x${string}`) ?? "0"],
     watch: true,
-    refetchInterval: 1000,
+    refetchInterval: 3_000,
     enabled: !!account?.address && !disabled,
   });
 

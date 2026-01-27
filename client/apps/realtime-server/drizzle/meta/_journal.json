@@ -8,6 +8,20 @@
       "when": 1760934394873,
       "tag": "0000_gorgeous_psynapse",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768348476283,
+      "tag": "0001_smooth_vance_astro",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768467535235,
+      "tag": "0002_avatar_generation_images",
+      "breakpoints": true
     }
   ]
 }

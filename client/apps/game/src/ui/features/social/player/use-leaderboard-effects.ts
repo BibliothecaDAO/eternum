@@ -181,7 +181,7 @@ export const useLeaderboardEffects = (
     const newEffects = new Map<string, PlayerEffect>();
 
     // Select 2-4 random players
-    const shuffled = [...players].sort(() => Math.random() - 0.5);
+    const shuffled = players.toSorted(() => Math.random() - 0.5);
     const selectedCount = Math.min(shuffled.length, 2 + Math.floor(Math.random() * 3));
     const selectedPlayers = shuffled.slice(0, selectedCount);
 
@@ -199,7 +199,7 @@ export const useLeaderboardEffects = (
       ] as const;
 
       const numCategories = 1 + Math.floor(Math.random() * 3);
-      const shuffledCategories = [...categories].sort(() => Math.random() - 0.5);
+      const shuffledCategories = categories.toSorted(() => Math.random() - 0.5);
 
       let totalGain = 0;
       for (let i = 0; i < numCategories; i++) {

@@ -1,7 +1,7 @@
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "../chat-input";
 import MessageGroupComponent, { MessageGroup } from "../message-group";

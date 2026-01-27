@@ -24,7 +24,6 @@ export async function gameClientFetch<T = any>(query: string): Promise<T> {
   const url = `${GAME_API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
 
-  console.log(response);
   if (!response.ok) {
     throw new Error(`Failed to fetch: ${response.statusText}`);
   }

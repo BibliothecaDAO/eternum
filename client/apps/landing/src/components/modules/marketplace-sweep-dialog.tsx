@@ -59,7 +59,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDia
                       <div className="flex items-center gap-2">
                         {metadata?.attributes
                           ?.filter((attribute: { trait_type: string }) => attribute.trait_type === "Resource")
-                          .sort(
+                          .toSorted(
                             (a: { value: { toString: () => string } }, b: { value: { toString: () => string } }) => {
                               const aWithoutSpace = a.value.toString().replace(/\s/g, "");
                               const bWithoutSpace = b.value.toString().replace(/\s/g, "");
@@ -99,7 +99,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDia
               <ConnectWalletPrompt connectors={connectors} connect={connect} />
             ) : (
               <Button className="w-full" onClick={handlePurchase} disabled={selectedPasses.length === 0}>
-                Purchase {selectedPasses.length} Pass{selectedPasses.length !== 1 ? "es" : ""}
+                Purchase {selectedPasses.length} Item{selectedPasses.length !== 1 ? "s" : ""}
               </Button>
             )}
           </div>

@@ -99,7 +99,7 @@ export const QuestContainer = ({
         // Add a flag to identify if this structure matches the armyInfo
         isMatchingStructure: structure?.structure?.entity_id === matchingStructureEntityId,
       }))
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         // First sort by matching flag (true comes before false)
         if (a.isMatchingStructure && !b.isMatchingStructure) return -1;
         if (!a.isMatchingStructure && b.isMatchingStructure) return 1;

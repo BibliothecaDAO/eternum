@@ -3,6 +3,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "ES2023"],
     "allowJs": true,
     "esModuleInterop": true,
     "jsx": "preserve",

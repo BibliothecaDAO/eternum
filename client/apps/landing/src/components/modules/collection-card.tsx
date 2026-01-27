@@ -29,7 +29,7 @@ export function CollectionCard({ collectionKey, collection, stats, variants }: C
       key={collectionKey}
       variants={variants}
       whileHover={{ scale: 1.03 }}
-      className="relative min-h-[300px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border border-gold/40"
+      className={`relative min-h-[350px] bg-cover ${collectionKey === "beasts" ? "bg-position-[center_top_3rem]" : "bg-center"} rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border border-gold/40`}
       style={{ backgroundImage: `url('${collection.image}')` }}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 rounded-lg" />

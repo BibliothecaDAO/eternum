@@ -177,6 +177,7 @@ export interface CreateBuildingProps extends SystemSigner {
 export interface DestroyBuildingProps extends SystemSigner {
   entity_id: BigNumberish;
   building_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };
@@ -185,6 +186,7 @@ export interface DestroyBuildingProps extends SystemSigner {
 export interface PauseProductionProps extends SystemSigner {
   entity_id: BigNumberish;
   building_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };
@@ -193,6 +195,7 @@ export interface PauseProductionProps extends SystemSigner {
 export interface ResumeProductionProps extends SystemSigner {
   entity_id: BigNumberish;
   building_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };
@@ -202,6 +205,7 @@ export interface CreateAdminBanksProps extends SystemSigner {
   banks: {
     name: string;
     coord: {
+      alt: boolean;
       x: BigNumberish;
       y: BigNumberish;
     };
@@ -400,8 +404,20 @@ export interface SetBlitzModeConfigProps extends SystemSigner {
   blitz_mode_on: boolean;
 }
 
-export interface SetBlitzPreviousGameProps extends SystemSigner {
-  prev_prize_distribution_systems: BigNumberish;
+export interface SetFactoryAddressProps extends SystemSigner {
+  factory_address: BigNumberish;
+}
+
+export interface SetMMRConfigProps extends SystemSigner {
+  enabled: boolean;
+  mmr_token_address: BigNumberish;
+  distribution_mean: BigNumberish;
+  spread_factor: BigNumberish;
+  max_delta: BigNumberish;
+  k_factor: BigNumberish;
+  lobby_split_weight_scaled: BigNumberish;
+  mean_regression_scaled: BigNumberish;
+  min_players: BigNumberish;
 }
 
 export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSigner {
@@ -446,7 +462,6 @@ export interface SetVillageTokenProps extends SystemSigner {
   village_pass_nft_address: BigNumberish;
   village_mint_initial_recipient: BigNumberish;
 }
-
 
 export interface SetTradeConfigProps extends SystemSigner {
   max_count: BigNumberish;
@@ -683,6 +698,15 @@ export interface BlitzPrizeClaimNoGameProps extends SystemSigner {
   registered_player: BigNumberish; // ContractAddress of the only registered player
 }
 
+// MMR system calls
+export interface CommitGameMMRProps extends SystemSigner {
+  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
+}
+
+export interface ClaimGameMMRProps extends SystemSigner {
+  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
+}
+
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: BigNumberish;
   max_stamina: BigNumberish;
@@ -793,6 +817,26 @@ export interface ExplorerMoveProps extends SystemSigner {
   directions: number[];
   /** Whether to explore new tiles along the way */
   explore: boolean;
+}
+
+/**
+ * Properties for traveling an explorer (no exploration)
+ */
+export interface ExplorerTravelProps extends SystemSigner {
+  /** ID of the explorer to move */
+  explorer_id: number;
+  /** Array of directions to move in */
+  directions: number[];
+}
+
+/**
+ * Properties for exploring with an explorer (includes VRF and reward extraction)
+ */
+export interface ExplorerExploreProps extends SystemSigner {
+  /** ID of the explorer to move */
+  explorer_id: number;
+  /** Array of directions to move in */
+  directions: number[];
 }
 
 /**
@@ -993,6 +1037,13 @@ export interface StructureTroopAdjacentTransferProps extends SystemSigner {
   resources: Resource[];
 }
 
+export interface OpenLootChestProps {
+  signer: AccountInterface;
+  token_id: bigint;
+  loot_chest_address: string;
+  claim_address: string;
+}
+
 export interface CreateMarketplaceOrdersProps {
   marketplace_address: BigNumberish;
   tokens: {
@@ -1077,6 +1128,7 @@ export interface TroopBurnProps extends SystemSigner {
 export interface OpenChestProps extends SystemSigner {
   explorer_id: BigNumberish;
   chest_coord: {
+    alt: boolean;
     x: BigNumberish;
     y: BigNumberish;
   };

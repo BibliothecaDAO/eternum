@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
@@ -304,6 +304,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(from_entity_owner),
                     entity_id: Option::Some(from_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -383,6 +384,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(from_entity_owner),
                     entity_id: Option::Some(from_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -467,6 +469,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         world
             .emit_event(
                 @StoryEvent {
+                    id: world.dispatcher.uuid(),
                     owner: Option::Some(from_entity_owner),
                     entity_id: Option::Some(from_entity_id),
                     tx_hash: starknet::get_tx_info().unbox().transaction_hash,

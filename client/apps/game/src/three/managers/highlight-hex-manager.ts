@@ -1,9 +1,21 @@
-import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
+import { highlightHexInstancedMaterial } from "@/three/shaders/highlight-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";
 import gsap from "gsap";
-import { AdditiveBlending, Color, Mesh, MeshBasicMaterial, Scene, ShaderMaterial, Vector3 } from "three";
+import {
+  AdditiveBlending,
+  Color,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  Quaternion,
+  Scene,
+  ShaderMaterial,
+  Vector3,
+} from "three";
 import { getWorldPositionForHex } from "../utils";
 
 const HIGHLIGHT_COLOR_BY_ACTION = new Map<ActionType, Vector3>([
@@ -21,14 +33,33 @@ const getHighlightColorForAction = (actionType: ActionType): Vector3 => {
   return HIGHLIGHT_COLOR_BY_ACTION.get(actionType) ?? HIGHLIGHT_COLOR_BY_ACTION.get(ActionType.CreateArmy)!;
 };
 
+// Maximum number of highlights that can be displayed at once
+const MAX_HIGHLIGHTS = 500;
+
+// Temporary objects to avoid allocations in hot paths
+const tempMatrix = new Matrix4();
+const tempPosition = new Vector3();
+const tempScale = new Vector3();
+const tempColor = new Color();
+
+// Fixed rotation for all highlights (rotated -90 degrees on X axis)
+const HIGHLIGHT_ROTATION = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
+
+interface InstanceAnimationState {
+  index: number;
+  position: Vector3;
+  targetScale: number;
+  currentScale: number;
+}
+
 export class HighlightHexManager {
-  private highlightedHexes: Mesh[] = [];
+  private instancedMesh: InstancedMesh;
   private material: ShaderMaterial;
   private yOffset: number = 0;
   private hexGeometryPool: HexGeometryPool;
-  private materialByActionType: Map<ActionType, ShaderMaterial> = new Map();
   private highlightTimeline: gsap.core.Timeline | null = null;
   private activeLaunchGlows: Array<{ mesh: Mesh; material: MeshBasicMaterial }> = [];
+  private activeInstances: InstanceAnimationState[] = [];
   private readonly rolloutConfig = {
     stepDelay: 0.02,
     entryDuration: 0.18,
@@ -37,29 +68,29 @@ export class HighlightHexManager {
   };
 
   constructor(private scene: Scene) {
-    this.material = highlightHexMaterial;
     this.hexGeometryPool = HexGeometryPool.getInstance();
-    this.initializeMaterialCache();
-  }
 
-  private initializeMaterialCache() {
-    const actionTypes: ActionType[] = [
-      ActionType.Explore,
-      ActionType.Move,
-      ActionType.Attack,
-      ActionType.Help,
-      ActionType.Build,
-      ActionType.Quest,
-      ActionType.Chest,
-      ActionType.CreateArmy,
-    ];
+    // Create the instanced material
+    this.material = highlightHexInstancedMaterial.clone();
+    hexGeometryDebugger.trackMaterialClone("HighlightHexManager.constructor");
 
-    actionTypes.forEach((type) => {
-      const cloned = this.material.clone();
-      hexGeometryDebugger.trackMaterialClone("HighlightHexManager.initializeMaterialCache");
-      cloned.uniforms.color.value = getHighlightColorForAction(type);
-      this.materialByActionType.set(type, cloned);
-    });
+    // Get shared geometry
+    const hexagonGeometry = this.hexGeometryPool.getGeometry("highlight");
+    hexGeometryDebugger.trackSharedGeometryUsage("highlight", "HighlightHexManager.constructor");
+
+    // Create InstancedMesh with capacity for max highlights
+    this.instancedMesh = new InstancedMesh(hexagonGeometry, this.material, MAX_HIGHLIGHTS);
+    this.instancedMesh.count = 0; // Start with no visible instances
+    this.instancedMesh.frustumCulled = true;
+
+    // Initialize instance color buffer
+    this.instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(MAX_HIGHLIGHTS * 3), 3);
+
+    // Disable raycasting for the instanced mesh
+    this.instancedMesh.raycast = () => {};
+
+    // Add to scene (single draw call for all highlights!)
+    this.scene.add(this.instancedMesh);
   }
 
   highlightHexes(actionPaths: ActionPath[]) {
@@ -67,64 +98,85 @@ export class HighlightHexManager {
     this.highlightTimeline = null;
     this.cleanupLaunchGlows();
 
-    // Remove existing highlights
-    this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
-    this.highlightedHexes = [];
+    // Reset all instances
+    this.activeInstances = [];
+    this.instancedMesh.count = 0;
 
     if (actionPaths.length === 0) return;
 
-    // Use shared geometry instead of creating new one
-    const hexagonGeometry = this.hexGeometryPool.getGeometry("highlight");
-    hexGeometryDebugger.trackSharedGeometryUsage("highlight", "HighlightHexManager.highlightHexes");
+    const count = Math.min(actionPaths.length, MAX_HIGHLIGHTS);
+    this.instancedMesh.count = count;
 
     const timeline = gsap.timeline();
 
-    actionPaths.forEach((hex, index) => {
+    // Set up each instance
+    for (let i = 0; i < count; i++) {
+      const hex = actionPaths[i];
       const position = getWorldPositionForHex(hex.hex);
-      const material =
-        this.materialByActionType.get(hex.actionType) ?? this.materialByActionType.get(ActionType.CreateArmy)!;
-      const highlightMesh = new Mesh(hexagonGeometry, material);
-      highlightMesh.position.set(position.x, 0.175 + this.yOffset, position.z);
-      highlightMesh.rotation.x = -Math.PI / 2;
-      highlightMesh.visible = false;
-      highlightMesh.scale.setScalar(this.rolloutConfig.initialScale);
+      const color = getHighlightColorForAction(hex.actionType);
 
-      // Disable raycasting for this mesh
-      highlightMesh.raycast = () => {};
+      // Store position for this instance
+      tempPosition.set(position.x, 0.175 + this.yOffset, position.z);
 
-      this.scene.add(highlightMesh);
-      this.highlightedHexes.push(highlightMesh);
+      // Create animation state
+      const animState: InstanceAnimationState = {
+        index: i,
+        position: tempPosition.clone(),
+        targetScale: 1,
+        currentScale: this.rolloutConfig.initialScale,
+      };
+      this.activeInstances.push(animState);
 
-      const startTime = index * this.rolloutConfig.stepDelay;
+      // Set initial matrix (invisible scale)
+      this.updateInstanceMatrix(i, animState.position, this.rolloutConfig.initialScale);
 
-      timeline.add(() => {
-        highlightMesh.visible = true;
-      }, startTime);
+      // Set instance color
+      tempColor.setRGB(color.x, color.y, color.z);
+      this.instancedMesh.setColorAt(i, tempColor);
+
+      // Animate scale from initialScale to 1
+      const startTime = i * this.rolloutConfig.stepDelay;
 
       timeline.to(
-        highlightMesh.scale,
+        animState,
         {
-          x: 1,
-          y: 1,
-          z: 1,
+          currentScale: 1,
           duration: this.rolloutConfig.entryDuration,
           ease: this.rolloutConfig.ease,
+          onUpdate: () => {
+            this.updateInstanceMatrix(animState.index, animState.position, animState.currentScale);
+          },
         },
         startTime,
       );
 
-      if (index === 0) {
-        this.triggerLaunchGlow(position, material.uniforms.color.value, timeline, startTime);
+      // Trigger launch glow for first hex
+      if (i === 0) {
+        this.triggerLaunchGlow(position, color, timeline, startTime);
       }
-    });
+    }
+
+    // Mark buffers as needing update
+    this.instancedMesh.instanceMatrix.needsUpdate = true;
+    if (this.instancedMesh.instanceColor) {
+      this.instancedMesh.instanceColor.needsUpdate = true;
+    }
+
+    // Compute bounding sphere for frustum culling
+    this.instancedMesh.computeBoundingSphere();
 
     this.highlightTimeline = timeline;
   }
 
+  private updateInstanceMatrix(index: number, position: Vector3, scale: number) {
+    tempScale.set(scale, scale, scale);
+    tempMatrix.compose(position, HIGHLIGHT_ROTATION, tempScale);
+    this.instancedMesh.setMatrixAt(index, tempMatrix);
+    this.instancedMesh.instanceMatrix.needsUpdate = true;
+  }
+
   updateHighlightPulse(pulseFactor: number) {
-    this.materialByActionType.forEach((mat) => {
-      mat.uniforms.opacity.value = pulseFactor;
-    });
+    this.material.uniforms.opacity.value = pulseFactor;
   }
 
   setYOffset(yOffset: number) {
@@ -217,24 +269,20 @@ export class HighlightHexManager {
     this.cleanupLaunchGlows();
     console.log("🧹 HighlightHexManager: Starting disposal");
 
-    let meshesDisposed = 0;
+    // Remove instanced mesh from scene
+    if (this.instancedMesh.parent) {
+      this.instancedMesh.parent.remove(this.instancedMesh);
+    }
 
-    // Dispose all highlighted hex meshes
-    this.highlightedHexes.forEach((mesh) => {
-      // Remove from scene
-      if (mesh.parent) {
-        mesh.parent.remove(mesh);
-      }
+    // Dispose the material (geometry is from the pool, don't dispose it)
+    this.material.dispose();
 
-      meshesDisposed++;
-    });
+    // Dispose the instanced mesh (handles instance matrix/color buffers)
+    this.instancedMesh.dispose();
 
-    // Clear the array
-    this.highlightedHexes = [];
+    // Clear active instances
+    this.activeInstances = [];
 
-    this.materialByActionType.forEach((mat) => mat.dispose());
-    this.materialByActionType.clear();
-
-    console.log(`🧹 HighlightHexManager: Disposed ${meshesDisposed} meshes and materials`);
+    console.log("🧹 HighlightHexManager: Disposed InstancedMesh (1 draw call vs N individual meshes)");
   }
 }

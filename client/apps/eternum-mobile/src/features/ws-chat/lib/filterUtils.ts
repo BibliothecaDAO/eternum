@@ -27,7 +27,7 @@ export const filterMessages = (
 
 // Sort messages by timestamp
 export const sortMessagesByTime = (messages: Message[]): Message[] => {
-  return [...messages].sort((a, b) => {
+  return messages.toSorted((a, b) => {
     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
   });
 };

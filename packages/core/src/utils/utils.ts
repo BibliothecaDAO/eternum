@@ -65,7 +65,7 @@ export const currentTickCount = (time: number) => {
   return Number(time / tickIntervalInSeconds);
 };
 
-export function calculateDistance(start: Position, destination: Position): number {
+export function calculateDistance(start: Pick<Position, "x" | "y">, destination: Pick<Position, "x" | "y">): number {
   // d = √((x2-x1)² + (y2-y1)²)
 
   // Calculate the difference in x and y coordinates

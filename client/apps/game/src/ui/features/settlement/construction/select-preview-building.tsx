@@ -47,7 +47,10 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
-import { InfoIcon, Trash } from "lucide-react";
+import InfoIcon from "lucide-react/dist/esm/icons/info";
+import Pause from "lucide-react/dist/esm/icons/pause";
+import Play from "lucide-react/dist/esm/icons/play";
+import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -143,10 +146,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const vacatedSpotsRef = useRef<Set<string>>(new Set());
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
   const [pendingDestroys, setPendingDestroys] = useState<Record<string, boolean>>({});
+  const [pendingPauseResume, setPendingPauseResume] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     occupiedSpotsRef.current.clear();
     vacatedSpotsRef.current.clear();
+    setPendingBuilds({});
+    setPendingDestroys({});
+    setPendingPauseResume({});
   }, [entityId]);
 
   useEffect(() => {
@@ -367,6 +374,84 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     ],
   );
 
+  const handlePauseResumeAll = useCallback(
+    async (target: { type: BuildingType; resource?: ResourcesIds }) => {
+      if (!realm?.position) {
+        toast.error("Select a realm before managing production.");
+        return;
+      }
+
+      const buildingKey = target.type.toString();
+      const outerCol = Number(realm.position.x);
+      const outerRow = Number(realm.position.y);
+      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+        col: outerCol,
+        row: outerRow,
+      });
+
+      const currentBuildings = tileManager.existingBuildings();
+      const categoryBuildings = currentBuildings.filter((b) => b.category === target.type);
+
+      if (categoryBuildings.length === 0) {
+        toast.error("No buildings of this type found.");
+        return;
+      }
+
+      // Determine action: if any are active, pause all; if all paused, resume all
+      const anyActive = categoryBuildings.some((b) => !b.paused);
+      const action = anyActive ? "pause" : "resume";
+
+      setPendingPauseResume((prev) => ({ ...prev, [buildingKey]: true }));
+
+      try {
+        await Promise.all(
+          categoryBuildings.map((building) => {
+            if (action === "pause" && !building.paused) {
+              return tileManager.pauseProduction(dojo.account.account, entityId, building.col, building.row);
+            } else if (action === "resume" && building.paused) {
+              return tileManager.resumeProduction(dojo.account.account, entityId, building.col, building.row);
+            }
+            return Promise.resolve();
+          }),
+        );
+      } catch (error) {
+        console.error(`Failed to ${action} production`, error);
+        toast.error(`Failed to ${action} production. Please try again.`);
+      } finally {
+        setPendingPauseResume((prev) => {
+          const next = { ...prev };
+          delete next[buildingKey];
+          return next;
+        });
+      }
+    },
+    [dojo.account.account, dojo.setup.components, dojo.setup.systemCalls, entityId, realm?.position],
+  );
+
+  const existingBuildings = realm?.position
+    ? new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+        col: Number(realm.position.x),
+        row: Number(realm.position.y),
+      }).existingBuildings()
+    : [];
+
+  const pausedByCategory = useMemo(() => {
+    const counts = new Map<BuildingType, { total: number; paused: number }>();
+    existingBuildings.forEach((building) => {
+      const entry = counts.get(building.category) ?? { total: 0, paused: 0 };
+      entry.total += 1;
+      if (building.paused) entry.paused += 1;
+      counts.set(building.category, entry);
+    });
+
+    const map = new Map<BuildingType, boolean>();
+    counts.forEach((entry, category) => {
+      map.set(category, entry.paused === entry.total);
+    });
+
+    return map;
+  }, [existingBuildings]);
+
   const realmBiome = useMemo<BiomeType | null>(() => {
     if (!realm?.position) return null;
 
@@ -426,8 +511,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const mode = useGameModeConfig();
 
   const buildingTypes = useMemo(
-    () =>
-      Object.keys(BuildingType).filter((key) => mode.rules.isBuildingTypeAllowed(key)),
+    () => Object.keys(BuildingType).filter((key) => mode.rules.isBuildingTypeAllowed(key)),
     [mode],
   );
 
@@ -589,6 +673,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               const destroyPending = Boolean(pendingDestroys[buildKey]);
               const destroyDisabled = count <= 0 || destroyPending;
 
+              const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+              const allPausedState = pausedByCategory.get(building);
+
               return (
                 <BuildingCard
                   key={resourceId}
@@ -629,6 +716,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
                   destroyDisabled={destroyDisabled}
                   destroyLoading={destroyPending}
+                  onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
+                  pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                  pauseResumeAllLoading={pauseResumePending}
+                  allPaused={allPausedState ?? false}
                 />
               );
             })}
@@ -646,7 +737,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
               .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
-              .sort((a, b) => {
+              .toSorted((a, b) => {
                 const buildingA = BuildingType[a as keyof typeof BuildingType];
                 const buildingB = BuildingType[b as keyof typeof BuildingType];
 
@@ -688,6 +779,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const isFarm = building === BuildingType.ResourceWheat;
                 const isFishingVillage = building === BuildingType.ResourceFish;
                 const isMarket = building === BuildingType.ResourceDonkey;
+
+                const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                const allPausedState = pausedByCategory.get(building);
+                const showPauseResume = !isWorkersHut;
 
                 return (
                   <BuildingCard
@@ -739,6 +834,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     onDestroy={() => handleDestroyBuilding({ type: building })}
                     destroyDisabled={destroyDisabled}
                     destroyLoading={destroyPending}
+                    onPauseResumeAll={showPauseResume ? () => handlePauseResumeAll({ type: building }) : undefined}
+                    pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                    pauseResumeAllLoading={pauseResumePending}
+                    allPaused={allPausedState ?? false}
                   />
                 );
               })}
@@ -811,8 +910,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     >
                       <div className="grid grid-cols-2 gap-2 p-2">
                         {group.buildings
-                          .slice()
-                          .sort((a, b) => {
+                          .toSorted((a, b) => {
                             const buildingA = BuildingType[a as keyof typeof BuildingType];
                             const buildingB = BuildingType[b as keyof typeof BuildingType];
                             const infoA = getMilitaryBuildingInfo(buildingA);
@@ -846,6 +944,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             const count = getBuildingCountFor(building);
                             const destroyPending = Boolean(pendingDestroys[buildKey]);
                             const destroyDisabled = count <= 0 || destroyPending;
+
+                            const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                            const allPausedState = pausedByCategory.get(building);
 
                             return (
                               <BuildingCard
@@ -891,6 +992,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 onDestroy={() => handleDestroyBuilding({ type: building })}
                                 destroyDisabled={destroyDisabled}
                                 destroyLoading={destroyPending}
+                                onPauseResumeAll={() => handlePauseResumeAll({ type: building })}
+                                pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                                pauseResumeAllLoading={pauseResumePending}
+                                allPaused={allPausedState ?? false}
                               />
                             );
                           })}
@@ -914,8 +1019,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       activeArmyType,
       pendingBuilds,
       pendingDestroys,
+      pendingPauseResume,
+      pausedByCategory,
       handleAutoBuild,
       handleDestroyBuilding,
+      handlePauseResumeAll,
       getBuildingCountFor,
       checkBalance,
     ],
@@ -1001,6 +1109,10 @@ const BuildingCard = ({
   onDestroy,
   destroyDisabled,
   destroyLoading,
+  onPauseResumeAll,
+  pauseResumeAllDisabled,
+  pauseResumeAllLoading,
+  allPaused,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -1025,6 +1137,10 @@ const BuildingCard = ({
   onDestroy?: () => void;
   destroyDisabled?: boolean;
   destroyLoading?: boolean;
+  onPauseResumeAll?: () => void;
+  pauseResumeAllDisabled?: boolean;
+  pauseResumeAllLoading?: boolean;
+  allPaused?: boolean;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const isDisabled = disabled;
@@ -1129,25 +1245,49 @@ const BuildingCard = ({
           >
             {buildLoading ? "…" : "Build"}
           </button>
-          {onDestroy && (
-            <button
-              type="button"
-              disabled={Boolean(destroyDisabled)}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (destroyDisabled) return;
-                onDestroy();
-              }}
-              className={clsx(
-                "flex items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow transition",
-                !destroyDisabled && "hover:translate-y-[-1px] hover:bg-red-800",
-                destroyDisabled && "opacity-60 cursor-not-allowed",
-              )}
-              aria-label="Destroy building"
-            >
-              {destroyLoading ? "…" : <Trash className="w-3 h-3" />}
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {onDestroy && (
+              <button
+                type="button"
+                disabled={Boolean(destroyDisabled)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (destroyDisabled) return;
+                  onDestroy();
+                }}
+                className={clsx(
+                  "flex items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow transition",
+                  !destroyDisabled && "hover:translate-y-[-1px] hover:bg-red-800",
+                  destroyDisabled && "opacity-60 cursor-not-allowed",
+                )}
+                aria-label="Destroy building"
+              >
+                {destroyLoading ? "…" : <Trash className="w-3 h-3" />}
+              </button>
+            )}
+            {onPauseResumeAll && (
+              <button
+                type="button"
+                disabled={Boolean(pauseResumeAllDisabled)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (pauseResumeAllDisabled) return;
+                  onPauseResumeAll();
+                }}
+                className={clsx(
+                  "flex items-center justify-center rounded-md border px-2.5 py-1 text-[10px] font-semibold text-white shadow transition",
+                  allPaused
+                    ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
+                    : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
+                  !pauseResumeAllDisabled && "hover:translate-y-[-1px]",
+                  pauseResumeAllDisabled && "opacity-60 cursor-not-allowed",
+                )}
+                aria-label={allPaused ? "Resume all" : "Pause all"}
+              >
+                {pauseResumeAllLoading ? "…" : allPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+              </button>
+            )}
+          </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {isWorkersHut && (
@@ -1197,7 +1337,7 @@ const BuildingCard = ({
   );
 };
 
-export const ResourceInfo = ({
+const ResourceInfo = ({
   resourceId,
   buildingId,
   entityId,
@@ -1362,7 +1502,7 @@ export const ResourceInfo = ({
   );
 };
 
-export const BuildingInfo = ({
+const BuildingInfo = ({
   buildingId,
   entityId,
   name = BuildingTypeToString[buildingId as keyof typeof BuildingTypeToString],

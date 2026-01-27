@@ -159,8 +159,8 @@ export const StructureProductionPanel = memo(
             badgeVariant === "detailed" ? "flex flex-wrap items-center gap-3" : "flex flex-wrap items-center gap-2"
           }
         >
-          {[...resourceProductionSummary]
-            .sort((a, b) => {
+          {resourceProductionSummary
+            .toSorted((a, b) => {
               if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
               if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;
               return a.resourceId - b.resourceId;

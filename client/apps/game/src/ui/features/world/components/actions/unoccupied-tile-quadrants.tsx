@@ -8,7 +8,7 @@ import { battleSimulation } from "@/ui/features/world/components/config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
-import { CrosshairIcon } from "lucide-react";
+import CrosshairIcon from "lucide-react/dist/esm/icons/crosshair";
 
 const unoccupiedTileTroopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
 
@@ -33,7 +33,7 @@ const unoccupiedTileTroopConfig: Record<
   },
 };
 
-export const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
+const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
   const label = biome.toString();
   return label
     .replace(/_/g, " ")
@@ -43,7 +43,7 @@ export const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
     .trim();
 };
 
-export const getQuadrantBonusStyles = (bonus: number) => {
+const getQuadrantBonusStyles = (bonus: number) => {
   if (bonus > 1) {
     return {
       containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
@@ -83,7 +83,7 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
             styles,
           };
         })
-        .sort((a, b) => a.bonus - b.bonus),
+        .toSorted((a, b) => a.bonus - b.bonus),
     [biome],
   );
 

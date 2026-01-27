@@ -1,7 +1,7 @@
 import { CameraView } from "../scenes/hexagon-scene";
 import { HexPosition, ID, HexEntityInfo } from "@bibliothecadao/types";
 
-export type HoverLabelController = {
+type HoverLabelController = {
   show: (entityId: ID) => void;
   hide: (entityId: ID) => void;
   hideAll?: () => void;

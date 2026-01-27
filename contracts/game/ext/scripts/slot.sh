@@ -42,7 +42,7 @@
 # NETWORK CONFIGURATIONS:
 #   slot:    https://api.cartridge.gg/x/<project-name>/katana
 #            (Requires prior Katana deployment with same project name)
-#   mainnet: https://api.cartridge.gg/x/eternum/mainnet
+#   mainnet: https://api.cartridge.gg/x/starknet/mainnet
 #   sepolia: https://api.cartridge.gg/x/starknet/sepolia
 #
 # PROJECT NAMING:
@@ -151,7 +151,7 @@ if [ "$COMMAND" = "torii" ]; then
 
     RPC_URL="https://api.cartridge.gg/x/$PROJECT_NAME/katana"
     if [ "$SN_NETWORK" = "mainnet" ]; then
-        RPC_URL="https://api.cartridge.gg/x/eternum/mainnet"
+        RPC_URL="https://api.cartridge.gg/x/starknet/mainnet"
     fi
     if [ "$SN_NETWORK" = "sepolia" ]; then
         RPC_URL="https://api.cartridge.gg/x/starknet/sepolia"
@@ -247,7 +247,7 @@ EXAMPLES:
 
 SEQUENCER CONFIGURATIONS:
     slot:    https://api.cartridge.gg/x/<project-name>/katana
-    mainnet: https://api.cartridge.gg/x/eternum/mainnet
+    mainnet: https://api.cartridge.gg/x/starknet/mainnet
     sepolia: https://api.cartridge.gg/x/starknet/sepolia
 EOF
     exit 0
@@ -313,7 +313,8 @@ EOF
 # Update deployment section to include reminders
 if [ "$COMMAND" = "katana" ]; then
     echo -e "${YELLOW}► Setting up Katana network...${NC}"
-    slot deployments create --team realms-eternum $PROJECT_NAME katana \
+    slot deployments create -t epic $PROJECT_NAME katana \
+        --version v1.7.0-alpha.1 \
         --invoke-max-steps "$KATANA_MAX_INVOKE_STEPS" \
         --dev --dev.no-fee
 
@@ -325,7 +326,7 @@ fi
 
 if [ "$COMMAND" = "torii" ]; then
     echo -e "\n${YELLOW}► Setting up Torii indexer...${NC}"
-    slot deployments create --team realms-eternum $PROJECT_NAME torii \
+    slot deployments create -t basic $PROJECT_NAME torii \
         --version v1.7.0-alpha.1 \
         --world $WORLD \
         --rpc $RPC_URL \

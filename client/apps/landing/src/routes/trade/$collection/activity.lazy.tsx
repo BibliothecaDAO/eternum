@@ -8,7 +8,13 @@ import { fetchMarketOrderEvents } from "@/hooks/services";
 import { formatRelativeTime } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Pencil from "lucide-react/dist/esm/icons/pencil";
+import ShoppingCart from "lucide-react/dist/esm/icons/shopping-cart";
+import Tag from "lucide-react/dist/esm/icons/tag";
+import X from "lucide-react/dist/esm/icons/x";
 import { Suspense, useState } from "react";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
@@ -47,37 +53,42 @@ function ActivityPage() {
         </div>
       )}
 
-      <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
-        {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">Activity</h4> : <div></div>}
-        <div className="w-full flex justify-end gap-1 sm:gap-2 px-4 items-center">
-          Type:
-          <Button
-            variant={filterType === "all" ? "default" : "outline"}
-            size="sm"
-            className="hidden sm:flex"
-            onClick={() => setFilterType("all")}
-            title="Filter All"
-          >
-            All
-          </Button>
-          <Button
-            variant={filterType === "sales" ? "default" : "outline"}
-            size="sm"
-            className="hidden sm:flex"
-            onClick={() => setFilterType("sales")}
-            title="Filter Sales"
-          >
-            Sales
-          </Button>
-          <Button
-            variant={filterType === "listings" ? "default" : "outline"}
-            size="sm"
-            className="hidden sm:flex"
-            onClick={() => setFilterType("listings")}
-            title="Filter Listings"
-          >
-            Listings
-          </Button>
+      <ScrollHeader
+        className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0"
+        onScrollChange={setIsHeaderScrolled}
+      >
+        {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold pl-4">Activity</h4> : <div></div>}
+        <div className="flex flex-wrap justify-end gap-2 px-4 items-center">
+          <span className="text-sm text-muted-foreground">Type:</span>
+          <div className="flex items-center rounded-md overflow-hidden border shadow-sm">
+            <Button
+              variant={filterType === "all" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-none text-xs sm:text-sm h-9 px-3"
+              onClick={() => setFilterType("all")}
+              title="Show all activity"
+            >
+              All
+            </Button>
+            <Button
+              variant={filterType === "sales" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-none border-l text-xs sm:text-sm h-9 px-3"
+              onClick={() => setFilterType("sales")}
+              title="Show sales only"
+            >
+              Sales
+            </Button>
+            <Button
+              variant={filterType === "listings" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-none border-l text-xs sm:text-sm h-9 px-3"
+              onClick={() => setFilterType("listings")}
+              title="Show listings only"
+            >
+              Listings
+            </Button>
+          </div>
         </div>
       </ScrollHeader>
 
@@ -102,15 +113,17 @@ function ActivityPage() {
                       <div className="px-4 py-2 text-left">Status</div>
                       <div className="px-4 py-2 text-left col-span-2">Item</div>
                       <div className="px-4 py-2 text-left">Price</div>
-                      <div className="px-4 py-2 text-left">Resources</div>
-                      <div className="px-4 py-2 text-right col-span-2">Time</div>
+                      <div className="px-4 py-2 text-left">Time</div>
+                      <div className="px-4 py-2 text-left col-span-2">Resources</div>
                     </div>
 
                     {/* Table body */}
                     <div className="w-full">
                       {events.map((event) => {
                         const metadata = event.metadata;
-                        const image = metadata?.image || "";
+                        const image = metadata?.image?.startsWith("ipfs://")
+                          ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                          : metadata?.image;
                         const price = event.price
                           ? parseFloat(Number(formatUnits(BigInt(event.price), 18)).toFixed(2)).toLocaleString()
                           : "0";
@@ -172,25 +185,10 @@ function ActivityPage() {
                               </div>
                             </div>
 
-                            {/* Resources */}
-                            <div className="px-4 py-3 text-left col-span-2">
-                              <div className="flex flex-wrap gap-2 mb-2 h-full items-center">
-                                {metadata?.attributes
-                                  ?.filter((attribute) => attribute.trait_type === "Resource")
-                                  .map((attribute, index) => (
-                                    <ResourceIcon
-                                      resource={attribute.value as string}
-                                      size="sm"
-                                      key={`${attribute.trait_type}-${index}`}
-                                    />
-                                  ))}
-                              </div>
-                            </div>
-
                             {/* Time */}
                             <div className="px-4 py-3 text-sm text-muted-foreground">
                               {event.executed_at && (
-                                <div className="flex items-center justify-end h-full">
+                                <div className="flex items-center h-full">
                                   <Clock className="w-3 h-3 mr-1" />
                                   <TooltipProvider>
                                     <Tooltip delayDuration={0} defaultOpen={false} disableHoverableContent>
@@ -204,6 +202,21 @@ function ActivityPage() {
                                   </TooltipProvider>
                                 </div>
                               )}
+                            </div>
+
+                            {/* Resources */}
+                            <div className="px-4 py-3 text-left col-span-2">
+                              <div className="flex flex-wrap gap-2 mb-2 h-full items-center">
+                                {metadata?.attributes
+                                  ?.filter((attribute) => attribute.trait_type === "Resource")
+                                  .map((attribute, index) => (
+                                    <ResourceIcon
+                                      resource={attribute.value as string}
+                                      size="sm"
+                                      key={`${attribute.trait_type}-${index}`}
+                                    />
+                                  ))}
+                              </div>
                             </div>
                           </div>
                         );

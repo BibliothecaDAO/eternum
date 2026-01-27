@@ -2,7 +2,7 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/design-system/atoms/button";
 import { useConnect } from "@starknet-react/core";
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { useCallback, useEffect } from "react";
 
 interface ControllerProps {

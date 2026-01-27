@@ -113,7 +113,7 @@ export default function BuildingCard({ title, image, buildingType, description }
         <div style={styles.info}>
           <div style={styles.stats}>
             {population > 0 && <div style={styles.stat}>Pop Req: {population}</div>}
-            {populationCapacity > 0 && <div style={styles.stat}>Pop Cap: +{populationCapacity}</div>}
+            {populationCapacity > 0 && <div style={styles.stat}>Pop Cap: +6</div>}
           </div>
 
           <ul style={{ listStyleType: "disc", marginLeft: "1rem", marginBottom: "0.5rem" }}>

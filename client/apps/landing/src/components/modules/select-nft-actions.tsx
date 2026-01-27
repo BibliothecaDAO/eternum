@@ -1,4 +1,4 @@
-import { XIcon } from "lucide-react";
+import XIcon from "lucide-react/dist/esm/icons/x";
 import { Button } from "../ui/button";
 
 export const SelectNftActions = ({

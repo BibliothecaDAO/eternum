@@ -34,16 +34,23 @@ export default defineConfig({
     google: "Open Sans",
   },
 
-  title: "Eternum (Season 1 - Concluded)",
+  title: "Realms Docs",
   sidebar: [
     {
       text: "Overview",
       items: [
         { text: "Introduction", link: "/overview/introduction" },
-        { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
         { text: "$LORDS Token", link: "/overview/lords" },
-        { text: "Loot Chests", link: "/overview/loot-chests" },
+        {
+          text: "Loot Chests",
+          collapsed: true,
+          link: "/overview/chests/loot-chests",
+          items: [
+            { text: "Chest Contents", link: "/overview/chests/contents" },
+            { text: "Cosmetic Items", link: "/overview/chests/cosmetics" },
+          ],
+        },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
         { text: "Resource Addresses", link: "/overview/resource-addresses" },
@@ -53,33 +60,31 @@ export default defineConfig({
       text: "Blitz",
       items: [
         { text: "Key Concepts", link: "/blitz/key-concepts" },
+        { text: "Game Entry", link: "/blitz/game-entry" },
         { text: "World Physics", link: "/blitz/world-physics" },
         {
           text: "Realms",
           collapsed: true,
-          items: [
-            { text: "Realms", link: "/blitz/realms/realm" },
-            { text: "Buildings", link: "/blitz/realms/buildings" },
-          ],
+          link: "/blitz/realms/realm",
+          items: [{ text: "Buildings", link: "/blitz/realms/buildings" }],
         },
         {
           text: "Materials",
           collapsed: true,
+          link: "/blitz/materials/resources",
           items: [
-            { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
-            { text: "Storage", link: "/blitz/materials/storage" },
+            { text: "Production Automation", link: "/blitz/materials/automation" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
             { text: "Bridging", link: "/blitz/materials/bridging" },
             { text: "Relics", link: "/blitz/materials/relics" },
-            { text: "Automation", link: "/blitz/materials/automation" },
           ],
         },
         {
           text: "Military",
           collapsed: true,
+          link: "/blitz/military/armies",
           items: [
-            { text: "Armies", link: "/blitz/military/armies" },
             { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
             { text: "Damage", link: "/blitz/military/damage" },
@@ -88,10 +93,8 @@ export default defineConfig({
         {
           text: "World Map & Movement",
           collapsed: true,
-          items: [
-            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
-            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
-          ],
+          link: "/blitz/worldmap-movement/worldmap",
+          items: [{ text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/blitz/world-structures" },
         { text: "Victory", link: "/blitz/victory" },
@@ -103,13 +106,13 @@ export default defineConfig({
       text: "Eternum (Season 1 - Concluded)",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
+        { text: "Game Entry", link: "/eternum/game-entry" },
         { text: "World Physics", link: "/eternum/world-physics" },
         {
           text: "Realms & Villages",
           link: "/eternum/realm-and-villages/realm",
           collapsed: true,
           items: [
-            { text: "Realms", link: "/eternum/realm-and-villages/realm" },
             { text: "Villages", link: "/eternum/realm-and-villages/villages" },
             { text: "Buildings", link: "/eternum/realm-and-villages/buildings" },
             { text: "Wonders", link: "/eternum/realm-and-villages/wonders" },
@@ -120,7 +123,6 @@ export default defineConfig({
           link: "/eternum/resources/resources",
           collapsed: true,
           items: [
-            { text: "Materials", link: "/eternum/resources/resources" },
             { text: "Production", link: "/eternum/resources/production" },
             { text: "Automation", link: "/eternum/resources/automation" },
             { text: "Storage", link: "/eternum/resources/storage" },
@@ -133,7 +135,6 @@ export default defineConfig({
           link: "/eternum/military/armies",
           collapsed: true,
           items: [
-            { text: "Armies", link: "/eternum/military/armies" },
             { text: "Troop Tiers", link: "/eternum/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/eternum/military/stamina-and-biomes" },
             { text: "Damage", link: "/eternum/military/damage" },
@@ -144,10 +145,7 @@ export default defineConfig({
           text: "World Map & Movement",
           link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
-          items: [
-            { text: "World Map", link: "/eternum/worldmap-movement/worldmap" },
-            { text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" },
-          ],
+          items: [{ text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/eternum/world-structures" },
         { text: "Tribes", link: "/eternum/tribes" },
@@ -165,6 +163,16 @@ export default defineConfig({
         { text: "SDK", link: "/development/sdk" },
         { text: "Collaborators", link: "/development/collaborators" },
         { text: "LLM", link: "/development/llm" },
+      ],
+    },
+    {
+      text: "Changelog",
+      collapsed: true,
+      items: [
+        { text: "3 September 2025", link: "/changelog/3-september-2025" },
+        { text: "7 November 2025", link: "/changelog/7-november-2025" },
+        { text: "14 November 2025", link: "/changelog/14-november-2025" },
+        { text: "8 December 2025", link: "/changelog/8-december-2025" },
       ],
     },
   ],

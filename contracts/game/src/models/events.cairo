@@ -1,11 +1,13 @@
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::position::{Coord, Direction};
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
-use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event(historical: false)]
 pub struct StoryEvent {
+    #[key]
+    pub id: ID,
     #[key]
     pub owner: Option<ContractAddress>,
     #[key]
@@ -111,15 +113,13 @@ pub struct StructureLevelUpStory {
 ///
 ///////////////////////////////////////////////
 
-
-
 #[derive(Introspect, Copy, Drop, Serde)]
 pub enum PointsActivity {
     Exploration,
     OpenRelicChest,
     HyperstructureSharePoints,
     HyperStructureBanditsDefeat,
-    OtherStructureBanditsDefeat
+    OtherStructureBanditsDefeat,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -182,7 +182,7 @@ pub enum BattleType {
 #[derive(Introspect, Copy, Drop, Serde, Default)]
 pub struct BattleStructureType {
     pub structure_category: u8,
-    pub structure_taken: bool
+    pub structure_taken: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]

@@ -141,6 +141,14 @@ export default {
           tropical_seasonal_forest: "#596823",
           tropical_rain_forest: "#4f6123",
         },
+        // Rarity colors for chest opening
+        rarity: {
+          common: "#848484",
+          uncommon: "#6cc95e",
+          rare: "#56c8da",
+          epic: "#ba37d4",
+          legendary: "#e9b062",
+        },
       },
       backgroundImage: {
         map: "url(/images/map.svg)",

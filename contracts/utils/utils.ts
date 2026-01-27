@@ -30,14 +30,16 @@ export interface SeasonAddresses {
   lords: string;
   /** Address of the STRK token contract */
   strk: string;
-  /** Address of the loot chest contract */
-  lootChests?: string;
-  /** Address of the marketplace contract */
-  marketplace?: string;
   /** Map of resource name to [resourceId, contractAddress] */
   resources: {
     [key: string]: (string | number)[];
   };
+  /** Address of the marketplace contract */
+  marketplace: string;
+  /** Address of the cosmetics claim contract */
+  cosmeticsClaim: string;
+  /** Address of the MMR token contract */
+  mmrToken: string;
 }
 
 /** Valid chain identifiers */

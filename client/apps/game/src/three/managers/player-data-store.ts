@@ -1,5 +1,5 @@
-import { sqlApi } from "@/services/api";
 import { getGameModeConfig } from "@/config/game-modes";
+import { sqlApi } from "@/services/api";
 import { StructureType } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";
@@ -63,10 +63,17 @@ export class PlayerDataStore {
   private async fetchAndStoreData(): Promise<void> {
     const mode = getGameModeConfig();
     const result = await sqlApi.fetchGlobalStructureExplorerAndGuildDetails();
-    let realmsData = realms as Record<string, { name: string }>;
+    const realmsData = realms as Record<string, { name: string }>;
+
+    // Clear existing data before repopulating to prevent stale entries
+    this.addressToPlayerDataMap.clear();
+    this.structureToAddressMap.clear();
+    this.explorerToStructureMap.clear();
+    this.structureToNameMap.clear();
+
     await Promise.all(
       result.map((item) => {
-        let transformedItem = {
+        const transformedItem = {
           explorerIds: item.explorer_ids ? item.explorer_ids.toString().split(",").filter(Boolean) : [],
           structureIds: item.structure_ids ? item.structure_ids.toString().split(",").filter(Boolean) : [],
           guildId: item.guild_id || "",
@@ -85,20 +92,20 @@ export class PlayerDataStore {
         };
         // Create a mapping from explorer id to structure id
         transformedItem.explorerIds.forEach((explorerId) => {
-          let actualExplorerId = explorerId.split(":")[0];
-          let actualStructureId = explorerId.split(":")[1];
+          const actualExplorerId = explorerId.split(":")[0];
+          const actualStructureId = explorerId.split(":")[1];
           this.explorerToStructureMap.set(actualExplorerId, actualStructureId);
         });
 
         // Create a mapping from structure id to player address
         transformedItem.structureIds.forEach((structureId) => {
-          let actualStructureId = structureId.split(":")[0];
-          let actualRealmId = structureId.split(":")[1];
-          let actualCategory = structureId.split(":")[2];
+          const actualStructureId = structureId.split(":")[0];
+          const actualRealmId = structureId.split(":")[1];
+          const actualCategory = structureId.split(":")[2];
           this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
           const realmName =
             actualRealmId === "0"
-              ? mode.structure.getTypeName(Number(actualCategory) as StructureType) ?? "Structure"
+              ? (mode.structure.getTypeName(Number(actualCategory) as StructureType) ?? "Structure")
               : realmsData[actualRealmId].name;
           this.structureToNameMap.set(actualStructureId, realmName);
         });

@@ -2,7 +2,10 @@ import { useMemo } from "react";
 
 import { getContractByName } from "@dojoengine/core";
 import type { TokenBalance } from "@dojoengine/torii-wasm";
-import { Clock3, Lock, Users, Wallet } from "lucide-react";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
+import Lock from "lucide-react/dist/esm/icons/lock";
+import Users from "lucide-react/dist/esm/icons/users";
+import Wallet from "lucide-react/dist/esm/icons/wallet";
 import { useAccount } from "@starknet-react/core";
 
 import type { MarketClass } from "@/pm/class";

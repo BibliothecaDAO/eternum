@@ -163,7 +163,7 @@ const createWorkerQueueProcessor = (
   }
 };
 
-export const syncEntitiesDebounced = async (
+const syncEntitiesDebounced = async (
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: Clause | undefined | null,
@@ -196,7 +196,6 @@ export const syncEntitiesDebounced = async (
   const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
     try {
       queueProcessor.queueUpdate(data.hashed_keys, data, origin);
-      setupResult.network.provider.recordStreamActivity();
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
@@ -233,8 +232,6 @@ export const syncEntitiesDebounced = async (
     eventUpdateCount = 0;
     lastLogTime = now;
   }, LOG_INTERVAL);
-
-  setupResult.network.provider.recordStreamActivity();
 
   return {
     cancel: () => {
@@ -337,7 +334,7 @@ export const initialSync = async (
   updateProgress(100);
 };
 
-export const resubscribeEntityStream = async (
+const resubscribeEntityStream = async (
   setup: SetupResult,
   state: AppStore,
   setInitialSyncProgress: (progress: number) => void,

@@ -17,6 +17,7 @@ export const formatQuests = (quests: Entity[], components: ClientComponents): Qu
         id: quest.id,
         game_address: ContractAddress(quest.game_address),
         coord: {
+          alt: quest.coord.alt ?? false,
           x: quest.coord.x,
           y: quest.coord.y,
         },

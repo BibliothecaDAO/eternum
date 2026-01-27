@@ -1,3 +1,4 @@
+import { DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
 import { ID, MERCENARIES, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -19,7 +20,7 @@ export const useBank = (bankEntityId: ID) => {
   const bankConfig = getComponentValue(WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.bank_config;
   return {
     entityId: structure.entity_id,
-    position: { x: structure.base.coord_x, y: structure.base.coord_y },
+    position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
     owner: addressName?.name ? shortString.decodeShortString(addressName.name.toString()) : MERCENARIES,
     structure,
     ownerFee: Number(bankConfig?.owner_fee_num) / Number(bankConfig?.owner_fee_denom),

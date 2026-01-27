@@ -23,7 +23,10 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { GUARD_SLOT_NAMES, Direction, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { AlertTriangle, Plus, Shield, Swords } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Swords from "lucide-react/dist/esm/icons/swords";
 import { useEffect, useMemo, useState } from "react";
 
 interface UnifiedArmyCreationDrawerProps {

@@ -37,7 +37,7 @@ export interface AudioPlayOptions {
   onError?: (error: Error) => void;
 }
 
-export interface SpatialAudioOptions {
+interface SpatialAudioOptions {
   position: Vector3;
   maxDistance?: number;
   rolloffFactor?: number;

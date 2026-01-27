@@ -12,16 +12,13 @@ interface LandingLayoutProps {
 }
 
 const SECTIONS = [
-  { label: "Overview", path: "/" },
+  { label: "Game", path: "/" },
   { label: "Cosmetics", path: "/cosmetics" },
   // { label: "Account", path: "/account" },
   { label: "Player", path: "/player" },
   { label: "Markets", path: "/markets" },
   { label: "Leaderboard", path: "/leaderboard" },
 ];
-
-// Served from client/public/images/landing/wooden-panel.png
-const LANDING_NAV_PANEL_IMAGE = "/images/landing/wooden-panel.png";
 
 export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayoutProps) => {
   const location = useLocation();
@@ -169,17 +166,17 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
         {/* Global modal container for landing routes */}
         <LandingModalHost />
         <header className="flex flex-col gap-6 px-6 pt-0 lg:px-10">
-          <nav aria-label="Landing sections" className="flex justify-center">
-            <div className="relative flex w-full max-w-[720px] justify-center px-2 sm:px-4">
+          <nav aria-label="Landing sections" className="flex justify-center uppercase font-serif">
+            <div className="relative flex w-full max-w-[720px] justify-center sm:px-4">
               <img
                 alt=""
                 aria-hidden="true"
                 src={"/borders/top-bar.png"}
                 loading="lazy"
-                className="w-full select-none object-contain pointer-events-none"
+                className="w-full hidden sm:block select-none object-contain pointer-events-none"
               />
-              <div className="absolute inset-0 flex items-center justify-center px-6 py-4 sm:px-8 -mt-6">
-                <div className="flex w-full flex-wrap items-center justify-center gap-2">
+              <div className="sm:absolute inset-0 flex items-center justify-center px-6 py-4 sm:px-8  sm:-mt-6">
+                <div className="flex w-full flex-wrap items-center justify-center gap-1">
                   {SECTIONS.map((section) => (
                     <NavLink
                       key={section.path}
@@ -201,7 +198,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
           </nav>
         </header>
 
-        <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-6 lg:px-0">
+        <main className="mx-auto flex w-full sm:flex-1 flex-col items-center justify-center lg:px-0">
           <Outlet />
         </main>
       </div>

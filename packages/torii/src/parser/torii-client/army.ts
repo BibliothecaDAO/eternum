@@ -5,6 +5,7 @@ export const getExplorerFromToriiEntity = (
   entity: any,
 ): ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> => {
   console.log({ entity });
+  const coordValue = entity.coord?.value;
   return {
     explorer_id: entity.explorer_id.value,
     owner: entity.owner.value,
@@ -29,8 +30,9 @@ export const getExplorerFromToriiEntity = (
       battle_cooldown_end: entity.troops.value.battle_cooldown_end.value,
     },
     coord: {
-      x: entity.coord.value.x.value,
-      y: entity.coord.value.y.value,
+      alt: coordValue?.alt?.value ?? coordValue?.alt ?? false,
+      x: coordValue?.x?.value ?? coordValue?.x,
+      y: coordValue?.y?.value ?? coordValue?.y,
     },
   };
 };

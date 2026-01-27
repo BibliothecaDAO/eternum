@@ -20,6 +20,13 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='sort']",
+          message: "Use .toSorted() instead of .sort() to avoid array mutation. See issue #4076.",
+        },
+      ],
     },
   },
 );

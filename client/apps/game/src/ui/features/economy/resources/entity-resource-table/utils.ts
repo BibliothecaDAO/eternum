@@ -32,7 +32,7 @@ export const ALWAYS_SHOW_RESOURCES = [
 export const HIDE_TIME_REMAINING_FOR = [ResourcesIds.Labor];
 
 // Food resources (unlimited production - no output_amount_left constraint)
-export const FOOD_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish];
+const FOOD_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish];
 
 // ==================== FORMATTERS ====================
 

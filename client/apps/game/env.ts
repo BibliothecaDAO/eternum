@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getSelectedChain } from "./src/runtime/world/store";
 
-const rawEnv = import.meta.env as Record<string, string | undefined>;
+const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
 const envSchema = z.object({
   // Master account
@@ -39,6 +39,19 @@ const envSchema = z.object({
     .default("https://torii-creator.zerocredence.workers.dev/dispatch/torii"),
   VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
   VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
+  VITE_PUBLIC_REALTIME_URL: z.string().url().optional().default("http://localhost:8080"),
+  VITE_PUBLIC_ENABLE_SQL_CACHE: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+
+  // Marketplace API endpoint (added)
+  VITE_PUBLIC_MARKETPLACE_URL: z
+    .string()
+    .url()
+    .optional()
+    .default("https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii"),
 
   // Action Dispatcher
   VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),
@@ -93,9 +106,40 @@ const envSchema = z.object({
     .optional()
     .default("false"),
 
+  // Chest opening feature flag
+  VITE_PUBLIC_CHEST_OPENING_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
+
   // PostHog
   VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
   VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
+
+  // Sentry
+  VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
+  VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("1.0")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("0.1")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("1.0")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
 
   // Tracing Configuration
   VITE_TRACING_ENABLED: z
@@ -143,6 +187,3 @@ if (storedChain) {
 
 export { env };
 export const hasPublicNodeUrl = Boolean(env.VITE_PUBLIC_NODE_URL);
-
-// Type for your validated env
-export type Env = z.infer<typeof envSchema>;

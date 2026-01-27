@@ -22,14 +22,7 @@ import {
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  ContractAddress,
-  ID,
-  Resources,
-  resources,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 

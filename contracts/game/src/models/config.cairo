@@ -2,14 +2,15 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
-use crate::alias::ID;
-use crate::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
-use crate::models::position::{Coord, CoordImpl, Direction};
-use crate::utils::random::VRFImpl;
 use starknet::ContractAddress;
+use crate::alias::ID;
+use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
+use crate::models::mmr::MMRConfig;
+use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 use crate::utils::math::{PercentageImpl};
 
+use crate::utils::random::VRFImpl;
 //
 // GLOBAL CONFIGS
 //
@@ -56,6 +57,8 @@ pub struct WorldConfig {
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub victory_points_win_config: VictoryPointsWinConfig,
+    pub factory_address: ContractAddress,
+    pub mmr_config: MMRConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -184,7 +187,9 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
         assert!(self.has_ended(), "Season is not over");
 
         let now = starknet::get_block_timestamp();
-        assert!(now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is not over");
+        assert!(
+            now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is not over",
+        );
     }
 
     fn end_season(ref world: WorldStorage) {
@@ -538,7 +543,8 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
             let c = b.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
 
             // coord middle is the middle of the triangle
-            let middle = a.neighbor_after_distance(start_direction, Self::center_tile_radius())
+            let middle = a
+                .neighbor_after_distance(start_direction, Self::center_tile_radius())
                 .neighbor_after_distance(triangle_direction, Self::center_tile_radius() / 2);
 
             if self.single_realm_mode {
@@ -559,12 +565,13 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
             let c = b.neighbor_after_distance(start_direction, Self::realm_tile_radius());
 
             // coord middle is the middle of the triangle
-            let middle = a.neighbor_after_distance(triangle_direction, Self::center_tile_radius())
+            let middle = a
+                .neighbor_after_distance(triangle_direction, Self::center_tile_radius())
                 .neighbor_after_distance(start_direction, Self::center_tile_radius() / 2);
 
             if self.single_realm_mode {
                 return array![middle];
-            } else { 
+            } else {
                 return array![a, b, c];
             }
         }
@@ -658,23 +665,23 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
         now >= self.registration_start_at
     }
 
-    fn deploy_entry_token(self: BlitzRegistrationConfig, entry_token_class_hash: felt252, calldata: Span<felt252>) -> ContractAddress {
-        let deployment_salt: felt252 =  starknet::get_tx_info().unbox().transaction_hash;
-        let deployment_unique: felt252 =  1; // true
+    fn deploy_entry_token(
+        self: BlitzRegistrationConfig, entry_token_class_hash: felt252, calldata: Span<felt252>,
+    ) -> ContractAddress {
+        let deployment_salt: felt252 = starknet::get_tx_info().unbox().transaction_hash;
+        let deployment_unique: felt252 = 1; // true
         let mut deployment_calldata: Array<felt252> = array![
-                entry_token_class_hash,
-                deployment_salt,
-                deployment_unique,
-                calldata.len().into(),
+            entry_token_class_hash, deployment_salt, deployment_unique, calldata.len().into(),
         ];
         for i in 0..calldata.len() {
             deployment_calldata.append(*calldata.at(i));
         }
         let deploy_result_span = starknet::syscalls::call_contract_syscall(
-            UNIVERSAL_DEPLOYER_ADDRESS.try_into().unwrap(), 
+            UNIVERSAL_DEPLOYER_ADDRESS.try_into().unwrap(),
             0x1987cbd17808b9a23693d4de7e246a443cfe37e6e7fbaeabd7d7e6532b07c3d, // selector!("deployContract")
-            deployment_calldata.span()
-        ).unwrap();
+            deployment_calldata.span(),
+        )
+            .unwrap();
 
         // @audit could this fail and not panic?
         (*deploy_result_span.at(0)).try_into().unwrap()
@@ -682,12 +689,8 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
 
     fn setup_entry_token(self: BlitzRegistrationConfig, ipfs_cid: ByteArray) {
-        let dispatcher = ICollectibleDispatcher {contract_address: self.entry_token_address};
-        dispatcher.set_attrs_raw_to_ipfs_cid(
-            self.entry_token_attrs_raw(),
-            ipfs_cid,
-            false
-        );
+        let dispatcher = ICollectibleDispatcher { contract_address: self.entry_token_address };
+        dispatcher.set_attrs_raw_to_ipfs_cid(self.entry_token_attrs_raw(), ipfs_cid, false);
     }
 
     fn entry_token_lock_id(self: BlitzRegistrationConfig) -> felt252 {
@@ -699,19 +702,16 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 
     fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x101 // @todo @note to be changed 
+        0x201 // Blitz Rewards (s0) NFTS
     }
 
     fn collectibles_elitenft_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x101 // @todo @note to be changed 
+        0x10101 // Series 0 Elite Invite NFTs
     }
 
     fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {
-        let dispatcher = ICollectibleDispatcher {contract_address: self.entry_token_address};
-        dispatcher.lock_state_update(
-            self.entry_token_lock_id(),
-            unlock_at
-        );
+        let dispatcher = ICollectibleDispatcher { contract_address: self.entry_token_address };
+        dispatcher.lock_state_update(self.entry_token_lock_id(), unlock_at);
     }
 }
 
@@ -1045,6 +1045,14 @@ pub struct BlitzRealmPlayerRegister {
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
+pub struct BlitzPlayerRegisterList {
+    #[key]
+    pub count: u16,
+    pub player: ContractAddress,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
 pub struct BlitzEntryTokenRegister {
     #[key]
     pub token_id: u128,
@@ -1059,10 +1067,3 @@ pub struct BlitzCosmeticAttrsRegister {
     pub attrs: Span<u128>,
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzPreviousGame {
-    #[key]
-    pub config_id: ID,
-    pub last_prize_distribution_systems: ContractAddress,
-}

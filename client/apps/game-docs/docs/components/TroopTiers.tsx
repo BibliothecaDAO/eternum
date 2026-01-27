@@ -250,22 +250,20 @@ export const TroopTierDamageStats = () => {
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
                 <div style={table.tableTierCell}>
-                  <span style={table.tierBadge}>T2</span>
-                  2.5 × T1
+                  <span style={table.tierBadge}>T2</span>3 × T1
                 </div>
               </td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>250%</td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>250%</td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
             </tr>
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
                 <div style={table.tableTierCell}>
-                  <span style={table.tierBadge}>T3</span>
-                  2.8 × T2 (7 × T1)
+                  <span style={table.tierBadge}>T3</span>3 × T2 (9 × T1)
                 </div>
               </td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>700%</td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>450%</td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>900%</td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
             </tr>
           </tbody>
         </table>

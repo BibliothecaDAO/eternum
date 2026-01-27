@@ -22,7 +22,7 @@ interface GameManifestLike {
   contracts?: ContractManifest[];
 }
 
-export const buildPaymasterActions = (): PaymasterAction[] => {
+const buildPaymasterActions = (): PaymasterAction[] => {
   const chain = env.VITE_PUBLIC_CHAIN as Chain;
   const baseManifest = getGameManifest(chain) as unknown as GameManifestLike;
   const activeWorld = getActiveWorld();
@@ -30,7 +30,11 @@ export const buildPaymasterActions = (): PaymasterAction[] => {
   let manifest: GameManifestLike = baseManifest;
 
   if (activeWorld && activeWorld.contractsBySelector && activeWorld.worldAddress) {
-    manifest = patchManifestWithFactory(baseManifest, activeWorld.worldAddress, activeWorld.contractsBySelector) as unknown as GameManifestLike;
+    manifest = patchManifestWithFactory(
+      baseManifest,
+      activeWorld.worldAddress,
+      activeWorld.contractsBySelector,
+    ) as unknown as GameManifestLike;
   }
 
   const actionsMap = new Map<string, PaymasterAction>();
@@ -89,4 +93,31 @@ export const downloadPaymasterActionsJson = () => {
   link.remove();
 
   URL.revokeObjectURL(url);
+};
+
+export const getPointSystemsAddress = (): string => {
+  const chain = env.VITE_PUBLIC_CHAIN as Chain;
+  const baseManifest = getGameManifest(chain) as unknown as GameManifestLike;
+  const activeWorld = getActiveWorld();
+
+  let manifest: GameManifestLike = baseManifest;
+
+  if (activeWorld && activeWorld.contractsBySelector && activeWorld.worldAddress) {
+    manifest = patchManifestWithFactory(
+      baseManifest,
+      activeWorld.worldAddress,
+      activeWorld.contractsBySelector,
+    ) as unknown as GameManifestLike;
+  }
+
+  if (Array.isArray(manifest?.contracts)) {
+    const pointSystemsContract = manifest.contracts.find(
+      (contract) => contract?.address && (contract as any)?.tag?.includes("point_systems"),
+    );
+    if (pointSystemsContract?.address) {
+      return pointSystemsContract.address;
+    }
+  }
+
+  return "Not found";
 };

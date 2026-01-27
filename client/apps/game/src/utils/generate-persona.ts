@@ -93,7 +93,7 @@ class SeededRandom {
   selectSubset<T>(arr: T[], minCount: number = 1, maxCount?: number): T[] {
     if (arr.length === 0) return [];
     const count = this.nextInt(minCount, maxCount !== undefined ? Math.min(maxCount, arr.length) + 1 : arr.length + 1);
-    const shuffled = [...arr].sort(() => this.next() - 0.5); // Simple shuffle
+    const shuffled = arr.toSorted(() => this.next() - 0.5); // Simple shuffle
     return shuffled.slice(0, count);
   }
 

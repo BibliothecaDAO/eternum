@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { AugmentedRealm } from "@/routes/mint.lazy";
-import { Grid2X2, Grid3X3 } from "lucide-react";
+import Grid2X2 from "lucide-react/dist/esm/icons/grid-2x2";
+import Grid3X3 from "lucide-react/dist/esm/icons/grid-3x3";
 import { useState } from "react";
 import { AnimatedGrid } from "./animated-grid";
 import { RealmCard } from "./realm-card";

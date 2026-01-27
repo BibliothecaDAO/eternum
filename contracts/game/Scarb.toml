@@ -17,8 +17,9 @@ cubit = { git = "https://github.com/credence0x/cubit.git", branch = "feat/cairo-
 #budokan = { git = "https://github.com/credence0x/tournaments.git", rev="0e58edb" }
 
 [dev-dependencies]
-dojo_cairo_test = "1.8.0"
-cairo_test = "2.13.1"
+snforge_std = "0.51.2"
+assert_macros = "2.13"
+dojo_snf_test = "1.8.0"
 openzeppelin_token = "2.0.0"
 openzeppelin = "2.0.0"
 
@@ -41,6 +42,9 @@ build-external-contracts = [
 
 [tool.scarb]
 allow-prebuilt-plugins = ["dojo_cairo_macros"]
+
+[scripts]
+test = "snforge test"
 
 [tool.fmt]
 sort-module-level-items = true

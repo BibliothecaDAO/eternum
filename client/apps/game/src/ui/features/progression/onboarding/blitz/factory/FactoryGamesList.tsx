@@ -4,7 +4,8 @@ import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { getAvailabilityStatus, getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { Chain } from "@contracts";
 import { motion } from "framer-motion";
-import { RefreshCw, ServerOff } from "lucide-react";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import ServerOff from "lucide-react/dist/esm/icons/server-off";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../../../env";
 import { staggerContainer } from "../animations";
@@ -96,15 +97,15 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
     }
 
     // Sort each category
-    upcoming.sort((a, b) => (a.startMainAt ?? Infinity) - (b.startMainAt ?? Infinity));
-    ongoing.sort((a, b) => {
+    const sortedUpcoming = upcoming.toSorted((a, b) => (a.startMainAt ?? Infinity) - (b.startMainAt ?? Infinity));
+    const sortedOngoing = ongoing.toSorted((a, b) => {
       const aEnd = a.endAt && a.endAt > nowSec ? a.endAt : Infinity;
       const bEnd = b.endAt && b.endAt > nowSec ? b.endAt : Infinity;
       return aEnd - bEnd;
     });
-    ended.sort((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0));
+    const sortedEnded = ended.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0));
 
-    return { ongoing, upcoming, ended, offline };
+    return { ongoing: sortedOngoing, upcoming: sortedUpcoming, ended: sortedEnded, offline };
   };
 
   const { ongoing, upcoming, ended } = categorizeGames();
@@ -146,7 +147,13 @@ export const FactoryGamesList = ({ className = "", maxHeight = "400px" }: Factor
       <div className={`rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center ${className}`}>
         <ServerOff className="w-8 h-8 mx-auto text-red-400 mb-2" />
         <p className="text-sm text-red-300">{error}</p>
-        <Button onClick={() => void handleRefresh()} size="xs" variant="outline" className="mt-3" forceUppercase={false}>
+        <Button
+          onClick={() => void handleRefresh()}
+          size="xs"
+          variant="outline"
+          className="mt-3"
+          forceUppercase={false}
+        >
           <div className="flex items-center gap-1.5">
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Retry</span>

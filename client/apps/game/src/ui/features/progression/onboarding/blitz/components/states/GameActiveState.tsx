@@ -5,7 +5,10 @@ import { Position } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { AlertCircle, Eye, Swords, Trophy } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Eye from "lucide-react/dist/esm/icons/eye";
+import Swords from "lucide-react/dist/esm/icons/swords";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
 import { fadeInUp } from "../../animations";
 import { SettleStage } from "../../types";
 import { formatLocalDateTime } from "../../utils";
@@ -118,7 +121,7 @@ const PlayButton = ({ onClick }: { onClick: () => void }) => (
     <Button onClick={onClick} className="w-full h-14 !text-brown !bg-gold rounded-md" forceUppercase={false}>
       <div className="flex items-center justify-center gap-3">
         <Sword className="w-6 h-6 fill-brown" />
-        <span className="text-lg font-bold">Play Blitz </span>
+        <span className="text-lg font-bold">Play Blitz</span>
       </div>
     </Button>
   </motion.div>

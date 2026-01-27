@@ -93,7 +93,7 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
             return [];
           })
           .filter((event, idx, arr) => arr.findLastIndex((item) => item.timestamp === event.timestamp) === idx)
-          .sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+          .toSorted((a, b) => Number(a.timestamp) - Number(b.timestamp));
 
         const numerators = items.flatMap((i) => {
           if (i.models.pm.VaultNumeratorEvent) {
@@ -156,8 +156,12 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
     }
 
     // Sort each group by timestamp ascending for efficient "find last <= timestamp" lookups
-    for (const arr of map.values()) {
-      arr.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+    // Use toSorted for immutability then reassign to maintain map structure
+    for (const [key, arr] of map.entries()) {
+      map.set(
+        key,
+        arr.toSorted((a, b) => Number(a.timestamp) - Number(b.timestamp)),
+      );
     }
 
     return map;

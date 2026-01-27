@@ -11,8 +11,11 @@ export type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
 // Entry token status
 export type EntryTokenStatus = "idle" | "minting" | "timeout" | "error";
 
+// Registration stage for combined obtain + register flow
+export type RegistrationStage = "idle" | "obtaining-token" | "waiting-for-token" | "registering" | "done" | "error";
+
 // Blitz step for progress indicator
-export type BlitzStep = "select-game" | "obtain-token" | "register" | "settle" | "play";
+type BlitzStep = "select-game" | "obtain-token" | "register" | "settle" | "play";
 
 // Factory game type
 export interface FactoryGame {
@@ -27,7 +30,7 @@ export interface FactoryGame {
 export type FactoryGameCategory = "ongoing" | "upcoming" | "ended" | "offline";
 
 // Blitz config from the contract
-export interface BlitzRegistrationConfig {
+interface BlitzRegistrationConfig {
   registration_start_at: number;
   registration_end_at: number;
   creation_start_at: number;

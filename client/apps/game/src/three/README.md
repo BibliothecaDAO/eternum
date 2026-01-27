@@ -1,6 +1,7 @@
 # Three.js client
 
-This directory hosts the browser Three.js renderer for the Eternum game client (world map, hex view, HUD).
+This folder contains the Three.js browser renderer used by the Eternum game client, including the world map, hex view,
+and HUD.
 
 ## Quick start
 

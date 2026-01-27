@@ -1,6 +1,5 @@
 import { getContractByName } from "@dojoengine/core";
 import { type MarketFiltersParams, useMarkets } from "@pm/sdk";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, HStack, ScrollArea, VStack } from "@pm/ui";
 import { memo, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -9,24 +8,28 @@ import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import type { TokenBalance } from "@dojoengine/torii-wasm";
 
+import Panel from "@/ui/design-system/atoms/panel";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { MarketImage } from "./market-image";
-import { MarketOdds } from "./market-odds";
 import { MarketQuickStats } from "./market-quick-stats";
 import { MarketStatusBadge } from "./market-status-badge";
 import { MarketTimeline } from "./market-timeline";
+import { OddsBarChart } from "./odds-bar-chart";
 
 const PAGE_SIZE = 6;
 
 /**
  * Memoized MarketCard component to prevent unnecessary rerenders
+ * Uses Panel design system component with clear visual hierarchy
  */
 const MarketCard = memo(function MarketCard({
   market,
   allBalances,
+  animationDelay = 0,
 }: {
   market: MarketClass;
   allBalances: TokenBalance[];
+  animationDelay?: number;
 }) {
   const href = useMemo(() => {
     try {
@@ -39,46 +42,63 @@ const MarketCard = memo(function MarketCard({
 
   const isLinkable = href !== "#";
 
-  const titleContent = (
-    <HStack className="gap-3">
-      <MarketImage market={market} className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-sm" />
-      <div>{market.title || "Untitled market"}</div>
-    </HStack>
-  );
-
   return (
-    <Card className="h-full gap-3 rounded-sm border border-gold/20 bg-dark/60 p-3 transition hover:border-gold/60">
-      <CardHeader className="flex items-start justify-between gap-3 px-0">
-        <CardTitle className="flex-1">
+    <Panel
+      tone="wood"
+      padding="none"
+      radius="lg"
+      border="subtle"
+      isInteractive
+      className="group flex h-full flex-col overflow-hidden animate-fade-in-up"
+      style={{ animationDelay: `${animationDelay}ms` }}
+    >
+      {/* Header: Image + Title + Status */}
+      <div className="flex items-start gap-3 p-4 pb-3">
+        <MarketImage market={market} className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-md" />
+        <div className="min-w-0 flex-1">
           {isLinkable ? (
-            <Link className="leading-normal hover:underline" to={href}>
-              {titleContent}
+            <Link to={href} className="block">
+              <h3 className="font-cinzel text-base font-semibold leading-tight text-gold transition-colors group-hover:text-gold/80">
+                {market.title || "Untitled market"}
+              </h3>
             </Link>
           ) : (
-            titleContent
+            <h3 className="font-cinzel text-base font-semibold leading-tight text-gold">
+              {market.title || "Untitled market"}
+            </h3>
           )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3 px-0">
-        <VStack className="w-full">
-          <VStack className="w-auto items-end" />
-          <MarketQuickStats market={market} balances={allBalances} />
-        </VStack>
+          <div className="mt-2">
+            <MarketStatusBadge market={market} />
+          </div>
+        </div>
+      </div>
 
-        <ScrollArea className="h-[120px] w-full pr-2">
-          <MarketOdds market={market} selectable={false} />
-        </ScrollArea>
+      {/* Quick Stats Row */}
+      <div className="border-t border-gold/10 px-4 py-2">
+        <MarketQuickStats market={market} balances={allBalances} />
+      </div>
 
-        <CardDescription>
-          <VStack className="gap-3">
-            <HStack className="justify-center">
-              <MarketStatusBadge market={market} />
-            </HStack>
-            <MarketTimeline market={market} />
-          </VStack>
-        </CardDescription>
-      </CardContent>
-    </Card>
+      {/* Odds Bar Chart */}
+      <div className="flex-1 border-t border-gold/10 px-4 py-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gold/50">Current Odds</p>
+        <OddsBarChart market={market} maxVisible={4} animated />
+      </div>
+
+      {/* Timeline Footer */}
+      <div className="border-t border-gold/10 px-4 py-3">
+        <MarketTimeline market={market} />
+      </div>
+
+      {/* Hover Overlay - Quick Action */}
+      {isLinkable && (
+        <Link
+          to={href}
+          className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-gold/20 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
+        >
+          View Market
+        </Link>
+      )}
+    </Panel>
   );
 });
 
@@ -119,10 +139,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
       return Number.isFinite(num) ? num : 0;
     };
 
-    return markets
-      .filter(Boolean)
-      .slice()
-      .sort((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
+    return markets.filter(Boolean).toSorted((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
   }, [markets]);
 
   // Calculate pagination info
@@ -153,19 +170,25 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
       </div>
 
       {/* Markets grid */}
-      <VStack className="4xl:grid-cols-4 relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {sortedMarkets.map((market) => (
-          <MarketCard key={market.market_id?.toString() ?? Math.random()} market={market} allBalances={allBalances} />
+      <div className="4xl:grid-cols-4 relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {sortedMarkets.map((market, index) => (
+          <MarketCard
+            key={market.market_id?.toString() ?? Math.random()}
+            market={market}
+            allBalances={allBalances}
+            animationDelay={index * 50}
+          />
         ))}
-      </VStack>
+      </div>
 
       {/* Pagination controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center space-x-4 py-4">
+        <div className="flex items-center justify-center gap-3 py-4">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1 || isFetching}
-            className="rounded bg-white/5 px-3 py-1 text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Previous page"
+            className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           >
             ←
           </button>
@@ -175,7 +198,8 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
           <button
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages || isFetching}
-            className="rounded bg-white/5 px-3 py-1 text-gold transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Next page"
+            className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           >
             →
           </button>

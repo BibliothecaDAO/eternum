@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 
 /**
  * Skeleton for chart components (fixed height container to prevent layout shifts)

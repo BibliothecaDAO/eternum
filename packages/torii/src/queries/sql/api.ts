@@ -45,6 +45,7 @@ import {
 import {
   buildApiUrl,
   extractFirstOrNull,
+  fetchJsonWithErrorHandling,
   fetchWithErrorHandling,
   formatAddressForQuery,
   hexToBigInt,
@@ -76,8 +77,17 @@ type TileOptRow = {
   data: TileDataInput;
 };
 
+const buildCacheUrl = (baseUrl: string, path: string): URL => {
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return new URL(`${trimmed}${normalizedPath}`);
+};
+
 export class SqlApi {
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly cacheBaseUrl?: string,
+  ) {}
 
   /**
    * Fetches quest data by entity ID from the SQL database.
@@ -206,6 +216,20 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchGlobalStructureExplorerAndGuildDetails(): Promise<PlayersData[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/structure-explorer-details");
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        return await fetchJsonWithErrorHandling<PlayersData[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached structure explorer details",
+        );
+      } catch (error) {
+        console.warn("Cached structure explorer details fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.STRUCTURE_AND_EXPLORER_DETAILS);
     return await fetchWithErrorHandling<PlayersData>(url, "Failed to fetch structure explorer and guild details");
   }
@@ -215,6 +239,24 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchAllTiles(): Promise<Tile[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/tiles");
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        const cachedRows = await fetchJsonWithErrorHandling<TileOptRow[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached tiles",
+        );
+
+        if (Array.isArray(cachedRows)) {
+          return cachedRows.map((row) => tileDataToTile(row.data));
+        }
+      } catch (error) {
+        console.warn("Cached tiles fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const url = buildApiUrl(this.baseUrl, TILES_QUERIES.ALL_TILES);
     const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles");
     return rows.map((row) => tileDataToTile(row.data));
@@ -225,6 +267,24 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchHyperstructures(): Promise<Hyperstructure[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/hyperstructures");
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        const cachedRows = await fetchJsonWithErrorHandling<Hyperstructure[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached hyperstructures",
+        );
+
+        if (Array.isArray(cachedRows)) {
+          return cachedRows;
+        }
+      } catch (error) {
+        console.warn("Cached hyperstructures fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.HYPERSTRUCTURES);
     return await fetchWithErrorHandling<Hyperstructure>(url, "Failed to fetch hyperstructures");
   }
@@ -441,11 +501,11 @@ export class SqlApi {
 
         return {
           entityId: tile.occupier_id,
-          position: { x: tile.col, y: tile.row },
+          position: { alt: false, x: tile.col, y: tile.row },
           distance: distance,
         };
       })
-      .sort((a, b) => a.distance - b.distance);
+      .toSorted((a, b) => a.distance - b.distance);
   }
 
   /**
@@ -490,7 +550,7 @@ export class SqlApi {
           entityId: structure.entity_id,
           structureType: structure.entity_type,
           type: EntityType.STRUCTURE,
-          position: { x: structure.coord_x, y: structure.coord_y },
+          position: { alt: false, x: structure.coord_x, y: structure.coord_y },
           relics,
         };
       });
@@ -501,7 +561,7 @@ export class SqlApi {
         return {
           entityId: army.entity_id,
           type: EntityType.ARMY,
-          position: { x: army.coord_x, y: army.coord_y },
+          position: { alt: false, x: army.coord_x, y: army.coord_y },
           relics,
         };
       });
@@ -574,6 +634,22 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchStoryEvents(limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/story-events");
+        cacheUrl.searchParams.set("limit", limit.toString());
+        cacheUrl.searchParams.set("offset", offset.toString());
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        return await fetchJsonWithErrorHandling<StoryEventData[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached story events",
+        );
+      } catch (error) {
+        console.warn("Cached story events fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
     const query = STORY_QUERIES.ALL_STORY_EVENTS.replace("{limit}", limit.toString()).replace(
       "{offset}",
       offset.toString(),
@@ -671,6 +747,7 @@ export class SqlApi {
     const { registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRow } =
       await fetchLeaderboardSourceData({
         baseUrl: this.baseUrl,
+        cacheBaseUrl: this.cacheBaseUrl,
         effectiveLimit,
         defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
       });
@@ -720,6 +797,7 @@ export class SqlApi {
 
     const leaderboardSourceData = await fetchLeaderboardSourceData({
       baseUrl: this.baseUrl,
+      cacheBaseUrl: this.cacheBaseUrl,
       effectiveLimit: 0,
       defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
     });

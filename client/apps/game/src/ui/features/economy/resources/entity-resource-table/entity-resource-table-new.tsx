@@ -31,7 +31,15 @@ import {
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import clsx from "clsx";
-import { ArrowDown, ArrowLeftRight, ArrowUp, Factory, ShoppingCart, Target, Trash2, X, Zap } from "lucide-react";
+import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import ShoppingCart from "lucide-react/dist/esm/icons/shopping-cart";
+import Target from "lucide-react/dist/esm/icons/target";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import X from "lucide-react/dist/esm/icons/x";
+import Zap from "lucide-react/dist/esm/icons/zap";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ALWAYS_SHOW_RESOURCES,
@@ -177,7 +185,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           isSelected: selectedStructureId ? Number(structure.entityId) === selectedStructureId : false,
         };
       })
-      .sort((a, b) => a.entityId - b.entityId);
+      .toSorted((a, b) => a.entityId - b.entityId);
 
     // If pin is enabled and there's a selected column, move it to the front
     if (pinSelectedColumn && selectedStructureId) {

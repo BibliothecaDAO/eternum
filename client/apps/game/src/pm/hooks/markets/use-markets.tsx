@@ -231,8 +231,11 @@ export const useMarkets = ({ marketFilters, limit = 25, offset = 0 }: UseMarkets
       map.get(n.market_id)!.push(n);
     }
     // Sort each group by index
-    for (const arr of map.values()) {
-      arr.sort((a, b) => a.index - b.index);
+    for (const [marketId, arr] of map.entries()) {
+      map.set(
+        marketId,
+        arr.toSorted((a, b) => a.index - b.index),
+      );
     }
     return map;
   }, [numeratorsQuery.data]);

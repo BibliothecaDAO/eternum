@@ -93,14 +93,8 @@ const getRarityTier = (resourceName: string): string => {
 const componentStyles = {
   resourceGridStyle: {
     display: "grid",
-    gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: "1rem",
-    "@media (min-width: 768px)": {
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    },
-    "@media (min-width: 1024px)": {
-      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    },
   },
   resourceItemStyle: {
     display: "flex",
@@ -165,7 +159,7 @@ const componentStyles = {
 
 const ResourceProbability = () => {
   // Sort resources by probability (highest to lowest)
-  const sortedResources = [...resourceProbabilities].sort((a, b) => b.probability - a.probability);
+  const sortedResources = resourceProbabilities.toSorted((a, b) => b.probability - a.probability);
 
   // Get bar color based on rarity - using more distinct gold/metallic tones
   const getTierColor = (rarityTier: string) => {

@@ -3,7 +3,7 @@ import { getFactorySqlBaseUrl } from "../constants";
 import { resolveWorldAddressFromFactory } from "@/runtime/world/factory-resolver";
 import type { Chain } from "@contracts";
 
-export interface ToriiConfigPayload {
+interface ToriiConfigPayload {
   env: string;
   rpc_url: string;
   torii_namespaces: string;

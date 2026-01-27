@@ -1,5 +1,5 @@
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { ArrowLeft } from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
 import React, { useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";

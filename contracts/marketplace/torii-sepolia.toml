@@ -19,31 +19,94 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-    "erc721:0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4", 
-    "erc721:0x7740bb27e547db8cf7ed3d9995f686a85e76eb211f12a2985783bd5a7cef85a", 
-    "erc721:0x2eae33ae6098b3c046bde05bf861ea8e34507bf8c8779eeba8d175193cef5c0", 
-    "erc20:0x7468d428a5559fe2f0e40b1c9d032881267e13c1b43cc75e26abdab485c000a"
+    "erc721:0x2eae33ae6098b3c046bde05bf861ea8e34507bf8c8779eeba8d175193cef5c0",   # Realms
+    "erc721:0x7740bb27e547db8cf7ed3d9995f686a85e76eb211f12a2985783bd5a7cef85a",   # Season Pass
+    "erc721:0x3055a923ad7546302c22c7faea014179b6c0fdb7677aedd9439b2cbf6c68806",   # Loot Chests
+    "erc20:0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",    # Lords
+    "erc721:0x59b49434d129e1a7fab31ef3652f07fa5cd8ba5acaa45bb48a6aad50086b395",   # Cosmetics
+    "erc721:0x72cf9022b79b6886e72c31249afbc894b5102dbd73369ba31f180e34802db1d",   # Cosmetics Claim
+    # "erc721:...Golden Token",      # Golden Token address is not present in provided mapping
+    # "erc721:...Beasts V2.1",      # Beasts V2.1 address is not present in provided mapping
+    # "erc721:...Adventurers",      # Adventurers address is not present in provided mapping
 ]
 
 namespaces = ["marketplace"]
 
-world_block = 0
-
 [erc]
-max_metadata_tasks = 2
+max_metadata_tasks = 50  # Increase concurrent metadata tasks for better ERC token processing
+
+world_block = 664160
 
 [sql]
 all_model_indices = false
-model_indices = [
-	{ model_tag = "marketplace-MarketOrderModel", fields = ["order_id"]},
-]
 
 historical = []
-cache_size = -1_000_000 # 1024MB of cache size
-page_size = 32_768
+cache_size = -156_250_000 # 20GB of cache size - increased for better query performance
+page_size = 65_536 # 64KB pages - better for large queries
+
+# Create indexes on auxiliary tables used by marketplace queries
+# Trigger once when marketplace models are registered
+hooks = [
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_tokens_contract_address] ON tokens (contract_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_tokens_contract_token] ON tokens (contract_address, token_id)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_balances_contract_token] ON token_balances (contract_address, token_id)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_balances_contract_account] ON token_balances (contract_address, account_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_transfers_contract_to] ON token_transfers (contract_address, to_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_transfers_contract_token_from] ON token_transfers (contract_address, token_id, from_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_tb_live_by_contract] ON token_balances (contract_address, token_id, account_address) WHERE balance != '0x0000000000000000000000000000000000000000000000000000000000000000'" },
+]
+
+# Model indices for marketplace performance optimization
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order_id"]
+
+# Composite index for active orders filtering (most selective fields first)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.active", "order.collection_id", "order.owner", "order.expiration"]
+
+# Composite index optimized for price sorting within a collection
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.collection_id", "order.active", "order.price"]
+
+# Composite index optimized for active orders by collection + expiration + price (paging by price)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.collection_id", "order.active", "order.expiration", "order.price"]
+
+# Index for token lookups
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.token_id"]
+
+# Index for owner filtering
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.owner"]
+
+# Composite index for active orders with token_id (for JOIN optimization)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.active", "order.token_id"]
+
+# Composite index for expiration checks
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.expiration", "order.active"]
+
+# Indices for marketplace events (activity, totals)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderEvent"
+fields = ["market_order.collection_id", "state"]
+
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderEvent"
+fields = ["internal_executed_at"]
 
 [server]
 http_cors_origins = ["*"]
 
 [events]
-raw = false
+raw = true

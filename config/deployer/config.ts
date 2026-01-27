@@ -94,7 +94,7 @@ export class GameConfigDeployer {
     await setGameModeConfig(config);
     await this.sleepNonLocal();
 
-    await setBlitzPreviousGame(config);
+    await setFactoryAddress(config);
     await this.sleepNonLocal();
 
     await setVictoryPointsConfig(config);
@@ -971,7 +971,6 @@ export const setupGlobals = async (config: Config) => {
   console.log(chalk.green(`    ✔ Quest configured `) + chalk.gray(txQuest.statusReceipt));
 };
 
-
 export const setAgentConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
@@ -1377,48 +1376,99 @@ export const setGameModeConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Game mode configured `) + chalk.gray(gameModeTx.statusReceipt) + "\n");
 };
 
-export const setBlitzPreviousGame = async (config: Config) => {
+export const setFactoryAddress = async (config: Config) => {
   // Read previously saved address from configuration
-  const prevAddress = (config.config as any)?.prev_prize_distribution_address as string | undefined;
-  // obtain current prize_distribution_systems from the current manifest
-  let currentAddress: string | undefined = undefined;
-  try {
-    const tag = `${NAMESPACE}-prize_distribution_systems`;
-    currentAddress = getContractByName((config.config.setup as any)?.manifest, tag);
-  } catch {
-    currentAddress = undefined;
-  }
-
-  // Validate previous address exists and is different from current
-  const isNonZero = (addr?: string) => !!addr && addr !== "0x0" && addr !== "0x";
-  if (!isNonZero(prevAddress)) {
-    console.log(chalk.gray("    ↪ No previous prize_distribution_systems found; skipping blitz previous game config"));
-    return;
-  }
-  if (currentAddress && prevAddress?.toLowerCase() === currentAddress.toLowerCase()) {
-    console.log(
-      chalk.gray("    ↪ Previous prize_distribution_systems equals current; skipping blitz previous game config"),
-    );
+  const factoryAddress = (config.config as any)?.factory_address as string | undefined;
+  if (!factoryAddress) {
+    console.log(chalk.gray("    ↪ No factory_address found in config; skipping factory address setup"));
     return;
   }
 
   console.log(
     chalk.cyan(`
-  ⚡ Blitz Previous Game
+  ⚡ Factory Address
   ═════════════════════`),
   );
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Previous Prize Distribution Systems")}
-    │  ${chalk.gray("Address:")} ${chalk.white(prevAddress)}
+    ┌─ ${chalk.yellow("Factory Address")}
+    │  ${chalk.gray("Address:")} ${chalk.white(factoryAddress)}
     └────────────────────────────────`),
   );
 
-  const tx = await config.provider.set_blitz_previous_game({
+  const tx = await config.provider.set_factory_address({
     signer: config.account,
-    prev_prize_distribution_systems: prevAddress!,
+    factory_address: factoryAddress!,
   });
-  console.log(chalk.green(`\n    ✔ Blitz previous game set `) + chalk.gray(tx.statusReceipt) + "\n");
+  console.log(chalk.green(`\n    ✔ Blitz factory address set `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setMMRConfig = async (config: Config) => {
+  // Read MMR config from configuration
+  // Note: initial_mmr and min_mmr are handled by the token contract, not the game contract
+  const mmrConfig = (config.config as any)?.mmr as
+    | {
+        enabled: boolean;
+        mmr_token_address: string;
+        distribution_mean?: number;
+        spread_factor?: number;
+        max_delta?: number;
+        k_factor?: number;
+        lobby_split_weight_scaled?: number;
+        mean_regression_scaled?: number;
+        min_players?: number;
+      }
+    | undefined;
+  if (!mmrConfig) {
+    console.log(chalk.gray("    ↪ No mmr config found; skipping MMR configuration"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  🎯 MMR Configuration
+  ═════════════════════`),
+  );
+
+  // Use defaults from the spec if not provided
+  const enabled = mmrConfig.enabled ?? false;
+  const mmr_token_address = mmrConfig.mmr_token_address ?? "0x0";
+  const distribution_mean = mmrConfig.distribution_mean ?? 1500;
+  const spread_factor = mmrConfig.spread_factor ?? 450;
+  const max_delta = mmrConfig.max_delta ?? 45;
+  const k_factor = mmrConfig.k_factor ?? 50;
+  const lobby_split_weight_scaled = mmrConfig.lobby_split_weight_scaled ?? 2500;
+  const mean_regression_scaled = mmrConfig.mean_regression_scaled ?? 150;
+  const min_players = mmrConfig.min_players ?? 6;
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("MMR Parameters")}
+    │  ${chalk.gray("Enabled:")} ${chalk.white(enabled)}
+    │  ${chalk.gray("Token Address:")} ${chalk.white(shortHexAddress(mmr_token_address))}
+    │  ${chalk.gray("Distribution Mean:")} ${chalk.white(distribution_mean)}
+    │  ${chalk.gray("Spread Factor:")} ${chalk.white(spread_factor)}
+    │  ${chalk.gray("Max Delta:")} ${chalk.white(max_delta)}
+    │  ${chalk.gray("K Factor:")} ${chalk.white(k_factor)}
+    │  ${chalk.gray("Lobby Split Weight:")} ${chalk.white(lobby_split_weight_scaled / 10000)}
+    │  ${chalk.gray("Mean Regression:")} ${chalk.white(mean_regression_scaled / 10000)}
+    │  ${chalk.gray("Min Players:")} ${chalk.white(min_players)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_mmr_config({
+    signer: config.account,
+    enabled,
+    mmr_token_address,
+    distribution_mean,
+    spread_factor,
+    max_delta,
+    k_factor,
+    lobby_split_weight_scaled,
+    mean_regression_scaled,
+    min_players,
+  });
+  console.log(chalk.green(`\n    ✔ MMR configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setVictoryPointsConfig = async (config: Config) => {
@@ -1719,7 +1769,7 @@ export const createBanks = async (config: Config) => {
   const stepsFromCenter = 220;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
   for (const [_, coord] of Object.entries(distantCoordinates)) {
-    bank_coords.push({ x: coord.x, y: coord.y });
+    bank_coords.push({ alt: false, x: coord.x, y: coord.y });
   }
 
   for (let i = 0; i < config.config.banks.maxNumBanks; i++) {

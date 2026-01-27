@@ -73,11 +73,27 @@ const PLAYER_LEADERBOARD_BASE = `
               ),
               'pointsactivity', ''
             )
-          ) AS activity,
+          ) AS raw_activity,
           lower(trim(COALESCE("story.PointsRegisteredStory.points", '0'))) AS raw_points
         FROM "s1_eternum-StoryEvent"
         WHERE story = 'PointsRegisteredStory'
           AND "story.PointsRegisteredStory.owner_address" IS NOT NULL
+      ),
+      points_story_normalized AS (
+        SELECT
+          player_address,
+          raw_activity,
+          raw_points,
+          -- Map numeric indices to activity names (PointsActivity enum order)
+          CASE
+            WHEN raw_activity = '0' THEN 'exploration'
+            WHEN raw_activity = '1' THEN 'openrelicchest'
+            WHEN raw_activity = '2' THEN 'hyperstructuresharepoints'
+            WHEN raw_activity = '3' THEN 'hyperstructurebanditsdefeat'
+            WHEN raw_activity = '4' THEN 'otherstructurebanditsdefeat'
+            ELSE raw_activity
+          END AS activity
+        FROM points_story
       ),
       points_story_prepared AS (
         SELECT
@@ -96,7 +112,7 @@ const PLAYER_LEADERBOARD_BASE = `
               THEN 1
             ELSE 0
           END AS is_hex
-        FROM points_story
+        FROM points_story_normalized
         WHERE player_address <> ''
           AND activity <> ''
           AND activity IS NOT NULL

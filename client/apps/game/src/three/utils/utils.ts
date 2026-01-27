@@ -21,7 +21,7 @@ export function isAddressEqualToAccount(address: bigint): boolean {
   return BigInt(address) === BigInt(useAccountStore.getState().account?.address || "0");
 }
 
-export function loggedInAccount(): ContractAddress {
+function loggedInAccount(): ContractAddress {
   return ContractAddress(useAccountStore.getState().account?.address || "0");
 }
 
@@ -41,7 +41,7 @@ const _matrixDecomposePos = new Vector3();
 const _matrixDecomposeQuat = new Quaternion();
 const _matrixDecomposeScale = new Vector3();
 
-export const getHexagonCoordinates = (
+const getHexagonCoordinates = (
   instancedMesh: InstancedMesh,
   instanceId: number,
 ): { hexCoords: HexPosition; position: Vector3 } => {
@@ -116,7 +116,10 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   };
 };
 
-export const calculateDistanceInHexes = (start: Position, destination: Position): number | undefined => {
+export const calculateDistanceInHexes = (
+  start: Pick<Position, "x" | "y">,
+  destination: Pick<Position, "x" | "y">,
+): number | undefined => {
   const distance = calculateDistance(start, destination);
   if (distance) {
     return Math.round(distance / HEX_SIZE / 2);

@@ -9,13 +9,14 @@ pub trait IStructureSystems<T> {
 pub mod structure_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
     use crate::models::events::{Story, StoryEvent, StructureLevelUpStory};
     use crate::models::map::Tile;
-    use crate::models::map2::{TileOpt};
+    use crate::models::map2::TileOpt;
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::Coord;
     use crate::models::resource::production::building::BuildingImpl;
@@ -30,7 +31,6 @@ pub mod structure_systems {
     use crate::models::weight::Weight;
     use crate::systems::utils::map::IMapImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
-    use starknet::ContractAddress;
 
     #[abi(embed_v0)]
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {
@@ -96,7 +96,8 @@ pub mod structure_systems {
             // update structure tile
             if structure_base.category == StructureCategory::Realm.into() {
                 let structure_coord = Coord { alt: false, x: structure_base.coord_x, y: structure_base.coord_y };
-                let structure_tile_opt: TileOpt = world.read_model((structure_coord.alt, structure_coord.x, structure_coord.y));
+                let structure_tile_opt: TileOpt = world
+                    .read_model((structure_coord.alt, structure_coord.x, structure_coord.y));
                 let mut structure_tile: Tile = structure_tile_opt.into();
                 let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                     ref world, structure_id,
@@ -125,6 +126,7 @@ pub mod structure_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(structure_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

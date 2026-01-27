@@ -4,6 +4,7 @@ const STORY_EVENT_SELECT_FIELDS = `
       tx_hash,
       story,
       timestamp,
+      id as id,
       internal_event_id as event_id,
       -- RealmCreatedStory fields
       "story.RealmCreatedStory.coord.x" as realm_coord_x,
