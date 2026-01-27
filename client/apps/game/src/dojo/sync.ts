@@ -138,9 +138,7 @@ const createMainThreadQueueProcessor = (
       try {
         if (logging) console.log("Applying batch update", batchRecord);
         const deletions = entityIds.filter((id) => isDeletionPayload(batchRecord[id]));
-        const upserts = entityIds
-          .filter((id) => !isDeletionPayload(batchRecord[id]))
-          .map((id) => batchRecord[id]);
+        const upserts = entityIds.filter((id) => !isDeletionPayload(batchRecord[id])).map((id) => batchRecord[id]);
 
         applyBatch({ upserts, deletions });
       } catch (error) {
@@ -343,8 +341,7 @@ export const initialSync = async (
   entityStreamSubscription = await syncEntitiesDebounced(
     setup.network.toriiClient,
     setup,
-    // GLOBAL_STREAM_CLAUSE,
-    null,
+    GLOBAL_STREAM_CLAUSE,
     logging,
   );
 
