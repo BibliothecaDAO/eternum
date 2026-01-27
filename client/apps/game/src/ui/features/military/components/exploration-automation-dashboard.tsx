@@ -1,6 +1,10 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
 import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
-import { useExplorationAutomationStore, EXPLORATION_AUTOMATION_INTERVAL_MS, type ExplorationAutomationEntry } from "@/hooks/store/use-exploration-automation-store";
+import {
+  useExplorationAutomationStore,
+  EXPLORATION_AUTOMATION_INTERVAL_MS,
+  type ExplorationAutomationEntry,
+} from "@/hooks/store/use-exploration-automation-store";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { OSWindow, explorationAutomation } from "@/ui/features/world";
@@ -49,7 +53,7 @@ const getProgressPercent = (entry: ExplorationAutomationEntry): number => {
   if (!entry.active || !entry.nextRunAt) return 0;
   const now = Date.now();
   const nextRunAt = entry.nextRunAt;
-  const lastRunAt = entry.lastRunAt ?? (nextRunAt - EXPLORATION_AUTOMATION_INTERVAL_MS);
+  const lastRunAt = entry.lastRunAt ?? nextRunAt - EXPLORATION_AUTOMATION_INTERVAL_MS;
 
   const totalDuration = nextRunAt - lastRunAt;
   const elapsed = now - lastRunAt;
@@ -88,10 +92,7 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
     setup: { components },
   } = useDojo();
 
-  const list = useMemo(
-    () => Object.values(entries).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
-    [entries],
-  );
+  const list = useMemo(() => Object.values(entries).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [entries]);
 
   // Get explorer positions
   const [explorerPositions, setExplorerPositions] = useState<Record<string, ExplorerPosition>>({});
@@ -237,9 +238,7 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <Bot className="w-10 h-10 text-gold/30 mb-2" />
           <p className="text-gold/60 text-xs">No exploration automations configured.</p>
-          <p className="text-gold/40 text-[10px] mt-1">
-            Enable auto-explore on an explorer to see it here.
-          </p>
+          <p className="text-gold/40 text-[10px] mt-1">Enable auto-explore on an explorer to see it here.</p>
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -267,12 +266,8 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                   </div>
                   <div className="flex flex-col min-w-0 flex-1 gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-medium text-gold/90">
-                        #{entry.explorerId}
-                      </span>
-                      <span className={cn("text-[10px]", getStatusColor(entry))}>
-                        {getStatusLabel(entry)}
-                      </span>
+                      <span className="text-xs font-medium text-gold/90">#{entry.explorerId}</span>
+                      <span className={cn("text-[10px]", getStatusColor(entry))}>{getStatusLabel(entry)}</span>
                     </div>
                     {/* Progress bar for active entries */}
                     {entry.active && (
@@ -291,11 +286,7 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                         </span>
                       </div>
                     )}
-                    {!entry.active && (
-                      <span className="text-[9px] text-gold/40">
-                        Paused
-                      </span>
-                    )}
+                    {!entry.active && <span className="text-[9px] text-gold/40">Paused</span>}
                   </div>
                 </div>
 
@@ -307,9 +298,7 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                     disabled={!pos}
                     className={cn(
                       "flex items-center justify-center rounded p-1.5 transition-all",
-                      pos
-                        ? "text-gold/60 hover:bg-gold/10 hover:text-gold"
-                        : "text-gold/20 cursor-not-allowed",
+                      pos ? "text-gold/60 hover:bg-gold/10 hover:text-gold" : "text-gold/20 cursor-not-allowed",
                     )}
                     title="Go to location"
                   >
@@ -334,11 +323,7 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                     )}
                     title={entry.active ? "Pause" : "Resume"}
                   >
-                    {entry.active ? (
-                      <Square className="w-3 h-3 fill-current" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5" />
-                    )}
+                    {entry.active ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3.5 h-3.5" />}
                   </button>
                   <button
                     type="button"

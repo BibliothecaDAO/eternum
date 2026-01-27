@@ -10,7 +10,11 @@ import { memo, useEffect, useMemo, useState } from "react";
 
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
-import { DEFAULT_SCOPE_RADIUS, DEFAULT_STRATEGY_ID, useExplorationAutomationStore } from "@/hooks/store/use-exploration-automation-store";
+import {
+  DEFAULT_SCOPE_RADIUS,
+  DEFAULT_STRATEGY_ID,
+  useExplorationAutomationStore,
+} from "@/hooks/store/use-exploration-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { explorationAutomation } from "@/ui/features/world";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -185,13 +189,7 @@ export const ArmyBannerEntityDetail = memo(
 
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 
-const ExplorationAutomationCompact = ({
-  explorerId,
-  compact: _compact,
-}: {
-  explorerId: ID;
-  compact: boolean;
-}) => {
+const ExplorationAutomationCompact = ({ explorerId, compact: _compact }: { explorerId: ID; compact: boolean }) => {
   const entries = useExplorationAutomationStore((s) => s.entries);
   const addEntry = useExplorationAutomationStore((s) => s.add);
   const updateEntry = useExplorationAutomationStore((s) => s.update);
@@ -218,9 +216,9 @@ const ExplorationAutomationCompact = ({
 
   const hasChanges = Boolean(
     entry &&
-      (entry.scopeRadius !== scopeRadius ||
-        entry.strategyId !== (strategyId as typeof entry.strategyId) ||
-        entry.blockedReason),
+    (entry.scopeRadius !== scopeRadius ||
+      entry.strategyId !== (strategyId as typeof entry.strategyId) ||
+      entry.blockedReason),
   );
 
   const handleQuickEnable = () => {
@@ -364,12 +362,7 @@ const ExplorationAutomationCompact = ({
   return (
     <div className="flex flex-col gap-1.5">
       {/* Main status row */}
-      <div
-        className={cn(
-          "flex items-center gap-2 rounded-lg border px-3 py-2 transition-all",
-          getStatusColor(),
-        )}
-      >
+      <div className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 transition-all", getStatusColor())}>
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="relative">
             <Bot className="h-4 w-4 text-gold/70" />
@@ -381,9 +374,7 @@ const ExplorationAutomationCompact = ({
             <span className="text-xs font-medium text-gold/90 truncate">
               {isBlocked ? `Blocked: ${entry.blockedReason}` : "Auto-Exploring"}
             </span>
-            {lastAction && !isBlocked && (
-              <span className="text-[10px] text-gold/50 truncate">Last: {lastAction}</span>
-            )}
+            {lastAction && !isBlocked && <span className="text-[10px] text-gold/50 truncate">Last: {lastAction}</span>}
           </div>
         </div>
 
@@ -401,9 +392,7 @@ const ExplorationAutomationCompact = ({
             onClick={() => setShowSettings(!showSettings)}
             className={cn(
               "flex items-center justify-center rounded p-1.5 transition-all",
-              showSettings
-                ? "bg-gold/20 text-gold"
-                : "text-gold/40 hover:bg-gold/10 hover:text-gold/70",
+              showSettings ? "bg-gold/20 text-gold" : "text-gold/40 hover:bg-gold/10 hover:text-gold/70",
             )}
             title="Settings"
           >

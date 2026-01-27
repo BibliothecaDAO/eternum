@@ -1,5 +1,12 @@
 import { getMapFromToriiExact } from "@/dojo/queries";
-import { DEFAULT_COORD_ALT, Position, getTileAt, isTileOccupierChest, isTileOccupierQuest, isTileOccupierStructure } from "@bibliothecadao/eternum";
+import {
+  DEFAULT_COORD_ALT,
+  Position,
+  getTileAt,
+  isTileOccupierChest,
+  isTileOccupierQuest,
+  isTileOccupierStructure,
+} from "@bibliothecadao/eternum";
 import type { ClientComponents, HexEntityInfo, TileOccupier } from "@bibliothecadao/types";
 import { BiomeType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
