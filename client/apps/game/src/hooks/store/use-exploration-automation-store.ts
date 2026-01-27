@@ -132,7 +132,7 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
             }
           } else {
             // When pausing, keep the nextRunAt so we can restore it on resume
-            nextRunAt = prev.nextRunAt;
+            nextRunAt = prev.nextRunAt ?? null;
           }
           const next: ExplorationAutomationEntry = {
             ...prev,
