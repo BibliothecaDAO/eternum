@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { ExplorationStrategyId } from "@/automation/exploration/types";
 
-export const EXPLORATION_AUTOMATION_INTERVAL_MS = 30_000;
+export const EXPLORATION_AUTOMATION_INTERVAL_MS = 120_000;
 export const DEFAULT_SCOPE_RADIUS = 24;
 export const DEFAULT_STRATEGY_ID: ExplorationStrategyId = "basic-frontier";
 
