@@ -1,4 +1,8 @@
-import { CheckCircle, Circle, Clock, Hourglass, XCircle } from "lucide-react";
+import CheckCircle from "lucide-react/dist/esm/icons/check-circle";
+import Circle from "lucide-react/dist/esm/icons/circle";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Hourglass from "lucide-react/dist/esm/icons/hourglass";
+import XCircle from "lucide-react/dist/esm/icons/x-circle";
 import type { LucideIcon } from "lucide-react";
 
 import { MarketClass } from "@/pm/class";

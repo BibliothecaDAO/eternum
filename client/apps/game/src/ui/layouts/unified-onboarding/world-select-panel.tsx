@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Users from "lucide-react/dist/esm/icons/users";
 
 import { useFactoryWorlds, type FactoryWorld } from "@/hooks/use-factory-worlds";
 import { useWorldsAvailability, getAvailabilityStatus, getWorldKey } from "@/hooks/use-world-availability";
@@ -13,6 +19,11 @@ import { env } from "../../../../env";
 const normalizeFactoryChain = (chain: Chain): Chain => {
   if (chain === "slottest" || chain === "local") return "slot";
   return chain;
+};
+
+const areListsEqual = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
 };
 
 interface WorldSelectPanelProps {
@@ -82,7 +93,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
     if (offlineGames.length > 0) {
       offlineGames.forEach((n) => deleteWorldProfile(n));
       const updatedList = listWorldNames();
-      setSaved(updatedList);
+      setSaved((prev) => (areListsEqual(prev, updatedList) ? prev : updatedList));
     }
   }, [savedChecksDone, saved, savedAvailability, savedWorldRefs]);
 

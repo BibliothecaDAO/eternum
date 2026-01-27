@@ -3,7 +3,8 @@ import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle, Shield } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { useMemo } from "react";
 
 import type { GuardSummary, SelectedTroopCombo } from "./types";
@@ -33,7 +34,7 @@ export const DefenseSlotSelection = ({
 }: DefenseSlotSelectionProps) => {
   const sortedSlots = useMemo(
     () =>
-      [...availableSlots].sort(
+      availableSlots.toSorted(
         (a, b) =>
           DISPLAYED_SLOT_NUMBER_MAP[a as keyof typeof DISPLAYED_SLOT_NUMBER_MAP] -
           DISPLAYED_SLOT_NUMBER_MAP[b as keyof typeof DISPLAYED_SLOT_NUMBER_MAP],

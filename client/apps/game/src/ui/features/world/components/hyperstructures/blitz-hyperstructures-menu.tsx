@@ -18,7 +18,10 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, MERCENARIES } from "@bibliothecadao/types";
-import { Loader, MapPin, MessageCircle, Shield } from "lucide-react";
+import Loader from "lucide-react/dist/esm/icons/loader";
+import MapPin from "lucide-react/dist/esm/icons/map-pin";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { useMemo, useState } from "react";
 import { HyperstructureCard } from "./hyperstructure-card";
 import { HyperstructureList } from "./hyperstructure-list";
@@ -102,7 +105,7 @@ export const BlitzHyperstructuresMenu = () => {
       activeTab === "bandits" ? processedHyperstructures.filter((h) => h.isBanditOwned) : processedHyperstructures;
 
     // Sort by distance (closest first)
-    return filtered.sort((a, b) => a.distance - b.distance);
+    return filtered.toSorted((a, b) => a.distance - b.distance);
   }, [processedHyperstructures, activeTab]);
 
   const handleRefresh = async () => {

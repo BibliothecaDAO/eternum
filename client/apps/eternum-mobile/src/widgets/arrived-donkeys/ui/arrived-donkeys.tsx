@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardFooter, CardTitle } from "@/shared/ui/card";
-import { PackageCheck } from "lucide-react";
+import PackageCheck from "lucide-react/dist/esm/icons/package-check";
 
 interface ArrivedDonkeysProps {
   onClaim: () => void;

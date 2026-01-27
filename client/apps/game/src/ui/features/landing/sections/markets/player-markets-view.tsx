@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 
-import { ArrowUpRight, Loader2, TrendingDown, TrendingUp } from "lucide-react";
+import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import TrendingDown from "lucide-react/dist/esm/icons/trending-down";
+import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
 import { MarketStatusBadge } from "./market-status-badge";
 import { formatNumber } from "./market-tabs";
 import { TokenIcon } from "./token-icon";

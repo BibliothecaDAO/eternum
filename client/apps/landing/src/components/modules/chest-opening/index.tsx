@@ -4,7 +4,7 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { ChestAsset, getHighestRarity } from "@/utils/cosmetics";
-import { Package } from "lucide-react";
+import Package from "lucide-react/dist/esm/icons/package";
 import { useCallback, useEffect, useState } from "react";
 import { env } from "../../../../env";
 import { ChestSelectionModal } from "./chest-selection-modal";

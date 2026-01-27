@@ -6,7 +6,9 @@ import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
 import { LEVEL_DESCRIPTIONS, resources } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
-import { Check, Loader2, X } from "lucide-react";
+import Check from "lucide-react/dist/esm/icons/check";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useState } from "react";
 
 interface UpgradeDrawerProps {

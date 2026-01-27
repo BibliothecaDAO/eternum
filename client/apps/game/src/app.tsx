@@ -38,7 +38,7 @@ const LANDING_BACKGROUND_VIDEO = "/videos/menu.mp4";
 
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
-  const isMobileBlocked = !isConstructionMode && IS_MOBILE;
+  const _isMobileBlocked = !isConstructionMode && IS_MOBILE;
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
 
   useEffect(() => {

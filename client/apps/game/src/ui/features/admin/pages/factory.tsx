@@ -16,6 +16,7 @@ import {
   setFactoryAddress as setFactoryAddressConfig,
   setGameModeConfig,
   setHyperstructureConfig,
+  setMMRConfig,
   setRealmUpgradeConfig,
   setResourceBridgeFeesConfig,
   setSeasonConfig,
@@ -33,18 +34,16 @@ import {
   setupGlobals,
 } from "@config-deployer/config";
 import { getGameManifest, type Chain } from "@contracts";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  Download,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  XCircle,
-} from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import Download from "lucide-react/dist/esm/icons/download";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import XCircle from "lucide-react/dist/esm/icons/x-circle";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
@@ -324,6 +323,13 @@ export const FactoryPage = () => {
       return false;
     }
   });
+  const [mmrEnabledOn, setMmrEnabledOn] = useState<boolean>(() => {
+    try {
+      return !!ETERNUM_CONFIG()?.mmr?.enabled;
+    } catch {
+      return false;
+    }
+  });
   const [durationHours, setDurationHours] = useState<number>(() => {
     try {
       const secs = Number(ETERNUM_CONFIG()?.season?.durationSeconds || 0);
@@ -351,6 +357,7 @@ export const FactoryPage = () => {
   const [startMainAtErrors, setStartMainAtErrors] = useState<Record<string, string>>({});
   // Per-world overrides
   const [devModeOverrides, setDevModeOverrides] = useState<Record<string, boolean>>({});
+  const [mmrEnabledOverrides, setMmrEnabledOverrides] = useState<Record<string, boolean>>({});
   const [durationHoursOverrides, setDurationHoursOverrides] = useState<Record<string, number>>({});
   const [durationMinutesOverrides, setDurationMinutesOverrides] = useState<Record<string, number>>({});
   const [blitzFeeAmountOverrides, setBlitzFeeAmountOverrides] = useState<Record<string, string>>({});
@@ -1400,6 +1407,30 @@ export const FactoryPage = () => {
                                             </div>
                                             <p className="text-[10px] text-slate-500">Controls in-game dev features.</p>
                                           </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">MMR System</label>
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                id={`mmr-enabled-${name}`}
+                                                type="checkbox"
+                                                checked={
+                                                  Object.prototype.hasOwnProperty.call(mmrEnabledOverrides, name)
+                                                    ? !!mmrEnabledOverrides[name]
+                                                    : mmrEnabledOn
+                                                }
+                                                onChange={(e) =>
+                                                  setMmrEnabledOverrides((p) => ({ ...p, [name]: e.target.checked }))
+                                                }
+                                                className="h-4 w-4 accent-blue-600"
+                                              />
+                                              <label htmlFor={`mmr-enabled-${name}`} className="text-xs text-slate-700">
+                                                Enable MMR tracking for this world
+                                              </label>
+                                            </div>
+                                            <p className="text-[10px] text-slate-500">
+                                              Tracks player skill ratings across Blitz games.
+                                            </p>
+                                          </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1595,7 +1626,7 @@ export const FactoryPage = () => {
                                                   profile.worldAddress,
                                                   profile.contractsBySelector,
                                                 );
-                                                let localProvider: any = new EternumProvider(
+                                                const localProvider: any = new EternumProvider(
                                                   patched,
                                                   env.VITE_PUBLIC_NODE_URL,
                                                   env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
@@ -1704,6 +1735,14 @@ export const FactoryPage = () => {
                                                   ? !!singleRealmModeOverrides[name]
                                                   : !!eternumConfig.settlement?.single_realm_mode;
 
+                                                // Apply MMR enabled override if provided
+                                                const selectedMmrEnabled = Object.prototype.hasOwnProperty.call(
+                                                  mmrEnabledOverrides,
+                                                  name,
+                                                )
+                                                  ? !!mmrEnabledOverrides[name]
+                                                  : mmrEnabledOn;
+
                                                 const configForWorld = {
                                                   ...eternumConfig,
                                                   factory_address: factoryAddressOverride,
@@ -1736,6 +1775,10 @@ export const FactoryPage = () => {
                                                     ...eternumConfig.settlement,
                                                     single_realm_mode: selectedSingleRealmMode,
                                                   },
+                                                  mmr: {
+                                                    ...eternumConfig.mmr,
+                                                    enabled: selectedMmrEnabled,
+                                                  },
                                                 } as any;
 
                                                 const ctx = {
@@ -1748,6 +1791,7 @@ export const FactoryPage = () => {
                                                 await setVRFConfig(ctx);
                                                 await setGameModeConfig(ctx);
                                                 await setFactoryAddressConfig(ctx);
+                                                await setMMRConfig(ctx);
                                                 await setVictoryPointsConfig(ctx);
                                                 await setDiscoverableVillageSpawnResourcesConfig(ctx);
                                                 await setBlitzRegistrationConfig(ctx);

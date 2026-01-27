@@ -6,7 +6,7 @@ import { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { formatUnits } from "@/pm/utils";
 import { Card, CardContent, CardHeader, CardTitle, HStack } from "@pm/ui";
-import { ChevronDown } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 
 const settingsQuery = new ToriiQueryBuilder()
   .addEntityModel("pm-CoreSettings")

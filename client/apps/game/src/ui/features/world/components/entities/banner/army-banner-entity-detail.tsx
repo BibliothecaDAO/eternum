@@ -1,4 +1,11 @@
-import { Bot, ChevronDown, ChevronUp, LayoutDashboard, Loader, Settings, Square, Trash2 } from "lucide-react";
+import Bot from "lucide-react/dist/esm/icons/bot";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import LayoutDashboard from "lucide-react/dist/esm/icons/layout-dashboard";
+import Loader from "lucide-react/dist/esm/icons/loader";
+import Settings from "lucide-react/dist/esm/icons/settings";
+import Square from "lucide-react/dist/esm/icons/square";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { memo, useEffect, useMemo, useState } from "react";
 
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";

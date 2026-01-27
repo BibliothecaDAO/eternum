@@ -98,7 +98,7 @@ const aggregateRelics = (playerRelics: PlayerRelicsData | null): AggregatedRelic
   playerRelics.structures?.forEach((structure) => appendEntityRelics(structure, RelicRecipientType.Structure));
   playerRelics.armies?.forEach((army) => appendEntityRelics(army, RelicRecipientType.Explorer));
 
-  return Array.from(relicMap.values()).sort((a, b) => b.amount - a.amount);
+  return Array.from(relicMap.values()).toSorted((a, b) => b.amount - a.amount);
 };
 
 const RelicGrid = ({ relics, gridClass, iconSize, onRelicClick }: RelicGridProps) => (

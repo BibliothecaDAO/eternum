@@ -889,7 +889,7 @@ export class ArmyManager {
     }
     return templates
       .map((template) => `${template.id}:${template.slot ?? ""}`)
-      .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0))
+      .toSorted((a, b) => (a > b ? 1 : a < b ? -1 : 0))
       .join("|");
   }
 
@@ -990,8 +990,10 @@ export class ArmyManager {
 
     // Recompute after async work to capture any armies added during preload
     visibleArmies = computeVisibleArmies();
-    visibleArmies.sort((a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId));
-    ({ modelTypesByEntity } = this.collectModelInfo(visibleArmies));
+    const sortedVisibleArmies = visibleArmies.toSorted(
+      (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
+    );
+    ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
 
     let buffersDirty = false;
 
@@ -999,7 +1001,7 @@ export class ArmyManager {
     const desiredIds = new Set(desiredOrder);
     const toRemove = this.visibleArmyOrder
       .filter((entityId) => !desiredIds.has(entityId))
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const aNum = this.toNumericId(a);
         const bNum = this.toNumericId(b);
         return aNum - bNum;

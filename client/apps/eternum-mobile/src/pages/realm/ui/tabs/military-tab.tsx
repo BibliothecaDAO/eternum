@@ -14,7 +14,11 @@ import { useDojo } from "@bibliothecadao/react";
 
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { AlertTriangle, Eye, Shield, Swords, Users } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Eye from "lucide-react/dist/esm/icons/eye";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Swords from "lucide-react/dist/esm/icons/swords";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useMemo, useState } from "react";
 
 export interface MilitaryTabProps {
@@ -100,7 +104,7 @@ export function MilitaryTab({}: MilitaryTabProps) {
     }
   };
 
-  const sortedArmies = armies.sort((a, b) => a.distance - b.distance);
+  const sortedArmies = armies.toSorted((a, b) => a.distance - b.distance);
 
   const handleCreateArmy = (type: "explorer" | "defense") => {
     setArmyCreationType(type);

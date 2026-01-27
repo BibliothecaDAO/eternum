@@ -83,7 +83,7 @@ export const usePlayerRanks = ({
             };
           })
           .filter((row): row is PlayerRankEntry => Boolean(row))
-          .sort((a, b) => a.rank - b.rank);
+          .toSorted((a, b) => a.rank - b.rank);
 
         if (!cancelled) {
           setRanks(parsedRanks);

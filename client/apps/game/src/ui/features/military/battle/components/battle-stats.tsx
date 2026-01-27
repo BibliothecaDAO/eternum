@@ -1,4 +1,6 @@
-import { Skull, Target, Trophy } from "lucide-react";
+import Skull from "lucide-react/dist/esm/icons/skull";
+import Target from "lucide-react/dist/esm/icons/target";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
 import { CooldownIndicator } from "./cooldown-indicator";
 
 interface BattleStatsProps {

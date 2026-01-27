@@ -34,7 +34,11 @@ import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-struc
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
 import { TileManager } from "@bibliothecadao/eternum";
-import { CircleHelp, Info, Map as MapIcon, Trash2, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
+import CircleHelp from "lucide-react/dist/esm/icons/circle-help";
+import Info from "lucide-react/dist/esm/icons/info";
+import MapIcon from "lucide-react/dist/esm/icons/map";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";

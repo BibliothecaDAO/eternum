@@ -99,18 +99,19 @@ export const TransactionList = ({ maxRecentTransactions = 10 }: TransactionListP
     }
 
     // Sort stuck by how long they've been waiting (longest first)
-    stuck.sort((a, b) => a.submittedAt - b.submittedAt);
+    const sortedStuck = stuck.toSorted((a, b) => a.submittedAt - b.submittedAt);
 
     // Sort pending by most recent first
-    pending.sort((a, b) => b.submittedAt - a.submittedAt);
+    const sortedPending = pending.toSorted((a, b) => b.submittedAt - a.submittedAt);
 
     // Sort completed by most recent first, limit to maxRecentTransactions
-    completed.sort((a, b) => (b.confirmedAt ?? b.submittedAt) - (a.confirmedAt ?? a.submittedAt));
-    const recent = completed.slice(0, maxRecentTransactions);
+    const recent = completed
+      .toSorted((a, b) => (b.confirmedAt ?? b.submittedAt) - (a.confirmedAt ?? a.submittedAt))
+      .slice(0, maxRecentTransactions);
 
     return {
-      pendingTxs: pending,
-      stuckTxs: stuck,
+      pendingTxs: sortedPending,
+      stuckTxs: sortedStuck,
       recentTxs: recent,
       stuckHashes: stuckHashSet,
     };

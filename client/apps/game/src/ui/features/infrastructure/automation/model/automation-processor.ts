@@ -203,7 +203,7 @@ export const buildRealmProductionPlan = ({
 
   const resourceDefinitions = Array.from(resourceIdsToProcess)
     .filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))
-    .sort((a, b) => a - b)
+    .toSorted((a, b) => a - b)
     .map((resourceId) => {
       const customPercentages = realmConfig.customPercentages?.[resourceId];
       const presetPercentages = presetAllocations.get(resourceId);

@@ -81,8 +81,7 @@ const normalizePresencePayload = (presence: PlayerPresence): PlayerPresence => (
 
 const createFallbackThread = (message: DirectMessage): DirectMessageThread => {
   const createdAt = toIsoTimestamp(message.createdAt as string | Date | undefined);
-  const participants = [message.senderId, message.recipientId] as [string, string];
-  participants.sort();
+  const participants = [message.senderId, message.recipientId].toSorted() as [string, string];
   return {
     id: message.threadId,
     participants,
@@ -163,7 +162,7 @@ const mapDirectThreadRecord = (record: any): DirectMessageThread => {
     throw new Error("Unable to resolve thread participants");
   }
 
-  const sortedParticipants = [...participants].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
+  const sortedParticipants = participants.toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
 
   const createdAt = toIsoTimestamp(record.createdAt ?? record.lastMessageAt ?? new Date().toISOString());
   const updatedAtValue = record.updatedAt ?? record.lastMessageAt ?? null;
@@ -438,7 +437,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         return existingAliasThread[0];
       }
 
-      const participants = [selfId, participantId].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
+      const participants = [selfId, participantId].toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
       const threadId = `${participants[0]}|${participants[1]}`;
       const existingThread = dmThreads[threadId];
 
@@ -911,11 +910,11 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         }
 
         const data = await response.json();
-        const incoming = Array.isArray(data?.messages)
+        const incomingUnsorted = Array.isArray(data?.messages)
           ? (data.messages as any[]).map((record) => mapWorldChatRecordToMessage(record, zoneId))
           : [];
 
-        incoming.sort((a, b) => {
+        const incoming = incomingUnsorted.toSorted((a, b) => {
           const aTime = new Date(a.createdAt as string).getTime();
           const bTime = new Date(b.createdAt as string).getTime();
           return aTime - bTime;
@@ -1020,11 +1019,11 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         }
 
         const data = await response.json();
-        const incoming = Array.isArray(data?.messages)
+        const incomingUnsorted = Array.isArray(data?.messages)
           ? (data.messages as any[]).map((record) => mapDirectMessageRecord(record))
           : [];
 
-        incoming.sort((a, b) => {
+        const incoming = incomingUnsorted.toSorted((a, b) => {
           const aTime = new Date(a.createdAt as string).getTime();
           const bTime = new Date(b.createdAt as string).getTime();
           return aTime - bTime;
@@ -1056,7 +1055,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           const existingMessages = threadState.messages;
           const existingIds = new Set(existingMessages.map((msg) => msg.id));
           const dedupedIncoming = incoming.filter((msg) => !existingIds.has(msg.id));
-          const combined = [...dedupedIncoming, ...existingMessages].sort(
+          const combined = [...dedupedIncoming, ...existingMessages].toSorted(
             (a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime(),
           );
 

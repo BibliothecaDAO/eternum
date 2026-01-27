@@ -138,6 +138,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     // Blitz prize models (single key)
     "s1_eternum-PlayersRankTrial",
     "s1_eternum-PlayersRankFinal",
+    "s1_eternum-MMRGameMeta",
   ];
 
   const twoKeyConfigModels = [
@@ -373,7 +374,7 @@ export const getEntitiesFromTorii = async <S extends Schema>(
           },
         };
 
-  return getEntities(client, query, components as any, [], entityModels, 40_000, true);
+  return getEntities(client, query, components as any, [], entityModels, 40_000, false);
 };
 
 export const getMarketFromTorii = async <S extends Schema>(

@@ -139,10 +139,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
       return Number.isFinite(num) ? num : 0;
     };
 
-    return markets
-      .filter(Boolean)
-      .slice()
-      .sort((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
+    return markets.filter(Boolean).toSorted((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
   }, [markets]);
 
   // Calculate pagination info

@@ -8,7 +8,7 @@ import { battleSimulation } from "@/ui/features/world/components/config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
-import { CrosshairIcon } from "lucide-react";
+import CrosshairIcon from "lucide-react/dist/esm/icons/crosshair";
 
 const unoccupiedTileTroopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
 
@@ -83,7 +83,7 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
             styles,
           };
         })
-        .sort((a, b) => a.bonus - b.bonus),
+        .toSorted((a, b) => a.bonus - b.bonus),
     [biome],
   );
 

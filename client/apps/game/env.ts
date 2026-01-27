@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getSelectedChain } from "./src/runtime/world/store";
 
-const rawEnv = import.meta.env as Record<string, string | undefined>;
+const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
 const envSchema = z.object({
   // Master account
@@ -117,6 +117,30 @@ const envSchema = z.object({
   VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
   VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
 
+  // Sentry
+  VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
+  VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("1.0")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("0.1")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("1.0")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+
   // Tracing Configuration
   VITE_TRACING_ENABLED: z
     .string()
@@ -163,6 +187,3 @@ if (storedChain) {
 
 export { env };
 export const hasPublicNodeUrl = Boolean(env.VITE_PUBLIC_NODE_URL);
-
-// Type for your validated env
-type Env = z.infer<typeof envSchema>;

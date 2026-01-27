@@ -25,7 +25,12 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Castle, Crown, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import Crown from "lucide-react/dist/esm/icons/crown";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Star from "lucide-react/dist/esm/icons/star";
+import Tent from "lucide-react/dist/esm/icons/tent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -259,8 +264,10 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     }
 
-    eligible.sort((a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0));
-    return eligible;
+    const sortedEligible = eligible.toSorted(
+      (a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0),
+    );
+    return sortedEligible;
   }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
   const selectedSource = useMemo(() => {
@@ -314,7 +321,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           }
           return norm(name).includes(norm(q));
         });
-    return [...searched].sort((a, b) => {
+    return searched.toSorted((a, b) => {
       const aFav = favoriteDestinationIds.has(Number(a.entityId));
       const bFav = favoriteDestinationIds.has(Number(b.entityId));
       if (aFav && !bFav) return -1;
@@ -438,7 +445,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
         return true;
       })
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const ra = a as ResourcesIds;
         const rb = b as ResourcesIds;
         const priA = getResourcePriority(ra);

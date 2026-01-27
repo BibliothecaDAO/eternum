@@ -498,12 +498,12 @@ export const useAutomation = () => {
       .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
       .map(([realmId, realm]) => {
         const customKeys = Object.keys(realm.customPercentages ?? {})
-          .sort()
+          .toSorted()
           .join(",");
         const presetId = realm.presetId ?? "smart";
         return `${realmId}:${presetId}:${customKeys}`;
       })
-      .sort()
+      .toSorted()
       .join("|");
 
     if (signature !== realmResourcesSignatureRef.current) {

@@ -1,6 +1,6 @@
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { MergedNftData } from "@/types";
-import { Crown } from "lucide-react";
+import Crown from "lucide-react/dist/esm/icons/crown";
 import { AnimatedGrid } from "./animated-grid";
 import { TokenCard } from "./token-card";
 

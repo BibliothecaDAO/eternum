@@ -211,8 +211,8 @@ const useRealtimeRecentMessages = (limit = 10): DirectMessage[] => {
   return useMemo(() => {
     const messages = Object.values(dmThreads).flatMap(({ messages }) => messages);
 
-    return [...messages]
-      .sort((a, b) => {
+    return messages
+      .toSorted((a, b) => {
         const aTime = toTimestamp(a.createdAt as string | Date | undefined);
         const bTime = toTimestamp(b.createdAt as string | Date | undefined);
         return bTime - aTime;

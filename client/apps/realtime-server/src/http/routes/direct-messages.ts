@@ -381,7 +381,7 @@ export function buildThreadId(playerA: string, playerB: string): string {
 }
 
 export function sortParticipants(playerA: string, playerB: string): [string, string] {
-  return [playerA, playerB].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
+  return [playerA, playerB].toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
 }
 
 export default directMessageRoutes;

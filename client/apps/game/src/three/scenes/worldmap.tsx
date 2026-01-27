@@ -2690,7 +2690,7 @@ export default class WorldmapScene extends HexagonScene {
       fetchStructures,
     });
 
-    this.prefetchQueue.sort((a, b) => a.priority - b.priority);
+    this.prefetchQueue = this.prefetchQueue.toSorted((a, b) => a.priority - b.priority);
     this.processPrefetchQueue();
   }
 

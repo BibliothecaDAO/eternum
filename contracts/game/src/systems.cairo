@@ -98,6 +98,7 @@ pub mod utils {
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
+    pub mod mmr;
     pub mod prize;
     pub mod realm;
     pub mod relic;
@@ -108,10 +109,10 @@ pub mod utils {
     pub mod village;
 }
 
-pub mod quest {
-    pub mod constants;
-    pub mod contracts;
-}
+// pub mod quest {
+//     pub mod constants;
+//     pub mod contracts;
+// }
 
 pub mod prize_distribution {
     pub mod contracts;
@@ -123,4 +124,12 @@ pub mod points {
 
 pub mod relic {
     pub mod contracts;
+}
+
+pub mod mmr {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests {
+        mod test_mmr_systems;
+    }
 }

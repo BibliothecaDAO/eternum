@@ -16,6 +16,7 @@ import { LeftCommandSidebar } from "../features/world/containers/left-command-si
 import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
 import { CombatSimulation } from "../modules/simulation/combat-simulation";
+import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { StoreManagers } from "../store-managers";
 import { PlayOverlayManager } from "./play-overlay-manager";
@@ -63,6 +64,7 @@ const BackgroundSystems = () => (
   <>
     <StoreManagers />
     <StructureSynchronizer />
+    <BlockTimestampPoller />
     <ChainTimePoller />
     <NotLoggedInMessage />
     <EndgameModal />

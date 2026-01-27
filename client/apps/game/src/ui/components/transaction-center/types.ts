@@ -756,7 +756,7 @@ export const getTxShortLabel = (type: TransactionType): string => {
 export const formatBatchSummary = (batchDetails: BatchedTransactionDetail[], maxItems: number = 3): string => {
   if (!batchDetails || batchDetails.length === 0) return "";
 
-  const sortedDetails = [...batchDetails].sort((a, b) => b.count - a.count);
+  const sortedDetails = batchDetails.toSorted((a, b) => b.count - a.count);
   const displayItems = sortedDetails.slice(0, maxItems);
   const remaining = sortedDetails.slice(maxItems).reduce((sum, d) => sum + d.count, 0);
 
