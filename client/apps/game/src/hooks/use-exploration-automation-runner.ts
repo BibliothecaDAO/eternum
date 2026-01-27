@@ -40,6 +40,9 @@ const isExplorerOwnedByAccount = (
   return ContractAddress(structure.owner) === ContractAddress(accountAddress);
 };
 
+const getPathStaminaCost = (path: { staminaCost?: number }[]): number =>
+  path.reduce((total, step) => total + (step.staminaCost ?? 0), 0);
+
 export const useExplorationAutomationRunner = () => {
   const {
     setup: { components, systemCalls, network },
@@ -253,7 +256,8 @@ export const useExplorationAutomationRunner = () => {
               continue;
             }
 
-            const isExplored = ActionPaths.getActionType(selection.path) === ActionType.Move;
+            const actionType = ActionPaths.getActionType(selection.path);
+            const isExplored = actionType === ActionType.Move;
             await manager.moveArmy(
               account as Account | AccountInterface,
               selection.path,
@@ -261,13 +265,22 @@ export const useExplorationAutomationRunner = () => {
               currentArmiesTick,
             );
 
+            const pathStaminaCost = getPathStaminaCost(selection.path);
+            const effectiveCost =
+              pathStaminaCost > 0 || actionType !== ActionType.Explore ? pathStaminaCost : exploreStaminaCost;
+            const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);
+            const shouldRepeat = actionType === ActionType.Explore && remainingStamina >= exploreStaminaCost;
+
             update(entry.id, {
               lastRunAt: nowMs,
               lastAction: selection.reason,
               blockedReason: null,
               lastError: null,
+              ...(shouldRepeat ? { nextRunAt: nowMs } : {}),
             });
-            scheduleNext(entry.id, nowMs);
+            if (!shouldRepeat) {
+              scheduleNext(entry.id, nowMs);
+            }
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             update(entry.id, {
