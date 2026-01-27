@@ -266,11 +266,14 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                       </span>
                     </div>
                     {/* Progress bar for active entries */}
-                    {entry.active && !entry.blockedReason && (
+                    {entry.active && (
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 rounded-full bg-black/40 overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-emerald-400 transition-all duration-1000"
+                            className={cn(
+                              "h-full rounded-full transition-all duration-1000",
+                              entry.blockedReason ? "bg-amber-400" : "bg-emerald-400",
+                            )}
                             style={{ width: `${getProgressPercent(entry)}%` }}
                           />
                         </div>
@@ -278,12 +281,6 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                           {getSecondsRemaining(entry)}s
                         </span>
                       </div>
-                    )}
-                    {/* Show blocked reason or paused state */}
-                    {entry.active && entry.blockedReason && (
-                      <span className="text-[9px] text-amber-400/70 truncate">
-                        Waiting...
-                      </span>
                     )}
                     {!entry.active && (
                       <span className="text-[9px] text-gold/40">
