@@ -1,16 +1,15 @@
-import { Loader, Trash2 } from "lucide-react";
+import { Bot, ChevronDown, ChevronUp, Loader, Settings, Square, Trash2 } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { DEFAULT_SCOPE_RADIUS, DEFAULT_STRATEGY_ID, useExplorationAutomationStore } from "@/hooks/store/use-exploration-automation-store";
-import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { EXPLORATION_STRATEGIES } from "@/automation/exploration";
-import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../../armies/army-warning";
 import { CompactEntityInventory } from "../compact-entity-inventory";
@@ -179,7 +178,7 @@ ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 
 const ExplorationAutomationCompact = ({
   explorerId,
-  compact,
+  compact: _compact,
 }: {
   explorerId: ID;
   compact: boolean;
@@ -194,6 +193,7 @@ const ExplorationAutomationCompact = ({
     [entries, explorerId],
   );
 
+  const [showSettings, setShowSettings] = useState(false);
   const [scopeRadius, setScopeRadius] = useState<number>(entry?.scopeRadius ?? DEFAULT_SCOPE_RADIUS);
   const [strategyId, setStrategyId] = useState<string>(entry?.strategyId ?? DEFAULT_STRATEGY_ID);
 
@@ -209,7 +209,20 @@ const ExplorationAutomationCompact = ({
         entry.blockedReason),
   );
 
-  const handleEnable = () => {
+  const handleQuickEnable = () => {
+    if (!entry) {
+      addEntry({
+        explorerId: String(explorerId),
+        scopeRadius: DEFAULT_SCOPE_RADIUS,
+        strategyId: DEFAULT_STRATEGY_ID,
+        active: true,
+      });
+    } else if (!entry.active) {
+      toggleActive(entry.id, true);
+    }
+  };
+
+  const handleSaveSettings = () => {
     if (entry) {
       updateEntry(entry.id, { scopeRadius, strategyId: strategyId as typeof entry.strategyId, blockedReason: null });
       if (!entry.active) {
@@ -223,104 +236,224 @@ const ExplorationAutomationCompact = ({
         active: true,
       });
     }
+    setShowSettings(false);
   };
 
-  const handleDisable = () => {
+  const handleStop = () => {
     if (!entry) return;
     toggleActive(entry.id, false);
   };
 
-  const statusLabel = entry ? (entry.active ? "Active" : "Paused") : "Not configured";
-  const inputClass = compact ? "h-8 text-sm" : "h-9";
-  const labelClass = compact ? "text-xxs" : "text-xs";
-  const debugEnabled =
-    typeof window !== "undefined" && window.localStorage.getItem("debugExplorationAutomation") === "true";
-  const [chainNowMs, setChainNowMs] = useState(() => getBlockTimestamp().currentBlockTimestamp * 1000);
-  const formatTimestamp = (value?: number | null) => {
-    if (!value) return "never";
-    try {
-      return new Date(value).toLocaleTimeString();
-    } catch {
-      return String(value);
+  const isActive = entry?.active ?? false;
+  const isBlocked = Boolean(entry?.blockedReason);
+  const lastAction = entry?.lastAction;
+
+  // Time formatting
+  const formatRelativeTime = (timestamp?: number | null) => {
+    if (!timestamp) return "never";
+    const now = Date.now();
+    const diff = timestamp - now;
+    const absDiff = Math.abs(diff);
+
+    if (absDiff < 1000) return "now";
+
+    const seconds = Math.floor(absDiff / 1000);
+    if (seconds < 60) {
+      return diff > 0 ? `in ${seconds}s` : `${seconds}s ago`;
     }
-  };
-  const formatDelta = (value?: number | null) => {
-    if (!value) return "";
-    const deltaSeconds = Math.round((value - chainNowMs) / 1000);
-    if (!Number.isFinite(deltaSeconds)) return "";
-    const sign = deltaSeconds >= 0 ? "+" : "";
-    return `${sign}${deltaSeconds}s`;
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return diff > 0 ? `in ${minutes}m` : `${minutes}m ago`;
+    }
+
+    return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  useEffect(() => {
-    if (!debugEnabled) return;
-    const intervalId = window.setInterval(() => {
-      setChainNowMs(getBlockTimestamp().currentBlockTimestamp * 1000);
-    }, 1000);
-    return () => window.clearInterval(intervalId);
-  }, [debugEnabled]);
+  // Status indicator styles
+  const getStatusColor = () => {
+    if (!entry) return "bg-gold/20 border-gold/30";
+    if (!isActive) return "bg-gold/10 border-gold/20";
+    if (isBlocked) return "bg-amber-500/20 border-amber-500/40";
+    return "bg-emerald-500/20 border-emerald-500/40";
+  };
 
-  return (
-    <div className="flex flex-col gap-2 rounded-lg border border-gold/20 bg-black/30 p-2">
-      <div className={`${labelClass} uppercase tracking-[0.25em] text-gold/60`}>Exploration Automation</div>
+  const getStatusDot = () => {
+    if (!entry || !isActive) return null;
+    if (isBlocked) return "bg-amber-400";
+    return "bg-emerald-400 animate-pulse";
+  };
+
+  // Inactive state - show simple enable button
+  if (!entry || !isActive) {
+    return (
       <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-1">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/50">Scope Radius</span>
-          <NumberInput value={scopeRadius} onChange={setScopeRadius} min={1} className={inputClass} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/50">Strategy</span>
-          <Select value={strategyId} onValueChange={setStrategyId}>
-            <SelectTrigger className={inputClass}>
-              <SelectValue placeholder="Select strategy" />
-            </SelectTrigger>
-            <SelectContent>
-              {EXPLORATION_STRATEGIES.map((strategy) => (
-                <SelectItem key={strategy.id} value={strategy.id}>
-                  {strategy.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
+        <div className="flex items-center gap-2">
+          <button
             type="button"
-            onClick={handleEnable}
-            disabled={entry?.active && !hasChanges}
-            variant="outline"
-            size={compact ? "xs" : "md"}
+            onClick={handleQuickEnable}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
+              "border-gold/30 bg-gold/5 text-gold/80 hover:bg-gold/15 hover:border-gold/50 hover:text-gold",
+            )}
           >
-            {entry?.active ? "Update" : "Enable"}
-          </Button>
-          {entry ? (
-            <Button
-              type="button"
-              onClick={handleDisable}
-              disabled={!entry.active}
-              variant="danger"
-              size={compact ? "xs" : "md"}
-            >
-              Disable
-            </Button>
-          ) : null}
-          <span className="text-xxs text-gold/60 uppercase tracking-[0.25em]">{statusLabel}</span>
+            <Bot className="h-3.5 w-3.5" />
+            <span>Enable Auto-Explore</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSettings(!showSettings)}
+            className={cn(
+              "flex items-center justify-center rounded-lg border p-2 transition-all",
+              "border-gold/20 bg-black/20 text-gold/50 hover:bg-gold/10 hover:text-gold/80",
+            )}
+            title="Settings"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </button>
         </div>
-        {entry?.blockedReason ? (
-          <div className="text-xxs text-warning uppercase tracking-[0.25em]">Blocked: {entry.blockedReason}</div>
-        ) : null}
-        {debugEnabled && entry ? (
-          <div className="text-xxs text-gold/60 uppercase tracking-[0.2em]">
-            <div>Last run: {formatTimestamp(entry.lastRunAt)}</div>
-            <div>Next run: {formatTimestamp(entry.nextRunAt)} {formatDelta(entry.nextRunAt)}</div>
-            {entry.lastAction ? <div>Last action: {entry.lastAction}</div> : null}
-            {entry.lastError ? <div>Error: {entry.lastError}</div> : null}
+
+        {/* Expandable settings */}
+        {showSettings && (
+          <div className="flex flex-col gap-2 rounded-lg border border-gold/10 bg-black/40 p-2 animate-in slide-in-from-top-2 duration-200">
+            <SettingsPanel
+              scopeRadius={scopeRadius}
+              setScopeRadius={setScopeRadius}
+              strategyId={strategyId}
+              setStrategyId={setStrategyId}
+            />
+            <button
+              type="button"
+              onClick={handleSaveSettings}
+              className="w-full rounded border border-gold/30 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold/90 transition hover:bg-gold/20"
+            >
+              Save & Enable
+            </button>
           </div>
-        ) : null}
+        )}
       </div>
+    );
+  }
+
+  // Active state - show compact status with controls
+  return (
+    <div className="flex flex-col gap-1.5">
+      {/* Main status row */}
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-lg border px-3 py-2 transition-all",
+          getStatusColor(),
+        )}
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="relative">
+            <Bot className="h-4 w-4 text-gold/70" />
+            {getStatusDot() && (
+              <span className={cn("absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full", getStatusDot())} />
+            )}
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-medium text-gold/90 truncate">
+              {isBlocked ? `Blocked: ${entry.blockedReason}` : "Auto-Exploring"}
+            </span>
+            {lastAction && !isBlocked && (
+              <span className="text-[10px] text-gold/50 truncate">Last: {lastAction}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setShowSettings(!showSettings)}
+            className={cn(
+              "flex items-center justify-center rounded p-1.5 transition-all",
+              showSettings
+                ? "bg-gold/20 text-gold"
+                : "text-gold/40 hover:bg-gold/10 hover:text-gold/70",
+            )}
+            title="Settings"
+          >
+            {showSettings ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          <button
+            type="button"
+            onClick={handleStop}
+            className="flex items-center justify-center rounded p-1.5 text-red-400/70 transition-all hover:bg-red-500/10 hover:text-red-400"
+            title="Stop"
+          >
+            <Square className="h-3 w-3 fill-current" />
+          </button>
+        </div>
+      </div>
+
+      {/* Timing info row */}
+      <div className="flex items-center justify-between px-1 text-[10px] text-gold/40">
+        <span>Ran: {formatRelativeTime(entry.lastRunAt)}</span>
+        <span>Next: {formatRelativeTime(entry.nextRunAt)}</span>
+      </div>
+
+      {/* Expandable settings */}
+      {showSettings && (
+        <div className="flex flex-col gap-2 rounded-lg border border-gold/10 bg-black/40 p-2 animate-in slide-in-from-top-2 duration-200">
+          <SettingsPanel
+            scopeRadius={scopeRadius}
+            setScopeRadius={setScopeRadius}
+            strategyId={strategyId}
+            setStrategyId={setStrategyId}
+          />
+          <button
+            type="button"
+            onClick={handleSaveSettings}
+            disabled={!hasChanges}
+            className={cn(
+              "w-full rounded border px-3 py-1.5 text-xs font-medium transition",
+              hasChanges
+                ? "border-gold/30 bg-gold/10 text-gold/90 hover:bg-gold/20"
+                : "border-gold/10 bg-black/20 text-gold/30 cursor-not-allowed",
+            )}
+          >
+            {hasChanges ? "Save Changes" : "No Changes"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
+
+const SettingsPanel = ({
+  scopeRadius,
+  setScopeRadius,
+  strategyId,
+  setStrategyId,
+}: {
+  scopeRadius: number;
+  setScopeRadius: (v: number) => void;
+  strategyId: string;
+  setStrategyId: (v: string) => void;
+}) => (
+  <div className="flex flex-col gap-2">
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] uppercase tracking-wider text-gold/40 w-16">Radius</span>
+      <NumberInput value={scopeRadius} onChange={setScopeRadius} min={1} className="h-7 text-xs flex-1" />
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] uppercase tracking-wider text-gold/40 w-16">Strategy</span>
+      <Select value={strategyId} onValueChange={setStrategyId}>
+        <SelectTrigger className="h-7 text-xs flex-1">
+          <SelectValue placeholder="Select strategy" />
+        </SelectTrigger>
+        <SelectContent>
+          {EXPLORATION_STRATEGIES.map((strategy) => (
+            <SelectItem key={strategy.id} value={strategy.id}>
+              {strategy.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+);
 
 const InlineStaminaBar = ({
   stamina,
