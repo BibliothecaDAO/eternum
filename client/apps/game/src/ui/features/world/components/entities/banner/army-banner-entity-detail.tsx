@@ -5,7 +5,7 @@ import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { DEFAULT_SCOPE_RADIUS, DEFAULT_STRATEGY_ID, useExplorationAutomationStore } from "@/hooks/store/use-exploration-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ExplorationAutomationDashboard } from "@/ui/features/military/components/exploration-automation-dashboard";
+import { explorationAutomation } from "@/ui/features/world";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -189,10 +189,10 @@ const ExplorationAutomationCompact = ({
   const addEntry = useExplorationAutomationStore((s) => s.add);
   const updateEntry = useExplorationAutomationStore((s) => s.update);
   const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const handleOpenDashboard = () => {
-    toggleModal(<ExplorationAutomationDashboard />);
+    togglePopup(explorationAutomation);
   };
 
   const entry = useMemo(
