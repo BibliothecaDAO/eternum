@@ -1,9 +1,11 @@
-import { Bot, ChevronDown, ChevronUp, Loader, Settings, Square, Trash2 } from "lucide-react";
+import { Bot, ChevronDown, ChevronUp, LayoutDashboard, Loader, Settings, Square, Trash2 } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { DEFAULT_SCOPE_RADIUS, DEFAULT_STRATEGY_ID, useExplorationAutomationStore } from "@/hooks/store/use-exploration-automation-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { ExplorationAutomationDashboard } from "@/ui/features/military/components/exploration-automation-dashboard";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -187,6 +189,11 @@ const ExplorationAutomationCompact = ({
   const addEntry = useExplorationAutomationStore((s) => s.add);
   const updateEntry = useExplorationAutomationStore((s) => s.update);
   const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
+  const handleOpenDashboard = () => {
+    toggleModal(<ExplorationAutomationDashboard />);
+  };
 
   const entry = useMemo(
     () => Object.values(entries).find((item) => item.explorerId === String(explorerId)),
@@ -311,6 +318,17 @@ const ExplorationAutomationCompact = ({
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
+          <button
+            type="button"
+            onClick={handleOpenDashboard}
+            className={cn(
+              "flex items-center justify-center rounded-lg border p-2 transition-all",
+              "border-gold/20 bg-black/20 text-gold/50 hover:bg-gold/10 hover:text-gold/80",
+            )}
+            title="All Automations"
+          >
+            <LayoutDashboard className="h-3.5 w-3.5" />
+          </button>
         </div>
 
         {/* Expandable settings */}
@@ -363,6 +381,14 @@ const ExplorationAutomationCompact = ({
         </div>
 
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleOpenDashboard}
+            className="flex items-center justify-center rounded p-1.5 text-gold/40 transition-all hover:bg-gold/10 hover:text-gold/70"
+            title="All Automations"
+          >
+            <LayoutDashboard className="h-3.5 w-3.5" />
+          </button>
           <button
             type="button"
             onClick={() => setShowSettings(!showSettings)}

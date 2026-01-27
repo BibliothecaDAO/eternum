@@ -56,6 +56,8 @@ interface ExplorationAutomationState {
   scheduleNext: (id: string, base?: number) => void;
   remove: (id: string) => void;
   pruneForGame: (gameId: string) => void;
+  pauseAll: () => void;
+  resumeAll: () => void;
 }
 
 const normalizeScopeRadius = (value: number | undefined): number => {
@@ -148,6 +150,27 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
           const entries = Object.fromEntries(
             Object.entries(state.entries).filter(([, entry]) => entry.gameId === gameId),
           );
+          return { entries };
+        }),
+      pauseAll: () =>
+        set((state) => {
+          const entries: Record<string, ExplorationAutomationEntry> = {};
+          Object.entries(state.entries).forEach(([id, entry]) => {
+            entries[id] = { ...entry, active: false, nextRunAt: null };
+          });
+          return { entries };
+        }),
+      resumeAll: () =>
+        set((state) => {
+          const now = getNowMs();
+          const entries: Record<string, ExplorationAutomationEntry> = {};
+          Object.entries(state.entries).forEach(([id, entry]) => {
+            entries[id] = {
+              ...entry,
+              active: true,
+              nextRunAt: now + EXPLORATION_AUTOMATION_INTERVAL_MS,
+            };
+          });
           return { entries };
         }),
     }),
