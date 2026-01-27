@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
-import { Bot, MapPin, Pause, Play, Square, Trash2 } from "lucide-react";
+import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
 import { useExplorationAutomationStore, EXPLORATION_AUTOMATION_INTERVAL_MS, type ExplorationAutomationEntry } from "@/hooks/store/use-exploration-automation-store";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -78,6 +78,7 @@ interface ExplorationAutomationContentProps {
 export const ExplorationAutomationContent = ({ onNavigate, compact = false }: ExplorationAutomationContentProps) => {
   const entries = useExplorationAutomationStore((s) => s.entries);
   const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
+  const runNow = useExplorationAutomationStore((s) => s.runNow);
   const remove = useExplorationAutomationStore((s) => s.remove);
   const pauseAll = useExplorationAutomationStore((s) => s.pauseAll);
   const resumeAll = useExplorationAutomationStore((s) => s.resumeAll);
@@ -154,6 +155,14 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
       toast.success("Automation removed.");
     },
     [remove],
+  );
+
+  const handleRunNow = useCallback(
+    (entry: ExplorationAutomationEntry) => {
+      runNow(entry.id);
+      toast.success("Running exploration now.");
+    },
+    [runNow],
   );
 
   const activeCount = list.filter((e) => e.active).length;
@@ -305,6 +314,14 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                     title="Go to location"
                   >
                     <MapPin className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRunNow(entry)}
+                    className="flex items-center justify-center rounded p-1.5 text-blue-400/70 transition-all hover:bg-blue-500/10 hover:text-blue-400"
+                    title="Run now"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"

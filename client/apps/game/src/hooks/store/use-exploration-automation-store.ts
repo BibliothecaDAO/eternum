@@ -54,6 +54,7 @@ interface ExplorationAutomationState {
   update: (id: string, patch: Partial<ExplorationAutomationEntry>) => void;
   toggleActive: (id: string, active?: boolean) => void;
   scheduleNext: (id: string, base?: number) => void;
+  runNow: (id: string) => void;
   remove: (id: string) => void;
   pruneForGame: (gameId: string) => void;
   pauseAll: () => void;
@@ -119,10 +120,24 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
           if (!prev) return state;
           const isActive = active ?? !prev.active;
           const now = getNowMs();
+          // Preserve remaining time when resuming
+          let nextRunAt: number | null;
+          if (isActive) {
+            // If previously had a nextRunAt that's still in the future, keep it
+            // Otherwise schedule from now
+            if (prev.nextRunAt && prev.nextRunAt > now) {
+              nextRunAt = prev.nextRunAt;
+            } else {
+              nextRunAt = now + EXPLORATION_AUTOMATION_INTERVAL_MS;
+            }
+          } else {
+            // When pausing, keep the nextRunAt so we can restore it on resume
+            nextRunAt = prev.nextRunAt;
+          }
           const next: ExplorationAutomationEntry = {
             ...prev,
             active: isActive,
-            nextRunAt: isActive ? now + EXPLORATION_AUTOMATION_INTERVAL_MS : null,
+            nextRunAt,
           };
           return { entries: { ...state.entries, [id]: next } };
         });
@@ -135,6 +150,18 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
           const next: ExplorationAutomationEntry = {
             ...prev,
             nextRunAt: now + EXPLORATION_AUTOMATION_INTERVAL_MS,
+          };
+          return { entries: { ...state.entries, [id]: next } };
+        });
+      },
+      runNow: (id) => {
+        set((state) => {
+          const prev = state.entries[id];
+          if (!prev) return state;
+          const next: ExplorationAutomationEntry = {
+            ...prev,
+            active: true,
+            nextRunAt: getNowMs(),
           };
           return { entries: { ...state.entries, [id]: next } };
         });
