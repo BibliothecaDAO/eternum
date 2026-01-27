@@ -1,19 +1,19 @@
-import { useMemo, useCallback, useState, useEffect } from "react";
-import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
+import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import {
-  useExplorationAutomationStore,
   EXPLORATION_AUTOMATION_INTERVAL_MS,
+  useExplorationAutomationStore,
   type ExplorationAutomationEntry,
 } from "@/hooks/store/use-exploration-automation-store";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { OSWindow, explorationAutomation } from "@/ui/features/world";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { OSWindow, explorationAutomation } from "@/ui/features/world";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const formatRelativeTime = (timestamp?: number | null): string => {
@@ -79,7 +79,7 @@ interface ExplorationAutomationContentProps {
   compact?: boolean;
 }
 
-export const ExplorationAutomationContent = ({ onNavigate, compact = false }: ExplorationAutomationContentProps) => {
+const ExplorationAutomationContent = ({ onNavigate, compact = false }: ExplorationAutomationContentProps) => {
   const entries = useExplorationAutomationStore((s) => s.entries);
   const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
   const runNow = useExplorationAutomationStore((s) => s.runNow);
