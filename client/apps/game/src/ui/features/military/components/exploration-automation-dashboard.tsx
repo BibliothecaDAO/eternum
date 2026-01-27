@@ -324,7 +324,7 @@ export const ExplorationAutomationWindow = () => {
       width="320px"
       height="auto"
     >
-      <ExplorationAutomationContent compact onNavigate={() => togglePopup(explorationAutomation)} />
+      <ExplorationAutomationContent compact />
     </OSWindow>
   );
 };
