@@ -311,7 +311,6 @@ const ExplorationAutomationCompact = ({
         ) : null}
         {debugEnabled && entry ? (
           <div className="text-xxs text-gold/60 uppercase tracking-[0.2em]">
-            <div>Entry: {entry.id}</div>
             <div>Last run: {formatTimestamp(entry.lastRunAt)}</div>
             <div>Next run: {formatTimestamp(entry.nextRunAt)} {formatDelta(entry.nextRunAt)}</div>
             {entry.lastAction ? <div>Last action: {entry.lastAction}</div> : null}

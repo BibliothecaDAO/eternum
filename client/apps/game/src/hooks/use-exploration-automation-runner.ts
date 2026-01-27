@@ -1,39 +1,43 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
-import { useDojo } from "@bibliothecadao/react";
 import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
   configManager,
   getBlockTimestamp,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
-import type { Account, AccountInterface } from "starknet";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue, getEntityString } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
+import type { Account, AccountInterface } from "starknet";
 
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getExplorationStrategy } from "@/automation/exploration";
+import { buildExplorationSnapshot } from "@/automation/exploration/map-cache";
 import {
   DEFAULT_SCOPE_RADIUS,
   DEFAULT_STRATEGY_ID,
   useExplorationAutomationStore,
 } from "@/hooks/store/use-exploration-automation-store";
-import { buildExplorationSnapshot } from "@/automation/exploration/map-cache";
-import { getExplorationStrategy } from "@/automation/exploration";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 
-const normalizeOwnerValue = (owner: unknown): string | null => {
-  if (typeof owner === "string") return owner.trim().toLowerCase();
-  if (typeof owner === "bigint") return `0x${owner.toString(16)}`;
-  if (typeof owner === "number" && Number.isFinite(owner)) return `0x${BigInt(owner).toString(16)}`;
-  return null;
-};
-
-const isOwnedByAccount = (owner: unknown, accountAddress: string | undefined): boolean => {
+const isExplorerOwnedByAccount = (
+  components: any,
+  explorerOwnerEntityId: number,
+  accountAddress: string | undefined,
+): boolean => {
   if (!accountAddress) return false;
-  const normalizedOwner = normalizeOwnerValue(owner);
-  const normalizedAccount = normalizeOwnerValue(accountAddress);
-  return Boolean(normalizedOwner && normalizedAccount && normalizedOwner === normalizedAccount);
+
+  // explorer.owner is a realm/structure entity ID, not an address
+  // Look up the Structure to get the actual player address
+  const structureEntity = getEntityIdFromKeys([BigInt(explorerOwnerEntityId)]);
+  const structure = getComponentValue(components.Structure, structureEntity);
+  if (!structure?.owner) return false;
+
+  // Compare using ContractAddress for proper normalization
+  return ContractAddress(structure.owner) === ContractAddress(accountAddress);
 };
 
 export const useExplorationAutomationRunner = () => {
@@ -44,8 +48,8 @@ export const useExplorationAutomationRunner = () => {
 
   const entries = useExplorationAutomationStore((s) => s.entries);
   const update = useExplorationAutomationStore((s) => s.update);
-  const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
   const scheduleNext = useExplorationAutomationStore((s) => s.scheduleNext);
+  const remove = useExplorationAutomationStore((s) => s.remove);
   const pruneForGame = useExplorationAutomationStore((s) => s.pruneForGame);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const gameWinner = useUIStore((state) => state.gameWinner);
@@ -61,17 +65,6 @@ export const useExplorationAutomationRunner = () => {
   }, []);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
-  const debugEnabled =
-    typeof window !== "undefined" && window.localStorage.getItem("debugExplorationAutomation") === "true";
-  const logDebug = useCallback(
-    (...args: unknown[]) => {
-      if (debugEnabled) {
-        // eslint-disable-next-line no-console
-        console.debug("[exploration-automation]", ...args);
-      }
-    },
-    [debugEnabled],
-  );
 
   const resolveExplorerEntity = useCallback(
     (explorerId: number) => {
@@ -132,7 +125,6 @@ export const useExplorationAutomationRunner = () => {
 
   const scheduleNextCheck = useCallback(() => {
     if (isSeasonOver()) {
-      logDebug("season-over");
       stopAutomation();
       return;
     }
@@ -147,27 +139,23 @@ export const useExplorationAutomationRunner = () => {
     timeoutIdRef.current = window.setTimeout(() => {
       void processRef.current();
     }, delay);
-  }, [isSeasonOver, logDebug, stopAutomation]);
+  }, [isSeasonOver, stopAutomation]);
 
   useEffect(() => {
     processRef.current = async () => {
       if (isSeasonOver()) {
-        logDebug("season-over");
         stopAutomation();
         return;
       }
       if (processingRef.current) {
-        logDebug("skip-processing");
         scheduleNextCheck();
         return;
       }
       if (!components || !network?.toriiClient || !network?.contractComponents) {
-        logDebug("missing-deps", { hasComponents: Boolean(components), hasTorii: Boolean(network?.toriiClient) });
         scheduleNextCheck();
         return;
       }
       if (!account || !account.address || account.address === "0x0") {
-        logDebug("missing-account");
         scheduleNextCheck();
         return;
       }
@@ -178,7 +166,8 @@ export const useExplorationAutomationRunner = () => {
         return;
       }
 
-      const nowMs = currentBlockTimestamp * 1000;
+      // Use wall clock time for scheduling (matches store and UI expectations)
+      const nowMs = Date.now();
       const due = activeEntries.filter((entry) => {
         const nextRunAt = normalizeNextRunAt(entry.nextRunAt);
         if (nextRunAt === null) return true;
@@ -186,21 +175,10 @@ export const useExplorationAutomationRunner = () => {
       });
 
       if (!due.length) {
-        logDebug("no-due-entries", {
-          active: activeEntries.length,
-          nowMs,
-          entries: activeEntries.map((entry) => ({
-            id: entry.id,
-            nextRunAt: entry.nextRunAt,
-            nextRunAtType: typeof entry.nextRunAt,
-            normalizedNextRunAt: normalizeNextRunAt(entry.nextRunAt),
-          })),
-        });
         scheduleNextCheck();
         return;
       }
 
-      logDebug("processing", { due: due.length, active: activeEntries.length, nowMs });
       processingRef.current = true;
 
       try {
@@ -209,39 +187,30 @@ export const useExplorationAutomationRunner = () => {
             const explorerId = Number(entry.explorerId);
             if (!Number.isFinite(explorerId) || explorerId <= 0) {
               update(entry.id, { blockedReason: "invalid-explorer", lastError: null });
-              logDebug("invalid-explorer", { entryId: entry.id, explorerId: entry.explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
 
             const { explorer } = resolveExplorerEntity(explorerId);
             if (!explorer) {
-              update(entry.id, { blockedReason: "missing-explorer", lastError: null });
-              logDebug("missing-explorer", { entryId: entry.id, explorerId });
+              // Explorer died or no longer exists - remove automation
+              remove(entry.id);
+              continue;
+            }
+
+            if (!isExplorerOwnedByAccount(components, explorer.owner, account.address)) {
+              // Explorer owned by someone else - remove automation
+              remove(entry.id);
+              continue;
+            }
+
+            // Check stamina before doing anything - wait for regen if too low
+            const staminaManager = new StaminaManager(components, explorerId);
+            const currentStamina = staminaManager.getStamina(currentArmiesTick);
+            const exploreStaminaCost = configManager.getExploreStaminaCost();
+            if (Number(currentStamina.amount) < exploreStaminaCost) {
+              update(entry.id, { blockedReason: "low-stamina", lastError: null });
               scheduleNext(entry.id, nowMs);
-              continue;
-            }
-
-            const battleCooldownEnd = Number(explorer.troops?.battle_cooldown_end ?? 0);
-            if (battleCooldownEnd > currentArmiesTick) {
-              toggleActive(entry.id, false);
-              update(entry.id, {
-                blockedReason: "battle",
-                lastAction: "disabled",
-                nextRunAt: null,
-              });
-              logDebug("blocked-battle", { entryId: entry.id, explorerId, battleCooldownEnd, currentArmiesTick });
-              continue;
-            }
-
-            if (!isOwnedByAccount(explorer.owner, account.address)) {
-              toggleActive(entry.id, false);
-              update(entry.id, {
-                blockedReason: "not-owned",
-                lastAction: "disabled",
-                nextRunAt: null,
-              });
-              logDebug("blocked-not-owned", { entryId: entry.id, explorerOwner: explorer.owner, account: account.address });
               continue;
             }
 
@@ -255,7 +224,6 @@ export const useExplorationAutomationRunner = () => {
 
             if (!snapshot) {
               update(entry.id, { blockedReason: "no-snapshot", lastError: null });
-              logDebug("blocked-no-snapshot", { entryId: entry.id, explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -281,13 +249,17 @@ export const useExplorationAutomationRunner = () => {
 
             if (!selection) {
               update(entry.id, { blockedReason: "no-paths", lastError: null });
-              logDebug("blocked-no-paths", { entryId: entry.id, explorerId });
               scheduleNext(entry.id, nowMs);
               continue;
             }
 
             const isExplored = ActionPaths.getActionType(selection.path) === ActionType.Move;
-            await manager.moveArmy(account as Account | AccountInterface, selection.path, isExplored, currentArmiesTick);
+            await manager.moveArmy(
+              account as Account | AccountInterface,
+              selection.path,
+              isExplored,
+              currentArmiesTick,
+            );
 
             update(entry.id, {
               lastRunAt: nowMs,
@@ -295,7 +267,6 @@ export const useExplorationAutomationRunner = () => {
               blockedReason: null,
               lastError: null,
             });
-            logDebug("moved", { entryId: entry.id, explorerId, reason: selection.reason });
             scheduleNext(entry.id, nowMs);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -303,8 +274,7 @@ export const useExplorationAutomationRunner = () => {
               lastError: message,
               blockedReason: "error",
             });
-            logDebug("error", { entryId: entry.id, message });
-            toast.error("Exploration automation failed. Check console for details.");
+            toast.error("Exploration automation failed.");
             scheduleNext(entry.id, nowMs);
           }
         }
@@ -325,8 +295,7 @@ export const useExplorationAutomationRunner = () => {
     scheduleNextCheck,
     stopAutomation,
     systemCalls,
-    toggleActive,
-    logDebug,
+    remove,
     resolveExplorerEntity,
     update,
   ]);

@@ -1,9 +1,9 @@
-import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { ExplorationStrategyId } from "@/automation/exploration/types";
 
-export const EXPLORATION_AUTOMATION_INTERVAL_MS = 120_000;
+export const EXPLORATION_AUTOMATION_INTERVAL_MS = 30_000;
 export const DEFAULT_SCOPE_RADIUS = 24;
 export const DEFAULT_STRATEGY_ID: ExplorationStrategyId = "basic-frontier";
 
@@ -16,10 +16,7 @@ const resolveCurrentGameId = (): string => {
   }
 };
 
-const getBlockNowMs = (): number => {
-  const { currentBlockTimestamp } = getBlockTimestamp();
-  return currentBlockTimestamp * 1000;
-};
+const getNowMs = (): number => Date.now();
 
 const generateId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -78,7 +75,7 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
       entries: {},
       add: (raw) => {
         const id = generateId();
-        const now = getBlockNowMs();
+        const now = getNowMs();
         const active = raw.active ?? true;
         const gameId = raw.gameId ?? resolveCurrentGameId();
         const scopeRadius = normalizeScopeRadius(raw.scopeRadius);
@@ -119,7 +116,7 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
           const prev = state.entries[id];
           if (!prev) return state;
           const isActive = active ?? !prev.active;
-          const now = getBlockNowMs();
+          const now = getNowMs();
           const next: ExplorationAutomationEntry = {
             ...prev,
             active: isActive,
@@ -132,7 +129,7 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
         set((state) => {
           const prev = state.entries[id];
           if (!prev) return state;
-          const now = base ?? getBlockNowMs();
+          const now = base ?? getNowMs();
           const next: ExplorationAutomationEntry = {
             ...prev,
             nextRunAt: now + EXPLORATION_AUTOMATION_INTERVAL_MS,
