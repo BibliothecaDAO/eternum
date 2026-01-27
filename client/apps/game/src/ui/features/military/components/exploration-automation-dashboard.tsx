@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
 import { Bot, MapPin, Pause, Play, Square, Trash2 } from "lucide-react";
-import { useExplorationAutomationStore, type ExplorationAutomationEntry } from "@/hooks/store/use-exploration-automation-store";
+import { useExplorationAutomationStore, EXPLORATION_AUTOMATION_INTERVAL_MS, type ExplorationAutomationEntry } from "@/hooks/store/use-exploration-automation-store";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { OSWindow, explorationAutomation } from "@/ui/features/world";
@@ -43,6 +43,26 @@ const getStatusColor = (entry: ExplorationAutomationEntry): string => {
   if (!entry.active) return "text-gold/50";
   if (entry.blockedReason) return "text-amber-400";
   return "text-emerald-400";
+};
+
+const getProgressPercent = (entry: ExplorationAutomationEntry): number => {
+  if (!entry.active || !entry.nextRunAt) return 0;
+  const now = Date.now();
+  const nextRunAt = entry.nextRunAt;
+  const lastRunAt = entry.lastRunAt ?? (nextRunAt - EXPLORATION_AUTOMATION_INTERVAL_MS);
+
+  const totalDuration = nextRunAt - lastRunAt;
+  const elapsed = now - lastRunAt;
+
+  if (totalDuration <= 0) return 100;
+  const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  return progress;
+};
+
+const getSecondsRemaining = (entry: ExplorationAutomationEntry): number => {
+  if (!entry.active || !entry.nextRunAt) return 0;
+  const remaining = Math.max(0, entry.nextRunAt - Date.now());
+  return Math.ceil(remaining / 1000);
 };
 
 interface ExplorerPosition {
@@ -229,14 +249,14 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                 )}
               >
                 {/* Left side - info */}
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="relative shrink-0">
                     <Bot className="w-4 h-4 text-gold/70" />
                     {entry.active && !entry.blockedReason && (
                       <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     )}
                   </div>
-                  <div className="flex flex-col min-w-0">
+                  <div className="flex flex-col min-w-0 flex-1 gap-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-medium text-gold/90">
                         #{entry.explorerId}
@@ -245,19 +265,31 @@ export const ExplorationAutomationContent = ({ onNavigate, compact = false }: Ex
                         {getStatusLabel(entry)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-gold/50">
-                      {pos && (
-                        <span className="flex items-center gap-0.5">
-                          <MapPin className="w-2.5 h-2.5" />
-                          ({pos.x}, {pos.y})
+                    {/* Progress bar for active entries */}
+                    {entry.active && !entry.blockedReason && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full bg-black/40 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-emerald-400 transition-all duration-1000"
+                            style={{ width: `${getProgressPercent(entry)}%` }}
+                          />
+                        </div>
+                        <span className="text-[9px] text-gold/50 tabular-nums w-6 text-right">
+                          {getSecondsRemaining(entry)}s
                         </span>
-                      )}
-                      <span>r:{entry.scopeRadius}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[9px] text-gold/40">
-                      <span>{formatRelativeTime(entry.lastRunAt)}</span>
-                      {entry.active && <span>Next: {formatRelativeTime(entry.nextRunAt)}</span>}
-                    </div>
+                      </div>
+                    )}
+                    {/* Show blocked reason or paused state */}
+                    {entry.active && entry.blockedReason && (
+                      <span className="text-[9px] text-amber-400/70 truncate">
+                        Waiting...
+                      </span>
+                    )}
+                    {!entry.active && (
+                      <span className="text-[9px] text-gold/40">
+                        Paused
+                      </span>
+                    )}
                   </div>
                 </div>
 
