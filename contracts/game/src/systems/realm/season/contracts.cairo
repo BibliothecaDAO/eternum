@@ -103,7 +103,7 @@ pub mod realm_systems {
             );
             assert!(
                 settlement_config.spires_max_count == settlement_config.spires_settled_count,
-                "Eternum: All spires must be created before creating new realms"
+                "Eternum: All spires must be created before creating new realms",
             );
 
             // collect season pass
@@ -130,7 +130,7 @@ pub mod realm_systems {
             let coord: Coord = settlement_config
                 .generate_coord(false, settlement.side, settlement.layer, settlement.point, map_center);
             settlement_config.update_max_layer_and_spires(realm_count.count.into());
-            WorldConfigUtilImpl::set_member(ref world,selector!("settlement_config"),settlement_config);
+            WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
 
             // create realm
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();

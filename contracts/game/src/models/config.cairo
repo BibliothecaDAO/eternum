@@ -8,8 +8,7 @@ use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
-use crate::utils::math::{PercentageImpl};
-
+use crate::utils::math::PercentageImpl;
 use crate::utils::random::VRFImpl;
 //
 // GLOBAL CONFIGS
@@ -318,11 +317,9 @@ pub struct SettlementConfig {
     pub layer_max: u8,
     pub layer_capacity_increment: u8,
     pub layer_capacity_bps: u16,
-
     pub spires_layer_distance: u8,
     pub spires_max_count: u16,
     pub spires_settled_count: u16,
-
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -333,7 +330,6 @@ pub struct RealmCountConfig {
 
 #[generate_trait]
 pub impl SettlementConfigImpl of SettlementConfigTrait {
-
     fn _num_hex_directions() -> u32 {
         6
     }
@@ -346,35 +342,35 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 
 
-
     fn _max_spots(layer_number: u32, layers_skipped: u32) -> u32 {
-        // this gets the max number of points that can fit 
+        // this gets the max number of points that can fit
         // in from layer 1 to layer y where each layer
         // has capacity of _num_hex_directions() * layer_number
 
         // we also need to account for layers skipped
 
         assert!(layer_number >= layers_skipped, "Layer number must be greater than or equal to layers skipped");
-        if layer_number == layers_skipped {return 0;}
-        let a = Self::_calculate_sum( Self::_num_hex_directions(), layer_number);
-        let b = Self::_calculate_sum( Self::_num_hex_directions(), layers_skipped);
+        if layer_number == layers_skipped {
+            return 0;
+        }
+        let a = Self::_calculate_sum(Self::_num_hex_directions(), layer_number);
+        let b = Self::_calculate_sum(Self::_num_hex_directions(), layers_skipped);
         a - b
     }
 
     fn _spire_layer_number(layer_number: u32, spires_layer_distance: u8) -> u32 {
         layer_number / spires_layer_distance.into()
     }
-    
+
     fn _spire_center_point_count() -> u32 {
         1
     }
 
     fn _max_spire_spots(layer_number: u32, spires_layer_distance: u8) -> u16 {
-        (Self::_spire_center_point_count() 
-        + Self::_max_spots(
-            Self::_spire_layer_number(layer_number, spires_layer_distance), 
-            0
-        )).try_into().unwrap()
+        (Self::_spire_center_point_count()
+            + Self::_max_spots(Self::_spire_layer_number(layer_number, spires_layer_distance), 0))
+            .try_into()
+            .unwrap()
     }
 
     fn _max_point_index(layer: u32) -> u32 {
@@ -382,25 +378,24 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 
     // todo: test aggresively
-    fn generate_coord(self: SettlementConfig, spire: bool, side: u32, mut layer: u32, point_index: u32, map_center: Coord) -> Coord {
+    fn generate_coord(
+        self: SettlementConfig, spire: bool, side: u32, mut layer: u32, point_index: u32, map_center: Coord,
+    ) -> Coord {
         assert!(side < 6, "Side must be less than 6"); // 0 - 5
         assert!(layer > 0, "Layer must be greater than 0"); // 1 - layer_max
 
         let mut base_distance: u32 = self.base_distance.into();
         if spire {
-
-             
             let max_spire_layer = Self::_spire_layer_number(self.layer_max.into(), self.spires_layer_distance);
             assert!(layer <= max_spire_layer.into(), "Layer must be less than max layer for spires");
 
-            // scale the map such that layer 1 of spires is 
+            // scale the map such that layer 1 of spires is
             // like layer 6 (self.spires_layer_distance) for realms
             // so we scale down the layer number and scale up the base distance.
             // we basically zoom out and rescale the map for spires.
             // we expect the layer to be scaled down already
 
-            base_distance = self.base_distance.into() * self.spires_layer_distance.into(); 
-
+            base_distance = self.base_distance.into() * self.spires_layer_distance.into();
         } else {
             assert!(layer <= self.layer_max.into(), "Layer must be less than max layer");
             assert!(layer > self.layers_skipped.into(), "Layer must be greater than layers skipped");
@@ -408,16 +403,12 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
 
         assert!(point_index <= Self::_max_point_index(layer), "Point must be less than max side points");
 
-
         let mut start_coord: Coord = map_center;
 
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::SouthWest),
-            (Direction::SouthEast, Direction::West), 
-            (Direction::SouthWest, Direction::NorthWest), 
-            (Direction::West, Direction::NorthEast), 
-            (Direction::NorthWest, Direction::East),
-            (Direction::NorthEast, Direction::SouthEast)
+            (Direction::East, Direction::SouthWest), (Direction::SouthEast, Direction::West),
+            (Direction::SouthWest, Direction::NorthWest), (Direction::West, Direction::NorthEast),
+            (Direction::NorthWest, Direction::East), (Direction::NorthEast, Direction::SouthEast),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(side);
 
@@ -435,25 +426,19 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 
     fn update_max_layer_and_spires(ref self: SettlementConfig, realm_count: u64) {
-
         // max realm spots
-        let mut current_max_realm_spots_capacity 
-            = Self::_max_spots(self.layer_max.into(), self.layers_skipped.into())
-            // add back the center spire spot that will be taken in _max_spire_spots 
+        let mut current_max_realm_spots_capacity = Self::_max_spots(self.layer_max.into(), self.layers_skipped.into())
+            // add back the center spire spot that will be taken in _max_spire_spots
             // because it is not counted in realms spots
             + Self::_spire_center_point_count()
             - Self::_max_spire_spots(self.layer_max.into(), self.spires_layer_distance).into();
 
-
         let capacity_threshold = PercentageImpl::get(
-                current_max_realm_spots_capacity.into(), self.layer_capacity_bps.into(),
-            );
-        if realm_count > capacity_threshold{
+            current_max_realm_spots_capacity.into(), self.layer_capacity_bps.into(),
+        );
+        if realm_count > capacity_threshold {
             self.layer_max += self.layer_capacity_increment;
-            self.spires_max_count = Self::_max_spire_spots(
-                self.layer_max.into(), 
-                self.spires_layer_distance
-            );
+            self.spires_max_count = Self::_max_spire_spots(self.layer_max.into(), self.spires_layer_distance);
         }
     }
 }

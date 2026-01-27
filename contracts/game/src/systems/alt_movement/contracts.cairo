@@ -1,5 +1,5 @@
 use crate::alias::ID;
-use crate::models::position::{Direction};
+use crate::models::position::Direction;
 
 #[starknet::interface]
 pub trait IAltMovementSystems<TContractState> {
@@ -12,6 +12,7 @@ pub mod alt_movement_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::IWorldDispatcherTrait;
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::SeasonConfigImpl;
@@ -23,7 +24,6 @@ pub mod alt_movement_systems {
     use crate::models::troop::ExplorerTroops;
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::troop::iExplorerImpl;
-    use starknet::ContractAddress;
 
     #[abi(embed_v0)]
     impl AltMovementSystemsImpl of super::IAltMovementSystems<ContractState> {
@@ -45,20 +45,16 @@ pub mod alt_movement_systems {
             assert!(current_tile.occupier_id == explorer_id, "tile occupier should be explorer");
 
             let spire_coord = start_coord.neighbor(spire_direction);
-            let spire_tile_opt: TileOpt = world.read_model((
-                start_coord.alt, spire_coord.x, spire_coord.y,
-            ));
+            let spire_tile_opt: TileOpt = world.read_model((start_coord.alt, spire_coord.x, spire_coord.y));
             let spire_tile: Tile = spire_tile_opt.into();
             assert!(
-                spire_tile.occupier_type == TileOccupier::Spire.into(),
-                "Eternum: explorer must be adjacent to spire"
+                spire_tile.occupier_type == TileOccupier::Spire.into(), "Eternum: explorer must be adjacent to spire",
             );
             assert!(explorer.coord.is_adjacent(spire_coord), "Eternum: explorer must be adjacent to spire");
 
             let destination_coord = Coord { alt: !start_coord.alt, x: start_coord.x, y: start_coord.y };
-            let destination_tile_opt: TileOpt = world.read_model((
-                destination_coord.alt, destination_coord.x, destination_coord.y,
-            ));
+            let destination_tile_opt: TileOpt = world
+                .read_model((destination_coord.alt, destination_coord.x, destination_coord.y));
             let mut destination_tile: Tile = destination_tile_opt.into();
             assert!(destination_tile.not_occupied(), "Eternum: destination tile is occupied");
 

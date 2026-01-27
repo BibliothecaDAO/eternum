@@ -323,7 +323,11 @@ pub impl TravelImpl of TravelTrait<Coord> {
             return false;
         }
         let tile_distance = Self::tile_distance(self, destination);
-        let expected_distance: u128 = if self.alt { REGULAR_TO_ALTERNATE_MAP_SCALE } else { 1 };
+        let expected_distance: u128 = if self.alt {
+            REGULAR_TO_ALTERNATE_MAP_SCALE
+        } else {
+            1
+        };
         tile_distance == expected_distance
     }
 
@@ -527,3 +531,4 @@ pub impl TravelImpl of TravelTrait<Coord> {
 //         }
 //     }
 // }
+

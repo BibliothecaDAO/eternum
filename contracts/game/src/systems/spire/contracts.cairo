@@ -20,8 +20,8 @@ pub mod spire_systems {
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordImpl};
-    use crate::systems::utils::map::IMapImpl;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::systems::utils::map::IMapImpl;
     use crate::utils::map::biomes::Biome;
     use super::SpireSettlement;
 
@@ -46,7 +46,7 @@ pub mod spire_systems {
                 let settlement = *settlement;
                 assert!(
                     settlement_config.spires_settled_count < settlement_config.spires_max_count,
-                    "Eternum: All spires have been created"
+                    "Eternum: All spires have been created",
                 );
 
                 let coord: Coord = settlement_config
@@ -70,9 +70,7 @@ pub mod spire_systems {
 
                 settlement_config.spires_settled_count += 1;
             }
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("settlement_config"), settlement_config,
-            );
+            WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
         }
     }
 }

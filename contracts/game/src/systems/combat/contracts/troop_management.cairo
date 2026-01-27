@@ -332,8 +332,7 @@ pub mod troop_management_systems {
             // ensure explorer is adjacent to home structure
             let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
             assert!(
-                explorer.coord.is_adjacent(explorer_owner_structure.coord()),
-                "explorer not adjacent to home structure",
+                explorer.coord.is_adjacent(explorer_owner_structure.coord()), "explorer not adjacent to home structure",
             );
 
             // deduct resources used to create explorer
@@ -469,8 +468,7 @@ pub mod troop_management_systems {
 
             // ensure explorers are adjacent to one another
             assert!(
-                from_explorer.coord.is_adjacent(to_explorer.coord),
-                "to explorer is not adjacent to source explorer",
+                from_explorer.coord.is_adjacent(to_explorer.coord), "to explorer is not adjacent to source explorer",
             );
 
             // ensure count is valid
@@ -618,8 +616,7 @@ pub mod troop_management_systems {
             // ensure explorer is adjacent to structure
             let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
             assert!(
-                from_explorer.coord.is_adjacent(to_structure_base.coord()),
-                "explorer is not adjacent to structure",
+                from_explorer.coord.is_adjacent(to_structure_base.coord()), "explorer is not adjacent to structure",
             );
 
             // ensure count is valid
@@ -786,8 +783,7 @@ pub mod troop_management_systems {
             // ensure structure is adjacent to explorer
             let mut from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
             assert!(
-                from_structure_base.coord().is_adjacent(to_explorer.coord),
-                "structure is not adjacent to explorer",
+                from_structure_base.coord().is_adjacent(to_explorer.coord), "structure is not adjacent to explorer",
             );
 
             // ensure count is less than or equal to structure guard count

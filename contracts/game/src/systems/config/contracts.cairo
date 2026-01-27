@@ -1,7 +1,8 @@
 use crate::models::config::{
     BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig, TroopDamageConfig,
-    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig, SettlementConfig
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, SettlementConfig, StructureCapacityConfig, TradeConfig,
+    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
+    VillageTokenConfig,
 };
 use crate::models::resource::production::building::BuildingCategory;
 
@@ -825,19 +826,18 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
-        fn set_settlement_config(ref self: ContractState, settlement_config: SettlementConfig, single_realm_mode: bool) {
-
+        fn set_settlement_config(
+            ref self: ContractState, settlement_config: SettlementConfig, single_realm_mode: bool,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            WorldConfigUtilImpl::set_member(
-                ref world,
-                selector!("settlement_config"),
-                settlement_config,
-            );
+            WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
 
             WorldConfigUtilImpl::set_member(
-                ref world, selector!("blitz_settlement_config"), BlitzSettlementConfigImpl::new(settlement_config.base_distance.into(), single_realm_mode),
+                ref world,
+                selector!("blitz_settlement_config"),
+                BlitzSettlementConfigImpl::new(settlement_config.base_distance.into(), single_realm_mode),
             );
 
             WorldConfigUtilImpl::set_member(

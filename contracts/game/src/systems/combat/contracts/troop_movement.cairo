@@ -120,7 +120,6 @@ pub mod troop_movement_systems {
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
-
                 // ensure next coordinate is not occupied
                 let from = explorer.coord;
                 let next = explorer.coord.neighbor_after_distance(*(directions.pop_front().unwrap()), step_distance);
