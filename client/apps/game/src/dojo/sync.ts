@@ -219,28 +219,12 @@ export const syncEntitiesDebounced = async (
 
   const applyBatch = ({ upserts, deletions }: BatchPayload) => {
     if (deletions.length > 0) {
-      console.log("[SYNC DEBUG] APPLYING DELETIONS:", deletions);
       deletions.forEach((entityId) => {
         world.deleteEntity(entityId as Entity);
       });
     }
 
     if (upserts.length > 0) {
-      // Debug: Check for Building updates in the batch
-      const buildingUpdates = upserts.filter(
-        (value) => value.models && Object.keys(value.models).some((key) => key.includes("Building")),
-      );
-      if (buildingUpdates.length > 0) {
-        console.log("[SYNC DEBUG] Applying batch with Building updates:", {
-          count: buildingUpdates.length,
-          buildingUpdates: buildingUpdates.map((u) => ({
-            hashed_keys: u.hashed_keys,
-            models: Object.keys(u.models),
-            buildingData: u.models["s1_eternum-Building"],
-          })),
-        });
-      }
-
       const modelsArray = upserts.map((value) => {
         return { hashed_keys: value.hashed_keys, models: value.models };
       });
@@ -267,20 +251,6 @@ export const syncEntitiesDebounced = async (
 
   const entitySub = await client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Entity updated", data);
-    // Debug: Check for DELETION (empty models)
-    if (!data.models || Object.keys(data.models).length === 0) {
-      console.log("[SYNC DEBUG] DELETION notification received:", {
-        hashed_keys: data.hashed_keys,
-      });
-    }
-    // Debug: Check for Building model updates specifically
-    if (data.models && Object.keys(data.models).some((key) => key.includes("Building"))) {
-      console.log("[SYNC DEBUG] Building model update received:", {
-        hashed_keys: data.hashed_keys,
-        models: Object.keys(data.models),
-        buildingData: data.models["s1_eternum-Building"],
-      });
-    }
     entityUpdateCount++;
     queueUpdate(data, "entity");
   });
