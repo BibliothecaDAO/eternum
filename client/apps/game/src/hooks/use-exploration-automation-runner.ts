@@ -4,6 +4,7 @@ import {
   ArmyActionManager,
   configManager,
   getBlockTimestamp,
+  Position,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -13,9 +14,11 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import type { Account, AccountInterface } from "starknet";
+import type { ActionPath } from "@bibliothecadao/eternum";
 
 import { getExplorationStrategy } from "@/automation/exploration";
 import { buildExplorationSnapshot } from "@/automation/exploration/map-cache";
+import type { ExplorationMapSnapshot } from "@/automation/exploration/types";
 import {
   DEFAULT_SCOPE_RADIUS,
   DEFAULT_STRATEGY_ID,
@@ -40,8 +43,18 @@ const isExplorerOwnedByAccount = (
   return ContractAddress(structure.owner) === ContractAddress(accountAddress);
 };
 
+const REPEAT_EXPLORE_DELAY_MS = 3_000;
+const FAST_CACHE_TTL_MS = 15_000;
+
 const getPathStaminaCost = (path: { staminaCost?: number }[]): number =>
   path.reduce((total, step) => total + (step.staminaCost ?? 0), 0);
+
+type SnapshotCache = {
+  snapshot: ExplorationMapSnapshot;
+  updatedAt: number;
+  fastModeUntil?: number;
+  recentlyExplored: Set<string>;
+};
 
 export const useExplorationAutomationRunner = () => {
   const {
@@ -60,6 +73,7 @@ export const useExplorationAutomationRunner = () => {
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
+  const snapshotCacheRef = useRef<Map<string, SnapshotCache>>(new Map());
 
   const normalizeNextRunAt = useCallback((value: unknown): number | null => {
     if (value === null || value === undefined) return null;
@@ -217,18 +231,31 @@ export const useExplorationAutomationRunner = () => {
               continue;
             }
 
-            const snapshot = await buildExplorationSnapshot({
-              components,
-              contractComponents: network.contractComponents,
-              toriiClient: network.toriiClient,
-              explorerId,
-              scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
-            });
+            const cached = snapshotCacheRef.current.get(entry.id);
+            const useFastCache = Boolean(cached?.fastModeUntil && nowMs <= cached.fastModeUntil);
+            let snapshot =
+              useFastCache && cached?.snapshot
+                ? cached.snapshot
+                : await buildExplorationSnapshot({
+                    components,
+                    contractComponents: network.contractComponents,
+                    toriiClient: network.toriiClient,
+                    explorerId,
+                    scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
+                  });
 
             if (!snapshot) {
               update(entry.id, { blockedReason: "no-snapshot", lastError: null });
               scheduleNext(entry.id, nowMs);
               continue;
+            }
+
+            if (!cached || !useFastCache) {
+              snapshotCacheRef.current.set(entry.id, {
+                snapshot,
+                updatedAt: nowMs,
+                recentlyExplored: new Set(),
+              });
             }
 
             const manager = new ArmyActionManager(components, systemCalls, explorerId);
@@ -242,12 +269,59 @@ export const useExplorationAutomationRunner = () => {
               currentArmiesTick,
               ContractAddress(account.address),
             );
+            let actionPathMap = actionPaths.getPaths();
+
+            if (useFastCache && cached) {
+              const filtered = new Map<string, ActionPath[]>();
+              actionPathMap.forEach((path, key) => {
+                if (ActionPaths.getActionType(path) !== ActionType.Explore) return;
+                const endHex = path[path.length - 1]?.hex;
+                if (!endHex) return;
+                const normalized = new Position({ x: endHex.col, y: endHex.row }).getNormalized();
+                if (cached.recentlyExplored.has(`${normalized.x},${normalized.y}`)) return;
+                filtered.set(key, path);
+              });
+
+              if (filtered.size === 0) {
+                const refreshed = await buildExplorationSnapshot({
+                  components,
+                  contractComponents: network.contractComponents,
+                  toriiClient: network.toriiClient,
+                  explorerId,
+                  scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
+                });
+                if (!refreshed) {
+                  update(entry.id, { blockedReason: "no-snapshot", lastError: null });
+                  scheduleNext(entry.id, nowMs);
+                  continue;
+                }
+                snapshot = refreshed;
+                snapshotCacheRef.current.set(entry.id, {
+                  snapshot,
+                  updatedAt: nowMs,
+                  recentlyExplored: new Set(),
+                });
+                const refreshedPaths = manager.findActionPaths(
+                  snapshot.structureHexes,
+                  snapshot.armyHexes,
+                  snapshot.exploredTiles,
+                  snapshot.questHexes,
+                  snapshot.chestHexes,
+                  currentDefaultTick,
+                  currentArmiesTick,
+                  ContractAddress(account.address),
+                );
+                actionPathMap = refreshedPaths.getPaths();
+              } else {
+                actionPathMap = filtered;
+              }
+            }
 
             const strategy = getExplorationStrategy(entry.strategyId ?? DEFAULT_STRATEGY_ID);
             const selection = strategy.selectNextAction({
               ...snapshot,
               explorerId,
-              actionPaths: actionPaths.getPaths(),
+              actionPaths: actionPathMap,
             });
 
             if (!selection) {
@@ -270,13 +344,27 @@ export const useExplorationAutomationRunner = () => {
               pathStaminaCost > 0 || actionType !== ActionType.Explore ? pathStaminaCost : exploreStaminaCost;
             const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);
             const shouldRepeat = actionType === ActionType.Explore && remainingStamina >= exploreStaminaCost;
+            const repeatAt = nowMs + REPEAT_EXPLORE_DELAY_MS;
+
+            if (shouldRepeat) {
+              const endHex = selection.path[selection.path.length - 1]?.hex;
+              if (endHex) {
+                const normalized = new Position({ x: endHex.col, y: endHex.row }).getNormalized();
+                const cache = snapshotCacheRef.current.get(entry.id);
+                if (cache) {
+                  cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);
+                  cache.fastModeUntil = repeatAt + FAST_CACHE_TTL_MS;
+                  cache.updatedAt = nowMs;
+                }
+              }
+            }
 
             update(entry.id, {
               lastRunAt: nowMs,
               lastAction: selection.reason,
               blockedReason: null,
               lastError: null,
-              ...(shouldRepeat ? { nextRunAt: nowMs } : {}),
+              ...(shouldRepeat ? { nextRunAt: repeatAt } : {}),
             });
             if (!shouldRepeat) {
               scheduleNext(entry.id, nowMs);
