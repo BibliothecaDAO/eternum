@@ -70,12 +70,20 @@ impl CubeImpl of CubeTrait {
         Cube { alt: self.alt, q: self.q.abs(), r: self.r.abs(), s: self.s.abs() }
     }
 
+    fn step_distance(self: Cube) -> u32 {
+        if self.alt {
+            REGULAR_TO_ALTERNATE_MAP_SCALE.try_into().unwrap()
+        } else {
+            1
+        }
+    }
+
     fn neighbor_after_distance(self: Cube, direction: Direction, tile_distance: u32) -> Cube {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-cube
 
         // NOTE: NorthEast and SouthEast are swapped
         //      Also, NorthWest and SouthWest
-        let di: i128 = tile_distance.into();
+        let di: i128 = (tile_distance * self.step_distance()).into();
         let cube_direction_vectors = match direction {
             Direction::East => Cube { alt: self.alt, q: di, r: 0, s: -di },
             Direction::NorthEast => Cube { alt: self.alt, q: 0, r: di, s: -di },
@@ -216,25 +224,27 @@ pub impl CoordImpl of CoordTrait {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
         // NOTE: NorthEast and SouthEast are swapped
         //      Also, NorthWest and SouthWest
+
+        let sd = self.step_distance();
         if self.y & 1 == 0 {
             // where self.y (row) is even
             match direction {
-                Direction::East(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y + 1 },
-                Direction::NorthWest(()) => Coord { alt: self.alt, x: self.x, y: self.y + 1 },
-                Direction::West(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord { alt: self.alt, x: self.x, y: self.y - 1 },
-                Direction::SouthEast(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y - 1 },
+                Direction::East(()) => Coord { alt: self.alt, x: self.x + sd, y: self.y },
+                Direction::NorthEast(()) => Coord { alt: self.alt, x: self.x + sd, y: self.y + sd },
+                Direction::NorthWest(()) => Coord { alt: self.alt, x: self.x, y: self.y + sd },
+                Direction::West(()) => Coord { alt: self.alt, x: self.x - sd, y: self.y },
+                Direction::SouthWest(()) => Coord { alt: self.alt, x: self.x, y: self.y - sd },
+                Direction::SouthEast(()) => Coord { alt: self.alt, x: self.x + sd, y: self.y - sd },
             }
         } else {
             // where self.y (row) is odd
             match direction {
-                Direction::East(()) => Coord { alt: self.alt, x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord { alt: self.alt, x: self.x, y: self.y + 1 },
-                Direction::NorthWest(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y + 1 },
-                Direction::West(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord { alt: self.alt, x: self.x - 1, y: self.y - 1 },
-                Direction::SouthEast(()) => Coord { alt: self.alt, x: self.x, y: self.y - 1 },
+                Direction::East(()) => Coord { alt: self.alt, x: self.x + sd, y: self.y },
+                Direction::NorthEast(()) => Coord { alt: self.alt, x: self.x, y: self.y + sd },
+                Direction::NorthWest(()) => Coord { alt: self.alt, x: self.x - sd, y: self.y + sd },
+                Direction::West(()) => Coord { alt: self.alt, x: self.x - sd, y: self.y },
+                Direction::SouthWest(()) => Coord { alt: self.alt, x: self.x - sd, y: self.y - sd },
+                Direction::SouthEast(()) => Coord { alt: self.alt, x: self.x, y: self.y - sd },
             }
         }
     }

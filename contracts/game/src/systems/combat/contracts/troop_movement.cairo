@@ -116,13 +116,12 @@ pub mod troop_movement_systems {
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
             let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
             let season_mode_on = !blitz_mode_on;
-            let step_distance: u32 = explorer.coord.step_distance();
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
                 // ensure next coordinate is not occupied
                 let from = explorer.coord;
-                let next = explorer.coord.neighbor_after_distance(*(directions.pop_front().unwrap()), step_distance);
+                let next = explorer.coord.neighbor(*directions.pop_front().unwrap());
                 let tile_opt: TileOpt = world.read_model((next.alt, next.x, next.y));
                 let mut tile: Tile = tile_opt.into();
                 assert!(tile.not_occupied(), "one of the tiles in path is occupied");
