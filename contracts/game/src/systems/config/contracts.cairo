@@ -238,6 +238,19 @@ pub trait IQuestConfig<T> {
     fn set_quest_config(ref self: T, quest_config: QuestConfig);
 }
 
+#[starknet::interface]
+pub trait IFaithConfig<T> {
+    fn set_faith_config(
+        ref self: T,
+        enabled: bool,
+        wonder_base_fp_per_sec: u16,
+        holy_site_fp_per_sec: u16,
+        realm_fp_per_sec: u16,
+        village_fp_per_sec: u16,
+        owner_share_percent: u16,
+    );
+}
+
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
@@ -248,7 +261,7 @@ pub mod config_systems {
     use crate::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
         BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
+        FaithConfig, HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
         ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
         StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
@@ -1028,6 +1041,32 @@ pub mod config_systems {
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("victory_points_win_config"), victory_points_win_config,
             );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IFaithConfig of super::IFaithConfig<ContractState> {
+        fn set_faith_config(
+            ref self: ContractState,
+            enabled: bool,
+            wonder_base_fp_per_sec: u16,
+            holy_site_fp_per_sec: u16,
+            realm_fp_per_sec: u16,
+            village_fp_per_sec: u16,
+            owner_share_percent: u16,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let faith_config = FaithConfig {
+                enabled,
+                wonder_base_fp_per_sec,
+                holy_site_fp_per_sec,
+                realm_fp_per_sec,
+                village_fp_per_sec,
+                owner_share_percent,
+            };
+            WorldConfigUtilImpl::set_member(ref world, selector!("faith_config"), faith_config);
         }
     }
 }
