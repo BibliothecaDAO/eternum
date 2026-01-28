@@ -40,14 +40,14 @@ pub mod faith_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
-    use crate::models::events::{
-        FaithPledgedStory, FaithPointsClaimedStory, FaithRemovedStory, Story, StoryEvent,
-    };
+    use crate::models::events::{FaithPledgedStory, FaithPointsClaimedStory, FaithRemovedStory, Story, StoryEvent};
     use crate::models::faith::{
         FaithfulStructure, PlayerTotalFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithWinner,
     };
     use crate::models::owner::OwnerAddressTrait;
-    use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl, Wonder};
+    use crate::models::structure::{
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl, Wonder,
+    };
 
     #[abi(embed_v0)]
     impl FaithSystemsImpl of super::IFaithSystems<ContractState> {
@@ -82,7 +82,9 @@ pub mod faith_systems {
             // Get FP rates based on structure category
             let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
             assert!(faith_config.enabled, "Faith system is not enabled");
-            let (to_owner, to_pledger) = InternalImpl::_get_fp_rates(structure_base.category, structure_id, wonder_id, faith_config);
+            let (to_owner, to_pledger) = InternalImpl::_get_fp_rates(
+                structure_base.category, structure_id, wonder_id, faith_config,
+            );
 
             // Check if this is a wonder pledging to another wonder
             let is_self_pledge = structure_id == wonder_id;
@@ -92,8 +94,7 @@ pub mod faith_systems {
                 // Can only submit if no one is pledged to the submitting wonder
                 let submitting_wonder_faith: WonderFaith = world.read_model(structure_id);
                 assert!(
-                    submitting_wonder_faith.num_structures_pledged == 0,
-                    "Cannot submit wonder with active pledges"
+                    submitting_wonder_faith.num_structures_pledged == 0, "Cannot submit wonder with active pledges",
                 );
             }
 
@@ -102,8 +103,7 @@ pub mod faith_systems {
                 assert!(caller == wonder_owner, "Only wonder owner can self-pledge");
 
                 // Settle previous owner's points if owner changed
-                if wonder_faith.last_recorded_owner != wonder_owner
-                    && wonder_faith.last_recorded_owner.is_non_zero() {
+                if wonder_faith.last_recorded_owner != wonder_owner && wonder_faith.last_recorded_owner.is_non_zero() {
                     InternalImpl::_settle_owner_points(ref world, wonder_faith.last_recorded_owner, now);
                 }
                 wonder_faith.last_recorded_owner = wonder_owner;
@@ -149,7 +149,11 @@ pub mod faith_systems {
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
                         story: Story::FaithPledgedStory(
                             FaithPledgedStory {
-                                structure_id, wonder_id, structure_owner, fp_to_owner: to_owner, fp_to_pledger: to_pledger,
+                                structure_id,
+                                wonder_id,
+                                structure_owner,
+                                fp_to_owner: to_owner,
+                                fp_to_pledger: to_pledger,
                             },
                         ),
                         timestamp: now,
@@ -175,8 +179,7 @@ pub mod faith_systems {
 
             // Authorization: structure owner OR wonder owner can remove
             assert!(
-                caller == structure_owner || caller == wonder_owner,
-                "Only structure owner or wonder owner can remove"
+                caller == structure_owner || caller == wonder_owner, "Only structure owner or wonder owner can remove",
             );
 
             // Special case: Wonder removing itself (self-pledge)
@@ -245,7 +248,11 @@ pub mod faith_systems {
             let season_config = SeasonConfigImpl::get(world);
 
             let now = starknet::get_block_timestamp();
-            let end_time = if season_config.has_ended() { season_config.end_at } else { now };
+            let end_time = if season_config.has_ended() {
+                season_config.end_at
+            } else {
+                now
+            };
 
             let player_fp: PlayerTotalFaithPoints = world.read_model(player);
             if player_fp.last_updated_at == 0 {
@@ -284,7 +291,9 @@ pub mod faith_systems {
                 faith_config.wonder_base_fp_per_sec
             };
 
-            let to_owner: u16 = (total.into() * faith_config.owner_share_percent.into() / 10000_u32).try_into().unwrap();
+            let to_owner: u16 = (total.into() * faith_config.owner_share_percent.into() / 10000_u32)
+                .try_into()
+                .unwrap();
             let to_pledger: u16 = total - to_owner;
             (to_owner, to_pledger)
         }
@@ -330,7 +339,11 @@ pub mod faith_systems {
             let mut wonder_faith: WonderFaith = world.read_model(wonder_id);
 
             // Determine end time (cap at season end)
-            let end_time = if season_config.has_ended() { season_config.end_at } else { now };
+            let end_time = if season_config.has_ended() {
+                season_config.end_at
+            } else {
+                now
+            };
 
             // Skip if no time elapsed or not yet initialized
             if wonder_faith.claim_last_at == 0 || end_time <= wonder_faith.claim_last_at {
@@ -390,7 +403,11 @@ pub mod faith_systems {
             ref world: WorldStorage, player: ContractAddress, owner_delta: u16, pledger_delta: u16, now: u64,
         ) {
             let season_config = SeasonConfigImpl::get(world);
-            let end_time = if season_config.has_ended() { season_config.end_at } else { now };
+            let end_time = if season_config.has_ended() {
+                season_config.end_at
+            } else {
+                now
+            };
 
             let mut player_fp: PlayerTotalFaithPoints = world.read_model(player);
 
@@ -398,8 +415,7 @@ pub mod faith_systems {
             if player_fp.last_updated_at > 0 {
                 let time_elapsed = end_time - player_fp.last_updated_at;
                 if time_elapsed > 0 {
-                    let pending: u128 = (player_fp.points_per_sec_as_owner + player_fp.points_per_sec_as_pledger)
-                        .into()
+                    let pending: u128 = (player_fp.points_per_sec_as_owner + player_fp.points_per_sec_as_pledger).into()
                         * time_elapsed.into();
                     player_fp.points_claimed += pending;
                 }
@@ -418,7 +434,11 @@ pub mod faith_systems {
             ref world: WorldStorage, player: ContractAddress, owner_delta: u16, pledger_delta: u16, now: u64,
         ) {
             let season_config = SeasonConfigImpl::get(world);
-            let end_time = if season_config.has_ended() { season_config.end_at } else { now };
+            let end_time = if season_config.has_ended() {
+                season_config.end_at
+            } else {
+                now
+            };
 
             let mut player_fp: PlayerTotalFaithPoints = world.read_model(player);
 
@@ -426,8 +446,7 @@ pub mod faith_systems {
             if player_fp.last_updated_at > 0 {
                 let time_elapsed = end_time - player_fp.last_updated_at;
                 if time_elapsed > 0 {
-                    let pending: u128 = (player_fp.points_per_sec_as_owner + player_fp.points_per_sec_as_pledger)
-                        .into()
+                    let pending: u128 = (player_fp.points_per_sec_as_owner + player_fp.points_per_sec_as_pledger).into()
                         * time_elapsed.into();
                     player_fp.points_claimed += pending;
                 }

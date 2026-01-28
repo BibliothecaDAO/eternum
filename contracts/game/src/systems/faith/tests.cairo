@@ -9,7 +9,7 @@ mod tests {
             holy_site_fp_per_sec: 50,
             realm_fp_per_sec: 10,
             village_fp_per_sec: 1,
-            owner_share_percent: 3000, // 30%
+            owner_share_percent: 3000 // 30%
         }
     }
 
