@@ -98,14 +98,7 @@ const getMapFromToriiChunked = async (
   }
 
   let success = false;
-  const inFlight = getMapFromToriiExact(
-    client,
-    components,
-    bounds.minCol,
-    bounds.maxCol,
-    bounds.minRow,
-    bounds.maxRow,
-  )
+  const inFlight = getMapFromToriiExact(client, components, bounds.minCol, bounds.maxCol, bounds.minRow, bounds.maxRow)
     .then(() => {
       success = true;
     })

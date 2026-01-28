@@ -56,7 +56,10 @@ const getProgressPercent = (entry: ExplorationAutomationEntry): number => {
 
   // Progress = how much of the 120s interval has elapsed
   // 120s remaining = 0%, 0s remaining = 100%
-  const progress = Math.min(100, Math.max(0, ((EXPLORATION_AUTOMATION_INTERVAL_MS - remaining) / EXPLORATION_AUTOMATION_INTERVAL_MS) * 100));
+  const progress = Math.min(
+    100,
+    Math.max(0, ((EXPLORATION_AUTOMATION_INTERVAL_MS - remaining) / EXPLORATION_AUTOMATION_INTERVAL_MS) * 100),
+  );
   return progress;
 };
 
