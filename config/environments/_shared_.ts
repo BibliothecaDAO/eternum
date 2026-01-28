@@ -155,6 +155,14 @@ export const BATTLE_GRACE_TICK_COUNT = 24;
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 8;
+export const SETTLEMENT_LAYERS_SKIPPED = 2; // first 2 layers are empty
+export const SETTLEMENT_LAYER_MAX = 6; // starting number of layers
+export const SETTLEMENT_LAYER_CAPACITY_BPS = 8000; // 80% - once 80% of current layer capacity is used, capacity increases
+export const SETTLEMENT_LAYER_CAPACITY_INCREMENT = 6; // layer capacity increases by 6 layers after capacity bps is reached
+export const SETTLEMENT_SPIRES_LAYER_DISTANCE = 6;
+export const SETTLEMENT_SPIRES_MAX_COUNT = 1; // starts at 1, increased in contracts
+export const SETTLEMENT_SPIRES_SETTLED_COUNT = 0; // starts at 0, increased in contracts
+// Legacy constants (may be used elsewhere)
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
@@ -373,7 +381,13 @@ export const EternumGlobalConfig: Config = {
   settlement: {
     center: SETTLEMENT_CENTER,
     base_distance: SETTLEMENT_BASE_DISTANCE,
-    subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
+    layers_skipped: SETTLEMENT_LAYERS_SKIPPED,
+    layer_max: SETTLEMENT_LAYER_MAX,
+    layer_capacity_increment: SETTLEMENT_LAYER_CAPACITY_INCREMENT,
+    layer_capacity_bps: SETTLEMENT_LAYER_CAPACITY_BPS,
+    spires_layer_distance: SETTLEMENT_SPIRES_LAYER_DISTANCE,
+    spires_max_count: SETTLEMENT_SPIRES_MAX_COUNT,
+    spires_settled_count: SETTLEMENT_SPIRES_SETTLED_COUNT,
     single_realm_mode: false,
   },
   buildings: {

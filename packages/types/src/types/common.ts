@@ -545,7 +545,13 @@ export interface Config {
   settlement: {
     center: number;
     base_distance: number;
-    subsequent_distance: number;
+    layers_skipped: number;
+    layer_max: number;
+    layer_capacity_increment: number;
+    layer_capacity_bps: number;
+    spires_layer_distance: number;
+    spires_max_count: number;
+    spires_settled_count: number;
     single_realm_mode: boolean;
   };
   season: {

@@ -1521,7 +1521,13 @@ export function defineContractComponents(world: World) {
           settlement_config: {
             center: RecsType.Number,
             base_distance: RecsType.Number,
-            subsequent_distance: RecsType.Number,
+            layers_skipped: RecsType.Number,
+            layer_max: RecsType.Number,
+            layer_capacity_increment: RecsType.Number,
+            layer_capacity_bps: RecsType.Number,
+            spires_layer_distance: RecsType.Number,
+            spires_max_count: RecsType.Number,
+            spires_settled_count: RecsType.Number,
           },
           blitz_mode_on: RecsType.Boolean,
           blitz_settlement_config: {
@@ -1731,8 +1737,14 @@ export function defineContractComponents(world: World) {
               "u8", // MapConfig relic_hex_dist_from_center
               "u8", // MapConfig relic_chest_relics_per_chest
               "u32", // SettlementConfig center
-              "u32", // SettlementConfig base_distance
-              "u32", // SettlementConfig subsequent_distance
+              "u8", // SettlementConfig base_distance
+              "u8", // SettlementConfig layers_skipped
+              "u8", // SettlementConfig layer_max
+              "u8", // SettlementConfig layer_capacity_increment
+              "u16", // SettlementConfig layer_capacity_bps
+              "u8", // SettlementConfig spires_layer_distance
+              "u16", // SettlementConfig spires_max_count
+              "u16", // SettlementConfig spires_settled_count
               "bool", // blitz_mode_on
               "u32", // BlitzSettlementConfig base_distance
               "u32", // BlitzSettlementConfig side

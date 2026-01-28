@@ -36,6 +36,11 @@ export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
   count: BigNumberish;
 }
 
+export interface SpireMakeSpiresProps extends SystemSigner {
+  count: number;
+  spiresSettledCount: number;
+}
+
 export interface BlitzRealmAssignRealmPositionsProps extends SystemSigner {}
 
 export interface BlitzRealmSettleRealmsProps extends SystemSigner {
@@ -720,7 +725,13 @@ export interface SetStaminaRefillConfigProps extends SystemSigner {
 export interface SetSettlementConfigProps extends SystemSigner {
   center: BigNumberish;
   base_distance: BigNumberish;
-  subsequent_distance: BigNumberish;
+  layers_skipped: BigNumberish;
+  layer_max: BigNumberish;
+  layer_capacity_increment: BigNumberish;
+  layer_capacity_bps: BigNumberish;
+  spires_layer_distance: BigNumberish;
+  spires_max_count: BigNumberish;
+  spires_settled_count: BigNumberish;
   single_realm_mode: boolean;
 }
 export interface SetBlitzRegistrationConfigProps extends SystemSigner {

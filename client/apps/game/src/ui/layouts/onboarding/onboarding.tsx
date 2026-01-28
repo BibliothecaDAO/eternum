@@ -1,4 +1,4 @@
-import { BlitzOnboarding, SettleRealm, StepOne } from "@/ui/features/progression";
+import { BlitzOnboarding, EternumOnboarding, SettleRealm, StepOne } from "@/ui/features/progression";
 
 import { OnboardingContainer } from "./components/onboarding-container";
 import { OnboardingStage } from "./components/onboarding-stage";
@@ -15,7 +15,7 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
 
   const onboardingVariants = {
     blitz: BlitzOnboarding,
-    standard: StepOne,
+    standard: EternumOnboarding,
   };
   const OnboardingVariant = onboardingVariants[mode.ui.onboardingVariant];
   const stageContent = isSettlingRealm ? <SettleRealm onPrevious={handleExitSettleRealm} /> : <OnboardingVariant />;
