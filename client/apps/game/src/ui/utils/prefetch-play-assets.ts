@@ -180,16 +180,22 @@ const injectPrefetch = (href: PrefetchAsset): void => {
 };
 
 const schedule = (cb: () => void): void => {
-  if (typeof window === "undefined") {
+  if (typeof globalThis === "undefined") {
     return;
   }
 
-  if ("requestIdleCallback" in window) {
-    (window as Window & { requestIdleCallback: (fn: () => void) => number }).requestIdleCallback(cb);
+  const idleCallback = (
+    globalThis as typeof globalThis & {
+      requestIdleCallback?: (fn: () => void) => number;
+    }
+  ).requestIdleCallback;
+
+  if (typeof idleCallback === "function") {
+    idleCallback(cb);
     return;
   }
 
-  window.setTimeout(cb, 1500);
+  globalThis.setTimeout(cb, 1500);
 };
 
 const runBatchedPrefetch = (assets: readonly PrefetchAsset[], startIndex = 0): void => {
