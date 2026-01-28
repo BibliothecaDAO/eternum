@@ -22,6 +22,9 @@ const SECTIONS = [
 
 export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayoutProps) => {
   const location = useLocation();
+  const isLandingIndex = location.pathname === "/";
+  const isVideoEnabled = Boolean(backgroundVideo && isLandingIndex);
+  const activeBackgroundVideo = isVideoEnabled ? backgroundVideo : undefined;
 
   const resolvedBackground = useMemo(() => {
     const normalizedPath = location.pathname.toLowerCase();
@@ -41,7 +44,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    if (backgroundVideo) {
+    if (isVideoEnabled) {
       return;
     }
 
@@ -74,10 +77,10 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
       loader.removeEventListener("load", handleReady);
       loader.removeEventListener("error", handleReady);
     };
-  }, [backgroundVideo, currentBackground, resolvedBackground, transitionBackground]);
+  }, [currentBackground, isVideoEnabled, resolvedBackground, transitionBackground]);
 
   useEffect(() => {
-    if (backgroundVideo) {
+    if (isVideoEnabled) {
       return;
     }
 
@@ -102,17 +105,17 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
       window.clearTimeout(timeout);
       setIsTransitioning(false);
     };
-  }, [backgroundVideo, transitionBackground]);
+  }, [isVideoEnabled, transitionBackground]);
 
   useEffect(() => {
-    if (!backgroundVideo) {
+    if (!isVideoEnabled) {
       return;
     }
 
     if (resolvedBackground !== currentBackground) {
       setCurrentBackground(resolvedBackground);
     }
-  }, [backgroundVideo, currentBackground, resolvedBackground]);
+  }, [currentBackground, isVideoEnabled, resolvedBackground]);
 
   const handleTransitionEnd = (event: TransitionEvent<HTMLImageElement>) => {
     if (event.propertyName !== "opacity" || !transitionBackground) {
@@ -133,7 +136,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
           className="absolute inset-0 h-full w-full object-cover"
         />
 
-        {!backgroundVideo && transitionBackground ? (
+        {!isVideoEnabled && transitionBackground ? (
           <img
             alt="Eternum background"
             src={`/images/covers/blitz/${transitionBackground}.png`}
@@ -145,7 +148,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
           />
         ) : null}
 
-        {backgroundVideo ? (
+        {activeBackgroundVideo ? (
           <video
             autoPlay
             className="absolute inset-0 h-full w-full object-cover"
@@ -155,7 +158,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
             poster={`/images/covers/blitz/${currentBackground}.png`}
             preload="auto"
           >
-            <source src={backgroundVideo} type="video/mp4" />
+            <source src={activeBackgroundVideo} type="video/mp4" />
           </video>
         ) : null}
 
