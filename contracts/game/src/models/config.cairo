@@ -58,6 +58,7 @@ pub struct WorldConfig {
     pub victory_points_win_config: VictoryPointsWinConfig,
     pub factory_address: ContractAddress,
     pub mmr_config: MMRConfig,
+    pub faith_config: FaithConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -311,6 +312,16 @@ pub struct MapConfig {
 pub struct QuestConfig {
     pub quest_discovery_prob: u16,
     pub quest_discovery_fail_prob: u16,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct FaithConfig {
+    pub enabled: bool,
+    pub wonder_base_fp_per_sec: u16,
+    pub holy_site_fp_per_sec: u16,
+    pub realm_fp_per_sec: u16,
+    pub village_fp_per_sec: u16,
+    pub owner_share_percent: u16,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
