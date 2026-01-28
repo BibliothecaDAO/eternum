@@ -141,11 +141,10 @@ export const useExplorationAutomationRunner = () => {
   }, [components, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
-    // TEMPORARILY DISABLED FOR TESTING
-    // if (isSeasonOver()) {
-    //   stopAutomation();
-    //   return;
-    // }
+    if (isSeasonOver()) {
+      stopAutomation();
+      return;
+    }
     if (timeoutIdRef.current !== null) {
       window.clearTimeout(timeoutIdRef.current);
     }
@@ -161,11 +160,10 @@ export const useExplorationAutomationRunner = () => {
 
   useEffect(() => {
     processRef.current = async () => {
-      // TEMPORARILY DISABLED FOR TESTING
-      // if (isSeasonOver()) {
-      //   stopAutomation();
-      //   return;
-      // }
+      if (isSeasonOver()) {
+        stopAutomation();
+        return;
+      }
       if (processingRef.current) {
         scheduleNextCheck();
         return;
@@ -180,11 +178,10 @@ export const useExplorationAutomationRunner = () => {
       }
 
       const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-      // TEMPORARILY DISABLED FOR TESTING
-      // if (isSeasonOver(currentBlockTimestamp)) {
-      //   stopAutomation();
-      //   return;
-      // }
+      if (isSeasonOver(currentBlockTimestamp)) {
+        stopAutomation();
+        return;
+      }
 
       // Use wall clock time for scheduling (matches store and UI expectations)
       const nowMs = Date.now();
