@@ -476,6 +476,8 @@ export interface Config {
     agentFindFailProbability: number;
     villageFindProbability: number;
     villageFindFailProbability: number;
+    holysiteFindProbability: number;
+    holysiteFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;

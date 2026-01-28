@@ -2605,6 +2605,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       agent_find_fail_probability,
       village_find_probability,
       village_find_fail_probability,
+      holysite_find_probability,
+      holysite_find_fail_probability,
       hyps_win_prob,
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
@@ -2626,6 +2628,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         agent_find_fail_probability,
         village_find_probability,
         village_find_fail_probability,
+        holysite_find_probability,
+        holysite_find_fail_probability,
         hyps_win_prob,
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
@@ -2875,6 +2879,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       hyperstructure_capacity,
       fragment_mine_capacity,
       bank_structure_capacity,
+      holysite_capacity,
       signer,
     } = props;
 
@@ -2891,6 +2896,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         hyperstructure_capacity,
         fragment_mine_capacity,
         bank_structure_capacity,
+        holysite_capacity,
       ],
     });
   }

@@ -387,6 +387,8 @@ export interface SetMapConfigProps extends SystemSigner {
   agent_find_fail_probability: BigNumberish;
   village_find_probability: BigNumberish;
   village_find_fail_probability: BigNumberish;
+  holysite_find_probability: BigNumberish;
+  holysite_find_fail_probability: BigNumberish;
   hyps_win_prob: BigNumberish;
   hyps_fail_prob: BigNumberish;
   hyps_fail_prob_increase_p_hex: BigNumberish;
@@ -452,6 +454,7 @@ export interface SetCapacityConfigProps extends SystemSigner {
   hyperstructure_capacity: BigNumberish; // grams
   fragment_mine_capacity: BigNumberish; // grams
   bank_structure_capacity: BigNumberish; // grams
+  holysite_capacity: BigNumberish; // grams
 }
 
 export interface SetAgentConfigProps extends SystemSigner {

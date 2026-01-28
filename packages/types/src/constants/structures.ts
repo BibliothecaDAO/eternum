@@ -288,6 +288,7 @@ export enum CapacityConfig {
   HyperstructureStructure = 6,
   BankStructure = 7,
   FragmentMineStructure = 8,
+  HolySiteStructure = 9,
 }
 
 export const CAPACITY_CONFIG_CATEGORY_STRING_MAP: { [key: string]: number } = {

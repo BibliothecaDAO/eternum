@@ -94,6 +94,8 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         relic_discovery_interval_sec: 60,
         village_fail_probability: 1,
         village_win_probability: 0,
+        holysite_win_probability: 5000,
+        holysite_fail_probability: 5000,
     }
 }
 
@@ -158,7 +160,8 @@ pub fn MOCK_STRUCTURE_CAPACITY_CONFIG() -> StructureCapacityConfig {
         village_capacity: 1000000000000000, // grams
         hyperstructure_capacity: 1000000000000000, // grams
         fragment_mine_capacity: 1000000000000000, // grams
-        bank_structure_capacity: 1000000000000000 // grams
+        bank_structure_capacity: 1000000000000000, // grams
+        holysite_capacity: 1000000000000000 // grams
     }
 }
 

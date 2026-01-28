@@ -907,6 +907,8 @@ export const setupGlobals = async (config: Config) => {
     agent_find_fail_probability: config.config.exploration.agentFindFailProbability,
     village_find_probability: config.config.exploration.villageFindProbability,
     village_find_fail_probability: config.config.exploration.villageFindFailProbability,
+    holysite_find_probability: config.config.exploration.holysiteFindProbability,
+    holysite_find_fail_probability: config.config.exploration.holysiteFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
@@ -924,6 +926,10 @@ export const setupGlobals = async (config: Config) => {
     (mapCalldata.village_find_fail_probability /
       (mapCalldata.village_find_fail_probability + mapCalldata.village_find_probability)) *
     100;
+  const holysiteFindFailRate =
+    (mapCalldata.holysite_find_fail_probability /
+      (mapCalldata.holysite_find_fail_probability + mapCalldata.holysite_find_probability)) *
+    100;
   const agentFindFailRate =
     (mapCalldata.agent_find_fail_probability /
       (mapCalldata.agent_find_fail_probability + mapCalldata.agent_find_probability)) *
@@ -939,6 +945,7 @@ export const setupGlobals = async (config: Config) => {
     │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount)}
     │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
     │  ${chalk.gray("Village Find Fail Probability:")} ${chalk.white(villageFindFailRate) + "%"}
+    │  ${chalk.gray("Holy Site Find Fail Probability:")} ${chalk.white(holysiteFindFailRate) + "%"}
     │  ${chalk.gray("Agent Find Fail Probability:")} ${chalk.white(agentFindFailRate) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
@@ -1035,6 +1042,7 @@ export const setCapacityConfig = async (config: Config) => {
     hyperstructure_capacity: config.config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
     fragment_mine_capacity: config.config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
     bank_structure_capacity: config.config.carryCapacityGram[CapacityConfig.BankStructure],
+    holysite_capacity: config.config.carryCapacityGram[CapacityConfig.HolySiteStructure],
     troop_capacity: config.config.carryCapacityGram[CapacityConfig.Army],
     donkey_capacity: config.config.carryCapacityGram[CapacityConfig.Donkey],
     storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfig.Storehouse],
@@ -1052,6 +1060,7 @@ export const setCapacityConfig = async (config: Config) => {
     { name: "Hyperstructure", value: calldata.hyperstructure_capacity },
     { name: "Fragment Mine", value: calldata.fragment_mine_capacity },
     { name: "Bank", value: calldata.bank_structure_capacity },
+    { name: "Holy Site", value: calldata.holysite_capacity },
     { name: "Troops", value: calldata.troop_capacity },
     { name: "Donkeys", value: calldata.donkey_capacity },
     {

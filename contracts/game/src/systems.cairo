@@ -95,6 +95,7 @@ pub mod utils {
     pub mod distance;
     pub mod donkey;
     pub mod erc20;
+    pub mod holysite;
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;

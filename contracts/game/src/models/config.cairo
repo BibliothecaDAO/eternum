@@ -266,6 +266,7 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
+    pub holysite_capacity: u64 // grams
 }
 
 // speed
@@ -291,6 +292,8 @@ pub struct MapConfig {
     pub agent_discovery_fail_prob: u16,
     pub village_win_probability: u16,
     pub village_fail_probability: u16,
+    pub holysite_win_probability: u16,
+    pub holysite_fail_probability: u16,
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
