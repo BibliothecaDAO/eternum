@@ -152,14 +152,14 @@ const hasPrefetchLink = (href: string): boolean =>
   Boolean(document.querySelector(`link[rel="prefetch"][href="${href}"]`));
 
 const resolveAsType = (href: string): string | undefined => {
-  if (href.endsWith('.png') || href.endsWith('.jpg') || href.endsWith('.jpeg') || href.endsWith('.svg')) {
-    return 'image';
+  if (href.endsWith(".png") || href.endsWith(".jpg") || href.endsWith(".jpeg") || href.endsWith(".svg")) {
+    return "image";
   }
-  if (href.endsWith('.hdr') || href.endsWith('.glb') || href.endsWith('.gltf')) {
-    return 'fetch';
+  if (href.endsWith(".hdr") || href.endsWith(".glb") || href.endsWith(".gltf")) {
+    return "fetch";
   }
-  if (href.endsWith('.mp4')) {
-    return 'video';
+  if (href.endsWith(".mp4")) {
+    return "video";
   }
   return undefined;
 };
@@ -169,8 +169,8 @@ const injectPrefetch = (href: PrefetchAsset): void => {
     return;
   }
 
-  const link = document.createElement('link');
-  link.rel = 'prefetch';
+  const link = document.createElement("link");
+  link.rel = "prefetch";
   link.href = href;
   const asType = resolveAsType(href);
   if (asType) {
@@ -180,11 +180,11 @@ const injectPrefetch = (href: PrefetchAsset): void => {
 };
 
 const schedule = (cb: () => void): void => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return;
   }
 
-  if ('requestIdleCallback' in window) {
+  if ("requestIdleCallback" in window) {
     (window as Window & { requestIdleCallback: (fn: () => void) => number }).requestIdleCallback(cb);
     return;
   }
@@ -204,14 +204,14 @@ const runBatchedPrefetch = (assets: readonly PrefetchAsset[], startIndex = 0): v
 };
 
 export const prefetchPlayAssets = (): void => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return;
   }
 
-  if (sessionStorage.getItem(PREFETCH_KEY) === 'true') {
+  if (sessionStorage.getItem(PREFETCH_KEY) === "true") {
     return;
   }
 
-  sessionStorage.setItem(PREFETCH_KEY, 'true');
+  sessionStorage.setItem(PREFETCH_KEY, "true");
   schedule(() => runBatchedPrefetch(PREFETCH_PLAY_ASSETS));
 };

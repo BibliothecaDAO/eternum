@@ -9,7 +9,11 @@ interface LoadingScreenProps {
   prefetchPlayAssets?: boolean;
 }
 
-export const LoadingScreen = ({ backgroundImage, progress, prefetchPlayAssets: shouldPrefetch }: LoadingScreenProps) => {
+export const LoadingScreen = ({
+  backgroundImage,
+  progress,
+  prefetchPlayAssets: shouldPrefetch,
+}: LoadingScreenProps) => {
   useEffect(() => {
     if (shouldPrefetch) {
       prefetchPlayAssets();
