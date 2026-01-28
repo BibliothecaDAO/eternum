@@ -135,11 +135,12 @@ impl CubeImpl of CubeTrait {
         let mut results: Array<Cube> = array![];
         let mut zero_cube: Cube = Zero::zero();
         zero_cube.alt = self.alt;
-        let mut hex = self.add(zero_cube.neighbor_after_distance(Direction::SouthWest, 1).scale(radius.into()));
+        let mut hex = self
+            .add(zero_cube.neighbor_after_distance(Direction::SouthWest, self.step_distance()).scale(radius.into()));
         for direction in DirectionImpl::all() {
             for _ in 0..radius {
                 results.append(hex);
-                hex = hex.neighbor_after_distance(direction, 1);
+                hex = hex.neighbor_after_distance(direction, self.step_distance());
             }
         }
         results
