@@ -1765,7 +1765,7 @@ mod tests {
 
     /// @notice Tests that `explorer_explorer_swap` reverts if the explorers are not adjacent.
     #[test]
-    #[should_panic(expected: "to explorer is not adjacent to source explorer")]
+    #[should_panic(expected: "to explorer is not at the target coordinate")]
     fn test_explorer_swap_revert_not_adjacent() {
         // Arrange
         let mut world = setup_troop_management_world();

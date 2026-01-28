@@ -9,7 +9,7 @@ mod tests {
     use dojo::world::WorldStorageTrait;
     use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
     use crate::constants::RESOURCE_PRECISION;
-    use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::position::{Coord, Direction};
     use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl};
     use crate::models::troop::{ExplorerTroops, GuardSlot, TroopTier, TroopType, Troops};
     use crate::systems::combat::contracts::troop_battle::{
@@ -166,17 +166,13 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
-        // Move second explorer's coord to be non-adjacent to first explorer
-        let mut explorer: ExplorerTroops = world.read_model(second_explorer.explorer_id);
-        explorer.coord = explorer.coord.neighbor_after_distance(Direction::NorthEast, 5);
-        world.write_model_test(@explorer);
-
+        // Try to attack with wrong direction (not adjacent in that direction)
         let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
         start_cheat_caller_address(systems.troop_battle, second_explorer.owner);
         dispatcher
             .attack_explorer_vs_explorer(
-                second_explorer.explorer_id, first_explorer.explorer_id, Direction::West, array![].span(),
+                second_explorer.explorer_id, first_explorer.explorer_id, Direction::NorthEast, array![].span(),
             );
         stop_cheat_caller_address(systems.troop_battle);
     }
@@ -274,14 +270,8 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
-        // Move explorer's coord to be non-adjacent to the structure
-        // Structure (realm) is at (80, 80), explorer is at (81, 80)
-        // Move explorer to (85, 80) which is NOT adjacent to (80, 80)
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
-        explorer_troops.coord = explorer_troops.coord.neighbor_after_distance(Direction::NorthEast, 5);
-        world.write_model_test(@explorer_troops);
-
-        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
+        // Try to attack with wrong direction (not adjacent)
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::NorthEast);
     }
 
     // ========================================================================
@@ -355,13 +345,9 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
-        // Move explorer's coord to be non-adjacent to the structure
-        // Structure (realm) is at (80, 80), explorer is at (81, 80)
-        // Move explorer to (85, 80) which is NOT adjacent to (80, 80)
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
-        explorer_troops.coord = explorer_troops.coord.neighbor_after_distance(Direction::NorthEast, 5);
-        world.write_model_test(@explorer_troops);
-
-        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East);
+        // Try to attack with wrong direction (not adjacent)
+        attack_guard_vs_explorer(
+            ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::NorthEast,
+        );
     }
 }
