@@ -3420,6 +3420,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_faith_config(props: SystemProps.SetFaithConfigProps) {
+    const {
+      enabled,
+      wonder_base_fp_per_sec,
+      holy_site_fp_per_sec,
+      realm_fp_per_sec,
+      village_fp_per_sec,
+      owner_share_percent,
+      signer,
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_faith_config",
+      calldata: [enabled ? 1 : 0, wonder_base_fp_per_sec, holy_site_fp_per_sec, realm_fp_per_sec, village_fp_per_sec, owner_share_percent],
+    });
+  }
+
   public async mint_test_realm(props: SystemProps.MintTestRealmProps) {
     const {
       token_id,

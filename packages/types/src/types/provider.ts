@@ -649,6 +649,15 @@ export interface SetQuestConfigProps extends SystemSigner {
   quest_find_fail_probability: BigNumberish;
 }
 
+export interface SetFaithConfigProps extends SystemSigner {
+  enabled: boolean;
+  wonder_base_fp_per_sec: BigNumberish;
+  holy_site_fp_per_sec: BigNumberish;
+  realm_fp_per_sec: BigNumberish;
+  village_fp_per_sec: BigNumberish;
+  owner_share_percent: BigNumberish;
+}
+
 export interface InitializeHyperstructureProps extends SystemSigner {
   hyperstructure_id: BigNumberish;
 }
