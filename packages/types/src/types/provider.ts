@@ -385,8 +385,8 @@ export interface SetMapConfigProps extends SystemSigner {
   shards_mines_fail_probability: BigNumberish;
   agent_find_probability: BigNumberish;
   agent_find_fail_probability: BigNumberish;
-  village_find_probability: BigNumberish;
-  village_find_fail_probability: BigNumberish;
+  camp_find_probability: BigNumberish;
+  camp_find_fail_probability: BigNumberish;
   holysite_find_probability: BigNumberish;
   holysite_find_fail_probability: BigNumberish;
   hyps_win_prob: BigNumberish;
@@ -455,6 +455,7 @@ export interface SetCapacityConfigProps extends SystemSigner {
   fragment_mine_capacity: BigNumberish; // grams
   bank_structure_capacity: BigNumberish; // grams
   holysite_capacity: BigNumberish; // grams
+  camp_capacity: BigNumberish; // grams
 }
 
 export interface SetAgentConfigProps extends SystemSigner {

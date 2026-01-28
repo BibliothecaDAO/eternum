@@ -266,7 +266,8 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
-    pub holysite_capacity: u64 // grams
+    pub holysite_capacity: u64, // grams
+    pub camp_capacity: u64 // grams
 }
 
 // speed
@@ -290,8 +291,8 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub agent_discovery_prob: u16,
     pub agent_discovery_fail_prob: u16,
-    pub village_win_probability: u16,
-    pub village_fail_probability: u16,
+    pub camp_win_probability: u16,
+    pub camp_fail_probability: u16,
     pub holysite_win_probability: u16,
     pub holysite_fail_probability: u16,
     pub hyps_win_prob: u32,

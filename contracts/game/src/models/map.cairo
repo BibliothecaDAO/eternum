@@ -110,6 +110,7 @@ pub enum TileOccupier {
     Spire,
     //
     HolySite,
+    Camp,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -160,6 +161,7 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::Spire => 35,
             //
             TileOccupier::HolySite => 36,
+            TileOccupier::Camp => 37,
         }
     }
 }

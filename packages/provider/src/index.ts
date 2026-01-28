@@ -2603,8 +2603,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       shards_mines_fail_probability,
       agent_find_probability,
       agent_find_fail_probability,
-      village_find_probability,
-      village_find_fail_probability,
+      camp_find_probability,
+      camp_find_fail_probability,
       holysite_find_probability,
       holysite_find_fail_probability,
       hyps_win_prob,
@@ -2626,8 +2626,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         shards_mines_fail_probability,
         agent_find_probability,
         agent_find_fail_probability,
-        village_find_probability,
-        village_find_fail_probability,
+        camp_find_probability,
+        camp_find_fail_probability,
         holysite_find_probability,
         holysite_find_fail_probability,
         hyps_win_prob,
@@ -2880,6 +2880,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       fragment_mine_capacity,
       bank_structure_capacity,
       holysite_capacity,
+      camp_capacity,
       signer,
     } = props;
 
@@ -2897,6 +2898,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         fragment_mine_capacity,
         bank_structure_capacity,
         holysite_capacity,
+        camp_capacity,
       ],
     });
   }
@@ -3323,11 +3325,34 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
-    const { center, base_distance, subsequent_distance, signer, single_realm_mode } = props;
+    const {
+      center,
+      base_distance,
+      layers_skipped,
+      layer_max,
+      layer_capacity_increment,
+      layer_capacity_bps,
+      spires_layer_distance,
+      spires_max_count,
+      spires_settled_count,
+      single_realm_mode,
+      signer,
+    } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
-      calldata: [center, base_distance, subsequent_distance, single_realm_mode],
+      calldata: [
+        center,
+        base_distance,
+        layers_skipped,
+        layer_max,
+        layer_capacity_increment,
+        layer_capacity_bps,
+        spires_layer_distance,
+        spires_max_count,
+        spires_settled_count,
+        single_realm_mode,
+      ],
     });
   }
 

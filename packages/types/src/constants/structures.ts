@@ -9,6 +9,8 @@ export enum StructureType {
   Bank = 3,
   FragmentMine = 4,
   Village = 5,
+  HolySite = 6,
+  Camp = 7,
 }
 
 export const EternumStructureTypeToNameMapping: Record<StructureType, string> = {
@@ -17,6 +19,8 @@ export const EternumStructureTypeToNameMapping: Record<StructureType, string> = 
   [StructureType.Bank]: "Bank",
   [StructureType.FragmentMine]: "Fragment Mine",
   [StructureType.Village]: "Village",
+  [StructureType.HolySite]: "Holy Site",
+  [StructureType.Camp]: "Camp",
 };
 
 export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
@@ -24,7 +28,9 @@ export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "Hyperstructure",
   [StructureType.Bank]: "Bank",
   [StructureType.FragmentMine]: "Essence Rift",
-  [StructureType.Village]: "Camp",
+  [StructureType.Village]: "Village",
+  [StructureType.HolySite]: "Holy Site",
+  [StructureType.Camp]: "Camp",
 };
 
 export enum BuildingType {
@@ -289,6 +295,7 @@ export enum CapacityConfig {
   BankStructure = 7,
   FragmentMineStructure = 8,
   HolySiteStructure = 9,
+  CampStructure = 10,
 }
 
 export const CAPACITY_CONFIG_CATEGORY_STRING_MAP: { [key: string]: number } = {

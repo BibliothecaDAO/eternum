@@ -107,8 +107,8 @@ export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 export const AGENT_FIND_PROBABILITY = 0; // 0/100 = 0%
 export const AGENT_FIND_FAIL_PROBABILITY = 100; // 100/100 = 100%
 
-export const VILLAGE_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
-export const VILLAGE_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
+export const CAMP_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
+export const CAMP_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
 
 export const HOLYSITE_FIND_PROBABILITY = 500; // 500 / 50_000 = 1%
 export const HOLYSITE_FIND_FAIL_PROBABILITY = 49_500; // 49_500 / 50_000 = 99%
@@ -302,8 +302,8 @@ export const EternumGlobalConfig: Config = {
     shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
     agentFindProbability: AGENT_FIND_PROBABILITY,
     agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
-    villageFindProbability: VILLAGE_FIND_PROBABILITY,
-    villageFindFailProbability: VILLAGE_FIND_FAIL_PROBABILITY,
+    campFindProbability: CAMP_FIND_PROBABILITY,
+    campFindFailProbability: CAMP_FIND_FAIL_PROBABILITY,
     holysiteFindProbability: HOLYSITE_FIND_PROBABILITY,
     holysiteFindFailProbability: HOLYSITE_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
@@ -331,6 +331,7 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfig.BankStructure]: 18446744073709551615n, // max
     [CapacityConfig.FragmentMineStructure]: 18446744073709551615n, // max
     [CapacityConfig.HolySiteStructure]: 18446744073709551615n, // max
+    [CapacityConfig.CampStructure]: 18446744073709551615n, // max
     [CapacityConfig.Donkey]: 50 * 1000, // 500 kg per donkey
     // 10_000 gr per army
     [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count

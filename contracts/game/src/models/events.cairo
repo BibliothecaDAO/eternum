@@ -143,6 +143,7 @@ pub enum ExploreFind {
     Quest,
     Village,
     HolySite,
+    Camp,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]

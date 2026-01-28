@@ -24,6 +24,7 @@ pub mod Tasks {
     pub const QUEST_DISCOVER: felt252 = 'QUEST_DISCOVER';
     pub const MINE_DISCOVER: felt252 = 'MINE_DISCOVER';
     pub const HOLYSITE_DISCOVER: felt252 = 'HOLYSITE_DISCOVER';
+    pub const CAMP_DISCOVER: felt252 = 'CAMP_DISCOVER';
     pub const HYPERSTRUCTURE_DISCOVER: felt252 = 'HYPERSTRUCTURE_DISCOVER';
     pub const RESOURCE_PRODUCE: felt252 = 'RESOURCE_PRODUCE';
     pub const BUILD_STANDARD: felt252 = 'BUILD_STANDARD';

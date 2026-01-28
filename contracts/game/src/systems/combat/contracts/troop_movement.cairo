@@ -209,13 +209,15 @@ pub mod troop_movement_systems {
                                 world, caller.into(), Tasks::QUEST_DISCOVER, 1, starknet::get_block_timestamp(),
                             );
                         },
-                        ExploreFind::Village => { // AchievementTrait::progress(
-                        //     world, caller.into(), Tasks::VILLAGE_DISCOVER, 1, starknet::get_block_timestamp(),
-                        // );
-                        },
+                        ExploreFind::Village => {},
                         ExploreFind::HolySite => {
                             AchievementTrait::progress(
                                 world, caller.into(), Tasks::HOLYSITE_DISCOVER, 1, starknet::get_block_timestamp(),
+                            );
+                        },
+                        ExploreFind::Camp => {
+                            AchievementTrait::progress(
+                                world, caller.into(), Tasks::CAMP_DISCOVER, 1, starknet::get_block_timestamp(),
                             );
                         },
                     }
@@ -593,12 +595,12 @@ pub mod troop_movement_util_systems {
                     if found_holysite {
                         return (true, ExploreFind::HolySite);
                     } else {
-                        // perform lottery to discover village
-                        let (village_discovery_systems, _) = world.dns(@"village_discovery_systems").unwrap();
-                        let village_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-                            contract_address: village_discovery_systems,
+                        // perform lottery to discover camp (blitz mode only)
+                        let (camp_discovery_systems, _) = world.dns(@"camp_discovery_systems").unwrap();
+                        let camp_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                            contract_address: camp_discovery_systems,
                         };
-                        let (found_village, _) = village_discovery_systems
+                        let (found_camp, _) = camp_discovery_systems
                             .find_treasure(
                                 vrf_seed,
                                 tile,
@@ -609,8 +611,8 @@ pub mod troop_movement_util_systems {
                                 current_tick,
                                 season_mode_on,
                             );
-                        if found_village {
-                            return (true, ExploreFind::Village);
+                        if found_camp {
+                            return (true, ExploreFind::Camp);
                         } else {
                             // perform lottery to discover agent
                             let (agent_discovery_systems, _) = world.dns(@"agent_discovery_systems").unwrap();
@@ -837,23 +839,17 @@ pub mod holysite_discovery_systems {
 
 
 #[dojo::contract]
-pub mod village_discovery_systems {
+pub mod camp_discovery_systems {
     use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
-    use crate::models::config::{
-        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
-        WorldConfigUtilImpl,
-    };
+    use crate::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
     use crate::models::events::ExploreFind;
     use crate::models::map::Tile;
-    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use crate::systems::utils::mine::iMineDiscoveryImpl;
-    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use crate::systems::utils::village::iVillageDiscoveryImpl;
+    use crate::systems::utils::camp::iCampDiscoveryImpl;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
-    impl VillageDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+    impl CampDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
         fn find_treasure(
             self: @ContractState,
             vrf_seed: u256,
@@ -875,17 +871,15 @@ pub mod village_discovery_systems {
                 "caller must be the troop_movement_util_systems",
             );
 
-            // Villages only discoverable in blitz mode (non-season)
+            // Camps only discoverable in blitz mode (non-season)
             if season_mode_on {
                 return (false, ExploreFind::None);
             }
 
-            let village_lottery_won: bool = iVillageDiscoveryImpl::lottery(map_config, vrf_seed, world);
-            if village_lottery_won {
-                iVillageDiscoveryImpl::create(
-                    ref world, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed,
-                );
-                return (true, ExploreFind::Village);
+            let camp_lottery_won: bool = iCampDiscoveryImpl::lottery(map_config, vrf_seed, world);
+            if camp_lottery_won {
+                iCampDiscoveryImpl::create(ref world, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed);
+                return (true, ExploreFind::Camp);
             }
             return (false, ExploreFind::None);
         }

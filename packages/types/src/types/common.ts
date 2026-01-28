@@ -71,6 +71,9 @@ export enum TileOccupier {
   Quest = 33,
   Chest = 34,
   Spire = 35,
+  //
+  HolySite = 36,
+  Camp = 37,
 }
 
 /**
@@ -474,8 +477,8 @@ export interface Config {
     shardsMinesWinProbability: number;
     agentFindProbability: number;
     agentFindFailProbability: number;
-    villageFindProbability: number;
-    villageFindFailProbability: number;
+    campFindProbability: number;
+    campFindFailProbability: number;
     holysiteFindProbability: number;
     holysiteFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;

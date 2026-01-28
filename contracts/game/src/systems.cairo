@@ -92,6 +92,7 @@ pub mod season {
 
 pub mod utils {
     pub mod bridge;
+    pub mod camp;
     pub mod distance;
     pub mod donkey;
     pub mod erc20;
