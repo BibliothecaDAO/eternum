@@ -689,9 +689,7 @@ export class WorldUpdateListener {
               for (let buildingType = 1; buildingType <= buildingCounts.length; buildingType++) {
                 const count = buildingCounts[buildingType - 1]; // buildingCounts is 0-indexed, buildingType is 1-indexed
 
-                console.log(
-                  `[onStructureBuildingsUpdate] Evaluating buildingType ${buildingType}: count = ${count}`
-                );
+                console.log(`[onStructureBuildingsUpdate] Evaluating buildingType ${buildingType}: count = ${count}`);
 
                 if (count > 0) {
                   const prod = {
