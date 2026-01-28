@@ -205,7 +205,7 @@ const createWorkerQueueProcessor = (
   }
 };
 
-const syncEntitiesDebounced = async (
+export const syncEntitiesDebounced = async (
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: Clause | undefined | null,
