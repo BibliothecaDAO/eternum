@@ -645,20 +645,27 @@ export class WorldUpdateListener {
           this.setup.components.StructureBuildings,
           callback,
           (update: any) => {
+            console.log("[onStructureBuildingsUpdate] Received update:", update);
+
             if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
               const [currentState, _prevState] = update.value;
 
-              if (!currentState) return;
+              console.log("[onStructureBuildingsUpdate] currentState:", currentState, "_prevState:", _prevState);
 
-              // console.log("[onStructureBuildingsUpdate] currentState:", currentState);
+              if (!currentState) {
+                console.log("[onStructureBuildingsUpdate] currentState is falsy, returning.");
+                return;
+              }
 
               const entityId = currentState?.entity_id;
+              console.log("[onStructureBuildingsUpdate] entityId:", entityId);
 
               if (entityId === undefined || entityId === null) {
                 this.logMissingEntityId("Structure.onStructureBuildingsUpdate", {
                   update,
                   currentState,
                 });
+                console.log("[onStructureBuildingsUpdate] entityId missing, returning.");
                 return;
               }
 
@@ -669,10 +676,12 @@ export class WorldUpdateListener {
                 currentState.packed_counts_3 ? BigInt(currentState.packed_counts_3) : 0n,
               ];
 
+              console.log("[onStructureBuildingsUpdate] packedValues:", packedValues);
+
               // Unpack the building counts
               const buildingCounts = unpackBuildingCounts(packedValues);
 
-              // console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
+              console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
 
               const activeProductions: ActiveProduction[] = [];
 
@@ -680,20 +689,26 @@ export class WorldUpdateListener {
               for (let buildingType = 1; buildingType <= buildingCounts.length; buildingType++) {
                 const count = buildingCounts[buildingType - 1]; // buildingCounts is 0-indexed, buildingType is 1-indexed
 
+                console.log(`[onStructureBuildingsUpdate] Evaluating buildingType ${buildingType}: count = ${count}`);
+
                 if (count > 0) {
-                  activeProductions.push({
+                  const prod = {
                     buildingCount: count,
                     buildingType: buildingType as BuildingType,
-                  });
+                  };
+                  activeProductions.push(prod);
+                  console.log("[onStructureBuildingsUpdate] Added activeProduction:", prod);
                 }
               }
 
-              // console.log("[onStructureBuildingsUpdate] activeProductions:", activeProductions);
+              console.log("[onStructureBuildingsUpdate] Final activeProductions:", activeProductions);
 
               return {
                 entityId,
                 activeProductions,
               };
+            } else {
+              console.log("[onStructureBuildingsUpdate] Not a relevant component update:", update);
             }
           },
           false,
@@ -739,26 +754,76 @@ export class WorldUpdateListener {
           this.setup.components.Building,
           callback,
           async (update: any) => {
+            console.log("[onBuildingUpdate] Raw update received:", {
+              entity: update.entity,
+              type: update.type,
+              component: update.component?.metadata?.name,
+              value: update.value,
+              hexCoords,
+            });
+
             if (isComponentUpdate(update, this.setup.components.Building)) {
-              const building = getComponentValue(this.setup.components.Building, update.entity);
-              if (!building) return;
+              const [currentState, prevState] = update.value;
 
-              if (building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
+              console.log("[onBuildingUpdate] Received update:", {
+                entity: update.entity,
+                currentState,
+                prevState,
+                hexCoords,
+              });
 
-              const innerCol = building.inner_col;
-              const innerRow = building.inner_row;
-              const buildingType = building.category;
-              const paused = building.paused;
+              // Handle deletion - current state is null/undefined but we have previous state
+              if (!currentState && prevState) {
+                if (prevState.outer_col !== hexCoords.col || prevState.outer_row !== hexCoords.row) {
+                  console.log("[onBuildingUpdate] Deletion ignored - different hex coords");
+                  return;
+                }
+
+                const result = {
+                  buildingType: BuildingType.None,
+                  innerCol: prevState.inner_col,
+                  innerRow: prevState.inner_row,
+                  paused: false,
+                };
+
+                console.log("[onBuildingUpdate] Building DELETED:", result);
+                return result;
+              }
+
+              // Handle building set to None category (another way deletion can happen)
+              if (currentState && currentState.category === BuildingType.None) {
+                if (currentState.outer_col !== hexCoords.col || currentState.outer_row !== hexCoords.row) return;
+
+                const result = {
+                  buildingType: BuildingType.None,
+                  innerCol: currentState.inner_col,
+                  innerRow: currentState.inner_row,
+                  paused: false,
+                };
+
+                console.log("[onBuildingUpdate] Building set to None:", result);
+                return result;
+              }
+
+              // Normal update case
+              if (!currentState) {
+                console.log("[onBuildingUpdate] No current state and no prev state, returning");
+                return;
+              }
+
+              if (currentState.outer_col !== hexCoords.col || currentState.outer_row !== hexCoords.row) {
+                console.log("[onBuildingUpdate] Different hex coords, ignoring");
+                return;
+              }
 
               const result = {
-                buildingType,
-                innerCol,
-                innerRow,
-                paused,
+                buildingType: currentState.category,
+                innerCol: currentState.inner_col,
+                innerRow: currentState.inner_row,
+                paused: currentState.paused,
               };
 
               console.log("[onBuildingUpdate] BuildingSystemUpdate:", result);
-
               return result;
             }
           },
