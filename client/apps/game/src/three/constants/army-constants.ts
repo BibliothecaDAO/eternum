@@ -4,6 +4,8 @@ import { ModelType } from "../types/army";
 export const MAX_INSTANCES = 1000;
 export const ANIMATION_STATE_IDLE = 0;
 export const ANIMATION_STATE_MOVING = 1;
+export const ANIMATION_STATE_ATTACKING = 2;
+export const ANIMATION_STATE_DEATH = 3;
 
 export const TROOP_TO_MODEL: Record<TroopType, Record<TroopTier, ModelType>> = {
   [TroopType.Knight]: {
