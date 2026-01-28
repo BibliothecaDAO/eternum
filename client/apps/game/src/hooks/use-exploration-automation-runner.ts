@@ -138,6 +138,8 @@ export const useExplorationAutomationRunner = () => {
     const season = configManager.getSeasonConfig();
     const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
     pruneForGame(gameId);
+    // Clear snapshot cache when game changes - old snapshots are invalid
+    snapshotCacheRef.current.clear();
   }, [components, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
@@ -212,12 +214,14 @@ export const useExplorationAutomationRunner = () => {
             if (!explorer) {
               // Explorer died or no longer exists - remove automation
               remove(entry.id);
+              snapshotCacheRef.current.delete(entry.id);
               continue;
             }
 
             if (!isExplorerOwnedByAccount(components, explorer.owner, account.address)) {
               // Explorer owned by someone else - remove automation
               remove(entry.id);
+              snapshotCacheRef.current.delete(entry.id);
               continue;
             }
 
