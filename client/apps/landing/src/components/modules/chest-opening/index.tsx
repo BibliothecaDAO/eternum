@@ -4,7 +4,7 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { ChestAsset, getHighestRarity } from "@/utils/cosmetics";
-import { Package } from "lucide-react";
+import Package from "lucide-react/dist/esm/icons/package";
 import { useCallback, useEffect, useState } from "react";
 import { env } from "../../../../env";
 import { ChestSelectionModal } from "./chest-selection-modal";
@@ -17,8 +17,6 @@ import { ChestEpoch, useChestOpeningFlow } from "./use-chest-opening-flow";
 
 // Re-export components for external use
 export { FloatingOpenButton } from "./floating-open-button";
-export { TiltCard } from "./tilt-card";
-export type { ChestOpeningState } from "./use-chest-opening-flow";
 
 interface ChestOpeningExperienceProps {
   ownedChests: MergedNftData[];
@@ -197,6 +195,3 @@ export function ChestOpeningExperience({ ownedChests, onClose }: ChestOpeningExp
     </>
   );
 }
-
-// Legacy export for backwards compatibility
-export { ChestOpeningExperience as ChestOpeningModal };

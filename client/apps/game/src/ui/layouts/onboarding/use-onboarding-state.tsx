@@ -9,12 +9,12 @@ import { SeasonPassButton } from "./components/season-pass-button";
 
 type OnboardingStage = "intro" | "settle";
 
-export interface BottomContentContext {
+interface BottomContentContext {
   isLocalChain: boolean;
   handleEnterSettleRealm: () => void;
 }
 
-export interface UseOnboardingStateOptions {
+interface UseOnboardingStateOptions {
   resolveBottomContent?: (context: BottomContentContext) => ReactNode | undefined;
 }
 

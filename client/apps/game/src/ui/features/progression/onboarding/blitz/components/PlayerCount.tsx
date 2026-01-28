@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+import Users from "lucide-react/dist/esm/icons/users";
 
 interface PlayerCountProps {
   count: number;

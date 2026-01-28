@@ -1,5 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
-import { Package } from "lucide-react";
+import Package from "lucide-react/dist/esm/icons/package";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { CHEST_OPENING_ENABLED } from "./index";
@@ -10,7 +10,7 @@ interface FloatingOpenButtonProps {
   disabled?: boolean;
 }
 
-export function FloatingOpenButton({ chestCount, onClick, disabled = false }: FloatingOpenButtonProps) {
+function FloatingOpenButton({ chestCount, onClick, disabled = false }: FloatingOpenButtonProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
 

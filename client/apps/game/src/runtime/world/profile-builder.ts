@@ -47,6 +47,24 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
   // As a last resort, default to 0x0 so configuration can still proceed with patched contracts
   if (!worldAddress) worldAddress = "0x0";
 
+  // 3) Fetch entry token and fee token addresses from WorldConfig
+  let entryTokenAddress: string | undefined;
+  let feeTokenAddress: string | undefined;
+  try {
+    const configQuery = `SELECT "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(configQuery)}`;
+    const response = await fetch(url);
+    if (response.ok) {
+      const [row] = (await response.json()) as Record<string, unknown>[];
+      if (row) {
+        entryTokenAddress = normalizeAddress(row.entry_token_address) ?? undefined;
+        feeTokenAddress = normalizeAddress(row.fee_token) ?? undefined;
+      }
+    }
+  } catch {
+    // ignore fetch errors; entry/fee token will fallback to env vars
+  }
+
   const slotDefaultRpcUrl = `${cartridgeApiBase}/x/eternum-blitz-slot-3/katana`;
   const chainDefaultRpcUrl =
     chain === "slot" || chain === "slottest"
@@ -65,6 +83,8 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
     rpcUrl,
     worldAddress,
     contractsBySelector,
+    entryTokenAddress,
+    feeTokenAddress,
     fetchedAt: Date.now(),
   };
 

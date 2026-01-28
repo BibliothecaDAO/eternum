@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
-import { ExternalLink, Loader2, Trophy } from "lucide-react";
+import ExternalLink from "lucide-react/dist/esm/icons/external-link";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
 import { usePrizePoolBalance } from "../hooks";
 
 const formatPrizePoolBalance = (balance: bigint): string => {

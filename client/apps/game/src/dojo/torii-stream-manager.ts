@@ -167,7 +167,7 @@ export class ToriiStreamManager {
   }
 }
 
-const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
+export const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
   const grouped = models.reduce<
     Map<
       string,

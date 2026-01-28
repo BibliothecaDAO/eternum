@@ -9,5 +9,3 @@ export const openWorldSelectorModal = (): Promise<WorldSelection> => {
     setModal(<WorldSelectorModal onConfirm={handleConfirm} onCancel={handleCancel} />, true);
   });
 };
-
-export type { WorldSelection } from "./world-selector-modal";

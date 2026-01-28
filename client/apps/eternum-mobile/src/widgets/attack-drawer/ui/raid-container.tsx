@@ -31,7 +31,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { useEffect, useMemo, useState } from "react";
 import { AttackTarget, TargetType } from "../model/types";
 

@@ -143,6 +143,16 @@
     "collectibles:deploy:timelockmaker:slottest": "cd ./contracts/collectibles/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:timelockmaker:slottest",
     "collectibles:deploy:timelockmaker:sepolia": "cd ./contracts/collectibles/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:timelockmaker:sepolia",
     "collectibles:deploy:timelockmaker:mainnet": "cd ./contracts/collectibles/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:timelockmaker:mainnet",
+    "mmr:deploy:local": "cd ./contracts/mmr/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:mmr:local",
+    "mmr:deploy:slot": "cd ./contracts/mmr/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:mmr:slot",
+    "mmr:deploy:slottest": "cd ./contracts/mmr/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:mmr:slottest",
+    "mmr:deploy:sepolia": "cd ./contracts/mmr/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:mmr:sepolia",
+    "mmr:deploy:mainnet": "cd ./contracts/mmr/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:mmr:mainnet",
+    "mmr:grantgamerole:local": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantgamerole:local",
+    "mmr:grantgamerole:slot": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantgamerole:slot",
+    "mmr:grantgamerole:slottest": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantgamerole:slottest",
+    "mmr:grantgamerole:sepolia": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantgamerole:sepolia",
+    "mmr:grantgamerole:mainnet": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantgamerole:mainnet",
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "npx knip --exclude binaries,dependencies",
@@ -156,9 +166,6 @@
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
     "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
     "manifest:copy-abis": "node scripts/copy-abis.mjs"
-  },
-  "bin": {
-    "dispatch-torii": "scripts/dispatch-torii.mjs"
   },
   "dependencies": {
     "@cartridge/connector": "catalog:",

@@ -4,7 +4,9 @@ import { Link, useParams } from "react-router-dom";
 import { MarketClass, type MarketOutcome } from "@/pm/class";
 import { useMarket } from "@pm/sdk";
 import { ScrollArea } from "@pm/ui";
-import { ArrowLeft, Play, RefreshCw } from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
+import Play from "lucide-react/dist/esm/icons/play";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 
 import Button from "@/ui/design-system/atoms/button";
 
@@ -45,7 +47,7 @@ const MARKET_DETAIL_TABS: Array<{ key: MarketDetailsTabKey; label: string }> = [
   { key: "resolution", label: "Resolution" },
 ];
 
-const MarketDetailsTabs = ({ market }: { market: MarketClass }) => {
+const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {
   const [activeTab, setActiveTab] = useState<MarketDetailsTabKey>("terms");
 
   return (
@@ -74,7 +76,7 @@ const MarketDetailsTabs = ({ market }: { market: MarketClass }) => {
         {activeTab === "terms" && !market.terms ? <p className="text-sm text-gold/70">No terms provided.</p> : null}
 
         {activeTab === "comments" ? <UserMessages marketId={market.market_id} /> : null}
-        {activeTab === "activity" ? <MarketActivity market={market} /> : null}
+        {activeTab === "activity" ? <MarketActivity market={market} refreshKey={refreshKey} /> : null}
         {activeTab === "positions" ? <MarketPositions market={market} /> : null}
         {activeTab === "vault-fees" ? <MarketVaultFees market={market} /> : null}
         {activeTab === "resolution" ? (
@@ -107,9 +109,11 @@ const MarketDetailsContent = ({
   const watchDisabled = watchState.status === "offline";
   const watchLoading = watchState.status === "checking" || isWatching;
 
+  // Get current outcomes from market
+  const outcomes = useMemo(() => market.getMarketOutcomes() ?? [], [market]);
+
   const defaultHighestOutcome = useMemo(() => {
-    const outcomes = market.getMarketOutcomes();
-    if (!outcomes || outcomes.length === 0) return undefined;
+    if (outcomes.length === 0) return undefined;
 
     return outcomes.reduce<MarketOutcome | undefined>((best, current) => {
       const currentOdds = Number(current.odds);
@@ -120,14 +124,21 @@ const MarketDetailsContent = ({
 
       return best;
     }, undefined);
-  }, [market]);
+  }, [outcomes]);
 
+  // Set initial selection OR sync selected outcome with updated market data
   useEffect(() => {
-    if (!defaultHighestOutcome) return;
-    if (!selectedOutcome) {
+    if (!selectedOutcome && defaultHighestOutcome) {
+      // Initial selection
       setSelectedOutcome(defaultHighestOutcome);
+    } else if (selectedOutcome) {
+      // Sync with updated market data - find outcome with same index
+      const updatedOutcome = outcomes.find((o) => o.index === selectedOutcome.index);
+      if (updatedOutcome && updatedOutcome !== selectedOutcome) {
+        setSelectedOutcome(updatedOutcome);
+      }
     }
-  }, [defaultHighestOutcome, selectedOutcome]);
+  }, [outcomes, defaultHighestOutcome, selectedOutcome]);
 
   return (
     <>
@@ -200,7 +211,7 @@ const MarketDetailsContent = ({
         </div>
       </div>
 
-      <MarketDetailsTabs market={market} />
+      <MarketDetailsTabs market={market} refreshKey={refreshKey} />
     </>
   );
 };
@@ -263,5 +274,3 @@ export const LandingMarketDetails = () => {
     </MarketsProviders>
   );
 };
-
-export default LandingMarketDetails;

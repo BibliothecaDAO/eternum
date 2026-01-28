@@ -1,12 +1,16 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { AlertTriangle, Clock3, Info, Trophy, Users } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
+import Info from "lucide-react/dist/esm/icons/info";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ClaimBlitzPrizeButton } from "./components/claim-blitz-prize-button";
@@ -46,7 +50,7 @@ export const PrizePanel = () => {
     const mine = trials.filter((t) => String(t.owner).toLowerCase() === String(account.address).toLowerCase());
     if (mine.length === 0) return undefined;
     // pick the latest by trial_id
-    return mine.sort((a, b) => ((b.trial_id as bigint) > (a.trial_id as bigint) ? 1 : -1))[0];
+    return mine.toSorted((a, b) => ((b.trial_id as bigint) > (a.trial_id as bigint) ? 1 : -1))[0];
   }, [trials, account.address]);
   const finalTrial = useMemo(() => {
     if (!finalTrialId) return undefined;
@@ -61,7 +65,7 @@ export const PrizePanel = () => {
       .filter((p): p is NonNullable<typeof p> => Boolean(p))
       .filter((p) => (p.registered_points as bigint) > 0n)
       .map((p) => ({ address: p!.address as unknown as bigint, points: p!.registered_points as bigint }))
-      .sort((a, b) => (a.points === b.points ? 0 : a.points < b.points ? 1 : -1));
+      .toSorted((a, b) => (a.points === b.points ? 0 : a.points < b.points ? 1 : -1));
   }, [registeredPlayersEntities, components.PlayerRegisteredPoints]);
 
   const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);
@@ -300,7 +304,6 @@ export const PrizePanel = () => {
               <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
                 <span>Ranking Reference</span>
                 <div className="flex items-center gap-4 text-gold/80">
-                  {/* <span className="font-mono">ID: {String(finalTrialId)}</span> */}
                   <span className="font-mono">Total Pot: {formatTokenAmount(finalTotalPot)}</span>
                 </div>
               </div>

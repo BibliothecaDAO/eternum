@@ -6,7 +6,8 @@ import { getProducedResource, ID, RealmInfo, ResourcesIds, StructureType } from 
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
-import { CheckCircle2Icon, SparklesIcon } from "lucide-react";
+import CheckCircle2Icon from "lucide-react/dist/esm/icons/check-circle-2";
+import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
@@ -227,8 +228,8 @@ const SidebarRealm = ({
 
         <div className="flex flex-wrap items-center gap-2">
           {hasProduction ? (
-            [...resourceProductionSummary]
-              .sort((a, b) => {
+            resourceProductionSummary
+              .toSorted((a, b) => {
                 // Wheat first, then by resource id ascending
                 if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
                 if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;

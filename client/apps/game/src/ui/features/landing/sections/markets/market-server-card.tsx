@@ -1,5 +1,10 @@
 import clsx from "clsx";
-import { Clock3, Loader2, Percent, Trash2, RotateCcw, Users } from "lucide-react";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Percent from "lucide-react/dist/esm/icons/percent";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useCallback, useEffect, useMemo } from "react";
 
 import { Button, NumberInput } from "@/ui/design-system/atoms";

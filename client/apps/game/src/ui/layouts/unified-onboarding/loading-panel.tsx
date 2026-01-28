@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Check, Loader2, RefreshCw } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 
 import type { BootstrapTask } from "@/hooks/context/use-unified-onboarding";
 import Button from "@/ui/design-system/atoms/button";

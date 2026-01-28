@@ -3,7 +3,7 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 
 const mintUrl = "https://empire.realms.world";
 

@@ -187,9 +187,9 @@ const ResourceArrivalsStoreManager = () => {
       isAutoClaimingRef.current = true;
 
       try {
-        readyArrivals.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
+        const sortedReadyArrivals = readyArrivals.toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
 
-        for (const arrival of readyArrivals) {
+        for (const arrival of sortedReadyArrivals) {
           const arrivalKey = getArrivalKey(arrival);
 
           if (autoClaimedArrivals.current.has(arrivalKey)) {

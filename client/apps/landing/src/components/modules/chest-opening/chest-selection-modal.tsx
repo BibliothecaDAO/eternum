@@ -7,7 +7,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MergedNftData } from "@/types";
 import gsap from "gsap";
-import { ArrowUpDown, ChevronDown, Filter, Package, X } from "lucide-react";
+import ArrowUpDown from "lucide-react/dist/esm/icons/arrow-up-down";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Filter from "lucide-react/dist/esm/icons/filter";
+import Package from "lucide-react/dist/esm/icons/package";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChestStageContainer } from "./chest-stage-container";
 import { ChestEpoch } from "./use-chest-opening-flow";
@@ -300,7 +304,7 @@ export function ChestSelectionModal({
     // Convert Sets to sorted arrays
     const result: Record<string, string[]> = {};
     Object.entries(traits).forEach(([traitType, values]) => {
-      result[traitType] = Array.from(values).sort((a, b) => {
+      result[traitType] = Array.from(values).toSorted((a, b) => {
         // Try numeric sort first
         const numA = Number(a);
         const numB = Number(b);
@@ -315,7 +319,7 @@ export function ChestSelectionModal({
   }, [chests]);
 
   // Get list of trait types
-  const traitTypes = useMemo(() => Object.keys(traitOptions).sort(), [traitOptions]);
+  const traitTypes = useMemo(() => Object.keys(traitOptions).toSorted(), [traitOptions]);
 
   // Filter and sort chests
   const filteredAndSortedChests = useMemo(() => {
@@ -332,7 +336,7 @@ export function ChestSelectionModal({
     });
 
     // Apply sorting
-    result.sort((a, b) => {
+    const sorted = result.toSorted((a, b) => {
       if (sortMode === "id-asc") {
         return Number(a.token_id) - Number(b.token_id);
       } else {
@@ -340,7 +344,7 @@ export function ChestSelectionModal({
       }
     });
 
-    return result;
+    return sorted;
   }, [chests, filters, sortMode]);
 
   // Count active filters

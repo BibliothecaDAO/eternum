@@ -96,7 +96,7 @@ export function updateSelectionPulseMaterial(deltaTime: number) {
  * @param isDaydreamsAgent - Is this an AI agent?
  * @param ownerAddress - Owner's wallet address for enemy color assignment
  */
-export function setSelectionColorForPlayer(
+function setSelectionColorForPlayer(
   isMine: boolean,
   isAlly: boolean,
   isDaydreamsAgent: boolean,
@@ -109,7 +109,7 @@ export function setSelectionColorForPlayer(
 /**
  * Set selection colors directly from a PlayerColorProfile
  */
-export function setSelectionColorFromProfile(profile: PlayerColorProfile): void {
+function setSelectionColorFromProfile(profile: PlayerColorProfile): void {
   selectionPulseMaterial.uniforms.color.value.copy(profile.selection);
   // Use a brighter version of the primary color for the pulse
   const pulseCol = profile.primary.clone();
@@ -120,7 +120,7 @@ export function setSelectionColorFromProfile(profile: PlayerColorProfile): void 
 /**
  * Reset selection colors to default (bright blue)
  */
-export function resetSelectionColors(): void {
+function resetSelectionColors(): void {
   selectionPulseMaterial.uniforms.color.value.setRGB(0.2, 0.8, 1.0);
   selectionPulseMaterial.uniforms.pulseColor.value.setRGB(1.0, 1.0, 0.8);
 }
@@ -128,7 +128,7 @@ export function resetSelectionColors(): void {
 /**
  * Get current selection colors for debugging
  */
-export function getSelectionColors(): { baseColor: Color; pulseColor: Color } {
+function getSelectionColors(): { baseColor: Color; pulseColor: Color } {
   return {
     baseColor: selectionPulseMaterial.uniforms.color.value.clone(),
     pulseColor: selectionPulseMaterial.uniforms.pulseColor.value.clone(),

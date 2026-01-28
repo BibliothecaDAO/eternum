@@ -1486,7 +1486,7 @@ export class StructureManager {
     }
     return templates
       .map((template) => `${template.id}:${template.slot ?? ""}`)
-      .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0))
+      .toSorted((a, b) => (a > b ? 1 : a < b ? -1 : 0))
       .join("|");
   }
 

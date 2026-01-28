@@ -1,6 +1,10 @@
 import Button from "@/ui/design-system/atoms/button";
 import gsap from "gsap";
-import { AlertCircle, Check, Copy, RotateCcw, X } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
+import X from "lucide-react/dist/esm/icons/x";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChestStageContainer, ChestStageContent } from "./chest-stage-container";
 

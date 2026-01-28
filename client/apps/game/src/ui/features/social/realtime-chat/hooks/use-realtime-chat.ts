@@ -58,7 +58,7 @@ export const useRealtimePresence = (): PlayerPresence[] => {
 
 export const useRealtimeTypingIndicators = () => useRealtimeChatStore((state) => state.typingIndicators);
 
-export const useRealtimePendingMessages = () => {
+const useRealtimePendingMessages = () => {
   const worldZones = useRealtimeChatStore((state) => state.worldZones);
   const dmThreads = useRealtimeChatStore((state) => state.dmThreads);
 
@@ -192,7 +192,7 @@ export const useRealtimeChatSelector = <T>(
   // equalityFn?: (previous: T, next: T) => boolean,
 ): T => useRealtimeChatStore(selector);
 
-export const useRealtimePendingMessageById = (messageId: string): PendingMessage | undefined =>
+const useRealtimePendingMessageById = (messageId: string): PendingMessage | undefined =>
   useRealtimeChatStore((state) => {
     for (const zone of Object.values(state.worldZones)) {
       const match = zone.pendingMessages.find((pending) => pending.id === messageId);
@@ -205,14 +205,14 @@ export const useRealtimePendingMessageById = (messageId: string): PendingMessage
     return undefined;
   });
 
-export const useRealtimeRecentMessages = (limit = 10): DirectMessage[] => {
+const useRealtimeRecentMessages = (limit = 10): DirectMessage[] => {
   const dmThreads = useRealtimeChatStore((state) => state.dmThreads);
 
   return useMemo(() => {
     const messages = Object.values(dmThreads).flatMap(({ messages }) => messages);
 
-    return [...messages]
-      .sort((a, b) => {
+    return messages
+      .toSorted((a, b) => {
         const aTime = toTimestamp(a.createdAt as string | Date | undefined);
         const bTime = toTimestamp(b.createdAt as string | Date | undefined);
         return bTime - aTime;

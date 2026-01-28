@@ -4,7 +4,8 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
-import { ChevronDown, Info } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Info from "lucide-react/dist/esm/icons/info";
 
 enum BiomeFilenames {
   Bare = "bare.png",

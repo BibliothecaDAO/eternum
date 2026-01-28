@@ -186,7 +186,6 @@ export function OpeningStage({ active, videoSrc, onComplete, onSkip }: OpeningSt
         timelineRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   // Don't render if not active

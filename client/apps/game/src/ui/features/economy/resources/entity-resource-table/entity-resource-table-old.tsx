@@ -1,6 +1,6 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
-  getBlockTimestamp,
   getBuildingCount,
   getEntityIdFromKeys,
   getStructureArmyRelicEffects,
@@ -13,7 +13,8 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
+import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
 
@@ -61,7 +62,7 @@ export const EntityResourceTableOld = React.memo(
 
     const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
 
-    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
     const currentTick = currentDefaultTick || 0;
 
     const activeRelicEffects = useMemo(() => {
@@ -224,6 +225,9 @@ export const EntityResourceTableOld = React.memo(
                           activeRelicEffects={activeRelicEffects}
                           canOpenProduction={hasProductionBuilding}
                           disableButtons={disableButtons}
+                          currentDefaultTick={currentDefaultTick}
+                          currentArmiesTick={currentArmiesTick}
+                          armiesTickTimeRemaining={armiesTickTimeRemaining}
                         />
                       );
                     })}

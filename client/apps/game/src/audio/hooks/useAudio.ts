@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAllAssets } from "../config/registry";
 import { AudioManager } from "../core/AudioManager";
-import { AudioCategory, AudioPlayOptions } from "../types";
+import { AudioCategory, AudioPlayOptions, AudioState } from "../types";
 
 export function useAudio() {
   const managerRef = useRef<AudioManager>();
   const [isReady, setIsReady] = useState(false);
   const assetsRegisteredRef = useRef(false);
+
+  // Declare audioState before ensureReady so it can be used in the callback
+  const [audioState, setAudioState] = useState<Readonly<AudioState> | undefined>();
 
   const ensureReady = useCallback(async () => {
     try {
@@ -80,9 +83,6 @@ export function useAudio() {
   const getMetrics = useCallback(() => {
     return managerRef.current?.getMetrics();
   }, []);
-
-  // Simple reactive state management - no polling!
-  const [audioState, setAudioState] = useState<ReturnType<typeof getState>>();
 
   useEffect(() => {
     if (isReady && managerRef.current) {

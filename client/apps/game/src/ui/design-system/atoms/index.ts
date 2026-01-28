@@ -16,7 +16,6 @@ export { default as KbdKey } from "./kbd-key";
 // Display Components
 export { default as Avatar } from "./avatar";
 export { NumberInput } from "./number-input";
-export { SortButton } from "./sort-button";
 
 // Navigation
 export * from "./tab";

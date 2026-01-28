@@ -42,7 +42,7 @@ export function navigateToStructure(col: number, row: number, scene?: "hex" | "m
  * @param row - Row coordinate
  * @param scene - Optional scene to navigate to ('hex' or 'map'). Defaults to current scene.
  */
-export function navigateToPosition(col: number, row: number, scene?: "hex" | "map") {
+function navigateToPosition(col: number, row: number, scene?: "hex" | "map") {
   const url = new Position({ x: col, y: row });
 
   // Determine which URL method to use based on scene parameter or current URL

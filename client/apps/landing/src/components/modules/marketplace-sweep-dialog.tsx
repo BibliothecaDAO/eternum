@@ -59,7 +59,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDia
                       <div className="flex items-center gap-2">
                         {metadata?.attributes
                           ?.filter((attribute: { trait_type: string }) => attribute.trait_type === "Resource")
-                          .sort(
+                          .toSorted(
                             (a: { value: { toString: () => string } }, b: { value: { toString: () => string } }) => {
                               const aWithoutSpace = a.value.toString().replace(/\s/g, "");
                               const bWithoutSpace = b.value.toString().replace(/\s/g, "");

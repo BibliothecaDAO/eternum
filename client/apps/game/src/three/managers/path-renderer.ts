@@ -436,7 +436,7 @@ export class PathRenderer {
     }
 
     // Sort ranges by start index for better allocation
-    this.freeSegmentRanges.sort((a, b) => a.start - b.start);
+    this.freeSegmentRanges = this.freeSegmentRanges.toSorted((a, b) => a.start - b.start);
   }
 
   /**
@@ -482,7 +482,7 @@ export class PathRenderer {
     }
 
     // Collect all paths and sort by current start index
-    const paths = Array.from(this.activePaths.values()).sort((a, b) => a.startIndex - b.startIndex);
+    const paths = Array.from(this.activePaths.values()).toSorted((a, b) => a.startIndex - b.startIndex);
 
     // Rewrite all paths contiguously
     let newIndex = 0;
@@ -636,5 +636,5 @@ export class PathRenderer {
   }
 }
 
-// Export singleton accessor
-export const pathRenderer = PathRenderer.getInstance();
+// Singleton accessor
+const pathRenderer = PathRenderer.getInstance();

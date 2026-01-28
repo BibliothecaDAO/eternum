@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ArrowDown } from "lucide-react";
+import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
 import React, { useEffect, useState } from "react";
 
 interface ToggleComponentProps {

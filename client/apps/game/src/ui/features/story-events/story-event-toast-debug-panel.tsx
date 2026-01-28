@@ -52,7 +52,7 @@ const demoEvents: StoryEventSystemUpdate[] = [
   },
 ];
 
-export function StoryEventToastDebugPanel() {
+function StoryEventToastDebugPanel() {
   const { pushToast, clearAll } = useStoryEventToasts();
   const {
     setup: { components },

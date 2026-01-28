@@ -9,7 +9,7 @@ import type { AppEnv } from "../middleware/auth";
 import { requirePlayerSession } from "../middleware/auth";
 import { avatarRateLimit, incrementRateLimit } from "../middleware/rate-limit";
 
-export const avatarRoutes = new Hono<AppEnv>();
+const avatarRoutes = new Hono<AppEnv>();
 
 const GENERATION_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_GENERATIONS_PER_WEEK =

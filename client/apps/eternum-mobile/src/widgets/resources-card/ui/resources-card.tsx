@@ -10,7 +10,8 @@ import { divideByPrecision, getIsBlitz } from "@bibliothecadao/eternum";
 import { getResourceTiers, ID, resources, ResourcesIds } from "@bibliothecadao/types";
 
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import { useCallback, useMemo, useState } from "react";
 
 interface ResourcesCardProps {
