@@ -6,6 +6,7 @@ import { Tooltip } from "../design-system/molecules/tooltip";
 import { StoryEventStream } from "../features";
 import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
+import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { ActionInstructions } from "../features/world/components/actions/action-instructions";
@@ -70,6 +71,7 @@ const BackgroundSystems = () => (
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
     <TransferAutomationManager />
+    <ExplorationAutomationManager />
   </>
 );
 
