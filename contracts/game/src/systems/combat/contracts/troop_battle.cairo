@@ -144,7 +144,7 @@ pub mod troop_battle_systems {
 
             // ensure both explorers are adjacent to each other
             assert!(
-                is_explorer_battle_adjacent(explorer_aggressor.coord, explorer_defender.coord),
+                is_explorer_battle_adjacent(ref world, explorer_aggressor.coord, explorer_defender.coord),
                 "explorers are not adjacent",
             );
 
