@@ -1,31 +1,10 @@
 use core::num::traits::Zero;
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use dojo::world::WorldStorage;
 use starknet::ContractAddress;
 use crate::alias::ID;
-use crate::constants::{ResourceTypes, blitz_produceable_resources};
-use crate::models::config::{
-    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, VillageFoundResourcesConfig,
-    WorldConfigUtilImpl,
-};
-use crate::models::map::TileOccupier;
-use crate::models::position::{Coord, TravelImpl};
-use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
-use crate::models::resource::production::production::ProductionImpl;
-use crate::models::resource::resource::{
-    ResourceMinMaxList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-};
-use crate::models::structure::{
-    StructureBaseImpl, StructureCategory, StructureImpl, StructureMetadata, StructureOwnerStoreImpl,
-};
-use crate::models::troop::{GuardSlot, TroopTier, TroopType};
-use crate::models::weight::Weight;
+use crate::constants::ResourceTypes;
+use crate::models::structure::{StructureMetadata, StructureOwnerStoreImpl};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
-use crate::system_libraries::structure_libraries::structure_creation_library::{
-    IStructureCreationlibraryDispatcherTrait, structure_creation_library,
-};
-use crate::systems::utils::structure::iStructureImpl;
-use crate::systems::utils::troop::iMercenariesImpl;
 
 #[generate_trait]
 pub impl iVillageImpl of iVillageTrait {
@@ -107,103 +86,8 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
         ]
     }
 }
+// Note: Village discovery has been replaced by Camp discovery.
+// Villages are no longer discoverable through exploration.
+// Use iCampDiscoveryImpl in systems/utils/camp.cairo instead.
 
 
-#[generate_trait]
-pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
-    fn lottery(map_config: MapConfig, vrf_seed: u256, world: WorldStorage) -> bool {
-        // make sure seed is different for each lottery system to prevent same outcome for same probability
-        let VRF_OFFSET: u256 = 5;
-        let village_vrf_seed = if vrf_seed > VRF_OFFSET {
-            vrf_seed - VRF_OFFSET
-        } else {
-            vrf_seed + VRF_OFFSET
-        };
-
-        // use RNG library simple boolean lottery
-        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let success: bool = rng_library_dispatcher
-            .get_weighted_choice_bool_simple(
-                map_config.village_win_probability.into(), map_config.village_fail_probability.into(), village_vrf_seed,
-            );
-
-        return success;
-    }
-
-    fn create(
-        ref world: WorldStorage,
-        coord: Coord,
-        troop_limit_config: TroopLimitConfig,
-        troop_stamina_config: TroopStaminaConfig,
-        vrf_seed: u256,
-    ) -> bool {
-        // make discoverable village structure
-        let structure_id = world.dispatcher.uuid();
-        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
-        structure_creation_library
-            .make_structure(
-                world,
-                coord,
-                Zero::zero(),
-                structure_id,
-                StructureCategory::Village,
-                blitz_produceable_resources().span(),
-                Default::default(),
-                TileOccupier::Village,
-                false,
-            );
-
-        // add guards to structure
-        // slot must start from delta, to charlie, to beta, to alpha
-        let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
-        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
-        iMercenariesImpl::add(
-            ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
-        );
-
-        // add starting resources to village structure
-        let village_find_resources_config: VillageFoundResourcesConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("village_find_resources_config"),
-        );
-        let starting_resources_id = village_find_resources_config.resources_mm_list_id;
-        let starting_resources_count = village_find_resources_config.resources_mm_list_count;
-
-        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-
-        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        for i in 0..starting_resources_count {
-            let starting_resource_min_max: ResourceMinMaxList = world.read_model((starting_resources_id, i));
-            let starting_resource_amount_range = starting_resource_min_max.max_amount
-                - starting_resource_min_max.min_amount;
-            let mut starting_resource_amount = starting_resource_min_max.min_amount;
-            if starting_resource_amount_range.is_non_zero() {
-                starting_resource_amount += rng_library_dispatcher
-                    .get_random_in_range(vrf_seed, i.into(), starting_resource_amount_range);
-            }
-            let starting_resource_type = starting_resource_min_max.resource_type;
-
-            // add starting resource to structure
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, starting_resource_type);
-            let mut starting_resource = SingleResourceStoreImpl::retrieve(
-                ref world, structure_id, starting_resource_type, ref structure_weight, resource_weight_grams, true,
-            );
-            starting_resource.add(starting_resource_amount, ref structure_weight, resource_weight_grams);
-            starting_resource.store(ref world);
-        }
-
-        // update structure weight
-        structure_weight.store(ref world, structure_id);
-
-        // place castle building
-        BuildingImpl::create(
-            ref world,
-            Zero::zero(),
-            structure_id,
-            StructureCategory::Village.into(),
-            coord,
-            BuildingCategory::ResourceLabor,
-            BuildingImpl::center(),
-        );
-        return true;
-    }
-}

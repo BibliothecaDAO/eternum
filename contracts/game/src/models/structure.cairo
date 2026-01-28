@@ -333,6 +333,14 @@ pub impl StructureImpl of StructureTrait {
                 structure.base.troop_max_explorer_count = 1;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
             },
+            StructureCategory::HolySite => {
+                structure.base.troop_max_explorer_count = 0;
+                structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers (same as FragmentMine)
+            },
+            StructureCategory::Camp => {
+                structure.base.troop_max_explorer_count = 1;
+                structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
+            },
             _ => { panic!("invalid structure category"); },
         }
         structure.base.created_at = starknet::get_block_timestamp().try_into().unwrap();
@@ -350,6 +358,8 @@ pub enum StructureCategory {
     Bank,
     FragmentMine,
     Village,
+    HolySite,
+    Camp,
 }
 
 pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
@@ -361,6 +371,8 @@ pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
             StructureCategory::Bank => 3,
             StructureCategory::FragmentMine => 4,
             StructureCategory::Village => 5,
+            StructureCategory::HolySite => 6,
+            StructureCategory::Camp => 7,
         }
     }
 }
@@ -374,6 +386,8 @@ pub impl StructureCategoryIntoU8 of Into<StructureCategory, u8> {
             StructureCategory::Bank => 3,
             StructureCategory::FragmentMine => 4,
             StructureCategory::Village => 5,
+            StructureCategory::HolySite => 6,
+            StructureCategory::Camp => 7,
         }
     }
 }

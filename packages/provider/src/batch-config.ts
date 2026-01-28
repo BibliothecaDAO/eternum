@@ -59,7 +59,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Complex operations
   [TransactionType.CONTRIBUTE]: TransactionCostCategory.HIGH,
   [TransactionType.MAKE_HYPERSTRUCTURES]: TransactionCostCategory.HIGH,
-  [TransactionType.MAKE_SPIRES]: TransactionCostCategory.HIGH,
   [TransactionType.SETTLE_REALMS]: TransactionCostCategory.HIGH,
   [TransactionType.REGISTER]: TransactionCostCategory.HIGH,
   [TransactionType.SEASON_CLOSE]: TransactionCostCategory.HIGH,
