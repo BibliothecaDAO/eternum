@@ -39,7 +39,7 @@ pub mod faith_systems {
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use crate::models::config::{FaithConfig, SeasonConfig, SeasonConfigImpl, WorldConfigUtilImpl};
+    use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{
         FaithPledgedStory, FaithPointsClaimedStory, FaithRemovedStory, Story, StoryEvent,
     };
@@ -72,19 +72,21 @@ pub mod faith_systems {
             let wonder_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
 
             // Check blacklist
-            let structure_blacklist: WonderFaithBlacklist = world.read_model((wonder_id, structure_id.into()));
-            let address_blacklist: WonderFaithBlacklist = world.read_model((wonder_id, caller.into()));
+            let structure_id_felt: felt252 = structure_id.into();
+            let caller_felt: felt252 = caller.into();
+            let structure_blacklist: WonderFaithBlacklist = world.read_model((wonder_id, structure_id_felt));
+            let address_blacklist: WonderFaithBlacklist = world.read_model((wonder_id, caller_felt));
             assert!(!structure_blacklist.is_blocked, "Structure is blacklisted");
             assert!(!address_blacklist.is_blocked, "Address is blacklisted");
 
             // Get FP rates based on structure category
             let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
             assert!(faith_config.enabled, "Faith system is not enabled");
-            let (to_owner, to_pledger) = Self::_get_fp_rates(structure_base.category, structure_id, wonder_id, faith_config);
+            let (to_owner, to_pledger) = InternalImpl::_get_fp_rates(structure_base.category, structure_id, wonder_id, faith_config);
 
             // Check if this is a wonder pledging to another wonder
             let is_self_pledge = structure_id == wonder_id;
-            let is_wonder_submitting = Self::_is_wonder(ref world, structure_id) && !is_self_pledge;
+            let is_wonder_submitting = InternalImpl::_is_wonder(ref world, structure_id) && !is_self_pledge;
 
             if is_wonder_submitting {
                 // Can only submit if no one is pledged to the submitting wonder
@@ -102,7 +104,7 @@ pub mod faith_systems {
                 // Settle previous owner's points if owner changed
                 if wonder_faith.last_recorded_owner != wonder_owner
                     && wonder_faith.last_recorded_owner.is_non_zero() {
-                    Self::_settle_owner_points(ref world, wonder_faith.last_recorded_owner, now);
+                    InternalImpl::_settle_owner_points(ref world, wonder_faith.last_recorded_owner, now);
                 }
                 wonder_faith.last_recorded_owner = wonder_owner;
             } else {
@@ -114,11 +116,11 @@ pub mod faith_systems {
             let mut faithful_structure: FaithfulStructure = world.read_model(structure_id);
             if faithful_structure.wonder_id != 0 && faithful_structure.faithful_since != 0 {
                 // Remove from previous wonder first
-                Self::_remove_from_wonder(ref world, structure_id, faithful_structure.wonder_id, now);
+                InternalImpl::_remove_from_wonder(ref world, structure_id, faithful_structure.wonder_id, now);
             }
 
             // Claim current wonder's points before state change
-            Self::_claim_wonder_points_internal(ref world, wonder_id, now);
+            InternalImpl::_claim_wonder_points_internal(ref world, wonder_id, now);
 
             // Update faithful structure
             faithful_structure.structure_id = structure_id;
@@ -134,8 +136,8 @@ pub mod faith_systems {
             world.write_model(@wonder_faith);
 
             // Update player points rates
-            Self::_update_player_rates_add(ref world, structure_owner, 0, to_pledger, now);
-            Self::_update_player_rates_add(ref world, wonder_owner, to_owner, 0, now);
+            InternalImpl::_update_player_rates_add(ref world, structure_owner, 0, to_pledger, now);
+            InternalImpl::_update_player_rates_add(ref world, wonder_owner, to_owner, 0, now);
 
             // Emit event
             world
@@ -185,7 +187,7 @@ pub mod faith_systems {
             }
 
             // Perform removal
-            Self::_remove_from_wonder(ref world, structure_id, wonder_id, now);
+            InternalImpl::_remove_from_wonder(ref world, structure_id, wonder_id, now);
 
             // Emit event
             world
@@ -209,7 +211,7 @@ pub mod faith_systems {
             season_config.assert_main_game_started_and_point_registration_grace_not_elapsed();
 
             let now = starknet::get_block_timestamp();
-            Self::_claim_wonder_points_internal(ref world, wonder_id, now);
+            InternalImpl::_claim_wonder_points_internal(ref world, wonder_id, now);
         }
 
         fn blacklist(ref self: ContractState, wonder_id: ID, blocked_id: felt252) {

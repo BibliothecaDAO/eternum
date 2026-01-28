@@ -135,3 +135,9 @@ pub mod mmr {
         mod test_mmr_systems;
     }
 }
+
+pub mod faith {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
