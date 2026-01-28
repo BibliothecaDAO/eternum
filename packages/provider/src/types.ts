@@ -1,3 +1,12 @@
+/**
+ * Details about a single transaction type within a batch.
+ * Used to display breakdown of batched transactions in the UI.
+ */
+export interface BatchedTransactionDetail {
+  type: TransactionType;
+  count: number;
+}
+
 export enum TransactionType {
   // Exploration & Movement
   EXPLORE = "explore",
@@ -140,6 +149,9 @@ export enum TransactionType {
   BLITZ_PRIZE_CLAIM = "blitz_prize_claim",
   BLITZ_PRIZE_PLAYER_RANK = "blitz_prize_player_rank",
   BLITZ_PRIZE_CLAIM_NO_GAME = "blitz_prize_claim_no_game",
+
+  // MMR
+  COMMIT_AND_CLAIM_MMR = "commit_and_claim_mmr",
 
   // Chests & Relics
   OPEN_CHEST = "open_chest",

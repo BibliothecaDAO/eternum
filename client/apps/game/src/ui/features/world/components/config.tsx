@@ -13,7 +13,8 @@ type OSWindows =
   | "Rewards"
   | "Shortcuts"
   | "LatestFeatures"
-  | "Transactions";
+  | "Transactions"
+  | "ExplorationAutomation";
 
 export interface OSInterface {
   onClick: () => void;
@@ -32,7 +33,7 @@ export interface ExpandableOSInterface extends OSInterface {
   isExpanded?: boolean;
 }
 
-export const hyperstructures: OSWindows = "Hyperstructures";
+const hyperstructures: OSWindows = "Hyperstructures";
 export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";
 export const trade: OSWindows = "Trade";
@@ -43,3 +44,4 @@ export const battleSimulation: OSWindows = "BattleSimulation";
 export const shortcuts: OSWindows = "Shortcuts";
 export const latestFeatures: OSWindows = "LatestFeatures";
 export const transactions: OSWindows = "Transactions";
+export const explorationAutomation: OSWindows = "ExplorationAutomation";

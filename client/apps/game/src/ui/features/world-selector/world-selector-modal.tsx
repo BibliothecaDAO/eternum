@@ -14,7 +14,16 @@ import {
 import type { WorldSelectionInput } from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
-import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2, UserCheck, UserX, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import UserCheck from "lucide-react/dist/esm/icons/user-check";
+import UserX from "lucide-react/dist/esm/icons/user-x";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chain } from "@contracts";
 import { env } from "../../../../env";
@@ -319,8 +328,7 @@ export const WorldSelectorModal = ({
 
   const handleRefresh = useCallback(async () => {
     setPlayerRegistration({});
-    await refetchFactoryWorlds();
-    await refetchFactory();
+    await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
   }, [refetchFactoryWorlds, refetchFactory]);
 
   const handleSwitchChain = useCallback(
@@ -393,7 +401,7 @@ export const WorldSelectorModal = ({
     isRegistered,
     isOnline,
     isLoading,
-    className = "mt-3",
+    className = "mt-2 sm:mt-3",
   }: {
     registrationCount: number | null;
     isRegistered: boolean | null;
@@ -404,7 +412,9 @@ export const WorldSelectorModal = ({
     const countLabel =
       isLoading && registrationCount == null ? "Checking players…" : `${registrationCount ?? "—"} registered`;
     return (
-      <div className={`${className} flex flex-wrap items-center gap-3 text-[10px] text-white/70`}>
+      <div
+        className={`${className} flex flex-wrap items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] text-white/70`}
+      >
         <span className="inline-flex items-center gap-1.5">
           <Users className="w-3 h-3" />
           {countLabel}
@@ -454,7 +464,7 @@ export const WorldSelectorModal = ({
     return (
       <div
         key={fg.worldKey}
-        className={`group relative rounded-lg border-2 p-4 transition-all duration-200 ${
+        className={`group relative rounded-lg border-2 p-2.5 sm:p-4 transition-all duration-200 ${
           isInteractive ? "cursor-pointer" : "cursor-default"
         } ${
           isSelected
@@ -475,11 +485,11 @@ export const WorldSelectorModal = ({
         }}
         onDoubleClick={() => isInteractive && handleEnterFactoryGame(fg)}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
               <div
-                className={`truncate font-bold text-base ${
+                className={`truncate font-bold text-sm sm:text-base ${
                   gameIsEnded ? "text-gold/50" : isUnconfigured ? "text-gold/70" : "text-gold"
                 }`}
               >
@@ -504,7 +514,7 @@ export const WorldSelectorModal = ({
               startMainAt={fg.startMainAt}
               endAt={fg.endAt}
               status={fg.status}
-              className={`text-sm md:text-base font-semibold mt-1 block ${
+              className={`text-xs sm:text-sm md:text-base font-semibold mt-0.5 sm:mt-1 block ${
                 gameIsEnded ? "text-white/40" : isUnconfigured ? "text-white/60" : "text-white"
               }`}
             />
@@ -568,31 +578,31 @@ export const WorldSelectorModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown/90 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown/90 backdrop-blur-sm p-2 sm:p-4">
       <div
         ref={modalRef}
-        className="w-full max-w-4xl border-2 border-gold/30 bg-brown/95 panel-wood rounded-lg shadow-2xl shadow-black/50 overflow-hidden"
+        className="w-full max-w-4xl max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] border-2 border-gold/30 bg-brown/95 panel-wood rounded-lg shadow-2xl shadow-black/50 overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="relative border-b-2 border-gold/20 bg-gradient-to-b from-brown/80 to-transparent p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-gold/10 border border-gold/30">
-                <Globe className="w-6 h-6 text-gold" />
+        <div className="relative border-b-2 border-gold/20 bg-gradient-to-b from-brown/80 to-transparent p-3 sm:p-6 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-gold/10 border border-gold/30">
+                <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-gold" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold tracking-tight text-gold uppercase">Select Game</h2>
-                <p className="text-sm text-gold/60 mt-1">Choose your game </p>
+                <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-gold uppercase">Select Game</h2>
+                <p className="text-xs sm:text-sm text-gold/60 mt-0.5 sm:mt-1">Choose your game</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-gold/60">Chain</span>
-                <div className="flex items-center gap-1 rounded-full border border-gold/20 bg-brown/80 p-1">
+                <div className="flex items-center gap-0.5 sm:gap-1 rounded-full border border-gold/20 bg-brown/80 p-0.5 sm:p-1">
                   <button
                     type="button"
                     onClick={() => handleSwitchChain("mainnet")}
-                    className={`px-2.5 py-1 text-[10px] font-semibold uppercase rounded-full transition ${
+                    className={`min-h-11 px-3 sm:px-2.5 py-1 sm:py-1 text-[10px] font-semibold uppercase rounded-full transition ${
                       activeFactoryChain === "mainnet"
                         ? "bg-gold/20 text-gold"
                         : "text-gold/60 hover:text-gold hover:bg-gold/10"
@@ -603,7 +613,7 @@ export const WorldSelectorModal = ({
                   <button
                     type="button"
                     onClick={() => handleSwitchChain("slot")}
-                    className={`px-2.5 py-1 text-[10px] font-semibold uppercase rounded-full transition ${
+                    className={`min-h-11 px-3 sm:px-2.5 py-1 sm:py-1 text-[10px] font-semibold uppercase rounded-full transition ${
                       activeFactoryChain === "slot"
                         ? "bg-gold/20 text-gold"
                         : "text-gold/60 hover:text-gold hover:bg-gold/10"
@@ -613,7 +623,7 @@ export const WorldSelectorModal = ({
                   </button>
                 </div>
               </div>
-              <Button onClick={cancel} variant="outline" size="md">
+              <Button onClick={cancel} variant="outline" size="md" className="!h-11 !px-3 sm:!px-4">
                 Cancel
               </Button>
             </div>
@@ -621,16 +631,18 @@ export const WorldSelectorModal = ({
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-3 sm:p-6 flex-1 overflow-y-auto">
           {/* Add New Game on top */}
 
           {/* Two columns: Factory left, Saved right */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
             {/* Factory games (left) */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex items-center gap-2 mb-2 sm:mb-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                <div className="text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Factory Games</div>
+                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">
+                  Factory Games
+                </div>
                 {factoryLoading && (
                   <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide bg-gold/10 text-gold border border-gold/30">
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -649,8 +661,8 @@ export const WorldSelectorModal = ({
               </div>
 
               {saved.length > 0 && (
-                <div className="rounded-lg border border-gold/20 bg-gold/5 p-2 mb-2">
-                  <p className="text-[10px] text-gold/60 text-center">
+                <div className="rounded-lg border border-gold/20 bg-gold/5 p-1.5 sm:p-2 mb-2 hidden sm:block">
+                  <p className="text-[9px] sm:text-[10px] text-gold/60 text-center">
                     <span className="font-semibold">Tip:</span> Double-click to enter • Hover for actions
                   </p>
                 </div>
@@ -686,7 +698,7 @@ export const WorldSelectorModal = ({
               {/* Factory list container with visible loading overlay when refreshing */}
               <div className="relative">
                 <div
-                  className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"
+                  className="space-y-2 max-h-[300px] sm:max-h-[400px] lg:max-h-[500px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar"
                   aria-busy={factoryLoading ? true : undefined}
                   aria-live="polite"
                 >
@@ -719,10 +731,10 @@ export const WorldSelectorModal = ({
                       const online = factoryGames.filter((fg) => fg.status === "ok");
                       const upcoming = online
                         .filter((fg) => isUpcoming(fg.startMainAt))
-                        .sort((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
+                        .toSorted((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
                       const ongoing = online
                         .filter((fg) => isOngoing(fg.startMainAt, fg.endAt))
-                        .sort((a, b) => {
+                        .toSorted((a, b) => {
                           // Infinite games (endAt === 0 or null) should be sorted by start time
                           if ((a.endAt === 0 || a.endAt == null) && (b.endAt === 0 || b.endAt == null)) {
                             return (a.startMainAt as number) - (b.startMainAt as number);
@@ -734,10 +746,10 @@ export const WorldSelectorModal = ({
                         });
                       const ended = online
                         .filter((fg) => isEnded(fg.startMainAt, fg.endAt))
-                        .sort((a, b) => (b.endAt as number) - (a.endAt as number));
+                        .toSorted((a, b) => (b.endAt as number) - (a.endAt as number));
                       const unknown = online
                         .filter((fg) => fg.startMainAt == null)
-                        .sort((a, b) => a.name.localeCompare(b.name));
+                        .toSorted((a, b) => a.name.localeCompare(b.name));
 
                       return (
                         <>
@@ -813,27 +825,31 @@ export const WorldSelectorModal = ({
             </div>
 
             {/* Saved worlds (right) */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex items-center gap-2 mb-2 sm:mb-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                <div className="text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Recent Games</div>
+                <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">
+                  Recent Games
+                </div>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
               </div>
 
               {saved.length > 0 && (
-                <div className="rounded-lg border border-gold/20 bg-gold/5 p-2 mb-2">
-                  <p className="text-[10px] text-gold/60 text-center">
+                <div className="rounded-lg border border-gold/20 bg-gold/5 p-1.5 sm:p-2 mb-2 hidden sm:block">
+                  <p className="text-[9px] sm:text-[10px] text-gold/60 text-center">
                     <span className="font-semibold">Tip:</span> Double-click to enter • Hover for actions
                   </p>
                 </div>
               )}
 
-              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-2 max-h-[300px] sm:max-h-[400px] lg:max-h-[500px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
                 {saved.length === 0 && (
-                  <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
-                    <Globe className="w-12 h-12 text-gold/30 mx-auto mb-2" />
-                    <p className="text-sm text-gold/60">No recent games yet</p>
-                    <p className="text-xs text-gold/40 mt-1">Enter a world name to begin your conquest</p>
+                  <div className="rounded-lg border-2 border-dashed border-gold/20 p-4 sm:p-6 text-center">
+                    <Globe className="w-10 h-10 sm:w-12 sm:h-12 text-gold/30 mx-auto mb-2" />
+                    <p className="text-xs sm:text-sm text-gold/60">No recent games yet</p>
+                    <p className="text-[10px] sm:text-xs text-gold/40 mt-1">
+                      Enter a world name to begin your conquest
+                    </p>
                   </div>
                 )}
                 {(() => {
@@ -871,7 +887,7 @@ export const WorldSelectorModal = ({
                     return (
                       <div
                         key={s}
-                        className={`group relative rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${
+                        className={`group relative rounded-lg border-2 p-2.5 sm:p-4 transition-all duration-200 cursor-pointer ${
                           selected === s
                             ? isOnline
                               ? gameIsEnded
@@ -889,11 +905,11 @@ export const WorldSelectorModal = ({
                           handleDoubleClick(savedWorldsByName.get(s) ?? { name: s, chain: undefined, worldKey: s })
                         }
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-2 sm:gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                               <div
-                                className={`truncate font-bold text-base ${gameIsEnded ? "text-gold/50" : "text-gold"}`}
+                                className={`truncate font-bold text-sm sm:text-base ${gameIsEnded ? "text-gold/50" : "text-gold"}`}
                               >
                                 {s}
                               </div>
@@ -919,7 +935,7 @@ export const WorldSelectorModal = ({
                                 startMainAt={meta.startMainAt}
                                 endAt={meta.endAt}
                                 status={statusMap[s]}
-                                className={`text-sm md:text-base font-semibold mt-1 block ${
+                                className={`text-xs sm:text-sm md:text-base font-semibold mt-0.5 sm:mt-1 block ${
                                   gameIsEnded ? "text-white/40" : "text-white"
                                 }`}
                               />

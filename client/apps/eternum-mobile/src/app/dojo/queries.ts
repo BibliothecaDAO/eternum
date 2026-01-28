@@ -113,6 +113,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-BlitzRealmPlayerRegister",
     "s1_eternum-PlayersRankFinal",
     "s1_eternum-PlayersRankTrial",
+    "s1_eternum-MMRGameMeta",
   ];
 
   const twoKeyConfigModels = ["s1_eternum-ResourceList"];

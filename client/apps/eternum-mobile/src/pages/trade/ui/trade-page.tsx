@@ -14,7 +14,7 @@ import {
 import { ContractAddress, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useSearch } from "@tanstack/react-router";
-import { ArrowDownUp } from "lucide-react";
+import ArrowDownUp from "lucide-react/dist/esm/icons/arrow-down-up";
 import { useEffect, useMemo, useState } from "react";
 import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 

@@ -1,7 +1,11 @@
 import { ChestCard } from "@/ui/features/landing/chest-opening/components";
 import { ChestEpoch } from "@/ui/features/landing/chest-opening/hooks/use-chest-opening-flow";
 import { MergedNftData } from "@/ui/features/landing/chest-opening/utils/types";
-import { ArrowUpDown, ChevronDown, Filter, Package, X } from "lucide-react";
+import ArrowUpDown from "lucide-react/dist/esm/icons/arrow-up-down";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Filter from "lucide-react/dist/esm/icons/filter";
+import Package from "lucide-react/dist/esm/icons/package";
+import X from "lucide-react/dist/esm/icons/x";
 import { useMemo, useState } from "react";
 
 type SortMode = "id-asc" | "id-desc";
@@ -140,7 +144,7 @@ export function ChestGallery({ chests, onOpenChest, isLoading = false, openingCh
     // Convert Sets to sorted arrays
     const result: Record<string, string[]> = {};
     Object.entries(traits).forEach(([traitType, values]) => {
-      result[traitType] = Array.from(values).sort((a, b) => {
+      result[traitType] = Array.from(values).toSorted((a, b) => {
         const numA = Number(a);
         const numB = Number(b);
         if (!isNaN(numA) && !isNaN(numB)) {
@@ -154,7 +158,7 @@ export function ChestGallery({ chests, onOpenChest, isLoading = false, openingCh
   }, [chests]);
 
   // Get list of trait types
-  const traitTypes = useMemo(() => Object.keys(traitOptions).sort(), [traitOptions]);
+  const traitTypes = useMemo(() => Object.keys(traitOptions).toSorted(), [traitOptions]);
 
   // Filter and sort chests
   const filteredAndSortedChests = useMemo(() => {
@@ -171,7 +175,7 @@ export function ChestGallery({ chests, onOpenChest, isLoading = false, openingCh
     });
 
     // Apply sorting
-    result.sort((a, b) => {
+    const sortedResult = result.toSorted((a, b) => {
       if (sortMode === "id-asc") {
         return Number(a.token_id) - Number(b.token_id);
       } else {
@@ -179,7 +183,7 @@ export function ChestGallery({ chests, onOpenChest, isLoading = false, openingCh
       }
     });
 
-    return result;
+    return sortedResult;
   }, [chests, filters, sortMode]);
 
   // Count active filters

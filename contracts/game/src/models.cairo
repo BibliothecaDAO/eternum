@@ -6,6 +6,7 @@ pub mod hyperstructure;
 pub mod map;
 pub mod map2;
 pub mod message;
+pub mod mmr;
 pub mod name;
 pub mod owner;
 pub mod position;

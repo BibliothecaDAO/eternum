@@ -19,9 +19,11 @@ import {
   GetTransactionReceiptResponse,
   uint256,
 } from "starknet";
-import { TransactionType } from "./types";
+import { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
+import { BatchedTransactionDetail, TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
-export { TransactionType };
+export { TransactionType, BatchedTransactionDetail } from "./types";
+export { TransactionCostCategory, CATEGORY_BATCH_LIMITS, getTransactionCategory } from "./batch-config";
 type TransactionFailureMeta = {
   type?: TransactionType;
   transactionCount?: number;
@@ -83,23 +85,37 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
   };
 }
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
+
+/**
+ * Queue item for transaction batching
+ */
+interface QueueItem {
+  providerCall: () => Promise<any>;
+  resolve: (value: any) => void;
+  reject: (reason?: any) => void;
+  transactionType?: TransactionType;
+}
+
+/**
+ * Promise queue that batches transactions by cost category.
+ * Transactions in the same category are batched together up to the category's limit.
+ */
 class PromiseQueue {
-  private queue: Array<{
-    providerCall: () => Promise<any>;
-    resolve: (value: any) => void;
-    reject: (reason?: any) => void;
-    batchId?: string; // Added batchId to group related calls
-  }> = [];
+  private queue: QueueItem[] = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
   private readonly BATCH_DELAY = 1000; // ms to wait for batching
-  private readonly MAX_BATCH_SIZE = 2; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
 
-  async enqueue<T>(providerCall: () => Promise<T>, batchId?: string): Promise<T> {
+  /**
+   * Enqueue a transaction for batched execution.
+   * @param providerCall - The function that executes the transaction
+   * @param transactionType - Optional transaction type for category-based batching
+   */
+  async enqueue<T>(providerCall: () => Promise<T>, transactionType?: TransactionType): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ providerCall, resolve, reject, batchId });
+      this.queue.push({ providerCall, resolve, reject, transactionType });
       this.scheduleProcessing();
     });
   }
@@ -107,25 +123,20 @@ class PromiseQueue {
   private scheduleProcessing() {
     if (this.processing) return;
 
-    if (this.batchTimeout) {
-      clearTimeout(this.batchTimeout);
-      this.batchTimeout = null;
-    }
-
-    if (this.queue.length >= this.MAX_BATCH_SIZE) {
-      void this.processQueue();
-      return;
-    }
-
+    // If no delay configured, process immediately
     if (this.BATCH_DELAY <= 0) {
       void this.processQueue();
       return;
     }
 
-    this.batchTimeout = setTimeout(() => {
-      this.batchTimeout = null;
-      void this.processQueue();
-    }, this.BATCH_DELAY);
+    // Only start timer if one isn't already running (first-in timestamp)
+    // This ensures earlier transactions aren't delayed by later ones
+    if (!this.batchTimeout) {
+      this.batchTimeout = setTimeout(() => {
+        this.batchTimeout = null;
+        void this.processQueue();
+      }, this.BATCH_DELAY);
+    }
   }
 
   private async processQueue() {
@@ -134,74 +145,96 @@ class PromiseQueue {
 
     try {
       while (this.queue.length > 0) {
-        // Group calls by batchId
-        const batchGroups = new Map<string | undefined, typeof this.queue>();
+        // Group calls by cost category for smart batching
+        const categoryGroups = new Map<TransactionCostCategory, QueueItem[]>();
+
         this.queue.forEach((item) => {
-          const group = batchGroups.get(item.batchId) || [];
+          const category = getTransactionCategory(item.transactionType);
+          const group = categoryGroups.get(category) || [];
           group.push(item);
-          batchGroups.set(item.batchId, group);
+          categoryGroups.set(category, group);
         });
 
-        // Process each batch group
-        for (const [batchId, group] of batchGroups) {
-          // Clear processed items from queue
-          this.queue = this.queue.filter((item) => item.batchId !== batchId);
+        // Clear the queue - we've captured all items
+        this.queue = [];
 
-          // Split into chunks if needed while keeping batched items together
-          const chunks = [];
-          for (let i = 0; i < group.length; i += this.MAX_BATCH_SIZE) {
-            chunks.push(group.slice(i, i + this.MAX_BATCH_SIZE));
+        // Process each category group with its specific batch limit
+        for (const [category, group] of categoryGroups) {
+          const batchLimit = CATEGORY_BATCH_LIMITS[category];
+
+          // Split into chunks based on category batch limit
+          const chunks: QueueItem[][] = [];
+          for (let i = 0; i < group.length; i += batchLimit) {
+            chunks.push(group.slice(i, i + batchLimit));
           }
 
           // Process each chunk
           for (const batch of chunks) {
-            console.log("Processing batch of size:", batch.length); // Debug log
-
-            if (batch.length === 1) {
-              const { providerCall, resolve, reject } = batch[0];
-              console.log({ providerCall, batch });
-              try {
-                const result = await providerCall();
-                resolve(result);
-              } catch (error) {
-                reject(error);
-              }
-            } else {
-              console.log("batch", batch);
-              try {
-                // Extract the actual calls from the providerCalls
-                const allCalls = await Promise.all(
-                  batch.map(async ({ providerCall }) => {
-                    // Access the internal call object
-                    const fn = providerCall as any;
-                    const calls = fn._transactionDetails;
-                    // Handle both single calls and arrays of calls
-                    return Array.isArray(calls) ? calls : [calls];
-                  }),
-                );
-
-                // Flatten all calls into a single array
-                const flattenedCalls = allCalls.flat();
-                console.log("Batched calls:", flattenedCalls); // Debug log
-
-                // Get signer from first call
-                const signer = (batch[0].providerCall as any)._signer;
-
-                // Execute the batched transaction
-                const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
-
-                // Resolve all promises with the result
-                batch.forEach((item) => item.resolve(result));
-              } catch (error) {
-                console.error("Batch processing error:", error); // Debug log
-                batch.forEach((item) => item.reject(error));
-              }
-            }
+            await this.processBatch(batch);
           }
         }
       }
     } finally {
       this.processing = false;
+    }
+  }
+
+  /**
+   * Process a batch of queue items as a single multicall transaction.
+   */
+  private async processBatch(batch: QueueItem[]) {
+    if (batch.length === 0) return;
+
+    if (batch.length === 1) {
+      // Single transaction - execute directly
+      const { providerCall, resolve, reject } = batch[0];
+      try {
+        const result = await providerCall();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    } else {
+      // Multiple transactions - batch them together
+      try {
+        // Extract the actual calls from the providerCalls
+        const allCalls = await Promise.all(
+          batch.map(async ({ providerCall }) => {
+            const fn = providerCall as any;
+            const calls = fn._transactionDetails;
+            // Handle both single calls and arrays of calls
+            return Array.isArray(calls) ? calls : [calls];
+          }),
+        );
+
+        // Flatten all calls into a single array
+        const flattenedCalls = allCalls.flat();
+
+        // Get signer from first call
+        const signer = (batch[0].providerCall as any)._signer;
+
+        // Collect batch details - count by transaction type
+        const typeCounts = new Map<TransactionType, number>();
+        batch.forEach((item) => {
+          if (item.transactionType) {
+            typeCounts.set(item.transactionType, (typeCounts.get(item.transactionType) || 0) + 1);
+          }
+        });
+
+        const batchDetails: BatchedTransactionDetail[] = Array.from(typeCounts.entries()).map(([type, count]) => ({
+          type,
+          count,
+        }));
+
+        // Execute the batched transaction with batch details
+        const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls, batchDetails);
+
+        // Resolve all promises with the result
+        batch.forEach((item) => item.resolve(result));
+      } catch (error) {
+        // Reject all promises in the batch
+        batch.forEach((item) => item.reject(error));
+      }
     }
   }
 }
@@ -414,9 +447,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    *
    * @param signer - Account that will sign the transaction
    * @param transactionDetails - Transaction call data
+   * @param batchDetails - Optional details about batched transactions (from PromiseQueue)
    * @returns Transaction receipt
    */
-  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+  async executeAndCheckTransaction(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+    batchDetails?: BatchedTransactionDetail[],
+  ) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -441,6 +479,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const transactionMeta = {
       type: txType,
       ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
+      ...(batchDetails && batchDetails.length > 0 && { batchDetails }),
     };
 
     const span = this.startTransactionSpan(transactionDetails, transactionMeta);
@@ -561,7 +600,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
     const call = this.createProviderCall(signer, callArgs);
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.OBTAIN_ENTRY_TOKEN);
   }
 
   public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
@@ -587,11 +626,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       };
 
       const call = this.createProviderCall(signer, [tokenLockCall, registerCall]);
-      return await this.promiseQueue.enqueue(call);
+      return await this.promiseQueue.enqueue(call, TransactionType.REGISTER);
     }
 
     const call = this.createProviderCall(signer, registerCall);
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.REGISTER);
   }
 
   /**
@@ -621,7 +660,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [count],
     };
     calls.push(makeHyperstructureCall);
-    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+    return await this.promiseQueue.enqueue(
+      this.createProviderCall(signer, calls),
+      TransactionType.MAKE_HYPERSTRUCTURES,
+    );
   }
 
   /**
@@ -652,7 +694,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "assign_realm_positions",
       calldata: [],
     });
-    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+    return await this.promiseQueue.enqueue(
+      this.createProviderCall(signer, calls),
+      TransactionType.ASSIGN_REALM_POSITIONS,
+    );
   }
 
   /**
@@ -675,7 +720,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       },
     ];
 
-    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls), TransactionType.SETTLE_REALMS);
   }
 
   /**
@@ -714,7 +759,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [settlement_count],
     });
 
-    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls), TransactionType.SETTLE_REALMS);
   }
 
   /**
@@ -905,7 +950,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CREATE_ORDER);
   }
 
   /**
@@ -946,7 +991,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [taker_id, trade_id, taker_buys_count],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.ACCEPT_ORDER);
   }
 
   /**
@@ -981,7 +1026,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [trade_id],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CANCEL_ORDER);
   }
 
   /**
@@ -1039,7 +1084,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [realm_entity_id],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.LEVEL_UP);
   }
 
   /**
@@ -1090,7 +1135,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const call = this.createProviderCall(signer, [approvalForAllCall, ...callData, createCall]);
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CREATE);
   }
 
   /**
@@ -1136,7 +1181,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     const calls = [approvalForAllCall, ...createCalls, approvalCloseForAllCall];
-    return await Promise.all(calls.map((call) => this.promiseQueue.enqueue(call)));
+    return await Promise.all(calls.map((call) => this.promiseQueue.enqueue(call, TransactionType.CREATE)));
   }
 
   /**
@@ -1246,7 +1291,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.SEND);
   }
 
   /**
@@ -1292,7 +1337,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       })),
     );
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.SEND);
   }
 
   /**
@@ -1343,7 +1388,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const call = this.createProviderCall(signer, [approvalCall, pickupCall]);
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.PICKUP);
   }
 
   public async arrivals_offload(props: SystemProps.ArrivalsOffloadProps) {
@@ -1355,7 +1400,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [structureId, day, slot, resource_count],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.ARRIVALS_OFFLOAD);
   }
 
   /**
@@ -1384,7 +1429,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [name],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.SET_ADDRESS_NAME);
   }
 
   /**
@@ -1415,7 +1460,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [entity_id, name],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.SET_ENTITY_NAME);
   }
 
   private createProviderCall(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
@@ -1465,7 +1510,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: CallData.compile([entity_id, directions, building_category, use_simple]),
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CREATE_BUILDING);
   }
 
   /**
@@ -1507,7 +1552,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ]),
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.DESTROY_BUILDING);
   }
 
   /**
@@ -1544,7 +1589,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ]),
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.PAUSE_BUILDING_PRODUCTION);
   }
 
   /**
@@ -1581,7 +1626,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ]),
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.RESUME_BUILDING_PRODUCTION);
   }
 
   public async execute_realm_production_plan(
@@ -1687,7 +1732,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
     const call = this.createProviderCall(signer, callArgs);
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION);
   }
 
   /**
@@ -1822,7 +1867,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.BUY);
   }
 
   /**
@@ -1857,7 +1902,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.SELL);
   }
 
   /**
@@ -1959,7 +2004,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [bank_entity_id, entity_id, resource_type, shares],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.REMOVE);
   }
 
   /**
@@ -1983,7 +2028,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [for_structure_id, slot, category, tier, amount],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.GUARD_ADD);
   }
 
   /**
@@ -2004,7 +2049,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [for_structure_id, slot],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.GUARD_DELETE);
   }
 
   /**
@@ -2028,7 +2073,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [for_structure_id, category, tier, amount, spawn_direction],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.EXPLORER_CREATE);
   }
 
   /**
@@ -2050,7 +2095,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [to_explorer_id, amount, home_direction],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.EXPLORER_ADD);
   }
 
   /**
@@ -2070,7 +2115,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.EXPLORER_DELETE);
   }
 
   /**
@@ -2097,7 +2142,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.TROOP_TROOP_ADJACENT_TRANSFER);
   }
 
   /**
@@ -2124,7 +2169,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER);
   }
 
   /**
@@ -2151,7 +2196,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER);
   }
 
   /**
@@ -2174,7 +2219,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [from_explorer_id, to_explorer_id, to_explorer_direction, count],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.EXPLORER_EXPLORER_SWAP);
   }
 
   /**
@@ -2198,7 +2243,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.EXPLORER_GUARD_SWAP);
   }
 
   /**
@@ -2222,7 +2267,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.GUARD_EXPLORER_SWAP);
   }
 
   /**
@@ -2242,7 +2287,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "explorer_move",
       calldata: [explorer_id, directions, 0],
     });
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.TRAVEL_HEX);
   }
 
   /**
@@ -2292,7 +2337,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     const call = this.createProviderCall(signer, callData);
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.EXPLORE);
   }
 
   /**
@@ -2345,7 +2390,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata,
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.ATTACK_EXPLORER_VS_EXPLORER);
   }
 
   /**
@@ -2367,7 +2412,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id, structure_id, structure_direction],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.ATTACK_EXPLORER_VS_GUARD);
   }
 
   /**
@@ -2390,7 +2435,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [structure_id, structure_guard_slot, explorer_id, explorer_direction],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.ATTACK_GUARD_VS_EXPLORER);
   }
 
   /**
@@ -2422,7 +2467,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.RAID_EXPLORER_VS_GUARD);
   }
 
   /**
@@ -2443,7 +2488,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [structure_id, wonder_structure_id],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CLAIM_WONDER_PRODUCTION_BONUS);
   }
 
   public async mint_starting_resources(props: SystemProps.MintStartingResources) {
@@ -2468,7 +2513,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [is_public, guild_name],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CREATE_GUILD);
   }
 
   public async join_guild(props: SystemProps.JoinGuildProps) {
@@ -2480,7 +2525,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [guild_entity_id],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.JOIN_GUILD);
   }
 
   public async update_whitelist(props: SystemProps.UpdateWhitelist) {
@@ -2492,7 +2537,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [address, whitelist],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.UPDATE_WHITELIST);
   }
 
   public async remove_guild_member(props: SystemProps.RemoveGuildMember) {
@@ -2504,7 +2549,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [player_address_to_remove],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.REMOVE_GUILD_MEMBER);
   }
 
   public async disband_guild(props: SystemProps.DisbandGuild) {
@@ -2521,7 +2566,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       }),
     );
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.REMOVE_GUILD_MEMBER);
   }
 
   public async leave_guild(props: SystemProps.LeaveGuildProps) {
@@ -2533,7 +2578,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.LEAVE_GUILD);
   }
 
   public async set_starting_resources_config(props: SystemProps.SetStartingResourcesConfigProps) {
@@ -2655,6 +2700,37 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_factory_address",
       calldata: [factory_address],
+    });
+  }
+
+  public async set_mmr_config(props: SystemProps.SetMMRConfigProps) {
+    const {
+      enabled,
+      mmr_token_address,
+      distribution_mean,
+      spread_factor,
+      max_delta,
+      k_factor,
+      lobby_split_weight_scaled,
+      mean_regression_scaled,
+      min_players,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_mmr_config",
+      calldata: [
+        enabled,
+        mmr_token_address,
+        distribution_mean,
+        spread_factor,
+        max_delta,
+        k_factor,
+        lobby_split_weight_scaled,
+        mean_regression_scaled,
+        min_players,
+      ],
     });
   }
 
@@ -3067,7 +3143,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [hyperstructure_id],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.INITIALIZE);
   }
 
   public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
@@ -3079,7 +3155,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CONTRIBUTE);
   }
 
   public async set_access(props: SystemProps.SetAccessProps) {
@@ -3091,7 +3167,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [hyperstructure_entity_id, access],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.SET_ACCESS);
   }
 
   public async end_game(props: SystemProps.EndGameProps) {
@@ -3103,7 +3179,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.END_GAME);
   }
 
   public async allocate_shares(props: SystemProps.SetCoOwnersProps) {
@@ -3115,7 +3191,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [hyperstructure_entity_id, co_owners.length, ...co_owners.flat()],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.ALLOCATE_SHARES);
   }
 
   public async season_prize_claim(props: SystemProps.ClaimLeaderboardRewardsProps) {
@@ -3137,7 +3213,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [trial_id, total_player_count_committed, players_list.length, ...players_list],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.BLITZ_PRIZE_PLAYER_RANK);
   }
 
   public async blitz_prize_claim(props: SystemProps.BlitzPrizeClaimProps) {
@@ -3159,7 +3235,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "blitz_prize_claim",
       calldata: [players.length, ...players],
     });
-    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls), TransactionType.BLITZ_PRIZE_CLAIM);
   }
 
   // Blitz prize: single-registrant no-game claim
@@ -3172,7 +3248,30 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [registered_player],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME);
+  }
+
+  // MMR system calls - commit and claim in a single transaction
+  public async commit_and_claim_game_mmr(props: SystemProps.CommitGameMMRProps) {
+    const { players, signer } = props;
+
+    const calls = [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-mmr_systems`),
+        entrypoint: "commit_game_mmr_meta",
+        calldata: [players.length, ...players],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-mmr_systems`),
+        entrypoint: "claim_game_mmr",
+        calldata: [players.length, ...players],
+      },
+    ];
+
+    return await this.promiseQueue.enqueue(
+      this.createProviderCall(signer, calls),
+      TransactionType.COMMIT_AND_CLAIM_MMR,
+    );
   }
 
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
@@ -3184,7 +3283,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [hyperstructure_ids.length, ...hyperstructure_ids, player],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CLAIM_CONSTRUCTION_POINTS);
   }
 
   public async claim_share_points(props: SystemProps.ClaimSharePointsProps) {
@@ -3196,7 +3295,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [hyperstructure_ids.length, ...hyperstructure_ids],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CLAIM_SHARE_POINTS);
   }
 
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {
@@ -3303,7 +3402,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [uint256.bnToUint256(token_id)],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.MINT);
   }
 
   public async mint_season_passes(props: SystemProps.MintSeasonPassesProps) {
@@ -3392,7 +3491,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [entity_id, resource_types.length, ...resource_types, resource_amounts.length, ...resource_amounts],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION);
   }
 
   /**
@@ -3434,7 +3533,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION);
   }
 
   /**
@@ -3473,7 +3572,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION);
   }
 
   // Loot Chest functions
@@ -3596,7 +3695,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [order_id],
     });
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call, TransactionType.CANCEL_MARKETPLACE_ORDER);
   }
 
   /**
@@ -3741,7 +3840,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "open_chest",
       calldata: [explorer_id, coordAlt, chest_coord.x, chest_coord.y],
     });
-    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls), TransactionType.OPEN_CHEST);
   }
 
   public async apply_relic(props: SystemProps.ApplyRelicProps) {

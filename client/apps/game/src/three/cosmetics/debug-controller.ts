@@ -26,7 +26,7 @@ interface GlobalOverrideState {
  * - GUI controls in lil-gui
  * - Console API via window.CosmeticsDebug
  */
-export class CosmeticDebugController {
+class CosmeticDebugController {
   private state: GlobalOverrideState = {
     enabled: false,
     armyCosmeticId: null,

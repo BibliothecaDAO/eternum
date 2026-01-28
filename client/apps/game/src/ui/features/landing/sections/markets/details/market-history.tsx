@@ -212,7 +212,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
 
     const playerPayloads = payload
       .filter((item): item is TooltipPayload<number, string> & { dataKey: string } => typeof item.dataKey === "string")
-      .sort((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
+      .toSorted((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
 
     return (
       <div className="min-w-[200px] rounded-lg border border-white/10 bg-black/95 px-3 py-2 shadow-xl backdrop-blur">

@@ -2,7 +2,7 @@ import { Card } from "@/shared/ui/card";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
-import { Info } from "lucide-react";
+import Info from "lucide-react/dist/esm/icons/info";
 
 interface MobileBiomeInfoPanelProps {
   biome: BiomeType;

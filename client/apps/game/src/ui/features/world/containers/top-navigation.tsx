@@ -1,6 +1,7 @@
 import { TransactionWindow } from "@/ui/components/transaction-center";
 import { TransferAutomationPopup } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ArmyCreationPopupManager } from "@/ui/features/military/components/unified-army-creation-modal";
+import { ExplorationAutomationWindow } from "@/ui/features/military/components/exploration-automation-dashboard";
 import { Social } from "@/ui/features/social";
 import { LatestFeaturesWindow } from "@/ui/modules/latest-features/latest-features";
 import { SettingsWindow } from "@/ui/modules/settings/settings";
@@ -19,6 +20,7 @@ export const TopNavigation = memo(() => {
         <LatestFeaturesWindow />
         <TransactionWindow />
         <TransferAutomationPopup />
+        <ExplorationAutomationWindow />
         <ArmyCreationPopupManager />
       </div>
     </>

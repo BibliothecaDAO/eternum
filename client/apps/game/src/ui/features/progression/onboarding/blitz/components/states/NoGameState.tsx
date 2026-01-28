@@ -1,6 +1,8 @@
 import Button from "@/ui/design-system/atoms/button";
 import { motion } from "framer-motion";
-import { Calendar, Eye, Search } from "lucide-react";
+import Calendar from "lucide-react/dist/esm/icons/calendar";
+import Eye from "lucide-react/dist/esm/icons/eye";
+import Search from "lucide-react/dist/esm/icons/search";
 import { fadeInUp } from "../../animations";
 import { CountdownTimer } from "../CountdownTimer";
 

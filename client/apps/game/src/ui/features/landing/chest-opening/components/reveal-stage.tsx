@@ -2,7 +2,9 @@ import Button from "@/ui/design-system/atoms/button";
 import { useChestSounds } from "../hooks/use-chest-sounds";
 import { useRevealShare } from "../hooks/use-reveal-share";
 import { AssetRarity, ChestAsset, RARITY_STYLES } from "../utils/cosmetics";
-import { Copy, Loader2, X } from "lucide-react";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useRef, useState } from "react";
 import { ChestStageContainer, ChestStageContent, ChestStageHeader } from "./chest-stage-container";
 import { TiltCard } from "./tilt-card";
@@ -384,7 +386,7 @@ export function RevealStage({
                 )}
                 {onOpenAnother && remainingChestsCount > 0 && (
                   <Button variant="primary" size="md" onClick={onOpenAnother} className="gap-2">
-                    Choose Next Chest ({remainingChestsCount} available)
+                    Open Next Chest ({remainingChestsCount} remaining)
                   </Button>
                 )}
               </div>
@@ -403,7 +405,7 @@ interface CollectionSummaryProps {
   collectionSize?: number;
 }
 
-export function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 }: CollectionSummaryProps) {
+function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 }: CollectionSummaryProps) {
   // Group by rarity
   const byRarity = assets.reduce(
     (acc, asset) => {

@@ -7,7 +7,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MergedNftData } from "@/types";
 import gsap from "gsap";
-import { ArrowUpDown, ChevronDown, Filter, Package, X } from "lucide-react";
+import ArrowUpDown from "lucide-react/dist/esm/icons/arrow-up-down";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Filter from "lucide-react/dist/esm/icons/filter";
+import Package from "lucide-react/dist/esm/icons/package";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChestStageContainer } from "./chest-stage-container";
 import { ChestEpoch } from "./use-chest-opening-flow";
@@ -74,6 +78,23 @@ interface ChestCardProps {
   index: number;
 }
 
+// Check if chest is an eternum-rewards-s1 chest based on metadata
+function isEternumRewardsS1(metadata: MergedNftData["metadata"] | undefined): boolean {
+  if (!metadata?.attributes) return false;
+
+  const idAttr = metadata.attributes.find((a) => a.trait_type === "ID");
+  const epochAttr = metadata.attributes.find((a) => a.trait_type === "Epoch");
+
+  if (idAttr && epochAttr) {
+    const idValue = String(idAttr.value).toLowerCase();
+    const epochValue = String(epochAttr.value).toLowerCase();
+    // ID: "Eternum Rewards Chest", Epoch: "Season 1"
+    return idValue.includes("eternum") && idValue.includes("rewards") && epochValue.includes("season 1");
+  }
+
+  return false;
+}
+
 // Extract all trait values for a specific trait type
 function getTraitValue(metadata: MergedNftData["metadata"] | undefined, traitType: string): string | null {
   if (!metadata?.attributes) return null;
@@ -85,10 +106,12 @@ function ChestCard({ chest, onSelect, isSelected, isLoading, index }: ChestCardP
   const cardRef = useRef<HTMLDivElement>(null);
   const [imageError, setImageError] = useState(false);
 
-  // Transform IPFS URLs to use Pinata gateway
-  const image = chest.metadata?.image?.startsWith("ipfs://")
-    ? chest.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
-    : chest.metadata?.image;
+  // Use local image for eternum-rewards-s1 chests, otherwise transform IPFS URLs
+  const image = isEternumRewardsS1(chest.metadata)
+    ? "/images/loot-chests/eternum-rewards-s1.png"
+    : chest.metadata?.image?.startsWith("ipfs://")
+      ? chest.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+      : chest.metadata?.image;
 
   // GSAP hover animations
   useEffect(() => {
@@ -281,7 +304,7 @@ export function ChestSelectionModal({
     // Convert Sets to sorted arrays
     const result: Record<string, string[]> = {};
     Object.entries(traits).forEach(([traitType, values]) => {
-      result[traitType] = Array.from(values).sort((a, b) => {
+      result[traitType] = Array.from(values).toSorted((a, b) => {
         // Try numeric sort first
         const numA = Number(a);
         const numB = Number(b);
@@ -296,7 +319,7 @@ export function ChestSelectionModal({
   }, [chests]);
 
   // Get list of trait types
-  const traitTypes = useMemo(() => Object.keys(traitOptions).sort(), [traitOptions]);
+  const traitTypes = useMemo(() => Object.keys(traitOptions).toSorted(), [traitOptions]);
 
   // Filter and sort chests
   const filteredAndSortedChests = useMemo(() => {
@@ -313,7 +336,7 @@ export function ChestSelectionModal({
     });
 
     // Apply sorting
-    result.sort((a, b) => {
+    const sorted = result.toSorted((a, b) => {
       if (sortMode === "id-asc") {
         return Number(a.token_id) - Number(b.token_id);
       } else {
@@ -321,7 +344,7 @@ export function ChestSelectionModal({
       }
     });
 
-    return result;
+    return sorted;
   }, [chests, filters, sortMode]);
 
   // Count active filters

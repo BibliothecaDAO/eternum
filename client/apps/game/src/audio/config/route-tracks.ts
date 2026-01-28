@@ -4,7 +4,7 @@ import type { GameModeId } from "@/config/game-modes";
 /**
  * Lightweight description of the current routing context used to map pages to curated music pools.
  */
-export interface RouteMatchContext {
+interface RouteMatchContext {
   pathname: string;
   modeId: GameModeId;
 }
@@ -108,7 +108,7 @@ export const matchRoutePlaylist = (pathname: string, override?: Partial<RouteMat
 
   const matches = ROUTE_TRACK_DEFINITIONS.filter((definition) => definition.match(baseContext));
 
-  const selected = matches.sort((a, b) => b.priority - a.priority)[0] ?? ROUTE_TRACK_DEFINITIONS[0];
+  const selected = matches.toSorted((a, b) => b.priority - a.priority)[0] ?? ROUTE_TRACK_DEFINITIONS[0];
 
   return {
     key: selected.key,

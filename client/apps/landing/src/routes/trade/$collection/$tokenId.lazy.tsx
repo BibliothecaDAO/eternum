@@ -5,7 +5,9 @@ import { fetchSingleCollectionToken } from "@/hooks/services";
 import { cn } from "@/lib/utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import { useState } from "react";
 import { formatUnits } from "viem";
 

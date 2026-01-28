@@ -41,7 +41,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
       }
 
       return true;
-    }).sort((a, b) => {
+    }).toSorted((a, b) => {
       // Sort by type then by level
       if (a.type !== b.type) {
         return a.type.localeCompare(b.type);

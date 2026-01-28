@@ -8,7 +8,10 @@ import { ControllerConnector } from "@cartridge/connector";
 import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
-import { AlertCircle, Globe, Home } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Home from "lucide-react/dist/esm/icons/home";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { env } from "../../../../../../env";
@@ -24,7 +27,7 @@ import { FactoryGamesList } from "../blitz/factory";
 import { GameState, RegistrationStage } from "../blitz/types";
 import { SpectateButton } from "../spectate-button";
 import { useBlitzGameState, useEntryTokens, useSettlement } from "./hooks";
-import { downloadPaymasterActionsJson } from "./paymaster-actions";
+import { downloadPaymasterActionsJson, getPointSystemsAddress } from "./paymaster-actions";
 
 const getBlitzHyperstructureCountForChain = (chain: string): number => {
   return chain === "mainnet" ? 1 : 4;
@@ -43,6 +46,7 @@ export const BlitzOnboarding = () => {
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
   const addressNameKeyRef = useRef<string | null>(null);
   const [isDownloadingActions, setIsDownloadingActions] = useState(false);
+  const [copiedPointSystems, setCopiedPointSystems] = useState(false);
   const [registrationStage, setRegistrationStage] = useState<RegistrationStage>("idle");
   const availableEntryTokenIdsRef = useRef<bigint[]>([]);
 
@@ -190,6 +194,17 @@ export const BlitzOnboarding = () => {
     }
   };
 
+  const handleCopyPointSystemsAddress = async () => {
+    const address = getPointSystemsAddress();
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedPointSystems(true);
+      setTimeout(() => setCopiedPointSystems(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy address", error);
+    }
+  };
+
   // Config error state
   if (!blitzConfig) {
     return (
@@ -329,6 +344,21 @@ export const BlitzOnboarding = () => {
         >
           {isDownloadingActions ? "Preparing actions JSON…" : "Download actions JSON"}
         </Button>
+        <div className="mt-3">
+          <p className="text-xs font-semibold mb-1 text-gold/60">Point Systems Address:</p>
+          <div className="flex items-center gap-2">
+            <p className="font-mono text-xs text-gold/60 break-all flex-1">{getPointSystemsAddress()}</p>
+            <Button
+              onClick={handleCopyPointSystemsAddress}
+              variant="outline"
+              size="xs"
+              className="!px-2 !py-1 shrink-0"
+              forceUppercase={false}
+            >
+              <Copy className={`w-3 h-3 ${copiedPointSystems ? "text-green-500" : ""}`} />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

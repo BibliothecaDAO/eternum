@@ -13,7 +13,10 @@ import {
 
 import { Resources, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
-import { ArrowRight, Check, Loader2, X } from "lucide-react";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+import Check from "lucide-react/dist/esm/icons/check";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useMemo, useState } from "react";
 
 interface ConfirmDrawerProps {

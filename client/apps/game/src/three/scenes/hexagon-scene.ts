@@ -1204,7 +1204,7 @@ export abstract class HexagonScene {
       this.highlightHexManager.dispose();
     }
     if (this.thunderBoltManager) {
-      this.thunderBoltManager.cleanup();
+      this.thunderBoltManager.destroy();
     }
     if (this.dayNightCycleManager) {
       this.dayNightCycleManager.dispose();

@@ -21,7 +21,7 @@ import { DEFAULT_PATH_CONFIG } from "../types/path";
  * UV.x: 0 = left edge, 1 = right edge (for thickness)
  * UV.y: 0 = segment start, 1 = segment end (for interpolation)
  */
-export function createPathQuadGeometry(): BufferGeometry {
+function createPathQuadGeometry(): BufferGeometry {
   const geometry = new BufferGeometry();
 
   // 4 vertices for a quad

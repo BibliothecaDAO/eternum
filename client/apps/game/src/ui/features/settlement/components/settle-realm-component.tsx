@@ -398,7 +398,7 @@ export const getUnusedSeasonPasses = async (accountAddress: string, realmIds: nu
       (realm: SeasonPassRealm): realm is SeasonPassRealm =>
         realm !== undefined && !realmIds.includes(Number(realm.realmId)),
     )
-    .sort(
+    .toSorted(
       (a: SeasonPassRealm, b: SeasonPassRealm) =>
         Number(b.resourceTypesUnpacked.length) - Number(a.resourceTypesUnpacked.length),
     );

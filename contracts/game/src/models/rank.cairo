@@ -47,7 +47,6 @@ pub struct RankPrize {
 
 #[generate_trait]
 pub impl RankPrizeImpl of RankPrizeTrait {
-
     // Elite Invite NFTs
     fn check_grant_elite_nft(ref self: RankPrize, current_player_count: u16, total_player_count: u16) {
         if total_player_count <= 132 {
@@ -60,12 +59,12 @@ pub impl RankPrizeImpl of RankPrizeTrait {
             let threshold = total_player_count / 2;
             self.grant_elite_nft = current_player_count <= threshold;
         } else {
-            // note that in this case, if multiple players have the same rank 
+            // note that in this case, if multiple players have the same rank
             // that crosses the 66 limit, only the first 66 players receive the NFT
             //. so it is possible for some players with the same rank to receive the NFT
             // while others do not. this leaves a bit of room for rank submitter to decide
-            // who gets the NFT in such cases 
-            self.grant_elite_nft =  current_player_count <= 66;
+            // who gets the NFT in such cases
+            self.grant_elite_nft = current_player_count <= 66;
         }
     }
 }

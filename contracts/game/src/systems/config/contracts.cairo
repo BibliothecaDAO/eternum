@@ -1,9 +1,8 @@
 use crate::models::config::{
     BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig, TroopDamageConfig,
-    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig
+    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig,
 };
-
 use crate::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
@@ -133,6 +132,22 @@ pub trait IFactoryConfig<T> {
 }
 
 #[starknet::interface]
+pub trait IMMRConfig<T> {
+    fn set_mmr_config(
+        ref self: T,
+        enabled: bool,
+        mmr_token_address: starknet::ContractAddress,
+        distribution_mean: u16,
+        spread_factor: u16,
+        max_delta: u8,
+        k_factor: u8,
+        lobby_split_weight_scaled: u16,
+        mean_regression_scaled: u16,
+        min_players: u8,
+    );
+}
+
+#[starknet::interface]
 pub trait IVillageFoundResourcesConfig<T> {
     fn set_village_found_resources_config(ref self: T, village_found_resources: Span<(u8, u128, u128)>);
 }
@@ -183,7 +198,9 @@ pub trait IResourceBridgeConfig<T> {
 
 #[starknet::interface]
 pub trait ISettlementConfig<T> {
-    fn set_settlement_config(ref self: T, center: u32, base_distance: u32, subsequent_distance: u32, single_realm_mode: bool);
+    fn set_settlement_config(
+        ref self: T, center: u32, base_distance: u32, subsequent_distance: u32, single_realm_mode: bool,
+    );
     fn set_blitz_registration_config(
         ref self: T,
         fee_token: starknet::ContractAddress,
@@ -194,12 +211,11 @@ pub trait ISettlementConfig<T> {
         entry_token_class_hash: felt252,
         entry_token_deploy_calldata: Span<felt252>,
         entry_token_ipfs_cid: ByteArray,
-
         collectibles_cosmetics_max: u8,
         collectibles_cosmetics_address: starknet::ContractAddress,
         collectibles_timelock_address: starknet::ContractAddress,
-        collectibles_lootchest_address:  starknet::ContractAddress,
-        collectibles_elitenft_address:  starknet::ContractAddress,
+        collectibles_lootchest_address: starknet::ContractAddress,
+        collectibles_elitenft_address: starknet::ContractAddress,
     );
 }
 
@@ -232,17 +248,18 @@ pub mod config_systems {
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
-        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstrtConstructConfig,
-        HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig,
-        SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig,
-        StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
-        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
-        VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
-        WorldConfigUtilImpl, BlitzRegistrationConfigImpl,
+        BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
+        HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
+        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
+        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
+        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
+    use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;
-    use crate::models::position::{CoordImpl, CENTER_COL};
+    use crate::models::position::{CENTER_COL, CoordImpl};
     use crate::models::resource::production::building::BuildingCategory;
     use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
     use crate::utils::achievements::index::AchievementTrait;
@@ -321,13 +338,12 @@ pub mod config_systems {
             }
 
             world_config.admin_address = admin_address;
-            
 
             let tx_hash: u256 = starknet::get_tx_info().unbox().transaction_hash.into();
             let half_map: u256 = (CENTER_COL / 2).into();
             let base_offset: u32 = (tx_hash % half_map).try_into().unwrap();
             // make it always end with an even number
-            world_config.map_center_offset = (base_offset / 10_u32) * 10_u32; 
+            world_config.map_center_offset = (base_offset / 10_u32) * 10_u32;
             world.write_model(@world_config);
         }
     }
@@ -811,7 +827,9 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
-        fn set_settlement_config(ref self: ContractState, center: u32, base_distance: u32, subsequent_distance: u32, single_realm_mode: bool) {
+        fn set_settlement_config(
+            ref self: ContractState, center: u32, base_distance: u32, subsequent_distance: u32, single_realm_mode: bool,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
@@ -822,7 +840,9 @@ pub mod config_systems {
             );
 
             WorldConfigUtilImpl::set_member(
-                ref world, selector!("blitz_settlement_config"), BlitzSettlementConfigImpl::new(base_distance, single_realm_mode),
+                ref world,
+                selector!("blitz_settlement_config"),
+                BlitzSettlementConfigImpl::new(base_distance, single_realm_mode),
             );
 
             WorldConfigUtilImpl::set_member(
@@ -840,13 +860,11 @@ pub mod config_systems {
             entry_token_class_hash: felt252,
             entry_token_deploy_calldata: Span<felt252>,
             entry_token_ipfs_cid: ByteArray,
-
             collectibles_cosmetics_max: u8,
             collectibles_cosmetics_address: starknet::ContractAddress,
             collectibles_timelock_address: starknet::ContractAddress,
-
-            collectibles_lootchest_address:  starknet::ContractAddress,
-            collectibles_elitenft_address:  starknet::ContractAddress,
+            collectibles_lootchest_address: starknet::ContractAddress,
+            collectibles_elitenft_address: starknet::ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -865,16 +883,13 @@ pub mod config_systems {
             blitz_registration_config.collectibles_lootchest_address = collectibles_lootchest_address;
             blitz_registration_config.collectibles_elitenft_address = collectibles_elitenft_address;
 
-
             if fee_amount > 0 {
-                let entry_token_address = blitz_registration_config.deploy_entry_token(
-                    entry_token_class_hash, entry_token_deploy_calldata
-                );
+                let entry_token_address = blitz_registration_config
+                    .deploy_entry_token(entry_token_class_hash, entry_token_deploy_calldata);
                 blitz_registration_config.entry_token_address = entry_token_address;
                 blitz_registration_config.setup_entry_token(entry_token_ipfs_cid);
                 blitz_registration_config.update_entry_token_lock(Bounded::MAX);
             }
-
 
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
@@ -913,18 +928,48 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl IFactoryConfig of super::IFactoryConfig<ContractState> {
+        fn set_factory_address(ref self: ContractState, address: starknet::ContractAddress) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
 
-        fn set_factory_address(
-            ref self: ContractState, address: starknet::ContractAddress
+            WorldConfigUtilImpl::set_member(ref world, selector!("factory_address"), address);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IMMRConfigImpl of super::IMMRConfig<ContractState> {
+        fn set_mmr_config(
+            ref self: ContractState,
+            enabled: bool,
+            mmr_token_address: starknet::ContractAddress,
+            distribution_mean: u16,
+            spread_factor: u16,
+            max_delta: u8,
+            k_factor: u8,
+            lobby_split_weight_scaled: u16,
+            mean_regression_scaled: u16,
+            min_players: u8,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
-            
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("factory_address"), address,
-            );
-        }
 
+            // Validate config to prevent division by zero and overflow issues
+            assert!(spread_factor > 0, "spread_factor must be > 0");
+            assert!(max_delta > 0, "max_delta must be > 0");
+
+            let mmr_config = MMRConfig {
+                enabled,
+                mmr_token_address,
+                distribution_mean,
+                spread_factor,
+                max_delta,
+                k_factor,
+                lobby_split_weight_scaled,
+                mean_regression_scaled,
+                min_players,
+            };
+            WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
+        }
     }
 
     #[abi(embed_v0)]

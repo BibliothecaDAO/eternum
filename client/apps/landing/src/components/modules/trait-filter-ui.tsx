@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
 interface TraitFilterUIProps {
@@ -53,7 +53,7 @@ const getTraitPlaceholder = (traitType: string): string => {
 };
 
 const sortResourceValues = (values: string[]): string[] => {
-  return [...values].sort((a, b) => {
+  return values.toSorted((a, b) => {
     const normalizeResource = (resource: string) => resource.replace(/\s/g, "");
     const aId = ResourcesIds[normalizeResource(a) as keyof typeof ResourcesIds];
     const bId = ResourcesIds[normalizeResource(b) as keyof typeof ResourcesIds];
@@ -65,7 +65,7 @@ const sortResourceValues = (values: string[]): string[] => {
 
 const sortRarityValues = (values: string[]): string[] => {
   const rarityOrder = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
-  return [...values].sort((a, b) => {
+  return values.toSorted((a, b) => {
     const aIndex = rarityOrder.indexOf(a);
     const bIndex = rarityOrder.indexOf(b);
     if (aIndex === -1) return 1;
@@ -75,7 +75,7 @@ const sortRarityValues = (values: string[]): string[] => {
 };
 
 const sortNumericValues = (values: string[]): string[] => {
-  return [...values].sort((a, b) => {
+  return values.toSorted((a, b) => {
     const aNum = parseInt(a, 10);
     const bNum = parseInt(b, 10);
     if (isNaN(aNum) && isNaN(bNum)) return a.localeCompare(b);

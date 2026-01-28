@@ -79,7 +79,7 @@ export const ResourceAddresses = () => {
       };
     })
     .filter((item) => item !== null)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       // Sort by the order defined in RESOURCE_ORDER
       const indexA = RESOURCE_ORDER.indexOf(a.id);
       const indexB = RESOURCE_ORDER.indexOf(b.id);

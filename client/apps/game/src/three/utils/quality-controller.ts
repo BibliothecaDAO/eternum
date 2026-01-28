@@ -1,4 +1,4 @@
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 
 /**
  * Quality feature flags that can be individually toggled
@@ -35,7 +35,7 @@ export interface QualityFeatures {
 /**
  * Complete quality preset with all configurable options
  */
-export interface QualityPreset extends QualityFeatures {
+interface QualityPreset extends QualityFeatures {
   name: string;
   targetFPS: number;
 }
@@ -43,7 +43,7 @@ export interface QualityPreset extends QualityFeatures {
 /**
  * Quality presets for LOW, MID, HIGH settings
  */
-const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
+const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
   [GraphicsSettings.LOW]: {
     name: "Low",
     targetFPS: 30,
@@ -121,6 +121,60 @@ const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
   },
 };
 
+const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
+  [GraphicsSettings.LOW]: {
+    ...BASE_QUALITY_PRESETS[GraphicsSettings.LOW],
+    name: "Low (Mobile)",
+    animationFPS: 8,
+    maxVisibleArmies: 60,
+    maxVisibleStructures: 40,
+    maxVisibleLabels: 50,
+    labelRenderDistance: 35,
+    animationCullDistance: 50,
+  },
+  [GraphicsSettings.MID]: {
+    ...BASE_QUALITY_PRESETS[GraphicsSettings.MID],
+    name: "Medium (Mobile)",
+    targetFPS: 30,
+    shadows: false,
+    shadowMapSize: 0,
+    pixelRatio: 1.25,
+    bloom: false,
+    bloomIntensity: 0,
+    vignette: false,
+    fxaa: false,
+    morphAnimations: false,
+    animationFPS: 15,
+    maxVisibleArmies: 200,
+    maxVisibleStructures: 100,
+    maxVisibleLabels: 120,
+    labelRenderDistance: 80,
+    animationCullDistance: 90,
+    chunkLoadRadius: 2,
+  },
+  [GraphicsSettings.HIGH]: {
+    ...BASE_QUALITY_PRESETS[GraphicsSettings.HIGH],
+    name: "High (Mobile)",
+    targetFPS: 45,
+    shadowMapSize: 1024,
+    pixelRatio: 1.5,
+    bloomIntensity: 0.12,
+    vignette: false,
+    fxaa: false,
+    animationFPS: 20,
+    maxVisibleArmies: 500,
+    maxVisibleStructures: 250,
+    maxVisibleLabels: 250,
+    labelRenderDistance: 140,
+    animationCullDistance: 120,
+    chunkLoadRadius: 2,
+  },
+};
+
+const QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = IS_MOBILE
+  ? MOBILE_QUALITY_PRESETS
+  : BASE_QUALITY_PRESETS;
+
 /**
  * Degradation steps - features to disable in order when FPS drops
  * Each step specifies which feature to toggle and the new value
@@ -149,7 +203,7 @@ const DEGRADATION_STEPS: DegradationStep[] = [
 /**
  * Event types emitted by QualityController
  */
-export type QualityChangeEvent = {
+type QualityChangeEvent = {
   type: "quality-change";
   previousFeatures: QualityFeatures;
   currentFeatures: QualityFeatures;
@@ -158,12 +212,12 @@ export type QualityChangeEvent = {
   description?: string;
 };
 
-export type QualityEventListener = (event: QualityChangeEvent) => void;
+type QualityEventListener = (event: QualityChangeEvent) => void;
 
 /**
  * Configuration for the QualityController
  */
-export interface QualityControllerConfig {
+interface QualityControllerConfig {
   /** Enable automatic quality adjustment based on FPS */
   autoAdjustEnabled?: boolean;
   /** Number of frames to average for FPS calculation */
@@ -227,7 +281,7 @@ const DEFAULT_CONFIG: Required<QualityControllerConfig> = {
  * }
  * ```
  */
-export class QualityController {
+class QualityController {
   private static instance: QualityController | null = null;
 
   private config: Required<QualityControllerConfig>;
@@ -571,6 +625,3 @@ export class QualityController {
 
 // Export singleton accessor
 export const qualityController = QualityController.getInstance();
-
-// Export preset for external use
-export { QUALITY_PRESETS };

@@ -10,7 +10,7 @@ import type { AppEnv } from "../middleware/auth";
 import { requirePlayerSession } from "../middleware/auth";
 import { formatZodError } from "../utils/zod";
 
-export const notesRoutes = new Hono<AppEnv>();
+const notesRoutes = new Hono<AppEnv>();
 
 notesRoutes.use("/*", requirePlayerSession);
 

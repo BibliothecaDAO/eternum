@@ -7,7 +7,7 @@ import { SqlApi } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
 import { useAccount } from "@starknet-react/core";
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
 

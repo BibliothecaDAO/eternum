@@ -6,10 +6,11 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { ProgressCircle } from "@/shared/ui/progress-circle";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { getFeltCenterOffset, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { FELT_CENTER, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { getLevelName, ResourcesIds } from "@bibliothecadao/types";
-import { ChevronDown, Copy } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Copy from "lucide-react/dist/esm/icons/copy";
 import { useMemo } from "react";
 
 export const RealmInfoHeader = () => {
@@ -32,12 +33,12 @@ export const RealmInfoHeader = () => {
   // Get level progress
   const { upgradeProgress } = useStructureUpgrade(structureEntityId);
 
-  const FELT_CENTER = getFeltCenterOffset();
+  const feltCenter = FELT_CENTER();
   const adjustedCoords = useMemo(() => {
     if (!selectedRealm) return null;
     return {
-      x: selectedRealm.position.x - FELT_CENTER,
-      y: selectedRealm.position.y - FELT_CENTER,
+      x: selectedRealm.position.x - feltCenter,
+      y: selectedRealm.position.y - feltCenter,
     };
   }, [selectedRealm]);
 

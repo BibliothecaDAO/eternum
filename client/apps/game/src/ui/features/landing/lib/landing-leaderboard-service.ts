@@ -53,7 +53,7 @@ export interface ScoreToBeatResult {
   generatedAt: number;
 }
 
-export interface ScoreToBeatOptions {
+interface ScoreToBeatOptions {
   perEndpointLimit?: number;
   runsToAggregate?: number;
   maxPlayers?: number;
@@ -210,7 +210,7 @@ const buildLeaderboardEntries = (rows: PlayerLeaderboardRow[], safeOffset: numbe
     }
   });
 
-  return entries.sort((a, b) => b.points - a.points).map((entry, index) => ({ ...entry, rank: index + 1 }));
+  return entries.toSorted((a, b) => b.points - a.points).map((entry, index) => ({ ...entry, rank: index + 1 }));
 };
 
 const fetchLeaderboardWithClient = async (
@@ -232,17 +232,23 @@ const fetchLeaderboardWithClient = async (
 export const fetchLandingLeaderboard = async (
   limit: number = DEFAULT_LIMIT,
   offset: number = 0,
-): Promise<PlayerLeaderboardData[]> => fetchLeaderboardWithClient(sqlApi, limit, offset);
+  toriiBaseUrl?: string,
+): Promise<PlayerLeaderboardData[]> => {
+  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  return fetchLeaderboardWithClient(client, limit, offset);
+};
 
 export const fetchLandingLeaderboardEntryByAddress = async (
   playerAddress: string,
+  toriiBaseUrl?: string,
 ): Promise<PlayerLeaderboardData | null> => {
   const normalizedAddress = normaliseAddress(playerAddress);
   if (!normalizedAddress) {
     return null;
   }
 
-  const rawRow = await sqlApi.fetchPlayerLeaderboardByAddress(normalizedAddress);
+  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  const rawRow = await client.fetchPlayerLeaderboardByAddress(normalizedAddress);
 
   if (!rawRow) {
     return null;
@@ -384,7 +390,7 @@ export const fetchScoreToBeatAcrossEndpoints = async (
 
   const aggregatedEntries = Array.from(perPlayer.values())
     .map((player) => {
-      const sortedRuns = [...player.runs].sort((a, b) => b.points - a.points).slice(0, safeRunsToAggregate);
+      const sortedRuns = player.runs.toSorted((a, b) => b.points - a.points).slice(0, safeRunsToAggregate);
       const combinedPoints = sortedRuns.reduce((sum, run) => sum + run.points, 0);
 
       return {
@@ -396,7 +402,7 @@ export const fetchScoreToBeatAcrossEndpoints = async (
       } satisfies ScoreToBeatEntrySummary;
     })
     .filter((entry) => entry.runs.length > 0)
-    .sort((a, b) => b.combinedPoints - a.combinedPoints)
+    .toSorted((a, b) => b.combinedPoints - a.combinedPoints)
     .slice(0, safeMaxPlayers);
 
   return {

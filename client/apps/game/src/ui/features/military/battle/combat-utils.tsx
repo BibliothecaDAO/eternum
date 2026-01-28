@@ -1,5 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { Map, Zap } from "lucide-react";
+import Map from "lucide-react/dist/esm/icons/map";
+import Zap from "lucide-react/dist/esm/icons/zap";
 
 export const getStaminaDisplay = (currentStamina: number, newStamina: number, staminaBonus: number) => {
   return (

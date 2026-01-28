@@ -1,6 +1,9 @@
 import Button from "@/ui/design-system/atoms/button";
 import { motion } from "framer-motion";
-import { Clock, Play, Wifi, WifiOff } from "lucide-react";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Play from "lucide-react/dist/esm/icons/play";
+import Wifi from "lucide-react/dist/esm/icons/wifi";
+import WifiOff from "lucide-react/dist/esm/icons/wifi-off";
 import { cardVariants } from "../animations";
 import { FactoryGame, FactoryGameCategory } from "../types";
 import { formatCountdown } from "../utils";

@@ -6,7 +6,7 @@ import { NavigationButton } from "@/ui/design-system/atoms/navigation-button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { CompactDefenseDisplay } from "@/ui/features/military/components/compact-defense-display";
-import { useChatStore } from "@/ui/features/social";
+import { useRealtimeChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
 import {
   getAddressName,
@@ -18,7 +18,10 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, MERCENARIES } from "@bibliothecadao/types";
-import { Loader, MapPin, MessageCircle, Shield } from "lucide-react";
+import Loader from "lucide-react/dist/esm/icons/loader";
+import MapPin from "lucide-react/dist/esm/icons/map-pin";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { useMemo, useState } from "react";
 import { HyperstructureCard } from "./hyperstructure-card";
 import { HyperstructureList } from "./hyperstructure-list";
@@ -43,9 +46,9 @@ export const BlitzHyperstructuresMenu = () => {
 
   const hyperstructures = useHyperstructures();
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
-  const openChat = useChatStore((state) => state.actions.openChat);
-  const addTab = useChatStore((state) => state.actions.addTab);
-  const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
+  const setShellOpen = useRealtimeChatStore((state) => state.actions.setShellOpen);
+  const openDirectThread = useRealtimeChatStore((state) => state.actions.openDirectThread);
+  const onlinePlayers = useRealtimeChatStore((state) => state.onlinePlayers);
 
   const processedHyperstructures = useMemo(() => {
     return hyperstructures.map((hyperstructure) => {
@@ -102,7 +105,7 @@ export const BlitzHyperstructuresMenu = () => {
       activeTab === "bandits" ? processedHyperstructures.filter((h) => h.isBanditOwned) : processedHyperstructures;
 
     // Sort by distance (closest first)
-    return filtered.sort((a, b) => a.distance - b.distance);
+    return filtered.toSorted((a, b) => a.distance - b.distance);
   }, [processedHyperstructures, activeTab]);
 
   const handleRefresh = async () => {
@@ -125,15 +128,12 @@ export const BlitzHyperstructuresMenu = () => {
 
   const handleChatClick = (hyperstructure: any) => {
     if (hyperstructure.isMine) {
-      openChat();
+      setShellOpen(true);
     } else if (hyperstructure.addressName && hyperstructure.addressName !== MERCENARIES) {
-      const userId = getUserIdByUsername(hyperstructure.addressName);
-      if (userId) {
-        addTab({
-          type: "direct",
-          name: hyperstructure.addressName,
-          recipientId: userId,
-        });
+      // Find player by display name from online players
+      const player = Object.values(onlinePlayers).find((p) => p.displayName === hyperstructure.addressName);
+      if (player) {
+        openDirectThread(player.playerId);
       }
     }
   };

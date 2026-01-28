@@ -1,6 +1,6 @@
 import { CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
 import { useCosmeticLoadoutStore } from "@/ui/features/landing/cosmetics/model";
-import { ExternalLink } from "lucide-react";
+import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 
 const TRADE_BASE_URL = "https://empire.realms.world/trade/cosmetics";
 

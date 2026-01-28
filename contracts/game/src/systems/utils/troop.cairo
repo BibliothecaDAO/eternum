@@ -13,7 +13,7 @@ use crate::models::config::{
     TroopStaminaConfig, WorldConfigUtilImpl,
 };
 use crate::models::map::{Tile, TileImpl, TileOccupier};
-use crate::models::map2::{TileOpt};
+use crate::models::map2::TileOpt;
 use crate::models::name::AddressName;
 use crate::models::owner::OwnerAddressTrait;
 use crate::models::position::{Coord, CoordImpl, Direction};
@@ -30,11 +30,11 @@ use crate::models::troop::{
     ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopBoosts, TroopTier, TroopType, Troops, TroopsImpl,
 };
 use crate::models::weight::{Weight, WeightImpl};
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::systems::utils::map::IMapImpl;
 use crate::utils::map::biomes::Biome;
 use crate::utils::math::PercentageValueImpl;
-use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 
 #[generate_trait]
@@ -594,7 +594,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         tick,
                         troop_limit_config,
                         troop_stamina_config,
-                        false
+                        false,
                     );
                 },
                 Option::None => { break; },

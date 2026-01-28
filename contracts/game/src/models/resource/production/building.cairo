@@ -3,6 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
@@ -20,7 +21,6 @@ use crate::models::structure::{
 };
 use crate::models::weight::{Weight, WeightImpl, WeightTrait};
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
-use starknet::ContractAddress;
 
 
 #[derive(PartialEq, Copy, Drop, Serde)]

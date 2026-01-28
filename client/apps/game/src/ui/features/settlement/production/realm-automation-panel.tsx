@@ -61,7 +61,7 @@ const resolveResourceLabel = (resourceId: number): string => {
 
 const uniqueResources = (resources: ResourcesIds[]): ResourcesIds[] => {
   const list = Array.from(new Set(resources));
-  return list.sort((a, b) => {
+  return list.toSorted((a, b) => {
     if (a === ResourcesIds.Wheat && b !== ResourcesIds.Wheat) return -1;
     if (b === ResourcesIds.Wheat && a !== ResourcesIds.Wheat) return 1;
     return a - b;
@@ -282,7 +282,7 @@ export const RealmAutomationPanel = ({
     return Array.from(aggregatedUsageMap.entries())
       .filter(([resourceId]) => resourceId !== ResourcesIds.Wheat)
       .map(([resourceId, percent]) => ({ resourceId, percent }))
-      .sort((a, b) => a.resourceId - b.resourceId);
+      .toSorted((a, b) => a.resourceId - b.resourceId);
   }, [aggregatedUsageMap]);
 
   const aggregatedUsageRecord = useMemo(() => {
@@ -359,7 +359,7 @@ export const RealmAutomationPanel = ({
           perCycle: producedPerCycle - consumedPerCycle,
         };
       })
-      .sort((a, b) => a.resourceId - b.resourceId);
+      .toSorted((a, b) => a.resourceId - b.resourceId);
   }, [aggregatedUsageMap, aggregatedConsumptionMap, aggregatedProductionMap]);
 
   const overallocatedEntries = useMemo(

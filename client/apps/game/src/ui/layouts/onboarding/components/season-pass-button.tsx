@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import FileText from "lucide-react/dist/esm/icons/file-text";
+import MessageSquare from "lucide-react/dist/esm/icons/message-square";
+import TwitterIcon from "lucide-react/dist/esm/icons/twitter";
 
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -13,7 +16,7 @@ import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement
 import { env } from "../../../../../env";
 import { mintUrl } from "../constants";
 
-export interface SeasonPassButtonProps {
+interface SeasonPassButtonProps {
   onSettleRealm: () => void;
 }
 

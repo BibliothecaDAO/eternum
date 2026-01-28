@@ -6,7 +6,7 @@ use crate::constants::{
 };
 use crate::models::config::{MapConfig, TickImpl, WorldConfigUtilImpl};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
-use crate::models::map2::{TileOpt};
+use crate::models::map2::TileOpt;
 use crate::models::position::{Coord, CoordImpl, Direction, DirectionImpl, TravelImpl};
 use crate::models::record::RelicRecord;
 use crate::models::resource::resource::{
@@ -14,13 +14,13 @@ use crate::models::resource::resource::{
 };
 use crate::models::structure::{StructureImpl, StructureReservation};
 use crate::models::weight::Weight;
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::systems::utils::map::IMapImpl;
 use crate::systems::utils::structure::iStructureImpl;
 use crate::systems::utils::troop::iMercenariesImpl;
 use crate::utils::map::biomes::Biome;
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
-use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 #[generate_trait]
 pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
@@ -70,7 +70,8 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
             } else {
                 if tile.not_discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
-                    let biome: Biome = biome_library.get_biome(destination_coord.alt, destination_coord.x.into(), destination_coord.y.into());
+                    let biome: Biome = biome_library
+                        .get_biome(destination_coord.alt, destination_coord.x.into(), destination_coord.y.into());
                     IMapImpl::explore(ref world, ref tile, biome);
                 }
                 IMapImpl::occupy(ref world, ref tile, TileOccupier::Chest, world.dispatcher.uuid());

@@ -18,7 +18,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { Sparkles } from "lucide-react";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 interface CompactEntityInventoryProps {
   resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null;
@@ -119,7 +119,7 @@ const buildDisplayItems = (
     })
     .filter(Boolean) as DisplayItem[];
 
-  return items.sort((a, b) => {
+  return items.toSorted((a, b) => {
     const priA = resolvePriority(a.resourceId);
     const priB = resolvePriority(b.resourceId);
     if (priA.group !== priB.group) return priA.group - priB.group;

@@ -169,7 +169,7 @@ const pruneCache = <T>(cache: Map<string, CacheEntry<T>>, maxEntries: number) =>
   if (cache.size <= maxEntries) {
     return;
   }
-  const entries = Array.from(cache.entries()).sort((a, b) => a[1].fetchedAt - b[1].fetchedAt);
+  const entries = Array.from(cache.entries()).toSorted((a, b) => a[1].fetchedAt - b[1].fetchedAt);
   const overflow = entries.length - maxEntries;
   for (let i = 0; i < overflow; i += 1) {
     cache.delete(entries[i]![0]);
@@ -198,7 +198,7 @@ const cleanupExpiredEntries = <T>(cache: Map<string, CacheEntry<T>>, staleMs: nu
 
 let cacheCleanupIntervalId: NodeJS.Timeout | null = null;
 
-export const startCacheCleanup = () => {
+const startCacheCleanup = () => {
   if (cacheCleanupIntervalId) {
     return;
   }
@@ -215,7 +215,7 @@ export const startCacheCleanup = () => {
   );
 };
 
-export const stopCacheCleanup = () => {
+const stopCacheCleanup = () => {
   if (cacheCleanupIntervalId) {
     clearInterval(cacheCleanupIntervalId);
     cacheCleanupIntervalId = null;
@@ -470,7 +470,7 @@ const resolveToriiSqlBaseUrl = (c: Context): string | null => {
   return normalizeToriiBaseUrl(process.env.TORII_SQL_BASE_URL, false);
 };
 
-export const cacheRoutes = new Hono<AppEnv>();
+const cacheRoutes = new Hono<AppEnv>();
 
 cacheRoutes.get("/leaderboard", async (c) => {
   const start = Date.now();

@@ -1,5 +1,8 @@
 import { formatTime } from "@bibliothecadao/eternum";
-import { AlertCircle, Shield, ShieldOff, Timer } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import ShieldOff from "lucide-react/dist/esm/icons/shield-off";
+import Timer from "lucide-react/dist/esm/icons/timer";
 import { useEffect, useState } from "react";
 
 interface CooldownIndicatorProps {

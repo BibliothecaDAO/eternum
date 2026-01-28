@@ -146,6 +146,7 @@ export class ArmyManager {
   private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private memoryMonitor?: MemoryMonitor;
+  private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
   private attachmentManager: CosmeticAttachmentManager;
   private armyAttachmentSignatures: Map<number, string> = new Map();
@@ -409,7 +410,7 @@ export class ArmyManager {
       statsParams.totalArmyCount = `Total: ${self.armies?.size ?? 0}`;
       statsParams.visibleArmyCount = `Visible: ${self.visibleArmyOrder?.length ?? 0}`;
     };
-    setInterval(updateStats, 500);
+    this.debugStatsIntervalId = setInterval(updateStats, 500);
 
     const statsFolder = debugFolder.addFolder("Stats");
     statsFolder.add(statsParams, "debugArmyCount").name("Debug Armies").listen();
@@ -888,7 +889,7 @@ export class ArmyManager {
     }
     return templates
       .map((template) => `${template.id}:${template.slot ?? ""}`)
-      .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0))
+      .toSorted((a, b) => (a > b ? 1 : a < b ? -1 : 0))
       .join("|");
   }
 
@@ -989,8 +990,10 @@ export class ArmyManager {
 
     // Recompute after async work to capture any armies added during preload
     visibleArmies = computeVisibleArmies();
-    visibleArmies.sort((a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId));
-    ({ modelTypesByEntity } = this.collectModelInfo(visibleArmies));
+    const sortedVisibleArmies = visibleArmies.toSorted(
+      (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
+    );
+    ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
 
     let buffersDirty = false;
 
@@ -998,7 +1001,7 @@ export class ArmyManager {
     const desiredIds = new Set(desiredOrder);
     const toRemove = this.visibleArmyOrder
       .filter((entityId) => !desiredIds.has(entityId))
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const aNum = this.toNumericId(a);
         const bNum = this.toNumericId(b);
         return aNum - bNum;
@@ -2735,6 +2738,12 @@ ${
     if (this.cleanupTimeout) {
       clearTimeout(this.cleanupTimeout);
       this.cleanupTimeout = null;
+    }
+
+    // Clean up debug stats interval
+    if (this.debugStatsIntervalId) {
+      clearInterval(this.debugStatsIntervalId);
+      this.debugStatsIntervalId = undefined;
     }
 
     // Clear any remaining pending updates

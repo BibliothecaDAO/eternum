@@ -22,7 +22,11 @@ import {
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useSendTransaction } from "@starknet-react/core";
-import { ArrowDown, ArrowLeftRight, Info, Star, X } from "lucide-react";
+import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import Info from "lucide-react/dist/esm/icons/info";
+import Star from "lucide-react/dist/esm/icons/star";
+import X from "lucide-react/dist/esm/icons/x";
 import React, { useCallback, useMemo, useState } from "react";
 import { formatEther, parseEther } from "viem";
 
@@ -64,7 +68,7 @@ const EfficiencyInfo = ({
   // Find the applicable efficiency rates based on hyperstructures completed
   const currentEfficiency = useMemo(() => {
     // Sort in descending order to find the highest tier that applies
-    const sortedData = [...efficiencyData].sort((a, b) => b.hyperstructures - a.hyperstructures);
+    const sortedData = efficiencyData.toSorted((a, b) => b.hyperstructures - a.hyperstructures);
     return sortedData.find((data) => hyperstructuresCompleted >= data.hyperstructures) || efficiencyData[0];
   }, [hyperstructuresCompleted]);
 
@@ -115,7 +119,7 @@ const EfficiencyInfo = ({
 
   // Find next efficiency tier
   const getNextEfficiencyTier = () => {
-    const sortedTiers = [...efficiencyData].sort((a, b) => a.hyperstructures - b.hyperstructures);
+    const sortedTiers = efficiencyData.toSorted((a, b) => a.hyperstructures - b.hyperstructures);
     const nextTier = sortedTiers.find((tier) => tier.hyperstructures > hyperstructuresCompleted);
     return nextTier;
   };
@@ -270,7 +274,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       name: key,
       tokenAddress: value[1] as string,
     }))
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       // Make LORDS appear first
       if (a.name.toLowerCase() === "lords") return -1;
       if (b.name.toLowerCase() === "lords") return 1;
@@ -325,7 +329,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
         isFavorite: structure.entityId ? favorites.includes(structure.entityId) : false,
         name: mode.structure.getName(structure.structure).name,
       }))
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const aFav = a.entityId ? Number(a.isFavorite) : 0;
         const bFav = b.entityId ? Number(b.isFavorite) : 0;
         return bFav - aFav;

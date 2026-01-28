@@ -1,8 +1,9 @@
 import { displayAddress } from "@/ui/utils/utils";
-import { toHexString } from "@bibliothecadao/eternum";
+import { getAddressName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
@@ -98,7 +99,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     });
 
     // Sort by rank ascending
-    return withPrize.sort((a, b) => a.rank - b.rank);
+    return withPrize.toSorted((a, b) => a.rank - b.rank);
   }, [
     playerRankEntities,
     components.PlayerRank,
@@ -108,6 +109,12 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     decimals,
     playerPointsByPlayer,
   ]);
+
+  // Helper to get player display name
+  const getPlayerDisplayName = (playerAddress: bigint): string => {
+    const name = getAddressName(ContractAddress(playerAddress), components);
+    return name || displayAddress(toHexString(playerAddress));
+  };
 
   const displayTrialId = typeof trialId === "bigint" ? trialId : finalTrialId;
   if (!displayTrialId) return <div className="text-gray-400 text-sm">No rankings for this trial yet.</div>;
@@ -129,7 +136,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
           {rows.map((r) => (
             <tr key={`${String(displayTrialId)}-${r.player}-${r.rank}`} className="border-t border-gray-700/40">
               <td className="py-2 pr-4">{r.rank}</td>
-              <td className="py-2 pr-4 font-mono">{displayAddress(toHexString(r.player))}</td>
+              <td className="py-2 pr-4">{getPlayerDisplayName(r.player)}</td>
               <td className="py-2 pr-4">{formatPoints(r.points)}</td>
               <td className="py-2 pr-4">{formatTokenAmount(r.prizeShare)}</td>
               <td className="py-2 pr-4">{r.paid ? "Claimed" : "Unclaimed"}</td>

@@ -3,7 +3,9 @@ import { cn } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardFooter, CardTitle } from "@/shared/ui/card";
-import { AlertTriangle, Eye, Swords } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Eye from "lucide-react/dist/esm/icons/eye";
+import Swords from "lucide-react/dist/esm/icons/swords";
 import { useMemo } from "react";
 
 interface NearbyEnemiesProps {
@@ -39,7 +41,7 @@ export const NearbyEnemies = ({ onView }: NearbyEnemiesProps) => {
   const { armies, count, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, 20);
 
   const closestEnemy = useMemo(() => {
-    return armies.sort((a, b) => a.distance - b.distance)[0];
+    return armies.toSorted((a, b) => a.distance - b.distance)[0];
   }, [armies]);
   const { color, bgColor, icon: Icon } = getDangerLevel(closestEnemy ? closestEnemy.distance : 100);
 

@@ -67,9 +67,7 @@ pub impl RelicEffectImpl of RelicEffectTrait {
             16 => (2_000, 30, 0),
             // E18: increase structure troop production by 20% for 60 Eternum Days
             17 => (2_000, 60, 0),
-            _ => {
-                panic!("Invalid relic resource id");
-            },
+            _ => { panic!("Invalid relic resource id"); },
         }
     }
 }

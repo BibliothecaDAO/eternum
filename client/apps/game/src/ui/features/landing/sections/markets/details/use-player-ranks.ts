@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
 const FORMATTED_WORLD_ID = "0x000000000000000000000000ffffffff";
-export type PlayerRankEntry = {
+type PlayerRankEntry = {
   player: string;
   rank: number;
 };
@@ -83,7 +83,7 @@ export const usePlayerRanks = ({
             };
           })
           .filter((row): row is PlayerRankEntry => Boolean(row))
-          .sort((a, b) => a.rank - b.rank);
+          .toSorted((a, b) => a.rank - b.rank);
 
         if (!cancelled) {
           setRanks(parsedRanks);

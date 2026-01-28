@@ -14,7 +14,7 @@ import { MarketClass } from "../../class";
 import { useConfig } from "../../providers";
 import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
-export interface UseMarketResult {
+interface UseMarketResult {
   market: MarketClass | undefined;
   refresh: () => Promise<void>;
   isLoading: boolean;
@@ -40,15 +40,33 @@ export const useMarket = (marketId: bigint): UseMarketResult => {
 
     setIsLoading(true);
     try {
-      // Fetch market entity
+      // Build all queries upfront
       const marketQuery = new ToriiQueryBuilder()
         .withEntityModels(["pm-Market", "pm-VaultDenominator", "pm-VaultFeesDenominator"])
         .withClause(new ClauseBuilder().where("pm-Market", "market_id", "Eq", marketIdPadded).build())
         .includeHashedKeys();
 
-      const marketResponse = await sdk.getEntities({ query: marketQuery });
-      const marketItems: StandardizedQueryResult<SchemaType> = marketResponse.getItems();
+      const vaultNumeratorQuery = new ToriiQueryBuilder()
+        .withEntityModels(["pm-VaultNumerator"])
+        .withClause(new ClauseBuilder().where("pm-VaultNumerator", "market_id", "Eq", marketIdPadded).build())
+        .withLimit(100)
+        .includeHashedKeys();
 
+      const marketCreatedQuery = new ToriiQueryBuilder()
+        .withEntityModels(["pm-MarketCreated"])
+        .withClause(new ClauseBuilder().where("pm-MarketCreated", "market_id", "Eq", marketIdPadded).build())
+        .withLimit(1)
+        .includeHashedKeys();
+
+      // Execute all queries in parallel
+      const [marketResponse, vaultNumeratorResponse, marketCreatedResponse] = await Promise.all([
+        sdk.getEntities({ query: marketQuery }),
+        sdk.getEntities({ query: vaultNumeratorQuery }),
+        sdk.getEventMessages({ query: marketCreatedQuery }),
+      ]);
+
+      // Process market entity response
+      const marketItems: StandardizedQueryResult<SchemaType> = marketResponse.getItems();
       if (marketItems[0]) {
         const entity = marketItems[0];
         if (entity.models.pm?.Market) {
@@ -62,32 +80,21 @@ export const useMarket = (marketId: bigint): UseMarketResult => {
         }
       }
 
-      // Fetch vault numerators
-      const vaultNumeratorQuery = new ToriiQueryBuilder()
-        .withEntityModels(["pm-VaultNumerator"])
-        .withClause(new ClauseBuilder().where("pm-VaultNumerator", "market_id", "Eq", marketIdPadded).build())
-        .withLimit(100)
-        .includeHashedKeys();
-
-      const vaultNumeratorResponse = await sdk.getEntities({ query: vaultNumeratorQuery });
+      // Process vault numerators response
       const vaultNumeratorItems: StandardizedQueryResult<SchemaType> = vaultNumeratorResponse.getItems();
-
       const numerators = vaultNumeratorItems
         .flatMap((item) => (item.models.pm?.VaultNumerator ? [item.models.pm.VaultNumerator as VaultNumerator] : []))
-        .sort((a, b) => Number(a.index) - Number(b.index));
+        .map((n) => ({
+          market_id: BigInt(n.market_id),
+          index: Number(n.index),
+          value: BigInt(n.value),
+        }))
+        .toSorted((a, b) => a.index - b.index);
 
-      setVaultNumerators(numerators);
+      setVaultNumerators(numerators as VaultNumerator[]);
 
-      // Fetch market created event
-      const marketCreatedQuery = new ToriiQueryBuilder()
-        .withEntityModels(["pm-MarketCreated"])
-        .withClause(new ClauseBuilder().where("pm-MarketCreated", "market_id", "Eq", marketIdPadded).build())
-        .withLimit(1)
-        .includeHashedKeys();
-
-      const marketCreatedResponse = await sdk.getEventMessages({ query: marketCreatedQuery });
+      // Process market created event response
       const marketCreatedItems: StandardizedQueryResult<SchemaType> = marketCreatedResponse.getItems();
-
       if (marketCreatedItems[0]?.models.pm?.MarketCreated) {
         setMarketCreated(marketCreatedItems[0].models.pm.MarketCreated as MarketCreated);
       }

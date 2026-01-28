@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle } from "lucide-react";
+import CheckCircle from "lucide-react/dist/esm/icons/check-circle";
 import { fadeInUp } from "../../animations";
 import { RegistrationStage } from "../../types";
 import { CountdownTimer } from "../CountdownTimer";

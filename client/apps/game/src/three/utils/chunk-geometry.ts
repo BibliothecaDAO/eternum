@@ -48,7 +48,7 @@ export function getRenderBounds(
 /**
  * Compute world-space Box3/Sphere bounds for the render area.
  */
-export function getWorldBoundsForRenderArea(
+function getWorldBoundsForRenderArea(
   startRow: number,
   startCol: number,
   renderSize: ChunkRenderSize,

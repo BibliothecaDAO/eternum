@@ -2,8 +2,7 @@ import { useStore } from "@/shared/store";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import {
   Biome,
-  getEntityIdFromKeys,
-  getFeltCenterOffset,
+  FELT_CENTER,
   isTileOccupierQuest,
   isTileOccupierStructure,
   Position as PositionInterface,
@@ -11,7 +10,6 @@ import {
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ArmyEntityDetail } from "./army-entity-detail";
 import { BiomeInfoPanel } from "./biome-info-panel";
@@ -54,19 +52,19 @@ export const HexEntityDetailsDrawer = ({ open, onOpenChange }: HexEntityDetailsD
     return isTileOccupierStructure(tile?.occupier_type || 0);
   }, [tile]);
 
-  const FELT_CENTER = getFeltCenterOffset();
+  const feltCenter = FELT_CENTER();
   const displayCoordinates = useMemo(() => {
     if (!selectedHex) return null;
     return {
-      col: selectedHex.col + FELT_CENTER,
-      row: selectedHex.row + FELT_CENTER,
+      col: selectedHex.col + feltCenter,
+      row: selectedHex.row + feltCenter,
     };
   }, [selectedHex]);
 
   const getDrawerTitle = () => {
     if (!selectedHex) return "Hex Details";
-    return `Hex (${displayCoordinates?.col ? displayCoordinates.col - FELT_CENTER : 0}, ${
-      displayCoordinates?.row ? displayCoordinates.row - FELT_CENTER : 0
+    return `Hex (${displayCoordinates?.col ? displayCoordinates.col - feltCenter : 0}, ${
+      displayCoordinates?.row ? displayCoordinates.row - feltCenter : 0
     })`;
   };
 

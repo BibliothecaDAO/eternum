@@ -72,7 +72,7 @@ export class AudioPoolManager {
       assetId: string;
     }
   > {
-    const stats: Record<string, any> = {};
+    const stats: Record<string, ReturnType<AudioPool["getStats"]>> = {};
     this.pools.forEach((pool, assetId) => {
       stats[assetId] = pool.getStats();
     });
@@ -113,7 +113,7 @@ export class AudioPoolManager {
    * Optimize pools based on usage patterns
    */
   optimizePools(): void {
-    this.pools.forEach((pool, assetId) => {
+    this.pools.forEach((pool, _assetId) => {
       const stats = pool.getStats();
 
       // If pool is frequently fully utilized, consider increasing size

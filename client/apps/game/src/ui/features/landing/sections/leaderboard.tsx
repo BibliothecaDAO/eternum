@@ -1,15 +1,28 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 
 import { useNavigate } from "react-router-dom";
 
-import { Download } from "lucide-react";
+import Download from "lucide-react/dist/esm/icons/download";
 
+import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import type { Chain } from "@contracts";
 
-import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import { LandingWorldSelector } from "../components/landing-world-selector";
+import { fetchLandingLeaderboard, type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
+import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
 import { useScoreToBeat } from "../lib/use-score-to-beat";
 
 const LEADERBOARD_LIMIT = 30;
@@ -42,17 +55,15 @@ const getRelativeTimeLabel = (timestamp: number | null, fallback: string) => {
   return relative.format(-minutesAgo, "minute");
 };
 
-const SCORE_TO_BEAT_STORAGE_KEY = "landing-score-to-beat-endpoints";
-const DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES: string[] = [
-  "warr-game-1",
-  "warr-game-2",
-  "warr-game-3",
-  "warr-game-4",
-  "warr-game-5",
-  "warr-game-6",
-];
+const SCORE_TO_BEAT_GAMES_STORAGE_KEY = "landing-score-to-beat-games";
+const SCORE_TO_BEAT_RUNS_STORAGE_KEY = "landing-score-to-beat-runs";
+const SCORE_TO_BEAT_CHAIN_STORAGE_KEY = "landing-score-to-beat-chain";
+const MAX_GAMES = 10;
+const DEFAULT_RUNS_TO_AGGREGATE = 3;
+const RUNS_TO_AGGREGATE_OPTIONS = [2, 3, 4] as const;
+const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
 
-const SCORE_TO_BEAT_TAB_ENABLED = true; // Temporarily hide the Score to Beat tab until it's ready again.
+const SCORE_TO_BEAT_TAB_ENABLED = true;
 
 const describeEndpoint = (endpoint: string) => {
   if (!endpoint) {
@@ -73,33 +84,14 @@ const describeEndpoint = (endpoint: string) => {
   }
 };
 
-const buildEndpointUrl = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
+const buildToriiSqlUrl = (gameName: string) => `https://api.cartridge.gg/x/${gameName}/torii/sql`;
 
-  const hasProtocol = /^https?:\/\//i.test(trimmed);
-  return hasProtocol ? trimmed : `https://api.cartridge.gg/x/${trimmed}/torii/sql`;
-};
-
-const parseEndpointInput = (value: string) => {
-  return Array.from(
-    new Set(
-      value
-        .split(/[\n,]+/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-    ),
-  );
-};
-
-const loadStoredEndpointNames = (): string[] | null => {
+const loadStoredSelectedGames = (): string[] | null => {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const stored = window.localStorage.getItem(SCORE_TO_BEAT_STORAGE_KEY);
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY);
   if (!stored) {
     return null;
   }
@@ -114,6 +106,71 @@ const loadStoredEndpointNames = (): string[] | null => {
   }
 
   return null;
+};
+
+const loadStoredChain = (): Chain | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_CHAIN_STORAGE_KEY);
+  if (stored && CHAIN_OPTIONS.includes(stored as Chain)) {
+    return stored as Chain;
+  }
+
+  return null;
+};
+
+const loadStoredRunsToAggregate = (): number | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_RUNS_STORAGE_KEY);
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const parsed = parseInt(stored, 10);
+    if (RUNS_TO_AGGREGATE_OPTIONS.includes(parsed as (typeof RUNS_TO_AGGREGATE_OPTIONS)[number])) {
+      return parsed;
+    }
+  } catch {
+    // Ignore malformed data and fall back to defaults.
+  }
+
+  return null;
+};
+
+const getRunsLabel = (count: number): string => {
+  switch (count) {
+    case 1:
+      return "single-run";
+    case 2:
+      return "two-run";
+    case 3:
+      return "three-run";
+    case 4:
+      return "four-run";
+    default:
+      return `${count}-run`;
+  }
+};
+
+const getBestRunsLabel = (count: number): string => {
+  switch (count) {
+    case 1:
+      return "Best run";
+    case 2:
+      return "Best two runs";
+    case 3:
+      return "Best three runs";
+    case 4:
+      return "Best four runs";
+    default:
+      return `Best ${count} runs`;
+  }
 };
 
 type LeaderboardTab = "score-to-beat" | "leaderboard";
@@ -246,14 +303,30 @@ export const LandingLeaderboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const navigate = useNavigate();
-  const [configuredEndpointNames, setConfiguredEndpointNames] = useState<string[]>(
-    DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES,
-  );
-  const [endpointEditorValue, setEndpointEditorValue] = useState<string>(
-    DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES.join("\n"),
-  );
+  const [selectedChain, setSelectedChain] = useState<Chain>("mainnet");
+  const [selectedGames, setSelectedGames] = useState<string[]>([]);
+  const [runsToAggregate, setRunsToAggregate] = useState<number>(DEFAULT_RUNS_TO_AGGREGATE);
 
-  const entries = useLandingLeaderboardStore((state) => state.entries);
+  // World selection for "Current Leaderboard" tab
+  const worldSelection = useLandingWorldSelection({ storageKeyPrefix: "leaderboard" });
+
+  // Local state for world-specific leaderboard data
+  const [worldEntries, setWorldEntries] = useState<LandingLeaderboardEntry[]>([]);
+  const [worldIsFetching, setWorldIsFetching] = useState(false);
+  const [worldError, setWorldError] = useState<string | null>(null);
+  const [worldLastUpdatedAt, setWorldLastUpdatedAt] = useState<number | null>(null);
+  const [worldLastFetchAt, setWorldLastFetchAt] = useState<number | null>(null);
+  const worldFetchAbortRef = useRef<AbortController | null>(null);
+
+  // Fetch available games from factory (for Score to Beat tab)
+  const { worlds: availableGames, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
+
+  // Store data (used when no custom world is selected)
+  const storeEntries = useLandingLeaderboardStore((state) => state.entries);
+
+  // Determine which data source to use
+  const useCustomWorld = worldSelection.toriiBaseUrl !== null;
+  const entries = useCustomWorld ? worldEntries : storeEntries;
   const { data: avatarProfiles } = useAvatarProfiles(entries.map((entry) => entry.address));
   const avatarMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -275,68 +348,79 @@ export const LandingLeaderboard = () => {
     [avatarMap],
   );
 
-  const isFetching = useLandingLeaderboardStore((state) => state.isFetching);
-  const error = useLandingLeaderboardStore((state) => state.error);
-  const lastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
-  const lastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
-  const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  const storeIsFetching = useLandingLeaderboardStore((state) => state.isFetching);
+  const storeError = useLandingLeaderboardStore((state) => state.error);
+  const storeLastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
+  const storeLastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+  const storeFetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+
+  // Use world-specific or store data depending on selection
+  const isFetching = useCustomWorld ? worldIsFetching : storeIsFetching;
+  const error = useCustomWorld ? worldError : storeError;
+  const lastUpdatedAt = useCustomWorld ? worldLastUpdatedAt : storeLastUpdatedAt;
+  const lastFetchAt = useCustomWorld ? worldLastFetchAt : storeLastFetchAt;
 
   useEffect(() => {
-    const stored = loadStoredEndpointNames();
-    if (stored) {
-      setConfiguredEndpointNames(stored);
-      setEndpointEditorValue(stored.join("\n"));
+    const storedChain = loadStoredChain();
+    if (storedChain) {
+      setSelectedChain(storedChain);
+    }
+    const storedGames = loadStoredSelectedGames();
+    if (storedGames) {
+      setSelectedGames(storedGames.slice(0, MAX_GAMES));
+    }
+    const storedRuns = loadStoredRunsToAggregate();
+    if (storedRuns) {
+      setRunsToAggregate(storedRuns);
     }
   }, []);
 
   const resolvedScoreToBeatEndpoints = useMemo(
-    () =>
-      configuredEndpointNames
-        .map((name) => buildEndpointUrl(name))
-        .filter((endpoint): endpoint is string => Boolean(endpoint)),
-    [configuredEndpointNames],
+    () => selectedGames.map((name) => buildToriiSqlUrl(name)),
+    [selectedGames],
   );
-
-  const editedEndpointNames = useMemo(() => parseEndpointInput(endpointEditorValue), [endpointEditorValue]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    window.localStorage.setItem(SCORE_TO_BEAT_STORAGE_KEY, JSON.stringify(configuredEndpointNames));
-  }, [configuredEndpointNames]);
+    window.localStorage.setItem(SCORE_TO_BEAT_CHAIN_STORAGE_KEY, selectedChain);
+  }, [selectedChain]);
 
-  const handleApplyScoreToBeatEndpoints = useCallback(() => {
-    setConfiguredEndpointNames(editedEndpointNames);
-    setEndpointEditorValue(editedEndpointNames.join("\n"));
-  }, [editedEndpointNames]);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
-  const handleClearScoreToBeatEndpoints = useCallback(() => {
-    setConfiguredEndpointNames([]);
-    setEndpointEditorValue("");
-  }, []);
+    window.localStorage.setItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY, JSON.stringify(selectedGames));
+  }, [selectedGames]);
 
-  const handleRemoveEndpointName = useCallback((name: string) => {
-    setConfiguredEndpointNames((current) => {
-      const updated = current.filter((item) => item !== name);
-      setEndpointEditorValue(updated.join("\n"));
-      return updated;
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(SCORE_TO_BEAT_RUNS_STORAGE_KEY, String(runsToAggregate));
+  }, [runsToAggregate]);
+
+  const handleToggleGame = useCallback((gameName: string) => {
+    setSelectedGames((current) => {
+      if (current.includes(gameName)) {
+        return current.filter((name) => name !== gameName);
+      }
+      if (current.length >= MAX_GAMES) {
+        return current; // Don't add if at limit
+      }
+      return [...current, gameName];
     });
   }, []);
 
-  const isEndpointEditorDirty = useMemo(
-    () =>
-      editedEndpointNames.length !== configuredEndpointNames.length ||
-      editedEndpointNames.some((name, index) => name !== configuredEndpointNames[index]),
-    [configuredEndpointNames, editedEndpointNames],
-  );
-  const isSaveEndpointsDisabled = !isEndpointEditorDirty;
-  const [isEndpointEditorOpen, setIsEndpointEditorOpen] = useState(false);
+  const handleClearSelectedGames = useCallback(() => {
+    setSelectedGames([]);
+  }, []);
 
-  useEffect(() => {
-    console.log("entries", entries);
-  }, [entries]);
+  const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(true);
 
   const {
     entries: scoreToBeatEntries,
@@ -347,7 +431,7 @@ export const LandingLeaderboard = () => {
     error: scoreToBeatError,
     refresh: refreshScoreToBeat,
     hasEndpointsConfigured: hasScoreToBeatConfiguration,
-  } = useScoreToBeat(resolvedScoreToBeatEndpoints);
+  } = useScoreToBeat(resolvedScoreToBeatEndpoints, runsToAggregate);
 
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
@@ -369,17 +453,82 @@ export const LandingLeaderboard = () => {
     return () => window.clearInterval(interval);
   }, [lastFetchAt]);
 
+  // Fetch world-specific leaderboard data
+  const fetchWorldLeaderboard = useCallback(
+    async (force = false) => {
+      const toriiUrl = worldSelection.toriiBaseUrl;
+      if (!toriiUrl) {
+        return;
+      }
+
+      const now = Date.now();
+      if (worldIsFetching) {
+        return;
+      }
+
+      if (!force && worldLastFetchAt && now - worldLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
+        return;
+      }
+
+      // Cancel any in-flight request
+      if (worldFetchAbortRef.current) {
+        worldFetchAbortRef.current.abort();
+      }
+      worldFetchAbortRef.current = new AbortController();
+
+      setWorldIsFetching(true);
+      setWorldError(force ? null : worldError);
+      setWorldLastFetchAt(now);
+
+      try {
+        const fetchedEntries = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, toriiUrl);
+        const timestamp = Date.now();
+        setWorldEntries(fetchedEntries);
+        setWorldLastUpdatedAt(timestamp);
+        setWorldLastFetchAt(timestamp);
+        setWorldIsFetching(false);
+        setWorldError(null);
+      } catch (caughtError) {
+        if (caughtError instanceof Error && caughtError.name === "AbortError") {
+          return;
+        }
+        const message = caughtError instanceof Error ? caughtError.message : "Unable to load leaderboard.";
+        setWorldIsFetching(false);
+        setWorldError(message);
+        setWorldLastFetchAt(Date.now());
+      }
+    },
+    [worldSelection.toriiBaseUrl, worldIsFetching, worldLastFetchAt, worldError],
+  );
+
+  // Reset world data when world changes
   useEffect(() => {
-    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
-  }, [fetchLeaderboard]);
+    setWorldEntries([]);
+    setWorldError(null);
+    setWorldLastUpdatedAt(null);
+    setWorldLastFetchAt(null);
+  }, [worldSelection.toriiBaseUrl]);
+
+  // Initial fetch and auto-refresh for both modes
+  useEffect(() => {
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard();
+    } else {
+      void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+      if (useCustomWorld) {
+        void fetchWorldLeaderboard();
+      } else {
+        void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+      }
     }, REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(interval);
-  }, [fetchLeaderboard]);
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -419,8 +568,12 @@ export const LandingLeaderboard = () => {
       return;
     }
 
-    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
-  }, [fetchLeaderboard, isFetching, refreshCooldownMs]);
+    if (useCustomWorld) {
+      void fetchWorldLeaderboard(true);
+    } else {
+      void storeFetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+    }
+  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard, isFetching, refreshCooldownMs]);
 
   const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.currentTarget.value);
@@ -515,13 +668,13 @@ export const LandingLeaderboard = () => {
     document.body.removeChild(downloadLink);
     window.URL.revokeObjectURL(url);
   }, [filteredEntries]);
-  const totalScoreGames = resolvedScoreToBeatEndpoints.length;
+  const totalScoreGames = selectedGames.length;
   const failedScoreGames = scoreToBeatFailedEndpoints.length;
   const activeSyncedGames = scoreToBeatSyncedEndpoints.length || totalScoreGames;
   const syncedScoreGames = Math.max(0, activeSyncedGames - failedScoreGames);
   const scoreGameLabel =
-    totalScoreGames > 0 ? `${syncedScoreGames}/${totalScoreGames} games syncing` : "Waiting for games";
-  const showScoreToBeatSection = SCORE_TO_BEAT_TAB_ENABLED && hasScoreToBeatConfiguration;
+    totalScoreGames > 0 ? `${syncedScoreGames}/${totalScoreGames} games selected` : "No games selected";
+  const showScoreToBeatSection = SCORE_TO_BEAT_TAB_ENABLED;
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(showScoreToBeatSection ? "score-to-beat" : "leaderboard");
   const [expandedScoreToBeatAddress, setExpandedScoreToBeatAddress] = useState<string | null>(null);
   const [expandedEntryAddress, setExpandedEntryAddress] = useState<string | null>(null);
@@ -614,7 +767,7 @@ export const LandingLeaderboard = () => {
               </>
             ) : (
               <p className="mt-2 text-sm text-white/70">
-                Chain two monster runs back-to-back and you become the number everyone else has to chase.
+                Chain your best {runsToAggregate} runs and you become the number everyone else has to chase.
               </p>
             )}
           </div>
@@ -655,49 +808,125 @@ export const LandingLeaderboard = () => {
         <div className="rounded-2xl border border-amber-100/20 bg-black/40 p-4 shadow-inner shadow-amber-500/5">
           <button
             type="button"
-            onClick={() => setIsEndpointEditorOpen((current) => !current)}
-            aria-expanded={isEndpointEditorOpen}
+            onClick={() => setIsGameSelectorOpen((current) => !current)}
+            aria-expanded={isGameSelectorOpen}
             className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-start sm:justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
           >
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-white/60">
               <span>{scoreGameLabel}</span>
               {isScoreToBeatLoading ? <span className="text-amber-100">• syncing</span> : null}
               <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/70">
-                {isEndpointEditorOpen ? "Hide" : "Edit"}
+                {isGameSelectorOpen ? "Hide" : "Select games"}
               </span>
             </div>
           </button>
-          {isEndpointEditorOpen ? (
+          {isGameSelectorOpen ? (
             <div className="mt-3 space-y-3">
-              <textarea
-                value={endpointEditorValue}
-                onChange={(event) => setEndpointEditorValue(event.currentTarget.value)}
-                spellCheck={false}
-                rows={3}
-                placeholder="warr-game-1\nwarr-game-2"
-                className="w-full rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-200/70 focus:bg-black/70"
-              />
+              {/* Chain selector */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs text-white/60">Chain:</span>
+                <div className="flex gap-1">
+                  {CHAIN_OPTIONS.map((chain) => (
+                    <button
+                      key={chain}
+                      type="button"
+                      onClick={() => setSelectedChain(chain)}
+                      className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 ${
+                        selectedChain === chain
+                          ? "border border-amber-200/60 bg-amber-200/30 text-amber-50"
+                          : "border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
+                      }`}
+                    >
+                      {chain}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Best of selector */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs text-white/60">Best of:</span>
+                <div className="flex gap-1">
+                  {RUNS_TO_AGGREGATE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setRunsToAggregate(option)}
+                      className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 ${
+                        runsToAggregate === option
+                          ? "border border-amber-200/60 bg-amber-200/30 text-amber-50"
+                          : "border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Available games from factory */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/60">
+                    Available games {isLoadingGames ? "(loading...)" : `(${availableGames.length})`}
+                  </span>
+                  <span className="text-xs text-white/50">
+                    {selectedGames.length}/{MAX_GAMES} selected
+                  </span>
+                </div>
+                {isLoadingGames ? (
+                  <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
+                    Loading games from {selectedChain}...
+                  </div>
+                ) : availableGames.length === 0 ? (
+                  <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
+                    No games found on {selectedChain}
+                  </div>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2">
+                    <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+                      {availableGames.map((game) => {
+                        const isSelected = selectedGames.includes(game.name);
+                        const isDisabled = !isSelected && selectedGames.length >= MAX_GAMES;
+                        return (
+                          <button
+                            key={game.name}
+                            type="button"
+                            onClick={() => handleToggleGame(game.name)}
+                            disabled={isDisabled}
+                            className={`rounded-lg px-2 py-1.5 text-left text-xs transition ${
+                              isSelected
+                                ? "border border-amber-200/60 bg-amber-200/20 text-amber-50"
+                                : isDisabled
+                                  ? "cursor-not-allowed border border-white/5 bg-white/5 text-white/30"
+                                  : "border border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:bg-white/10"
+                            }`}
+                          >
+                            <span className="block truncate">{game.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Selected games and clear button */}
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleApplyScoreToBeatEndpoints}
-                  disabled={isSaveEndpointsDisabled}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-200/50 bg-amber-200/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-amber-50 transition hover:border-amber-200/70 hover:bg-amber-200/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Save games
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClearScoreToBeatEndpoints}
-                  disabled={configuredEndpointNames.length === 0 && endpointEditorValue.trim().length === 0}
+                  onClick={handleClearSelectedGames}
+                  disabled={selectedGames.length === 0}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:border-white/40 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Clear list
+                  Clear selection
                 </button>
               </div>
-              {configuredEndpointNames.length ? (
+
+              {/* Show selected games as chips */}
+              {selectedGames.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {configuredEndpointNames.map((name) => (
+                  {selectedGames.map((name) => (
                     <span
                       key={name}
                       className="inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-200/10 px-3 py-1 text-xs font-semibold text-amber-50"
@@ -705,9 +934,9 @@ export const LandingLeaderboard = () => {
                       {name}
                       <button
                         type="button"
-                        onClick={() => handleRemoveEndpointName(name)}
+                        onClick={() => handleToggleGame(name)}
                         className="rounded-full border border-white/20 bg-white/10 px-1 text-[10px] font-bold text-white/80 transition hover:border-white/40 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
-                        aria-label={`Remove ${name} from tracked games`}
+                        aria-label={`Remove ${name} from selection`}
                       >
                         ×
                       </button>
@@ -715,13 +944,13 @@ export const LandingLeaderboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-white/60">No games selected. Add at least one to see the score to beat.</p>
+                <p className="text-xs text-white/60">
+                  No games selected. Select games above to see the combined leaderboard.
+                </p>
               )}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-white/60">
-              Expand to define the games you want to track for score to beat.
-            </p>
+            <p className="mt-3 text-xs text-white/60">Expand to select games for the combined leaderboard.</p>
           )}
         </div>
 
@@ -739,21 +968,23 @@ export const LandingLeaderboard = () => {
             ))
           ) : (
             <div className="col-span-2 rounded-2xl border border-dashed border-white/20 bg-black/20 p-4 text-sm text-white/60">
-              Waiting for back-to-back runs before we crown a pace setter.
+              Waiting for runs before we crown a pace setter.
             </div>
           )}
         </div>
 
         {scoreToBeatTopTen.length ? (
           <div>
-            <p className="text-xs uppercase tracking-wide text-white/50">Top 10 two-run totals</p>
+            <p className="text-xs uppercase tracking-wide text-white/50">
+              Top 10 {getRunsLabel(runsToAggregate)} totals
+            </p>
             <ol className="mt-3 divide-y divide-white/10 rounded-2xl border border-white/10 bg-black/30 text-sm">
               {scoreToBeatTopTen.map((entry, index) => {
                 const rank = index + 1;
                 const challengerLabel = displayAddress(entry.address);
                 const isLeader = rank === 1;
                 const isExpanded = expandedScoreToBeatAddress === entry.address;
-                const runSummaryLabel = entry.runs.length >= 2 ? "Best two runs" : "Best run";
+                const runSummaryLabel = getBestRunsLabel(Math.min(entry.runs.length, runsToAggregate));
                 const panelId = getScoreToBeatRunsPanelId(entry.address);
 
                 return (
@@ -838,23 +1069,53 @@ export const LandingLeaderboard = () => {
   };
 
   const renderLeaderboardContent = () => {
+    const worldSelectorUI = (
+      <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4 mb-4">
+        <LandingWorldSelector
+          selectedChain={worldSelection.selectedChain}
+          selectedWorld={worldSelection.selectedWorld}
+          availableWorlds={worldSelection.availableWorlds}
+          isLoading={worldSelection.isLoading}
+          isCheckingAvailability={worldSelection.isCheckingAvailability}
+          onChainChange={worldSelection.setSelectedChain}
+          onWorldChange={worldSelection.setSelectedWorld}
+        />
+        {worldSelection.selectedWorld && (
+          <p className="mt-2 text-xs text-gold/60">
+            Showing data from: <span className="font-semibold text-gold">{worldSelection.selectedWorld}</span>
+          </p>
+        )}
+      </div>
+    );
+
     if (isInitialLoading) {
-      return renderSkeleton();
+      return (
+        <>
+          {worldSelectorUI}
+          {renderSkeleton()}
+        </>
+      );
     }
 
     if (entries.length === 0) {
       return (
-        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
-          No ranked players yet. Check back soon once battles begin.
-        </div>
+        <>
+          {worldSelectorUI}
+          <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+            No ranked players yet. Check back soon once battles begin.
+          </div>
+        </>
       );
     }
 
     if (isFiltering && filteredEntries.length === 0) {
       return (
-        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
-          No players match "{searchQuery.trim()}".
-        </div>
+        <>
+          {worldSelectorUI}
+          <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/35 to-black/75 p-8 text-center text-sm text-gold/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
+            No players match "{searchQuery.trim()}".
+          </div>
+        </>
       );
     }
 
@@ -862,6 +1123,7 @@ export const LandingLeaderboard = () => {
 
     return (
       <div className="space-y-6">
+        {worldSelectorUI}
         <div className="flex flex-col gap-2 rounded-3xl border border-gold/20 bg-gold/5 px-4 py-3 text-xs text-gold/70 sm:flex-row sm:items-center sm:justify-between">
           <span className="tracking-wide">Download the current view (filters included).</span>
           <button

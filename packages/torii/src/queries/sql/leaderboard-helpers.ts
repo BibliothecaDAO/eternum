@@ -434,7 +434,7 @@ export const buildAdditionalLeaderboardEntries = ({
 };
 
 export const sortLeaderboardEntries = (entries: PlayerLeaderboardRow[]): PlayerLeaderboardRow[] => {
-  return entries.sort((a, b) => {
+  return entries.toSorted((a, b) => {
     const aTotal = parseNumericValue(a.registeredPoints);
     const bTotal = parseNumericValue(b.registeredPoints);
 

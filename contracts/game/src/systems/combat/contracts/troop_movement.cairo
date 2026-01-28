@@ -14,18 +14,21 @@ pub mod troop_movement_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorageTrait;
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
         VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
-    use crate::models::events::{ExploreFind, ExplorerMoveStory,ExplorerExtractRewardStory, Story, StoryEvent, PointsRegisteredStory, PointsActivity};
+    use crate::models::events::{
+        ExploreFind, ExplorerExtractRewardStory, ExplorerMoveStory, PointsActivity, PointsRegisteredStory, Story,
+        StoryEvent,
+    };
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
-    use crate::models::map2::{TileOpt};
+    use crate::models::map2::TileOpt;
     use crate::models::position::{CoordTrait, Direction};
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -33,6 +36,8 @@ pub mod troop_movement_systems {
     use crate::models::structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl};
     use crate::models::troop::{ExplorerTroops, GuardImpl};
     use crate::models::weight::Weight;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
@@ -40,9 +45,6 @@ pub mod troop_movement_systems {
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
-    use starknet::ContractAddress;
-    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
     // to be removed
@@ -116,17 +118,15 @@ pub mod troop_movement_systems {
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
-
                 // todo: for the alternate map feature, it is very simple.
                 // simply add 15 steps to whatever direction the explorer is moving towards
                 // let next = explorer.coord.neighbor_after_distance(*(directions.pop_front().unwrap()), 15);
-
 
                 // ensure next coordinate is not occupied
                 let from = explorer.coord;
                 let next = explorer.coord.neighbor(*(directions.pop_front().unwrap()));
                 let tile_opt: TileOpt = world.read_model((next.alt, next.x, next.y));
-                let mut tile: Tile = tile_opt.into(); 
+                let mut tile: Tile = tile_opt.into();
                 assert!(tile.not_occupied(), "one of the tiles in path is occupied");
 
                 // add biome to biomes
@@ -180,7 +180,6 @@ pub mod troop_movement_systems {
                         let tile_opt: TileOpt = world.read_model((next.alt, next.x, next.y));
                         tile = tile_opt.into();
                     }
-
 
                     // emit explore achievement progression
                     AchievementTrait::progress(
@@ -320,7 +319,6 @@ pub mod troop_movement_systems {
                     );
             }
 
-
             // to be removed
             world
                 .emit_event(
@@ -338,9 +336,8 @@ pub mod troop_movement_systems {
 
             tiles_to_return.span()
         }
-        
-        fn explorer_extract_reward(ref self: ContractState, explorer_id: ID) {
 
+        fn explorer_extract_reward(ref self: ContractState, explorer_id: ID) {
             let mut world = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
@@ -349,24 +346,26 @@ pub mod troop_movement_systems {
             explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure explorer is at the surface
-            assert!(explorer.coord.alt == false, "Eternum: explorer must be on surface to extract reward"); 
+            assert!(explorer.coord.alt == false, "Eternum: explorer must be on surface to extract reward");
 
             // ensure explorer is alive
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
 
             // ensure explorer tile is correct
             let tile_opt: TileOpt = world.read_model((explorer.coord.alt, explorer.coord.x, explorer.coord.y));
-            let mut tile: Tile =tile_opt.into();
+            let mut tile: Tile = tile_opt.into();
             assert!(explorer_id == tile.occupier_id, "tile occupier should be explorer");
             assert!(tile.biome != Biome::None.into(), "tile must be explored");
 
             // ensure to consume vrf seed even if tile.reward_extracted is true
-            // to prevent client errors 
+            // to prevent client errors
             let caller = starknet::get_caller_address();
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
             let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
 
-            if tile.reward_extracted {return;}
+            if tile.reward_extracted {
+                return;
+            }
             assert!(tile.reward_extracted == false, "tile reward already extracted");
 
             // mark reward as extracted
@@ -377,7 +376,6 @@ pub mod troop_movement_systems {
             let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
 
-
             // grant resource reward for exploration
             let (explore_reward_type, explore_reward_amount) = iExplorerImpl::exploration_reward(
                 ref world, Option::Some(explorer), current_tick, map_config, vrf_seed, blitz_mode_on,
@@ -387,9 +385,7 @@ pub mod troop_movement_systems {
                 ref world, explorer, explore_reward_type,
             );
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
-            let mut reward_receiver_weight: Weight = WeightStoreImpl::retrieve(
-                ref world, exploration_reward_receiver,
-            );
+            let mut reward_receiver_weight: Weight = WeightStoreImpl::retrieve(ref world, exploration_reward_receiver);
             let mut resource = SingleResourceStoreImpl::retrieve(
                 ref world,
                 exploration_reward_receiver,
@@ -436,7 +432,6 @@ pub mod troop_movement_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
-
         }
     }
 }
@@ -465,18 +460,18 @@ pub mod troop_movement_util_systems {
     use dojo::world::WorldStorageTrait;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
-        CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
     use crate::models::events::ExploreFind;
     use crate::models::map::Tile;
     use crate::models::position::Coord;
-    use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry};
+    // use crate::models::config::{QuestConfig};
+    // use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry};
     use crate::models::structure::StructureReservation;
-    use crate::systems::quest::constants::VERSION;
-    use crate::systems::quest::contracts::{
-        IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl,
-    };
+    // use crate::systems::quest::constants::VERSION;
+    // use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait,
+    // iQuestDiscoveryImpl};
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
@@ -617,25 +612,25 @@ pub mod troop_movement_util_systems {
                         if found_agent {
                             return (true, ExploreFind::Agent);
                         } else {
-                            let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
-                                world, selector!("quest_config"),
-                            );
-                            let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
-                            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
-                            let quest_game_count = quest_game_registry.games.len();
-                            if quest_game_count > 0 && feature_toggle.enabled {
-                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
-                                    quest_config, vrf_seed, world,
-                                );
-                                if quest_lottery_won {
-                                    let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
-                                    let quest_system = IQuestSystemsDispatcher {
-                                        contract_address: quest_system_address,
-                                    };
-                                    quest_system.create_quest(tile, vrf_seed);
-                                    return (true, ExploreFind::Quest);
-                                }
-                            }
+                            // let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
+                            //     world, selector!("quest_config"),
+                            // );
+                            // let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
+                            // let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+                            // let quest_game_count = quest_game_registry.games.len();
+                            // if quest_game_count > 0 && feature_toggle.enabled {
+                            //     let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
+                            //         quest_config, vrf_seed, world,
+                            //     );
+                            //     if quest_lottery_won {
+                            //         let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
+                            //         let quest_system = IQuestSystemsDispatcher {
+                            //             contract_address: quest_system_address,
+                            //         };
+                            //         quest_system.create_quest(tile, vrf_seed);
+                            //         return (true, ExploreFind::Quest);
+                            //     }
+                            // }
                             return (false, ExploreFind::None);
                         }
                     }
