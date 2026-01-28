@@ -5,6 +5,7 @@
  * @param url - Optional RPC URL for the provider
  */
 import * as SystemProps from "@bibliothecadao/types";
+import { settledCountToPosition } from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import type { Span } from "@opentelemetry/api";
 import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
@@ -663,6 +664,52 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(
       this.createProviderCall(signer, calls),
       TransactionType.MAKE_HYPERSTRUCTURES,
+    );
+  }
+
+  /**
+   * Create spires for the alternate map
+   *
+   * @param props - Properties for spire creation
+   * @param props.count - Number of spires to create
+   * @param props.spiresSettledCount - Current number of spires already settled
+   * @returns Transaction receipt
+   */
+  public async spire_make_spires(props: SystemProps.SpireMakeSpiresProps) {
+    const { count, spiresSettledCount, signer } = props;
+
+    // Calculate positions for all spires we're about to create
+    const settlements: { side: number; layer: number; point: number }[] = [];
+    let isCenter = false;
+
+    for (let i = 0; i < count; i++) {
+      const currentCount = spiresSettledCount + i;
+
+      if (currentCount === 0) {
+        // First spire is at center
+        isCenter = true;
+      } else {
+        const position = settledCountToPosition(currentCount);
+        settlements.push(position);
+      }
+    }
+
+    // Build calldata: is_center (bool), then array of settlements
+    // Array format: [length, side1, layer1, point1, side2, layer2, point2, ...]
+    const calldata: (number | boolean)[] = [isCenter ? 1 : 0, settlements.length];
+    for (const s of settlements) {
+      calldata.push(s.side, s.layer, s.point);
+    }
+
+    const createSpiresCall: Call = {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-spire_systems`),
+      entrypoint: "create_spires",
+      calldata,
+    };
+
+    return await this.promiseQueue.enqueue(
+      this.createProviderCall(signer, [createSpiresCall]),
+      TransactionType.MAKE_SPIRES,
     );
   }
 
@@ -3317,11 +3364,34 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
-    const { center, base_distance, subsequent_distance, signer, single_realm_mode } = props;
+    const {
+      center,
+      base_distance,
+      layers_skipped,
+      layer_max,
+      layer_capacity_increment,
+      layer_capacity_bps,
+      spires_layer_distance,
+      spires_max_count,
+      spires_settled_count,
+      signer,
+      single_realm_mode,
+    } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
-      calldata: [center, base_distance, subsequent_distance, single_realm_mode],
+      calldata: [
+        center,
+        base_distance,
+        layers_skipped,
+        layer_max,
+        layer_capacity_increment,
+        layer_capacity_bps,
+        spires_layer_distance,
+        spires_max_count,
+        spires_settled_count,
+        single_realm_mode,
+      ],
     });
   }
 

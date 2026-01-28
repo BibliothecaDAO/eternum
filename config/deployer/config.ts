@@ -1336,23 +1336,46 @@ export const setSettlementConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-  const { center, base_distance, subsequent_distance, single_realm_mode } = config.config.settlement;
+  const {
+    center,
+    base_distance,
+    layers_skipped,
+    layer_max,
+    layer_capacity_increment,
+    layer_capacity_bps,
+    spires_layer_distance,
+    spires_max_count,
+    spires_settled_count,
+    single_realm_mode,
+  } = config.config.settlement;
 
   const calldata = {
     signer: config.account,
     center,
     base_distance,
-    subsequent_distance,
+    layers_skipped,
+    layer_max,
+    layer_capacity_increment,
+    layer_capacity_bps,
+    spires_layer_distance,
+    spires_max_count,
+    spires_settled_count,
     single_realm_mode,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Layout Parameters")}
-    │  ${chalk.gray("Center:")}            ${chalk.white(`(${calldata.center}, ${calldata.center})`)}
-    │  ${chalk.gray("Base Distance:")}     ${chalk.white(calldata.base_distance)}
-    │  ${chalk.gray("Subsequent Distance:")}   ${chalk.white(calldata.subsequent_distance)}
-    │  ${chalk.gray("Single Realm Mode:")}   ${chalk.white(calldata.single_realm_mode)}
+    │  ${chalk.gray("Center:")}                    ${chalk.white(`(${calldata.center}, ${calldata.center})`)}
+    │  ${chalk.gray("Base Distance:")}             ${chalk.white(calldata.base_distance)}
+    │  ${chalk.gray("Layers Skipped:")}            ${chalk.white(calldata.layers_skipped)}
+    │  ${chalk.gray("Layer Max:")}                 ${chalk.white(calldata.layer_max)}
+    │  ${chalk.gray("Layer Capacity Increment:")} ${chalk.white(calldata.layer_capacity_increment)}
+    │  ${chalk.gray("Layer Capacity BPS:")}        ${chalk.white(calldata.layer_capacity_bps)} ${chalk.gray("(= " + calldata.layer_capacity_bps / 100 + "%)")}
+    │  ${chalk.gray("Spires Layer Distance:")}     ${chalk.white(calldata.spires_layer_distance)}
+    │  ${chalk.gray("Spires Max Count:")}          ${chalk.white(calldata.spires_max_count)}
+    │  ${chalk.gray("Spires Settled Count:")}      ${chalk.white(calldata.spires_settled_count)}
+    │  ${chalk.gray("Single Realm Mode:")}         ${chalk.white(calldata.single_realm_mode)}
     │
     └────────────────────────────────`),
   );
@@ -1766,7 +1789,7 @@ export const createBanks = async (config: Config) => {
   const banks = [];
   const bank_coords = [];
   // Find coordinates x steps from center in each direction
-  const stepsFromCenter = 220;
+  const stepsFromCenter = 15 * 21;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
   for (const [_, coord] of Object.entries(distantCoordinates)) {
     bank_coords.push({ alt: false, x: coord.x, y: coord.y });

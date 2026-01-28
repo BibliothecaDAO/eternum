@@ -113,18 +113,15 @@ pub mod troop_movement_systems {
             let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("victory_points_grant_config"),
             );
+            let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
             let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
             let season_mode_on = !blitz_mode_on;
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
-                // todo: for the alternate map feature, it is very simple.
-                // simply add 15 steps to whatever direction the explorer is moving towards
-                // let next = explorer.coord.neighbor_after_distance(*(directions.pop_front().unwrap()), 15);
-
                 // ensure next coordinate is not occupied
                 let from = explorer.coord;
-                let next = explorer.coord.neighbor(*(directions.pop_front().unwrap()));
+                let next = explorer.coord.neighbor(*directions.pop_front().unwrap());
                 let tile_opt: TileOpt = world.read_model((next.alt, next.x, next.y));
                 let mut tile: Tile = tile_opt.into();
                 assert!(tile.not_occupied(), "one of the tiles in path is occupied");
@@ -151,7 +148,6 @@ pub mod troop_movement_systems {
                     );
 
                     // perform lottery to discover mine
-                    let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
                     let rng_library_dispatcher = rng_library::get_dispatcher(@world);
                     let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
                     let (troop_movement_util_systems_address, _) = world.dns(@"troop_movement_util_systems").unwrap();
@@ -916,4 +912,3 @@ pub mod relic_chest_discovery_systems {
         }
     }
 }
-

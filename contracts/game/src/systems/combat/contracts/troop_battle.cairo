@@ -24,7 +24,7 @@ pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use crate::alias::ID;
     use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
     use crate::models::config::{
@@ -33,7 +33,7 @@ pub mod troop_battle_systems {
     };
     use crate::models::events::{BattleStory, BattleStructureType, BattleType, Story, StoryEvent};
     use crate::models::owner::OwnerAddressTrait;
-    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::position::{Coord, Direction, TravelTrait};
     use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
@@ -44,6 +44,7 @@ pub mod troop_battle_systems {
     use crate::models::weight::Weight;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
+    use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
@@ -67,6 +68,21 @@ pub mod troop_battle_systems {
         winner_id: ID,
         max_reward: Span<(u8, u128)>,
         timestamp: u64,
+    }
+
+    /// Check if two explorers are in valid battle position.
+    /// - Same layer: must be adjacent (normal hex adjacency)
+    /// - Different layers: must be at same (x,y) coordinate AND aggressor must be adjacent to a spire
+    fn is_explorer_battle_adjacent(ref world: WorldStorage, aggressor: Coord, defender: Coord) -> bool {
+        if aggressor.alt == defender.alt {
+            // Same layer - normal adjacency check
+            aggressor.is_adjacent(defender)
+        } else {
+            // Different layers - must be at same coordinates and aggressor must be adjacent to a spire
+            aggressor.x == defender.x
+                && aggressor.y == defender.y
+                && IMapImpl::is_adjacent_to_spire(ref world, aggressor)
+        }
     }
 
 
@@ -128,7 +144,7 @@ pub mod troop_battle_systems {
 
             // ensure both explorers are adjacent to each other
             assert!(
-                explorer_defender.coord == explorer_aggressor.coord.neighbor(defender_direction),
+                is_explorer_battle_adjacent(ref world, explorer_aggressor.coord, explorer_defender.coord),
                 "explorers are not adjacent",
             );
 
@@ -423,7 +439,7 @@ pub mod troop_battle_systems {
 
             // ensure explorer is adjacent to structure
             assert!(
-                explorer_aggressor.coord.neighbor(structure_direction) == guarded_structure.coord(),
+                explorer_aggressor.coord.is_adjacent(guarded_structure.coord()),
                 "explorer is not adjacent to structure",
             );
 
@@ -687,7 +703,7 @@ pub mod troop_battle_systems {
 
             // ensure structure is adjacent to explorer
             assert!(
-                explorer_defender.coord == structure_aggressor_base.coord().neighbor(explorer_direction),
+                structure_aggressor_base.coord().is_adjacent(explorer_defender.coord),
                 "structure is not adjacent to explorer",
             );
 
