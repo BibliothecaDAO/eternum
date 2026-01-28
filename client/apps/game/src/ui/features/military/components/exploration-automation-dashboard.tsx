@@ -52,14 +52,14 @@ const getStatusColor = (entry: ExplorationAutomationEntry): string => {
 const getProgressPercent = (entry: ExplorationAutomationEntry): number => {
   if (!entry.active || !entry.nextRunAt) return 0;
   const now = Date.now();
-  const nextRunAt = entry.nextRunAt;
-  const lastRunAt = entry.lastRunAt ?? nextRunAt - EXPLORATION_AUTOMATION_INTERVAL_MS;
+  const remaining = Math.max(0, entry.nextRunAt - now);
 
-  const totalDuration = nextRunAt - lastRunAt;
-  const elapsed = now - lastRunAt;
-
-  if (totalDuration <= 0) return 100;
-  const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  // Progress = how much of the 120s interval has elapsed
+  // 120s remaining = 0%, 0s remaining = 100%
+  const progress = Math.min(
+    100,
+    Math.max(0, ((EXPLORATION_AUTOMATION_INTERVAL_MS - remaining) / EXPLORATION_AUTOMATION_INTERVAL_MS) * 100),
+  );
   return progress;
 };
 
