@@ -119,7 +119,7 @@ function App() {
             <Route
               path="/play/*"
               element={
-                <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
+                <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} prefetchPlayAssets />}>
                   <LazyGameRoute backgroundImage={backgroundImage} />
                 </Suspense>
               }
