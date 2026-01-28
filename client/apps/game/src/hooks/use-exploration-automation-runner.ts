@@ -1,3 +1,4 @@
+import type { ActionPath } from "@bibliothecadao/eternum";
 import {
   ActionPaths,
   ActionType,
@@ -14,7 +15,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import type { Account, AccountInterface } from "starknet";
-import type { ActionPath } from "@bibliothecadao/eternum";
 
 import { getExplorationStrategy } from "@/automation/exploration";
 import { buildExplorationSnapshot } from "@/automation/exploration/map-cache";
@@ -141,10 +141,11 @@ export const useExplorationAutomationRunner = () => {
   }, [components, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
-    if (isSeasonOver()) {
-      stopAutomation();
-      return;
-    }
+    // TEMPORARILY DISABLED FOR TESTING
+    // if (isSeasonOver()) {
+    //   stopAutomation();
+    //   return;
+    // }
     if (timeoutIdRef.current !== null) {
       window.clearTimeout(timeoutIdRef.current);
     }
@@ -160,10 +161,11 @@ export const useExplorationAutomationRunner = () => {
 
   useEffect(() => {
     processRef.current = async () => {
-      if (isSeasonOver()) {
-        stopAutomation();
-        return;
-      }
+      // TEMPORARILY DISABLED FOR TESTING
+      // if (isSeasonOver()) {
+      //   stopAutomation();
+      //   return;
+      // }
       if (processingRef.current) {
         scheduleNextCheck();
         return;
@@ -178,10 +180,11 @@ export const useExplorationAutomationRunner = () => {
       }
 
       const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-      if (isSeasonOver(currentBlockTimestamp)) {
-        stopAutomation();
-        return;
-      }
+      // TEMPORARILY DISABLED FOR TESTING
+      // if (isSeasonOver(currentBlockTimestamp)) {
+      //   stopAutomation();
+      //   return;
+      // }
 
       // Use wall clock time for scheduling (matches store and UI expectations)
       const nowMs = Date.now();
