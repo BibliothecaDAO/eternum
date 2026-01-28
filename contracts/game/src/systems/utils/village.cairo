@@ -90,3 +90,4 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
 // Villages are no longer discoverable through exploration.
 // Use iCampDiscoveryImpl in systems/utils/camp.cairo instead.
 
+
