@@ -63,9 +63,9 @@ pub mod faith_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
 
-            // Verify wonder exists
+            // Verify wonder exists (realm_id > 0 indicates the wonder was properly created)
             let wonder: Wonder = world.read_model(wonder_id);
-            assert!(wonder.structure_id == wonder_id && wonder.structure_id != 0, "Invalid wonder");
+            assert!(wonder.realm_id > 0, "Invalid wonder");
 
             // Load wonder faith state
             let mut wonder_faith: WonderFaith = world.read_model(wonder_id);
@@ -82,13 +82,13 @@ pub mod faith_systems {
             // Get FP rates based on structure category
             let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
             assert!(faith_config.enabled, "Faith system is not enabled");
-            let (to_owner, to_pledger) = InternalImpl::_get_fp_rates(
-                structure_base.category, structure_id, wonder_id, faith_config,
-            );
-
             // Check if this is a wonder pledging to another wonder
             let is_self_pledge = structure_id == wonder_id;
             let is_wonder_submitting = InternalImpl::_is_wonder(ref world, structure_id) && !is_self_pledge;
+
+            let (to_owner, to_pledger) = InternalImpl::_get_fp_rates(
+                structure_base.category, structure_id, wonder_id, is_wonder_submitting, faith_config,
+            );
 
             if is_wonder_submitting {
                 // Can only submit if no one is pledged to the submitting wonder
@@ -106,7 +106,7 @@ pub mod faith_systems {
                 if wonder_faith.last_recorded_owner != wonder_owner && wonder_faith.last_recorded_owner.is_non_zero() {
                     InternalImpl::_settle_owner_points(ref world, wonder_faith.last_recorded_owner, now);
                 }
-                wonder_faith.last_recorded_owner = wonder_owner;
+                // Note: last_recorded_owner is set later after re-reading the model
             } else {
                 // Regular pledge - must own the structure
                 structure_owner.assert_caller_owner();
@@ -122,6 +122,9 @@ pub mod faith_systems {
             // Claim current wonder's points before state change
             InternalImpl::_claim_wonder_points_internal(ref world, wonder_id, now);
 
+            // Re-read wonder_faith after claim to get updated claim_last_at
+            let mut wonder_faith: WonderFaith = world.read_model(wonder_id);
+
             // Update faithful structure
             faithful_structure.structure_id = structure_id;
             faithful_structure.wonder_id = wonder_id;
@@ -133,6 +136,10 @@ pub mod faith_systems {
             // Update wonder faith state
             wonder_faith.claim_per_sec += to_owner + to_pledger;
             wonder_faith.num_structures_pledged += 1;
+            // Update last_recorded_owner for self-pledge
+            if is_self_pledge {
+                wonder_faith.last_recorded_owner = wonder_owner;
+            }
             world.write_model(@wonder_faith);
 
             // Update player points rates
@@ -275,10 +282,15 @@ pub mod faith_systems {
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
-        fn _get_fp_rates(category: u8, structure_id: ID, wonder_id: ID, faith_config: FaithConfig) -> (u16, u16) {
+        fn _get_fp_rates(
+            category: u8, structure_id: ID, wonder_id: ID, is_wonder_submitting: bool, faith_config: FaithConfig,
+        ) -> (u16, u16) {
             let is_self_pledge = structure_id == wonder_id;
 
             let total = if is_self_pledge {
+                faith_config.wonder_base_fp_per_sec
+            } else if is_wonder_submitting {
+                // Wonder submitting to another wonder uses wonder base rate
                 faith_config.wonder_base_fp_per_sec
             } else if category == StructureCategory::Realm.into() {
                 faith_config.realm_fp_per_sec
@@ -287,8 +299,8 @@ pub mod faith_systems {
             } else if category == StructureCategory::HolySite.into() {
                 faith_config.holy_site_fp_per_sec
             } else {
-                // Check if it's a wonder submitting to another wonder
-                faith_config.wonder_base_fp_per_sec
+                // Fallback for unknown categories
+                faith_config.realm_fp_per_sec
             };
 
             let to_owner: u16 = (total.into() * faith_config.owner_share_percent.into() / 10000_u32)
@@ -300,13 +312,12 @@ pub mod faith_systems {
 
         fn _is_wonder(ref world: WorldStorage, structure_id: ID) -> bool {
             let wonder: Wonder = world.read_model(structure_id);
-            wonder.structure_id == structure_id && wonder.structure_id != 0
+            wonder.realm_id > 0
         }
 
         fn _remove_from_wonder(ref world: WorldStorage, structure_id: ID, wonder_id: ID, now: u64) {
             // Load current state
             let mut faithful_structure: FaithfulStructure = world.read_model(structure_id);
-            let mut wonder_faith: WonderFaith = world.read_model(wonder_id);
 
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             let wonder_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, wonder_id);
@@ -316,6 +327,9 @@ pub mod faith_systems {
 
             // Claim wonder points before state change
             Self::_claim_wonder_points_internal(ref world, wonder_id, now);
+
+            // Re-read wonder_faith after claim to get updated state
+            let mut wonder_faith: WonderFaith = world.read_model(wonder_id);
 
             // Update wonder faith state (subtract rates)
             wonder_faith.claim_per_sec -= to_owner + to_pledger;
