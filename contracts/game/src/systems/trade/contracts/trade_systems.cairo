@@ -26,7 +26,7 @@ pub mod trade_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::DEFAULT_NS;
+    use crate::constants::{DEFAULT_NS, ResourceTypes};
     use crate::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::resource::arrivals::ResourceArrivalImpl;
@@ -117,6 +117,16 @@ pub mod trade_systems {
 
             // ensure maker resource is not taker resource
             assert!(maker_gives_resource_type != taker_pays_resource_type, "maker resource is taker resource");
+
+            // Satoshis cannot be transported by donkeys - only armies can carry them
+            assert!(
+                maker_gives_resource_type != ResourceTypes::SATOSHI,
+                "Satoshis cannot be transported by donkeys - only armies can carry them",
+            );
+            assert!(
+                taker_pays_resource_type != ResourceTypes::SATOSHI,
+                "Satoshis cannot be transported by donkeys - only armies can carry them",
+            );
 
             // ensure amounts are valid
             assert!(maker_gives_resource_type.is_non_zero(), "maker gives resource type is 0");
