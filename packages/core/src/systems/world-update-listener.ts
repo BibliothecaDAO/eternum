@@ -754,28 +754,12 @@ export class WorldUpdateListener {
           this.setup.components.Building,
           callback,
           async (update: any) => {
-            console.log("[onBuildingUpdate] Raw update received:", {
-              entity: update.entity,
-              type: update.type,
-              component: update.component?.metadata?.name,
-              value: update.value,
-              hexCoords,
-            });
-
             if (isComponentUpdate(update, this.setup.components.Building)) {
               const [currentState, prevState] = update.value;
-
-              console.log("[onBuildingUpdate] Received update:", {
-                entity: update.entity,
-                currentState,
-                prevState,
-                hexCoords,
-              });
 
               // Handle deletion - current state is null/undefined but we have previous state
               if (!currentState && prevState) {
                 if (prevState.outer_col !== hexCoords.col || prevState.outer_row !== hexCoords.row) {
-                  console.log("[onBuildingUpdate] Deletion ignored - different hex coords");
                   return;
                 }
 
@@ -786,7 +770,6 @@ export class WorldUpdateListener {
                   paused: false,
                 };
 
-                console.log("[onBuildingUpdate] Building DELETED:", result);
                 return result;
               }
 
@@ -801,18 +784,15 @@ export class WorldUpdateListener {
                   paused: false,
                 };
 
-                console.log("[onBuildingUpdate] Building set to None:", result);
                 return result;
               }
 
               // Normal update case
               if (!currentState) {
-                console.log("[onBuildingUpdate] No current state and no prev state, returning");
                 return;
               }
 
               if (currentState.outer_col !== hexCoords.col || currentState.outer_row !== hexCoords.row) {
-                console.log("[onBuildingUpdate] Different hex coords, ignoring");
                 return;
               }
 
@@ -823,7 +803,6 @@ export class WorldUpdateListener {
                 paused: currentState.paused,
               };
 
-              console.log("[onBuildingUpdate] BuildingSystemUpdate:", result);
               return result;
             }
           },
