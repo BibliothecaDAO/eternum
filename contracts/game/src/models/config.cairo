@@ -327,6 +327,20 @@ pub struct FaithConfig {
     pub reward_token: starknet::ContractAddress,
 }
 
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BitcoinMineConfig {
+    pub enabled: bool,
+    pub phase_duration_seconds: u64,        // 600 = 10 minutes
+    pub satoshis_per_phase: u128,           // Amount of satoshis emitted each phase
+    pub satoshi_weight_grams: u128,         // Weight per satoshi unit
+    // Production rates: labor consumed per second at each level
+    pub very_low_labor_per_sec: u16,        // 1
+    pub low_labor_per_sec: u16,             // 2
+    pub medium_labor_per_sec: u16,          // 3
+    pub high_labor_per_sec: u16,            // 4
+    pub very_high_labor_per_sec: u16,       // 5
+}
+
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct SettlementConfig {
     pub center: u32,
