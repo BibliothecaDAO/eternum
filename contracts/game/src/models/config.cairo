@@ -268,7 +268,8 @@ pub struct StructureCapacityConfig {
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
     pub holysite_capacity: u64, // grams
-    pub camp_capacity: u64 // grams
+    pub camp_capacity: u64, // grams
+    pub bitcoin_mine_capacity: u64 // grams
 }
 
 // speed
