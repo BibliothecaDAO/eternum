@@ -128,15 +128,17 @@ pub mod faith_systems {
 
             // Update wonder faith state
             InternalImpl::_claim_wonder_points_internal(ref world, ref wonder_faith, now, season_config.end_at);
-            wonder_faith.claim_per_sec += to_owner + to_pledger;
-            wonder_faith.owner_claim_per_sec += to_owner;
+            wonder_faith.claim_per_sec += to_owner.into() + to_pledger.into();
+            wonder_faith.owner_claim_per_sec += to_owner.into();
             wonder_faith.num_structures_pledged += 1;
             world.write_model(@wonder_faith);
 
             // Update player points rates (ADD)
             let sea = season_config.end_at;
-            InternalImpl::_update_player_rates(ref world, true, structure_owner, wonder_id, 0, to_pledger, now, sea);
-            InternalImpl::_update_player_rates(ref world, true, wonder_owner, wonder_id, to_owner, 0, now, sea);
+            InternalImpl::_update_player_rates(
+                ref world, true, structure_owner, wonder_id, 0, to_pledger.into(), now, sea,
+            );
+            InternalImpl::_update_player_rates(ref world, true, wonder_owner, wonder_id, to_owner.into(), 0, now, sea);
 
             // Emit event
             world
@@ -281,10 +283,10 @@ pub mod faith_systems {
                 // Transfer pledger rate from old owner to new owner
                 let wonder_id = faithful_structure.wonder_id;
                 InternalImpl::_update_player_rates(
-                    ref world, false, structure_old_owner, wonder_id, 0, to_pledger, now, sea,
+                    ref world, false, structure_old_owner, wonder_id, 0, to_pledger.into(), now, sea,
                 );
                 InternalImpl::_update_player_rates(
-                    ref world, true, structure_new_owner, wonder_id, 0, to_pledger, now, sea,
+                    ref world, true, structure_new_owner, wonder_id, 0, to_pledger.into(), now, sea,
                 );
 
                 faithful_structure.last_recorded_owner = structure_new_owner;
@@ -389,7 +391,8 @@ pub mod faith_systems {
         ) -> (u16, u16) {
             let is_self_pledge = structure_id == wonder_id;
 
-            let total = if is_self_pledge {
+            // Config values are pre-scaled by client (FAITH_PRECISION applied in config)
+            let total: u16 = if is_self_pledge {
                 faith_config.wonder_base_fp_per_sec
             } else if is_wonder_submitting {
                 // Wonder submitting to another wonder uses wonder base rate
@@ -433,8 +436,8 @@ pub mod faith_systems {
             let to_owner = faithful_structure.fp_to_wonder_owner_per_sec;
             let to_pledger = faithful_structure.fp_to_struct_owner_per_sec;
 
-            wonder_faith.claim_per_sec -= to_owner + to_pledger;
-            wonder_faith.owner_claim_per_sec -= to_owner;
+            wonder_faith.claim_per_sec -= to_owner.into() + to_pledger.into();
+            wonder_faith.owner_claim_per_sec -= to_owner.into();
             wonder_faith.num_structures_pledged -= 1;
             world.write_model(@wonder_faith);
 
@@ -451,8 +454,12 @@ pub mod faith_systems {
             world.write_model(@faithful_structure);
 
             // Update player points rates (subtract)
-            Self::_update_player_rates(ref world, false, structure_owner, wonder_id, 0, to_pledger, now, season_end_at);
-            Self::_update_player_rates(ref world, false, wonder_owner, wonder_id, to_owner, 0, now, season_end_at);
+            Self::_update_player_rates(
+                ref world, false, structure_owner, wonder_id, 0, to_pledger.into(), now, season_end_at,
+            );
+            Self::_update_player_rates(
+                ref world, false, wonder_owner, wonder_id, to_owner.into(), 0, now, season_end_at,
+            );
         }
 
         fn _claim_wonder_points_internal(
@@ -529,8 +536,8 @@ pub mod faith_systems {
             add: bool,
             player: ContractAddress,
             wonder_id: ID,
-            owner_delta: u16,
-            pledger_delta: u16,
+            owner_delta: u32,
+            pledger_delta: u32,
             now: u64,
             season_end_at: u64,
         ) {

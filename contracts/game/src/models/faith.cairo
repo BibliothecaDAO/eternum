@@ -30,9 +30,9 @@ pub struct WonderFaith {
     pub wonder_id: ID,
     pub last_recorded_owner: ContractAddress,
     pub claimed_points: u128,
-    pub claim_per_sec: u16,
+    pub claim_per_sec: u32,
     pub claim_last_at: u64,
-    pub owner_claim_per_sec: u16,
+    pub owner_claim_per_sec: u32,
     pub num_structures_pledged: u32,
 }
 
@@ -58,8 +58,8 @@ pub struct PlayerFaithPoints {
     #[key]
     pub wonder_id: ID,
     pub points_claimed: u128,
-    pub points_per_sec_as_owner: u16,
-    pub points_per_sec_as_pledger: u16,
+    pub points_per_sec_as_owner: u32,
+    pub points_per_sec_as_pledger: u32,
     pub last_updated_at: u64,
 }
 

@@ -240,6 +240,7 @@ pub trait IQuestConfig<T> {
 
 #[starknet::interface]
 pub trait IFaithConfig<T> {
+    /// Set faith configuration. FP rates are automatically scaled by FAITH_PRECISION (10).
     fn set_faith_config(
         ref self: T,
         enabled: bool,
@@ -1060,6 +1061,7 @@ pub mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
+            // Store raw values - FAITH_PRECISION is applied in faith_systems when calculating rates
             let faith_config = FaithConfig {
                 enabled,
                 wonder_base_fp_per_sec,
