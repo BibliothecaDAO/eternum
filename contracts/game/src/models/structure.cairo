@@ -341,6 +341,10 @@ pub impl StructureImpl of StructureTrait {
                 structure.base.troop_max_explorer_count = 1;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
             },
+            StructureCategory::BitcoinMine => {
+                structure.base.troop_max_explorer_count = 0;
+                structure.base.troop_max_guard_count = 1; // 1 guard slot for T3 defender
+            },
             _ => { panic!("invalid structure category"); },
         }
         structure.base.created_at = starknet::get_block_timestamp().try_into().unwrap();
@@ -360,6 +364,7 @@ pub enum StructureCategory {
     Village,
     HolySite,
     Camp,
+    BitcoinMine,
 }
 
 pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
@@ -373,6 +378,7 @@ pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
             StructureCategory::Village => 5,
             StructureCategory::HolySite => 6,
             StructureCategory::Camp => 7,
+            StructureCategory::BitcoinMine => 8,
         }
     }
 }
@@ -388,6 +394,7 @@ pub impl StructureCategoryIntoU8 of Into<StructureCategory, u8> {
             StructureCategory::Village => 5,
             StructureCategory::HolySite => 6,
             StructureCategory::Camp => 7,
+            StructureCategory::BitcoinMine => 8,
         }
     }
 }
