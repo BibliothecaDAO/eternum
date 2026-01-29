@@ -1,40 +1,446 @@
 use crate::alias::ID;
 
+/// # Faith Systems Interface
+///
+/// The Faith system allows players to pledge their structures (Realms, Villages, Holy Sites)
+/// to Wonders, creating a faith-based leaderboard with end-of-season prize distribution.
+///
+/// ## Overview
+///
+/// - **Wonders** are special structures that can receive faith from other structures
+/// - **Faith Points (FP)** accumulate over time based on pledged structures
+/// - **Leaderboard** tracks which wonder has the most accumulated FP
+/// - **Prize Pool** is distributed at season end to winning wonders and their followers
+///
+/// ## FP Emission Rates (configurable via FaithConfig)
+///
+/// | Structure Type | Base FP/sec | Owner Share (30%) | Pledger Share (70%) |
+/// |----------------|-------------|-------------------|---------------------|
+/// | Wonder (self)  | 50          | 15                | 35                  |
+/// | Holy Site      | 50          | 15                | 35                  |
+/// | Realm          | 10          | 3                 | 7                   |
+/// | Village        | 1           | 0.3               | 0.7                 |
+///
+/// Note: Actual rates may include a precision multiplier (e.g., 10x) applied in config.
+///
+/// ## Key Concepts
+///
+/// ### Wonder Self-Pledge
+/// A wonder must first pledge to itself (`pledge_faith(wonder_id, wonder_id)`) before
+/// it can receive pledges from other structures. This initializes the wonder's faith state.
+///
+/// ### Subservient Wonders
+/// A wonder can submit to another wonder, forfeiting its ability to attract followers.
+/// - The submitting wonder must have `num_structures_pledged == 0`
+/// - Once subservient, the wonder cannot receive new pledges
+/// - The subservient wonder contributes 50 FP/sec to the dominant wonder
+///
+/// ### Ownership Tracking
+/// Both wonder and structure ownership changes are tracked to ensure FP is credited
+/// to the correct players. The system uses `last_recorded_owner` fields to detect
+/// ownership changes and settle points accordingly.
+///
+/// ## Client Integration Workflow
+///
+/// ### 1. Initialize a Wonder
+/// ```
+/// faith_systems.pledge_faith(wonder_id, wonder_id);  // Wonder self-pledges
+/// ```
+///
+/// ### 2. Pledge a Structure to a Wonder
+/// ```
+/// faith_systems.pledge_faith(realm_id, wonder_id);  // Realm pledges to wonder
+/// ```
+///
+/// ### 3. After Ownership Transfer (wonder or structure)
+/// ```
+/// // Call immediately after any ownership change to ensure proper FP crediting
+/// faith_systems.update_wonder_ownership(wonder_id);
+/// faith_systems.update_structure_ownership(structure_id);
+/// ```
+///
+/// ### 4. Settle Points (optional, happens automatically on state changes)
+/// ```
+/// faith_systems.claim_wonder_points(wonder_id);     // Updates wonder's total FP
+/// faith_systems.claim_player_points(player, wonder_id);  // Settles player's pending FP
+/// ```
+///
+/// ### 5. Remove Faith (change allegiance)
+/// ```
+/// faith_systems.remove_faith(structure_id);  // Structure owner or wonder owner can call
+/// ```
 #[starknet::interface]
 pub trait IFaithSystems<T> {
     /// Pledge a structure's faith to a wonder.
-    /// Special cases:
-    /// - Wonder pledging to itself (structure_id == wonder_id): Starts base FP accumulation
-    /// - Wonder pledging to another wonder: Only allowed if num_structures_pledged == 0
+    ///
+    /// # Description
+    ///
+    /// Commits a structure to serve a wonder, generating Faith Points (FP) over time.
+    /// The FP is split between the wonder owner (30%) and the structure owner (70%).
+    ///
+    /// # Parameters
+    ///
+    /// * `structure_id` - The ID of the structure pledging faith (Realm, Village, Holy Site, or Wonder)
+    /// * `wonder_id` - The ID of the wonder receiving the pledge
+    ///
+    /// # Behavior Cases
+    ///
+    /// | Case | Condition | Effect |
+    /// |------|-----------|--------|
+    /// | Self-Pledge | `structure_id == wonder_id` | Initializes wonder, starts 50 FP/sec |
+    /// | Wonder Submission | structure is a wonder, pledging to different wonder | Contributes 50 FP/sec, becomes subservient |
+    /// | Normal Pledge | structure is Realm/Village/Holy Site | Contributes FP based on structure type |
+    ///
+    /// # Requirements
+    ///
+    /// - Season must be active (started and not ended)
+    /// - Structure must not already be faithful to any wonder
+    /// - Target wonder must exist and have a valid owner
+    /// - Target wonder must be self-pledged (have `last_recorded_owner` set)
+    /// - Target wonder must NOT be subservient to another wonder
+    /// - Structure/caller must not be blacklisted by the wonder
+    /// - Faith system must be enabled in config
+    /// - If structure is a wonder pledging to another wonder:
+    ///   - The submitting wonder must have `num_structures_pledged == 0`
+    ///
+    /// # Errors
+    ///
+    /// - `"Structure is already faithful to wonder {id}"` - Structure already pledged
+    /// - `"Invalid wonder"` - Target wonder doesn't exist
+    /// - `"Wonder faith no owner initialized"` - Wonder hasn't self-pledged yet
+    /// - `"Wonder owner mismatch"` - Ownership state inconsistent (call update_wonder_ownership)
+    /// - `"Structure is blacklisted"` - Structure ID is on wonder's blacklist
+    /// - `"Address is blacklisted"` - Caller address is on wonder's blacklist
+    /// - `"Faith system is not enabled"` - FaithConfig.enabled is false
+    /// - `"Cannot submit wonder with active pledges"` - Wonder trying to submit but has followers
+    /// - `"Cannot pledge to a subservient wonder"` - Target wonder is pledged to another wonder
+    ///
+    /// # Events
+    ///
+    /// Emits `FaithPledgedStory` with structure_id, wonder_id, structure_owner, and FP rates.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Step 1: Wonder owner initializes their wonder
+    /// faith_systems.pledge_faith(wonder_id, wonder_id);
+    ///
+    /// // Step 2: Other players pledge their structures
+    /// faith_systems.pledge_faith(my_realm_id, wonder_id);
+    /// faith_systems.pledge_faith(my_village_id, wonder_id);
+    /// ```
     fn pledge_faith(ref self: T, structure_id: ID, wonder_id: ID);
 
-    /// Remove a structure's faith from a wonder.
-    /// Can be called by structure owner or wonder owner.
+    /// Remove a structure's faith from its pledged wonder.
+    ///
+    /// # Description
+    ///
+    /// Removes a structure from its current wonder allegiance, stopping FP accumulation
+    /// and settling all pending points for both the structure owner and wonder owner.
+    ///
+    /// # Parameters
+    ///
+    /// * `structure_id` - The ID of the structure to remove from its wonder
+    ///
+    /// # Authorization
+    ///
+    /// Can be called by:
+    /// - **Structure owner**: Wants to change allegiance or stop participating
+    /// - **Wonder owner**: Wants to remove an unwanted follower
+    ///
+    /// # Special Cases
+    ///
+    /// | Case | Behavior |
+    /// |------|----------|
+    /// | Wonder self-removal | Only allowed if `num_structures_pledged <= 1` (no other followers) |
+    /// | Subservient wonder removal | Updates both wonder ownerships before removal |
+    ///
+    /// # Requirements
+    ///
+    /// - Season must be active
+    /// - Structure must be faithful to a wonder
+    /// - Caller must be structure owner OR wonder owner
+    /// - If removing wonder's self-pledge: wonder must have no other followers
+    ///
+    /// # Side Effects
+    ///
+    /// 1. Calls `update_wonder_ownership` on the target wonder
+    /// 2. If structure is a wonder: calls `update_wonder_ownership` on the structure
+    /// 3. Calls `update_structure_ownership` on the structure
+    /// 4. Claims wonder points before state change
+    /// 5. Settles player FP for both structure and wonder owners
+    /// 6. Clears `FaithfulStructure` state
+    ///
+    /// # Errors
+    ///
+    /// - `"Structure not faithful to any wonder"` - Structure isn't pledged
+    /// - `"Only structure owner or wonder owner can remove"` - Unauthorized caller
+    /// - `"Cannot remove self while others are pledged"` - Wonder trying to un-self-pledge with followers
+    ///
+    /// # Events
+    ///
+    /// Emits `FaithRemovedStory` with structure_id, previous_wonder_id, and structure_owner.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Structure owner removes their own structure
+    /// faith_systems.remove_faith(my_realm_id);
+    ///
+    /// // Wonder owner kicks out a follower
+    /// faith_systems.remove_faith(unwanted_realm_id);
+    /// ```
     fn remove_faith(ref self: T, structure_id: ID);
 
-    /// Update wonder ownership for faith point accumulation.
-    /// Called when wonder ownership changes to:
-    /// - Settle previous owner's accumulated points
-    /// - Transfer ongoing rates to new owner
+    /// Update faith point tracking after wonder ownership changes.
+    ///
+    /// # Description
+    ///
+    /// Synchronizes the faith system's ownership tracking with the actual wonder owner.
+    /// Must be called after any wonder ownership transfer (battle capture, trade, etc.)
+    /// to ensure FP is credited to the correct player.
+    ///
+    /// # Parameters
+    ///
+    /// * `wonder_id` - The ID of the wonder that changed ownership
+    ///
+    /// # When to Call
+    ///
+    /// **IMPORTANT**: This should be called immediately after any wonder ownership change:
+    /// - After a wonder is captured in battle
+    /// - After a wonder is traded/transferred
+    /// - Before any faith-related operations if ownership might have changed
+    ///
+    /// # What It Does
+    ///
+    /// 1. Compares `WonderFaith.last_recorded_owner` with current `Structure.owner`
+    /// 2. If different:
+    ///    - Claims all pending wonder points (updates leaderboard)
+    ///    - Deducts `owner_claim_per_sec` rate from old owner's `PlayerFaithPoints`
+    ///    - Adds `owner_claim_per_sec` rate to new owner's `PlayerFaithPoints`
+    ///    - Updates `WonderFaith.last_recorded_owner`
+    /// 3. Also calls `update_structure_ownership` for the wonder (since wonder is also a structure)
+    ///
+    /// # Authorization
+    ///
+    /// **Permissionless** - Anyone can call this. It simply synchronizes state.
+    ///
+    /// # Requirements
+    ///
+    /// - Season must be active
+    /// - Wonder must exist (valid realm_id)
+    /// - Wonder must have an owner
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // After winning a battle that captured a wonder
+    /// faith_systems.update_wonder_ownership(captured_wonder_id);
+    ///
+    /// // Before pledging to a wonder (to ensure state is current)
+    /// faith_systems.update_wonder_ownership(target_wonder_id);
+    /// faith_systems.pledge_faith(my_realm_id, target_wonder_id);
+    /// ```
     fn update_wonder_ownership(ref self: T, wonder_id: ID);
 
-    /// Update structure ownership for faith point accumulation.
-    /// Called when pledged structure ownership changes to:
-    /// - Settle previous owner's accumulated points
-    /// - Transfer ongoing pledger rates to new owner
+    /// Update faith point tracking after pledged structure ownership changes.
+    ///
+    /// # Description
+    ///
+    /// Synchronizes the faith system's ownership tracking with the actual structure owner.
+    /// Must be called after any pledged structure ownership transfer to ensure the new
+    /// owner receives the pledger FP share.
+    ///
+    /// # Parameters
+    ///
+    /// * `structure_id` - The ID of the structure that changed ownership
+    ///
+    /// # When to Call
+    ///
+    /// Call after any ownership change of a structure that is currently pledged:
+    /// - After a realm/village/holy site is captured
+    /// - After a structure is traded/transferred
+    ///
+    /// # What It Does
+    ///
+    /// 1. Checks if structure is faithful to any wonder (if not, returns early)
+    /// 2. Compares `FaithfulStructure.last_recorded_owner` with current `Structure.owner`
+    /// 3. If different:
+    ///    - Settles pending FP for old owner
+    ///    - Transfers `fp_to_struct_owner_per_sec` (pledger rate) from old to new owner
+    ///    - Updates `FaithfulStructure.last_recorded_owner`
+    ///
+    /// # Authorization
+    ///
+    /// **Permissionless** - Anyone can call this.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // After capturing an enemy realm that was pledged to a wonder
+    /// faith_systems.update_structure_ownership(captured_realm_id);
+    /// ```
     fn update_structure_ownership(ref self: T, structure_id: ID);
 
-    /// Claim accumulated faith points for a wonder.
+    /// Claim and settle a wonder's accumulated faith points.
+    ///
+    /// # Description
+    ///
+    /// Calculates and records all FP accumulated by a wonder since the last claim.
+    /// Updates the faith leaderboard if the wonder achieves a new high score.
+    ///
+    /// # Parameters
+    ///
+    /// * `wonder_id` - The ID of the wonder to claim points for
+    ///
+    /// # When to Call
+    ///
+    /// - Periodically to update leaderboard standings
+    /// - Before season end to ensure final scores are recorded
+    /// - Called automatically during ownership updates and pledge changes
+    ///
+    /// # Calculation
+    ///
+    /// ```
+    /// new_points = claim_per_sec * (current_time - claim_last_at)
+    /// claimed_points += new_points
+    /// ```
+    ///
+    /// Note: Time is capped at `season_end_at` - no points accumulate after season ends.
+    ///
+    /// # Leaderboard Update
+    ///
+    /// - If `claimed_points > WonderFaithWinners.high_score`: Wonder becomes sole leader
+    /// - If `claimed_points == high_score`: Wonder is added to tied winners list
+    ///
+    /// # Requirements
+    ///
+    /// - Season main phase must have started
+    /// - Wonder must exist
+    ///
+    /// # Side Effects
+    ///
+    /// - Calls `update_wonder_ownership` first (ensures ownership is current)
+    /// - Updates `WonderFaith.claimed_points` and `claim_last_at`
+    /// - May update `WonderFaithWinners` if new high score
+    /// - Emits `FaithPointsClaimedStory` event
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Update leaderboard before checking standings
+    /// faith_systems.claim_wonder_points(my_wonder_id);
+    /// ```
     fn claim_wonder_points(ref self: T, wonder_id: ID);
 
-    /// Claim a player's accumulated faith points for a specific wonder on their behalf.
-    /// Anyone can call this to settle another player's pending points.
+    /// Claim and settle a player's accumulated faith points for a specific wonder.
+    ///
+    /// # Description
+    ///
+    /// Settles all pending FP for a player's participation in a specific wonder.
+    /// This converts their rate-based accumulation into claimed points.
+    ///
+    /// # Parameters
+    ///
+    /// * `player` - The address of the player to settle points for
+    /// * `wonder_id` - The ID of the wonder the player has points in
+    ///
+    /// # When to Call
+    ///
+    /// - Before season end to lock in final point totals
+    /// - Before prize distribution to ensure accurate share calculation
+    /// - Called automatically during ownership updates and pledge changes
+    ///
+    /// # Authorization
+    ///
+    /// **Permissionless** - Anyone can call this on behalf of any player.
+    /// This is intentional to allow batch settlement operations.
+    ///
+    /// # Calculation
+    ///
+    /// ```
+    /// time_elapsed = min(season_end_at, now) - last_updated_at
+    /// new_points = (points_per_sec_as_owner + points_per_sec_as_pledger) * time_elapsed
+    /// points_claimed += new_points
+    /// ```
+    ///
+    /// # Data Updated
+    ///
+    /// - `PlayerFaithPoints.points_claimed` - Increases by newly settled points
+    /// - `PlayerFaithPoints.last_updated_at` - Set to current time (capped at season end)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Settle your own points
+    /// faith_systems.claim_player_points(my_address, wonder_id);
+    ///
+    /// // Settle another player's points (e.g., before prize distribution)
+    /// faith_systems.claim_player_points(other_player, wonder_id);
+    /// ```
     fn claim_player_points(ref self: T, player: starknet::ContractAddress, wonder_id: ID);
 
     /// Blacklist a structure or address from pledging to a wonder.
+    ///
+    /// # Description
+    ///
+    /// Prevents a specific structure ID or wallet address from pledging to the wonder.
+    /// Useful for wonder owners who want to curate their follower base.
+    ///
+    /// # Parameters
+    ///
+    /// * `wonder_id` - The ID of the wonder setting the blacklist
+    /// * `blocked_id` - Either a structure ID (as felt252) or an address (as felt252)
+    ///
+    /// # Authorization
+    ///
+    /// **Wonder owner only** - Only the current owner of the wonder can blacklist.
+    ///
+    /// # Requirements
+    ///
+    /// - Caller must be the wonder owner
+    /// - If `blocked_id` is a structure ID: that structure must NOT be currently pledged
+    ///   to this wonder (must remove first, then blacklist)
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// // Blacklist a specific structure
+    /// let realm_id_felt: felt252 = unwanted_realm_id.into();
+    /// faith_systems.blacklist(my_wonder_id, realm_id_felt);
+    ///
+    /// // Blacklist a wallet address (all their structures)
+    /// let address_felt: felt252 = unwanted_player.into();
+    /// faith_systems.blacklist(my_wonder_id, address_felt);
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// - `"Only wonder owner can blacklist"` - Caller is not wonder owner
+    /// - `"Structure must be removed from wonder before blacklisting"` - Can't blacklist active follower
     fn blacklist(ref self: T, wonder_id: ID, blocked_id: felt252);
 
-    /// Remove a structure or address from blacklist.
+    /// Remove a structure or address from a wonder's blacklist.
+    ///
+    /// # Description
+    ///
+    /// Allows a previously blacklisted structure or address to pledge to the wonder again.
+    ///
+    /// # Parameters
+    ///
+    /// * `wonder_id` - The ID of the wonder modifying its blacklist
+    /// * `blocked_id` - The structure ID or address to unblacklist (as felt252)
+    ///
+    /// # Authorization
+    ///
+    /// **Wonder owner only**
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Remove a structure from blacklist
+    /// faith_systems.unblacklist(my_wonder_id, realm_id_felt);
+    /// ```
     fn unblacklist(ref self: T, wonder_id: ID, blocked_id: felt252);
 }
 
