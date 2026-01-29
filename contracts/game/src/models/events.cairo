@@ -55,6 +55,9 @@ pub enum Story {
     FaithPledgedStory: FaithPledgedStory,
     FaithRemovedStory: FaithRemovedStory,
     FaithPointsClaimedStory: FaithPointsClaimedStory,
+    // Bitcoin Mine System
+    BitcoinMineProductionStory: BitcoinMineProductionStory,
+    BitcoinPhaseLotteryStory: BitcoinPhaseLotteryStory,
 }
 
 ///////////////////////////////////////////////
@@ -362,4 +365,28 @@ pub struct FaithPointsClaimedStory {
     pub wonder_id: ID,
     pub new_points: u128,
     pub total_points: u128,
+}
+
+///////////////////////////////////////////////
+///  Bitcoin Mine System
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct BitcoinMineProductionStory {
+    pub mine_id: ID,
+    pub owner: ContractAddress,
+    pub production_level: u8,
+    pub labor_consumed: u128,
+    pub work_produced: u128,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct BitcoinPhaseLotteryStory {
+    pub phase_id: u64,
+    pub total_work: u128,
+    pub winner_mine_id: ID,
+    pub winner_owner: ContractAddress,
+    pub satoshis_awarded: u128,
+    pub roll_value: u128,
 }
