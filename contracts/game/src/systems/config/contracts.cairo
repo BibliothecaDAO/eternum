@@ -253,6 +253,22 @@ pub trait IFaithConfig<T> {
     );
 }
 
+#[starknet::interface]
+pub trait IBitcoinMineConfig<T> {
+    fn set_bitcoin_mine_config(
+        ref self: T,
+        enabled: bool,
+        phase_duration_seconds: u64,
+        satoshis_per_phase: u128,
+        satoshi_weight_grams: u128,
+        very_low_labor_per_sec: u16,
+        low_labor_per_sec: u16,
+        medium_labor_per_sec: u16,
+        high_labor_per_sec: u16,
+        very_high_labor_per_sec: u16,
+    );
+}
+
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
@@ -261,15 +277,15 @@ pub mod config_systems {
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
-        BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        FaithConfig, HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
-        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
-        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
-        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
-        WorldConfigUtilImpl,
+        AgentControllerConfig, BankConfig, BattleConfig, BitcoinMineConfig, BlitzHypersSettlementConfigImpl,
+        BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig,
+        BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
+        HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+        ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig,
+        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+        VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
+        WorldConfig, WorldConfigUtilImpl,
     };
     use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;
@@ -1072,6 +1088,38 @@ pub mod config_systems {
                 reward_token,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("faith_config"), faith_config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl BitcoinMineConfigImpl of super::IBitcoinMineConfig<ContractState> {
+        fn set_bitcoin_mine_config(
+            ref self: ContractState,
+            enabled: bool,
+            phase_duration_seconds: u64,
+            satoshis_per_phase: u128,
+            satoshi_weight_grams: u128,
+            very_low_labor_per_sec: u16,
+            low_labor_per_sec: u16,
+            medium_labor_per_sec: u16,
+            high_labor_per_sec: u16,
+            very_high_labor_per_sec: u16,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let config = BitcoinMineConfig {
+                enabled,
+                phase_duration_seconds,
+                satoshis_per_phase,
+                satoshi_weight_grams,
+                very_low_labor_per_sec,
+                low_labor_per_sec,
+                medium_labor_per_sec,
+                high_labor_per_sec,
+                very_high_labor_per_sec,
+            };
+            WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), config);
         }
     }
 }
