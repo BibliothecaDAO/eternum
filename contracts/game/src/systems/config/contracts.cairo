@@ -248,6 +248,7 @@ pub trait IFaithConfig<T> {
         realm_fp_per_sec: u16,
         village_fp_per_sec: u16,
         owner_share_percent: u16,
+        reward_token: starknet::ContractAddress,
     );
 }
 
@@ -1054,6 +1055,7 @@ pub mod config_systems {
             realm_fp_per_sec: u16,
             village_fp_per_sec: u16,
             owner_share_percent: u16,
+            reward_token: starknet::ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -1065,6 +1067,7 @@ pub mod config_systems {
                 realm_fp_per_sec,
                 village_fp_per_sec,
                 owner_share_percent,
+                reward_token,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("faith_config"), faith_config);
         }

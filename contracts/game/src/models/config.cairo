@@ -322,6 +322,7 @@ pub struct FaithConfig {
     pub realm_fp_per_sec: u16,
     pub village_fp_per_sec: u16,
     pub owner_share_percent: u16,
+    pub reward_token: starknet::ContractAddress,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]

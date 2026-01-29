@@ -138,6 +138,7 @@ pub mod mmr {
 
 pub mod faith {
     pub mod contracts;
+    pub mod prize_contracts;
     #[cfg(test)]
     mod tests;
 }
