@@ -5,7 +5,6 @@
  * @param url - Optional RPC URL for the provider
  */
 import * as SystemProps from "@bibliothecadao/types";
-import { settledCountToPosition } from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import type { Span } from "@opentelemetry/api";
 import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
@@ -664,52 +663,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(
       this.createProviderCall(signer, calls),
       TransactionType.MAKE_HYPERSTRUCTURES,
-    );
-  }
-
-  /**
-   * Create spires for the alternate map
-   *
-   * @param props - Properties for spire creation
-   * @param props.count - Number of spires to create
-   * @param props.spiresSettledCount - Current number of spires already settled
-   * @returns Transaction receipt
-   */
-  public async spire_make_spires(props: SystemProps.SpireMakeSpiresProps) {
-    const { count, spiresSettledCount, signer } = props;
-
-    // Calculate positions for all spires we're about to create
-    const settlements: { side: number; layer: number; point: number }[] = [];
-    let isCenter = false;
-
-    for (let i = 0; i < count; i++) {
-      const currentCount = spiresSettledCount + i;
-
-      if (currentCount === 0) {
-        // First spire is at center
-        isCenter = true;
-      } else {
-        const position = settledCountToPosition(currentCount);
-        settlements.push(position);
-      }
-    }
-
-    // Build calldata: is_center (bool), then array of settlements
-    // Array format: [length, side1, layer1, point1, side2, layer2, point2, ...]
-    const calldata: (number | boolean)[] = [isCenter ? 1 : 0, settlements.length];
-    for (const s of settlements) {
-      calldata.push(s.side, s.layer, s.point);
-    }
-
-    const createSpiresCall: Call = {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-spire_systems`),
-      entrypoint: "create_spires",
-      calldata,
-    };
-
-    return await this.promiseQueue.enqueue(
-      this.createProviderCall(signer, [createSpiresCall]),
-      TransactionType.MAKE_SPIRES,
     );
   }
 
@@ -2650,8 +2603,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       shards_mines_fail_probability,
       agent_find_probability,
       agent_find_fail_probability,
-      village_find_probability,
-      village_find_fail_probability,
+      camp_find_probability,
+      camp_find_fail_probability,
+      holysite_find_probability,
+      holysite_find_fail_probability,
       hyps_win_prob,
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
@@ -2671,8 +2626,10 @@ export class EternumProvider extends EnhancedDojoProvider {
         shards_mines_fail_probability,
         agent_find_probability,
         agent_find_fail_probability,
-        village_find_probability,
-        village_find_fail_probability,
+        camp_find_probability,
+        camp_find_fail_probability,
+        holysite_find_probability,
+        holysite_find_fail_probability,
         hyps_win_prob,
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
@@ -2922,6 +2879,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       hyperstructure_capacity,
       fragment_mine_capacity,
       bank_structure_capacity,
+      holysite_capacity,
+      camp_capacity,
       signer,
     } = props;
 
@@ -2938,6 +2897,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         hyperstructure_capacity,
         fragment_mine_capacity,
         bank_structure_capacity,
+        holysite_capacity,
+        camp_capacity,
       ],
     });
   }
@@ -3374,8 +3335,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       spires_layer_distance,
       spires_max_count,
       spires_settled_count,
-      signer,
       single_realm_mode,
+      signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
@@ -3456,6 +3417,32 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_quest_config",
       calldata: [quest_find_probability, quest_find_fail_probability],
+    });
+  }
+
+  public async set_faith_config(props: SystemProps.SetFaithConfigProps) {
+    const {
+      enabled,
+      wonder_base_fp_per_sec,
+      holy_site_fp_per_sec,
+      realm_fp_per_sec,
+      village_fp_per_sec,
+      owner_share_percent,
+      reward_token,
+      signer,
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_faith_config",
+      calldata: [
+        enabled ? 1 : 0,
+        wonder_base_fp_per_sec,
+        holy_site_fp_per_sec,
+        realm_fp_per_sec,
+        village_fp_per_sec,
+        owner_share_percent,
+        reward_token,
+      ],
     });
   }
 

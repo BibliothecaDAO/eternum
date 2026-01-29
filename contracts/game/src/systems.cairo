@@ -92,9 +92,11 @@ pub mod season {
 
 pub mod utils {
     pub mod bridge;
+    pub mod camp;
     pub mod distance;
     pub mod donkey;
     pub mod erc20;
+    pub mod holysite;
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
@@ -114,14 +116,6 @@ pub mod utils {
 //     pub mod contracts;
 // }
 
-pub mod alt_movement {
-    pub mod contracts;
-}
-
-pub mod spire {
-    pub mod contracts;
-}
-
 pub mod prize_distribution {
     pub mod contracts;
 }
@@ -140,4 +134,11 @@ pub mod mmr {
     mod tests {
         mod test_mmr_systems;
     }
+}
+
+pub mod faith {
+    pub mod contracts;
+    pub mod prize_contracts;
+    #[cfg(test)]
+    mod tests;
 }

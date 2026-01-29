@@ -211,6 +211,8 @@ pub mod structure_creation_library {
                 StructureCategory::Hyperstructure => structure_capacity_config.hyperstructure_capacity,
                 StructureCategory::FragmentMine => structure_capacity_config.fragment_mine_capacity,
                 StructureCategory::Bank => structure_capacity_config.bank_structure_capacity,
+                StructureCategory::HolySite => structure_capacity_config.holysite_capacity,
+                StructureCategory::Camp => structure_capacity_config.camp_capacity,
             };
             let capacity: u128 = capacity.into() * RESOURCE_PRECISION;
             let structure_weight: Weight = Weight { capacity, weight: 0 };

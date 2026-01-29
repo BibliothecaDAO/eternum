@@ -58,6 +58,7 @@ pub struct WorldConfig {
     pub victory_points_win_config: VictoryPointsWinConfig,
     pub factory_address: ContractAddress,
     pub mmr_config: MMRConfig,
+    pub faith_config: FaithConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -266,6 +267,8 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
+    pub holysite_capacity: u64, // grams
+    pub camp_capacity: u64 // grams
 }
 
 // speed
@@ -289,8 +292,10 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub agent_discovery_prob: u16,
     pub agent_discovery_fail_prob: u16,
-    pub village_win_probability: u16,
-    pub village_fail_probability: u16,
+    pub camp_win_probability: u16,
+    pub camp_fail_probability: u16,
+    pub holysite_win_probability: u16,
+    pub holysite_fail_probability: u16,
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -307,6 +312,17 @@ pub struct MapConfig {
 pub struct QuestConfig {
     pub quest_discovery_prob: u16,
     pub quest_discovery_fail_prob: u16,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct FaithConfig {
+    pub enabled: bool,
+    pub wonder_base_fp_per_sec: u16,
+    pub holy_site_fp_per_sec: u16,
+    pub realm_fp_per_sec: u16,
+    pub village_fp_per_sec: u16,
+    pub owner_share_percent: u16,
+    pub reward_token: starknet::ContractAddress,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]

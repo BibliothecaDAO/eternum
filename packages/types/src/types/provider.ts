@@ -385,8 +385,10 @@ export interface SetMapConfigProps extends SystemSigner {
   shards_mines_fail_probability: BigNumberish;
   agent_find_probability: BigNumberish;
   agent_find_fail_probability: BigNumberish;
-  village_find_probability: BigNumberish;
-  village_find_fail_probability: BigNumberish;
+  camp_find_probability: BigNumberish;
+  camp_find_fail_probability: BigNumberish;
+  holysite_find_probability: BigNumberish;
+  holysite_find_fail_probability: BigNumberish;
   hyps_win_prob: BigNumberish;
   hyps_fail_prob: BigNumberish;
   hyps_fail_prob_increase_p_hex: BigNumberish;
@@ -452,6 +454,8 @@ export interface SetCapacityConfigProps extends SystemSigner {
   hyperstructure_capacity: BigNumberish; // grams
   fragment_mine_capacity: BigNumberish; // grams
   bank_structure_capacity: BigNumberish; // grams
+  holysite_capacity: BigNumberish; // grams
+  camp_capacity: BigNumberish; // grams
 }
 
 export interface SetAgentConfigProps extends SystemSigner {
@@ -643,6 +647,16 @@ export interface SetHyperstructureConfig extends SystemSigner {
 export interface SetQuestConfigProps extends SystemSigner {
   quest_find_probability: BigNumberish;
   quest_find_fail_probability: BigNumberish;
+}
+
+export interface SetFaithConfigProps extends SystemSigner {
+  enabled: boolean;
+  wonder_base_fp_per_sec: BigNumberish;
+  holy_site_fp_per_sec: BigNumberish;
+  realm_fp_per_sec: BigNumberish;
+  village_fp_per_sec: BigNumberish;
+  owner_share_percent: BigNumberish;
+  reward_token: BigNumberish;
 }
 
 export interface InitializeHyperstructureProps extends SystemSigner {

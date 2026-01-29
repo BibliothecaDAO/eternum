@@ -107,8 +107,11 @@ export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 export const AGENT_FIND_PROBABILITY = 0; // 0/100 = 0%
 export const AGENT_FIND_FAIL_PROBABILITY = 100; // 100/100 = 100%
 
-export const VILLAGE_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
-export const VILLAGE_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
+export const CAMP_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
+export const CAMP_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
+
+export const HOLYSITE_FIND_PROBABILITY = 500; // 500 / 50_000 = 1%
+export const HOLYSITE_FIND_FAIL_PROBABILITY = 49_500; // 49_500 / 50_000 = 99%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 2_000; // 2_000 / 100_000 = 2%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 98_000; // 98_000 / 100_000 = 98%
@@ -254,6 +257,16 @@ const MMR_LOBBY_SPLIT_WEIGHT_SCALED = 2500; // 0.25 scaled by 10000 (split lobby
 const MMR_MEAN_REGRESSION_SCALED = 150; // 0.015 scaled by 10000 (pull toward distribution mean)
 const MMR_MIN_PLAYERS = 6; // Minimum players for a game to be rated
 
+// ----- Faith System ----- //
+const FAITH_PRECISION = 10; // Multiplier for FP rates (allows fractional FP without decimals)
+const FAITH_ENABLED = true;
+const FAITH_WONDER_BASE_FP_PER_SEC = 50 * FAITH_PRECISION; // Base FP/sec for wonder self-pledge
+const FAITH_HOLY_SITE_FP_PER_SEC = 30 * FAITH_PRECISION; // FP/sec for holy site pledge
+const FAITH_REALM_FP_PER_SEC = 10 * FAITH_PRECISION; // FP/sec for realm pledge
+const FAITH_VILLAGE_FP_PER_SEC = 5 * FAITH_PRECISION; // FP/sec for village pledge
+const FAITH_OWNER_SHARE_PERCENT = 30; // 30% goes to wonder owner, 70% to pledger
+const FAITH_REWARD_TOKEN = (await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords) || "0x0";
+
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -299,8 +312,10 @@ export const EternumGlobalConfig: Config = {
     shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
     agentFindProbability: AGENT_FIND_PROBABILITY,
     agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
-    villageFindProbability: VILLAGE_FIND_PROBABILITY,
-    villageFindFailProbability: VILLAGE_FIND_FAIL_PROBABILITY,
+    campFindProbability: CAMP_FIND_PROBABILITY,
+    campFindFailProbability: CAMP_FIND_FAIL_PROBABILITY,
+    holysiteFindProbability: HOLYSITE_FIND_PROBABILITY,
+    holysiteFindFailProbability: HOLYSITE_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
     hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER,
@@ -325,6 +340,8 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfig.HyperstructureStructure]: 18446744073709551615n, // max
     [CapacityConfig.BankStructure]: 18446744073709551615n, // max
     [CapacityConfig.FragmentMineStructure]: 18446744073709551615n, // max
+    [CapacityConfig.HolySiteStructure]: 18446744073709551615n, // max
+    [CapacityConfig.CampStructure]: 18446744073709551615n, // max
     [CapacityConfig.Donkey]: 50 * 1000, // 500 kg per donkey
     // 10_000 gr per army
     [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count
@@ -483,6 +500,15 @@ export const EternumGlobalConfig: Config = {
     lobby_split_weight_scaled: MMR_LOBBY_SPLIT_WEIGHT_SCALED,
     mean_regression_scaled: MMR_MEAN_REGRESSION_SCALED,
     min_players: MMR_MIN_PLAYERS,
+  },
+  faith: {
+    enabled: FAITH_ENABLED,
+    wonder_base_fp_per_sec: FAITH_WONDER_BASE_FP_PER_SEC,
+    holy_site_fp_per_sec: FAITH_HOLY_SITE_FP_PER_SEC,
+    realm_fp_per_sec: FAITH_REALM_FP_PER_SEC,
+    village_fp_per_sec: FAITH_VILLAGE_FP_PER_SEC,
+    owner_share_percent: FAITH_OWNER_SHARE_PERCENT,
+    reward_token: FAITH_REWARD_TOKEN,
   },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
