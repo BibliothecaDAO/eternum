@@ -88,7 +88,8 @@ pub trait IFaithSystems<T> {
     /// | Case | Condition | Effect |
     /// |------|-----------|--------|
     /// | Self-Pledge | `structure_id == wonder_id` | Initializes wonder, starts 50 FP/sec |
-    /// | Wonder Submission | structure is a wonder, pledging to different wonder | Contributes 50 FP/sec, becomes subservient |
+    /// | Wonder Submission | structure is a wonder, pledging to different wonder | Contributes 50 FP/sec, becomes
+    /// subservient |
     /// | Normal Pledge | structure is Realm/Village/Holy Site | Contributes FP based on structure type |
     ///
     /// # Requirements

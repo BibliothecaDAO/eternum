@@ -63,7 +63,8 @@ System X reads/writes Model A, B
 
 ### 1.3 Identify Existing Patterns (Self-Learning)
 
-**CRITICAL**: Before implementing anything, study how similar features are built in the codebase. Don't invent new patterns when established ones exist.
+**CRITICAL**: Before implementing anything, study how similar features are built in the codebase. Don't invent new
+patterns when established ones exist.
 
 ```bash
 # Find similar models
@@ -80,7 +81,8 @@ Grep("Config", "contracts/game/src/models/config.cairo")
 Grep("set.*Config", "config/deployer/config.ts")
 ```
 
-**Copy existing patterns exactly** before adapting. If `set_world_config` exists, your `set_feature_config` should follow the same structure.
+**Copy existing patterns exactly** before adapting. If `set_world_config` exists, your `set_feature_config` should
+follow the same structure.
 
 ### 1.4 Create Todo List
 
@@ -343,6 +345,7 @@ A feature is not complete until the entire stack is wired up. Before marking don
 - [ ] **Deployer Integration** - Add `set<Feature>Config()` call in `config/deployer/config.ts`
 
 **Self-Learning Principle**: Before implementing a new pattern (like config setters), search for existing examples:
+
 ```bash
 # Find existing config patterns
 Grep("set_.*_config", "contracts/game/src/systems")
@@ -364,32 +367,35 @@ scarb test
 
 **Use the smallest type that fits the value range.** Don't upsize unless aggregation requires it.
 
-| Value Range | Type | Use Case |
-|-------------|------|----------|
-| 0-255 | `u8` | Percentages, small counts |
-| 0-65,535 | `u16` | Config values, rates per second |
-| 0-4.29B | `u32` | Aggregated rates, medium counts |
-| 0-340 undecillion | `u128` | Accumulated totals, balances |
+| Value Range       | Type   | Use Case                        |
+| ----------------- | ------ | ------------------------------- |
+| 0-255             | `u8`   | Percentages, small counts       |
+| 0-65,535          | `u16`  | Config values, rates per second |
+| 0-4.29B           | `u32`  | Aggregated rates, medium counts |
+| 0-340 undecillion | `u128` | Accumulated totals, balances    |
 
-**Example**: A config field for "points per second" that will never exceed 1000 should be `u16`, not `u32`. Only upsize when values are aggregated (e.g., summing multiple `u16` rates into a `u32` total).
+**Example**: A config field for "points per second" that will never exceed 1000 should be `u16`, not `u32`. Only upsize
+when values are aggregated (e.g., summing multiple `u16` rates into a `u32` total).
 
 ### Layer Separation
 
 **Scaling and precision belong in the client/config layer, not contracts.**
 
-| Layer | Responsibility |
-|-------|----------------|
+| Layer                             | Responsibility                                     |
+| --------------------------------- | -------------------------------------------------- |
 | `config/environments/_shared_.ts` | Apply precision multipliers, human-readable values |
-| `config/deployer/config.ts` | Pass scaled values to contracts |
-| `contracts/` | Store and compute with pre-scaled integers |
+| `config/deployer/config.ts`       | Pass scaled values to contracts                    |
+| `contracts/`                      | Store and compute with pre-scaled integers         |
 
 **Bad** (precision in contracts):
+
 ```cairo
 const PRECISION: u32 = 10;
 let scaled = config.rate * PRECISION;
 ```
 
 **Good** (precision in client):
+
 ```typescript
 // _shared_.ts
 const PRECISION = 10;
@@ -401,6 +407,7 @@ const RATE = 50 * PRECISION; // 500
 **Prefer simple data structures over complex index-based patterns.**
 
 **Bad** (over-engineered):
+
 ```cairo
 struct Winners {
     count: u32,
@@ -413,6 +420,7 @@ struct Winner {
 ```
 
 **Good** (simple):
+
 ```cairo
 struct Winners {
     wonder_ids: Array<ID>,
@@ -552,18 +560,24 @@ From `utils/testing/helpers.cairo`:
 ## Anti-Patterns to Avoid
 
 ### 1. Over-Engineering Data Structures
+
 Don't create complex index-based storage when a simple `Array<T>` works. Question every level of indirection.
 
 ### 2. Wrong Layer for Logic
+
 - Precision/scaling → client/config, not contracts
 - Business rules → contracts, not client
 - Type conversions → where data crosses boundaries
 
 ### 3. Incomplete Feature Integration
-A contract change without deployer integration is incomplete. Always trace the full path: Model → System → Provider → Types → Config → Deployer.
+
+A contract change without deployer integration is incomplete. Always trace the full path: Model → System → Provider →
+Types → Config → Deployer.
 
 ### 4. Type Over-Sizing
+
 Don't use `u32` when `u16` fits. Don't use `u128` when `u32` fits. Larger types cost more gas and obscure intent.
 
 ### 5. Inventing New Patterns
+
 Before creating a new way to do something, search for how it's already done. The codebase is your teacher.
