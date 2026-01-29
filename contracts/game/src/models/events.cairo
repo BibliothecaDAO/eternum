@@ -148,6 +148,7 @@ pub enum ExploreFind {
     Village,
     HolySite,
     Camp,
+    BitcoinMine,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]

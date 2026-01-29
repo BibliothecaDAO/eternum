@@ -220,6 +220,7 @@ pub mod troop_movement_systems {
                                 world, caller.into(), Tasks::CAMP_DISCOVER, 1, starknet::get_block_timestamp(),
                             );
                         },
+                        ExploreFind::BitcoinMine => {},
                     }
 
                     // check if biome type has been discovered by player previously
