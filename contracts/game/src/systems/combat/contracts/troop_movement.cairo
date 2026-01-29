@@ -596,6 +596,30 @@ pub mod troop_movement_util_systems {
                     if found_holysite {
                         return (true, ExploreFind::HolySite);
                     } else {
+                        // perform lottery to discover bitcoin mine (Ethereal layer only)
+                        if tile.alt {
+                            let (bitcoin_mine_discovery_systems, _) = world
+                                .dns(@"bitcoin_mine_discovery_systems")
+                                .unwrap();
+                            let bitcoin_mine_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                                contract_address: bitcoin_mine_discovery_systems,
+                            };
+                            let (found_bitcoin_mine, _) = bitcoin_mine_discovery_systems
+                                .find_treasure(
+                                    vrf_seed,
+                                    tile,
+                                    starknet::get_caller_address(),
+                                    map_config,
+                                    troop_limit_config,
+                                    troop_stamina_config,
+                                    current_tick,
+                                    season_mode_on,
+                                );
+                            if found_bitcoin_mine {
+                                return (true, ExploreFind::BitcoinMine);
+                            }
+                        }
+
                         // perform lottery to discover camp (blitz mode only)
                         let (camp_discovery_systems, _) = world.dns(@"camp_discovery_systems").unwrap();
                         let camp_discovery_systems = ITroopMovementUtilSystemsDispatcher {
