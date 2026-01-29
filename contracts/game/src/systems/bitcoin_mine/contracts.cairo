@@ -1,4 +1,3 @@
-use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::models::bitcoin_mine::ProductionLevel;
 
@@ -69,7 +68,7 @@ pub mod bitcoin_mine_systems {
             );
 
             // Claim pending work first
-            Self::_claim_work_internal(ref world, mine_id);
+            InternalImpl::_claim_work_internal(ref world, mine_id);
 
             // Update production level
             let mut mine_state: BitcoinMineState = world.read_model(mine_id);
@@ -82,7 +81,7 @@ pub mod bitcoin_mine_systems {
             let season_config = SeasonConfigImpl::get(world);
             season_config.assert_started_and_not_over();
 
-            Self::_claim_work_internal(ref world, mine_id);
+            InternalImpl::_claim_work_internal(ref world, mine_id);
         }
 
         fn execute_phase_lottery(ref self: ContractState, phase_id: u64) {
@@ -93,7 +92,7 @@ pub mod bitcoin_mine_systems {
             let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
             assert!(config.enabled, "Bitcoin mine system is not enabled");
 
-            let current_phase = Self::_get_current_phase(ref world, config);
+            let current_phase = InternalImpl::_get_current_phase(ref world, config);
             assert!(phase_id < current_phase, "Phase has not ended yet");
 
             // Check if lottery already executed
@@ -226,17 +225,17 @@ pub mod bitcoin_mine_systems {
                 return 0;
             }
 
-            let current_phase = Self::_get_current_phase(ref world, config);
+            let current_phase = InternalImpl::_get_current_phase(ref world, config);
             let phases_elapsed = current_phase - mine_state.work_last_claimed_phase;
 
-            let work_per_phase = Self::_get_work_per_phase(mine_state.production_level, config);
+            let work_per_phase = InternalImpl::_get_work_per_phase(mine_state.production_level, config);
             phases_elapsed.into() * work_per_phase
         }
 
         fn get_current_phase(self: @ContractState) -> u64 {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
-            Self::_get_current_phase(ref world, config)
+            InternalImpl::_get_current_phase(ref world, config)
         }
 
         fn get_mine_contribution(self: @ContractState, mine_id: ID, phase_id: u64) -> u128 {

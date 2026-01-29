@@ -143,3 +143,9 @@ pub mod faith {
     #[cfg(test)]
     mod tests;
 }
+
+pub mod bitcoin_mine {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
