@@ -146,6 +146,7 @@ pub mod faith {
 
 pub mod bitcoin_mine {
     pub mod contracts;
+    pub mod discovery_systems;
     #[cfg(test)]
     mod tests;
 }
