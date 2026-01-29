@@ -91,6 +91,7 @@ pub mod season {
 }
 
 pub mod utils {
+    pub mod bitcoin_mine;
     pub mod bridge;
     pub mod camp;
     pub mod distance;
