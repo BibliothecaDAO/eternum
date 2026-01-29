@@ -645,27 +645,20 @@ export class WorldUpdateListener {
           this.setup.components.StructureBuildings,
           callback,
           (update: any) => {
-            console.log("[onStructureBuildingsUpdate] Received update:", update);
-
             if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
               const [currentState, _prevState] = update.value;
 
-              console.log("[onStructureBuildingsUpdate] currentState:", currentState, "_prevState:", _prevState);
-
               if (!currentState) {
-                console.log("[onStructureBuildingsUpdate] currentState is falsy, returning.");
                 return;
               }
 
               const entityId = currentState?.entity_id;
-              console.log("[onStructureBuildingsUpdate] entityId:", entityId);
 
               if (entityId === undefined || entityId === null) {
                 this.logMissingEntityId("Structure.onStructureBuildingsUpdate", {
                   update,
                   currentState,
                 });
-                console.log("[onStructureBuildingsUpdate] entityId missing, returning.");
                 return;
               }
 
@@ -676,39 +669,27 @@ export class WorldUpdateListener {
                 currentState.packed_counts_3 ? BigInt(currentState.packed_counts_3) : 0n,
               ];
 
-              console.log("[onStructureBuildingsUpdate] packedValues:", packedValues);
-
               // Unpack the building counts
               const buildingCounts = unpackBuildingCounts(packedValues);
-
-              console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
 
               const activeProductions: ActiveProduction[] = [];
 
               // Iterate through all building types and create productions for non-zero counts
               for (let buildingType = 1; buildingType <= buildingCounts.length; buildingType++) {
                 const count = buildingCounts[buildingType - 1]; // buildingCounts is 0-indexed, buildingType is 1-indexed
-
-                console.log(`[onStructureBuildingsUpdate] Evaluating buildingType ${buildingType}: count = ${count}`);
-
                 if (count > 0) {
                   const prod = {
                     buildingCount: count,
                     buildingType: buildingType as BuildingType,
                   };
                   activeProductions.push(prod);
-                  console.log("[onStructureBuildingsUpdate] Added activeProduction:", prod);
                 }
               }
-
-              console.log("[onStructureBuildingsUpdate] Final activeProductions:", activeProductions);
 
               return {
                 entityId,
                 activeProductions,
               };
-            } else {
-              console.log("[onStructureBuildingsUpdate] Not a relevant component update:", update);
             }
           },
           false,
@@ -935,7 +916,6 @@ export class WorldUpdateListener {
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
-              console.log("[onChestTileUpdate] update:", result);
               return result;
             }
           },
