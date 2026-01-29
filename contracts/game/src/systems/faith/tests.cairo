@@ -845,6 +845,95 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected: "Cannot pledge to a subservient wonder")]
+    fn test_cannot_pledge_to_subservient_wonder() {
+        // Scenario: Wonder1 submits to Wonder2, then a realm tries to pledge to Wonder1
+        // This should fail because Wonder1 is subservient (no longer attracting faith)
+        let mut world = setup_faith_world();
+        let (system_addr, dispatcher) = get_faith_dispatcher(ref world);
+
+        let wonder1_owner = starknet::contract_address_const::<'w1_owner'>();
+        let wonder2_owner = starknet::contract_address_const::<'w2_owner'>();
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+
+        let wonder1_coord = Coord { alt: false, x: 10, y: 10 };
+        let wonder2_coord = Coord { alt: false, x: 30, y: 30 };
+        let realm_coord = Coord { alt: false, x: 20, y: 20 };
+
+        let wonder1_id = spawn_test_wonder(ref world, wonder1_owner, wonder1_coord);
+        let wonder2_id = spawn_test_wonder(ref world, wonder2_owner, wonder2_coord);
+        let realm_id = spawn_test_realm(ref world, realm_owner, realm_coord);
+
+        start_cheat_block_timestamp_global(1000);
+
+        // Wonder2 self-pledges (target wonder)
+        start_cheat_caller_address(system_addr, wonder2_owner);
+        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        stop_cheat_caller_address(system_addr);
+
+        // Wonder1 submits to Wonder2 (becomes subservient)
+        start_cheat_caller_address(system_addr, wonder1_owner);
+        dispatcher.pledge_faith(wonder1_id, wonder2_id);
+        stop_cheat_caller_address(system_addr);
+
+        // Verify Wonder1 is subservient (pledged to Wonder2)
+        let wonder1_faithful: FaithfulStructure = world.read_model(wonder1_id);
+        assert!(wonder1_faithful.wonder_id == wonder2_id, "Wonder1 should be faithful to Wonder2");
+
+        // Now realm tries to pledge to Wonder1 - this should FAIL
+        start_cheat_caller_address(system_addr, realm_owner);
+        dispatcher.pledge_faith(realm_id, wonder1_id); // Should panic
+        stop_cheat_caller_address(system_addr);
+    }
+
+    #[test]
+    fn test_can_pledge_to_wonder_that_receives_subservient_wonder() {
+        // Scenario: Wonder1 submits to Wonder2. A realm CAN still pledge to Wonder2
+        // (the dominant wonder that received the submission)
+        let mut world = setup_faith_world();
+        let (system_addr, dispatcher) = get_faith_dispatcher(ref world);
+
+        let wonder1_owner = starknet::contract_address_const::<'w1_owner'>();
+        let wonder2_owner = starknet::contract_address_const::<'w2_owner'>();
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+
+        let wonder1_coord = Coord { alt: false, x: 10, y: 10 };
+        let wonder2_coord = Coord { alt: false, x: 30, y: 30 };
+        let realm_coord = Coord { alt: false, x: 20, y: 20 };
+
+        let wonder1_id = spawn_test_wonder(ref world, wonder1_owner, wonder1_coord);
+        let wonder2_id = spawn_test_wonder(ref world, wonder2_owner, wonder2_coord);
+        let realm_id = spawn_test_realm(ref world, realm_owner, realm_coord);
+
+        start_cheat_block_timestamp_global(1000);
+
+        // Wonder2 self-pledges (target wonder)
+        start_cheat_caller_address(system_addr, wonder2_owner);
+        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        stop_cheat_caller_address(system_addr);
+
+        // Wonder1 submits to Wonder2
+        start_cheat_caller_address(system_addr, wonder1_owner);
+        dispatcher.pledge_faith(wonder1_id, wonder2_id);
+        stop_cheat_caller_address(system_addr);
+
+        // Realm pledges to Wonder2 - this should succeed
+        start_cheat_caller_address(system_addr, realm_owner);
+        dispatcher.pledge_faith(realm_id, wonder2_id);
+        stop_cheat_caller_address(system_addr);
+
+        // Verify realm is pledged to Wonder2
+        let realm_faithful: FaithfulStructure = world.read_model(realm_id);
+        assert!(realm_faithful.wonder_id == wonder2_id, "Realm should be faithful to Wonder2");
+
+        // Verify Wonder2 has all three pledges
+        let wonder2_faith: WonderFaith = world.read_model(wonder2_id);
+        assert!(wonder2_faith.num_structures_pledged == 3, "Wonder2 should have 3 pledges");
+        // 500 (self) + 500 (wonder1) + 100 (realm) = 1100
+        assert!(wonder2_faith.claim_per_sec == 1100, "Wonder2 should have 1100 FP/sec");
+    }
+
+    #[test]
     fn test_wonder_cannot_submit_with_active_pledges() {
         let mut world = setup_faith_world();
         let (system_addr, dispatcher) = get_faith_dispatcher(ref world);

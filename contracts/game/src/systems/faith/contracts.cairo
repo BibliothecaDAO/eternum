@@ -115,6 +115,15 @@ pub mod faith_systems {
                 );
             }
 
+            // Check if target wonder is subservient (already pledged to another wonder)
+            // Subservient wonders cannot attract new faith
+            if !is_self_pledge {
+                let target_wonder_faithful: FaithfulStructure = world.read_model(wonder_id);
+                let target_is_subservient = target_wonder_faithful.wonder_id.is_non_zero()
+                    && target_wonder_faithful.wonder_id != wonder_id;
+                assert!(!target_is_subservient, "Cannot pledge to a subservient wonder");
+            }
+
             let (to_owner, to_pledger) = InternalImpl::_get_fp_rates(
                 structure_base.category, structure_id, wonder_id, is_wonder_submitting_to_another, faith_config,
             );
