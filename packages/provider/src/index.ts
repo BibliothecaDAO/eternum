@@ -3428,6 +3428,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       realm_fp_per_sec,
       village_fp_per_sec,
       owner_share_percent,
+      reward_token,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -3440,6 +3441,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         realm_fp_per_sec,
         village_fp_per_sec,
         owner_share_percent,
+        reward_token,
       ],
     });
   }

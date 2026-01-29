@@ -257,6 +257,16 @@ const MMR_LOBBY_SPLIT_WEIGHT_SCALED = 2500; // 0.25 scaled by 10000 (split lobby
 const MMR_MEAN_REGRESSION_SCALED = 150; // 0.015 scaled by 10000 (pull toward distribution mean)
 const MMR_MIN_PLAYERS = 6; // Minimum players for a game to be rated
 
+// ----- Faith System ----- //
+const FAITH_PRECISION = 10; // Multiplier for FP rates (allows fractional FP without decimals)
+const FAITH_ENABLED = true;
+const FAITH_WONDER_BASE_FP_PER_SEC = 50 * FAITH_PRECISION; // Base FP/sec for wonder self-pledge
+const FAITH_HOLY_SITE_FP_PER_SEC = 30 * FAITH_PRECISION; // FP/sec for holy site pledge
+const FAITH_REALM_FP_PER_SEC = 10 * FAITH_PRECISION; // FP/sec for realm pledge
+const FAITH_VILLAGE_FP_PER_SEC = 5 * FAITH_PRECISION; // FP/sec for village pledge
+const FAITH_OWNER_SHARE_PERCENT = 30; // 30% goes to wonder owner, 70% to pledger
+const FAITH_REWARD_TOKEN = (await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords) || "0x0";
+
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -490,6 +500,15 @@ export const EternumGlobalConfig: Config = {
     lobby_split_weight_scaled: MMR_LOBBY_SPLIT_WEIGHT_SCALED,
     mean_regression_scaled: MMR_MEAN_REGRESSION_SCALED,
     min_players: MMR_MIN_PLAYERS,
+  },
+  faith: {
+    enabled: FAITH_ENABLED,
+    wonder_base_fp_per_sec: FAITH_WONDER_BASE_FP_PER_SEC,
+    holy_site_fp_per_sec: FAITH_HOLY_SITE_FP_PER_SEC,
+    realm_fp_per_sec: FAITH_REALM_FP_PER_SEC,
+    village_fp_per_sec: FAITH_VILLAGE_FP_PER_SEC,
+    owner_share_percent: FAITH_OWNER_SHARE_PERCENT,
+    reward_token: FAITH_REWARD_TOKEN,
   },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,

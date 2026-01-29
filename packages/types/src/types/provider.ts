@@ -656,6 +656,7 @@ export interface SetFaithConfigProps extends SystemSigner {
   realm_fp_per_sec: BigNumberish;
   village_fp_per_sec: BigNumberish;
   owner_share_percent: BigNumberish;
+  reward_token: BigNumberish;
 }
 
 export interface InitializeHyperstructureProps extends SystemSigner {

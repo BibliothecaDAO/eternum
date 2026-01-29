@@ -665,6 +665,15 @@ export interface Config {
     mean_regression_scaled: number;
     min_players: number;
   };
+  faith?: {
+    enabled: boolean;
+    wonder_base_fp_per_sec: number;
+    holy_site_fp_per_sec: number;
+    realm_fp_per_sec: number;
+    village_fp_per_sec: number;
+    owner_share_percent: number;
+    reward_token: string;
+  };
 
   // Config for calling the setup function
   setup?: {

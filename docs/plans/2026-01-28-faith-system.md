@@ -2,10 +2,13 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Implement the Wonder Faith System where structures pledge faith to wonders and accumulate Faith Points (FP) for a separate leaderboard with its own prize distribution.
+**Goal:** Implement the Wonder Faith System where structures pledge faith to wonders and accumulate Faith Points (FP)
+for a separate leaderboard with its own prize distribution.
 
 **Architecture:**
-- New `faith.cairo` model file with WonderFaith, FaithfulStructure, PlayerTotalFaithPoints, WonderFaithWinner, WonderFaithBlacklist models
+
+- New `faith.cairo` model file with WonderFaith, FaithfulStructure, PlayerTotalFaithPoints, WonderFaithWinner,
+  WonderFaithBlacklist models
 - New `faith` system module with pledge/remove/claim/blacklist functions
 - FaithConfig stored in WorldConfig using WorldConfigUtilImpl pattern
 - Events added to existing Story enum in events.cairo
@@ -17,6 +20,7 @@
 ## Task 1: Create Faith Models
 
 **Files:**
+
 - Create: `contracts/game/src/models/faith.cairo`
 - Modify: `contracts/game/src/models.cairo`
 
@@ -98,8 +102,7 @@ pub mod faith;
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds with no errors
+Run: `cd contracts/game && scarb build` Expected: Build succeeds with no errors
 
 **Step 4: Commit**
 
@@ -122,6 +125,7 @@ EOF
 ## Task 2: Add FaithConfig to WorldConfig
 
 **Files:**
+
 - Modify: `contracts/game/src/models/config.cairo`
 
 **Step 1: Add FaithConfig struct**
@@ -150,8 +154,7 @@ Add to `WorldConfig` struct after `mmr_config`:
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -173,6 +176,7 @@ EOF
 ## Task 3: Add Faith Events to Story Enum
 
 **Files:**
+
 - Modify: `contracts/game/src/models/events.cairo`
 
 **Step 1: Add FaithPledgedStory struct**
@@ -222,8 +226,7 @@ Add to the `Story` enum after `PrizeDistributedStory`:
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -245,6 +248,7 @@ EOF
 ## Task 4: Create Faith Systems Contract Interface
 
 **Files:**
+
 - Create: `contracts/game/src/systems/faith/contracts.cairo`
 
 **Step 1: Create the faith systems contract file with interface**
@@ -703,8 +707,7 @@ pub mod faith_systems {
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds (may have warnings about unused imports initially)
+Run: `cd contracts/game && scarb build` Expected: Build succeeds (may have warnings about unused imports initially)
 
 **Step 3: Commit**
 
@@ -726,6 +729,7 @@ EOF
 ## Task 5: Register Faith Module in Systems
 
 **Files:**
+
 - Modify: `contracts/game/src/systems.cairo`
 
 **Step 1: Add faith module**
@@ -742,8 +746,7 @@ pub mod faith {
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -762,6 +765,7 @@ EOF
 ## Task 6: Add Faith Config Setter to Config Systems
 
 **Files:**
+
 - Modify: `contracts/game/src/systems/config/contracts.cairo`
 
 **Step 1: Add IFaithConfig trait**
@@ -825,8 +829,7 @@ use crate::models::config::FaithConfig;
 
 **Step 4: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 5: Commit**
 
@@ -845,6 +848,7 @@ EOF
 ## Task 7: Create Faith System Tests
 
 **Files:**
+
 - Create: `contracts/game/src/systems/faith/tests.cairo`
 
 **Step 1: Create the test file**
@@ -930,8 +934,7 @@ mod tests {
 
 **Step 2: Run tests to verify**
 
-Run: `cd contracts/game && sozo test -f test_faith`
-Expected: Tests pass
+Run: `cd contracts/game && sozo test -f test_faith` Expected: Tests pass
 
 **Step 3: Commit**
 
@@ -952,6 +955,7 @@ EOF
 ## Task 8: Update TypeScript Types for Faith System
 
 **Files:**
+
 - Modify: `packages/types/src/constants/structures.ts` (if needed)
 - Create or modify TypeScript provider for faith config
 
@@ -961,8 +965,7 @@ Check that `StructureType.HolySite` (value 6) exists in the enum. This was added
 
 **Step 2: Run TypeScript build**
 
-Run: `pnpm run build:packages`
-Expected: Build succeeds
+Run: `pnpm run build:packages` Expected: Build succeeds
 
 **Step 3: Commit if changes were needed**
 
@@ -973,6 +976,7 @@ Only commit if modifications were made.
 ## Task 9: Add Faith Config to Provider
 
 **Files:**
+
 - Modify: `packages/provider/src/index.ts`
 
 **Step 1: Add set_faith_config method**
@@ -1015,8 +1019,7 @@ public async set_faith_config(props: {
 
 **Step 2: Run TypeScript build**
 
-Run: `pnpm run build:packages`
-Expected: Build succeeds
+Run: `pnpm run build:packages` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -1038,23 +1041,19 @@ EOF
 
 **Step 1: Format Cairo code**
 
-Run: `cd contracts/game && scarb fmt`
-Expected: Code is formatted
+Run: `cd contracts/game && scarb fmt` Expected: Code is formatted
 
 **Step 2: Build contracts**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds with no errors
+Run: `cd contracts/game && scarb build` Expected: Build succeeds with no errors
 
 **Step 3: Run all tests**
 
-Run: `cd contracts/game && sozo test`
-Expected: All tests pass
+Run: `cd contracts/game && sozo test` Expected: All tests pass
 
 **Step 4: Build TypeScript packages**
 
-Run: `pnpm run build:packages`
-Expected: Build succeeds
+Run: `pnpm run build:packages` Expected: Build succeeds
 
 **Step 5: Final commit if formatting changed anything**
 
@@ -1083,6 +1082,7 @@ This plan implements the Faith System with:
 7. **Verification** (Task 10): Full build and test validation
 
 Key design decisions preserved:
+
 - Lazy point calculation using `points_per_sec × time_elapsed`
 - Incremental leaderboard updates when structures pledge/leave
 - 30/70 split between wonder owner and structure owner

@@ -171,6 +171,9 @@ export class GameConfigDeployer {
 
     await setSettlementConfig(config);
     await this.sleepNonLocal();
+
+    await setFaithConfig(config);
+    await this.sleepNonLocal();
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
@@ -1392,6 +1395,58 @@ export const setSettlementConfig = async (config: Config) => {
   );
 
   const tx = await config.provider.set_settlement_config(calldata);
+
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setFaithConfig = async (config: Config) => {
+  if (!config.config.faith) {
+    console.log(chalk.yellow(`\n  ⛪ Faith Configuration: Skipped (no config)\n`));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  ⛪ Faith Configuration
+  ═══════════════════════════`),
+  );
+
+  const {
+    enabled,
+    wonder_base_fp_per_sec,
+    holy_site_fp_per_sec,
+    realm_fp_per_sec,
+    village_fp_per_sec,
+    owner_share_percent,
+    reward_token,
+  } = config.config.faith;
+
+  const calldata = {
+    signer: config.account,
+    enabled,
+    wonder_base_fp_per_sec,
+    holy_site_fp_per_sec,
+    realm_fp_per_sec,
+    village_fp_per_sec,
+    owner_share_percent: owner_share_percent * 100, // Convert percentage to basis points
+    reward_token,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Faith Parameters")}
+    │  ${chalk.gray("Enabled:")}                 ${chalk.white(calldata.enabled)}
+    │  ${chalk.gray("Wonder FP/sec:")}           ${chalk.white(calldata.wonder_base_fp_per_sec)}
+    │  ${chalk.gray("Holy Site FP/sec:")}        ${chalk.white(calldata.holy_site_fp_per_sec)}
+    │  ${chalk.gray("Realm FP/sec:")}            ${chalk.white(calldata.realm_fp_per_sec)}
+    │  ${chalk.gray("Village FP/sec:")}          ${chalk.white(calldata.village_fp_per_sec)}
+    │  ${chalk.gray("Owner Share:")}             ${chalk.white(owner_share_percent + "%")}
+    │  ${chalk.gray("Reward Token:")}            ${chalk.white(calldata.reward_token)}
+    │
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_faith_config(calldata);
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
