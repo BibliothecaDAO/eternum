@@ -296,6 +296,8 @@ pub struct MapConfig {
     pub camp_fail_probability: u16,
     pub holysite_win_probability: u16,
     pub holysite_fail_probability: u16,
+    pub bitcoin_mine_win_probability: u16,   // 1/50 = 2% = 200 (out of 10000)
+    pub bitcoin_mine_fail_probability: u16,  // 9800
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
