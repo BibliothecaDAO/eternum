@@ -33,7 +33,7 @@ pub mod troop_battle_systems {
     };
     use crate::models::events::{BattleStory, BattleStructureType, BattleType, Story, StoryEvent};
     use crate::models::owner::OwnerAddressTrait;
-    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
@@ -65,6 +65,7 @@ pub mod troop_battle_systems {
         #[key]
         defender_owner: ID,
         winner_id: ID,
+        coord: Coord,
         max_reward: Span<(u8, u128)>,
         timestamp: u64,
     }
@@ -127,10 +128,8 @@ pub mod troop_battle_systems {
             assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
 
             // ensure both explorers are adjacent to each other
-            assert!(
-                explorer_defender.coord == explorer_aggressor.coord.neighbor(defender_direction),
-                "explorers are not adjacent",
-            );
+            let battle_location = explorer_aggressor.coord.neighbor(defender_direction);
+            assert!(explorer_defender.coord == battle_location, "explorers are not adjacent");
 
             // aggressor attacks defender
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
@@ -296,6 +295,7 @@ pub mod troop_battle_systems {
                         defender_owner: explorer_defender.owner,
                         winner_id: winner_owner_structure_id,
                         max_reward: steal_resources,
+                        coord: battle_location,
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
@@ -422,10 +422,8 @@ pub mod troop_battle_systems {
             assert!(guard_troops.count.is_non_zero(), "defender has no troops");
 
             // ensure explorer is adjacent to structure
-            assert!(
-                explorer_aggressor.coord.neighbor(structure_direction) == guarded_structure.coord(),
-                "explorer is not adjacent to structure",
-            );
+            let battle_location = explorer_aggressor.coord.neighbor(structure_direction);
+            assert!(battle_location == guarded_structure.coord(), "explorer is not adjacent to structure");
 
             // aggressor attacks defender
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
@@ -563,6 +561,7 @@ pub mod troop_battle_systems {
                         defender_owner: 0,
                         winner_id: winner_owner_structure_id,
                         max_reward: array![].span(),
+                        coord: battle_location,
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
@@ -686,10 +685,8 @@ pub mod troop_battle_systems {
             }
 
             // ensure structure is adjacent to explorer
-            assert!(
-                explorer_defender.coord == structure_aggressor_base.coord().neighbor(explorer_direction),
-                "structure is not adjacent to explorer",
-            );
+            let battle_location = structure_aggressor_base.coord().neighbor(explorer_direction);
+            assert!(explorer_defender.coord == battle_location, "structure is not adjacent to explorer");
 
             // aggressor attacks defender
             let biome_library = biome_library::get_dispatcher(@world);
@@ -824,6 +821,7 @@ pub mod troop_battle_systems {
                         defender_owner: explorer_defender.owner,
                         winner_id: winner_owner_structure_id,
                         max_reward: array![].span(),
+                        coord: battle_location,
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
