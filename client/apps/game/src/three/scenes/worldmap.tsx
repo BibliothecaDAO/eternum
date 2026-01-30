@@ -135,6 +135,8 @@ const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
   { model: "s1_eternum-ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
   { model: "s1_eternum-Building", colField: "outer_col", rowField: "outer_row" },
+  { model: "s1_eternum-ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
+  { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
 
 export default class WorldmapScene extends HexagonScene {
@@ -745,14 +747,6 @@ export default class WorldmapScene extends HexagonScene {
           this.clearCache();
           this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
         }
-      }),
-    );
-
-    // Store the unsubscribe function for Structure contributions
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Structure.onContribution((value) => {
-        this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
-        this.structureManager.updateChunk(this.currentChunk);
       }),
     );
 

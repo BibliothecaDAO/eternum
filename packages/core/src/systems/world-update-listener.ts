@@ -768,7 +768,6 @@ export class WorldUpdateListener {
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
-              console.log("[onQuestTileUpdate] update:", val);
               return val;
             }
           },
@@ -788,10 +787,7 @@ export class WorldUpdateListener {
 
         this.setupSystem(
           this.setup.components.events.ExplorerRewardEvent,
-          (value: ExplorerRewardSystemUpdate) => {
-            console.log("[onExplorerRewardEventUpdate] ExplorerRewardSystemUpdate:", value);
-            callback(value);
-          },
+          callback,
           async (update: any): Promise<ExplorerRewardSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.events.ExplorerRewardEvent)) {
               const [currentState] = update.value;
@@ -865,7 +861,6 @@ export class WorldUpdateListener {
                   return;
                 }
 
-                console.log("[onDeadChest] update:", deadChestEntityId);
                 return deadChestEntityId;
               }
             }
@@ -893,7 +888,6 @@ export class WorldUpdateListener {
               entityId,
               level: currentState.base.level,
             };
-            console.log("[onLevelUpdate] StructureEntityListener:", val);
             callback(val);
           }
         });
@@ -914,30 +908,19 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.events.BattleEvent)) {
               const [currentState, _prevState] = update.value;
 
-              console.log("🛡️ BattleEvent received:", {
-                currentState,
-                prevState: _prevState,
-                updateType: "BattleEvent",
-              });
-
               if (!currentState) {
-                console.log("❌ BattleEvent: No current state, returning undefined");
                 return;
               }
 
               // Parse max_reward from the event
               const maxReward: Array<{ resourceType: number; amount: number }> = [];
               if (currentState.max_reward && Array.isArray(currentState.max_reward)) {
-                console.log("💰 BattleEvent: Parsing max_reward:", currentState.max_reward);
                 for (const reward of currentState.max_reward) {
-                  // Assuming reward is [resourceType, amount] tuple
                   if (Array.isArray(reward) && reward.length === 2) {
-                    const parsedReward = {
+                    maxReward.push({
                       resourceType: Number(reward[0]),
                       amount: divideByPrecision(Number(reward[1])),
-                    };
-                    maxReward.push(parsedReward);
-                    console.log("💰 BattleEvent: Added reward:", parsedReward);
+                    });
                   }
                 }
               }
@@ -948,16 +931,6 @@ export class WorldUpdateListener {
                 currentState.winner_id === currentState.attacker_owner
                   ? currentState.attacker_id
                   : currentState.defender_id;
-
-              console.log("🏆 BattleEvent: Winner determination:", {
-                winnerId: currentState.winner_id,
-                attackerOwner: currentState.attacker_owner,
-                defenderOwner: currentState.defender_owner,
-                attackerId: currentState.attacker_id,
-                defenderId: currentState.defender_id,
-                selectedEntityId: entityId,
-                logic: currentState.winner_id === currentState.attacker_owner ? "attacker won" : "defender won",
-              });
 
               if (entityId === undefined || entityId === null) {
                 this.logMissingEntityId("BattleEvent.onBattleUpdate", { update, currentState });
@@ -977,7 +950,6 @@ export class WorldUpdateListener {
                 },
               };
 
-              console.log("✅ BattleEvent: Final result:", result);
               return result;
             }
           },
