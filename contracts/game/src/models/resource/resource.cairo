@@ -251,6 +251,9 @@ pub struct Resource {
     RELIC_E16_BALANCE: u128,
     RELIC_E17_BALANCE: u128,
     RELIC_E18_BALANCE: u128,
+    // Bitcoin Mine Resources
+    WORK_BALANCE: u128,
+    SATOSHI_BALANCE: u128,
     weight: Weight,
     STONE_PRODUCTION: Production,
     COAL_PRODUCTION: Production,
@@ -401,6 +404,9 @@ pub impl ResourceImpl of ResourceTrait {
             54 => selector!("RELIC_E16_BALANCE"),
             55 => selector!("RELIC_E17_BALANCE"),
             56 => selector!("RELIC_E18_BALANCE"),
+            // Bitcoin Mine Resources
+            57 => selector!("WORK_BALANCE"),
+            58 => selector!("SATOSHI_BALANCE"),
             _ => panic!("Invalid resource type"),
         }
     }
