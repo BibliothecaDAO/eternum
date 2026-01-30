@@ -1850,7 +1850,6 @@ export class ArmyManager {
 
         this.attachmentManager.updateAttachmentTransforms(numericEntityId, baseTransform, mountTransforms);
       }
-
     }
 
     if (pointsBatchStarted && this.pointsRenderers) {

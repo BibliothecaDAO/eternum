@@ -146,9 +146,7 @@ const ArmyBannerEntityDetailContent = memo(
           <ArmyWarning army={explorer} explorerResources={explorerResources} structureResources={structureResources} />
         ) : null}
 
-        {relicEffects.length > 0 && (
-          <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact />
-        )}
+        {relicEffects.length > 0 && <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact />}
 
         <div className="flex flex-col gap-2">
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relics</span>
