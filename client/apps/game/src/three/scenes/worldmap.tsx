@@ -28,7 +28,6 @@ import { gameWorkerManager } from "../../managers/game-worker-manager";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
-import { QuestModal } from "@/ui/features/progression";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -42,7 +41,6 @@ import {
   getBlockTimestamp,
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
-  QuestSystemUpdate,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -83,7 +81,6 @@ import { env } from "../../../env";
 import { preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
-import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -198,7 +195,6 @@ export default class WorldmapScene extends HexagonScene {
   // normalized positions and if they are allied or not
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
-  private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
   private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
@@ -207,7 +203,6 @@ export default class WorldmapScene extends HexagonScene {
   private armyLastUpdateAt: Map<ID, number> = new Map();
   // normalized coordinates
   private structuresPositions: Map<ID, HexPosition> = new Map();
-  private questsPositions: Map<ID, HexPosition> = new Map();
 
   // Battle direction manager for tracking attacker/defender relationships
   private battleDirectionManager: BattleDirectionManager;
@@ -363,7 +358,6 @@ export default class WorldmapScene extends HexagonScene {
   // Label groups
   private armyLabelsGroup: Group;
   private structureLabelsGroup: Group;
-  private questLabelsGroup: Group;
   private chestLabelsGroup: Group;
 
   private storeSubscriptions: Array<() => void> = [];
@@ -381,7 +375,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
-  private questManager: QuestManager;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -460,8 +453,6 @@ export default class WorldmapScene extends HexagonScene {
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
     this.structureLabelsGroup = new Group();
     this.structureLabelsGroup.name = "StructureLabelsGroup";
-    this.questLabelsGroup = new Group();
-    this.questLabelsGroup.name = "QuestLabelsGroup";
     this.chestLabelsGroup = new Group();
     this.chestLabelsGroup.name = "ChestLabelsGroup";
 
@@ -471,8 +462,6 @@ export default class WorldmapScene extends HexagonScene {
       this.armyLabelsGroup,
       this,
       this.dojo,
-      async (_entityId: number) => {},
-      async (_entityId: number) => {},
       this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
@@ -497,15 +486,10 @@ export default class WorldmapScene extends HexagonScene {
       this,
       this.fxManager,
       this.dojo,
-      async (_entityId: number) => {},
-      async (_entityId: number) => {},
       this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
     );
-
-    // Initialize the quest manager
-    this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this, this.chunkSize);
 
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
@@ -547,11 +531,6 @@ export default class WorldmapScene extends HexagonScene {
           show: (entityId: ID) => this.structureManager.showLabel(entityId),
           hide: (entityId: ID) => this.structureManager.hideLabel(entityId),
           hideAll: () => this.structureManager.hideAllLabels(),
-        },
-        quest: {
-          show: (entityId: ID) => this.questManager.showLabel(entityId),
-          hide: (entityId: ID) => this.questManager.hideLabel(entityId),
-          hideAll: () => this.questManager.hideAllLabels(),
         },
         chest: {
           show: (entityId: ID) => this.chestManager.showLabel(entityId),
@@ -747,14 +726,6 @@ export default class WorldmapScene extends HexagonScene {
           this.clearCache();
           this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
         }
-      }),
-    );
-
-    // perform some updates for the quest manager
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Quest.onTileUpdate((update: QuestSystemUpdate) => {
-        this.updateQuestHexes(update);
-        this.questManager.onUpdate(update);
       }),
     );
 
@@ -1262,10 +1233,9 @@ export default class WorldmapScene extends HexagonScene {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
     const army = this.armyHexes.get(hex.x)?.get(hex.y);
     const structure = this.structureHexes.get(hex.x)?.get(hex.y);
-    const quest = this.questHexes.get(hex.x)?.get(hex.y);
     const chest = this.chestHexes.get(hex.x)?.get(hex.y);
 
-    return { army, structure, quest, chest };
+    return { army, structure, chest };
   }
 
   // hexcoords is normalized
@@ -1279,7 +1249,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
-    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
+    const { army, structure, chest } = this.getHexagonEntity(hexCoords);
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
     this.handleHexSelection(hexCoords, isMine);
 
@@ -1287,9 +1257,6 @@ export default class WorldmapScene extends HexagonScene {
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
       this.onStructureSelection(structure.id, hexCoords);
-    } else if (quest) {
-      // Handle quest click
-      this.clearEntitySelection();
     } else if (chest) {
       // Handle chest click - chests can be interacted with by anyone
       this.clearEntitySelection();
@@ -1369,8 +1336,6 @@ export default class WorldmapScene extends HexagonScene {
           this.onArmyAttack(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.Quest) {
-          this.onQuestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
@@ -1632,7 +1597,6 @@ export default class WorldmapScene extends HexagonScene {
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
-      this.questHexes,
       this.chestHexes,
       currentDefaultTick,
       currentArmiesTick,
@@ -1675,21 +1639,6 @@ export default class WorldmapScene extends HexagonScene {
     this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes);
   }
 
-  // handle quest selection
-  private onQuestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
-    const selectedPath = actionPath.map((path) => path.hex);
-
-    // Get the target hex (last hex in the path)
-    const targetHex = selectedPath[selectedPath.length - 1];
-
-    this.state.toggleModal(
-      <QuestModal
-        explorerEntityId={selectedEntityId}
-        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
-      />,
-    );
-  }
-
   private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
     const selectedPath = actionPath.map((path) => path.hex);
 
@@ -1722,7 +1671,6 @@ export default class WorldmapScene extends HexagonScene {
     this.selectionPulseManager.clearOwnershipPulses();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
-    this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
   }
 
@@ -1844,7 +1792,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private attachLabelGroupsToScene() {
-    const groups = [this.armyLabelsGroup, this.structureLabelsGroup, this.questLabelsGroup, this.chestLabelsGroup];
+    const groups = [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup];
     groups.forEach((group) => {
       if (!group.parent) {
         this.scene.add(group);
@@ -1858,7 +1806,6 @@ export default class WorldmapScene extends HexagonScene {
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
-    this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
     this.registerStoreSubscriptions();
     this.setupCameraZoomHandler();
@@ -1885,7 +1832,6 @@ export default class WorldmapScene extends HexagonScene {
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
-    this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
     this.registerStoreSubscriptions();
     this.setupCameraZoomHandler();
@@ -1908,13 +1854,11 @@ export default class WorldmapScene extends HexagonScene {
     // Remove label groups from scene
     this.scene.remove(this.armyLabelsGroup);
     this.scene.remove(this.structureLabelsGroup);
-    this.scene.remove(this.questLabelsGroup);
     this.scene.remove(this.chestLabelsGroup);
 
     // Clean up labels
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
-    this.questManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
 
     // Clear any pending army removals
@@ -2228,36 +2172,6 @@ export default class WorldmapScene extends HexagonScene {
     return { oldPos, newPos };
   }
 
-  // update quest hexes on the map
-  public updateQuestHexes(update: QuestSystemUpdate) {
-    const {
-      hexCoords: { col, row },
-      entityId,
-    } = update;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const newPos = { col: normalized.x, row: normalized.y };
-    const oldPos = this.questsPositions.get(entityId);
-
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.questHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.questHexes.get(oldPos.col)?.delete(oldPos.row);
-      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
-    }
-
-    this.questsPositions.set(entityId, newPos);
-
-    if (!this.questHexes.has(newPos.col)) {
-      this.questHexes.set(newPos.col, new Map());
-    }
-    this.questHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: 0n });
-    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
-    this.scheduleTileRefreshIfAffectsCurrentRenderBounds(oldPos ?? null, newPos);
-  }
-
   // update chest hexes on the map
   public updateChestHexes(update: ChestSystemUpdate) {
     const {
@@ -2318,8 +2232,7 @@ export default class WorldmapScene extends HexagonScene {
     const pos = getWorldPositionForHex({ row, col });
 
     const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
-    const isQuest = this.questManager.questHexCoords.get(col)?.has(row) || false;
-    const shouldHideTile = isStructure || isQuest;
+    const shouldHideTile = isStructure;
 
     const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
     const renderedChunkStartCol = parseInt(this.currentChunk.split(",")[1]);
@@ -2395,7 +2308,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   /**
-   * Structures/quests hide the underlying biome tile. When they change within the current
+   * Structures hide the underlying biome tile. When they change within the current
    * render window we need to refresh the hex grid so tiles don't linger underneath.
    */
   private scheduleTileRefreshIfAffectsCurrentRenderBounds(
@@ -2926,8 +2839,7 @@ export default class WorldmapScene extends HexagonScene {
         tempPosition.set(baseX, 0, baseZ);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-        const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
-        const shouldHideTile = isStructure || isQuest;
+        const shouldHideTile = isStructure;
         const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
 
         this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
@@ -3752,7 +3664,6 @@ export default class WorldmapScene extends HexagonScene {
     const updateTasks = [
       { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
       { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
-      { label: "quest", promise: this.questManager.updateChunk(chunkKey, options) },
       { label: "chest", promise: this.chestManager.updateChunk(chunkKey, options) },
     ];
 
@@ -3771,7 +3682,6 @@ export default class WorldmapScene extends HexagonScene {
         visible: {
           armies: this.armyManager.getVisibleCount(),
           structures: this.structureManager.getVisibleCount(),
-          quests: this.questManager.getVisibleCount(),
           chests: this.chestManager.getVisibleCount(),
         },
         pendingFetches: this.pendingChunks.size,

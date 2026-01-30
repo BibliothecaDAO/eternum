@@ -5,7 +5,6 @@ import {
   HexPosition,
   ID,
   QuestType,
-  RelicEffectWithEndTick,
   ResourcesIds,
   StructureType,
   TroopTier,
@@ -148,11 +147,6 @@ export type QuestSystemUpdate = {
 export type ChestSystemUpdate = {
   occupierId: ID;
   hexCoords: HexPosition;
-};
-
-export type RelicEffectSystemUpdate = {
-  entityId: ID;
-  relicEffects: RelicEffectWithEndTick[];
 };
 
 export interface QuestData {

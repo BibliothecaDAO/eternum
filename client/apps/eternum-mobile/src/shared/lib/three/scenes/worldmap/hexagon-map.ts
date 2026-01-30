@@ -15,7 +15,6 @@ import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManage
 import { FXManager } from "../../managers/fx-manager";
 import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
-import { RelicEffectsManager } from "../../managers/relic-effects-manager";
 import { ResourceFXManager } from "../../managers/resource-fx-manager";
 import { SelectionManager } from "../../managers/selection-manager";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
@@ -46,7 +45,6 @@ export class HexagonMap {
   private questManager!: QuestManager;
   private chestManager!: ChestManager;
   private selectionManager!: SelectionManager;
-  private relicEffectsManager!: RelicEffectsManager;
 
   // === HEX STATE ===
   private allHexes: Set<string> = new Set();
@@ -117,10 +115,7 @@ export class HexagonMap {
     });
     this.questManager = new QuestManager(this.scene);
     this.chestManager = new ChestManager(this.scene);
-    this.relicEffectsManager = new RelicEffectsManager(this.fxManager);
-
     this.armyManager.setDependencies(this.dojo, this.fxManager, this.biomesManager.getExploredTiles());
-    this.relicEffectsManager.setUnitTileRenderer(this.armyManager.getUnitTileRenderer());
     this.structureManager.setDependencies(this.dojo, this.biomesManager.getExploredTiles());
 
     // Set up the callback for biomes manager to check for structures
@@ -139,9 +134,7 @@ export class HexagonMap {
     this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
     this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
     this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
-    this.systemManager.Army.onDeadArmy((entityId) =>
-      this.armyManager.deleteArmy(entityId, (id) => this.relicEffectsManager.clearEntityRelicEffects(id)),
-    );
+    this.systemManager.Army.onDeadArmy((entityId) => this.armyManager.deleteArmy(entityId));
     this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
     this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
     this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
@@ -151,15 +144,6 @@ export class HexagonMap {
     this.systemManager.Quest.onTileUpdate((update) => this.questManager.handleSystemUpdate(update));
     this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
     this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
-    this.systemManager.RelicEffect.onExplorerTroopsUpdate(async (update) =>
-      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.armyManager.getArmyPosition(id)),
-    );
-    this.systemManager.RelicEffect.onStructureGuardUpdate((update) =>
-      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
-    );
-    this.systemManager.RelicEffect.onStructureProductionUpdate((update) =>
-      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
-    );
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
   }
 
@@ -776,9 +760,6 @@ export class HexagonMap {
   }
 
   public dispose(): void {
-    // Clean up relic effects
-    this.relicEffectsManager.dispose();
-
     // Clean up resource FX manager
     this.resourceFXManager.destroy();
 
@@ -950,11 +931,6 @@ export class HexagonMap {
 
       this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row);
     }, 500);
-  }
-
-  private getStructurePosition(structureId: number): { col: number; row: number } | undefined {
-    const structure = this.structureManager.getObject(structureId);
-    return structure ? { col: structure.col, row: structure.row } : undefined;
   }
 
   /**
