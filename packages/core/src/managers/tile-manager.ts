@@ -69,28 +69,6 @@ export class TileManager {
   };
 
   existingBuildings = () => {
-    console.log("[TileManager.existingBuildings] Querying for buildings at:", {
-      outer_col: this.col,
-      outer_row: this.row,
-    });
-
-    // Debug: Check ALL Building entities first
-    const allBuildingEntities = Array.from(runQuery([Has(this.components.Building)]));
-    console.log("[TileManager.existingBuildings] Total Building entities in RECS:", allBuildingEntities.length);
-    if (allBuildingEntities.length > 0 && allBuildingEntities.length < 20) {
-      allBuildingEntities.forEach((entity) => {
-        const val = getComponentValue(this.components.Building, entity);
-        console.log("[TileManager.existingBuildings] Building entity:", {
-          entity,
-          outer_col: val?.outer_col,
-          outer_row: val?.outer_row,
-          inner_col: val?.inner_col,
-          inner_row: val?.inner_row,
-          category: val?.category,
-        });
-      });
-    }
-
     const builtBuildings = Array.from(
       runQuery([
         Has(this.components.Building),
@@ -99,16 +77,9 @@ export class TileManager {
       ]),
     );
 
-    console.log("[TileManager.existingBuildings] Found entities:", builtBuildings.length);
-
     const buildings = builtBuildings.map((entity) => {
       const productionModelValue = getComponentValue(this.components.Building, entity);
       const category = productionModelValue!.category;
-
-      console.log("[TileManager.existingBuildings] Building component value:", {
-        entity,
-        productionModelValue,
-      });
 
       return {
         col: Number(productionModelValue?.inner_col),
