@@ -23,7 +23,6 @@ const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
 
 const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
 
-
 enum BiomeFilenames {
   Bare = "bare_2_0_baked.glb",
   Beach = "beach.glb",

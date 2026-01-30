@@ -1018,5 +1018,3 @@ export const updateStructureLabel = (
 export const createChestLabel = (chest: ChestLabelData, cameraView: CameraView): HTMLElement => {
   return ChestLabelType.createElement(chest, cameraView);
 };
-
-
