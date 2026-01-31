@@ -22,15 +22,22 @@ This page is a **map of the documentation inside this repository**.
   - Global SQL queries: [`docs/global-sql-queries.md`](./global-sql-queries.md)
 
 ## Running the docs site locally
-The docs site lives at [`client/apps/game-docs`](../client/apps/game-docs). A typical local run looks like:
+The docs site lives at [`client/apps/game-docs`](../client/apps/game-docs) and is built with **Vocs**.
 
+### Recommended (from repo root)
+```bash
+pnpm install
+pnpm dev:docs
+```
+
+### Alternative (run from the docs app folder)
 ```bash
 cd client/apps/game-docs
 pnpm install
-pnpm dev
+pnpm run dev
 ```
 
-If the above doesn’t work on your machine, use the root README and the `client/apps/game-docs/README.md` for the exact, current commands.
+If the above doesn’t work on your machine, follow the repo root `readme.md` and `client/apps/game-docs/README.md`.
 
 ---
 
