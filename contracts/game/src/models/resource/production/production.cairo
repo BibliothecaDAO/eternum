@@ -8,6 +8,7 @@ use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
 use crate::models::events::{ProductionStory, Story, StoryEvent};
+use crate::models::position::Coord;
 use crate::models::resource::resource::{
     ResourceList, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
     StructureSingleResourceFoodImpl, TroopResourceImpl, WeightStoreImpl,
@@ -17,7 +18,7 @@ use crate::models::weight::Weight;
 use crate::utils::achievements::index::{AchievementTrait, Tasks};
 use crate::utils::math::{PercentageValueImpl, min};
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct ProductionBoostBonus {
     #[key]
@@ -29,6 +30,8 @@ pub struct ProductionBoostBonus {
     pub incr_resource_rate_end_tick: u32,
     pub incr_labor_rate_end_tick: u32,
     pub incr_troop_rate_end_tick: u32,
+    // structure coordinate for spatial filtering
+    pub coord: Coord,
 }
 
 
@@ -58,6 +61,7 @@ pub impl ProductionBoostBonusZeroable of Zero<ProductionBoostBonus> {
             incr_resource_rate_end_tick: 0,
             incr_labor_rate_end_tick: 0,
             incr_troop_rate_end_tick: 0,
+            coord: Coord { alt: false, x: 0, y: 0 },
         }
     }
 }
