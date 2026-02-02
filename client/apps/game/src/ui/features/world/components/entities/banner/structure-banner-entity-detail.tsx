@@ -156,12 +156,7 @@ const StructureBannerEntityDetailContent = memo(
         </div>
 
         {relicEffects.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <span className={cn(labelTextClass, "uppercase tracking-[0.25em] text-gold/70")}>Active Relic Effects</span>
-            <div className="max-h-[200px] overflow-auto pr-1">
-              <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
-            </div>
-          </div>
+          <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
         )}
 
         <Tabs variant="inventory" className="flex flex-1 flex-col gap-3">

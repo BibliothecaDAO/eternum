@@ -16,7 +16,7 @@ import InstancedBiome from "@/three/managers/instanced-biome";
 import { LAND_NAME } from "@/three/managers/instanced-model";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
-import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
+import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
@@ -28,7 +28,6 @@ import { gameWorkerManager } from "../../managers/game-worker-manager";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
-import { QuestModal } from "@/ui/features/progression";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -37,15 +36,11 @@ import {
   ArmyActionManager,
   BattleEventSystemUpdate,
   ChestSystemUpdate,
-  ExplorerMoveSystemUpdate,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
-  isRelicActive,
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
-  QuestSystemUpdate,
-  RelicEffectSystemUpdate,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -61,7 +56,6 @@ import {
   HexEntityInfo,
   HexPosition,
   ID,
-  RelicEffect,
   ResourcesIds,
   Structure,
   StructureType,
@@ -87,7 +81,6 @@ import { env } from "../../../env";
 import { preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
-import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -137,8 +130,11 @@ const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
 const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-TileOpt", colField: "col", rowField: "row" },
   { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
+  { model: "s1_eternum-StructureBuildings", colField: "coord.x", rowField: "coord.y" },
   { model: "s1_eternum-ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
   { model: "s1_eternum-Building", colField: "outer_col", rowField: "outer_row" },
+  { model: "s1_eternum-ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
+  { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
 
 export default class WorldmapScene extends HexagonScene {
@@ -200,7 +196,6 @@ export default class WorldmapScene extends HexagonScene {
   // normalized positions and if they are allied or not
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
-  private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
   private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
@@ -209,7 +204,6 @@ export default class WorldmapScene extends HexagonScene {
   private armyLastUpdateAt: Map<ID, number> = new Map();
   // normalized coordinates
   private structuresPositions: Map<ID, HexPosition> = new Map();
-  private questsPositions: Map<ID, HexPosition> = new Map();
 
   // Battle direction manager for tracking attacker/defender relationships
   private battleDirectionManager: BattleDirectionManager;
@@ -359,20 +353,12 @@ export default class WorldmapScene extends HexagonScene {
   private initialSetupPromise: Promise<void> | null = null;
   private cancelHexGridComputation?: () => void;
 
-  // Pending relic effects store - holds relic effects for entities that aren't loaded yet
-  private pendingRelicEffects: Map<ID, Map<RelicSource, Set<{ relicResourceId: number; effect: RelicEffect }>>> =
-    new Map();
-
-  // Relic effect validation timer
-  private relicValidationInterval: ReturnType<typeof setTimeout> | null = null;
-
   // Global chunk switching coordination
   private globalChunkSwitchPromise: Promise<void> | null = null;
 
   // Label groups
   private armyLabelsGroup: Group;
   private structureLabelsGroup: Group;
-  private questLabelsGroup: Group;
   private chestLabelsGroup: Group;
 
   private storeSubscriptions: Array<() => void> = [];
@@ -390,7 +376,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
-  private questManager: QuestManager;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -469,8 +454,6 @@ export default class WorldmapScene extends HexagonScene {
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
     this.structureLabelsGroup = new Group();
     this.structureLabelsGroup.name = "StructureLabelsGroup";
-    this.questLabelsGroup = new Group();
-    this.questLabelsGroup.name = "QuestLabelsGroup";
     this.chestLabelsGroup = new Group();
     this.chestLabelsGroup.name = "ChestLabelsGroup";
 
@@ -480,8 +463,6 @@ export default class WorldmapScene extends HexagonScene {
       this.armyLabelsGroup,
       this,
       this.dojo,
-      (entityId: ID) => this.applyPendingRelicEffects(entityId),
-      (entityId: ID) => this.clearPendingRelicEffects(entityId),
       this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
@@ -506,15 +487,10 @@ export default class WorldmapScene extends HexagonScene {
       this,
       this.fxManager,
       this.dojo,
-      (entityId: ID) => this.applyPendingRelicEffects(entityId),
-      (entityId: ID) => this.clearPendingRelicEffects(entityId),
       this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
     );
-
-    // Initialize the quest manager
-    this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this, this.chunkSize);
 
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
@@ -556,11 +532,6 @@ export default class WorldmapScene extends HexagonScene {
           show: (entityId: ID) => this.structureManager.showLabel(entityId),
           hide: (entityId: ID) => this.structureManager.hideLabel(entityId),
           hideAll: () => this.structureManager.hideAllLabels(),
-        },
-        quest: {
-          show: (entityId: ID) => this.questManager.showLabel(entityId),
-          hide: (entityId: ID) => this.questManager.hideLabel(entityId),
-          hideAll: () => this.questManager.hideAllLabels(),
         },
         chest: {
           show: (entityId: ID) => this.chestManager.showLabel(entityId),
@@ -759,22 +730,6 @@ export default class WorldmapScene extends HexagonScene {
       }),
     );
 
-    // Store the unsubscribe function for Structure contributions
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Structure.onContribution((value) => {
-        this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
-        this.structureManager.updateChunk(this.currentChunk);
-      }),
-    );
-
-    // perform some updates for the quest manager
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Quest.onTileUpdate((update: QuestSystemUpdate) => {
-        this.updateQuestHexes(update);
-        this.questManager.onUpdate(update);
-      }),
-    );
-
     // perform some updates for the chest manager
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
@@ -786,67 +741,6 @@ export default class WorldmapScene extends HexagonScene {
       this.worldUpdateListener.Chest.onDeadChest((entityId) => {
         // If the chest is opened, remove it from the map
         this.deleteChest(entityId);
-      }),
-    );
-
-    // Store the unsubscribe function for Relic Effect updates
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.RelicEffect.onExplorerTroopsUpdate(async (update: RelicEffectSystemUpdate) => {
-        this.handleRelicEffectUpdate(update);
-      }),
-    );
-
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.RelicEffect.onStructureGuardUpdate((update: RelicEffectSystemUpdate) => {
-        this.handleRelicEffectUpdate(update, RelicSource.Guard);
-      }),
-    );
-
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.RelicEffect.onStructureProductionUpdate((update: RelicEffectSystemUpdate) => {
-        this.handleRelicEffectUpdate(update, RelicSource.Production);
-      }),
-    );
-
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.ExplorerMove.onExplorerMoveEventUpdate((update: ExplorerMoveSystemUpdate) => {
-        const { explorerId } = update;
-        // const { explorerId, resourceId, amount } = update;
-
-        // Find the army position using explorerId
-        setTimeout(() => {
-          const armyPosition = this.armiesPositions.get(explorerId);
-
-          if (armyPosition) {
-            // Check if user has camera follow enabled and is on worldmap
-            const followArmyMoves = useUIStore.getState().followArmyMoves;
-            const currentScene = this.sceneManager.getCurrentScene();
-
-            if (followArmyMoves && currentScene === SceneName.WorldMap) {
-              this.focusCameraOnEvent(armyPosition.col, armyPosition.row, "Following Army Movement");
-            }
-            // if (resourceId === 0) {
-            //   return;
-            // }
-            // const resource = findResourceById(resourceId);
-            // const ownerAddress = this.getEntityOwnerAddress(explorerId);
-            // const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
-            // if (isOwnArmy) {
-            //   // Play the sound for the resource gain only when it belongs to the local player
-            //   playResourceSound(resourceId);
-            // }
-            // // Display the resource gain at the army's position
-            // this.displayResourceGain(
-            //   resourceId,
-            //   amount,
-            //   armyPosition.col,
-            //   armyPosition.row,
-            //   resource?.trait + " found",
-            // );
-          } else {
-            console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
-          }
-        }, 500);
       }),
     );
 
@@ -963,9 +857,6 @@ export default class WorldmapScene extends HexagonScene {
     window.addEventListener("urlChanged", () => {
       this.clearSelection();
     });
-
-    // Start relic effect validation timer (every 5 seconds)
-    this.startRelicValidationTimer();
   }
 
   private setupCameraZoomHandler() {
@@ -1343,10 +1234,9 @@ export default class WorldmapScene extends HexagonScene {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
     const army = this.armyHexes.get(hex.x)?.get(hex.y);
     const structure = this.structureHexes.get(hex.x)?.get(hex.y);
-    const quest = this.questHexes.get(hex.x)?.get(hex.y);
     const chest = this.chestHexes.get(hex.x)?.get(hex.y);
 
-    return { army, structure, quest, chest };
+    return { army, structure, chest };
   }
 
   // hexcoords is normalized
@@ -1360,7 +1250,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
-    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
+    const { army, structure, chest } = this.getHexagonEntity(hexCoords);
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
     this.handleHexSelection(hexCoords, isMine);
 
@@ -1368,9 +1258,6 @@ export default class WorldmapScene extends HexagonScene {
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
       this.onStructureSelection(structure.id, hexCoords);
-    } else if (quest) {
-      // Handle quest click
-      this.clearEntitySelection();
     } else if (chest) {
       // Handle chest click - chests can be interacted with by anyone
       this.clearEntitySelection();
@@ -1450,8 +1337,6 @@ export default class WorldmapScene extends HexagonScene {
           this.onArmyAttack(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.Quest) {
-          this.onQuestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
@@ -1713,7 +1598,6 @@ export default class WorldmapScene extends HexagonScene {
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
-      this.questHexes,
       this.chestHexes,
       currentDefaultTick,
       currentArmiesTick,
@@ -1756,21 +1640,6 @@ export default class WorldmapScene extends HexagonScene {
     this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes);
   }
 
-  // handle quest selection
-  private onQuestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
-    const selectedPath = actionPath.map((path) => path.hex);
-
-    // Get the target hex (last hex in the path)
-    const targetHex = selectedPath[selectedPath.length - 1];
-
-    this.state.toggleModal(
-      <QuestModal
-        explorerEntityId={selectedEntityId}
-        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
-      />,
-    );
-  }
-
   private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
     const selectedPath = actionPath.map((path) => path.hex);
 
@@ -1803,7 +1672,6 @@ export default class WorldmapScene extends HexagonScene {
     this.selectionPulseManager.clearOwnershipPulses();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
-    this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
   }
 
@@ -1925,7 +1793,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private attachLabelGroupsToScene() {
-    const groups = [this.armyLabelsGroup, this.structureLabelsGroup, this.questLabelsGroup, this.chestLabelsGroup];
+    const groups = [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup];
     groups.forEach((group) => {
       if (!group.parent) {
         this.scene.add(group);
@@ -1939,7 +1807,6 @@ export default class WorldmapScene extends HexagonScene {
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
-    this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
     this.registerStoreSubscriptions();
     this.setupCameraZoomHandler();
@@ -1966,7 +1833,6 @@ export default class WorldmapScene extends HexagonScene {
     this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
-    this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
     this.registerStoreSubscriptions();
     this.setupCameraZoomHandler();
@@ -1989,13 +1855,11 @@ export default class WorldmapScene extends HexagonScene {
     // Remove label groups from scene
     this.scene.remove(this.armyLabelsGroup);
     this.scene.remove(this.structureLabelsGroup);
-    this.scene.remove(this.questLabelsGroup);
     this.scene.remove(this.chestLabelsGroup);
 
     // Clean up labels
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
-    this.questManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
 
     // Clear any pending army removals
@@ -2230,6 +2094,22 @@ export default class WorldmapScene extends HexagonScene {
           this.armyStructureOwners.delete(entityId);
           return;
         }
+      } else {
+        // New army with 0n owner - MapDataStore likely hasn't cached it yet.
+        // Resolve owner directly from ECS Structure component using ownerStructureId.
+        const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
+        if (resolvedStructureId) {
+          try {
+            const components = this.dojo.components as any;
+            const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
+            const structure = getComponentValue(components.Structure, structureEntity);
+            if (structure?.owner) {
+              actualOwnerAddress = BigInt(structure.owner);
+            }
+          } catch {
+            // Fall through with 0n if ECS lookup fails
+          }
+        }
       }
     }
 
@@ -2309,36 +2189,6 @@ export default class WorldmapScene extends HexagonScene {
     return { oldPos, newPos };
   }
 
-  // update quest hexes on the map
-  public updateQuestHexes(update: QuestSystemUpdate) {
-    const {
-      hexCoords: { col, row },
-      entityId,
-    } = update;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const newPos = { col: normalized.x, row: normalized.y };
-    const oldPos = this.questsPositions.get(entityId);
-
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.questHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.questHexes.get(oldPos.col)?.delete(oldPos.row);
-      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
-    }
-
-    this.questsPositions.set(entityId, newPos);
-
-    if (!this.questHexes.has(newPos.col)) {
-      this.questHexes.set(newPos.col, new Map());
-    }
-    this.questHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: 0n });
-    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
-    this.scheduleTileRefreshIfAffectsCurrentRenderBounds(oldPos ?? null, newPos);
-  }
-
   // update chest hexes on the map
   public updateChestHexes(update: ChestSystemUpdate) {
     const {
@@ -2399,8 +2249,7 @@ export default class WorldmapScene extends HexagonScene {
     const pos = getWorldPositionForHex({ row, col });
 
     const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
-    const isQuest = this.questManager.questHexCoords.get(col)?.has(row) || false;
-    const shouldHideTile = isStructure || isQuest;
+    const shouldHideTile = isStructure;
 
     const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
     const renderedChunkStartCol = parseInt(this.currentChunk.split(",")[1]);
@@ -2476,7 +2325,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   /**
-   * Structures/quests hide the underlying biome tile. When they change within the current
+   * Structures hide the underlying biome tile. When they change within the current
    * render window we need to refresh the hex grid so tiles don't linger underneath.
    */
   private scheduleTileRefreshIfAffectsCurrentRenderBounds(
@@ -3007,8 +2856,7 @@ export default class WorldmapScene extends HexagonScene {
         tempPosition.set(baseX, 0, baseZ);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-        const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
-        const shouldHideTile = isStructure || isQuest;
+        const shouldHideTile = isStructure;
         const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
 
         this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
@@ -3833,7 +3681,6 @@ export default class WorldmapScene extends HexagonScene {
     const updateTasks = [
       { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
       { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
-      { label: "quest", promise: this.questManager.updateChunk(chunkKey, options) },
       { label: "chest", promise: this.chestManager.updateChunk(chunkKey, options) },
     ];
 
@@ -3852,7 +3699,6 @@ export default class WorldmapScene extends HexagonScene {
         visible: {
           armies: this.armyManager.getVisibleCount(),
           structures: this.structureManager.getVisibleCount(),
-          quests: this.questManager.getVisibleCount(),
           chests: this.chestManager.getVisibleCount(),
         },
         pendingFetches: this.pendingChunks.size,
@@ -3905,193 +3751,6 @@ export default class WorldmapScene extends HexagonScene {
     this.interactiveHexManager.clearHexes();
   }
 
-  /**
-   * Handle relic effect updates from the game system
-   * @param update The relic effect update containing entity ID and array of relic effects
-   * @param relicSource Optional source of the relic effects (for structures)
-   */
-  private async handleRelicEffectUpdate(update: RelicEffectSystemUpdate, relicSource?: RelicSource) {
-    const { entityId, relicEffects } = update;
-
-    let entityFound = false;
-
-    // Check if this is an army entity
-    if (this.armyManager.hasArmy(entityId)) {
-      // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
-      const { currentArmiesTick } = getBlockTimestamp();
-      const newEffects = relicEffects.map((relicEffect) => ({
-        relicNumber: relicEffect.id,
-        effect: {
-          start_tick: currentArmiesTick,
-          end_tick: relicEffect.endTick,
-          usage_left: 1,
-        },
-      }));
-
-      await this.armyManager.updateRelicEffects(entityId, newEffects);
-      entityFound = true;
-    }
-
-    // Check if this is a structure entity
-    if (!entityFound && relicSource) {
-      const structureHexes = this.structureManager.structures.getStructures();
-      for (const [, structures] of structureHexes) {
-        if (structures.has(entityId)) {
-          // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
-          const { currentArmiesTick } = getBlockTimestamp();
-          const newEffects = relicEffects.map((relicEffect) => ({
-            relicNumber: relicEffect.id,
-            effect: {
-              start_tick: currentArmiesTick,
-              end_tick: relicEffect.endTick,
-              usage_left: 1,
-            },
-          }));
-
-          await this.structureManager.updateRelicEffects(entityId, newEffects, relicSource);
-          entityFound = true;
-          break;
-        }
-      }
-    }
-
-    // If entity is not currently loaded, store as pending effects
-    if (!entityFound) {
-      // Get or create the entity's pending effects map
-      let entityPendingMap = this.pendingRelicEffects.get(entityId);
-      if (!entityPendingMap) {
-        entityPendingMap = new Map();
-        this.pendingRelicEffects.set(entityId, entityPendingMap);
-      }
-
-      // Determine the source for pending effects
-      const pendingSource = relicSource || RelicSource.Guard;
-
-      // Clear existing pending effects for this entity/source and add new ones
-      if (relicEffects.length > 0) {
-        const pendingRelicsSet = new Set<{ relicResourceId: number; effect: RelicEffect }>();
-        for (const relicEffect of relicEffects) {
-          pendingRelicsSet.add({
-            relicResourceId: relicEffect.id,
-            effect: {
-              end_tick: relicEffect.endTick,
-              usage_left: 1,
-            },
-          });
-        }
-        entityPendingMap.set(pendingSource, pendingRelicsSet);
-      } else {
-        entityPendingMap.delete(pendingSource);
-        // If no sources have pending effects, remove the entity
-        if (entityPendingMap.size === 0) {
-          this.pendingRelicEffects.delete(entityId);
-        }
-      }
-    } else {
-      // Update pending effects store even for loaded entities to keep it in sync
-      // Get or create the entity's pending effects map
-      let entityPendingMap = this.pendingRelicEffects.get(entityId);
-      if (!entityPendingMap) {
-        entityPendingMap = new Map();
-        this.pendingRelicEffects.set(entityId, entityPendingMap);
-      }
-
-      const pendingSource = relicSource || RelicSource.Guard;
-
-      if (relicEffects.length > 0) {
-        const pendingRelicsSet = new Set<{ relicResourceId: number; effect: RelicEffect }>();
-        for (const relicEffect of relicEffects) {
-          pendingRelicsSet.add({
-            relicResourceId: relicEffect.id,
-            effect: {
-              end_tick: relicEffect.endTick,
-              usage_left: 1,
-            },
-          });
-        }
-        entityPendingMap.set(pendingSource, pendingRelicsSet);
-      } else {
-        entityPendingMap.delete(pendingSource);
-        // If no sources have pending effects, remove the entity
-        if (entityPendingMap.size === 0) {
-          this.pendingRelicEffects.delete(entityId);
-        }
-      }
-    }
-  }
-
-  /**
-   * Apply all pending relic effects for an entity (called when entity is loaded)
-   */
-  private async applyPendingRelicEffects(entityId: ID) {
-    const entityPendingMap = this.pendingRelicEffects.get(entityId);
-    if (!entityPendingMap || entityPendingMap.size === 0) return;
-
-    // Check if this is an army entity
-    if (this.armyManager.hasArmy(entityId)) {
-      try {
-        // For armies, combine all pending effects (they don't have sources)
-        const allPendingRelics: { relicResourceId: number; effect: RelicEffect }[] = [];
-        for (const pendingRelics of entityPendingMap.values()) {
-          allPendingRelics.push(...Array.from(pendingRelics));
-        }
-
-        // Convert pending relics to array format for updateRelicEffects
-        const relicEffectsArray = allPendingRelics.map((pendingRelic) => ({
-          relicNumber: pendingRelic.relicResourceId,
-          effect: pendingRelic.effect,
-        }));
-
-        await this.armyManager.updateRelicEffects(entityId, relicEffectsArray);
-      } catch (error) {
-        console.error(`Failed to apply pending relic effects to army ${entityId}:`, error);
-      }
-      return;
-    }
-
-    // Check if this is a structure entity
-    const structureHexes = this.structureManager.structures.getStructures();
-    for (const [, structures] of structureHexes) {
-      if (structures.has(entityId)) {
-        try {
-          // For structures, apply effects per source
-          for (const [relicSource, pendingRelics] of entityPendingMap) {
-            // Convert pending relics to array format for updateRelicEffects
-            const relicEffectsArray = Array.from(pendingRelics).map((pendingRelic) => ({
-              relicNumber: pendingRelic.relicResourceId,
-              effect: pendingRelic.effect,
-            }));
-
-            await this.structureManager.updateRelicEffects(entityId, relicEffectsArray, relicSource);
-            console.log(
-              `Applied ${relicEffectsArray.length} pending relic effects to structure: entityId=${entityId}, source=${relicSource}`,
-            );
-          }
-        } catch (error) {
-          console.error(`Failed to apply pending relic effects to structure ${entityId}:`, error);
-        }
-        return;
-      }
-    }
-  }
-
-  /**
-   * Clear all pending relic effects for an entity (called when entity is removed)
-   */
-  private clearPendingRelicEffects(entityId: ID) {
-    const entityPendingMap = this.pendingRelicEffects.get(entityId);
-    if (entityPendingMap) {
-      let totalEffects = 0;
-      for (const pendingRelics of entityPendingMap.values()) {
-        totalEffects += pendingRelics.size;
-      }
-      console.log(
-        `Cleared ${totalEffects} pending relic effects for entity ${entityId} from ${entityPendingMap.size} sources`,
-      );
-      this.pendingRelicEffects.delete(entityId);
-    }
-  }
-
   destroy() {
     if (this.chunkRefreshTimeout !== null) {
       clearTimeout(this.chunkRefreshTimeout);
@@ -4115,7 +3774,6 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
-    this.stopRelicValidationTimer();
     this.clearCache();
 
     // Clean up selection pulse manager
@@ -4159,104 +3817,6 @@ export default class WorldmapScene extends HexagonScene {
     row: number,
   ): Promise<void> {
     return this.resourceFXManager.playMultipleResourceFx(resources, col, row);
-  }
-
-  /**
-   * Start the periodic relic effect validation timer
-   */
-  private startRelicValidationTimer() {
-    // Clear any existing timer
-    this.stopRelicValidationTimer();
-
-    // Set up new timer to run every 5 seconds
-    this.relicValidationInterval = setInterval(() => {
-      this.validateActiveRelicEffects();
-    }, 5000);
-  }
-
-  /**
-   * Stop the periodic relic effect validation timer
-   */
-  private stopRelicValidationTimer() {
-    if (this.relicValidationInterval) {
-      clearInterval(this.relicValidationInterval);
-      this.relicValidationInterval = null;
-    }
-  }
-
-  /**
-   * Validate all currently displayed relic effects and remove inactive ones
-   */
-  private async validateActiveRelicEffects() {
-    try {
-      const { currentArmiesTick } = getBlockTimestamp();
-      let removedCount = 0;
-
-      // Validate army relic effects
-      const armies = this.armyManager.getArmies();
-      for (const army of armies) {
-        const currentRelics = this.armyManager.getArmyRelicEffects(army.entityId);
-        if (currentRelics.length > 0) {
-          // Filter out inactive relics
-          const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
-
-          // If some relics were removed, update the effects
-          if (activeRelics.length < currentRelics.length) {
-            const removedThisArmy = currentRelics.length - activeRelics.length;
-
-            await this.armyManager.updateRelicEffects(
-              army.entityId,
-              activeRelics.map((r) => ({ relicNumber: r.relicId, effect: r.effect })),
-            );
-            removedCount += removedThisArmy;
-          }
-        }
-      }
-
-      // Validate structure relic effects
-      const structureHexes = this.structureManager.structures.getStructures();
-      for (const [, structures] of structureHexes) {
-        for (const [entityId] of structures) {
-          const currentRelics = this.structureManager.getStructureRelicEffects(entityId);
-          if (currentRelics.length > 0) {
-            // Filter out inactive relics
-            const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
-
-            // If some relics were removed, update the effects
-            if (activeRelics.length < currentRelics.length) {
-              const removedThisStructure = currentRelics.length - activeRelics.length;
-              console.log(
-                `Removing ${removedThisStructure} inactive relic effect(s) from structure: entityId=${entityId}`,
-              );
-              // For validation, we need to update each source separately
-              // Get effects by source and update them
-              for (const source of [RelicSource.Guard, RelicSource.Production]) {
-                const sourceRelics = this.structureManager.getStructureRelicEffectsBySource(entityId, source);
-                if (sourceRelics.length > 0) {
-                  const activeSourceRelics = sourceRelics.filter((relic) =>
-                    isRelicActive(relic.effect, currentArmiesTick),
-                  );
-                  if (activeSourceRelics.length < sourceRelics.length) {
-                    await this.structureManager.updateRelicEffects(
-                      entityId,
-                      activeSourceRelics.map((r) => ({ relicNumber: r.relicId, effect: r.effect })),
-                      source,
-                    );
-                  }
-                }
-              }
-              removedCount += removedThisStructure;
-            }
-          }
-        }
-      }
-
-      if (removedCount > 0 && import.meta.env.DEV) {
-        console.debug(`[Relic Effects] Removed ${removedCount} stale relic instances during validation`);
-      }
-    } catch (error) {
-      console.error("Error during relic effect validation:", error);
-    }
   }
 
   private async selectNextArmy(): Promise<void> {

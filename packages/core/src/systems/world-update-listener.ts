@@ -27,33 +27,22 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { StaminaManager } from "../managers";
 import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "../stores/map-data-store";
-import { storyEventBus } from "../stores/story-event-bus";
-import {
-  divideByPrecision,
-  getArmyRelicEffects,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
-  tileOptToTile,
-  unpackBuildingCounts,
-} from "../utils";
+import { divideByPrecision, tileOptToTile, unpackBuildingCounts } from "../utils";
 import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
-import { getAddressName, getStructureName } from "../utils/entities";
+import { getStructureName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { DataEnhancer } from "./data-enhancer";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
-  ExplorerMoveSystemUpdate,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
-  type RelicEffectSystemUpdate,
-  type StoryEventSystemUpdate,
   StructureSystemUpdate,
   type StructureTileSystemUpdate,
   type TileSystemUpdate,
 } from "./types";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, getStructureStage } from "./utils";
+import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "./utils";
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -62,10 +51,6 @@ export class WorldUpdateListener {
   private dataEnhancer: DataEnhancer;
   private updateSequenceMap: Map<ID, number> = new Map(); // Track update sequence numbers
   private pendingUpdates: Map<ID, Promise<any>> = new Map(); // Track pending async updates
-  private explorerMoveEventCache: Map<string, ExplorerMoveSystemUpdate> = new Map();
-  private explorerMoveEventOrder: string[] = [];
-  private readonly MAX_EXPLORER_MOVE_EVENT_CACHE_SIZE = 100;
-  private static storyEventRegistered = false; // Prevent duplicate story event registrations
 
   constructor(
     private setup: SetupResult,
@@ -81,14 +66,6 @@ export class WorldUpdateListener {
     this.mapDataStore.refresh().catch((error) => {
       console.warn("Initial MapDataStore refresh failed:", error);
     });
-
-    this.registerExplorerMoveCache();
-
-    // Only register story event stream once across all instances
-    if (!WorldUpdateListener.storyEventRegistered) {
-      this.registerStoryEventStream();
-      WorldUpdateListener.storyEventRegistered = true;
-    }
   }
 
   private resolveEntityId(
@@ -422,38 +399,6 @@ export class WorldUpdateListener {
 
   public get Structure() {
     return {
-      onContribution: (callback: (value: { entityId: ID; structureType: StructureType; stage: number }) => void) => {
-        this.setupSystem(
-          this.setup.components.HyperstructureRequirements,
-          callback,
-          async (update: any) => {
-            const structure = getComponentValue(
-              this.setup.components.Structure,
-              getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_id)]),
-            );
-
-            if (!structure) return;
-
-            const category = structure.base.category as StructureType;
-
-            const structureEntityId = structure.entity_id;
-
-            if (structureEntityId === undefined || structureEntityId === null) {
-              this.logMissingEntityId("Structure.onContribution", { update, structure });
-              return;
-            }
-
-            const stage = getStructureStage(category, structureEntityId, this.setup.components);
-
-            return {
-              entityId: structureEntityId,
-              structureType: category,
-              stage,
-            };
-          },
-          false,
-        );
-      },
       onTileUpdate: (callback: (value: StructureTileSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.TileOpt,
@@ -686,6 +631,8 @@ export class WorldUpdateListener {
                 }
               }
 
+              this.mapDataStore.updateStructureBuildings(entityId, activeProductions);
+
               return {
                 entityId,
                 activeProductions,
@@ -823,33 +770,7 @@ export class WorldUpdateListener {
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
-              console.log("[onQuestTileUpdate] update:", val);
               return val;
-            }
-          },
-          false,
-        );
-      },
-    };
-  }
-
-  public get ExplorerMove() {
-    return {
-      onExplorerMoveEventUpdate: (callback: (value: ExplorerMoveSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.events.ExplorerMoveEvent,
-          (value: ExplorerMoveSystemUpdate) => {
-            // Log the ExplorerMove update
-            console.log("[onExplorerMoveEventUpdate] ExplorerMoveSystemUpdate:", value);
-            this.storeExplorerMoveEvent(value);
-            callback(value);
-          },
-          async (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.events.ExplorerMoveEvent)) {
-              const [currentState, _prevState] = update.value;
-              if (!currentState) return undefined;
-
-              return this.parseExplorerMoveEvent(currentState);
             }
           },
           false,
@@ -868,10 +789,7 @@ export class WorldUpdateListener {
 
         this.setupSystem(
           this.setup.components.events.ExplorerRewardEvent,
-          (value: ExplorerRewardSystemUpdate) => {
-            console.log("[onExplorerRewardEventUpdate] ExplorerRewardSystemUpdate:", value);
-            callback(value);
-          },
+          callback,
           async (update: any): Promise<ExplorerRewardSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.events.ExplorerRewardEvent)) {
               const [currentState] = update.value;
@@ -945,7 +863,6 @@ export class WorldUpdateListener {
                   return;
                 }
 
-                console.log("[onDeadChest] update:", deadChestEntityId);
                 return deadChestEntityId;
               }
             }
@@ -973,133 +890,12 @@ export class WorldUpdateListener {
               entityId,
               level: currentState.base.level,
             };
-            console.log("[onLevelUpdate] StructureEntityListener:", val);
             callback(val);
           }
         });
 
         // Return the subscription so it can be cleaned up later
         return subscription as any;
-      },
-    };
-  }
-
-  public get RelicEffect() {
-    return {
-      onExplorerTroopsUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.ExplorerTroops,
-          callback,
-          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-              const [currentState, prevState] = update.value;
-
-              // at least one of the states must have an entity id
-              const entityId = currentState?.explorer_id || prevState?.explorer_id || 0;
-
-              // Check if we have a current state
-              if (currentState) {
-                const { currentArmiesTick } = getBlockTimestamp();
-                const relicEffects = getArmyRelicEffects(currentState.troops, currentArmiesTick);
-
-                if (relicEffects.length === 0) {
-                  return;
-                }
-
-                const val = {
-                  entityId,
-                  relicEffects,
-                };
-                console.log("[onExplorerTroopsRelicEffectUpdate] update:", val);
-                return val;
-              }
-            }
-          },
-          false,
-        );
-      },
-      onStructureGuardUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.Structure,
-          callback,
-          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.Structure)) {
-              const [currentState, _prevState] = update.value;
-
-              if (!currentState) return;
-
-              const { currentArmiesTick } = getBlockTimestamp();
-              const relicEffects = getStructureArmyRelicEffects(currentState, currentArmiesTick);
-
-              if (relicEffects.length === 0) {
-                return;
-              }
-
-              const guardEntityId = currentState?.entity_id;
-
-              if (guardEntityId === undefined || guardEntityId === null) {
-                this.logMissingEntityId("RelicEffect.onStructureGuardUpdate", { update, currentState });
-                return;
-              }
-
-              const val = {
-                entityId: guardEntityId,
-                relicEffects,
-              };
-              console.log("[onStructureGuardRelicEffectUpdate] update:", val);
-              return val;
-            }
-          },
-          false,
-        );
-      },
-      onStructureProductionUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.ProductionBoostBonus,
-          callback,
-          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.ProductionBoostBonus)) {
-              const [currentState, _prevState] = update.value;
-
-              const { currentArmiesTick } = getBlockTimestamp();
-
-              if (!currentState) return;
-
-              const relicEffects = getStructureRelicEffects(currentState, currentArmiesTick);
-
-              if (relicEffects.length === 0) {
-                return;
-              }
-
-              const productionEntityId = currentState?.structure_id;
-
-              if (productionEntityId === undefined || productionEntityId === null) {
-                this.logMissingEntityId("RelicEffect.onStructureProductionUpdate", { update, currentState });
-                return;
-              }
-
-              const val = {
-                entityId: productionEntityId,
-                relicEffects,
-              };
-              console.log("[onStructureProductionRelicEffectUpdate] update:", val);
-              return val;
-            }
-          },
-          false,
-        );
-      },
-    };
-  }
-
-  public get StoryEvent() {
-    return {
-      subscribe: (listener: (event: StoryEventSystemUpdate) => void) => {
-        const wrappedListener = (event: StoryEventSystemUpdate) => {
-          console.log("[StoryEvent] update:", event);
-          listener(event);
-        };
-        return storyEventBus.subscribe(wrappedListener);
       },
     };
   }
@@ -1114,30 +910,19 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.events.BattleEvent)) {
               const [currentState, _prevState] = update.value;
 
-              console.log("🛡️ BattleEvent received:", {
-                currentState,
-                prevState: _prevState,
-                updateType: "BattleEvent",
-              });
-
               if (!currentState) {
-                console.log("❌ BattleEvent: No current state, returning undefined");
                 return;
               }
 
               // Parse max_reward from the event
               const maxReward: Array<{ resourceType: number; amount: number }> = [];
               if (currentState.max_reward && Array.isArray(currentState.max_reward)) {
-                console.log("💰 BattleEvent: Parsing max_reward:", currentState.max_reward);
                 for (const reward of currentState.max_reward) {
-                  // Assuming reward is [resourceType, amount] tuple
                   if (Array.isArray(reward) && reward.length === 2) {
-                    const parsedReward = {
+                    maxReward.push({
                       resourceType: Number(reward[0]),
                       amount: divideByPrecision(Number(reward[1])),
-                    };
-                    maxReward.push(parsedReward);
-                    console.log("💰 BattleEvent: Added reward:", parsedReward);
+                    });
                   }
                 }
               }
@@ -1148,16 +933,6 @@ export class WorldUpdateListener {
                 currentState.winner_id === currentState.attacker_owner
                   ? currentState.attacker_id
                   : currentState.defender_id;
-
-              console.log("🏆 BattleEvent: Winner determination:", {
-                winnerId: currentState.winner_id,
-                attackerOwner: currentState.attacker_owner,
-                defenderOwner: currentState.defender_owner,
-                attackerId: currentState.attacker_id,
-                defenderId: currentState.defender_id,
-                selectedEntityId: entityId,
-                logic: currentState.winner_id === currentState.attacker_owner ? "attacker won" : "defender won",
-              });
 
               if (entityId === undefined || entityId === null) {
                 this.logMissingEntityId("BattleEvent.onBattleUpdate", { update, currentState });
@@ -1177,7 +952,6 @@ export class WorldUpdateListener {
                 },
               };
 
-              console.log("✅ BattleEvent: Final result:", result);
               return result;
             }
           },
@@ -1185,89 +959,6 @@ export class WorldUpdateListener {
         );
       },
     };
-  }
-
-  private registerStoryEventStream() {
-    if (!this.setup.components.events?.StoryEvent) {
-      console.warn("StoryEvent component is not registered on setup.components.events");
-      return;
-    }
-
-    this.setupSystem(
-      this.setup.components.events.StoryEvent,
-      (event: StoryEventSystemUpdate) => {
-        // Add log before publishing event
-        console.log("[registerStoryEventStream] update:", event);
-        storyEventBus.publish(event);
-      },
-      async (update: any): Promise<StoryEventSystemUpdate | undefined> => {
-        if (isComponentUpdate(update, this.setup.components.events.StoryEvent)) {
-          const [currentState] = update.value;
-
-          if (!currentState) {
-            return undefined;
-          }
-
-          return this.mapStoryEventPayload(currentState);
-        }
-
-        return undefined;
-      },
-      false,
-    );
-  }
-
-  private registerExplorerMoveCache() {
-    if (!this.setup.components.events?.ExplorerMoveEvent) {
-      console.warn("ExplorerMoveEvent component is not registered on setup.components.events");
-      return;
-    }
-
-    this.setupSystem(
-      this.setup.components.events.ExplorerMoveEvent,
-      (value: ExplorerMoveSystemUpdate) => {
-        // Log before storing to cache
-        console.log("[registerExplorerMoveCache] ExplorerMoveSystemUpdate:", value);
-        this.storeExplorerMoveEvent(value);
-      },
-      async (update: any): Promise<ExplorerMoveSystemUpdate | undefined> => {
-        if (isComponentUpdate(update, this.setup.components.events.ExplorerMoveEvent)) {
-          const [currentState] = update.value;
-          if (!currentState) {
-            return undefined;
-          }
-          return this.parseExplorerMoveEvent(currentState);
-        }
-        return undefined;
-      },
-      false,
-    );
-  }
-
-  private parseExplorerMoveEvent(currentState: any): ExplorerMoveSystemUpdate | undefined {
-    const explorerId = this.toNumber(currentState?.explorer_id);
-    if (explorerId === null) {
-      return undefined;
-    }
-
-    // const resourceId = (this.toNumber(currentState?.reward_resource_type) ?? 0) as ResourcesIds | 0;
-    // const rawAmount = currentState?.reward_resource_amount ?? 0;
-    // const normalizedAmount = this.toNumber(rawAmount);
-    // const amount = normalizedAmount !== null ? divideByPrecision(normalizedAmount) : 0;
-    const timestamp = this.toNumber(currentState?.timestamp) ?? 0;
-    const exploreFindVariant = this.unwrapSchemaEnum(currentState?.explore_find);
-    const exploreFind = exploreFindVariant?.name ?? null;
-
-    const val = {
-      explorerId,
-      // resourceId,
-      // amount,
-      // rawAmount,
-      timestamp,
-      exploreFind,
-    };
-    // console.log("[parseExplorerMoveEvent] update:", val);
-    return val;
   }
 
   private parseExplorerRewardEvent(currentState: any): ExplorerRewardSystemUpdate | undefined {
@@ -1295,148 +986,6 @@ export class WorldUpdateListener {
     };
     // console.log("[parseExplorerRewardEvent] update:", val);
     return val;
-  }
-
-  private storeExplorerMoveEvent(event: ExplorerMoveSystemUpdate | undefined) {
-    if (!event) {
-      return;
-    }
-
-    const key = this.getExplorerMoveCacheKey(event.explorerId, event.timestamp);
-    if (!key) {
-      return;
-    }
-
-    // Add log for store
-    console.log("[storeExplorerMoveEvent] storing:", event);
-
-    this.explorerMoveEventCache.set(key, event);
-    this.explorerMoveEventOrder.push(key);
-
-    if (this.explorerMoveEventOrder.length > this.MAX_EXPLORER_MOVE_EVENT_CACHE_SIZE) {
-      const oldestKey = this.explorerMoveEventOrder.shift();
-      if (oldestKey) {
-        this.explorerMoveEventCache.delete(oldestKey);
-      }
-    }
-  }
-
-  private getCachedExplorerMoveEvent(
-    explorerId: ID | null,
-    timestamp: number | null,
-  ): ExplorerMoveSystemUpdate | undefined {
-    const key = this.getExplorerMoveCacheKey(explorerId, timestamp);
-    if (!key) {
-      return undefined;
-    }
-    const val = this.explorerMoveEventCache.get(key);
-    if (val) {
-      console.log("[getCachedExplorerMoveEvent] hit:", val);
-    }
-    return val;
-  }
-
-  private getExplorerMoveCacheKey(explorerId: ID | null, timestamp: number | null): string | null {
-    if (explorerId === null || timestamp === null) {
-      return null;
-    }
-
-    return `${explorerId}-${timestamp}`;
-  }
-
-  private mapStoryEventPayload(currentState: any): StoryEventSystemUpdate {
-    const owner = this.normalizeOptionalValue<string | bigint | number>(currentState.owner);
-    const entityId = this.normalizeOptionalValue<number | string>(currentState.entity_id);
-    console.log({ currentState });
-
-    const ownerAddress = owner === null ? null : this.stringifyValue(owner);
-    const numericEntityId = entityId === null ? null : Number(entityId);
-    const safeEntityId = numericEntityId === null || Number.isNaN(numericEntityId) ? null : numericEntityId;
-
-    const txHash = currentState.tx_hash ? this.stringifyValue(currentState.tx_hash) : "";
-    const timestamp = this.toNumber(currentState?.timestamp) ?? 0;
-
-    const storyVariant = this.extractStoryVariant(currentState.story);
-    const storyType = storyVariant.storyType;
-    let storyPayload = storyVariant.storyPayload;
-
-    console.log({ storyPayload, storyType });
-
-    if ((!storyPayload || storyType === "Unknown") && currentState.story) {
-      console.debug("ℹ️ StoryEvent: Unparsed payload", {
-        story: currentState.story,
-        storyType,
-        storyPayload,
-      });
-    }
-
-    if ((!storyPayload || Object.keys(storyPayload).length === 0) && storyType === "ExplorerMoveStory") {
-      const fallback = this.getCachedExplorerMoveEvent(safeEntityId, timestamp);
-      if (fallback) {
-        storyPayload = {
-          explorer_id: fallback.explorerId,
-          // reward_resource_type: fallback.resourceId,
-          // reward_resource_amount: fallback.rawAmount,
-          explore_find: fallback.exploreFind ?? undefined,
-        } as Record<string, unknown>;
-      }
-    }
-
-    const ownerName = ownerAddress
-      ? getAddressName(ownerAddress as unknown as ContractAddress, this.setup.components) || null
-      : null;
-
-    if (safeEntityId === null) {
-      this.logMissingEntityId("mapStoryEventPayload", { currentState });
-    }
-
-    const val = {
-      ownerAddress,
-      ownerName,
-      entityId: safeEntityId,
-      txHash,
-      timestamp,
-      storyType,
-      storyPayload,
-      rawStory: currentState.story,
-    };
-    // console.log("[mapStoryEventPayload] update:", val);
-
-    return val;
-  }
-
-  private normalizeOptionalValue<T>(value: unknown): T | null {
-    if (value === undefined || value === null) {
-      return null;
-    }
-
-    if (typeof value === "object") {
-      if ("Some" in (value as Record<string, unknown>)) {
-        return this.normalizeOptionalValue<T>((value as Record<string, unknown>).Some);
-      }
-
-      if ("None" in (value as Record<string, unknown>)) {
-        return null;
-      }
-    }
-
-    if (typeof value === "string") {
-      if (value === "0x0" || value === "0" || value.trim() === "") {
-        return null;
-      }
-
-      return value as T;
-    }
-
-    if (typeof value === "number") {
-      return value === 0 ? null : (value as T);
-    }
-
-    if (typeof value === "bigint") {
-      return value === 0n ? null : (value as T);
-    }
-
-    return value as T;
   }
 
   private toNumber(value: unknown): number | null {
@@ -1497,93 +1046,6 @@ export class WorldUpdateListener {
       } catch (error) {
         return null;
       }
-    }
-
-    return null;
-  }
-
-  private stringifyValue(value: unknown): string {
-    if (typeof value === "string") {
-      return value;
-    }
-
-    if (typeof value === "bigint") {
-      return `0x${value.toString(16)}`;
-    }
-
-    if (typeof value === "number") {
-      return Number.isInteger(value) ? value.toString() : value.toFixed(2);
-    }
-
-    if (value && typeof value === "object" && "toString" in value) {
-      return String(value as { toString: () => string });
-    }
-
-    return String(value ?? "");
-  }
-
-  private extractStoryVariant(story: unknown): { storyType: string; storyPayload: Record<string, unknown> | null } {
-    const variant = this.unwrapSchemaEnum(story);
-    if (!variant) {
-      return { storyType: "Unknown", storyPayload: null };
-    }
-
-    const normalizedPayload = this.normalizeSchemaValue(variant.payload);
-
-    const val = {
-      storyType: variant.name,
-      storyPayload:
-        normalizedPayload && typeof normalizedPayload === "object"
-          ? (normalizedPayload as Record<string, unknown>)
-          : normalizedPayload !== undefined && normalizedPayload !== null
-            ? { value: normalizedPayload }
-            : null,
-    };
-    console.log("[extractStoryVariant] update:", val);
-
-    return val;
-  }
-
-  private unwrapSchemaEnum(value: unknown): { name: string; payload: unknown } | null {
-    if (value === undefined || value === null) {
-      return null;
-    }
-
-    if (typeof value === "string") {
-      return { name: value, payload: null };
-    }
-
-    if (Array.isArray(value)) {
-      if (value.length === 2 && typeof value[0] === "string") {
-        return { name: value[0], payload: value[1] };
-      }
-      return null;
-    }
-
-    if (typeof value !== "object") {
-      return null;
-    }
-
-    const record = value as Record<string, unknown>;
-
-    if (typeof record.__kind === "string") {
-      const payload = record.value ?? record[record.__kind];
-      return { name: record.__kind, payload };
-    }
-
-    if (typeof record.kind === "string") {
-      const payload = record.value ?? record[record.kind];
-      return { name: record.kind, payload };
-    }
-
-    const entries = Object.entries(record);
-    if (entries.length === 1 && typeof entries[0][0] === "string") {
-      return { name: entries[0][0], payload: entries[0][1] };
-    }
-
-    // Some schema values wrap the variant in a `value` property
-    if ("value" in record) {
-      return this.unwrapSchemaEnum(record.value);
     }
 
     return null;

@@ -453,13 +453,18 @@ export function defineContractComponents(world: World) {
             current: RecsType.Number,
             max: RecsType.Number,
           },
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
-            customTypes: ["Population"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Population", "Coord"],
           },
         },
       );
@@ -631,13 +636,18 @@ export function defineContractComponents(world: World) {
           incr_resource_rate_end_tick: RecsType.Number,
           incr_labor_rate_end_tick: RecsType.Number,
           incr_troop_rate_end_tick: RecsType.Number,
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "ProductionBoostBonus",
-            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32"],
-            customTypes: [],
+            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Coord"],
           },
         },
       );
@@ -1176,6 +1186,7 @@ export function defineContractComponents(world: World) {
               "u16",
               "u32",
               "u32",
+              "bool",
               "u32",
               "u32",
             ],
@@ -2134,6 +2145,11 @@ const eventsComponents = (world: World) => {
             attacker_owner: RecsType.Number,
             defender_owner: RecsType.Number,
             winner_id: RecsType.Number,
+            coord: {
+              alt: RecsType.Boolean,
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
             max_reward: RecsType.StringArray,
             timestamp: RecsType.Number,
           },
@@ -2141,7 +2157,7 @@ const eventsComponents = (world: World) => {
             metadata: {
               namespace: "s1_eternum",
               name: "BattleEvent",
-              types: ["u32", "u32", "u32", "u32", "u32", "Span<(u8, u128)>", "u64"],
+              types: ["u32", "u32", "u32", "u32", "u32", "bool", "u32", "u32", "Span<(u8, u128)>", "u64"],
               customTypes: [],
             },
           },
@@ -2271,13 +2287,18 @@ const eventsComponents = (world: World) => {
             explorer_owner_address: RecsType.String,
             reward_resource_id: RecsType.Number,
             reward_resource_amount: RecsType.BigInt,
+            coord: {
+              alt: RecsType.Boolean,
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "s1_eternum",
               name: "ExplorerRewardEvent",
-              types: ["u32", "u32", "ContractAddress", "u8", "u128", "u64"],
+              types: ["u32", "u32", "ContractAddress", "u8", "u128", "bool", "u32", "u32", "u64"],
               customTypes: [],
             },
           },

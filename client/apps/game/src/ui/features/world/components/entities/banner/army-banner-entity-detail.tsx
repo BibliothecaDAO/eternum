@@ -24,6 +24,7 @@ import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { EXPLORATION_STRATEGIES } from "@/automation/exploration";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
+import { ActiveRelicEffects } from "../active-relic-effects";
 import { ArmyWarning } from "../../armies/army-warning";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
@@ -144,6 +145,8 @@ const ArmyBannerEntityDetailContent = memo(
         {hasWarnings && explorerResources && structureResources ? (
           <ArmyWarning army={explorer} explorerResources={explorerResources} structureResources={structureResources} />
         ) : null}
+
+        {relicEffects.length > 0 && <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact />}
 
         <div className="flex flex-col gap-2">
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relics</span>

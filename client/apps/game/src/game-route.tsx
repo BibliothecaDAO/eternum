@@ -11,7 +11,7 @@ import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
-import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
+import { StoryEventToastBridge } from "./ui/features/story-events";
 import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
 import { World } from "./ui/layouts/world";
 import { LoadingScreen } from "./ui/modules/loading-screen";
@@ -32,14 +32,12 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
     <DojoProvider value={setupResult} account={account}>
       <MetagameProvider>
         <ErrorBoundary>
-          <StoryEventToastProvider>
-            <StoryEventToastBridge />
-            <TransactionListenerBridge />
-            <TransactionNotification />
-            <World backgroundImage={backgroundImage} />
-            <WorldLoading />
-            <Toaster />
-          </StoryEventToastProvider>
+          <StoryEventToastBridge />
+          <TransactionListenerBridge />
+          <TransactionNotification />
+          <World backgroundImage={backgroundImage} />
+          <WorldLoading />
+          <Toaster />
         </ErrorBoundary>
       </MetagameProvider>
     </DojoProvider>

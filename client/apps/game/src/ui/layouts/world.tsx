@@ -3,7 +3,6 @@ import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { Leva } from "leva";
 import { env } from "../../../env";
 import { Tooltip } from "../design-system/molecules/tooltip";
-import { StoryEventStream } from "../features";
 import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
@@ -88,7 +87,6 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
     <RealmTransferManager zIndex={100} />
     <PlayOverlayManager backgroundImage={backgroundImage} />
     <CombatSimulation />
-    <StoryEventStream />
   </>
 );
 
