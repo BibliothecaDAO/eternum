@@ -55,6 +55,8 @@ pub struct StructureBuildings {
     pub packed_counts_3: u128,
     // population
     pub population: Population,
+    // structure coordinate for spatial filtering
+    pub coord: Coord,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Default, DojoStore)]
@@ -620,8 +622,9 @@ pub impl BuildingImpl of BuildingTrait {
         population.increase_capacity(building_category_config.capacity_grant.into());
         population.assert_within_capacity(building_config.base_population);
 
-        // set population
+        // set population and coord
         structure_buildings.population = population;
+        structure_buildings.coord = outer_entity_coord;
         world.write_model(@structure_buildings);
 
         // emit event
@@ -785,8 +788,9 @@ pub impl BuildingImpl of BuildingTrait {
         population.decrease_population(building_category_config.population_cost.into());
         population.assert_within_capacity(building_config.base_population);
 
-        // set population
+        // set population and coord
         structure_buildings.population = population;
+        structure_buildings.coord = outer_entity_coord;
         world.write_model(@structure_buildings);
 
         let destroyed_building_category = building.category;
