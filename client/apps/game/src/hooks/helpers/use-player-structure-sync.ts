@@ -34,7 +34,7 @@ export const usePlayerStructureSync = () => {
           clauses: structureEntityIds.map((id) => ({
             Keys: {
               keys: [id.toString()],
-              pattern_matching: "FixedLen" as PatternMatching,
+              pattern_matching: "VariableLen" as PatternMatching,
               models: PLAYER_STRUCTURE_MODELS,
             },
           })),
