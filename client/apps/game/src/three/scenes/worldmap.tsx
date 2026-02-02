@@ -2093,6 +2093,22 @@ export default class WorldmapScene extends HexagonScene {
           this.armyStructureOwners.delete(entityId);
           return;
         }
+      } else {
+        // New army with 0n owner - MapDataStore likely hasn't cached it yet.
+        // Resolve owner directly from ECS Structure component using ownerStructureId.
+        const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
+        if (resolvedStructureId) {
+          try {
+            const components = this.dojo.components as any;
+            const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
+            const structure = getComponentValue(components.Structure, structureEntity);
+            if (structure?.owner) {
+              actualOwnerAddress = BigInt(structure.owner);
+            }
+          } catch {
+            // Fall through with 0n if ECS lookup fails
+          }
+        }
       }
     }
 
