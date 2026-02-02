@@ -727,6 +727,14 @@ export class StructureManager {
     let finalGuardArmies = update.guardArmies;
     let finalActiveProductions = update.activeProductions;
 
+    // Preserve existing activeProductions if the structure already has them.
+    // The real-time onStructureBuildingsUpdate subscription is the authoritative source
+    // for building data, while this update path reads from MapDataStore (SQL cache) which
+    // refreshes on a timer and may be stale.
+    if (existingStructure?.activeProductions && existingStructure.activeProductions.length > 0) {
+      finalActiveProductions = existingStructure.activeProductions;
+    }
+
     const battleData = update.battleData ?? {};
     let { battleCooldownEnd } = battleData as { battleCooldownEnd?: number };
     const {

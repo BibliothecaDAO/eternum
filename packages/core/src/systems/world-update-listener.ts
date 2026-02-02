@@ -631,6 +631,8 @@ export class WorldUpdateListener {
                 }
               }
 
+              this.mapDataStore.updateStructureBuildings(entityId, activeProductions);
+
               return {
                 entityId,
                 activeProductions,
