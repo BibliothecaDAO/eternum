@@ -1585,45 +1585,34 @@ Key design decisions:
 
 **Problem:** Spires are placed at fixed locations on the Ethereal layer. If a Bitcoin Mine (or other structure) is discovered at a tile that is later designated as a spire location, there's a collision.
 
-### Proposed Solutions
+**Constraints:**
+- Spire locations expand dynamically as more realms settle (cannot pre-reserve)
+- Destroying player structures is not acceptable
 
-**Option A: Reservation System (Preventive)**
-
-Spire locations are pre-reserved in `StructureReservation` model before the game starts. The discovery lottery already checks `structure_reservation.reserved` and skips structure creation on reserved tiles.
-
-- **Pros:** Clean, no collision possible
-- **Cons:** Reduces discoverable area, spire locations must be known upfront
-
-**Option B: Spire Takes Priority (Destructive)**
-
-When a spire is placed, any existing structure at that location is destroyed. The structure owner loses the mine and any resources inside.
-
-- **Pros:** Simple to implement, spires always work
-- **Cons:** Player loses investment unexpectedly, feels unfair
+### Viable Solutions
 
 **Option C: Structure Relocation (Displacement)**
 
-When a spire is placed, any existing structure is moved to the nearest unoccupied tile. Owner retains the structure.
+When a spire needs to spawn, any existing structure at that location is moved to the nearest unoccupied tile. Owner retains the structure and all resources.
 
-- **Pros:** Fair to players, no loss
-- **Cons:** Complex to implement, may cause cascading collisions
+- **Pros:** Fair to players, no loss of investment
+- **Cons:** Complex to implement, need to update tile occupancy for both old and new locations, may need to handle edge case of no available nearby tiles
 
 **Option D: Spire Relocation (Alternative)**
 
 If a structure exists at a spire's designated location, the spire spawns at the nearest valid unoccupied tile instead.
 
-- **Pros:** Player investment protected
-- **Cons:** Spire placement becomes unpredictable, may affect game balance
+- **Pros:** Player investment fully protected, simpler than moving structures
+- **Cons:** Spire placement becomes slightly unpredictable, players could strategically block spire locations
 
-**Option E: Conditional Discovery (Hybrid)**
+### Decision Needed
 
-Bitcoin mines can only be discovered on tiles that are NOT potential spire locations. This requires knowing all possible spire locations at discovery time.
+Which approach should be implemented?
 
-- **Pros:** No collision possible, player always knows mine is safe
-- **Cons:** Requires spire location data at discovery, reduces discoverable area
+- **Option C** prioritizes spire placement consistency
+- **Option D** prioritizes simplicity and player experience
 
-### Recommendation
-
-**Option A (Reservation System)** is the cleanest solution if spire locations are known before the season starts. The existing `StructureReservation` model and check in `find_treasure` already support this pattern.
-
-If spire locations are dynamic or unknown at season start, **Option D (Spire Relocation)** is the most player-friendly choice that doesn't punish exploration.
+Either way, implementation requires:
+1. Check for existing structure at spire spawn location
+2. Find nearest unoccupied tile (ring search outward)
+3. Update the appropriate entity's location and tile occupancy
