@@ -453,13 +453,18 @@ export function defineContractComponents(world: World) {
             current: RecsType.Number,
             max: RecsType.Number,
           },
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
-            customTypes: ["Population"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Population", "Coord"],
           },
         },
       );
@@ -631,13 +636,18 @@ export function defineContractComponents(world: World) {
           incr_resource_rate_end_tick: RecsType.Number,
           incr_labor_rate_end_tick: RecsType.Number,
           incr_troop_rate_end_tick: RecsType.Number,
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "ProductionBoostBonus",
-            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32"],
-            customTypes: [],
+            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Coord"],
           },
         },
       );
