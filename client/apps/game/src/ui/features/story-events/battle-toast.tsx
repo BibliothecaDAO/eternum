@@ -36,13 +36,13 @@ export function BattleToast({
   const Icon = theme.icon;
 
   return (
-    <div className="pointer-events-auto overflow-hidden rounded-lg border border-amber-500/40 bg-zinc-950/80 px-3 py-3 text-[11px] leading-tight text-zinc-200 shadow-lg shadow-amber-900/25 w-[var(--width)]">
+    <div className="panel-wood pointer-events-auto overflow-hidden rounded-lg px-3 py-3 text-[11px] leading-tight text-gold shadow-md w-[var(--width)]">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-100">
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-gold">
             <Icon className={cn("h-3 w-3 flex-shrink-0", theme.highlight)} aria-hidden />
             <span className="truncate">{attackerLabel}</span>
-            <span className="text-amber-400">vs</span>
+            <span className="text-gold/60">vs</span>
             <span className="truncate">{defenderLabel}</span>
           </div>
         </div>
@@ -57,9 +57,9 @@ export function BattleToast({
               toast.dismiss(toastId);
             }}
             className={cn(
-              "inline-flex items-center gap-2 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
-              "border-amber-400/60 bg-amber-500/10 text-amber-50 hover:bg-amber-500/20",
-              !location && "cursor-not-allowed border-amber-400/20 text-amber-200/50 hover:bg-amber-500/10",
+              "button-wood inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+              "border-gold/25 bg-brown/50 text-gold hover:border-gold/45 hover:bg-brown/70",
+              !location && "cursor-not-allowed opacity-40 hover:border-gold/25 hover:bg-brown/50",
             )}
           >
             <Navigation className="h-3 w-3" />
@@ -68,20 +68,20 @@ export function BattleToast({
           <button
             type="button"
             onClick={() => toast.dismiss(toastId)}
-            className="rounded p-0.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="rounded p-0.5 text-gold/40 hover:text-gold transition-colors"
           >
             <X className="h-3 w-3" />
           </button>
         </div>
       </div>
 
-      <div className="mt-2 flex flex-col gap-1 text-[11px] text-amber-50">
+      <div className="mt-2 flex flex-col gap-1 text-[11px] text-gold/80">
         <div className="leading-snug">
           <span>{attackerTroops}</span>
-          <span className="px-1 text-amber-300">vs</span>
+          <span className="px-1 text-gold/50">vs</span>
           <span>{defenderTroops}</span>
         </div>
-        {winnerLabel && <div className="font-semibold text-amber-200">Winner: {formatWinnerName(winnerLabel)}</div>}
+        {winnerLabel && <div className="font-semibold text-brilliance">Winner: {formatWinnerName(winnerLabel)}</div>}
       </div>
     </div>
   );
