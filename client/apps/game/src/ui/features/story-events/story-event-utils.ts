@@ -47,7 +47,7 @@ export interface BattleLocation {
   type: "structure" | "army";
 }
 
-export const formatEnum = (value: unknown): string | undefined => {
+const formatEnum = (value: unknown): string | undefined => {
   if (!value) return undefined;
   if (typeof value === "string") return value;
   if (typeof value === "number" && Number.isFinite(value)) return value.toString();
@@ -76,7 +76,7 @@ export const parseNumeric = (value: unknown): number | null => {
   return null;
 };
 
-export const formatCount = (value: number | null): string | undefined => {
+const formatCount = (value: number | null): string | undefined => {
   if (value === null || !Number.isFinite(value)) return undefined;
   const absValue = Math.abs(value);
   if (absValue < 1000) {
@@ -121,14 +121,17 @@ export const formatPlayerLabel = (value: unknown): string => {
   return String(value);
 };
 
-export const extractRoleLabel = (description: string | undefined, role: "Attacker" | "Defender"): string | undefined => {
+export const extractRoleLabel = (
+  description: string | undefined,
+  role: "Attacker" | "Defender",
+): string | undefined => {
   if (!description) return undefined;
   const pattern = new RegExp(`${role}\\s*\\[(.*?)\\]`);
   const match = description.match(pattern);
   return match?.[1];
 };
 
-export interface StoryDescriptionSegment {
+interface StoryDescriptionSegment {
   label?: string;
   value: string;
 }

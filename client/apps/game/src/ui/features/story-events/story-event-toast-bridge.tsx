@@ -208,10 +208,18 @@ export function StoryEventToastBridge() {
 
       const attackerTroops =
         normalizePresentationTroops(attackerForces) ??
-        formatTroopSummary(event.battle_attacker_troops_before, event.battle_attacker_troops_type, event.battle_attacker_troops_tier);
+        formatTroopSummary(
+          event.battle_attacker_troops_before,
+          event.battle_attacker_troops_type,
+          event.battle_attacker_troops_tier,
+        );
       const defenderTroops =
         normalizePresentationTroops(defenderForces) ??
-        formatTroopSummary(event.battle_defender_troops_before, event.battle_defender_troops_type, event.battle_defender_troops_tier);
+        formatTroopSummary(
+          event.battle_defender_troops_before,
+          event.battle_defender_troops_type,
+          event.battle_defender_troops_tier,
+        );
 
       const location = getBattleLocation(event);
       const locationLabel = getLocationLabel(location);
