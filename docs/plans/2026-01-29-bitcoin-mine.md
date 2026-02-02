@@ -1578,3 +1578,52 @@ Key design decisions:
 - **Work = Labor**: 1:1 ratio where labor consumed equals work produced
 - **Army-only transport**: Satoshis cannot be carried by donkeys, matching lore
 - **Permissionless lottery**: Anyone can execute phase lottery after phase ends
+
+---
+
+## Open Design Question: Spire-Structure Collision
+
+**Problem:** Spires are placed at fixed locations on the Ethereal layer. If a Bitcoin Mine (or other structure) is discovered at a tile that is later designated as a spire location, there's a collision.
+
+### Proposed Solutions
+
+**Option A: Reservation System (Preventive)**
+
+Spire locations are pre-reserved in `StructureReservation` model before the game starts. The discovery lottery already checks `structure_reservation.reserved` and skips structure creation on reserved tiles.
+
+- **Pros:** Clean, no collision possible
+- **Cons:** Reduces discoverable area, spire locations must be known upfront
+
+**Option B: Spire Takes Priority (Destructive)**
+
+When a spire is placed, any existing structure at that location is destroyed. The structure owner loses the mine and any resources inside.
+
+- **Pros:** Simple to implement, spires always work
+- **Cons:** Player loses investment unexpectedly, feels unfair
+
+**Option C: Structure Relocation (Displacement)**
+
+When a spire is placed, any existing structure is moved to the nearest unoccupied tile. Owner retains the structure.
+
+- **Pros:** Fair to players, no loss
+- **Cons:** Complex to implement, may cause cascading collisions
+
+**Option D: Spire Relocation (Alternative)**
+
+If a structure exists at a spire's designated location, the spire spawns at the nearest valid unoccupied tile instead.
+
+- **Pros:** Player investment protected
+- **Cons:** Spire placement becomes unpredictable, may affect game balance
+
+**Option E: Conditional Discovery (Hybrid)**
+
+Bitcoin mines can only be discovered on tiles that are NOT potential spire locations. This requires knowing all possible spire locations at discovery time.
+
+- **Pros:** No collision possible, player always knows mine is safe
+- **Cons:** Requires spire location data at discovery, reduces discoverable area
+
+### Recommendation
+
+**Option A (Reservation System)** is the cleanest solution if spire locations are known before the season starts. The existing `StructureReservation` model and check in `find_treasure` already support this pattern.
+
+If spire locations are dynamic or unknown at season start, **Option D (Spire Relocation)** is the most player-friendly choice that doesn't punish exploration.
