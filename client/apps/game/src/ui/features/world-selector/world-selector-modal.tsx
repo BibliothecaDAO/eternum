@@ -286,24 +286,45 @@ export const WorldSelectorModal = ({
     };
   }, [playerFeltLiteral, factoryWorlds, factoryAvailability, savedWorldRefs, savedAvailability, playerRegistration]);
 
-  // Build factory games list from cached availability results
+  // Build factory games list from cached availability results (filtered by active chain)
   const factoryGames = useMemo(() => {
-    return factoryWorlds.map((world) => {
+    return factoryWorlds
+      .filter((world) => normalizeFactoryChain(world.chain) === activeFactoryChain)
+      .map((world) => {
+        const worldKey = getWorldKey(world);
+        const availability = factoryAvailability.get(worldKey);
+        const status = getAvailabilityStatus(availability);
+        return {
+          name: world.name,
+          chain: world.chain,
+          worldKey,
+          status,
+          startMainAt: availability?.meta?.startMainAt ?? null,
+          endAt: availability?.meta?.endAt ?? null,
+          registrationCount: availability?.meta?.registrationCount ?? null,
+          isRegistered: playerRegistration[worldKey] ?? null,
+        };
+      });
+  }, [factoryWorlds, factoryAvailability, playerRegistration, activeFactoryChain]);
+
+  // Count online games per chain for the toggle badges
+  const gameCountsByChain = useMemo(() => {
+    const counts: Record<Chain, number> = { mainnet: 0, slot: 0, slottest: 0, local: 0, sepolia: 0 };
+    factoryWorlds.forEach((world) => {
       const worldKey = getWorldKey(world);
       const availability = factoryAvailability.get(worldKey);
-      const status = getAvailabilityStatus(availability);
-      return {
-        name: world.name,
-        chain: world.chain,
-        worldKey,
-        status,
-        startMainAt: availability?.meta?.startMainAt ?? null,
-        endAt: availability?.meta?.endAt ?? null,
-        registrationCount: availability?.meta?.registrationCount ?? null,
-        isRegistered: playerRegistration[worldKey] ?? null,
-      };
+      const isOnline = availability?.isAvailable && !availability.isLoading;
+      const startMainAt = availability?.meta?.startMainAt ?? null;
+      const endAt = availability?.meta?.endAt ?? null;
+      // Only count ongoing or upcoming games (not ended)
+      const gameIsActive = isOnline && !isEnded(startMainAt, endAt);
+      if (gameIsActive) {
+        const normalizedChain = normalizeFactoryChain(world.chain);
+        counts[normalizedChain]++;
+      }
     });
-  }, [factoryWorlds, factoryAvailability, playerRegistration]);
+    return counts;
+  }, [factoryWorlds, factoryAvailability, isEnded]);
 
   // Build savedWorldMeta from cached availability for backwards compatibility
   const savedWorldMeta = useMemo(() => {
@@ -387,7 +408,6 @@ export const WorldSelectorModal = ({
   };
 
   const handleEnterFactoryGame = (game: FactoryGameDisplay) => {
-    if (normalizeFactoryChain(game.chain) !== activeFactoryChain) return;
     close(null, false);
     onConfirm({ name: game.name, chain: game.chain });
   };
@@ -457,8 +477,7 @@ export const WorldSelectorModal = ({
     const isOnline = fg.status === "ok";
     const isUnconfigured = fg.startMainAt == null && isOnline;
     const gameIsEnded = isEnded(fg.startMainAt, fg.endAt);
-    const isChainMatch = normalizeFactoryChain(fg.chain) === activeFactoryChain;
-    const isInteractive = isOnline && isChainMatch;
+    const isInteractive = isOnline;
     const isSelected = selectedFactory ? getWorldKey(selectedFactory) === fg.worldKey : false;
 
     return (
@@ -479,10 +498,7 @@ export const WorldSelectorModal = ({
                 ? "border-gold/30 bg-gold/5 hover:bg-gold/10 hover:border-gold/40 opacity-80"
                 : "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
         }`}
-        onClick={() => {
-          if (!isChainMatch) return;
-          setSelectedFactory(fg);
-        }}
+        onClick={() => setSelectedFactory(fg)}
         onDoubleClick={() => isInteractive && handleEnterFactoryGame(fg)}
       >
         <div className="flex items-start justify-between gap-2 sm:gap-3">
@@ -500,7 +516,7 @@ export const WorldSelectorModal = ({
                   fg.chain === "mainnet"
                     ? "border-brilliance/30 bg-brilliance/10 text-brilliance"
                     : "border-gold/30 bg-gold/10 text-gold/70"
-                } ${isChainMatch ? "" : "opacity-60"}`}
+                }`}
               >
                 {fg.chain}
               </span>
@@ -602,24 +618,46 @@ export const WorldSelectorModal = ({
                   <button
                     type="button"
                     onClick={() => handleSwitchChain("mainnet")}
-                    className={`min-h-11 px-3 sm:px-2.5 py-1 sm:py-1 text-[10px] font-semibold uppercase rounded-full transition ${
+                    className={`min-h-11 px-3 sm:px-2.5 py-1 sm:py-1 text-[10px] font-semibold uppercase rounded-full transition flex items-center gap-1.5 ${
                       activeFactoryChain === "mainnet"
                         ? "bg-gold/20 text-gold"
                         : "text-gold/60 hover:text-gold hover:bg-gold/10"
                     }`}
                   >
                     Mainnet
+                    {gameCountsByChain.mainnet > 0 && (
+                      <span
+                        className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-bold rounded-full ${
+                          activeFactoryChain === "mainnet"
+                            ? "bg-brilliance/20 text-brilliance"
+                            : "bg-gold/10 text-gold/60"
+                        }`}
+                      >
+                        {gameCountsByChain.mainnet}
+                      </span>
+                    )}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleSwitchChain("slot")}
-                    className={`min-h-11 px-3 sm:px-2.5 py-1 sm:py-1 text-[10px] font-semibold uppercase rounded-full transition ${
+                    className={`min-h-11 px-3 sm:px-2.5 py-1 sm:py-1 text-[10px] font-semibold uppercase rounded-full transition flex items-center gap-1.5 ${
                       activeFactoryChain === "slot"
                         ? "bg-gold/20 text-gold"
                         : "text-gold/60 hover:text-gold hover:bg-gold/10"
                     }`}
                   >
                     Slot
+                    {gameCountsByChain.slot > 0 && (
+                      <span
+                        className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-bold rounded-full ${
+                          activeFactoryChain === "slot"
+                            ? "bg-brilliance/20 text-brilliance"
+                            : "bg-gold/10 text-gold/60"
+                        }`}
+                      >
+                        {gameCountsByChain.slot}
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
