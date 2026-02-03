@@ -1,7 +1,8 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactoryWorlds, type FactoryWorld } from "@/hooks/use-factory-worlds";
-import { useWorldsAvailability, getAvailabilityStatus, getWorldKey } from "@/hooks/use-world-availability";
+import { useWorldsAvailability, getAvailabilityStatus, getWorldKey, type WorldConfigMeta } from "@/hooks/use-world-availability";
+import { WorldRegistrationButton } from "./components/WorldRegistrationButton";
 import {
   clearActiveWorld,
   deleteWorldProfile,
@@ -104,6 +105,8 @@ type FactoryGameDisplay = {
   endAt: number | null;
   registrationCount: number | null;
   isRegistered: boolean | null;
+  /** Full config for registration */
+  config: WorldConfigMeta | null;
 };
 
 type SavedWorldDisplay = {
@@ -303,6 +306,7 @@ export const WorldSelectorModal = ({
           endAt: availability?.meta?.endAt ?? null,
           registrationCount: availability?.meta?.registrationCount ?? null,
           isRegistered: playerRegistration[worldKey] ?? null,
+          config: availability?.meta ?? null,
         };
       });
   }, [factoryWorlds, factoryAvailability, playerRegistration, activeFactoryChain]);
@@ -540,6 +544,17 @@ export const WorldSelectorModal = ({
               isOnline,
               isLoading: fg.status === "checking",
             })}
+            {/* Registration Button */}
+            <div className="mt-2">
+              <WorldRegistrationButton
+                worldName={fg.name}
+                chain={fg.chain}
+                config={fg.config}
+                isRegistered={fg.isRegistered === true}
+                isOnline={isOnline}
+                onRegistrationComplete={() => void handleRefresh()}
+              />
+            </div>
           </div>
 
           <div className="flex flex-col items-end gap-2">
