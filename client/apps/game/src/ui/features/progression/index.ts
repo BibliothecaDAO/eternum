@@ -2,8 +2,6 @@
 // This feature handles player progression and learning systems
 
 // Quest System - Exports used externally
-export { QuestModal } from "./quests/quest-modal";
-export { CurrentQuest, QuestRealm } from "./quests/quest-realm-component";
 export * from "./quests/quest-utils";
 
 // Tutorial & Hints System - Exports used externally

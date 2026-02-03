@@ -622,6 +622,17 @@ export class MapDataStore {
     }
   }
 
+  public updateStructureBuildings(entityId: number, activeProductions: ActiveProduction[]): void {
+    const structure = this.structuresMap.get(entityId);
+
+    if (!structure) {
+      return;
+    }
+
+    structure.activeProductions = activeProductions;
+    this.structuresMap.set(entityId, structure);
+  }
+
   public updateStructureGuards(entityId: number, guardArmies: GuardArmy[], battleCooldownEnd?: number): void {
     const structure = this.structuresMap.get(entityId);
 

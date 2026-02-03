@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import PackageOpen from "lucide-react/dist/esm/icons/package-open";
 import { memo, useEffect, useState } from "react";
 
 export const AllResourceArrivals = memo(
@@ -18,17 +19,20 @@ export const AllResourceArrivals = memo(
 
     if (!hasArrivals) {
       return (
-        <div className="h-full flex items-center justify-center p-4">
-          <div className="text-center ">
-            <p className="text-lg font-medium mb-2">No resource arrivals</p>
-            <p className="text-sm">There are no incoming resources</p>
+        <div className="h-full flex items-center justify-center p-6">
+          <div className="flex flex-col items-center gap-3 text-gold/40">
+            <PackageOpen size={28} strokeWidth={1.5} />
+            <p className="text-xs uppercase tracking-widest">No incoming transfers</p>
           </div>
         </div>
       );
     }
 
     return (
-      <div className={`p-2 flex flex-col space-y-1 overflow-y-auto gap-2 ${className}`}>
+      <div className={`p-3 flex flex-col overflow-y-auto gap-3 ${className}`}>
+        <p className="text-[10px] uppercase tracking-wider text-gold/40 px-1">
+          Arrived resources are auto-claimed into your structure's balance.
+        </p>
         {playerStructures.map((structure) => (
           <StructureArrivals key={structure.entityId} structure={structure} now={now} />
         ))}

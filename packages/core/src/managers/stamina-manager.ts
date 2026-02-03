@@ -31,15 +31,16 @@ export class StaminaManager {
 
   public static getStamina(troops: Troops, currentArmiesTick: number) {
     const lastRefillTick = troops.stamina.updated_tick;
+
     if (lastRefillTick >= BigInt(currentArmiesTick)) {
       return structuredClone(troops.stamina);
     }
 
     const staminaPerTick = configManager.getRefillPerTick();
-    const boostPercent = troops.boosts.incr_stamina_regen_percent_num;
+    const boostPercent = Number(troops.boosts.incr_stamina_regen_percent_num);
     const boostStaminaPerTick = Math.floor((staminaPerTick * boostPercent) / 10_000);
     const ticksSinceLastRefill = currentArmiesTick - Number(lastRefillTick);
-    const boostNumTicksPassed = Math.min(ticksSinceLastRefill, troops.boosts.incr_stamina_regen_tick_count);
+    const boostNumTicksPassed = Math.min(ticksSinceLastRefill, Number(troops.boosts.incr_stamina_regen_tick_count));
     const additionalStaminaBoost = boostNumTicksPassed * boostStaminaPerTick;
 
     const newStamina = this.refill(

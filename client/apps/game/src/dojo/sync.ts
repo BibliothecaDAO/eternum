@@ -23,10 +23,6 @@ let entityStreamSubscription: { cancel: () => void } | null = null;
 
 const GLOBAL_NON_SPATIAL_MODELS: string[] = [
   // Events
-  "s1_eternum-StoryEvent",
-  "s1_eternum-ExplorerMoveEvent",
-  "s1_eternum-ExplorerRewardEvent",
-  "s1_eternum-BattleEvent",
   "s1_eternum-OpenRelicChestEvent",
   // Guilds
   "s1_eternum-Guild",
@@ -43,25 +39,25 @@ const GLOBAL_NON_SPATIAL_MODELS: string[] = [
   "s1_eternum-WeightConfig",
   "s1_eternum-ResourceFactoryConfig",
   "s1_eternum-BuildingCategoryConfig",
-  "s1_eternum-ResourceBridgeWtlConfig",
   "s1_eternum-StructureLevelConfig",
-  "s1_eternum-SeasonPrize",
   "s1_eternum-SeasonEnded",
   "s1_eternum-QuestLevels",
   "s1_eternum-AddressName",
   "s1_eternum-PlayerRegisteredPoints",
   "s1_eternum-BlitzRealmPlayerRegister",
-  "s1_eternum-BlitzEntryTokenRegister",
   "s1_eternum-BlitzRealmSettleFinish",
   "s1_eternum-PlayersRankTrial",
   "s1_eternum-PlayersRankFinal",
   "s1_eternum-ResourceList",
   "s1_eternum-PlayerRank",
   "s1_eternum-RankPrize",
-  // Structure-scoped but non-spatial models (kept global for now)
-  "s1_eternum-StructureBuildings",
+];
+
+// Models synced per-player via a scoped subscription (see usePlayerStructureSync)
+export const PLAYER_STRUCTURE_MODELS: string[] = [
   "s1_eternum-ProductionBoostBonus",
   "s1_eternum-Resource",
+  "s1_eternum-ResourceArrival",
 ];
 
 const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_NON_SPATIAL_MODELS.map((model) => ({ model }));
@@ -243,41 +239,18 @@ export const syncEntitiesDebounced = async (
     }
   };
 
-  // Debug: Track update frequency
-  let entityUpdateCount = 0;
-  let eventUpdateCount = 0;
-  let lastLogTime = Date.now();
-  const LOG_INTERVAL = 5000; // Log every 5 seconds
-
   const entitySub = await client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Entity updated", data);
-    entityUpdateCount++;
     queueUpdate(data, "entity");
   });
 
   const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Event message updated", data.hashed_keys);
-    eventUpdateCount++;
     queueUpdate(data, "event");
   });
 
-  // Periodic logging of update rates
-  const debugInterval = setInterval(() => {
-    const now = Date.now();
-    const elapsed = (now - lastLogTime) / 1000;
-    const entityRate = entityUpdateCount / elapsed;
-    const eventRate = eventUpdateCount / elapsed;
-    console.log(
-      `[SYNC DEBUG] Entity updates: ${entityUpdateCount} (${entityRate.toFixed(1)}/sec), Event updates: ${eventUpdateCount} (${eventRate.toFixed(1)}/sec)`,
-    );
-    entityUpdateCount = 0;
-    eventUpdateCount = 0;
-    lastLogTime = now;
-  }, LOG_INTERVAL);
-
   return {
     cancel: () => {
-      clearInterval(debugInterval);
       entitySub.cancel();
       eventSub.cancel();
       queueProcessor.dispose();

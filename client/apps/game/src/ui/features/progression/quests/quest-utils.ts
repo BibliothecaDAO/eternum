@@ -3,7 +3,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
-export const useGetQuests = (gameAddress: string, questTileId: number) => {
+const useGetQuests = (gameAddress: string, questTileId: number) => {
   const {
     setup: { components },
   } = useDojo();
