@@ -6,8 +6,8 @@ import {
   configManager,
   ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
-  getBlockTimestamp,
   FELT_CENTER,
+  getBlockTimestamp,
   Position,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -749,7 +749,6 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   public selectArmy(
     armyId: number,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
-    questHexes: Map<number, Map<number, HexEntityInfo>>,
     chestHexes: Map<number, Map<number, HexEntityInfo>>,
   ): ActionPaths | null {
     if (!this.dojo) {
@@ -804,7 +803,6 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     row: number,
     store: any,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
-    questHexes: Map<number, Map<number, HexEntityInfo>>,
     chestHexes: Map<number, Map<number, HexEntityInfo>>,
   ): { shouldSelect: boolean; actionPaths?: ActionPaths } {
     const isDoubleClick = store.handleObjectClick(armyId, "army", col, row);
@@ -813,7 +811,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       return { shouldSelect: false };
     }
 
-    const actionPaths = this.selectArmy(armyId, structureHexes, questHexes, chestHexes);
+    const actionPaths = this.selectArmy(armyId, structureHexes, chestHexes);
     return { shouldSelect: true, actionPaths: actionPaths || undefined };
   }
 
