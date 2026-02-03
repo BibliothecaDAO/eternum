@@ -1,3 +1,10 @@
+pub mod artificer {
+    pub mod contracts;
+
+    #[cfg(test)]
+    mod tests;
+}
+
 pub mod config {
     pub mod contracts;
     #[cfg(test)]

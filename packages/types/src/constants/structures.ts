@@ -76,6 +76,7 @@ export enum BuildingType {
   ResourceWheat = 37,
   ResourceFish = 38,
   ResourceEssence = 39,
+  ResourceResearch = 40,
 }
 
 export const BuildingTypeToString: Record<BuildingType, string> = {
@@ -119,6 +120,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceWheat]: "Farm",
   [BuildingType.ResourceFish]: "Fishing Village",
   [BuildingType.ResourceEssence]: "Essence Mine",
+  [BuildingType.ResourceResearch]: "Research",
 };
 
 export function getBuildingCategory(category: BuildingType): CairoCustomEnum {
@@ -279,6 +281,8 @@ export function getProducedResource(category: BuildingType): ResourcesIds | unde
       return ResourcesIds.Wheat;
     case BuildingType.ResourceFish:
       return ResourcesIds.Fish;
+    case BuildingType.ResourceResearch:
+      return ResourcesIds.Research;
     default:
       return undefined;
   }

@@ -204,6 +204,9 @@ export const SEASON_POINT_REGISTRATION_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECO
 
 export const TRADE_MAX_COUNT = 10;
 
+// ----- Artificer ----- //
+export const ARTIFICER_RESEARCH_COST_FOR_RELIC = 50_000;
+
 export const AGENT_CONTROLLER_ADDRESS = "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344"; // set in indexer.sh
 export const AGENT_MAX_LIFETIME_COUNT = 10_000;
 export const AGENT_MAX_CURRENT_COUNT = 1_000;
@@ -509,6 +512,9 @@ export const EternumGlobalConfig: Config = {
     village_fp_per_sec: FAITH_VILLAGE_FP_PER_SEC,
     owner_share_percent: FAITH_OWNER_SHARE_PERCENT,
     reward_token: FAITH_REWARD_TOKEN,
+  },
+  artificer: {
+    research_cost_for_relic: ARTIFICER_RESEARCH_COST_FOR_RELIC,
   },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,

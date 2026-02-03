@@ -251,6 +251,7 @@ pub struct Resource {
     RELIC_E16_BALANCE: u128,
     RELIC_E17_BALANCE: u128,
     RELIC_E18_BALANCE: u128,
+    RESEARCH_BALANCE: u128,
     weight: Weight,
     STONE_PRODUCTION: Production,
     COAL_PRODUCTION: Production,
@@ -290,6 +291,7 @@ pub struct Resource {
     FISH_PRODUCTION: Production,
     LORDS_PRODUCTION: Production,
     ESSENCE_PRODUCTION: Production,
+    RESEARCH_PRODUCTION: Production,
 }
 
 
@@ -401,6 +403,7 @@ pub impl ResourceImpl of ResourceTrait {
             54 => selector!("RELIC_E16_BALANCE"),
             55 => selector!("RELIC_E17_BALANCE"),
             56 => selector!("RELIC_E18_BALANCE"),
+            57 => selector!("RESEARCH_BALANCE"),
             _ => panic!("Invalid resource type"),
         }
     }
@@ -447,6 +450,7 @@ pub impl ResourceImpl of ResourceTrait {
             36 => selector!("FISH_PRODUCTION"),
             37 => selector!("LORDS_PRODUCTION"),
             38 => selector!("ESSENCE_PRODUCTION"),
+            57 => selector!("RESEARCH_PRODUCTION"),
             _ => panic!("Invalid resource type"),
         }
     }

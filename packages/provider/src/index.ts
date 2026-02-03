@@ -3446,6 +3446,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_artificer_config(props: SystemProps.SetArtificerConfigProps) {
+    const { research_cost_for_relic, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_artificer_config",
+      calldata: [research_cost_for_relic],
+    });
+  }
+
   public async mint_test_realm(props: SystemProps.MintTestRealmProps) {
     const {
       token_id,

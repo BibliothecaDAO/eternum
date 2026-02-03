@@ -253,6 +253,11 @@ pub trait IFaithConfig<T> {
     );
 }
 
+#[starknet::interface]
+pub trait IArtificerConfig<T> {
+    fn set_artificer_config(ref self: T, research_cost_for_relic: u128);
+}
+
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
@@ -261,15 +266,15 @@ pub mod config_systems {
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
-        BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        FaithConfig, HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
-        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
-        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
-        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
-        WorldConfigUtilImpl,
+        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl,
+        BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig,
+        BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
+        HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+        ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig,
+        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+        VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
+        WorldConfig, WorldConfigUtilImpl,
     };
     use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;
@@ -1072,6 +1077,17 @@ pub mod config_systems {
                 reward_token,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("faith_config"), faith_config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IArtificerConfig of super::IArtificerConfig<ContractState> {
+        fn set_artificer_config(ref self: ContractState, research_cost_for_relic: u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let artificer_config = ArtificerConfig { research_cost_for_relic };
+            WorldConfigUtilImpl::set_member(ref world, selector!("artificer_config"), artificer_config);
         }
     }
 }

@@ -659,6 +659,10 @@ export interface SetFaithConfigProps extends SystemSigner {
   reward_token: BigNumberish;
 }
 
+export interface SetArtificerConfigProps extends SystemSigner {
+  research_cost_for_relic: BigNumberish;
+}
+
 export interface InitializeHyperstructureProps extends SystemSigner {
   hyperstructure_id: BigNumberish;
 }
