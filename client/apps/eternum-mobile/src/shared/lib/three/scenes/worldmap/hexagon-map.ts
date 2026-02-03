@@ -11,7 +11,7 @@ import { DojoResult } from "@bibliothecadao/react";
 import { ActorType, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
-import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManager } from "../../entity-managers";
+import { ArmyManager, BiomesManager, ChestManager, StructureManager } from "../../entity-managers";
 import { FXManager } from "../../managers/fx-manager";
 import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
@@ -42,7 +42,6 @@ export class HexagonMap {
   private highlightRenderer!: HighlightRenderer;
   private armyManager!: ArmyManager;
   private structureManager!: StructureManager;
-  private questManager!: QuestManager;
   private chestManager!: ChestManager;
   private selectionManager!: SelectionManager;
 
@@ -113,7 +112,6 @@ export class HexagonMap {
       // Refresh biome tiles when structures are updated
       this.biomesManager.refreshTileVisibility();
     });
-    this.questManager = new QuestManager(this.scene);
     this.chestManager = new ChestManager(this.scene);
     this.armyManager.setDependencies(this.dojo, this.fxManager, this.biomesManager.getExploredTiles());
     this.structureManager.setDependencies(this.dojo, this.biomesManager.getExploredTiles());
@@ -126,7 +124,6 @@ export class HexagonMap {
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyManager);
     this.selectionManager.registerObjectRenderer("structure", this.structureManager);
-    this.selectionManager.registerObjectRenderer("quest", this.questManager);
     this.selectionManager.registerObjectRenderer("chest", this.chestManager);
   }
 
@@ -140,8 +137,6 @@ export class HexagonMap {
     this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
       this.structureManager.handleBuildingUpdate(update),
     );
-    this.systemManager.Structure.onContribution((value) => this.structureManager.handleContributionUpdate(value));
-    this.systemManager.Quest.onTileUpdate((update) => this.questManager.handleSystemUpdate(update));
     this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
     this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
@@ -193,7 +188,6 @@ export class HexagonMap {
     await this.biomesManager.ensureMaterialsReady();
     await this.structureManager.ensureMaterialsReady();
     await this.armyManager.ensureMaterialsReady();
-    await this.questManager.ensureMaterialsReady();
     await this.chestManager.ensureMaterialsReady();
   }
 
@@ -399,7 +393,6 @@ export class HexagonMap {
     this.biomesManager.setVisibleBounds(bounds);
     this.armyManager.setVisibleBounds(bounds);
     this.structureManager.setVisibleBounds(bounds);
-    this.questManager.setVisibleBounds(bounds);
     this.chestManager.setVisibleBounds(bounds);
     console.log(`[RENDER-TIMING] Update bounds: ${(performance.now() - boundsUpdateStartTime).toFixed(2)}ms`);
   }
@@ -539,9 +532,6 @@ export class HexagonMap {
         console.log(`Help action at (${col}, ${row})`);
         this.handleHelpAction(actionPath, selectedObject.id);
         break;
-      case ActionType.Quest:
-        console.log(`Quest action at (${col}, ${row})`);
-        break;
       case ActionType.Chest:
         console.log(`Chest action at (${col}, ${row})`);
         this.chestManager.handleChestAction(selectedObject.id, actionPath, this.store);
@@ -559,7 +549,6 @@ export class HexagonMap {
     const normalized = position.getNormalized();
     const armyInfo = this.armyManager.getArmyHexes().get(normalized.x)?.get(normalized.y);
     const structureInfo = this.structureManager.getStructureHexes().get(normalized.x)?.get(normalized.y);
-    const questInfo = this.questManager.getQuestHexes().get(normalized.x)?.get(normalized.y);
     const chestInfo = this.chestManager.getChestHexes().get(normalized.x)?.get(normalized.y);
 
     return {
@@ -571,9 +560,6 @@ export class HexagonMap {
             (obj): obj is NonNullable<typeof obj> => obj !== undefined,
           )
         : [],
-      quests: questInfo
-        ? [this.questManager.getObject(questInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
-        : [],
       chests: chestInfo
         ? [this.chestManager.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
         : [],
@@ -581,14 +567,12 @@ export class HexagonMap {
   }
 
   private selectHexEntity(entityInfo: any, col: number, row: number): void {
-    const { armies, structures, quests, chests } = entityInfo;
+    const { armies, structures, chests } = entityInfo;
 
     if (armies.length > 0) {
       this.handleArmyHexClick(armies[0], col, row);
     } else if (structures.length > 0) {
       this.handleStructureHexClick(structures[0], col, row);
-    } else if (quests.length > 0) {
-      this.handleQuestHexClick(quests[0], col, row);
     } else if (chests.length > 0) {
       this.handleChestHexClick();
     } else {
@@ -603,7 +587,6 @@ export class HexagonMap {
       row,
       this.store,
       this.structureManager.getStructureHexes(),
-      this.questManager.getQuestHexes(),
       this.chestManager.getChestHexes(),
     );
 
@@ -625,14 +608,6 @@ export class HexagonMap {
     if (result.shouldSelect && result.actionPaths) {
       this.selectionManager.selectObject(structure.id, "structure", col, row);
       this.selectionManager.setActionPaths(result.actionPaths);
-    }
-  }
-
-  private handleQuestHexClick(quest: any, col: number, row: number): void {
-    const result = this.questManager.handleHexClick(quest.id, col, row, this.store);
-
-    if (result.shouldSelect) {
-      this.selectionManager.selectObject(quest.id, "quest", col, row);
     }
   }
 
@@ -784,7 +759,6 @@ export class HexagonMap {
     this.highlightRenderer.dispose();
     this.armyManager.dispose();
     this.structureManager.dispose();
-    this.questManager.dispose();
     this.chestManager.dispose();
     this.selectionManager.dispose();
 
