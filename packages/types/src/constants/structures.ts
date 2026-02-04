@@ -390,7 +390,8 @@ export const isEconomyBuilding = (buildingType: BuildingType) => {
     buildingType === BuildingType.ResourceFish ||
     buildingType === BuildingType.ResourceDonkey ||
     buildingType === BuildingType.WorkersHut ||
-    buildingType === BuildingType.Storehouse
+    buildingType === BuildingType.Storehouse ||
+    buildingType === BuildingType.ResourceResearch
   );
 };
 
