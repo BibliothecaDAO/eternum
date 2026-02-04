@@ -257,7 +257,7 @@ pub trait IFaithConfig<T> {
 
 #[starknet::interface]
 pub trait IBitcoinMineConfig<T> {
-    fn set_bitcoin_mine_config(ref self: T, enabled: bool, prize_per_phase: u128);
+    fn set_bitcoin_mine_config(ref self: T, enabled: bool, prize_per_phase: u128, min_labor_per_contribution: u128);
 }
 
 #[starknet::interface]
@@ -1096,11 +1096,13 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl BitcoinMineConfigImpl of super::IBitcoinMineConfig<ContractState> {
-        fn set_bitcoin_mine_config(ref self: ContractState, enabled: bool, prize_per_phase: u128) {
+        fn set_bitcoin_mine_config(
+            ref self: ContractState, enabled: bool, prize_per_phase: u128, min_labor_per_contribution: u128,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let config = BitcoinMineConfig { enabled, prize_per_phase };
+            let config = BitcoinMineConfig { enabled, prize_per_phase, min_labor_per_contribution };
             WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), config);
         }
     }

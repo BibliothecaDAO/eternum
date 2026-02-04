@@ -386,6 +386,6 @@ pub struct BitcoinPhaseLotteryStory {
     pub total_labor: u128,
     pub winner_mine_id: ID,
     pub winner_owner: ContractAddress,
+    pub winner_labor: u128,
     pub prize_awarded: u128,
-    pub roll_value: u128,
 }

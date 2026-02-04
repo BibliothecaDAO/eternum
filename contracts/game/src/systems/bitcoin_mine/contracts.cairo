@@ -17,6 +17,7 @@ pub trait IBitcoinMineSystems<T> {
 
 #[dojo::contract]
 pub mod bitcoin_mine_systems {
+    use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
@@ -91,6 +92,7 @@ pub mod bitcoin_mine_systems {
             mine_weight.store(ref world, mine_id);
 
             // Add labor to phase
+            assert!(labor_amount >= config.min_labor_per_contribution, "Labor below minimum contribution");
             phase_labor.total_labor += labor_amount;
 
             // Track mine's contribution
@@ -147,25 +149,15 @@ pub mod bitcoin_mine_systems {
                 "Contribution window has not closed yet",
             );
 
-            // Already claimed - nothing to do
-            if phase_labor.reward_claimed {
+            // Already processed or no labor - nothing to do
+            if phase_labor.reward_receiver_phase.is_non_zero() || phase_labor.total_labor.is_zero() {
                 return;
             }
 
-            // No labor = no reward
-            if phase_labor.total_labor == 0 {
-                phase_labor.reward_claimed = true;
-                world.write_model(@phase_labor);
-                return;
-            }
-
-            // If phase ends after season end_at (and end_at > 0), burn the prize - no reward given
+            // If phase ends after season end_at (and end_at > 0), no reward given
             let phase_end_time = BitcoinPhaseImpl::end_time(phase_id, bitcoin_tick);
-            if season_config.end_at > 0 && phase_end_time > season_config.end_at {
-                phase_labor.reward_claimed = true;
-                world.write_model(@phase_labor);
-                return;
-            }
+            let phase_end_after_season = season_config.end_at > 0 && phase_end_time > season_config.end_at;
+            assert!(!phase_end_after_season, "phase ends after season");
 
             // Get VRF for lottery
             let caller = starknet::get_caller_address();
@@ -194,17 +186,16 @@ pub mod bitcoin_mine_systems {
                 world.write_model(@mine_phase_labor);
                 phase_labor.claim_count += 1;
 
-                // Calculate win probability (basis points)
-                let win_probability = (mine_phase_labor.labor_contributed * 10000) / phase_labor.total_labor;
-
-                // Generate random roll for this mine
+                // Determine if this mine wins using weighted choice
+                let success_weight = mine_phase_labor.labor_contributed;
+                let fail_weight = phase_labor.total_labor - mine_phase_labor.labor_contributed;
                 let mine_vrf_seed = vrf_seed + mine_index.into();
-                let roll: u128 = rng_library_dispatcher.get_random_in_range(mine_vrf_seed, 0, 10001);
+                let is_winner = rng_library_dispatcher
+                    .get_weighted_choice_bool_simple(success_weight, fail_weight, mine_vrf_seed);
 
-                // Check if this mine wins
-                if roll <= win_probability {
-                    // Winner found!
-                    phase_labor.reward_claimed = true;
+                if is_winner {
+                    // Winner found - reward stays in this phase
+                    phase_labor.reward_receiver_phase = phase_id;
                     world.write_model(@phase_labor);
 
                     // Mint SATOSHI at the winning mine (owner can transport via donkeys)
@@ -232,8 +223,8 @@ pub mod bitcoin_mine_systems {
                                         total_labor: phase_labor.total_labor,
                                         winner_mine_id: mine_id,
                                         winner_owner,
+                                        winner_labor: mine_phase_labor.labor_contributed,
                                         prize_awarded: phase_labor.prize_pool,
-                                        roll_value: roll,
                                     },
                                 ),
                                 timestamp: now,
@@ -250,27 +241,27 @@ pub mod bitcoin_mine_systems {
             world.write_model(@phase_labor);
 
             // If all participants have claimed and no winner, roll over prize to next qualifying phase
-            if phase_labor.claim_count == phase_labor.participant_count && !phase_labor.reward_claimed {
-                // Mark this phase as claimed (prize will be rolled over)
-                phase_labor.reward_claimed = true;
-                world.write_model(@phase_labor);
-
+            if phase_labor.claim_count == phase_labor.participant_count && phase_labor.reward_receiver_phase.is_zero() {
                 // Find next qualifying phase (one with participants whose prize hasn't been claimed)
                 let mut rollover_offset: u64 = 1;
                 while rollover_offset <= MAX_ROLLOVER_PHASES {
                     let next_phase_id = phase_id + rollover_offset;
                     let mut next_phase: BitcoinPhaseLabor = world.read_model(next_phase_id);
 
-                    // If phase has participants and prize not yet claimed, add rollover
-                    if next_phase.participant_count > 0 && !next_phase.reward_claimed {
+                    // If phase has participants and reward not yet assigned, add rollover
+                    if next_phase.participant_count > 0 && next_phase.reward_receiver_phase.is_zero() {
                         next_phase.prize_pool += phase_labor.prize_pool;
                         world.write_model(@next_phase);
+
+                        // Mark this phase's reward as forwarded to the next phase
+                        phase_labor.reward_receiver_phase = next_phase_id;
+                        world.write_model(@phase_labor);
                         break;
                     }
 
                     rollover_offset += 1;
                 };
-                // If no qualifying phase found within 6 phases, prize is burned
+                // If no qualifying phase found within 6 phases, reward_receiver_phase stays 0 (prize burned)
             }
         }
 

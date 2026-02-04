@@ -11,7 +11,7 @@ pub struct BitcoinPhaseLabor {
     pub total_labor: u128, // cumulative labor deposited
     pub participant_count: u32, // distinct mines that contributed
     pub claim_count: u32, // mines that have attempted claim
-    pub reward_claimed: bool // has anyone won yet
+    pub reward_receiver_phase: u64 // phase that received reward (self if won, other if forwarded, 0 if pending)
 }
 
 /// Tracks a mine's labor contribution for a specific phase
