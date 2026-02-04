@@ -6,8 +6,13 @@ use crate::alias::ID;
 pub struct BitcoinPhaseWork {
     #[key]
     pub phase_id: u64,
-    pub total_work: u128,
-    pub lottery_executed: bool,
+    pub phase_end_time: u64, // timestamp when work window closes (0 = uninitialized)
+    pub prize_pool: u128, // wBTC allocated for this phase (base + rollover)
+    pub prize_origin_phase: u64, // phase where prize originated (for rollover tracking)
+    pub total_work: u128, // cumulative work contributed
+    pub participant_count: u32, // distinct mines that contributed work
+    pub claim_count: u32, // mines that have attempted claim
+    pub reward_claimed: bool // has anyone won yet
 }
 
 /// Tracks a single bitcoin mine's state
@@ -19,7 +24,7 @@ pub struct BitcoinMineState {
     pub production_level: u8, // 0=stopped, 1-5=very_low to very_high
     pub work_accumulated: u128, // Total work produced by this mine
     pub work_last_claimed_phase: u64, // Last phase when work was claimed
-    pub satoshis_won: u128 // Total satoshis won by this mine
+    pub prizes_won: u128 // Total wBTC prizes won by this mine
 }
 
 /// Tracks a mine's work contribution for a specific phase
@@ -31,6 +36,7 @@ pub struct BitcoinMinePhaseWork {
     #[key]
     pub mine_id: ID,
     pub work_contributed: u128,
+    pub claimed: bool // has this mine attempted claim yet
 }
 
 /// Global bitcoin mine registry for phase processing
