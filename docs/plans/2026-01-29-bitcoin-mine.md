@@ -1609,7 +1609,7 @@ The original design had a single `execute_phase_lottery` function that anyone co
 - If they lose: nothing happens, they can't claim again for this phase
 - **First to win gets the reward** - subsequent claims for that phase fail
 
-#### Last Roller Guarantee + Rollover
+#### Last Roller + Rollover
 
 - Contract tracks how many participants have attempted to claim
 - Contract knows the total participant count from the work window
@@ -1617,7 +1617,12 @@ The original design had a single `execute_phase_lottery` function that anyone co
   - If they win: normal payout
   - If they still don't win: **reward rolls over to the next open phase**
 - Rollover continues for up to **6 phases** maximum
-- If still unclaimed after 6 phases, reward is distributed to the 6th phase winner guaranteed
+- If still unclaimed after 6 phases: **reward is burned** (nobody wins)
+
+This creates interesting dynamics:
+- Growing jackpots attract more participants
+- More participants = higher chance someone wins before burnout
+- Burning unclaimed rewards keeps satoshi supply scarce
 
 ### Why This Design Is Better
 
@@ -1628,7 +1633,7 @@ The original design had a single `execute_phase_lottery` function that anyone co
 | **Player engagement** | Passive waiting | Active claiming creates urgency |
 | **Fairness** | Timing of single call matters | Everyone gets their own roll |
 | **Jackpot potential** | Fixed per phase | Accumulates on no-winner phases |
-| **Guaranteed payout** | Depends on someone calling | Last roller or 6-phase cap |
+| **Scarcity** | All rewards distributed | Unclaimed rewards burned |
 
 ### Implementation Changes Required
 
@@ -1640,7 +1645,7 @@ The current `execute_phase_lottery(phase_id)` needs to be replaced with:
 /// - Runs VRF lottery weighted by caller's work percentage
 /// - If win: transfers satoshis to caller's mine
 /// - If lose: marks caller as claimed (can't retry)
-/// - If last claimer loses: rolls reward to next phase
+/// - If last claimer loses: rolls reward to next phase (up to 6x, then burned)
 fn claim_phase_reward(ref self: T, mine_id: ID, phase_id: u64);
 ```
 
