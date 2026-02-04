@@ -129,6 +129,9 @@ pub mod ResourceTypes {
     pub const SATOSHI: u8 = 58;
 }
 
+// Bitcoin Mine constants
+pub const MAX_ROLLOVER_PHASES: u64 = 6;
+
 
 pub fn resource_type_name(resource_type: u8) -> ByteArray {
     if resource_type == 1 {
