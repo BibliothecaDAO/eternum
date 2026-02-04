@@ -281,6 +281,8 @@ export function getProducedResource(category: BuildingType): ResourcesIds | unde
       return ResourcesIds.Wheat;
     case BuildingType.ResourceFish:
       return ResourcesIds.Fish;
+    case BuildingType.ResourceResearch:
+      return ResourcesIds.Research;
     default:
       return undefined;
   }

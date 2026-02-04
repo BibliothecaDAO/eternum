@@ -174,6 +174,9 @@ export class GameConfigDeployer {
 
     await setFaithConfig(config);
     await this.sleepNonLocal();
+
+    await setArtificerConfig(config);
+    await this.sleepNonLocal();
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
@@ -1449,6 +1452,37 @@ export const setFaithConfig = async (config: Config) => {
   const tx = await config.provider.set_faith_config(calldata);
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setArtificerConfig = async (config: Config) => {
+  if (!config.config.artificer) {
+    console.log(chalk.yellow(`\n  🔬 Artificer Configuration: Skipped (no config)\n`));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  🔬 Artificer Configuration
+  ═══════════════════════════`),
+  );
+
+  const { research_cost_for_relic } = config.config.artificer;
+
+  // Apply resource precision to the cost (config stores human-readable value)
+  const calldata = {
+    signer: config.account,
+    research_cost_for_relic: research_cost_for_relic * config.config.resources.resourcePrecision,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Artificer Config")}
+    │  ${chalk.gray("Research Cost for Relic:")} ${chalk.white(research_cost_for_relic)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_artificer_config(calldata);
+  console.log(chalk.green(`\n    ✔ Artificer configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setGameModeConfig = async (config: Config) => {

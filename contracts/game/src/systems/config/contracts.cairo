@@ -269,6 +269,11 @@ pub trait IBitcoinMineConfig<T> {
     );
 }
 
+#[starknet::interface]
+pub trait IArtificerConfig<T> {
+    fn set_artificer_config(ref self: T, research_cost_for_relic: u128);
+}
+
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
@@ -277,7 +282,7 @@ pub mod config_systems {
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        AgentControllerConfig, BankConfig, BattleConfig, BitcoinMineConfig, BlitzHypersSettlementConfigImpl,
+        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig, BlitzHypersSettlementConfigImpl,
         BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig,
         BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
         HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
@@ -1120,6 +1125,17 @@ pub mod config_systems {
                 very_high_labor_per_sec,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IArtificerConfig of super::IArtificerConfig<ContractState> {
+        fn set_artificer_config(ref self: ContractState, research_cost_for_relic: u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let artificer_config = ArtificerConfig { research_cost_for_relic };
+            WorldConfigUtilImpl::set_member(ref world, selector!("artificer_config"), artificer_config);
         }
     }
 }

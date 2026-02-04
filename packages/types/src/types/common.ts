@@ -674,6 +674,9 @@ export interface Config {
     owner_share_percent: number;
     reward_token: string;
   };
+  artificer?: {
+    research_cost_for_relic: number;
+  };
 
   // Config for calling the setup function
   setup?: {
