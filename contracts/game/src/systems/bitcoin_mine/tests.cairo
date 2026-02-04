@@ -1,15 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use crate::constants::RESOURCE_PRECISION;
     use crate::models::config::BitcoinMineConfig;
 
     const PRIZE_PER_PHASE: u128 = 100_000_000; // 1 SATOSHI in smallest units (8 decimals)
-    const MIN_LABOR_PER_CONTRIBUTION: u128 = 100 * RESOURCE_PRECISION; // Minimum 100 labor per contribution
 
     fn get_default_bitcoin_mine_config() -> BitcoinMineConfig {
-        BitcoinMineConfig {
-            enabled: true, prize_per_phase: PRIZE_PER_PHASE, min_labor_per_contribution: MIN_LABOR_PER_CONTRIBUTION,
-        }
+        BitcoinMineConfig { enabled: true, prize_per_phase: PRIZE_PER_PHASE, min_labor_per_contribution: 1 }
     }
 
     #[test]
@@ -17,15 +13,7 @@ mod tests {
         let config = get_default_bitcoin_mine_config();
         assert!(config.enabled, "Should be enabled");
         assert!(config.prize_per_phase == PRIZE_PER_PHASE, "Prize should match");
-        assert!(config.min_labor_per_contribution == MIN_LABOR_PER_CONTRIBUTION, "Min labor should match");
-    }
-
-    #[test]
-    fn test_labor_calculation() {
-        // Players deposit labor directly - no conversion
-        // Player burns 1800 labor (with precision) = 1800 labor deposited
-        let labor_deposited = 1800_u128 * RESOURCE_PRECISION;
-        assert!(labor_deposited == 1800 * RESOURCE_PRECISION, "Labor calculation should be correct");
+        assert!(config.min_labor_per_contribution == 1, "Min labor should match");
     }
 
     #[test]
