@@ -74,7 +74,8 @@ pub mod bitcoin_mine_systems {
             // Initialize phase if not yet initialized
             if phase_labor.phase_end_time == 0 {
                 phase_labor.phase_id = target_phase_id;
-                phase_labor.phase_end_time = now + bitcoin_tick.interval();
+                // Phase ends 1 second before next phase starts
+                phase_labor.phase_end_time = bitcoin_tick.convert_to_estimated_timestamp(target_phase_id + 1) - 1;
                 phase_labor.prize_pool = config.prize_per_phase;
             } else {
                 // Phase already initialized - ensure contribution window is still open
