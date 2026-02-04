@@ -1,4 +1,3 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { POLLING_INTERVALS } from "@/config/polling";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -25,7 +24,6 @@ import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { env } from "../../env";
 
 const getArrivalKey = (arrival: ResourceArrivalInfo) =>
   `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
@@ -441,8 +439,6 @@ const PlayerStructuresStoreManager = () => {
   const playerStructures = usePlayerStructures();
   const setPlayerStructures = useUIStore((state) => state.setPlayerStructures);
 
-  console.log({ playerStructures });
-
   // Sync structure-scoped models (Resource, StructureBuildings, ProductionBoostBonus)
   // scoped to only the player's own structures
   usePlayerStructureSync();
@@ -454,32 +450,7 @@ const PlayerStructuresStoreManager = () => {
   return null;
 };
 
-const ButtonStateStoreManager = () => {
-  const {
-    account: { account },
-    setup: { components },
-  } = useDojo();
-  const mode = useGameModeConfig();
-
-  const setDisableButtons = useUIStore((state) => state.setDisableButtons);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  const structureInfo = useMemo(
-    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components),
-    [structureEntityId, account.address, components, mode],
-  );
-
-  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
-
-  const seasonHasStarted = useMemo(() => env.VITE_PUBLIC_SEASON_START_TIME < Date.now() / 1000, []);
-
-  useEffect(() => {
-    const disableButtons = !structureIsMine || account.address === "0x0" || !seasonHasStarted;
-    setDisableButtons(disableButtons);
-  }, [setDisableButtons, structureIsMine, account.address, seasonHasStarted]);
-
-  return null;
-};
+const ButtonStateStoreManager = () => {};
 
 const PlayerDataStoreManager = () => {
   const {

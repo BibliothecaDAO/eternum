@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { debouncedGetBuildingsFromTorii } from "@/dojo/debounced-queries";
+import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { PLAYER_STRUCTURE_MODELS, syncEntitiesDebounced } from "@/dojo/sync";
+import { sqlApi } from "@/services/api";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
+import { useAccountStore } from "../store/use-account-store";
 
 export const usePlayerStructureSync = () => {
   const {
     setup: {
-      network: { toriiClient },
+      network: { toriiClient, contractComponents },
     },
     setup,
   } = useDojo();
@@ -23,6 +26,32 @@ export const usePlayerStructureSync = () => {
     () => playerStructures.map((s) => ({ col: s.position.x, row: s.position.y })),
     [playerStructures],
   );
+
+  const accountAddress = useAccountStore().account?.address;
+
+  // PLAYER STRUCTURES (fetch player-owned structures into RECS so usePlayerStructures works)
+  useEffect(() => {
+    // Replace with your actual definitions or props if needed
+    if (!accountAddress) return;
+    let cancelled = false;
+    (async () => {
+      const structures = await sqlApi.fetchStructuresByOwner(accountAddress);
+      console.log({ structures });
+      if (structures.length > 0 && !cancelled) {
+        await getStructuresDataFromTorii(
+          toriiClient,
+          contractComponents as any,
+          structures.map((s: any) => ({
+            entityId: s.entity_id,
+            position: { col: s.coord_x, row: s.coord_y },
+          })),
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accountAddress, toriiClient, contractComponents]);
 
   // Initial fetch of buildings for player structures
   useEffect(() => {

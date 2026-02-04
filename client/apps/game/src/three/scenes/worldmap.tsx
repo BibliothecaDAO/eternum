@@ -3152,16 +3152,16 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    this.beginToriiFetch();
-    try {
-      await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
-      structuresToSync.forEach((structure) => this.syncedStructureIds.add(structure.entityId));
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to fetch structures for chunk", this.currentChunk, error);
-    } finally {
-      structuresToSync.forEach((structure) => this.syncingStructureIds.delete(structure.entityId));
-      this.endToriiFetch();
-    }
+    // this.beginToriiFetch();
+    // try {
+    //   // await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
+    //   structuresToSync.forEach((structure) => this.syncedStructureIds.add(structure.entityId));
+    // } catch (error) {
+    //   console.error("[WorldmapScene] Failed to fetch structures for chunk", this.currentChunk, error);
+    // } finally {
+    //   structuresToSync.forEach((structure) => this.syncingStructureIds.delete(structure.entityId));
+    //   this.endToriiFetch();
+    // }
   }
 
   private beginToriiFetch() {
