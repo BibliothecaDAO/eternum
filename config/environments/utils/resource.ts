@@ -47,6 +47,7 @@ export const RESOURCES_WEIGHTS_NANOGRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Lords]: 0,
   [ResourcesIds.Wheat]: 100,
   [ResourcesIds.Fish]: 100,
+  [ResourcesIds.Research]: 0, // Weightless
 };
 
 export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
@@ -88,6 +89,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.AncientFragment]: 3,
   [ResourcesIds.Essence]: 10,
   [ResourcesIds.Labor]: 1,
+  [ResourcesIds.Research]: 1, // Placeholder - TBD from balance sheet
 };
 
 export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
@@ -211,6 +213,11 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.AncientFragment]: [],
   [ResourcesIds.Essence]: [],
   [ResourcesIds.Labor]: [],
+  [ResourcesIds.Research]: [
+    { resource: ResourcesIds.Fish, amount: 15 },
+    { resource: ResourcesIds.Lords, amount: 0.001 },
+    { resource: ResourcesIds.Essence, amount: 0.5 },
+  ],
 };
 
 export const STARTING_RESOURCES: ResourceCost[] = [
@@ -282,6 +289,7 @@ export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs 
   [ResourcesIds.AncientFragment]: 0,
   [ResourcesIds.Essence]: 0,
   [ResourcesIds.Labor]: 0,
+  [ResourcesIds.Research]: 0, // Cannot be converted to labor
 };
 export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM: ResourceOutputs = RESOURCE_PRODUCTION_OUTPUT_AMOUNTS;
 
@@ -360,6 +368,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   [ResourcesIds.AncientFragment]: [],
   [ResourcesIds.Essence]: [],
   [ResourcesIds.Labor]: [],
+  [ResourcesIds.Research]: [], // No simple recipe
 };
 
 export const multiplyStartingResources = (multiplier: number): ResourceCost[] => {

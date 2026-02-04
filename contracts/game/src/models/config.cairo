@@ -59,6 +59,7 @@ pub struct WorldConfig {
     pub factory_address: ContractAddress,
     pub mmr_config: MMRConfig,
     pub faith_config: FaithConfig,
+    pub artificer_config: ArtificerConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -223,6 +224,10 @@ pub struct TradeConfig {
     pub max_count: u8,
 }
 
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct ArtificerConfig {
+    pub research_cost_for_relic: u128 // Amount of research needed to exchange for a relic
+}
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct SeasonAddressesConfig {
