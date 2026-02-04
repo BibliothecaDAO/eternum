@@ -2,7 +2,7 @@ use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IBitcoinMineSystems<T> {
-    /// Contribute labor to a phase (initializes phase if first contributor)
+    /// Contribute labor to a phase
     fn contribute_labor(ref self: T, mine_id: ID, target_phase_id: u64, labor_amount: u128);
 
     /// Process claims for multiple mines in a phase (permissionless)
@@ -23,7 +23,7 @@ pub mod bitcoin_mine_systems {
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, MAX_FUTURE_PHASES, MAX_ROLLOVER_PHASES, ResourceTypes};
-    use crate::models::bitcoin_mine::{BitcoinMinePhaseLabor, BitcoinPhaseLabor};
+    use crate::models::bitcoin_mine::{BitcoinMinePhaseLabor, BitcoinPhaseImpl, BitcoinPhaseLabor};
     use crate::models::config::{BitcoinMineConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl};
     use crate::models::events::{BitcoinMineProductionStory, BitcoinPhaseLotteryStory, Story, StoryEvent};
     use crate::models::owner::OwnerAddressTrait;
@@ -66,20 +66,17 @@ pub mod bitcoin_mine_systems {
                 "Cannot contribute to phase more than 30 phases in the future",
             );
 
+            // Validate contribution window is still open
+            assert!(
+                BitcoinPhaseImpl::is_contribution_open(target_phase_id, bitcoin_tick), "Contribution window has closed",
+            );
+
             // Read target phase labor
             let mut phase_labor: BitcoinPhaseLabor = world.read_model(target_phase_id);
 
-            let now = starknet::get_block_timestamp();
-
-            // Initialize phase if not yet initialized
-            if phase_labor.phase_end_time == 0 {
-                phase_labor.phase_id = target_phase_id;
-                // Phase ends 1 second before next phase starts
-                phase_labor.phase_end_time = bitcoin_tick.convert_to_estimated_timestamp(target_phase_id + 1) - 1;
+            // Initialize phase prize pool if first contributor
+            if phase_labor.participant_count == 0 {
                 phase_labor.prize_pool = config.prize_per_phase;
-            } else {
-                // Phase already initialized - ensure contribution window is still open
-                assert!(now < phase_labor.phase_end_time, "Contribution window has closed");
             }
 
             // Burn labor from mine
@@ -99,8 +96,6 @@ pub mod bitcoin_mine_systems {
             // Track mine's contribution
             let mut mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((target_phase_id, mine_id));
             let is_first_contribution = mine_phase_labor.labor_contributed == 0;
-            mine_phase_labor.phase_id = target_phase_id;
-            mine_phase_labor.mine_id = mine_id;
             mine_phase_labor.labor_contributed += labor_amount;
             world.write_model(@mine_phase_labor);
 
@@ -111,6 +106,7 @@ pub mod bitcoin_mine_systems {
             world.write_model(@phase_labor);
 
             // Emit production event
+            let now = starknet::get_block_timestamp();
             world
                 .emit_event(
                     @StoryEvent {
@@ -136,15 +132,20 @@ pub mod bitcoin_mine_systems {
             let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
             assert!(config.enabled, "Bitcoin mine system is not enabled");
 
+            // Get tick config for phase timing
+            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world);
+
             // Read phase labor
             let mut phase_labor: BitcoinPhaseLabor = world.read_model(phase_id);
 
-            // Validate phase was initialized
-            assert!(phase_labor.phase_end_time > 0, "Phase was not initialized");
+            // Validate phase has participants
+            assert!(phase_labor.participant_count > 0, "Phase has no participants");
 
             // Validate contribution window has closed
-            let now = starknet::get_block_timestamp();
-            assert!(now >= phase_labor.phase_end_time, "Contribution window has not closed yet");
+            assert!(
+                BitcoinPhaseImpl::has_contribution_closed(phase_id, bitcoin_tick),
+                "Contribution window has not closed yet",
+            );
 
             // Already claimed - nothing to do
             if phase_labor.reward_claimed {
@@ -159,7 +160,8 @@ pub mod bitcoin_mine_systems {
             }
 
             // If phase ends after season end_at (and end_at > 0), burn the prize - no reward given
-            if season_config.end_at > 0 && phase_labor.phase_end_time > season_config.end_at {
+            let phase_end_time = BitcoinPhaseImpl::end_time(phase_id, bitcoin_tick);
+            if season_config.end_at > 0 && phase_end_time > season_config.end_at {
                 phase_labor.reward_claimed = true;
                 world.write_model(@phase_labor);
                 return;
@@ -169,6 +171,8 @@ pub mod bitcoin_mine_systems {
             let caller = starknet::get_caller_address();
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
             let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
+
+            let now = starknet::get_block_timestamp();
 
             // Process each mine in the array
             let mut mine_index: u32 = 0;
@@ -251,14 +255,14 @@ pub mod bitcoin_mine_systems {
                 phase_labor.reward_claimed = true;
                 world.write_model(@phase_labor);
 
-                // Find next qualifying phase (one whose prize hasn't been claimed)
+                // Find next qualifying phase (one with participants whose prize hasn't been claimed)
                 let mut rollover_offset: u64 = 1;
                 while rollover_offset <= MAX_ROLLOVER_PHASES {
                     let next_phase_id = phase_id + rollover_offset;
                     let mut next_phase: BitcoinPhaseLabor = world.read_model(next_phase_id);
 
-                    // If phase exists and prize not yet claimed, add rollover
-                    if next_phase.phase_end_time > 0 && !next_phase.reward_claimed {
+                    // If phase has participants and prize not yet claimed, add rollover
+                    if next_phase.participant_count > 0 && !next_phase.reward_claimed {
                         next_phase.prize_pool += phase_labor.prize_pool;
                         world.write_model(@next_phase);
                         break;
