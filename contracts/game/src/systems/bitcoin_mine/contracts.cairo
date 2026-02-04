@@ -6,14 +6,11 @@ pub trait IBitcoinMineSystems<T> {
     /// Set production level for a bitcoin mine (must own the mine)
     fn set_production_level(ref self: T, mine_id: ID, level: ProductionLevel);
 
-    /// Claim work and update mine state for pending phases
-    fn claim_work(ref self: T, mine_id: ID);
+    /// Contribute labor to a phase (initializes phase if first contributor)
+    fn contribute_labor(ref self: T, mine_id: ID, labor_amount: u128);
 
-    /// Execute lottery for a completed phase (permissionless)
-    fn execute_phase_lottery(ref self: T, phase_id: u64);
-
-    /// Withdraw satoshis from mine to an army (only armies can carry satoshis)
-    fn withdraw_satoshis(ref self: T, mine_id: ID, army_id: ID, amount: u128);
+    /// Process claims for multiple mines in a phase (permissionless)
+    fn claim_phase_reward(ref self: T, phase_id: u64, mine_ids: Array<ID>);
 
     /// View: Get mine's pending work
     fn get_pending_work(self: @T, mine_id: ID) -> u128;
@@ -27,13 +24,12 @@ pub trait IBitcoinMineSystems<T> {
 
 #[dojo::contract]
 pub mod bitcoin_mine_systems {
-    use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, MAX_ROLLOVER_PHASES, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::bitcoin_mine::{
         BitcoinMinePhaseWork, BitcoinMineRegistry, BitcoinMineState, BitcoinPhaseWork, ProductionLevel,
     };
@@ -42,11 +38,10 @@ pub mod bitcoin_mine_systems {
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
+    use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use crate::models::structure::{StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
-    use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
-    use crate::systems::utils::troop::iExplorerImpl;
 
     #[abi(embed_v0)]
     impl BitcoinMineSystemsImpl of super::IBitcoinMineSystems<ContractState> {
@@ -67,24 +62,13 @@ pub mod bitcoin_mine_systems {
                 structure_base.category == StructureCategory::BitcoinMine.into(), "Structure is not a bitcoin mine",
             );
 
-            // Claim pending work first
-            InternalImpl::_claim_work_internal(ref world, mine_id);
-
             // Update production level
             let mut mine_state: BitcoinMineState = world.read_model(mine_id);
             mine_state.production_level = level.into();
             world.write_model(@mine_state);
         }
 
-        fn claim_work(ref self: ContractState, mine_id: ID) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
-            season_config.assert_started_and_not_over();
-
-            InternalImpl::_claim_work_internal(ref world, mine_id);
-        }
-
-        fn execute_phase_lottery(ref self: ContractState, phase_id: u64) {
+        fn contribute_labor(ref self: ContractState, mine_id: ID, labor_amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let season_config = SeasonConfigImpl::get(world);
             season_config.assert_started_and_not_over();
@@ -92,16 +76,148 @@ pub mod bitcoin_mine_systems {
             let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
             assert!(config.enabled, "Bitcoin mine system is not enabled");
 
-            let current_phase = InternalImpl::_get_current_phase(ref world, config);
-            assert!(phase_id < current_phase, "Phase has not ended yet");
+            let caller = starknet::get_caller_address();
 
-            // Check if lottery already executed
+            // Verify mine ownership
+            let mine_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
+            assert!(mine_owner == caller, "Only mine owner can contribute labor");
+
+            // Verify it's a bitcoin mine
+            let structure_base = StructureBaseStoreImpl::retrieve(ref world, mine_id);
+            assert!(
+                structure_base.category == StructureCategory::BitcoinMine.into(), "Structure is not a bitcoin mine",
+            );
+
+            // Get registry to determine current phase
+            let mut registry: BitcoinMineRegistry = world.read_model(WORLD_CONFIG_ID);
+            let next_phase_id = registry.current_phase + 1;
+
+            // Read current phase work
+            let mut phase_work: BitcoinPhaseWork = world.read_model(next_phase_id);
+
+            // Initialize phase if this is the first contribution
+            let now = starknet::get_block_timestamp();
+            if phase_work.phase_end_time == 0 {
+                // Validate: phase_id == 1 OR previous phase has ended
+                if next_phase_id > 1 {
+                    let prev_phase: BitcoinPhaseWork = world.read_model(registry.current_phase);
+                    assert!(now >= prev_phase.phase_end_time, "Previous phase has not ended yet");
+                }
+
+                // Calculate rollover from previous phase if unclaimed
+                let mut rollover: u128 = 0;
+                if next_phase_id > 1 {
+                    let prev_phase: BitcoinPhaseWork = world.read_model(registry.current_phase);
+                    if !prev_phase.reward_claimed && prev_phase.prize_pool > 0 {
+                        // Check if within rollover limit
+                        let rollover_count = next_phase_id - prev_phase.prize_origin_phase;
+                        if rollover_count < MAX_ROLLOVER_PHASES {
+                            rollover = prev_phase.prize_pool;
+                            phase_work.prize_origin_phase = prev_phase.prize_origin_phase;
+                        }
+                        // If rollover_count >= MAX_ROLLOVER_PHASES, prize is burned (rollover stays 0)
+                    }
+                }
+
+                // Initialize phase
+                phase_work.phase_id = next_phase_id;
+                phase_work.phase_end_time = now + config.phase_duration_seconds;
+                phase_work.prize_pool = config.prize_per_phase + rollover;
+                if phase_work.prize_origin_phase == 0 {
+                    phase_work.prize_origin_phase = next_phase_id;
+                }
+
+                // Update registry
+                registry.current_phase = next_phase_id;
+                world.write_model(@registry);
+            } else {
+                // Ensure work window is still open
+                assert!(now < phase_work.phase_end_time, "Work window has closed");
+            }
+
+            // Burn labor from mine
+            let labor_weight = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
+            let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, mine_id);
+            let mut labor_resource = SingleResourceStoreImpl::retrieve(
+                ref world, mine_id, ResourceTypes::LABOR, ref mine_weight, labor_weight, true,
+            );
+            assert!(labor_resource.balance >= labor_amount, "Not enough labor");
+            labor_resource.spend(labor_amount, ref mine_weight, labor_weight);
+            labor_resource.store(ref world);
+            mine_weight.store(ref world, mine_id);
+
+            // Add work to phase (1:1 labor to work ratio)
+            let work_amount = labor_amount;
+            phase_work.total_work += work_amount;
+
+            // Track mine's contribution
+            let mut mine_phase_work: BitcoinMinePhaseWork = world.read_model((next_phase_id, mine_id));
+            let is_first_contribution = mine_phase_work.work_contributed == 0;
+            mine_phase_work.phase_id = next_phase_id;
+            mine_phase_work.mine_id = mine_id;
+            mine_phase_work.work_contributed += work_amount;
+            world.write_model(@mine_phase_work);
+
+            // Increment participant count if first contribution
+            if is_first_contribution {
+                phase_work.participant_count += 1;
+            }
+            world.write_model(@phase_work);
+
+            // Update mine state
+            let mut mine_state: BitcoinMineState = world.read_model(mine_id);
+            mine_state.work_accumulated += work_amount;
+            mine_state.work_last_claimed_phase = next_phase_id;
+            world.write_model(@mine_state);
+
+            // Emit production event
+            world
+                .emit_event(
+                    @StoryEvent {
+                        id: world.dispatcher.uuid(),
+                        owner: Option::Some(mine_owner),
+                        entity_id: Option::Some(mine_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::BitcoinMineProductionStory(
+                            BitcoinMineProductionStory {
+                                mine_id,
+                                owner: mine_owner,
+                                production_level: mine_state.production_level,
+                                labor_consumed: labor_amount,
+                                work_produced: work_amount,
+                            },
+                        ),
+                        timestamp: now,
+                    },
+                );
+        }
+
+        fn claim_phase_reward(ref self: ContractState, phase_id: u64, mine_ids: Array<ID>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let season_config = SeasonConfigImpl::get(world);
+            season_config.assert_started_and_not_over();
+
+            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
+            assert!(config.enabled, "Bitcoin mine system is not enabled");
+
+            // Read phase work
             let mut phase_work: BitcoinPhaseWork = world.read_model(phase_id);
-            assert!(!phase_work.lottery_executed, "Lottery already executed for this phase");
 
-            // No work = no lottery
+            // Validate phase was initialized
+            assert!(phase_work.phase_end_time > 0, "Phase was not initialized");
+
+            // Validate work window has closed
+            let now = starknet::get_block_timestamp();
+            assert!(now >= phase_work.phase_end_time, "Work window has not closed yet");
+
+            // Already claimed - nothing to do
+            if phase_work.reward_claimed {
+                return;
+            }
+
+            // No work = no reward
             if phase_work.total_work == 0 {
-                phase_work.lottery_executed = true;
+                phase_work.reward_claimed = true;
                 world.write_model(@phase_work);
                 return;
             }
@@ -111,131 +227,96 @@ pub mod bitcoin_mine_systems {
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
             let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
 
-            // Roll 0-10000 (basis points)
-            let roll: u128 = rng_library_dispatcher.get_random_in_range(vrf_seed, 0, 10001);
+            // Process each mine in the array
+            let mut mine_index: u32 = 0;
+            let mine_ids_span = mine_ids.span();
+            while mine_index < mine_ids_span.len() {
+                let mine_id = *mine_ids_span.at(mine_index);
 
-            // Find winner based on cumulative contribution percentages
-            let registry: BitcoinMineRegistry = world.read_model(WORLD_CONFIG_ID);
-            let mut cumulative_percentage: u128 = 0;
-            let mut winner_mine_id: ID = 0;
+                // Read mine's phase work
+                let mut mine_phase_work: BitcoinMinePhaseWork = world.read_model((phase_id, mine_id));
 
-            for mine_id in registry.active_mine_ids.span() {
-                let mine_phase_work: BitcoinMinePhaseWork = world.read_model((phase_id, *mine_id));
-                if mine_phase_work.work_contributed > 0 {
-                    // Calculate this mine's percentage (basis points)
-                    let contribution_percentage = (mine_phase_work.work_contributed * 10000) / phase_work.total_work;
-                    cumulative_percentage += contribution_percentage;
-
-                    if roll <= cumulative_percentage {
-                        winner_mine_id = *mine_id;
-                        break;
-                    }
+                // Skip if no work contributed or already claimed
+                if mine_phase_work.work_contributed == 0 || mine_phase_work.claimed {
+                    mine_index += 1;
+                    continue;
                 }
-            }
 
-            // Award satoshis to winner
-            if winner_mine_id.is_non_zero() {
-                let mut mine_state: BitcoinMineState = world.read_model(winner_mine_id);
-                mine_state.satoshis_won += config.satoshis_per_phase;
-                world.write_model(@mine_state);
+                // Mark as claimed
+                mine_phase_work.claimed = true;
+                world.write_model(@mine_phase_work);
+                phase_work.claim_count += 1;
 
-                // Add satoshis to mine's inventory
-                let satoshi_weight = config.satoshi_weight_grams;
-                let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, winner_mine_id);
-                let mut satoshi_resource = SingleResourceStoreImpl::retrieve(
-                    ref world, winner_mine_id, ResourceTypes::SATOSHI, ref mine_weight, satoshi_weight, true,
-                );
-                satoshi_resource.add(config.satoshis_per_phase, ref mine_weight, satoshi_weight);
-                satoshi_resource.store(ref world);
-                mine_weight.store(ref world, winner_mine_id);
+                // Calculate win probability (basis points)
+                let win_probability = (mine_phase_work.work_contributed * 10000) / phase_work.total_work;
 
-                // Emit event
-                let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, winner_mine_id);
-                world
-                    .emit_event(
-                        @StoryEvent {
-                            id: world.dispatcher.uuid(),
-                            owner: Option::Some(winner_owner),
-                            entity_id: Option::Some(winner_mine_id),
-                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                            story: Story::BitcoinPhaseLotteryStory(
-                                BitcoinPhaseLotteryStory {
-                                    phase_id,
-                                    total_work: phase_work.total_work,
-                                    winner_mine_id,
-                                    winner_owner,
-                                    satoshis_awarded: config.satoshis_per_phase,
-                                    roll_value: roll,
-                                },
-                            ),
-                            timestamp: starknet::get_block_timestamp(),
-                        },
+                // Generate random roll for this mine
+                let mine_vrf_seed = vrf_seed + mine_index.into();
+                let roll: u128 = rng_library_dispatcher.get_random_in_range(mine_vrf_seed, 0, 10001);
+
+                // Check if this mine wins
+                if roll <= win_probability {
+                    // Winner found!
+                    phase_work.reward_claimed = true;
+                    world.write_model(@phase_work);
+
+                    // Update mine state
+                    let mut mine_state: BitcoinMineState = world.read_model(mine_id);
+                    mine_state.prizes_won += phase_work.prize_pool;
+                    world.write_model(@mine_state);
+
+                    // Transfer ERC20 prize to winner
+                    let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
+                    let reward_token = IERC20Dispatcher { contract_address: config.reward_token };
+                    assert!(
+                        reward_token.transfer(winner_owner, phase_work.prize_pool.into()), "Failed to transfer prize",
                     );
+
+                    // Emit event
+                    world
+                        .emit_event(
+                            @StoryEvent {
+                                id: world.dispatcher.uuid(),
+                                owner: Option::Some(winner_owner),
+                                entity_id: Option::Some(mine_id),
+                                tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                                story: Story::BitcoinPhaseLotteryStory(
+                                    BitcoinPhaseLotteryStory {
+                                        phase_id,
+                                        total_work: phase_work.total_work,
+                                        winner_mine_id: mine_id,
+                                        winner_owner,
+                                        prize_awarded: phase_work.prize_pool,
+                                        roll_value: roll,
+                                    },
+                                ),
+                                timestamp: now,
+                            },
+                        );
+
+                    return; // Stop processing - winner found
+                }
+
+                mine_index += 1;
             }
 
-            // Mark lottery as executed
-            phase_work.lottery_executed = true;
+            // Update phase work with new claim count
             world.write_model(@phase_work);
-        }
 
-        fn withdraw_satoshis(ref self: ContractState, mine_id: ID, army_id: ID, amount: u128) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
-            season_config.assert_started_and_not_over();
-
-            let caller = starknet::get_caller_address();
-
-            // Verify mine ownership
-            let mine_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
-            assert!(mine_owner == caller, "Only mine owner can withdraw satoshis");
-
-            // Verify army ownership and that it's an explorer (army)
-            let army: ExplorerTroops = world.read_model(army_id);
-            army.assert_caller_structure_or_agent_owner(ref world);
-
-            // Transfer satoshis from mine to army
-            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
-            let satoshi_weight = config.satoshi_weight_grams;
-
-            // Deduct from mine
-            let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, mine_id);
-            let mut mine_satoshi = SingleResourceStoreImpl::retrieve(
-                ref world, mine_id, ResourceTypes::SATOSHI, ref mine_weight, satoshi_weight, true,
-            );
-            mine_satoshi.spend(amount, ref mine_weight, satoshi_weight);
-            mine_satoshi.store(ref world);
-            mine_weight.store(ref world, mine_id);
-
-            // Add to army
-            let mut army_weight: Weight = WeightStoreImpl::retrieve(ref world, army_id);
-            let mut army_satoshi = SingleResourceStoreImpl::retrieve(
-                ref world, army_id, ResourceTypes::SATOSHI, ref army_weight, satoshi_weight, false,
-            );
-            army_satoshi.add(amount, ref army_weight, satoshi_weight);
-            army_satoshi.store(ref world);
-            army_weight.store(ref world, army_id);
+            // If all participants have claimed and no winner, prize rolls over to next phase
+            // (handled in contribute_labor when initializing next phase)
         }
 
         fn get_pending_work(self: @ContractState, mine_id: ID) -> u128 {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
-
+            let world: WorldStorage = self.world(DEFAULT_NS());
             let mine_state: BitcoinMineState = world.read_model(mine_id);
-            if mine_state.production_level == 0 {
-                return 0;
-            }
-
-            let current_phase = InternalImpl::_get_current_phase(ref world, config);
-            let phases_elapsed = current_phase - mine_state.work_last_claimed_phase;
-
-            let work_per_phase = InternalImpl::_get_work_per_phase(mine_state.production_level, config);
-            phases_elapsed.into() * work_per_phase
+            mine_state.work_accumulated
         }
 
         fn get_current_phase(self: @ContractState) -> u64 {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
-            InternalImpl::_get_current_phase(ref world, config)
+            let world: WorldStorage = self.world(DEFAULT_NS());
+            let registry: BitcoinMineRegistry = world.read_model(WORLD_CONFIG_ID);
+            registry.current_phase
         }
 
         fn get_mine_contribution(self: @ContractState, mine_id: ID, phase_id: u64) -> u128 {
@@ -248,119 +329,6 @@ pub mod bitcoin_mine_systems {
 
             let mine_phase_work: BitcoinMinePhaseWork = world.read_model((phase_id, mine_id));
             (mine_phase_work.work_contributed * 10000) / phase_work.total_work
-        }
-    }
-
-    #[generate_trait]
-    impl InternalImpl of InternalTrait {
-        fn _claim_work_internal(ref world: WorldStorage, mine_id: ID) {
-            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
-            let current_phase = Self::_get_current_phase(ref world, config);
-
-            let mut mine_state: BitcoinMineState = world.read_model(mine_id);
-
-            // Calculate work for elapsed phases
-            if mine_state.production_level > 0 && current_phase > mine_state.work_last_claimed_phase {
-                let work_per_phase = Self::_get_work_per_phase(mine_state.production_level, config);
-
-                // Process each elapsed phase
-                let mut phase_id = mine_state.work_last_claimed_phase + 1;
-                while phase_id <= current_phase {
-                    // Add work to phase total
-                    let mut phase_work: BitcoinPhaseWork = world.read_model(phase_id);
-                    phase_work.phase_id = phase_id;
-                    phase_work.total_work += work_per_phase;
-                    world.write_model(@phase_work);
-
-                    // Track mine's contribution to this phase
-                    let mut mine_phase_work: BitcoinMinePhaseWork = world.read_model((phase_id, mine_id));
-                    mine_phase_work.phase_id = phase_id;
-                    mine_phase_work.mine_id = mine_id;
-                    mine_phase_work.work_contributed += work_per_phase;
-                    world.write_model(@mine_phase_work);
-
-                    // Burn labor from mine
-                    let labor_cost = Self::_get_labor_cost_per_phase(mine_state.production_level, config);
-                    let labor_weight = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
-                    let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, mine_id);
-                    let mut labor_resource = SingleResourceStoreImpl::retrieve(
-                        ref world, mine_id, ResourceTypes::LABOR, ref mine_weight, labor_weight, true,
-                    );
-
-                    // Check if mine has enough labor
-                    if labor_resource.balance >= labor_cost {
-                        labor_resource.spend(labor_cost, ref mine_weight, labor_weight);
-                        labor_resource.store(ref world);
-                        mine_weight.store(ref world, mine_id);
-
-                        mine_state.work_accumulated += work_per_phase;
-                    } else {
-                        // Not enough labor - stop production
-                        mine_state.production_level = 0;
-                        break;
-                    }
-
-                    phase_id += 1;
-                }
-
-                mine_state.work_last_claimed_phase = current_phase;
-                world.write_model(@mine_state);
-
-                // Emit production event
-                let mine_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
-                world
-                    .emit_event(
-                        @StoryEvent {
-                            id: world.dispatcher.uuid(),
-                            owner: Option::Some(mine_owner),
-                            entity_id: Option::Some(mine_id),
-                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                            story: Story::BitcoinMineProductionStory(
-                                BitcoinMineProductionStory {
-                                    mine_id,
-                                    owner: mine_owner,
-                                    production_level: mine_state.production_level,
-                                    labor_consumed: Self::_get_labor_cost_per_phase(
-                                        mine_state.production_level, config,
-                                    ),
-                                    work_produced: work_per_phase,
-                                },
-                            ),
-                            timestamp: starknet::get_block_timestamp(),
-                        },
-                    );
-            }
-        }
-
-        fn _get_current_phase(ref world: WorldStorage, config: BitcoinMineConfig) -> u64 {
-            let now = starknet::get_block_timestamp();
-            now / config.phase_duration_seconds
-        }
-
-        fn _get_work_per_phase(production_level: u8, config: BitcoinMineConfig) -> u128 {
-            // Work per second = labor per second (1:1 ratio)
-            // Work per phase = work_per_sec * phase_duration
-            let work_per_sec: u128 = match production_level {
-                0 => 0,
-                1 => config.very_low_labor_per_sec.into(),
-                2 => config.low_labor_per_sec.into(),
-                3 => config.medium_labor_per_sec.into(),
-                4 => config.high_labor_per_sec.into(),
-                _ => config.very_high_labor_per_sec.into(),
-            };
-            work_per_sec * config.phase_duration_seconds.into() * RESOURCE_PRECISION
-        }
-
-        fn _get_labor_cost_per_phase(production_level: u8, config: BitcoinMineConfig) -> u128 {
-            let labor_per_sec: u128 = match production_level {
-                0 => 0,
-                1 => config.very_low_labor_per_sec.into(),
-                2 => config.low_labor_per_sec.into(),
-                3 => config.medium_labor_per_sec.into(),
-                4 => config.high_labor_per_sec.into(),
-                _ => config.very_high_labor_per_sec.into(),
-            };
-            labor_per_sec * config.phase_duration_seconds.into() * RESOURCE_PRECISION
         }
     }
 }
