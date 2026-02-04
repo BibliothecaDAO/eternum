@@ -51,8 +51,6 @@ export const useActiveStructureSync = () => {
   }, [structureEntityId, accountAddress, components]);
   // const isOwnStructure = false;
 
-  console.log({ isOwnStructure, structureEntityId });
-
   useEffect(() => {
     // Only subscribe for non-owned structures; usePlayerStructureSync covers the player's own
     if (isOwnStructure || !structureEntityId || !toriiClient) return;
