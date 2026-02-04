@@ -2,7 +2,8 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Implement Bitcoin Mines - discoverable structures in the Ethereal layer that allow players to exhibit 'proof of work' to extract sponsored wBTC via a phase-based lottery system.
+**Goal:** Implement Bitcoin Mines - discoverable structures in the Ethereal layer that allow players to exhibit 'proof
+of work' to extract sponsored wBTC via a phase-based lottery system.
 
 **Architecture:**
 
@@ -48,8 +49,7 @@ Add case for WORK:
 
 **Step 4: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 5: Commit**
 
@@ -111,8 +111,7 @@ Add case in the match for `category`:
 
 **Step 5: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 6: Commit**
 
@@ -152,8 +151,7 @@ Add case in the `into` match:
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -185,8 +183,7 @@ Add after `Camp`:
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -219,8 +216,7 @@ Add after `holysite_fail_probability`:
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -264,8 +260,7 @@ pub struct BitcoinMineConfig {
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -297,8 +292,7 @@ Add after `camp_capacity`:
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -426,8 +420,7 @@ pub mod bitcoin_mine;
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -494,8 +487,7 @@ Add after `FaithPointsClaimedStory`:
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -638,8 +630,7 @@ pub mod bitcoin_mine;
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -998,8 +989,7 @@ pub mod bitcoin_mine_systems {
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds (may have warnings initially)
+Run: `cd contracts/game && scarb build` Expected: Build succeeds (may have warnings initially)
 
 **Step 3: Commit**
 
@@ -1038,8 +1028,7 @@ pub mod bitcoin_mine {
 
 **Step 2: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -1063,7 +1052,8 @@ EOF
 
 **Step 1: Add bitcoin mine discovery in find_treasure**
 
-In the `find_treasure` function in `troop_movement_util_systems`, add bitcoin mine discovery BEFORE camp discovery, but only for Ethereal layer (coord.alt == true):
+In the `find_treasure` function in `troop_movement_util_systems`, add bitcoin mine discovery BEFORE camp discovery, but
+only for Ethereal layer (coord.alt == true):
 
 ```cairo
                     // perform lottery to discover bitcoin mine (Ethereal layer only)
@@ -1103,8 +1093,7 @@ In `explorer_move`, add achievement case for BitcoinMine:
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -1223,8 +1212,7 @@ pub mod bitcoin_mine {
 
 **Step 3: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -1314,8 +1302,7 @@ use crate::models::config::BitcoinMineConfig;
 
 **Step 4: Run scarb build to verify**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
+Run: `cd contracts/game && scarb build` Expected: Build succeeds
 
 **Step 5: Commit**
 
@@ -1333,7 +1320,8 @@ EOF
 
 ## Task 16: ~~Restrict Satoshi Transfer to Armies Only~~ (REMOVED)
 
-**Status:** No longer needed - prizes are distributed via ERC20 transfer directly to mine owner, not as an in-game resource.
+**Status:** No longer needed - prizes are distributed via ERC20 transfer directly to mine owner, not as an in-game
+resource.
 
 ---
 
@@ -1413,8 +1401,7 @@ mod tests {
 
 **Step 2: Run tests to verify**
 
-Run: `cd contracts/game && sozo test -f test_bitcoin`
-Expected: Tests pass
+Run: `cd contracts/game && sozo test -f test_bitcoin` Expected: Tests pass
 
 **Step 3: Commit**
 
@@ -1438,18 +1425,15 @@ EOF
 
 **Step 1: Format Cairo code**
 
-Run: `cd contracts/game && scarb fmt`
-Expected: Code is formatted
+Run: `cd contracts/game && scarb fmt` Expected: Code is formatted
 
 **Step 2: Build contracts**
 
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds with no errors
+Run: `cd contracts/game && scarb build` Expected: Build succeeds with no errors
 
 **Step 3: Run all tests**
 
-Run: `cd contracts/game && sozo test`
-Expected: All tests pass
+Run: `cd contracts/game && sozo test` Expected: All tests pass
 
 **Step 4: Final commit if formatting changed anything**
 
@@ -1494,7 +1478,8 @@ Key design decisions:
 
 ### Problems with Original Design
 
-The original design had a single `execute_phase_lottery` function that anyone could call to determine the winner. This has several issues:
+The original design had a single `execute_phase_lottery` function that anyone could call to determine the winner. This
+has several issues:
 
 1. **Centralized execution**: One transaction determines the winner for everyone
 2. **Gas burden on caller**: Whoever calls the lottery pays gas but may not benefit
@@ -1506,6 +1491,7 @@ The original design had a single `execute_phase_lottery` function that anyone co
 #### Phase 1: Work Window (10 minutes)
 
 **Phase Initialization (Lazy):**
+
 - A new phase is initialized when the **first player contributes labor** to it
 - On first contribution, validate:
   - Phase ID is 1 (first phase ever), OR
@@ -1517,6 +1503,7 @@ The original design had a single `execute_phase_lottery` function that anyone co
 - The stored `phase_end_time` serves as proof the phase has been initialized
 
 **During Work Window:**
+
 - Players burn labor at their bitcoin mines during the open window
 - Can keep burning labor as long as current_timestamp < phase_end_time
 - Labor burned = work contributed (1:1 ratio)
@@ -1546,20 +1533,21 @@ The original design had a single `execute_phase_lottery` function that anyone co
 - If still unclaimed after 6 phases: **reward is burned** (nobody wins)
 
 This creates interesting dynamics:
+
 - Growing jackpots attract more participants
 - More participants = higher chance someone wins before burnout
 - Burning unclaimed rewards keeps prize pool scarce
 
 ### Why This Design Is Better
 
-| Aspect | Old Design | New Design |
-|--------|------------|------------|
-| **Permissionless** | Anyone can call | Anyone can call (same) |
-| **Batch processing** | Single winner selection | Process multiple mines per TX |
-| **Bot-friendly** | N/A | Bots can batch-process all claims |
-| **Fairness** | Single roll for all | Each mine gets their own roll |
-| **Jackpot potential** | Fixed per phase | Accumulates on no-winner phases |
-| **Scarcity** | All rewards distributed | Unclaimed rewards burned |
+| Aspect                | Old Design              | New Design                        |
+| --------------------- | ----------------------- | --------------------------------- |
+| **Permissionless**    | Anyone can call         | Anyone can call (same)            |
+| **Batch processing**  | Single winner selection | Process multiple mines per TX     |
+| **Bot-friendly**      | N/A                     | Bots can batch-process all claims |
+| **Fairness**          | Single roll for all     | Each mine gets their own roll     |
+| **Jackpot potential** | Fixed per phase         | Accumulates on no-winner phases   |
+| **Scarcity**          | All rewards distributed | Unclaimed rewards burned          |
 
 ### Implementation Changes Required
 
@@ -1603,15 +1591,18 @@ assert!(reward_token.transfer(winner_owner, prize_amount.into()), "Failed to tra
 ```
 
 **Config fields:**
+
 - `prize_per_phase: u128` - Amount of wBTC (in smallest units, 8 decimals) per phase
 - `reward_token: ContractAddress` - wBTC token address
 
 New state tracking needed:
 
 **Global Registry (BitcoinMineRegistry):**
+
 - `current_phase: u64` - contract-managed sequential phase counter (increments on first contribution)
 
 **Per-Phase State (BitcoinPhaseWork):**
+
 - `phase_end_time: u64` - timestamp when work window closes (set on initialization, 0 = uninitialized)
 - `prize_pool: u128` - wBTC allocated for this phase (base + any rollover)
 - `prize_origin_phase: u64` - phase where the prize pool originated (for rollover tracking)
@@ -1621,11 +1612,13 @@ New state tracking needed:
 - `reward_claimed: bool` - has anyone won yet
 
 **Hardcoded Constants:**
+
 - `MAX_ROLLOVER_PHASES: u8 = 6` - max phases a reward can roll over before being burned
 - Rollover count calculated as: `current_phase - prize_origin_phase`
 - If `current_phase - prize_origin_phase >= MAX_ROLLOVER_PHASES` and last participant loses → burn
 
 **Per-Mine-Per-Phase State (BitcoinMinePhaseWork):**
+
 - `work_contributed: u128` - this mine's work for this phase
 - `claimed: bool` - has this mine attempted claim yet
 
@@ -1633,9 +1626,11 @@ New state tracking needed:
 
 ## Spire-Structure Collision (Resolved)
 
-**Problem:** Spires are placed at fixed locations on the Ethereal layer. If a Bitcoin Mine (or other structure) is discovered at a tile that is later designated as a spire location, there's a collision.
+**Problem:** Spires are placed at fixed locations on the Ethereal layer. If a Bitcoin Mine (or other structure) is
+discovered at a tile that is later designated as a spire location, there's a collision.
 
 **Constraints:**
+
 - Spire locations expand dynamically as more realms settle (cannot pre-reserve)
 - Destroying player structures is not acceptable
 
@@ -1644,24 +1639,29 @@ New state tracking needed:
 When a spire would spawn at a location that's already occupied (in either the alt or regular layer):
 
 **If occupier is a structure:**
+
 1. **Mark the position as "taken"** in the contracts (so it won't be selected again)
 2. **Don't create a spire** at that location
 3. **Move on to the next spire** in the sequence
 
 **If occupier is a troop:**
+
 1. **Move the troop to an adjacent tile** using `iExplorerImpl::attempt_move_to_adjacent_tile`
 2. **Create the spire** at the designated location
 
 **Pros:**
+
 - Structures are fully protected (no forced relocation)
 - Troops are displaced gracefully (existing pattern in codebase)
 - Spires spawn at designated locations when possible
 - Deterministic behavior
 
 **Cons:**
+
 - Fewer total spires if structure collisions occur (acceptable tradeoff)
 
 **Implementation:**
+
 ```cairo
 // When spawning spire at designated location
 let tile: Tile = world.read_model((coord.x, coord.y, coord.alt));

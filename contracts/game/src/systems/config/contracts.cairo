@@ -282,15 +282,16 @@ pub mod config_systems {
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig, BlitzHypersSettlementConfigImpl,
-        BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig,
-        BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
-        HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig,
-        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
-        WorldConfig, WorldConfigUtilImpl,
+        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig,
+        BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl,
+        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, FaithConfig,
+        HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
+        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
+        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
+        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
     use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;

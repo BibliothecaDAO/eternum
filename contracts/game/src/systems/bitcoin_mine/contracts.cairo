@@ -305,9 +305,8 @@ pub mod bitcoin_mine_systems {
 
             // Update phase work with new claim count
             world.write_model(@phase_work);
-
             // If all participants have claimed and no winner, prize rolls over to next phase
-            // (handled in contribute_labor when initializing next phase)
+        // (handled in contribute_labor when initializing next phase)
         }
 
         fn get_pending_work(self: @ContractState, mine_id: ID) -> u128 {
