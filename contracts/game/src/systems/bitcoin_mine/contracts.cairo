@@ -92,6 +92,7 @@ pub mod bitcoin_mine_systems {
             mine_weight.store(ref world, mine_id);
 
             // Add labor to phase
+            assert!(labor_amount > 0, "Labor amount must be > 0");
             assert!(labor_amount >= config.min_labor_per_contribution, "Labor below minimum contribution");
             phase_labor.total_labor += labor_amount;
 
@@ -248,8 +249,8 @@ pub mod bitcoin_mine_systems {
                     let next_phase_id = phase_id + rollover_offset;
                     let mut next_phase: BitcoinPhaseLabor = world.read_model(next_phase_id);
 
-                    // If phase has participants and reward not yet assigned, add rollover
-                    if next_phase.participant_count > 0 && next_phase.reward_receiver_phase.is_zero() {
+                    // If reward not yet assigned, add rollover
+                    if next_phase.reward_receiver_phase.is_zero() {
                         next_phase.prize_pool += phase_labor.prize_pool;
                         world.write_model(@next_phase);
 
