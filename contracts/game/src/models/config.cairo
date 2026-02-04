@@ -332,8 +332,8 @@ pub struct FaithConfig {
 pub struct BitcoinMineConfig {
     pub enabled: bool,
     pub phase_duration_seconds: u64, // 600 = 10 minutes
-    pub satoshis_per_phase: u128, // Amount of satoshis emitted each phase
-    pub satoshi_weight_grams: u128, // Weight per satoshi unit
+    pub prize_per_phase: u128, // Amount of wBTC (in smallest unit) awarded per phase
+    pub reward_token: starknet::ContractAddress, // wBTC token address
     // Production rates: labor consumed per second at each level
     pub very_low_labor_per_sec: u16, // 1
     pub low_labor_per_sec: u16, // 2
