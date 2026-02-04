@@ -854,6 +854,11 @@ pub impl TickImpl of TickTrait {
         return TickInterval { tick_interval: tick_config.delivery_tick_in_seconds };
     }
 
+    fn get_bitcoin_phase_interval(ref world: WorldStorage) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world);
+        return TickInterval { tick_interval: tick_config.bitcoin_phase_in_seconds };
+    }
+
     fn interval(self: TickInterval) -> u64 {
         self.tick_interval
     }

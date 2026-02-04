@@ -1,11 +1,6 @@
 use core::num::traits::zero::Zero;
-use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use crate::constants::WORLD_CONFIG_ID;
-use crate::models::bitcoin_mine::{BitcoinMineRegistry, BitcoinMineState};
-use crate::models::config::{
-    MapConfig, TickConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
-};
+use crate::models::config::{MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig};
 use crate::models::map::TileOccupier;
 use crate::models::position::Coord;
 use crate::models::structure::StructureCategory;
@@ -71,25 +66,6 @@ pub impl iBitcoinMineDiscoveryImpl of iBitcoinMineDiscoveryTrait {
             ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
         );
 
-        // Initialize mine state
-        let tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
-        let current_phase = Self::_get_current_phase(tick_config);
-
-        let mine_state = BitcoinMineState {
-            mine_id: structure_id, labor_deposited: 0, last_contributed_phase: current_phase, prizes_won: 0,
-        };
-        world.write_model(@mine_state);
-
-        // Add to registry
-        let mut registry: BitcoinMineRegistry = world.read_model(WORLD_CONFIG_ID);
-        registry.active_mine_ids.append(structure_id);
-        world.write_model(@registry);
-
         return true;
-    }
-
-    fn _get_current_phase(tick_config: TickConfig) -> u64 {
-        let now = starknet::get_block_timestamp();
-        now / tick_config.bitcoin_phase_in_seconds
     }
 }

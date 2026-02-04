@@ -3,13 +3,12 @@ use crate::alias::ID;
 #[starknet::interface]
 pub trait IBitcoinMineSystems<T> {
     /// Contribute labor to a phase (initializes phase if first contributor)
-    /// Players can contribute to future phases by specifying target_phase_id
     fn contribute_labor(ref self: T, mine_id: ID, target_phase_id: u64, labor_amount: u128);
 
     /// Process claims for multiple mines in a phase (permissionless)
     fn claim_phase_reward(ref self: T, phase_id: u64, mine_ids: Array<ID>);
 
-    /// View: Get current phase ID
+    /// View: Get current phase ID (time-based)
     fn get_current_phase(self: @T) -> u64;
 
     /// View: Get mine's contribution percentage for a phase (basis points)
@@ -23,10 +22,11 @@ pub mod bitcoin_mine_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, MAX_FUTURE_PHASES, MAX_ROLLOVER_PHASES, ResourceTypes, WORLD_CONFIG_ID};
-    use crate::models::bitcoin_mine::{BitcoinMinePhaseLabor, BitcoinMineRegistry, BitcoinMineState, BitcoinPhaseLabor};
-    use crate::models::config::{BitcoinMineConfig, SeasonConfigImpl, TickConfig, WorldConfigUtilImpl};
+    use crate::constants::{DEFAULT_NS, MAX_FUTURE_PHASES, MAX_ROLLOVER_PHASES, ResourceTypes};
+    use crate::models::bitcoin_mine::{BitcoinMinePhaseLabor, BitcoinPhaseLabor};
+    use crate::models::config::{BitcoinMineConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl};
     use crate::models::events::{BitcoinMineProductionStory, BitcoinPhaseLotteryStory, Story, StoryEvent};
+    use crate::models::owner::OwnerAddressTrait;
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -44,12 +44,9 @@ pub mod bitcoin_mine_systems {
             let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
             assert!(config.enabled, "Bitcoin mine system is not enabled");
 
-            let tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
-            let caller = starknet::get_caller_address();
-
             // Verify mine ownership
             let mine_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
-            assert!(mine_owner == caller, "Only mine owner can contribute labor");
+            mine_owner.assert_caller_owner();
 
             // Verify it's a bitcoin mine
             let structure_base = StructureBaseStoreImpl::retrieve(ref world, mine_id);
@@ -57,14 +54,15 @@ pub mod bitcoin_mine_systems {
                 structure_base.category == StructureCategory::BitcoinMine.into(), "Structure is not a bitcoin mine",
             );
 
-            // Get registry to determine current phase
-            let mut registry: BitcoinMineRegistry = world.read_model(WORLD_CONFIG_ID);
+            // Get current phase from tick config
+            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world);
+            let current_phase = bitcoin_tick.current();
 
-            // Validate target_phase_id is valid (must be > 0 and >= current_phase + 1 for future contributions)
+            // Validate target_phase_id
             assert!(target_phase_id > 0, "Phase ID must be greater than 0");
-            assert!(target_phase_id > registry.current_phase, "Cannot contribute to past or current phase");
+            assert!(target_phase_id > current_phase, "Cannot contribute to past or current phase");
             assert!(
-                target_phase_id <= registry.current_phase + MAX_FUTURE_PHASES,
+                target_phase_id <= current_phase + MAX_FUTURE_PHASES,
                 "Cannot contribute to phase more than 30 phases in the future",
             );
 
@@ -73,47 +71,11 @@ pub mod bitcoin_mine_systems {
 
             let now = starknet::get_block_timestamp();
 
-            // Handle phase initialization for the "next" phase (current_phase + 1)
-            if target_phase_id == registry.current_phase + 1 && phase_labor.phase_end_time == 0 {
-                // Validate: phase_id == 1 OR previous phase has ended
-                if target_phase_id > 1 {
-                    let prev_phase: BitcoinPhaseLabor = world.read_model(registry.current_phase);
-                    assert!(now >= prev_phase.phase_end_time, "Previous phase has not ended yet");
-                }
-
-                // Calculate rollover from previous phase if unclaimed
-                let mut rollover: u128 = 0;
-                if target_phase_id > 1 {
-                    let prev_phase: BitcoinPhaseLabor = world.read_model(registry.current_phase);
-                    if !prev_phase.reward_claimed && prev_phase.prize_pool > 0 {
-                        // Check if within rollover limit
-                        let rollover_count = target_phase_id - prev_phase.prize_origin_phase;
-                        if rollover_count < MAX_ROLLOVER_PHASES {
-                            rollover = prev_phase.prize_pool;
-                            phase_labor.prize_origin_phase = prev_phase.prize_origin_phase;
-                        }
-                        // If rollover_count >= MAX_ROLLOVER_PHASES, prize is burned (rollover stays 0)
-                    }
-                }
-
-                // Initialize phase
+            // Initialize phase if not yet initialized
+            if phase_labor.phase_end_time == 0 {
                 phase_labor.phase_id = target_phase_id;
-                phase_labor.phase_end_time = now + tick_config.bitcoin_phase_in_seconds;
-                phase_labor.prize_pool = config.prize_per_phase + rollover;
-                if phase_labor.prize_origin_phase == 0 {
-                    phase_labor.prize_origin_phase = target_phase_id;
-                }
-
-                // Update registry
-                registry.current_phase = target_phase_id;
-                world.write_model(@registry);
-            } else if phase_labor.phase_end_time == 0 {
-                // Future phase (beyond current_phase + 1) - initialize without rollover
-                // Prize rollover only happens when phases are sequential
-                phase_labor.phase_id = target_phase_id;
-                phase_labor.phase_end_time = now + tick_config.bitcoin_phase_in_seconds;
+                phase_labor.phase_end_time = now + bitcoin_tick.interval();
                 phase_labor.prize_pool = config.prize_per_phase;
-                phase_labor.prize_origin_phase = target_phase_id;
             } else {
                 // Phase already initialized - ensure contribution window is still open
                 assert!(now < phase_labor.phase_end_time, "Contribution window has closed");
@@ -146,12 +108,6 @@ pub mod bitcoin_mine_systems {
                 phase_labor.participant_count += 1;
             }
             world.write_model(@phase_labor);
-
-            // Update mine state
-            let mut mine_state: BitcoinMineState = world.read_model(mine_id);
-            mine_state.labor_deposited += labor_amount;
-            mine_state.last_contributed_phase = target_phase_id;
-            world.write_model(@mine_state);
 
             // Emit production event
             world
@@ -246,11 +202,6 @@ pub mod bitcoin_mine_systems {
                     phase_labor.reward_claimed = true;
                     world.write_model(@phase_labor);
 
-                    // Update mine state
-                    let mut mine_state: BitcoinMineState = world.read_model(mine_id);
-                    mine_state.prizes_won += phase_labor.prize_pool;
-                    world.write_model(@mine_state);
-
                     // Mint SATOSHI at the winning mine (owner can transport via donkeys)
                     let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
                     let satoshi_weight = ResourceWeightImpl::grams(ref world, ResourceTypes::SATOSHI);
@@ -292,14 +243,36 @@ pub mod bitcoin_mine_systems {
 
             // Update phase labor with new claim count
             world.write_model(@phase_labor);
-            // If no winner found, prize rolls over when someone starts the next sequential phase
-        // (only if previous phase ended and wasn't claimed - see contribute_labor)
+
+            // If all participants have claimed and no winner, roll over prize to next qualifying phase
+            if phase_labor.claim_count == phase_labor.participant_count && !phase_labor.reward_claimed {
+                // Mark this phase as claimed (prize will be rolled over)
+                phase_labor.reward_claimed = true;
+                world.write_model(@phase_labor);
+
+                // Find next qualifying phase (one whose prize hasn't been claimed)
+                let mut rollover_offset: u64 = 1;
+                while rollover_offset <= MAX_ROLLOVER_PHASES {
+                    let next_phase_id = phase_id + rollover_offset;
+                    let mut next_phase: BitcoinPhaseLabor = world.read_model(next_phase_id);
+
+                    // If phase exists and prize not yet claimed, add rollover
+                    if next_phase.phase_end_time > 0 && !next_phase.reward_claimed {
+                        next_phase.prize_pool += phase_labor.prize_pool;
+                        world.write_model(@next_phase);
+                        break;
+                    }
+
+                    rollover_offset += 1;
+                };
+                // If no qualifying phase found within 6 phases, prize is burned
+            }
         }
 
         fn get_current_phase(self: @ContractState) -> u64 {
-            let world: WorldStorage = self.world(DEFAULT_NS());
-            let registry: BitcoinMineRegistry = world.read_model(WORLD_CONFIG_ID);
-            registry.current_phase
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world);
+            bitcoin_tick.current()
         }
 
         fn get_mine_contribution(self: @ContractState, mine_id: ID, phase_id: u64) -> u128 {

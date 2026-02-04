@@ -132,8 +132,8 @@ pub mod ResourceTypes {
 }
 
 // Bitcoin Mine constants
-pub const MAX_ROLLOVER_PHASES: u64 = 6;
 pub const MAX_FUTURE_PHASES: u64 = 30;
+pub const MAX_ROLLOVER_PHASES: u64 = 6;
 
 
 pub fn resource_type_name(resource_type: u8) -> ByteArray {
