@@ -1,5 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { POLLING_INTERVALS } from "@/config/polling";
+import { useActiveStructureSync } from "@/hooks/helpers/use-active-structure-sync";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
@@ -444,6 +445,7 @@ const PlayerStructuresStoreManager = () => {
   // Sync structure-scoped models (Resource, StructureBuildings, ProductionBoostBonus)
   // scoped to only the player's own structures
   usePlayerStructureSync();
+  useActiveStructureSync();
 
   useEffect(() => {
     setPlayerStructures(playerStructures);

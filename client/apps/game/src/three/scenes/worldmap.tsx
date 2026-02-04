@@ -284,12 +284,14 @@ export default class WorldmapScene extends HexagonScene {
     document.body.style.cursor = "wait";
 
     try {
+      const accountAddress = useAccountStore.getState().account?.address;
       await ensureStructureSynced(
         this.dojo.components as SetupResult["components"],
         this.dojo.network?.toriiClient!,
         this.dojo.network?.contractComponents as any,
         structureId,
         { col: contractCoords.x, row: contractCoords.y },
+        accountAddress,
       );
     } catch (error) {
       console.error("[WorldmapScene] Failed to fetch structure data from Torii", error);

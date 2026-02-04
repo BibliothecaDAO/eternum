@@ -9,6 +9,7 @@ import { useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useAccountStore } from "../store/use-account-store";
 import { useUIStore } from "../store/use-ui-store";
 
 type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
@@ -170,7 +171,8 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
       document.body.style.cursor = "wait";
 
       try {
-        await ensureStructureSynced(components, toriiClient, contractComponents as any, structureEntityId, effectivePosition);
+        const account = useAccountStore.getState().account?.address;
+        await ensureStructureSynced(components, toriiClient, contractComponents as any, structureEntityId, effectivePosition, account);
       } catch (error) {
         console.error("[useGoToStructure] Failed to sync structure before navigation", error);
       } finally {

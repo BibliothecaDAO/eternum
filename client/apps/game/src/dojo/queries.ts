@@ -115,15 +115,15 @@ export const getStructuresDataFromTorii = async (
   return Promise.all([structuresPromise, armiesPromise, buildingsPromise, tilePromise]);
 };
 
-// TODO: This is a one-shot fetch — once the structure is loaded into RECS, we won't receive
-// subsequent updates (e.g. ownership changes, guard troop changes). We need a way to subscribe
-// to updates for the entered structure without adding a broad subscription that's too demanding.
+// For own structures, usePlayerStructureSync keeps data fresh so we only fetch if missing.
+// For non-owned structures, always re-fetch since no subscription covers them and data may be stale.
 export const ensureStructureSynced = async (
   components: { Structure?: Component<any, any, any> },
   toriiClient: ToriiClient,
   contractComponents: Component<Schema, Metadata, undefined>[],
   structureEntityId: ID,
   position: { col: number; row: number },
+  accountAddress?: string,
 ): Promise<void> => {
   if (!components?.Structure || !toriiClient || !contractComponents) {
     return;
@@ -137,8 +137,14 @@ export const ensureStructureSynced = async (
   }
 
   const existing = getComponentValue(components.Structure, entityKey);
-  if (existing) {
-    return;
+  if (existing && accountAddress) {
+    try {
+      if (BigInt(existing.owner) === BigInt(accountAddress)) {
+        return;
+      }
+    } catch {
+      // owner comparison failed, re-fetch to be safe
+    }
   }
 
   const numericId = Number(structureEntityId);
