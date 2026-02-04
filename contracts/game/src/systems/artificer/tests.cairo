@@ -93,10 +93,12 @@ mod tests {
                 // Structure models
                 TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
                 // Resource models
-                TestResource::Model("Resource"), // Events
-                TestResource::Event("BurnResearchForRelicEvent"),
-                // Contract
-                TestResource::Contract("artificer_systems"), // Libraries
+                TestResource::Model("Resource"), // RNG model (needed for VRF)
+                TestResource::Model("RNG"),
+                // Events
+                TestResource::Event("BurnResearchForRelicEvent"), // Contract
+                TestResource::Contract("artificer_systems"),
+                // Libraries
                 TestResource::Library(("rng_library", "0_1_9")),
             ]
                 .span(),
@@ -260,8 +262,54 @@ mod tests {
         ResourceImpl::read_balance(ref world, structure_id, ResourceTypes::RESEARCH)
     }
 
+    fn get_total_relic_balance(ref world: WorldStorage, structure_id: ID) -> u128 {
+        use crate::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID};
+        let mut total: u128 = 0;
+        for relic_id in RELICS_RESOURCE_START_ID..RELICS_RESOURCE_END_ID + 1 {
+            total += ResourceImpl::read_balance(ref world, structure_id, relic_id);
+        }
+        total
+    }
+
     // ============================================================================
-    // Failure Tests (these don't require RNG)
+    // Success Tests
+    // ============================================================================
+
+    #[test]
+    fn test_burn_research_for_relic_success() {
+        let mut world = setup_artificer_world();
+        let (system_addr, dispatcher) = get_artificer_dispatcher(ref world);
+
+        let owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_id = spawn_test_realm(ref world, owner);
+
+        // Grant exact amount needed
+        grant_research(ref world, realm_id, RESEARCH_COST_FOR_RELIC);
+
+        // Record initial balances
+        let initial_research = get_research_balance(ref world, realm_id);
+        let initial_relics = get_total_relic_balance(ref world, realm_id);
+
+        assert!(initial_research == RESEARCH_COST_FOR_RELIC, "initial research incorrect");
+        assert!(initial_relics == 0, "should have no relics initially");
+
+        start_cheat_block_timestamp_global(1000);
+
+        start_cheat_caller_address(system_addr, owner);
+        dispatcher.burn_research_for_relic(realm_id);
+        stop_cheat_caller_address(system_addr);
+
+        // Verify research was burned
+        let final_research = get_research_balance(ref world, realm_id);
+        assert!(final_research == 0, "research should be burned");
+
+        // Verify a relic was granted (exactly 1 relic with RESOURCE_PRECISION amount)
+        let final_relics = get_total_relic_balance(ref world, realm_id);
+        assert!(final_relics == RESOURCE_PRECISION, "should have received exactly 1 relic");
+    }
+
+    // ============================================================================
+    // Failure Tests
     // ============================================================================
 
     #[test]
