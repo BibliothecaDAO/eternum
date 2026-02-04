@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 
+import { debouncedGetBuildingsFromTorii } from "@/dojo/debounced-queries";
 import { PLAYER_STRUCTURE_MODELS, syncEntitiesDebounced } from "@/dojo/sync";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import type { PatternMatching } from "@dojoengine/torii-client";
@@ -18,6 +19,17 @@ export const usePlayerStructureSync = () => {
 
   const structureEntityIds = useMemo(() => playerStructures.map((s) => s.entityId), [playerStructures]);
 
+  const structurePositions = useMemo(
+    () => playerStructures.map((s) => ({ col: s.position.x, row: s.position.y })),
+    [playerStructures],
+  );
+
+  // Initial fetch of buildings for player structures
+  useEffect(() => {
+    if (structurePositions.length === 0) return;
+    debouncedGetBuildingsFromTorii(toriiClient, setup.network.contractComponents as any, structurePositions);
+  }, [structurePositions, toriiClient, setup.network.contractComponents]);
+
   useEffect(() => {
     const subscribe = async () => {
       // Cancel previous subscription
@@ -28,16 +40,26 @@ export const usePlayerStructureSync = () => {
 
       if (structureEntityIds.length === 0) return;
 
+      const structureClauses = structureEntityIds.map((id) => ({
+        Keys: {
+          keys: [id.toString()],
+          pattern_matching: "VariableLen" as PatternMatching,
+          models: PLAYER_STRUCTURE_MODELS,
+        },
+      }));
+
+      const buildingClauses = structurePositions.map((pos) => ({
+        Keys: {
+          keys: [pos.col.toString(), pos.row.toString()],
+          pattern_matching: "VariableLen" as PatternMatching,
+          models: ["s1_eternum-Building"],
+        },
+      }));
+
       const clause: Clause = {
         Composite: {
           operator: "Or",
-          clauses: structureEntityIds.map((id) => ({
-            Keys: {
-              keys: [id.toString()],
-              pattern_matching: "VariableLen" as PatternMatching,
-              models: PLAYER_STRUCTURE_MODELS,
-            },
-          })),
+          clauses: [...structureClauses, ...buildingClauses],
         },
       };
 
@@ -52,5 +74,5 @@ export const usePlayerStructureSync = () => {
         subscriptionRef.current = null;
       }
     };
-  }, [structureEntityIds, toriiClient, setup]);
+  }, [structureEntityIds, structurePositions, toriiClient, setup]);
 };
