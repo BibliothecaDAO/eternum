@@ -1,7 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
-import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
+import { ensureStructureSynced, getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -277,51 +277,20 @@ export default class WorldmapScene extends HexagonScene {
   private perfSimulation: WorldmapPerfSimulation | null = null;
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
-  private async ensureStructureSynced(structureId: ID, hexCoords: HexPosition) {
-    const components = this.dojo.components as SetupResult["components"];
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents;
-
+  private async ensureStructureQueriedMethod(structureId: ID, hexCoords: HexPosition) {
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-
-    if (!components?.Structure || !toriiClient || !contractComponents) {
-      return;
-    }
-
-    let entityKey: string | undefined;
-    try {
-      entityKey = getEntityIdFromKeys([BigInt(structureId)]) as string;
-    } catch (error) {
-      console.warn("[WorldmapScene] Unable to build entity key for structure", structureId, error);
-      return;
-    }
-
-    const existing = getComponentValue(components.Structure, entityKey as any);
-    if (existing) {
-      return;
-    }
-
-    const numericId = Number(structureId);
-    if (!Number.isFinite(hexCoords.col) || !Number.isFinite(hexCoords.row)) {
-      console.warn("[WorldmapScene] Unable to determine coordinates for structure", structureId);
-      return;
-    }
-    if (!Number.isFinite(numericId)) {
-      console.warn("[WorldmapScene] Structure id is not a finite number", structureId);
-      return;
-    }
 
     const previousCursor = document.body.style.cursor;
     document.body.style.cursor = "wait";
 
     try {
-      const typedContractComponents = contractComponents as any;
-      await getStructuresDataFromTorii(toriiClient, typedContractComponents, [
-        {
-          entityId: numericId,
-          position: { col: contractCoords.x, row: contractCoords.y },
-        },
-      ]);
+      await ensureStructureSynced(
+        this.dojo.components as SetupResult["components"],
+        this.dojo.network?.toriiClient!,
+        this.dojo.network?.contractComponents as any,
+        structureId,
+        { col: contractCoords.x, row: contractCoords.y },
+      );
     } catch (error) {
       console.error("[WorldmapScene] Failed to fetch structure data from Torii", error);
     } finally {
@@ -1200,7 +1169,7 @@ export default class WorldmapScene extends HexagonScene {
 
     try {
       console.log("[WorldmapScene] Syncing structure before entry", structure.id, hexCoords);
-      await this.ensureStructureSynced(structure.id, hexCoords);
+      await this.ensureStructureQueriedMethod(structure.id, hexCoords);
     } catch (error) {
       console.error("[WorldmapScene] Failed to sync structure before entry", error);
     }
@@ -1513,7 +1482,6 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
 
     if (hexCoords) {
-      void this.ensureStructureSynced(selectedEntityId, hexCoords);
       const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
       const worldMapPosition =
         Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))

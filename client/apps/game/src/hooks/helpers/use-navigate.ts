@@ -2,7 +2,7 @@ import { useCallback } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
 
-import { getStructuresDataFromTorii } from "@/dojo/queries";
+import { ensureStructureSynced } from "@/dojo/queries";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { useQuery } from "@bibliothecadao/react";
@@ -151,41 +151,18 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
   const navigateToHexView = useNavigateToHexView();
   const navigateToMapView = useNavigateToMapView();
 
-  const ensureStructureSynced = useCallback(
+  const ensureStructureSyncedCb = useCallback(
     async (structureEntityId: ID, position: Position, worldMapPosition?: { col: number; row: number }) => {
       const components = setupResult?.components;
       const toriiClient = setupResult?.network?.toriiClient;
       const contractComponents = setupResult?.network?.contractComponents;
 
-      if (!components?.Structure || !toriiClient || !contractComponents) {
-        return;
-      }
-
-      let entityKey: any;
-      try {
-        entityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
-      } catch (error) {
-        console.warn("[useGoToStructure] Unable to build entity key for", structureEntityId, error);
-        return;
-      }
-
-      const existing = getComponentValue(components.Structure, entityKey);
-      if (existing) {
+      if (!components || !toriiClient || !contractComponents) {
         return;
       }
 
       const effectivePosition = worldMapPosition ?? toWorldMapPosition(position);
-
       if (!effectivePosition) {
-        console.warn("[useGoToStructure] Unable to determine structure coordinates for", structureEntityId);
-        return;
-      }
-
-      const { col, row } = effectivePosition;
-
-      const numericId = Number(structureEntityId);
-      if (!Number.isFinite(numericId)) {
-        console.warn("[useGoToStructure] Structure id is not a finite number", structureEntityId);
         return;
       }
 
@@ -193,12 +170,7 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
       document.body.style.cursor = "wait";
 
       try {
-        await getStructuresDataFromTorii(toriiClient, contractComponents as any, [
-          {
-            entityId: numericId,
-            position: { col, row },
-          },
-        ]);
+        await ensureStructureSynced(components, toriiClient, contractComponents as any, structureEntityId, effectivePosition);
       } catch (error) {
         console.error("[useGoToStructure] Failed to sync structure before navigation", error);
       } finally {
@@ -239,7 +211,7 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     const worldMapPosition = toWorldMapPosition(targetPosition);
 
     try {
-      await ensureStructureSynced(structureEntityId, targetPosition, worldMapPosition);
+      await ensureStructureSyncedCb(structureEntityId, targetPosition, worldMapPosition);
     } catch (error) {
       console.error("[useGoToStructure] Unexpected error while syncing structure", error);
     }

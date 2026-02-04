@@ -1,11 +1,12 @@
 // onload -> fetch single key entities
 
 import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
-import { Component, Metadata, Schema } from "@dojoengine/recs";
+import { Component, Metadata, Schema, getComponentValue } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
@@ -112,6 +113,40 @@ export const getStructuresDataFromTorii = async (
 
   // Execute all promises in parallel
   return Promise.all([structuresPromise, armiesPromise, buildingsPromise, tilePromise]);
+};
+
+// TODO: This is a one-shot fetch — once the structure is loaded into RECS, we won't receive
+// subsequent updates (e.g. ownership changes, guard troop changes). We need a way to subscribe
+// to updates for the entered structure without adding a broad subscription that's too demanding.
+export const ensureStructureSynced = async (
+  components: { Structure?: Component<any, any, any> },
+  toriiClient: ToriiClient,
+  contractComponents: Component<Schema, Metadata, undefined>[],
+  structureEntityId: ID,
+  position: { col: number; row: number },
+): Promise<void> => {
+  if (!components?.Structure || !toriiClient || !contractComponents) {
+    return;
+  }
+
+  let entityKey: any;
+  try {
+    entityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
+  } catch {
+    return;
+  }
+
+  const existing = getComponentValue(components.Structure, entityKey);
+  if (existing) {
+    return;
+  }
+
+  const numericId = Number(structureEntityId);
+  if (!Number.isFinite(numericId) || !Number.isFinite(position.col) || !Number.isFinite(position.row)) {
+    return;
+  }
+
+  await getStructuresDataFromTorii(toriiClient, contractComponents, [{ entityId: numericId, position }]);
 };
 
 export const getConfigFromTorii = async <S extends Schema>(
