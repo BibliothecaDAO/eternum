@@ -105,6 +105,7 @@ export const BUILDING_IMAGES_PATH = {
   [BuildingType.ResourceCrossbowmanT3]: `${BUILD_IMAGES_PREFIX}archery.png`,
   [BuildingType.WorkersHut]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
   [BuildingType.Storehouse]: `${BUILD_IMAGES_PREFIX}storehouse.png`,
+  [BuildingType.ResourceResearch]: `${BUILD_IMAGES_PREFIX}research_lab.png`,
   [ResourceMiningTypes.Forge]: `${BUILD_IMAGES_PREFIX}forge.png`,
   [ResourceMiningTypes.Mine]: `${BUILD_IMAGES_PREFIX}mine.png`,
   [ResourceMiningTypes.LumberMill]: `${BUILD_IMAGES_PREFIX}lumber_mill.png`,
