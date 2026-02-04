@@ -1577,7 +1577,79 @@ Key design decisions:
 - **Phase-based lottery**: Every 10 minutes, weighted random selection based on work contribution
 - **Work = Labor**: 1:1 ratio where labor consumed equals work produced
 - **Army-only transport**: Satoshis cannot be carried by donkeys, matching lore
-- **Permissionless lottery**: Anyone can execute phase lottery after phase ends
+
+---
+
+## Design Revision: Distributed Claim Lottery
+
+### Problems with Original Design
+
+The original design had a single `execute_phase_lottery` function that anyone could call to determine the winner. This has several issues:
+
+1. **Centralized execution**: One transaction determines the winner for everyone
+2. **Gas burden on caller**: Whoever calls the lottery pays gas but may not benefit
+3. **No urgency**: No incentive to participate quickly
+4. **Potential griefing**: Callers could time their call strategically
+
+### Revised Mechanism
+
+#### Phase 1: Work Window (10 minutes)
+
+- Players burn labor at their bitcoin mines during the open window
+- Can keep burning labor as long as the 10-minute window is still open
+- Labor burned = work contributed (1:1 ratio)
+- Work contribution determines lottery odds for that phase
+
+#### Phase 2: Claim Window (after work window closes)
+
+- Once the 10-minute window closes, players can attempt to claim the reward
+- **Each player calls their own `claim_reward(phase_id)` transaction**
+- The contract runs a VRF lottery for that caller based on their percentage of total work
+- If they win: they receive the satoshis immediately
+- If they lose: nothing happens, they can't claim again for this phase
+- **First to win gets the reward** - subsequent claims for that phase fail
+
+#### Last Roller Guarantee + Rollover
+
+- Contract tracks how many participants have attempted to claim
+- Contract knows the total participant count from the work window
+- When the **last participant** calls claim:
+  - If they win: normal payout
+  - If they still don't win: **reward rolls over to the next open phase**
+- Rollover continues for up to **6 phases** maximum
+- If still unclaimed after 6 phases, reward is distributed to the 6th phase winner guaranteed
+
+### Why This Design Is Better
+
+| Aspect | Old Design | New Design |
+|--------|------------|------------|
+| **Gas distribution** | Single caller pays all | Each claimant pays their own |
+| **Incentive alignment** | Caller may not benefit | Claimant is trying to win |
+| **Player engagement** | Passive waiting | Active claiming creates urgency |
+| **Fairness** | Timing of single call matters | Everyone gets their own roll |
+| **Jackpot potential** | Fixed per phase | Accumulates on no-winner phases |
+| **Guaranteed payout** | Depends on someone calling | Last roller or 6-phase cap |
+
+### Implementation Changes Required
+
+The current `execute_phase_lottery(phase_id)` needs to be replaced with:
+
+```cairo
+/// Player attempts to claim reward for a completed phase
+/// - Checks caller contributed work to this phase
+/// - Runs VRF lottery weighted by caller's work percentage
+/// - If win: transfers satoshis to caller's mine
+/// - If lose: marks caller as claimed (can't retry)
+/// - If last claimer loses: rolls reward to next phase
+fn claim_phase_reward(ref self: T, mine_id: ID, phase_id: u64);
+```
+
+New state tracking needed:
+- `phase_participant_count: u32` - total workers in phase
+- `phase_claim_count: u32` - how many have attempted claim
+- `phase_claimed_by_mine: bool` - has this mine claimed yet
+- `phase_reward_claimed: bool` - has anyone won yet
+- `phase_rollover_amount: u128` - accumulated from previous phases
 
 ---
 
