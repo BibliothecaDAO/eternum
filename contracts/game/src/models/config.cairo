@@ -337,14 +337,7 @@ pub struct FaithConfig {
 pub struct BitcoinMineConfig {
     pub enabled: bool,
     pub phase_duration_seconds: u64, // 600 = 10 minutes
-    pub prize_per_phase: u128, // Amount of wBTC (in smallest unit) awarded per phase
-    pub reward_token: starknet::ContractAddress, // wBTC token address
-    // Production rates: labor consumed per second at each level
-    pub very_low_labor_per_sec: u16, // 1
-    pub low_labor_per_sec: u16, // 2
-    pub medium_labor_per_sec: u16, // 3
-    pub high_labor_per_sec: u16, // 4
-    pub very_high_labor_per_sec: u16 // 5
+    pub prize_per_phase: u128 // Amount of SATOSHI awarded per phase
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]

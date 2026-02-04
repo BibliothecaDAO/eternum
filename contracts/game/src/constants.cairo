@@ -51,7 +51,7 @@ pub fn all_resource_ids() -> Array<u8> {
         39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53,
         54, 55, 56, // Research
         57, // Bitcoin Mine Resources
-        58, 59,
+        58,
     ]
 }
 
@@ -127,13 +127,13 @@ pub mod ResourceTypes {
     // Research
     pub const RESEARCH: u8 = 57;
 
-    // Bitcoin Mine Resources
-    pub const WORK: u8 = 58;
-    pub const SATOSHI: u8 = 59;
+    // Bitcoin Mine Resources (work is tracked internally, not as a resource)
+    pub const SATOSHI: u8 = 58;
 }
 
 // Bitcoin Mine constants
 pub const MAX_ROLLOVER_PHASES: u64 = 6;
+pub const MAX_FUTURE_PHASES: u64 = 30;
 
 
 pub fn resource_type_name(resource_type: u8) -> ByteArray {
@@ -252,8 +252,6 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 57 {
         "RESEARCH"
     } else if resource_type == 58 {
-        "WORK"
-    } else if resource_type == 59 {
         "SATOSHI"
     } else {
         format!("{} (unknown resource name)", resource_type)

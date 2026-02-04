@@ -376,15 +376,14 @@ pub struct FaithPointsClaimedStory {
 pub struct BitcoinMineProductionStory {
     pub mine_id: ID,
     pub owner: ContractAddress,
-    pub production_level: u8,
-    pub labor_consumed: u128,
-    pub work_produced: u128,
+    pub phase_id: u64,
+    pub labor_deposited: u128,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct BitcoinPhaseLotteryStory {
     pub phase_id: u64,
-    pub total_work: u128,
+    pub total_labor: u128,
     pub winner_mine_id: ID,
     pub winner_owner: ContractAddress,
     pub prize_awarded: u128,

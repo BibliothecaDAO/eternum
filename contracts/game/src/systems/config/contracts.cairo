@@ -255,18 +255,7 @@ pub trait IFaithConfig<T> {
 
 #[starknet::interface]
 pub trait IBitcoinMineConfig<T> {
-    fn set_bitcoin_mine_config(
-        ref self: T,
-        enabled: bool,
-        phase_duration_seconds: u64,
-        prize_per_phase: u128,
-        reward_token: starknet::ContractAddress,
-        very_low_labor_per_sec: u16,
-        low_labor_per_sec: u16,
-        medium_labor_per_sec: u16,
-        high_labor_per_sec: u16,
-        very_high_labor_per_sec: u16,
-    );
+    fn set_bitcoin_mine_config(ref self: T, enabled: bool, phase_duration_seconds: u64, prize_per_phase: u128);
 }
 
 #[starknet::interface]
@@ -1100,31 +1089,12 @@ pub mod config_systems {
     #[abi(embed_v0)]
     impl BitcoinMineConfigImpl of super::IBitcoinMineConfig<ContractState> {
         fn set_bitcoin_mine_config(
-            ref self: ContractState,
-            enabled: bool,
-            phase_duration_seconds: u64,
-            prize_per_phase: u128,
-            reward_token: starknet::ContractAddress,
-            very_low_labor_per_sec: u16,
-            low_labor_per_sec: u16,
-            medium_labor_per_sec: u16,
-            high_labor_per_sec: u16,
-            very_high_labor_per_sec: u16,
+            ref self: ContractState, enabled: bool, phase_duration_seconds: u64, prize_per_phase: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let config = BitcoinMineConfig {
-                enabled,
-                phase_duration_seconds,
-                prize_per_phase,
-                reward_token,
-                very_low_labor_per_sec,
-                low_labor_per_sec,
-                medium_labor_per_sec,
-                high_labor_per_sec,
-                very_high_labor_per_sec,
-            };
+            let config = BitcoinMineConfig { enabled, phase_duration_seconds, prize_per_phase };
             WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), config);
         }
     }

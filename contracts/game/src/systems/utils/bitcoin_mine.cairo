@@ -78,11 +78,7 @@ pub impl iBitcoinMineDiscoveryImpl of iBitcoinMineDiscoveryTrait {
         let current_phase = Self::_get_current_phase(ref world, bitcoin_mine_config);
 
         let mine_state = BitcoinMineState {
-            mine_id: structure_id,
-            production_level: 0, // Stopped until player activates
-            work_accumulated: 0,
-            work_last_claimed_phase: current_phase,
-            prizes_won: 0,
+            mine_id: structure_id, labor_deposited: 0, last_contributed_phase: current_phase, prizes_won: 0,
         };
         world.write_model(@mine_state);
 
