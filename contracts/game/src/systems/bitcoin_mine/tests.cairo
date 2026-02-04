@@ -1,18 +1,20 @@
 #[cfg(test)]
 mod tests {
+    use core::num::traits::Zero;
+    use starknet::ContractAddress;
     use crate::constants::RESOURCE_PRECISION;
     use crate::models::bitcoin_mine::ProductionLevel;
     use crate::models::config::BitcoinMineConfig;
 
     const PHASE_DURATION: u64 = 600; // 10 minutes
-    const SATOSHIS_PER_PHASE: u128 = 100_000_000_000; // 100 satoshis with precision
+    const PRIZE_PER_PHASE: u128 = 100_000_000; // 1 wBTC in smallest units (8 decimals)
 
     fn get_default_bitcoin_mine_config() -> BitcoinMineConfig {
         BitcoinMineConfig {
             enabled: true,
             phase_duration_seconds: PHASE_DURATION,
-            satoshis_per_phase: SATOSHIS_PER_PHASE,
-            satoshi_weight_grams: 1, // Very light
+            prize_per_phase: PRIZE_PER_PHASE,
+            reward_token: Zero::zero(), // Test address
             very_low_labor_per_sec: 1,
             low_labor_per_sec: 2,
             medium_labor_per_sec: 3,
