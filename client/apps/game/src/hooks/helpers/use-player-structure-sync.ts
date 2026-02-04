@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useRef } from "react";
 
-import { debouncedGetBuildingsFromTorii } from "@/dojo/debounced-queries";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
-import { PLAYER_STRUCTURE_MODELS, syncEntitiesDebounced } from "@/dojo/sync";
+import { syncEntitiesDebounced } from "@/dojo/sync";
 import { sqlApi } from "@/services/api";
+import { padHexAddressTo66 } from "@/ui/utils/utils";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
 import { useAccountStore } from "../store/use-account-store";
+
+// Models synced per-player via a scoped subscription (see usePlayerStructureSync)
+export const PLAYER_STRUCTURE_MODELS: string[] = [
+  "s1_eternum-ProductionBoostBonus",
+  "s1_eternum-Resource",
+  "s1_eternum-ResourceArrival",
+];
 
 export const usePlayerStructureSync = () => {
   const {
@@ -36,7 +44,6 @@ export const usePlayerStructureSync = () => {
     let cancelled = false;
     (async () => {
       const structures = await sqlApi.fetchStructuresByOwner(accountAddress);
-      console.log({ structures });
       if (structures.length > 0 && !cancelled) {
         await getStructuresDataFromTorii(
           toriiClient,
@@ -53,12 +60,6 @@ export const usePlayerStructureSync = () => {
     };
   }, [accountAddress, toriiClient, contractComponents]);
 
-  // Initial fetch of buildings for player structures
-  useEffect(() => {
-    if (structurePositions.length === 0) return;
-    debouncedGetBuildingsFromTorii(toriiClient, setup.network.contractComponents as any, structurePositions);
-  }, [structurePositions, toriiClient, setup.network.contractComponents]);
-
   useEffect(() => {
     const subscribe = async () => {
       // Cancel previous subscription
@@ -67,7 +68,7 @@ export const usePlayerStructureSync = () => {
         subscriptionRef.current = null;
       }
 
-      if (structureEntityIds.length === 0) return;
+      if (structureEntityIds.length === 0 || !accountAddress) return;
 
       const structureClauses = structureEntityIds.map((id) => ({
         Keys: {
@@ -85,10 +86,17 @@ export const usePlayerStructureSync = () => {
         },
       }));
 
+      const ownerStructureClause = MemberClause(
+        "s1_eternum-Structure",
+        "owner",
+        "Eq",
+        padHexAddressTo66(accountAddress),
+      ).build();
+
       const clause: Clause = {
         Composite: {
           operator: "Or",
-          clauses: [...structureClauses, ...buildingClauses],
+          clauses: [...structureClauses, ...buildingClauses, ownerStructureClause],
         },
       };
 
@@ -103,5 +111,5 @@ export const usePlayerStructureSync = () => {
         subscriptionRef.current = null;
       }
     };
-  }, [structureEntityIds, structurePositions, toriiClient, setup]);
+  }, [structureEntityIds, structurePositions, accountAddress, toriiClient, setup]);
 };
