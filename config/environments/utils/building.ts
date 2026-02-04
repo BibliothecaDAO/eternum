@@ -83,7 +83,7 @@ export const BUILDING_POPULATION: { [key in BuildingType]: number } = {
   [BuildingType.ResourcePaladinT3]: 3,
   [BuildingType.ResourceWheat]: 1,
   [BuildingType.ResourceFish]: 1,
-  [BuildingType.ResourceResearch]: 2,  // Placeholder - TBD
+  [BuildingType.ResourceResearch]: 2, // Placeholder - TBD
 };
 
 export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
@@ -271,7 +271,7 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Labor, amount: 120 },
     { resource: ResourcesIds.Wood, amount: 120 },
     { resource: ResourcesIds.Copper, amount: 60 },
-  ],  // Artificer's Workshop
+  ], // Artificer's Workshop
 };
 
 export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
@@ -321,7 +321,5 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   // Economic Buildings
   [BuildingType.ResourceDonkey]: [{ resource: ResourcesIds.Labor, amount: 180 }],
   [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Labor, amount: 60 }], // Worker Hut
-  [BuildingType.ResourceResearch]: [
-    { resource: ResourcesIds.Labor, amount: 360 },
-  ],  // Artificer's Workshop (labor-only)
+  [BuildingType.ResourceResearch]: [{ resource: ResourcesIds.Labor, amount: 360 }], // Artificer's Workshop (labor-only)
 };

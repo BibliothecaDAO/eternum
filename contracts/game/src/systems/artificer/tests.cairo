@@ -97,8 +97,7 @@ mod tests {
                 TestResource::Model("RNG"),
                 // Events
                 TestResource::Event("BurnResearchForRelicEvent"), // Contract
-                TestResource::Contract("artificer_systems"),
-                // Libraries
+                TestResource::Contract("artificer_systems"), // Libraries
                 TestResource::Library(("rng_library", "0_1_9")),
             ]
                 .span(),
