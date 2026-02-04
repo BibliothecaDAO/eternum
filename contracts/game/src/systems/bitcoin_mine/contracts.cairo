@@ -25,7 +25,7 @@ pub mod bitcoin_mine_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, MAX_FUTURE_PHASES, MAX_ROLLOVER_PHASES, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::bitcoin_mine::{BitcoinMinePhaseLabor, BitcoinMineRegistry, BitcoinMineState, BitcoinPhaseLabor};
-    use crate::models::config::{BitcoinMineConfig, SeasonConfigImpl, WorldConfigUtilImpl};
+    use crate::models::config::{BitcoinMineConfig, SeasonConfigImpl, TickConfig, WorldConfigUtilImpl};
     use crate::models::events::{BitcoinMineProductionStory, BitcoinPhaseLotteryStory, Story, StoryEvent};
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -44,6 +44,7 @@ pub mod bitcoin_mine_systems {
             let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
             assert!(config.enabled, "Bitcoin mine system is not enabled");
 
+            let tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
             let caller = starknet::get_caller_address();
 
             // Verify mine ownership
@@ -97,7 +98,7 @@ pub mod bitcoin_mine_systems {
 
                 // Initialize phase
                 phase_labor.phase_id = target_phase_id;
-                phase_labor.phase_end_time = now + config.phase_duration_seconds;
+                phase_labor.phase_end_time = now + tick_config.bitcoin_phase_in_seconds;
                 phase_labor.prize_pool = config.prize_per_phase + rollover;
                 if phase_labor.prize_origin_phase == 0 {
                     phase_labor.prize_origin_phase = target_phase_id;
@@ -110,7 +111,7 @@ pub mod bitcoin_mine_systems {
                 // Future phase (beyond current_phase + 1) - initialize without rollover
                 // Prize rollover only happens when phases are sequential
                 phase_labor.phase_id = target_phase_id;
-                phase_labor.phase_end_time = now + config.phase_duration_seconds;
+                phase_labor.phase_end_time = now + tick_config.bitcoin_phase_in_seconds;
                 phase_labor.prize_pool = config.prize_per_phase;
                 phase_labor.prize_origin_phase = target_phase_id;
             } else {

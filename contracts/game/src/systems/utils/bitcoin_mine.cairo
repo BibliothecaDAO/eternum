@@ -4,7 +4,7 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::constants::WORLD_CONFIG_ID;
 use crate::models::bitcoin_mine::{BitcoinMineRegistry, BitcoinMineState};
 use crate::models::config::{
-    BitcoinMineConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+    MapConfig, TickConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
 };
 use crate::models::map::TileOccupier;
 use crate::models::position::Coord;
@@ -72,10 +72,8 @@ pub impl iBitcoinMineDiscoveryImpl of iBitcoinMineDiscoveryTrait {
         );
 
         // Initialize mine state
-        let bitcoin_mine_config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("bitcoin_mine_config"),
-        );
-        let current_phase = Self::_get_current_phase(ref world, bitcoin_mine_config);
+        let tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
+        let current_phase = Self::_get_current_phase(tick_config);
 
         let mine_state = BitcoinMineState {
             mine_id: structure_id, labor_deposited: 0, last_contributed_phase: current_phase, prizes_won: 0,
@@ -90,8 +88,8 @@ pub impl iBitcoinMineDiscoveryImpl of iBitcoinMineDiscoveryTrait {
         return true;
     }
 
-    fn _get_current_phase(ref world: WorldStorage, config: BitcoinMineConfig) -> u64 {
+    fn _get_current_phase(tick_config: TickConfig) -> u64 {
         let now = starknet::get_block_timestamp();
-        now / config.phase_duration_seconds
+        now / tick_config.bitcoin_phase_in_seconds
     }
 }

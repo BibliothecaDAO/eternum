@@ -336,7 +336,6 @@ pub struct FaithConfig {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BitcoinMineConfig {
     pub enabled: bool,
-    pub phase_duration_seconds: u64, // 600 = 10 minutes
     pub prize_per_phase: u128 // Amount of SATOSHI awarded per phase
 }
 
@@ -751,6 +750,7 @@ pub struct VictoryPointsWinConfig {
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
     pub delivery_tick_in_seconds: u64,
+    pub bitcoin_phase_in_seconds: u64 // 600 = 10 minutes
 }
 
 

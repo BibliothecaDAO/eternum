@@ -174,7 +174,7 @@ pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
 }
 
 pub fn MOCK_TICK_CONFIG() -> TickConfig {
-    TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1 }
+    TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1, bitcoin_phase_in_seconds: 600 }
 }
 
 pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
