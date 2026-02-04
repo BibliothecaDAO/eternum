@@ -7,7 +7,8 @@
 **Architecture:**
 
 - New `BitcoinMine` structure category and `TileOccupier::BitcoinMine` variant
-- New `Work` and `Satoshi` resource types (Work is weightless, non-transferrable; Satoshis can only be carried by armies)
+- New `Work` resource type (weightless, non-transferrable)
+- ERC20 wBTC prize distribution via `reward_token.transfer`
 - New `bitcoin_mine` system module with production, phase calculation, and lottery mechanics
 - Phase-based reward distribution (every 10 minutes) using VRF-weighted random selection
 - Integration with exploration system for Ethereal-layer-only discovery (1/50 chance)
@@ -17,35 +18,32 @@
 
 ---
 
-## Task 1: Add New Resource Types (Work and Satoshi)
+## Task 1: Add New Resource Type (Work)
 
 **Files:**
 
 - Modify: `contracts/game/src/constants.cairo`
 
-**Step 1: Add WORK and SATOSHI resource type constants**
+**Step 1: Add WORK resource type constant**
 
 Add after `RELIC_E18` in the `ResourceTypes` module:
 
 ```cairo
     // Bitcoin Mine Resources
     pub const WORK: u8 = 57;
-    pub const SATOSHI: u8 = 58;
 ```
 
 **Step 2: Update all_resource_ids function**
 
-Add `57, 58` to the array in `all_resource_ids()`.
+Add `57` to the array in `all_resource_ids()`.
 
 **Step 3: Update resource_type_name function**
 
-Add cases for WORK and SATOSHI:
+Add case for WORK:
 
 ```cairo
     } else if resource_type == 57 {
         "WORK"
-    } else if resource_type == 58 {
-        "SATOSHI"
 ```
 
 **Step 4: Run scarb build to verify**
@@ -58,10 +56,10 @@ Expected: Build succeeds
 ```bash
 git add contracts/game/src/constants.cairo
 git commit -m "$(cat <<'EOF'
-feat(contracts): add WORK and SATOSHI resource types for Bitcoin Mine
+feat(contracts): add WORK resource type for Bitcoin Mine
 
 WORK (57) is weightless, non-transferrable, used for proof of work.
-SATOSHI (58) is the reward resource that can only be carried by armies.
+Prize distribution is via ERC20 wBTC transfer, not an in-game resource.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
@@ -253,8 +251,8 @@ Add after `FaithConfig`:
 pub struct BitcoinMineConfig {
     pub enabled: bool,
     pub phase_duration_seconds: u64,        // 600 = 10 minutes
-    pub satoshis_per_phase: u128,           // Amount of satoshis emitted each phase
-    pub satoshi_weight_grams: u128,         // Weight per satoshi unit
+    pub prize_per_phase: u128,              // Amount of wBTC (smallest units) per phase
+    pub reward_token: ContractAddress,      // wBTC token address
     // Production rates: labor consumed per second at each level
     pub very_low_labor_per_sec: u16,        // 1
     pub low_labor_per_sec: u16,             // 2
@@ -274,7 +272,7 @@ Expected: Build succeeds
 ```bash
 git add contracts/game/src/models/config.cairo
 git commit -m "$(cat <<'EOF'
-feat(contracts): add BitcoinMineConfig for phase-based satoshi distribution
+feat(contracts): add BitcoinMineConfig for phase-based wBTC distribution
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
@@ -350,7 +348,7 @@ pub struct BitcoinMineState {
     pub production_level: u8,           // 0=stopped, 1-5=very_low to very_high
     pub work_accumulated: u128,         // Total work produced by this mine
     pub work_last_claimed_phase: u64,   // Last phase when work was claimed
-    pub satoshis_won: u128,             // Total satoshis won by this mine
+    pub prizes_won: u128,               // Total wBTC prizes won by this mine
 }
 
 /// Tracks a mine's work contribution for a specific phase
@@ -479,7 +477,7 @@ pub struct BitcoinPhaseLotteryStory {
     pub total_work: u128,
     pub winner_mine_id: ID,
     pub winner_owner: ContractAddress,
-    pub satoshis_awarded: u128,
+    pub prize_awarded: u128,  // wBTC amount transferred
     pub roll_value: u128,
 }
 ```
@@ -611,7 +609,7 @@ pub impl iBitcoinMineDiscoveryImpl of iBitcoinMineDiscoveryTrait {
             production_level: 0, // Stopped until player activates
             work_accumulated: 0,
             work_last_claimed_phase: current_phase,
-            satoshis_won: 0,
+            prizes_won: 0,
         };
         world.write_model(@mine_state);
 
@@ -684,10 +682,8 @@ pub trait IBitcoinMineSystems<T> {
     fn claim_work(ref self: T, mine_id: ID);
 
     /// Execute lottery for a completed phase (permissionless)
+    /// NOTE: This will be replaced by claim_phase_reward in the distributed claim design
     fn execute_phase_lottery(ref self: T, phase_id: u64);
-
-    /// Withdraw satoshis from mine to an army (only armies can carry satoshis)
-    fn withdraw_satoshis(ref self: T, mine_id: ID, army_id: ID, amount: u128);
 
     /// View: Get mine's pending work
     fn get_pending_work(self: @T, mine_id: ID) -> u128;
@@ -705,6 +701,7 @@ pub mod bitcoin_mine_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
@@ -713,11 +710,8 @@ pub mod bitcoin_mine_systems {
     };
     use crate::models::config::{BitcoinMineConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{BitcoinMineProductionStory, BitcoinPhaseLotteryStory, Story, StoryEvent};
-    use crate::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-    };
+    use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use crate::models::structure::{StructureCategory, StructureBaseStoreImpl, StructureOwnerStoreImpl};
-    use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
@@ -808,24 +802,18 @@ pub mod bitcoin_mine_systems {
                 }
             }
 
-            // Award satoshis to winner
+            // Award prize to winner via ERC20 transfer
             if winner_mine_id.is_non_zero() {
                 let mut mine_state: BitcoinMineState = world.read_model(winner_mine_id);
-                mine_state.satoshis_won += config.satoshis_per_phase;
+                mine_state.prizes_won += config.prize_per_phase;
                 world.write_model(@mine_state);
 
-                // Add satoshis to mine's inventory
-                let satoshi_weight = config.satoshi_weight_grams;
-                let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, winner_mine_id);
-                let mut satoshi_resource = SingleResourceStoreImpl::retrieve(
-                    ref world, winner_mine_id, ResourceTypes::SATOSHI, ref mine_weight, satoshi_weight, true,
-                );
-                satoshi_resource.add(config.satoshis_per_phase, ref mine_weight, satoshi_weight);
-                satoshi_resource.store(ref world);
-                mine_weight.store(ref world, winner_mine_id);
+                // Transfer ERC20 wBTC to winner
+                let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, winner_mine_id);
+                let reward_token = IERC20Dispatcher { contract_address: config.reward_token };
+                assert!(reward_token.transfer(winner_owner, config.prize_per_phase.into()), "Failed to transfer prize");
 
                 // Emit event
-                let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, winner_mine_id);
                 world
                     .emit_event(
                         @StoryEvent {
@@ -839,7 +827,7 @@ pub mod bitcoin_mine_systems {
                                     total_work: phase_work.total_work,
                                     winner_mine_id,
                                     winner_owner,
-                                    satoshis_awarded: config.satoshis_per_phase,
+                                    prize_awarded: config.prize_per_phase,
                                     roll_value: roll,
                                 },
                             ),
@@ -853,43 +841,7 @@ pub mod bitcoin_mine_systems {
             world.write_model(@phase_work);
         }
 
-        fn withdraw_satoshis(ref self: ContractState, mine_id: ID, army_id: ID, amount: u128) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
-            season_config.assert_started_and_not_over();
-
-            let caller = starknet::get_caller_address();
-
-            // Verify mine ownership
-            let mine_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
-            assert!(mine_owner == caller, "Only mine owner can withdraw satoshis");
-
-            // Verify army ownership and that it's an explorer (army)
-            let army: ExplorerTroops = world.read_model(army_id);
-            army.assert_caller_structure_or_agent_owner(ref world);
-
-            // Transfer satoshis from mine to army
-            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
-            let satoshi_weight = config.satoshi_weight_grams;
-
-            // Deduct from mine
-            let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, mine_id);
-            let mut mine_satoshi = SingleResourceStoreImpl::retrieve(
-                ref world, mine_id, ResourceTypes::SATOSHI, ref mine_weight, satoshi_weight, true,
-            );
-            mine_satoshi.spend(amount, ref mine_weight, satoshi_weight);
-            mine_satoshi.store(ref world);
-            mine_weight.store(ref world, mine_id);
-
-            // Add to army
-            let mut army_weight: Weight = WeightStoreImpl::retrieve(ref world, army_id);
-            let mut army_satoshi = SingleResourceStoreImpl::retrieve(
-                ref world, army_id, ResourceTypes::SATOSHI, ref army_weight, satoshi_weight, true,
-            );
-            army_satoshi.add(amount, ref army_weight, satoshi_weight);
-            army_satoshi.store(ref world);
-            army_weight.store(ref world, army_id);
-        }
+        // NOTE: withdraw_satoshis is no longer needed - prizes are ERC20 transfers to owner
 
         fn get_pending_work(self: @ContractState, mine_id: ID) -> u128 {
             let world: WorldStorage = self.world(DEFAULT_NS());
@@ -1057,7 +1009,7 @@ git commit -m "$(cat <<'EOF'
 feat(contracts): add bitcoin mine systems contract
 
 Implements set_production_level, claim_work, execute_phase_lottery,
-withdraw_satoshis with POW-style phase-based lottery mechanics.
+ERC20 prize transfer with POW-style phase-based lottery mechanics.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
@@ -1307,8 +1259,8 @@ pub trait IBitcoinMineConfig<T> {
         ref self: T,
         enabled: bool,
         phase_duration_seconds: u64,
-        satoshis_per_phase: u128,
-        satoshi_weight_grams: u128,
+        prize_per_phase: u128,
+        reward_token: starknet::ContractAddress,
         very_low_labor_per_sec: u16,
         low_labor_per_sec: u16,
         medium_labor_per_sec: u16,
@@ -1327,8 +1279,8 @@ pub trait IBitcoinMineConfig<T> {
             ref self: ContractState,
             enabled: bool,
             phase_duration_seconds: u64,
-            satoshis_per_phase: u128,
-            satoshi_weight_grams: u128,
+            prize_per_phase: u128,
+            reward_token: starknet::ContractAddress,
             very_low_labor_per_sec: u16,
             low_labor_per_sec: u16,
             medium_labor_per_sec: u16,
@@ -1341,8 +1293,8 @@ pub trait IBitcoinMineConfig<T> {
             let config = BitcoinMineConfig {
                 enabled,
                 phase_duration_seconds,
-                satoshis_per_phase,
-                satoshi_weight_grams,
+                prize_per_phase,
+                reward_token,
                 very_low_labor_per_sec,
                 low_labor_per_sec,
                 medium_labor_per_sec,
@@ -1379,41 +1331,9 @@ EOF
 
 ---
 
-## Task 16: Restrict Satoshi Transfer to Armies Only
+## Task 16: ~~Restrict Satoshi Transfer to Armies Only~~ (REMOVED)
 
-**Files:**
-
-- Modify: `contracts/game/src/systems/trade/contracts.cairo` (or relevant transfer system)
-
-**Step 1: Add validation to prevent donkey transport of satoshis**
-
-In the resource transfer validation, add a check:
-
-```cairo
-// Satoshis cannot be transported by donkeys - only armies can carry them
-for (resource_type, _) in resources.span() {
-    assert!(*resource_type != ResourceTypes::SATOSHI, "Satoshis cannot be transported by donkeys");
-}
-```
-
-**Step 2: Run scarb build to verify**
-
-Run: `cd contracts/game && scarb build`
-Expected: Build succeeds
-
-**Step 3: Commit**
-
-```bash
-git add contracts/game/src/systems/trade/contracts.cairo
-git commit -m "$(cat <<'EOF'
-feat(contracts): restrict satoshi transport to armies only
-
-Donkeys cannot transport satoshis - they must be carried by armies.
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-EOF
-)"
-```
+**Status:** No longer needed - prizes are distributed via ERC20 transfer directly to mine owner, not as an in-game resource.
 
 ---
 
@@ -1428,31 +1348,21 @@ EOF
 ```cairo
 #[cfg(test)]
 mod tests {
-    use core::num::traits::zero::Zero;
-    use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use dojo_snf_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-    };
-    use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+    use core::num::traits::Zero;
     use starknet::ContractAddress;
-    use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
-    use crate::models::bitcoin_mine::{BitcoinMinePhaseWork, BitcoinMineState, BitcoinPhaseWork, ProductionLevel};
-    use crate::models::config::{BitcoinMineConfig, SeasonConfig, WorldConfigUtilImpl};
-    use crate::models::position::Coord;
-    use crate::models::structure::{Structure, StructureBase, StructureCategory};
-    use crate::systems::bitcoin_mine::contracts::{IBitcoinMineSystemsDispatcher, IBitcoinMineSystemsDispatcherTrait};
+    use crate::constants::RESOURCE_PRECISION;
+    use crate::models::bitcoin_mine::ProductionLevel;
+    use crate::models::config::BitcoinMineConfig;
 
     const PHASE_DURATION: u64 = 600; // 10 minutes
-    const SATOSHIS_PER_PHASE: u128 = 100_000_000_000; // 100 satoshis with precision
+    const PRIZE_PER_PHASE: u128 = 100_000_000; // 1 wBTC in smallest units (8 decimals)
 
     fn get_default_bitcoin_mine_config() -> BitcoinMineConfig {
         BitcoinMineConfig {
             enabled: true,
             phase_duration_seconds: PHASE_DURATION,
-            satoshis_per_phase: SATOSHIS_PER_PHASE,
-            satoshi_weight_grams: 1, // Very light
+            prize_per_phase: PRIZE_PER_PHASE,
+            reward_token: Zero::zero(), // Test address
             very_low_labor_per_sec: 1,
             low_labor_per_sec: 2,
             medium_labor_per_sec: 3,
@@ -1559,24 +1469,24 @@ EOF
 
 This plan implements the Bitcoin Mine system with:
 
-1. **Resource Types** (Task 1): WORK (57) - weightless, non-transferrable; SATOSHI (58) - army-only transport
+1. **Resource Type** (Task 1): WORK (57) - weightless, non-transferrable (prizes are ERC20 wBTC transfers)
 2. **Structure Category** (Tasks 2-4): BitcoinMine with T3 defender configuration
 3. **Config** (Tasks 5-7): MapConfig probabilities (1/50), BitcoinMineConfig with production rates and phase settings
 4. **Models** (Task 8): BitcoinPhaseWork, BitcoinMineState, BitcoinMinePhaseWork, BitcoinMineRegistry
 5. **Events** (Task 9): BitcoinMineProductionStory, BitcoinPhaseLotteryStory
 6. **Discovery** (Tasks 10, 13-14): Ethereal-layer-only discovery with 1/50 chance
-7. **Systems** (Tasks 11-12): Production level setting, work claiming, phase lottery execution, satoshi withdrawal
+7. **Systems** (Tasks 11-12): Production level setting, work claiming, phase lottery with ERC20 prize transfer
 8. **Config Setter** (Task 15): Admin config setter
-9. **Transport Restriction** (Task 16): Satoshis cannot be transported by donkeys
-10. **Tests** (Tasks 17-18): Unit tests and full verification
+9. **Tests** (Tasks 17-18): Unit tests and full verification
 
 Key design decisions:
 
 - **Ethereal-layer only**: Bitcoin mines discovered only when `coord.alt == true`
 - **T3 defenders**: Matching Ethereal Agents pattern (Paladin T3)
+- **ERC20 prizes**: Winner receives wBTC via `reward_token.transfer()`, not in-game resource
 - **Phase-based lottery**: Every 10 minutes, weighted random selection based on work contribution
 - **Work = Labor**: 1:1 ratio where labor consumed equals work produced
-- **Army-only transport**: Satoshis cannot be carried by donkeys, matching lore
+- **Direct prize transfer**: Winner receives wBTC directly via ERC20 transfer
 
 ---
 
@@ -1595,8 +1505,20 @@ The original design had a single `execute_phase_lottery` function that anyone co
 
 #### Phase 1: Work Window (10 minutes)
 
+**Phase Initialization (Lazy):**
+- A new phase is initialized when the **first player contributes labor** to it
+- On first contribution, validate:
+  - Phase ID is 1 (first phase ever), OR
+  - Previous phase exists AND has ended (`now >= previous_phase.phase_end_time`)
+- On first contribution:
+  - Prize pool (prize_per_phase + any rollover) is allocated for the phase
+  - `phase_end_time` is calculated and stored (current_timestamp + phase_duration)
+  - Phase number is validated to be exactly `current_phase + 1` (sequential enforcement)
+- The stored `phase_end_time` serves as proof the phase has been initialized
+
+**During Work Window:**
 - Players burn labor at their bitcoin mines during the open window
-- Can keep burning labor as long as the 10-minute window is still open
+- Can keep burning labor as long as current_timestamp < phase_end_time
 - Labor burned = work contributed (1:1 ratio)
 - Work contribution determines lottery odds for that phase
 
@@ -1609,7 +1531,7 @@ The original design had a single `execute_phase_lottery` function that anyone co
   - Skip if mine didn't contribute work to this phase
   - Skip if mine already claimed for this phase
   - Run VRF lottery weighted by mine's work percentage
-  - If win: transfer satoshis to that mine, stop processing
+  - If win: transfer wBTC prize to mine owner, stop processing
   - If lose: mark mine as claimed (can't retry)
 - **First mine to win gets the reward** - remaining mines in array still get marked as claimed
 
@@ -1626,7 +1548,7 @@ The original design had a single `execute_phase_lottery` function that anyone co
 This creates interesting dynamics:
 - Growing jackpots attract more participants
 - More participants = higher chance someone wins before burnout
-- Burning unclaimed rewards keeps satoshi supply scarce
+- Burning unclaimed rewards keeps prize pool scarce
 
 ### Why This Design Is Better
 
@@ -1644,7 +1566,20 @@ This creates interesting dynamics:
 The current `execute_phase_lottery(phase_id)` needs to be replaced with:
 
 ```cairo
+/// Contribute labor to a phase (initializes phase if first contributor)
+/// - If phase is uninitialized (phase_end_time == 0):
+///   - Validates: phase_id == 1 OR previous phase has ended (now >= prev.phase_end_time)
+///   - Validates: phase_id == current_phase + 1 (sequential)
+///   - Sets phase_end_time = now + phase_duration
+///   - Allocates prize_pool (base + any rollover from previous phases)
+///   - Increments current_phase
+/// - Burns labor from mine, adds work to phase
+/// - Increments participant_count if this mine's first contribution
+fn contribute_labor(ref self: T, mine_id: ID, labor_amount: u128);
+
 /// Process claims for multiple mines in a phase (permissionless, callable by anyone)
+/// - Requires: phase_end_time > 0 (phase was initialized)
+/// - Requires: current_timestamp >= phase_end_time (work window closed)
 /// - Iterates through mine_ids array
 /// - For each mine: runs VRF lottery weighted by their work percentage
 /// - First mine to win gets the reward, processing stops
@@ -1653,16 +1588,50 @@ The current `execute_phase_lottery(phase_id)` needs to be replaced with:
 fn claim_phase_reward(ref self: T, phase_id: u64, mine_ids: Array<ID>);
 ```
 
+### Prize Distribution (ERC20 Transfer)
+
+When a winner is determined, the prize is transferred as an ERC20 token (wBTC):
+
+```cairo
+// Get the winning mine owner's address
+let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, winner_mine_id);
+
+// Transfer prize via ERC20
+let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
+let reward_token = IERC20Dispatcher { contract_address: config.reward_token };
+assert!(reward_token.transfer(winner_owner, prize_amount.into()), "Failed to transfer prize");
+```
+
+**Config fields:**
+- `prize_per_phase: u128` - Amount of wBTC (in smallest units, 8 decimals) per phase
+- `reward_token: ContractAddress` - wBTC token address
+
 New state tracking needed:
-- `phase_participant_count: u32` - total workers in phase
-- `phase_claim_count: u32` - how many have attempted claim
-- `phase_claimed_by_mine: bool` - has this mine claimed yet
-- `phase_reward_claimed: bool` - has anyone won yet
-- `phase_rollover_amount: u128` - accumulated from previous phases
+
+**Global Registry (BitcoinMineRegistry):**
+- `current_phase: u64` - contract-managed sequential phase counter (increments on first contribution)
+
+**Per-Phase State (BitcoinPhaseWork):**
+- `phase_end_time: u64` - timestamp when work window closes (set on initialization, 0 = uninitialized)
+- `prize_pool: u128` - wBTC allocated for this phase (base + any rollover)
+- `prize_origin_phase: u64` - phase where the prize pool originated (for rollover tracking)
+- `total_work: u128` - cumulative work contributed
+- `participant_count: u32` - total distinct mines that contributed work
+- `claim_count: u32` - how many mines have attempted claim
+- `reward_claimed: bool` - has anyone won yet
+
+**Hardcoded Constants:**
+- `MAX_ROLLOVER_PHASES: u8 = 6` - max phases a reward can roll over before being burned
+- Rollover count calculated as: `current_phase - prize_origin_phase`
+- If `current_phase - prize_origin_phase >= MAX_ROLLOVER_PHASES` and last participant loses → burn
+
+**Per-Mine-Per-Phase State (BitcoinMinePhaseWork):**
+- `work_contributed: u128` - this mine's work for this phase
+- `claimed: bool` - has this mine attempted claim yet
 
 ---
 
-## Open Design Question: Spire-Structure Collision
+## Spire-Structure Collision (Resolved)
 
 **Problem:** Spires are placed at fixed locations on the Ethereal layer. If a Bitcoin Mine (or other structure) is discovered at a tile that is later designated as a spire location, there's a collision.
 
@@ -1670,30 +1639,54 @@ New state tracking needed:
 - Spire locations expand dynamically as more realms settle (cannot pre-reserve)
 - Destroying player structures is not acceptable
 
-### Viable Solutions
+### Solution: Skip Structures, Displace Troops
 
-**Option C: Structure Relocation (Displacement)**
+When a spire would spawn at a location that's already occupied (in either the alt or regular layer):
 
-When a spire needs to spawn, any existing structure at that location is moved to the nearest unoccupied tile. Owner retains the structure and all resources.
+**If occupier is a structure:**
+1. **Mark the position as "taken"** in the contracts (so it won't be selected again)
+2. **Don't create a spire** at that location
+3. **Move on to the next spire** in the sequence
 
-- **Pros:** Fair to players, no loss of investment
-- **Cons:** Complex to implement, need to update tile occupancy for both old and new locations, may need to handle edge case of no available nearby tiles
+**If occupier is a troop:**
+1. **Move the troop to an adjacent tile** using `iExplorerImpl::attempt_move_to_adjacent_tile`
+2. **Create the spire** at the designated location
 
-**Option D: Spire Relocation (Alternative)**
+**Pros:**
+- Structures are fully protected (no forced relocation)
+- Troops are displaced gracefully (existing pattern in codebase)
+- Spires spawn at designated locations when possible
+- Deterministic behavior
 
-If a structure exists at a spire's designated location, the spire spawns at the nearest valid unoccupied tile instead.
+**Cons:**
+- Fewer total spires if structure collisions occur (acceptable tradeoff)
 
-- **Pros:** Player investment fully protected, simpler than moving structures
-- **Cons:** Spire placement becomes slightly unpredictable, players could strategically block spire locations
+**Implementation:**
+```cairo
+// When spawning spire at designated location
+let tile: Tile = world.read_model((coord.x, coord.y, coord.alt));
+let regular_tile: Tile = world.read_model((coord.x, coord.y, false));
 
-### Decision Needed
+// Check both layers for occupation
+let alt_occupied = tile.occupier != TileOccupier::None;
+let regular_occupied = regular_tile.occupier != TileOccupier::None;
 
-Which approach should be implemented?
+if alt_occupied || regular_occupied {
+    // Check if occupier is a troop (can be displaced)
+    let occupier = if alt_occupied { tile.occupier } else { regular_tile.occupier };
 
-- **Option C** prioritizes spire placement consistency
-- **Option D** prioritizes simplicity and player experience
+    if is_troop_occupier(occupier) {
+        // Displace troop to adjacent tile
+        let mut explorer: ExplorerTroops = world.read_model(get_troop_id(occupier));
+        let mut occupied_tile = if alt_occupied { tile } else { regular_tile };
+        iExplorerImpl::attempt_move_to_adjacent_tile(ref world, ref explorer, ref occupied_tile);
+        // Continue to create spire
+    } else {
+        // Structure - skip this spire location
+        spire_registry.mark_position_taken(coord);
+        continue; // Move to next spire
+    }
+}
 
-Either way, implementation requires:
-1. Check for existing structure at spire spawn location
-2. Find nearest unoccupied tile (ring search outward)
-3. Update the appropriate entity's location and tile occupancy
+// Create the spire normally
+```
