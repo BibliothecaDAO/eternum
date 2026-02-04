@@ -28,7 +28,10 @@ mod tests {
     // Test Constants
     // ============================================================================
 
-    const RESEARCH_COST_FOR_RELIC: u128 = 50_000;
+    // Human-readable cost (50,000 research)
+    const RESEARCH_COST_FOR_RELIC_RAW: u128 = 50_000;
+    // Config value includes precision (this is what gets stored in config)
+    const RESEARCH_COST_FOR_RELIC: u128 = RESEARCH_COST_FOR_RELIC_RAW * RESOURCE_PRECISION;
 
     // ============================================================================
     // Test Setup
@@ -270,7 +273,7 @@ mod tests {
         let owner = starknet::contract_address_const::<'hyper_owner'>();
         let hyper_id = spawn_test_hyperstructure(ref world, owner);
 
-        let research_amount = RESEARCH_COST_FOR_RELIC * RESOURCE_PRECISION;
+        let research_amount = RESEARCH_COST_FOR_RELIC;
         grant_research(ref world, hyper_id, research_amount);
 
         start_cheat_block_timestamp_global(1000);
@@ -289,8 +292,8 @@ mod tests {
         let owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = spawn_test_realm(ref world, owner);
 
-        // Grant less than needed
-        let research_amount = (RESEARCH_COST_FOR_RELIC - 1) * RESOURCE_PRECISION;
+        // Grant less than needed (1 unit short)
+        let research_amount = RESEARCH_COST_FOR_RELIC - 1;
         grant_research(ref world, realm_id, research_amount);
 
         start_cheat_block_timestamp_global(1000);
@@ -326,7 +329,7 @@ mod tests {
         let owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = spawn_test_realm(ref world, owner);
 
-        let research_amount = RESEARCH_COST_FOR_RELIC * RESOURCE_PRECISION;
+        let research_amount = RESEARCH_COST_FOR_RELIC;
         grant_research(ref world, realm_id, research_amount);
 
         // Set timestamp before season start (season starts at 100)
@@ -351,7 +354,7 @@ mod tests {
         let owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_id = spawn_test_realm(ref world, owner);
 
-        let research_amount = RESEARCH_COST_FOR_RELIC * RESOURCE_PRECISION;
+        let research_amount = RESEARCH_COST_FOR_RELIC;
         grant_research(ref world, realm_id, research_amount);
 
         // Set timestamp after season end (season ends at 500)

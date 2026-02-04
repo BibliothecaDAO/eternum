@@ -14,6 +14,7 @@ pub mod artificer_systems {
     use crate::constants::{
         DEFAULT_NS, RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, relic_level,
     };
+    // Note: research_cost_for_relic in ArtificerConfig is stored with RESOURCE_PRECISION already applied
     use crate::models::config::{ArtificerConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::resource::resource::{
@@ -49,11 +50,11 @@ pub mod artificer_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            // Get config and burn research
+            // Get config and burn research (config value already includes precision)
             let artificer_config: ArtificerConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("artificer_config"),
             );
-            let research_cost = artificer_config.research_cost_for_relic * RESOURCE_PRECISION;
+            let research_cost = artificer_config.research_cost_for_relic;
             let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
             let research_weight_grams = ResourceWeightImpl::grams(ref world, ResourceTypes::RESEARCH);
             let mut research = SingleResourceStoreImpl::retrieve(

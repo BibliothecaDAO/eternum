@@ -1468,15 +1468,16 @@ export const setArtificerConfig = async (config: Config) => {
 
   const { research_cost_for_relic } = config.config.artificer;
 
+  // Apply resource precision to the cost (config stores human-readable value)
   const calldata = {
     signer: config.account,
-    research_cost_for_relic,
+    research_cost_for_relic: research_cost_for_relic * config.config.resources.resourcePrecision,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Artificer Config")}
-    │  ${chalk.gray("Research Cost for Relic:")} ${chalk.white(calldata.research_cost_for_relic)}
+    │  ${chalk.gray("Research Cost for Relic:")} ${chalk.white(research_cost_for_relic)}
     └────────────────────────────────`),
   );
 
