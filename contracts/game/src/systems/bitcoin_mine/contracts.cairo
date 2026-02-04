@@ -60,7 +60,7 @@ pub mod bitcoin_mine_systems {
 
             // Validate target_phase_id
             assert!(target_phase_id > 0, "Phase ID must be greater than 0");
-            assert!(target_phase_id > current_phase, "Cannot contribute to past or current phase");
+            assert!(target_phase_id >= current_phase, "Cannot contribute to past phase");
             assert!(
                 target_phase_id <= current_phase + MAX_FUTURE_PHASES,
                 "Cannot contribute to phase more than 30 phases in the future",
