@@ -82,7 +82,7 @@ pub impl iBitcoinMineDiscoveryImpl of iBitcoinMineDiscoveryTrait {
             production_level: 0, // Stopped until player activates
             work_accumulated: 0,
             work_last_claimed_phase: current_phase,
-            satoshis_won: 0,
+            prizes_won: 0,
         };
         world.write_model(@mine_state);
 
