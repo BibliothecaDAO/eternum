@@ -172,7 +172,14 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
 
       try {
         const account = useAccountStore.getState().account?.address;
-        await ensureStructureSynced(components, toriiClient, contractComponents as any, structureEntityId, effectivePosition, account);
+        await ensureStructureSynced(
+          components,
+          toriiClient,
+          contractComponents as any,
+          structureEntityId,
+          effectivePosition,
+          account,
+        );
       } catch (error) {
         console.error("[useGoToStructure] Failed to sync structure before navigation", error);
       } finally {
