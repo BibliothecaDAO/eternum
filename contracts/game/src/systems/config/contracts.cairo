@@ -1101,6 +1101,7 @@ pub mod config_systems {
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
+            assert!(min_labor_per_contribution > 0, "min_labor_per_contribution must be > 0");
 
             let config = BitcoinMineConfig { enabled, prize_per_phase, min_labor_per_contribution };
             WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), config);
