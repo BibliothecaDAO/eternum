@@ -469,6 +469,9 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             let (resource_type, resource_amount) = resources.at(index_count);
             let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
+            // ensure donkey can transport resource from A to B
+            iDonkeyImpl::assert_can_transport(ref world, from_coord, to_coord);
+
             // if the recipient is a village, and troops are being transferred,
             //  ensure the sender realm owner is the connected realm owner
             if to_structure_base.category == StructureCategory::Village.into() {
