@@ -1602,12 +1602,16 @@ The original design had a single `execute_phase_lottery` function that anyone co
 
 #### Phase 2: Claim Window (after work window closes)
 
-- Once the 10-minute window closes, players can attempt to claim the reward
-- **Each player calls their own `claim_reward(phase_id)` transaction**
-- The contract runs a VRF lottery for that caller based on their percentage of total work
-- If they win: they receive the satoshis immediately
-- If they lose: nothing happens, they can't claim again for this phase
-- **First to win gets the reward** - subsequent claims for that phase fail
+- Once the 10-minute window closes, claims can be processed
+- **Anyone can call `claim_phase_reward(phase_id, mine_ids[])`** - permissionless
+- Accepts an array of mine IDs to process in batch
+- For each mine in the array:
+  - Skip if mine didn't contribute work to this phase
+  - Skip if mine already claimed for this phase
+  - Run VRF lottery weighted by mine's work percentage
+  - If win: transfer satoshis to that mine, stop processing
+  - If lose: mark mine as claimed (can't retry)
+- **First mine to win gets the reward** - remaining mines in array still get marked as claimed
 
 #### Last Roller + Rollover
 
@@ -1628,10 +1632,10 @@ This creates interesting dynamics:
 
 | Aspect | Old Design | New Design |
 |--------|------------|------------|
-| **Gas distribution** | Single caller pays all | Each claimant pays their own |
-| **Incentive alignment** | Caller may not benefit | Claimant is trying to win |
-| **Player engagement** | Passive waiting | Active claiming creates urgency |
-| **Fairness** | Timing of single call matters | Everyone gets their own roll |
+| **Permissionless** | Anyone can call | Anyone can call (same) |
+| **Batch processing** | Single winner selection | Process multiple mines per TX |
+| **Bot-friendly** | N/A | Bots can batch-process all claims |
+| **Fairness** | Single roll for all | Each mine gets their own roll |
 | **Jackpot potential** | Fixed per phase | Accumulates on no-winner phases |
 | **Scarcity** | All rewards distributed | Unclaimed rewards burned |
 
@@ -1640,13 +1644,13 @@ This creates interesting dynamics:
 The current `execute_phase_lottery(phase_id)` needs to be replaced with:
 
 ```cairo
-/// Player attempts to claim reward for a completed phase
-/// - Checks caller contributed work to this phase
-/// - Runs VRF lottery weighted by caller's work percentage
-/// - If win: transfers satoshis to caller's mine
-/// - If lose: marks caller as claimed (can't retry)
-/// - If last claimer loses: rolls reward to next phase (up to 6x, then burned)
-fn claim_phase_reward(ref self: T, mine_id: ID, phase_id: u64);
+/// Process claims for multiple mines in a phase (permissionless, callable by anyone)
+/// - Iterates through mine_ids array
+/// - For each mine: runs VRF lottery weighted by their work percentage
+/// - First mine to win gets the reward, processing stops
+/// - Losing mines are marked as claimed (can't retry)
+/// - If last participant loses: rolls reward to next phase (up to 6x, then burned)
+fn claim_phase_reward(ref self: T, phase_id: u64, mine_ids: Array<ID>);
 ```
 
 New state tracking needed:
