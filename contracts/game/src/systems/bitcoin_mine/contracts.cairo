@@ -38,7 +38,6 @@ pub mod bitcoin_mine_systems {
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use crate::models::structure::{StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
     use crate::models::weight::Weight;
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
@@ -265,12 +264,16 @@ pub mod bitcoin_mine_systems {
                     mine_state.prizes_won += phase_work.prize_pool;
                     world.write_model(@mine_state);
 
-                    // Transfer ERC20 prize to winner
+                    // Mint SATOSHI at the winning mine (owner can transport via donkeys)
                     let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
-                    let reward_token = IERC20Dispatcher { contract_address: config.reward_token };
-                    assert!(
-                        reward_token.transfer(winner_owner, phase_work.prize_pool.into()), "Failed to transfer prize",
+                    let satoshi_weight = ResourceWeightImpl::grams(ref world, ResourceTypes::SATOSHI);
+                    let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, mine_id);
+                    let mut satoshi_resource = SingleResourceStoreImpl::retrieve(
+                        ref world, mine_id, ResourceTypes::SATOSHI, ref mine_weight, satoshi_weight, true,
                     );
+                    satoshi_resource.add(phase_work.prize_pool, ref mine_weight, satoshi_weight);
+                    satoshi_resource.store(ref world);
+                    mine_weight.store(ref world, mine_id);
 
                     // Emit event
                     world
