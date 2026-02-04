@@ -243,10 +243,11 @@ pub mod bitcoin_mine_systems {
 
             // If all participants have claimed and no winner, roll over prize to next qualifying phase
             if phase_labor.claim_count == phase_labor.participant_count && phase_labor.reward_receiver_phase.is_zero() {
-                // Find next qualifying phase (one with participants whose prize hasn't been claimed)
-                let mut rollover_offset: u64 = 1;
-                while rollover_offset <= MAX_ROLLOVER_PHASES {
-                    let next_phase_id = phase_id + rollover_offset;
+                // Find next qualifying phase starting from current phase
+                let current_phase = bitcoin_tick.current();
+                let mut rollover_offset: u64 = 0;
+                while rollover_offset < MAX_ROLLOVER_PHASES {
+                    let next_phase_id = current_phase + rollover_offset;
                     let mut next_phase: BitcoinPhaseLabor = world.read_model(next_phase_id);
 
                     // If reward not yet assigned, add rollover
