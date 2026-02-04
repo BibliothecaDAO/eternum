@@ -1,13 +1,12 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
-import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
+import { ensureStructureSynced, getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { sqlApi } from "@/services/api";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
@@ -39,8 +38,6 @@ import {
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -113,7 +110,6 @@ interface PrefetchQueueItem {
   fetchKey: string;
   priority: number;
   fetchTiles: boolean;
-  fetchStructures: boolean;
 }
 
 type ToriiBoundsCounterKey =
@@ -132,7 +128,6 @@ const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
   { model: "s1_eternum-StructureBuildings", colField: "coord.x", rowField: "coord.y" },
   { model: "s1_eternum-ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
-  { model: "s1_eternum-Building", colField: "outer_col", rowField: "outer_row" },
   { model: "s1_eternum-ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
   { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
@@ -155,7 +150,6 @@ export default class WorldmapScene extends HexagonScene {
   private readonly prefetchedAhead: string[] = [];
   private readonly maxPrefetchedAhead = 8;
   private prefetchQueue: PrefetchQueueItem[] = [];
-  private queuedPrefetchKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLD_CHUNK_CONFIG.prefetch.maxConcurrent;
@@ -283,51 +277,22 @@ export default class WorldmapScene extends HexagonScene {
   private perfSimulation: WorldmapPerfSimulation | null = null;
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
-  private async ensureStructureSynced(structureId: ID, hexCoords: HexPosition) {
-    const components = this.dojo.components as SetupResult["components"];
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents;
-
+  private async ensureStructureQueriedMethod(structureId: ID, hexCoords: HexPosition) {
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-
-    if (!components?.Structure || !toriiClient || !contractComponents) {
-      return;
-    }
-
-    let entityKey: string | undefined;
-    try {
-      entityKey = getEntityIdFromKeys([BigInt(structureId)]) as string;
-    } catch (error) {
-      console.warn("[WorldmapScene] Unable to build entity key for structure", structureId, error);
-      return;
-    }
-
-    const existing = getComponentValue(components.Structure, entityKey as any);
-    if (existing) {
-      return;
-    }
-
-    const numericId = Number(structureId);
-    if (!Number.isFinite(hexCoords.col) || !Number.isFinite(hexCoords.row)) {
-      console.warn("[WorldmapScene] Unable to determine coordinates for structure", structureId);
-      return;
-    }
-    if (!Number.isFinite(numericId)) {
-      console.warn("[WorldmapScene] Structure id is not a finite number", structureId);
-      return;
-    }
 
     const previousCursor = document.body.style.cursor;
     document.body.style.cursor = "wait";
 
     try {
-      const typedContractComponents = contractComponents as any;
-      await getStructuresDataFromTorii(toriiClient, typedContractComponents, [
-        {
-          entityId: numericId,
-          position: { col: contractCoords.x, row: contractCoords.y },
-        },
-      ]);
+      const accountAddress = useAccountStore.getState().account?.address;
+      await ensureStructureSynced(
+        this.dojo.components as SetupResult["components"],
+        this.dojo.network?.toriiClient!,
+        this.dojo.network?.contractComponents as any,
+        structureId,
+        { col: contractCoords.x, row: contractCoords.y },
+        accountAddress,
+      );
     } catch (error) {
       console.error("[WorldmapScene] Failed to fetch structure data from Torii", error);
     } finally {
@@ -339,8 +304,6 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = 16;
   private pinnedChunkKeys: Set<string> = new Set();
-  private syncedStructureIds: Set<ID> = new Set();
-  private syncingStructureIds: Set<ID> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
   private currentHexGridTask: symbol | null = null;
@@ -496,7 +459,6 @@ export default class WorldmapScene extends HexagonScene {
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
 
     // NOTE: Chunk integration system disabled for performance
-    // The core fix for chunk loading (awaiting refreshStructuresForChunks) doesn't require it.
     // The chunk integration adds overhead via hydration tracking callbacks on every entity update.
     // Uncomment if you need advanced chunk lifecycle debugging/tracking features.
     // this.initializeChunkIntegration();
@@ -1209,7 +1171,7 @@ export default class WorldmapScene extends HexagonScene {
 
     try {
       console.log("[WorldmapScene] Syncing structure before entry", structure.id, hexCoords);
-      await this.ensureStructureSynced(structure.id, hexCoords);
+      await this.ensureStructureQueriedMethod(structure.id, hexCoords);
     } catch (error) {
       console.error("[WorldmapScene] Failed to sync structure before entry", error);
     }
@@ -1522,7 +1484,6 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
 
     if (hexCoords) {
-      void this.ensureStructureSynced(selectedEntityId, hexCoords);
       const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
       const worldMapPosition =
         Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
@@ -2544,11 +2505,11 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       // Directional prefetch is lowest priority compared to pinned neighborhood.
-      this.enqueueChunkPrefetch(chunkKey, 2, { prefetchStructures: true });
+      this.enqueueChunkPrefetch(chunkKey, 2);
     });
   }
 
-  private enqueueChunkPrefetch(chunkKey: string, priority: number, options?: { prefetchStructures?: boolean }): void {
+  private enqueueChunkPrefetch(chunkKey: string, priority: number): void {
     if (!chunkKey) {
       return;
     }
@@ -2556,27 +2517,16 @@ export default class WorldmapScene extends HexagonScene {
     const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
     const tilesAlreadyHandled =
       this.fetchedChunks.has(fetchKey) || this.pendingChunks.has(fetchKey) || this.queuedPrefetchAreaKeys.has(fetchKey);
-    const fetchTiles = !tilesAlreadyHandled;
-
-    const wantsStructures = options?.prefetchStructures ?? false;
-    const fetchStructures = wantsStructures && !this.queuedPrefetchKeys.has(chunkKey);
-
-    if (!fetchTiles && !fetchStructures) {
+    if (tilesAlreadyHandled) {
       return;
     }
 
-    if (fetchTiles) {
-      this.queuedPrefetchAreaKeys.add(fetchKey);
-    }
-    if (fetchStructures) {
-      this.queuedPrefetchKeys.add(chunkKey);
-    }
+    this.queuedPrefetchAreaKeys.add(fetchKey);
     this.prefetchQueue.push({
       chunkKey,
       fetchKey,
       priority,
-      fetchTiles,
-      fetchStructures,
+      fetchTiles: true,
     });
 
     this.prefetchQueue = this.prefetchQueue.toSorted((a, b) => a.priority - b.priority);
@@ -2596,9 +2546,6 @@ export default class WorldmapScene extends HexagonScene {
           if (item.fetchTiles) {
             await this.computeTileEntities(item.chunkKey);
           }
-          if (item.fetchStructures) {
-            await this.refreshStructuresForChunks([item.chunkKey]);
-          }
         } catch (error) {
           if (import.meta.env.DEV) {
             console.warn("[CHUNK PREFETCH] Prefetch failed for chunk", item.chunkKey, error);
@@ -2607,9 +2554,6 @@ export default class WorldmapScene extends HexagonScene {
           this.activePrefetches -= 1;
           if (item.fetchTiles) {
             this.queuedPrefetchAreaKeys.delete(item.fetchKey);
-          }
-          if (item.fetchStructures) {
-            this.queuedPrefetchKeys.delete(item.chunkKey);
           }
           this.processPrefetchQueue();
         }
@@ -2935,7 +2879,6 @@ export default class WorldmapScene extends HexagonScene {
   private updatePinnedChunks(newChunkKeys: string[]): void {
     const nextPinned = new Set(newChunkKeys);
     const prevPinned = this.pinnedChunkKeys;
-    const newlyPinnedChunks: string[] = [];
     const removedPinnedChunks: string[] = [];
 
     // Compute render-area coverage for the new/old pinned sets
@@ -2957,13 +2900,6 @@ export default class WorldmapScene extends HexagonScene {
       }
     });
 
-    // Track which chunks became newly active so we can refresh their structures
-    nextPinned.forEach((chunkKey) => {
-      if (!prevPinned.has(chunkKey)) {
-        newlyPinnedChunks.push(chunkKey);
-      }
-    });
-
     prevPinned.forEach((chunkKey) => {
       if (!nextPinned.has(chunkKey)) {
         removedPinnedChunks.push(chunkKey);
@@ -2978,10 +2914,6 @@ export default class WorldmapScene extends HexagonScene {
 
     this.pinnedChunkKeys = nextPinned;
     this.pinnedRenderAreas = nextPinnedAreas;
-
-    if (newlyPinnedChunks.length > 0) {
-      this.refreshStructuresForChunks(newlyPinnedChunks);
-    }
 
     removedPinnedChunks.forEach((chunkKey) => {
       if (chunkKey !== this.currentChunk) {
@@ -3091,78 +3023,6 @@ export default class WorldmapScene extends HexagonScene {
       }
     });
     this.worldUpdateUnsubscribes = [];
-  }
-
-  private async refreshStructuresForChunks(chunkKeys: string[]): Promise<void> {
-    if (chunkKeys.length === 0 || this.currentChunk === "null") {
-      return;
-    }
-
-    if (!chunkKeys.includes(this.currentChunk)) {
-      return;
-    }
-
-    const { toriiClient, contractComponents } = this.dojo.network ?? {};
-    if (!toriiClient || !contractComponents) {
-      return;
-    }
-
-    const mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
-    await mapDataStore.waitForData();
-
-    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBounds(this.currentChunk);
-    const minX = minCol + FELT_CENTER();
-    const maxX = maxCol + FELT_CENTER();
-    const minY = minRow + FELT_CENTER();
-    const maxY = maxRow + FELT_CENTER();
-
-    const components = this.dojo.components as SetupResult["components"];
-    const structuresToSync: { entityId: number; position: { col: number; row: number } }[] = [];
-
-    for (const structure of mapDataStore.getAllStructures()) {
-      if (structure.coordX < minX || structure.coordX > maxX || structure.coordY < minY || structure.coordY > maxY) {
-        continue;
-      }
-
-      const entityId = structure.entityId;
-      if (this.syncedStructureIds.has(entityId) || this.syncingStructureIds.has(entityId)) {
-        continue;
-      }
-
-      if (components?.Structure) {
-        try {
-          const entityKey = getEntityIdFromKeys([BigInt(entityId)]) as string;
-          const existing = getComponentValue(components.Structure, entityKey as any);
-          if (existing) {
-            this.syncedStructureIds.add(entityId);
-            continue;
-          }
-        } catch (error) {
-          console.warn("[WorldmapScene] Unable to build entity key for structure", entityId, error);
-        }
-      }
-
-      structuresToSync.push({
-        entityId,
-        position: { col: structure.coordX, row: structure.coordY },
-      });
-      this.syncingStructureIds.add(entityId);
-    }
-
-    if (structuresToSync.length === 0) {
-      return;
-    }
-
-    this.beginToriiFetch();
-    try {
-      await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
-      structuresToSync.forEach((structure) => this.syncedStructureIds.add(structure.entityId));
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to fetch structures for chunk", this.currentChunk, error);
-    } finally {
-      structuresToSync.forEach((structure) => this.syncingStructureIds.delete(structure.entityId));
-      this.endToriiFetch();
-    }
   }
 
   private beginToriiFetch() {
@@ -3568,10 +3428,7 @@ export default class WorldmapScene extends HexagonScene {
       this.visibilityManager?.unregisterChunk(oldChunk);
     }
 
-    // Kick off data fetches for deterministic ordering
-    const structureFetchPromise = this.refreshStructuresForChunks([chunkKey]).catch((error) => {
-      console.error("[WorldmapScene] Structure fetch failed:", error);
-    });
+    // Kick off tile data fetch
     const tileFetchPromise = this.computeTileEntities(chunkKey).catch((error) => {
       console.error("[WorldmapScene] Tile fetch failed:", error);
     });
@@ -3600,8 +3457,8 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.height,
     );
 
-    // Wait for core data (tiles + structures) before updating managers to avoid empty renders
-    await Promise.all([structureFetchPromise, tileFetchPromise]);
+    // Wait for core tile data before updating managers to avoid empty renders
+    await tileFetchPromise;
     this.hydratedChunkRefreshes.delete(chunkKey);
 
     // If user navigated away during fetch, skip updating this chunk
@@ -3638,10 +3495,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Start deterministic data fetches
-    const structureFetchPromise = this.refreshStructuresForChunks([chunkKey]).catch((error) => {
-      console.error("[WorldmapScene] Background structure refresh failed:", error);
-    });
+    // Start tile data fetch
     const tileFetchPromise = this.computeTileEntities(chunkKey).catch((error) => {
       console.error("[WorldmapScene] Tile refresh failed:", error);
     });
@@ -3661,8 +3515,8 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.height,
     );
 
-    // Wait for data before updating managers
-    await Promise.all([structureFetchPromise, tileFetchPromise]);
+    // Wait for tile data before updating managers
+    await tileFetchPromise;
     this.hydratedChunkRefreshes.delete(chunkKey);
 
     await this.updateManagersForChunk(chunkKey, { force: true });
