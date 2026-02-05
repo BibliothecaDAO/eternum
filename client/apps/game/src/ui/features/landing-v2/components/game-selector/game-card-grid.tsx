@@ -182,16 +182,15 @@ const GameCard = ({
     <div
       className={cn(
         "relative group rounded-lg border bg-gradient-to-b backdrop-blur-sm",
-        "transition-all duration-200 hover:scale-[1.01] hover:shadow-md",
+        "transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:z-10",
         statusColors[game.gameStatus],
         isOngoing && "shadow-emerald-500/10",
-        isUpcoming && "shadow-amber-500/10",
-        showRegistered && "ring-1 ring-emerald-400/50",
+        isUpcoming && "shadow-amber-500/15",
       )}
     >
-      {/* Registered indicator - top banner */}
+      {/* Registered indicator - subtle gold top banner that works with all status colors */}
       {showRegistered && (
-        <div className="absolute -top-px left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent rounded-b-full" />
+        <div className="absolute -top-px left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-gold/60 to-transparent rounded-b-full" />
       )}
 
       <div className="p-3 space-y-2">
@@ -221,7 +220,7 @@ const GameCard = ({
             <span>{game.registrationCount ?? 0} players</span>
           </div>
           {showRegistered && (
-            <div className="flex items-center gap-1 text-emerald-400">
+            <div className="flex items-center gap-1 text-gold/80">
               <CheckCircle2 className="w-3 h-3" />
               <span className="font-medium">Registered</span>
             </div>
@@ -502,7 +501,7 @@ export const UnifiedGameGrid = ({
             <p className="text-[10px] text-white/30 mt-1">Games appear when servers are online</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-1">
             {games.map((game) => (
               <GameCard
                 key={game.worldKey}
