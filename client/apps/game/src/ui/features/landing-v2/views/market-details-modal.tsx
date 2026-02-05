@@ -1,5 +1,6 @@
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import Button from "@/ui/design-system/atoms/button";
+import { MarketsProviders } from "@/ui/features/landing/sections/markets";
 import { MarketOdds } from "@/ui/features/landing/sections/markets/market-odds";
 import { MarketStatusBadge } from "@/ui/features/landing/sections/markets/market-status-badge";
 import { MarketTimeline } from "@/ui/features/landing/sections/markets/market-timeline";
@@ -80,7 +81,10 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
   );
 };
 
-export const MarketDetailsModal = ({ market: initialMarket, onClose }: MarketDetailsModalProps) => {
+/**
+ * Inner modal content that uses hooks requiring MarketsProviders context
+ */
+const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: MarketClass; onClose: () => void }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
 
@@ -221,5 +225,16 @@ export const MarketDetailsModal = ({ market: initialMarket, onClose }: MarketDet
         </div>
       </div>
     </div>
+  );
+};
+
+/**
+ * Modal wrapper that provides the necessary context providers
+ */
+export const MarketDetailsModal = ({ market, onClose }: MarketDetailsModalProps) => {
+  return (
+    <MarketsProviders>
+      <MarketDetailsModalContent initialMarket={market} onClose={onClose} />
+    </MarketsProviders>
   );
 };
