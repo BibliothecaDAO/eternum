@@ -1,7 +1,6 @@
 import { useGameSelector } from "@/hooks/helpers/use-game-selector";
 import { useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
-import { resetBootstrap } from "@/init/bootstrap";
 import Button from "@/ui/design-system/atoms/button";
 import { ENTRY_TOKEN_LOCK_ID, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -238,10 +237,7 @@ export const BlitzOnboarding = () => {
       {/* Navigation header */}
       <div className="flex justify-between items-center -mb-2">
         <Button
-          onClick={() => {
-            resetBootstrap();
-            navigate("/");
-          }}
+          onClick={() => navigate("/")}
           variant="outline"
           size="xs"
           className="!px-3 !py-1.5"

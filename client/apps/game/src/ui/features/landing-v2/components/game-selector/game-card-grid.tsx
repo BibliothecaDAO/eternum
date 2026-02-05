@@ -258,7 +258,7 @@ const GameCard = ({
               <Play className="w-3 h-3" />
               Play
             </button>
-          ) : !showRegistered && canRegisterPeriod && playerAddress ? (
+          ) : game.isRegistered === false && !registrationStage && canRegisterPeriod && playerAddress ? (
             <>
               {isRegistering ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">

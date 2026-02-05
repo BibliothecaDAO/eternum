@@ -53,6 +53,13 @@ const GLOBAL_NON_SPATIAL_MODELS: string[] = [
   "s1_eternum-RankPrize",
 ];
 
+// Models synced per-player via a scoped subscription (see usePlayerStructureSync)
+export const PLAYER_STRUCTURE_MODELS: string[] = [
+  "s1_eternum-ProductionBoostBonus",
+  "s1_eternum-Resource",
+  "s1_eternum-ResourceArrival",
+];
+
 const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_NON_SPATIAL_MODELS.map((model) => ({ model }));
 const GLOBAL_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_STREAM_MODELS);
 
@@ -363,16 +370,4 @@ const resubscribeEntityStream = async (
     logging,
     reportProgress: false,
   });
-};
-
-/**
- * Cancel the active entity stream subscription.
- * Call this when navigating away from a game to free Torii connection resources.
- */
-export const cancelEntityStreamSubscription = () => {
-  if (entityStreamSubscription) {
-    console.log("[sync] Cancelling entity stream subscription");
-    entityStreamSubscription.cancel();
-    entityStreamSubscription = null;
-  }
 };

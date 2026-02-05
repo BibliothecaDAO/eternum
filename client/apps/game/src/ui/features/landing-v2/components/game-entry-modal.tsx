@@ -6,7 +6,7 @@
  * 2. Settlement phase - If user is registered but hasn't settled
  * 3. Auto-transitions to game when ready
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Eye, Loader2, Check, AlertCircle, RefreshCw, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
@@ -14,7 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import type { SetupResult } from "@/init/bootstrap";
-import { bootstrapGame, resetBootstrap } from "@/init/bootstrap";
+import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -690,9 +690,6 @@ export const GameEntryModal = ({
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
 
-  // Track if user entered the game (to avoid cleanup on successful navigation)
-  const didEnterGameRef = useRef(false);
-
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)));
@@ -995,27 +992,6 @@ export const GameEntryModal = ({
     startBootstrap();
   }, [isOpen, worldName, chain, updateTask]);
 
-  // Track if modal was open (to detect close)
-  const wasOpenRef = useRef(false);
-
-  // Cleanup when modal closes without entering game
-  useEffect(() => {
-    if (isOpen) {
-      // Modal is opening
-      wasOpenRef.current = true;
-      didEnterGameRef.current = false;
-    } else if (wasOpenRef.current) {
-      // Modal is closing (was open, now closed)
-      wasOpenRef.current = false;
-
-      // Only cleanup if user did NOT enter the game
-      if (!didEnterGameRef.current) {
-        console.log("[GameEntryModal] Cleaning up resources - modal closed without entering game");
-        resetBootstrap();
-      }
-    }
-  }, [isOpen]); // Only depend on isOpen, not bootstrapStatus
-
   // Update task progress based on sync
   useEffect(() => {
     if (bootstrapStatus !== "loading") return;
@@ -1052,9 +1028,6 @@ export const GameEntryModal = ({
 
   // Enter game handler - uses same navigation approach as /play/ page for consistent behavior
   const handleEnterGame = useCallback(async () => {
-    // Mark that we're entering the game (prevents cleanup on close)
-    didEnterGameRef.current = true;
-
     // Hide the onboarding overlay since we're entering through the new flow
     setShowBlankOverlay(false);
 
