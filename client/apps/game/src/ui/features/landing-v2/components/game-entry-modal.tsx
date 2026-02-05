@@ -17,6 +17,7 @@ import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import type { Chain } from "@contracts";
@@ -356,6 +357,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
   const navigate = useNavigate();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
+  const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -574,9 +576,11 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
   // Enter game handler
   const handleEnterGame = useCallback(() => {
+    // Hide the onboarding overlay since we're entering through the new flow
+    setShowBlankOverlay(false);
     const url = isSpectateMode ? "/play/map?col=0&row=0&spectate=true" : "/play/map?col=0&row=0";
     navigate(url);
-  }, [navigate, isSpectateMode]);
+  }, [navigate, isSpectateMode, setShowBlankOverlay]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
