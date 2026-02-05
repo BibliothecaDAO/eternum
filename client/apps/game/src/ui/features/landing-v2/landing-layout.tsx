@@ -70,7 +70,7 @@ const LandingLayoutContent = () => {
       <LandingSidebar onSettingsClick={handleSettingsClick} />
 
       {/* Top header with wallet */}
-      <LandingHeader walletButton={<Controller />} />
+      <LandingHeader walletButton={<Controller />} onSettingsClick={handleSettingsClick} />
 
       {/* Main content area */}
       <main
