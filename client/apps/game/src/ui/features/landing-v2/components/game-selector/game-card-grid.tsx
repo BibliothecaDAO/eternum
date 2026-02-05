@@ -554,14 +554,13 @@ export const UnifiedGameGrid = ({
             </button>
           </div>
         ) : games.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[100px] text-center">
-            <p className="text-xs text-white/40">No games available</p>
-            <p className="text-[10px] text-white/30 mt-1">Games appear when servers are online</p>
+          <div className="flex flex-col items-center justify-center h-[60px] text-center">
+            <p className="text-[10px] text-white/40">No games available</p>
           </div>
         ) : (
-          <div className="flex gap-3 p-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          <div className="flex gap-2 p-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             {games.map((game) => (
-              <div key={game.worldKey} className="flex-shrink-0 w-[280px]">
+              <div key={game.worldKey} className="flex-shrink-0 w-[240px]">
                 <GameCard
                   game={game}
                   onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
