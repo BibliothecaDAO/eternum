@@ -10,10 +10,10 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-02-05",
-    title: "Build Hyperstructures Button",
+    title: "Registration Status Fix",
     description:
-      "Registered players in upcoming games can now click 'Build Hyperstructures' to initialize hyperstructures before the game starts. Registration status now persists correctly when switching between tabs.",
-    type: "improvement",
+      "Registration status now persists correctly when switching between tabs. The Play button for ongoing games will automatically guide you through hyperstructure initialization if needed before settlement.",
+    type: "fix",
   },
   {
     date: "2026-02-05",

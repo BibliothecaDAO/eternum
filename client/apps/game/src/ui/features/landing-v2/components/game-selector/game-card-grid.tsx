@@ -359,7 +359,6 @@ export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
-  onBuildHyperstructures,
   onRegistrationComplete,
   className,
   devModeFilter,
@@ -596,11 +595,6 @@ export const UnifiedGameGrid = ({
                 onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
                 onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
                 onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
-                onBuildHyperstructures={
-                  onBuildHyperstructures
-                    ? () => onBuildHyperstructures({ name: game.name, chain: game.chain })
-                    : undefined
-                }
                 onRegistrationComplete={handleRegistrationComplete}
                 playerAddress={playerAddress}
                 showChainBadge={true}
@@ -616,11 +610,6 @@ export const UnifiedGameGrid = ({
                   onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
                   onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
                   onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
-                  onBuildHyperstructures={
-                    onBuildHyperstructures
-                      ? () => onBuildHyperstructures({ name: game.name, chain: game.chain })
-                      : undefined
-                  }
                   onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}
