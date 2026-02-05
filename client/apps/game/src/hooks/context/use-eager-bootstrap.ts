@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SetupResult } from "@/init/bootstrap";
-import { bootstrapGame } from "@/init/bootstrap";
+import { bootstrapGame, getCachedSetupResult } from "@/init/bootstrap";
 import { getActiveWorld } from "@/runtime/world";
 import { useSyncStore } from "../store/use-sync-store";
 
@@ -43,13 +43,20 @@ const BOOTSTRAP_TASKS: BootstrapTask[] = [
  */
 export const useEagerBootstrap = (): EagerBootstrapState => {
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
-  const [status, setStatus] = useState<BootstrapStatus>("idle");
-  const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
+
+  // Check if bootstrap has already completed (e.g., from GameEntryModal)
+  const cachedResult = getCachedSetupResult();
+  const isAlreadyReady = cachedResult !== null;
+
+  const [status, setStatus] = useState<BootstrapStatus>(isAlreadyReady ? "ready" : "idle");
+  const [setupResult, setSetupResult] = useState<SetupResult | null>(cachedResult);
   const [error, setError] = useState<Error | null>(null);
-  const [tasks, setTasks] = useState<BootstrapTask[]>(BOOTSTRAP_TASKS);
+  const [tasks, setTasks] = useState<BootstrapTask[]>(
+    isAlreadyReady ? BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "complete" as const })) : BOOTSTRAP_TASKS,
+  );
   const [currentTask, setCurrentTask] = useState<string | null>(null);
   const inFlightRef = useRef<Promise<SetupResult> | null>(null);
-  const hasStartedRef = useRef(false);
+  const hasStartedRef = useRef(isAlreadyReady);
 
   const updateTask = useCallback((taskId: string, taskStatus: BootstrapTask["status"]) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: taskStatus } : t)));
