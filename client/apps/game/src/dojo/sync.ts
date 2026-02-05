@@ -319,23 +319,29 @@ export const initialSync = async (
     }),
   );
 
-  // // SPECTATOR REALM
-  const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
+  // SPECTATOR REALM - only set default if no structure is already selected
+  // (e.g., when entering from landing page, structureEntityId is already set)
+  const currentStructureEntityId = state.structureEntityId;
+  if (!currentStructureEntityId || currentStructureEntityId === 0) {
+    const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
-  if (firstNonOwnedStructure) {
-    const start = performance.now();
-    state.setStructureEntityId(firstNonOwnedStructure.entity_id, {
-      spectator: true,
-      worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
-    });
-    await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
-      {
-        entityId: firstNonOwnedStructure.entity_id,
-        position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
-      },
-    ]);
-    const end = performance.now();
-    console.log("[sync] first structure query", end - start);
+    if (firstNonOwnedStructure) {
+      const start = performance.now();
+      state.setStructureEntityId(firstNonOwnedStructure.entity_id, {
+        spectator: true,
+        worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+      });
+      await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
+        {
+          entityId: firstNonOwnedStructure.entity_id,
+          position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+        },
+      ]);
+      const end = performance.now();
+      console.log("[sync] first structure query", end - start);
+      updateProgress(25);
+    }
+  } else {
     updateProgress(25);
   }
 
