@@ -995,25 +995,26 @@ export const GameEntryModal = ({
     startBootstrap();
   }, [isOpen, worldName, chain, updateTask]);
 
+  // Track if modal was open (to detect close)
+  const wasOpenRef = useRef(false);
+
   // Cleanup when modal closes without entering game
   useEffect(() => {
-    // Reset the ref when modal opens
     if (isOpen) {
+      // Modal is opening
+      wasOpenRef.current = true;
       didEnterGameRef.current = false;
-    }
+    } else if (wasOpenRef.current) {
+      // Modal is closing (was open, now closed)
+      wasOpenRef.current = false;
 
-    // Cleanup when modal closes
-    return () => {
-      // Only cleanup if:
-      // 1. Modal is closing (isOpen was true, now unmounting or becoming false)
-      // 2. Bootstrap was started
-      // 3. User did NOT enter the game
-      if (bootstrapStatus !== "idle" && !didEnterGameRef.current) {
+      // Only cleanup if user did NOT enter the game
+      if (!didEnterGameRef.current) {
         console.log("[GameEntryModal] Cleaning up resources - modal closed without entering game");
         resetBootstrap();
       }
-    };
-  }, [isOpen, bootstrapStatus]);
+    }
+  }, [isOpen]); // Only depend on isOpen, not bootstrapStatus
 
   // Update task progress based on sync
   useEffect(() => {
