@@ -558,9 +558,9 @@ export const UnifiedGameGrid = ({
             <p className="text-[10px] text-white/40">No games available</p>
           </div>
         ) : (
-          <div className="flex gap-2 p-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          <div className="flex gap-3 p-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             {games.map((game) => (
-              <div key={game.worldKey} className="flex-shrink-0 w-[240px]">
+              <div key={game.worldKey} className="flex-shrink-0 w-[320px]">
                 <GameCard
                   game={game}
                   onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}

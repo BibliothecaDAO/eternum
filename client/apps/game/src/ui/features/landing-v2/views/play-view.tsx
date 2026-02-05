@@ -254,7 +254,7 @@ const NewsContent = () => (
 
 /**
  * Play tab content with split layout:
- * - Top row: Hero left + Live/Upcoming side by side on right
+ * - Top row: Hero left + Live/Upcoming stacked on right
  * - Bottom row: Ended Games full width, collapsed by default
  */
 const PlayTabContent = ({
@@ -274,15 +274,15 @@ const PlayTabContent = ({
 
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
-      {/* Top Row: Hero + Live/Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 items-start">
+      {/* Top Row: Hero + Live/Upcoming stacked */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
         {/* Left: Hero Title */}
         <div className="flex flex-col justify-center min-h-[300px]">
           <HeroTitle />
         </div>
 
-        {/* Right: Live and Upcoming side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Right: Live and Upcoming stacked vertically */}
+        <div className="flex flex-col gap-4">
           {/* Live Games Panel */}
           <div className="rounded-2xl border border-emerald-500/30 bg-black/60 p-4 backdrop-blur-xl">
             <div className="flex items-center gap-2 mb-3">
