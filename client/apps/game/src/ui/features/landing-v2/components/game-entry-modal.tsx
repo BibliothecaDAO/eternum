@@ -1027,15 +1027,15 @@ export const GameEntryModal = ({
     }, 100);
   }, []);
 
-  // Enter game handler
+  // Enter game handler - uses same navigation approach as /play/ page for consistent behavior
   const handleEnterGame = useCallback(async () => {
     // Hide the onboarding overlay since we're entering through the new flow
     setShowBlankOverlay(false);
 
-    // Default coordinates (hyperstructure center)
+    // Default coordinates (world center)
     let col = 0;
     let row = 0;
-    let structureId: number | null = null;
+    let structureId = 0;
 
     // For players (not spectators), try to find their owned structure
     if (!isSpectateMode && setupResult && account?.address) {
@@ -1064,26 +1064,24 @@ export const GameEntryModal = ({
       }
     }
 
-    // Build URL - use /hex for local view when player has a structure, /map for spectators
-    // structureId param ensures the correct structure is selected
-    let url: string;
+    // Navigate to the game route first (required for the game to load)
+    navigate("/play");
+
+    // Use goToStructure for proper state management (same as /play/ page "Play Blitz" button)
+    // This sets structureEntityId in UI store, updates selectedHex, and navigates with wouter
+    const position = new Position({ x: col, y: row });
+
     if (isSpectateMode) {
-      url = `/play/map?col=${col}&row=${row}&spectate=true`;
-    } else if (structureId !== null) {
-      // Player entering their realm - use local/hex view
-      url = `/play/hex?col=${col}&row=${row}&structureId=${structureId}`;
+      // Spectators go to map view
+      await goToStructure(structureId, position, true, { spectator: true });
+    } else if (structureId > 0) {
+      // Players with a structure go to hex/local view
+      await goToStructure(structureId, position, false);
     } else {
-      // Fallback to map view
-      url = `/play/map?col=${col}&row=${row}`;
+      // Fallback: no structure found, go to map view
+      await goToStructure(0, position, true);
     }
-
-    navigate(url);
-
-    // Dispatch urlChanged event to notify Three.js GameRenderer about the route change
-    // This is needed because react-router-dom's navigate() doesn't trigger the custom event
-    // that the game's scene manager listens for to switch between WorldMap and Hexception views
-    window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, isSpectateMode, setShowBlankOverlay, setupResult, account]);
+  }, [navigate, goToStructure, isSpectateMode, setShowBlankOverlay, setupResult, account, worldName]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
