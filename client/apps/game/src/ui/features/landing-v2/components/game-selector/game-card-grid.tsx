@@ -188,9 +188,9 @@ const GameCard = ({
         isUpcoming && "shadow-amber-500/15",
       )}
     >
-      {/* Registered indicator - subtle gold top banner that works with all status colors */}
+      {/* Registered indicator - subtle green top banner */}
       {showRegistered && (
-        <div className="absolute -top-px left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-gold/60 to-transparent rounded-b-full" />
+        <div className="absolute -top-px left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent rounded-b-full" />
       )}
 
       <div className="p-3 space-y-2">
@@ -220,7 +220,7 @@ const GameCard = ({
             <span>{game.registrationCount ?? 0} players</span>
           </div>
           {showRegistered && (
-            <div className="flex items-center gap-1 text-gold/80">
+            <div className="flex items-center gap-1 text-emerald-400">
               <CheckCircle2 className="w-3 h-3" />
               <span className="font-medium">Registered</span>
             </div>
