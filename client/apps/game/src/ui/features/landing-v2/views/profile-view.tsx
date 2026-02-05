@@ -81,26 +81,5 @@ export const ProfileView = ({ className }: ProfileViewProps) => {
     }
   };
 
-  const getTitle = () => {
-    switch (activeTab) {
-      case "cosmetics":
-        return "Cosmetics";
-      case "wallet":
-        return "Wallet";
-      default:
-        return "Profile";
-    }
-  };
-
-  return (
-    <div className={cn("flex flex-col gap-6", className)}>
-      {/* Profile header */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-serif text-2xl font-bold text-gold sm:text-3xl">{getTitle()}</h1>
-      </div>
-
-      {/* Tab content */}
-      {renderContent()}
-    </div>
-  );
+  return <div className={cn("flex flex-col gap-6", className)}>{renderContent()}</div>;
 };
