@@ -465,7 +465,12 @@ export const UnifiedGameGrid = ({
 
       // Update state once with all results
       if (!cancelled && Object.keys(results).length > 0) {
-        setPlayerRegistration((prev) => ({ ...prev, ...results }));
+        console.log("[UnifiedGameGrid] Updating playerRegistration with results:", results);
+        setPlayerRegistration((prev) => {
+          const newState = { ...prev, ...results };
+          console.log("[UnifiedGameGrid] New playerRegistration state:", newState);
+          return newState;
+        });
       }
     };
 
@@ -477,6 +482,7 @@ export const UnifiedGameGrid = ({
 
   // Build game data - only include online games from both chains
   const games = useMemo<GameData[]>(() => {
+    console.log("[UnifiedGameGrid] Computing games memo, playerRegistration:", playerRegistration);
     const nodes = factoryWorlds
       .map((world) => {
         const worldKey = getWorldKey(world);
