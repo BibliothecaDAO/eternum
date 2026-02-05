@@ -17,9 +17,11 @@ import {
   Zap,
   Clock,
   Trophy,
+  RefreshCw,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { HeroTitle } from "../components/hero-title";
 import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
@@ -262,6 +264,8 @@ const PlayTabContent = ({
   onSeeScore,
   onForgeHyperstructures,
   onRegistrationComplete,
+  onRefreshUpcoming,
+  isRefreshing = false,
   disabled = false,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
@@ -269,6 +273,8 @@ const PlayTabContent = ({
   onSeeScore: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => void;
   onRegistrationComplete: () => void;
+  onRefreshUpcoming: () => void;
+  isRefreshing?: boolean;
   disabled?: boolean;
 }) => {
   return (
@@ -306,11 +312,21 @@ const PlayTabContent = ({
 
         {/* Upcoming Games Column */}
         <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
-              <Clock className="h-3.5 w-3.5 text-amber-400" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
+                <Clock className="h-3.5 w-3.5 text-amber-400" />
+              </div>
+              <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Upcoming Games</h2>
             </div>
-            <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Upcoming Games</h2>
+            <button
+              onClick={onRefreshUpcoming}
+              disabled={isRefreshing}
+              className="p-1 rounded-md bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20 hover:text-amber-400 transition-all disabled:opacity-50"
+              title="Refresh"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
             <UnifiedGameGrid
@@ -363,6 +379,7 @@ const PlayTabContent = ({
 export const PlayView = ({ className }: PlayViewProps) => {
   const [searchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as PlayTab) || "play";
+  const queryClient = useQueryClient();
 
   // Modal state for game entry
   const [entryModalOpen, setEntryModalOpen] = useState(false);
@@ -374,6 +391,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
   // Modal state for score card
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
   const [scoreWorld, setScoreWorld] = useState<WorldSelection | null>(null);
+
+  // Refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Auth state
   const account = useAccountStore((state) => state.account);
@@ -449,6 +469,17 @@ export const PlayView = ({ className }: PlayViewProps) => {
     // The toast is already shown by the GameCard component
   }, []);
 
+  // Refresh upcoming games data (invalidate world availability queries)
+  const handleRefreshUpcoming = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["worldAvailability"] });
+    } finally {
+      // Add a small delay so the spinner is visible
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [queryClient]);
+
   const renderContent = () => {
     switch (activeTab) {
       case "learn":
@@ -470,6 +501,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSeeScore={handleSeeScore}
             onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
+            onRefreshUpcoming={handleRefreshUpcoming}
+            isRefreshing={isRefreshing}
             disabled={entryModalOpen || scoreModalOpen}
           />
         );
