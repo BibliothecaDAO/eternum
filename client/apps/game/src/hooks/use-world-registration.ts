@@ -155,16 +155,20 @@ export const useWorldRegistration = ({
 
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
+  const devModeOn = config?.devModeOn ?? false;
 
   // Check if registration is open
   const now = Date.now() / 1000;
   const registrationStartAt = config?.registrationStartAt ?? 0;
   const registrationEndAt = config?.registrationEndAt ?? 0;
-  const isRegistrationOpen =
+  // Normal registration window check
+  const isInRegistrationWindow =
     registrationStartAt > 0 &&
     registrationEndAt > registrationStartAt &&
     now >= registrationStartAt &&
     now < registrationEndAt;
+  // In dev mode, allow registration even after the window closes (during ongoing game)
+  const isRegistrationOpen = isInRegistrationWindow || (devModeOn && now >= registrationStartAt);
 
   const canRegister =
     enabled &&

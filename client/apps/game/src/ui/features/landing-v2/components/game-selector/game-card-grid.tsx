@@ -157,8 +157,12 @@ const GameCard = ({
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
+  const devModeOn = game.config?.devModeOn ?? false;
   const canPlay = isOngoing && game.isRegistered;
-  const canSpectate = isOngoing;
+  // Can spectate ongoing or ended games
+  const canSpectate = isOngoing || isEnded;
+  // Can register during upcoming, or during ongoing if dev mode is on
+  const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
@@ -166,7 +170,7 @@ const GameCard = ({
     chain: game.chain,
     config: game.config,
     isRegistered: game.isRegistered === true,
-    enabled: game.status === "ok" && !isEnded,
+    enabled: game.status === "ok" && canRegisterPeriod,
   });
 
   // Handle registration with toast notification
@@ -294,7 +298,7 @@ const GameCard = ({
           )}
 
           {/* Registration button with inline progress */}
-          {!showRegistered && !isEnded && playerAddress && (
+          {!showRegistered && canRegisterPeriod && playerAddress && (
             <>
               {isRegistering ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
@@ -323,11 +327,9 @@ const GameCard = ({
             </>
           )}
 
-          {!playerAddress && !showRegistered && !isEnded && (
+          {!playerAddress && !showRegistered && canRegisterPeriod && (
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
           )}
-
-          {isEnded && !canSpectate && <div className="flex-1 text-center text-[10px] text-white/40 py-1">Ended</div>}
         </div>
 
         {/* Fee info (shown when can register) */}
@@ -335,8 +337,8 @@ const GameCard = ({
           <div className="text-[10px] text-gold/50 text-center">Fee: {formatFeeAmount(feeAmount)} LORDS</div>
         )}
 
-        {/* Error message */}
-        {registrationStage === "error" && error && (
+        {/* Error message - only show if not already registered */}
+        {registrationStage === "error" && error && !showRegistered && (
           <div className="text-[10px] text-red-400 text-center truncate" title={error}>
             {error}
           </div>

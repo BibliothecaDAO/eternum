@@ -7,7 +7,7 @@ import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { useQuery, useQueries } from "@tanstack/react-query";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -59,6 +59,8 @@ export interface WorldConfigMeta {
   registrationEndAt: number | null;
   // MMR
   mmrEnabled: boolean;
+  // Dev mode - allows registration during ongoing games
+  devModeOn: boolean;
 }
 
 interface WorldRef {
@@ -93,6 +95,7 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string): Promise<WorldConfigMe
     registrationStartAt: null,
     registrationEndAt: null,
     mmrEnabled: false,
+    devModeOn: false,
   };
 
   try {
@@ -115,6 +118,10 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string): Promise<WorldConfigMe
       if (row.mmr_enabled != null) {
         const mmrVal = parseMaybeHexToNumber(row.mmr_enabled);
         meta.mmrEnabled = mmrVal != null && mmrVal !== 0;
+      }
+      if (row.dev_mode_on != null) {
+        const devVal = parseMaybeHexToNumber(row.dev_mode_on);
+        meta.devModeOn = devVal != null && devVal !== 0;
       }
     }
   } catch {
