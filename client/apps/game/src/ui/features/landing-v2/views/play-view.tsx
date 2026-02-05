@@ -264,7 +264,7 @@ const PlayTabContent = ({
   onSeeScore,
   onForgeHyperstructures,
   onRegistrationComplete,
-  onRefreshUpcoming,
+  onRefresh,
   isRefreshing = false,
   disabled = false,
 }: {
@@ -273,7 +273,7 @@ const PlayTabContent = ({
   onSeeScore: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => void;
   onRegistrationComplete: () => void;
-  onRefreshUpcoming: () => void;
+  onRefresh: () => void;
   isRefreshing?: boolean;
   disabled?: boolean;
 }) => {
@@ -288,12 +288,22 @@ const PlayTabContent = ({
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
         {/* Live Games Column */}
         <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
-              <Zap className="h-3.5 w-3.5 text-emerald-400" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
+                <Zap className="h-3.5 w-3.5 text-emerald-400" />
+              </div>
+              <h2 className="font-cinzel text-base text-emerald-400 uppercase tracking-wider">Live Games</h2>
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
             </div>
-            <h2 className="font-cinzel text-base text-emerald-400 uppercase tracking-wider">Live Games</h2>
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="p-1 rounded-md bg-emerald-500/10 text-emerald-400/70 hover:bg-emerald-500/20 hover:text-emerald-400 transition-all disabled:opacity-50"
+              title="Refresh"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
             <UnifiedGameGrid
@@ -320,7 +330,7 @@ const PlayTabContent = ({
               <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Upcoming Games</h2>
             </div>
             <button
-              onClick={onRefreshUpcoming}
+              onClick={onRefresh}
               disabled={isRefreshing}
               className="p-1 rounded-md bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20 hover:text-amber-400 transition-all disabled:opacity-50"
               title="Refresh"
@@ -469,8 +479,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
     // The toast is already shown by the GameCard component
   }, []);
 
-  // Refresh upcoming games data (invalidate world availability queries)
-  const handleRefreshUpcoming = useCallback(async () => {
+  // Refresh games data (invalidate world availability queries)
+  // This also handles the transition from upcoming to live when game starts
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
       await queryClient.invalidateQueries({ queryKey: ["worldAvailability"] });
@@ -501,7 +512,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSeeScore={handleSeeScore}
             onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
-            onRefreshUpcoming={handleRefreshUpcoming}
+            onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
             disabled={entryModalOpen || scoreModalOpen}
           />

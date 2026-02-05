@@ -20,8 +20,10 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
+import { Position } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 
 const DEBUG_MODAL = false; // Set to true to enable debug logging
@@ -664,6 +666,9 @@ export const GameEntryModal = ({
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
   const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
+
+  // Navigation hook - uses same approach as /play/ page for consistent behavior
+  const goToStructure = useGoToStructure(setupResult);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
   const [tasks, setTasks] = useState<BootstrapTask[]>(BOOTSTRAP_TASKS);
 
