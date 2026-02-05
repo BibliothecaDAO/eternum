@@ -35,7 +35,7 @@ const debugLog = (worldName: string | null, ...args: unknown[]) => {
 type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 type BootstrapTask = { id: string; label: string; status: "pending" | "running" | "complete" | "error" };
 type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
-type ModalPhase = "loading" | "hyperstructure" | "settlement" | "ready" | "error";
+type ModalPhase = "loading" | "forge" | "hyperstructure" | "settlement" | "ready" | "error";
 
 // Hyperstructure info type
 type HyperstructureInfo = {
@@ -50,6 +50,10 @@ interface GameEntryModalProps {
   worldName: string;
   chain: Chain;
   isSpectateMode?: boolean;
+  /** If true, skip settlement and just forge hyperstructures, then close */
+  isForgeMode?: boolean;
+  /** Number of hyperstructures left to forge (for forge mode) */
+  numHyperstructuresLeft?: number;
 }
 
 const LOADING_STATEMENTS = [
@@ -512,9 +516,143 @@ const HyperstructurePhase = ({
 };
 
 /**
+ * Forge hyperstructures phase - creates new hyperstructures during registration period
+ * This is different from initialization - forging creates new ones, initializing activates existing ones
+ */
+const ForgeHyperstructuresPhase = ({
+  numHyperstructuresLeft,
+  isForging,
+  onForge,
+  onClose,
+}: {
+  numHyperstructuresLeft: number;
+  isForging: boolean;
+  onForge: () => void;
+  onClose: () => void;
+}) => {
+  const allForged = numHyperstructuresLeft <= 0;
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="text-center mb-4">
+        <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-amber-400" />
+        </div>
+        <h2 className="text-lg font-semibold text-gold">
+          {allForged ? "All Hyperstructures Forged!" : "Forge Hyperstructures"}
+        </h2>
+        <p className="text-xs text-gold/60 mt-1">
+          {allForged
+            ? "All hyperstructures have been created for this game."
+            : "Create hyperstructures for the upcoming game. Anyone can forge them!"}
+        </p>
+      </div>
+
+      {!allForged && (
+        <>
+          {/* Forge button - golden orb style similar to HyperstructureForge */}
+          <motion.button
+            onClick={onForge}
+            disabled={isForging}
+            initial={{ scale: 1 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative w-24 h-24 rounded-full cursor-pointer transform-gpu disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-yellow-300/50 mb-4"
+            style={{
+              background: "radial-gradient(circle at 30% 30%, #facc15, #ca8a04, #f59e0b)",
+              boxShadow:
+                "0 8px 32px rgba(251, 191, 36, 0.4), inset 0 2px 8px rgba(255, 255, 255, 0.4), inset 0 -2px 8px rgba(0, 0, 0, 0.1)",
+              border: "4px solid #fef3c7",
+            }}
+          >
+            {/* Ripple Effect */}
+            <motion.div
+              className="absolute inset-0 rounded-full border-2 border-yellow-400/40"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.6, 0, 0.6],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+
+            {/* Content */}
+            <div className="flex items-center justify-center w-full h-full text-4xl font-black text-amber-900">
+              {isForging ? (
+                <motion.img
+                  src="/images/logos/eternum-loader.png"
+                  className="w-8 h-8"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+              ) : (
+                <motion.span
+                  key={numHyperstructuresLeft}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                >
+                  {numHyperstructuresLeft}
+                </motion.span>
+              )}
+            </div>
+
+            {/* Sparkles */}
+            {!isForging && (
+              <>
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 bg-white rounded-full"
+                    style={{
+                      top: `${20 + i * 20}%`,
+                      left: `${10 + i * 30}%`,
+                    }}
+                    animate={{
+                      opacity: [0, 1, 0],
+                      scale: [0, 1, 0],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      delay: i * 0.5,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </>
+            )}
+          </motion.button>
+
+          <p className="text-xs text-gold/50 text-center mb-4">
+            Click to forge {numHyperstructuresLeft} hyperstructure{numHyperstructuresLeft !== 1 ? "s" : ""}
+          </p>
+        </>
+      )}
+
+      {/* Close button */}
+      <Button variant="outline" onClick={onClose} className="w-full" forceUppercase={false}>
+        {allForged ? "Done" : "Close"}
+      </Button>
+    </div>
+  );
+};
+
+/**
  * Main GameEntryModal component
  */
-export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMode = false }: GameEntryModalProps) => {
+export const GameEntryModal = ({
+  isOpen,
+  onClose,
+  worldName,
+  chain,
+  isSpectateMode = false,
+  isForgeMode = false,
+  numHyperstructuresLeft: initialNumHyperstructuresLeft,
+}: GameEntryModalProps) => {
   const navigate = useNavigate();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
@@ -540,6 +678,10 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
   const [hyperstructureCheckComplete, setHyperstructureCheckComplete] = useState(false);
   const [isInitializingHyperstructure, setIsInitializingHyperstructure] = useState(false);
   const [currentInitializingId, setCurrentInitializingId] = useState<number | null>(null);
+
+  // Forge hyperstructures state (for creating new ones during registration)
+  const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
+  const [isForging, setIsForging] = useState(false);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -573,6 +715,9 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       result = "error";
     } else if (bootstrapStatus !== "ready") {
       result = "loading";
+    } else if (isForgeMode) {
+      // Forge mode - skip all checks and go straight to forge phase
+      result = "forge";
     } else if (isSpectateMode) {
       result = "ready";
     } else if (!checksComplete) {
@@ -590,6 +735,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     debugLog(worldName, "Phase determined:", result, {
       bootstrapStatus,
       hasError: !!bootstrapError,
+      isForgeMode,
       isSpectateMode,
       checksComplete,
       settlementCheckComplete,
@@ -602,6 +748,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
   }, [
     bootstrapStatus,
     bootstrapError,
+    isForgeMode,
     isSpectateMode,
     checksComplete,
     settlementCheckComplete,
@@ -628,8 +775,8 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       return;
     }
 
-    if (isSpectateMode) {
-      debugLog(worldName, "Skipping settlement check - spectate mode");
+    if (isSpectateMode || isForgeMode) {
+      debugLog(worldName, "Skipping settlement check - spectate or forge mode");
       setSettlementCheckComplete(true);
       return;
     }

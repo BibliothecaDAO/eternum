@@ -284,7 +284,7 @@ const PlayTabContent = ({
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
               <Zap className="h-3.5 w-3.5 text-emerald-400" />
             </div>
-            <h2 className="font-serif text-base text-emerald-400">Live Games</h2>
+            <h2 className="font-cinzel text-base text-emerald-400 uppercase tracking-wider">Live Games</h2>
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
           </div>
           <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
@@ -308,7 +308,7 @@ const PlayTabContent = ({
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
               <Clock className="h-3.5 w-3.5 text-amber-400" />
             </div>
-            <h2 className="font-serif text-base text-amber-400">Upcoming Games</h2>
+            <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Upcoming Games</h2>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
             <UnifiedGameGrid
@@ -331,7 +331,7 @@ const PlayTabContent = ({
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
               <Trophy className="h-3.5 w-3.5 text-gold" />
             </div>
-            <h2 className="font-serif text-base text-gold">Ended Games</h2>
+            <h2 className="font-cinzel text-base text-gold uppercase tracking-wider">Ended Games</h2>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             <UnifiedGameGrid

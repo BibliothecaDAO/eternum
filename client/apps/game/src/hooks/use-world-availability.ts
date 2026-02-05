@@ -7,7 +7,7 @@ import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { useQueries } from "@tanstack/react-query";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.num_hyperstructures_left" AS num_hyperstructures_left FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -63,6 +63,8 @@ export interface WorldConfigMeta {
   devModeOn: boolean;
   // Player registration status (null if not checked or no player)
   isPlayerRegistered: boolean | null;
+  // Number of hyperstructures left to create (for forging)
+  numHyperstructuresLeft: number | null;
 }
 
 interface WorldRef {
@@ -155,6 +157,7 @@ const fetchWorldConfigMeta = async (
     mmrEnabled: false,
     devModeOn: false,
     isPlayerRegistered: null,
+    numHyperstructuresLeft: null,
   };
 
   try {
@@ -181,6 +184,9 @@ const fetchWorldConfigMeta = async (
       if (row.dev_mode_on != null) {
         const devVal = parseMaybeHexToNumber(row.dev_mode_on);
         meta.devModeOn = devVal != null && devVal !== 0;
+      }
+      if (row.num_hyperstructures_left != null) {
+        meta.numHyperstructuresLeft = parseMaybeHexToNumber(row.num_hyperstructures_left);
       }
     }
 
