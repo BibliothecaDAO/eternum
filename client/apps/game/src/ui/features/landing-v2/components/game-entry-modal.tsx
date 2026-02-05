@@ -614,6 +614,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
   // Check settlement status after bootstrap completes
   useEffect(() => {
     debugLog(
+      worldName,
       "Settlement check effect - bootstrapStatus:",
       bootstrapStatus,
       "hasSetupResult:",
@@ -622,46 +623,52 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       isSpectateMode,
     );
 
-    if (bootstrapStatus !== "ready" || !setupResult || isSpectateMode) {
-      debugLog("Skipping settlement check");
+    if (bootstrapStatus !== "ready" || !setupResult) {
+      debugLog(worldName, "Skipping settlement check - bootstrap not ready");
+      return;
+    }
+
+    if (isSpectateMode) {
+      debugLog(worldName, "Skipping settlement check - spectate mode");
+      setSettlementCheckComplete(true);
       return;
     }
 
     // Query player's settlement status from Dojo components
     const checkSettlementStatus = async () => {
-      debugLog("Running settlement status check...");
+      debugLog(worldName, "Running settlement status check...");
       try {
         const { components } = setupResult;
         const playerAddress = account?.address;
-        debugLog("Player address:", playerAddress);
+        debugLog(worldName, "Player address:", playerAddress);
 
         if (!playerAddress) {
-          debugLog("No player address, skipping settlement check");
+          debugLog(worldName, "No player address, skipping settlement check");
           setNeedsSettlement(false);
+          setSettlementCheckComplete(true);
           return;
         }
 
         // Import Dojo utilities
-        debugLog("Importing Dojo utilities...");
         const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
         const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
 
         const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
-        debugLog("Entity ID:", entityId);
+        debugLog(worldName, "Entity ID:", entityId);
 
         // Check if player is registered
         const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId);
-        debugLog("playerRegister:", playerRegister);
+        debugLog(worldName, "playerRegister:", playerRegister);
         const isRegistered = playerRegister?.registered === true;
 
         // Check if player has any structures (meaning they've settled)
         const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
-        debugLog("playerStructures count:", playerStructures.size);
+        debugLog(worldName, "playerStructures count:", playerStructures.size);
         const hasSettled = playerStructures.size > 0;
 
         // Check settlement finish status
         const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId);
-        debugLog("settleFinish:", settleFinish);
+        debugLog(worldName, "settleFinish:", settleFinish);
         const coordsCount = (settleFinish as any)?.coords?.length ?? 0;
         const settledCount = (settleFinish as any)?.structure_ids?.length ?? 0;
 
@@ -672,7 +679,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         const canPlay = hasSettled && coordsCount + settledCount > 0 && settledCount === coordsCount + settledCount;
         const needsSettlementResult = isRegistered && !canPlay;
 
-        debugLog("Settlement check result:", {
+        debugLog(worldName, "Settlement check result:", {
           isRegistered,
           hasSettled,
           coordsCount,
@@ -682,28 +689,23 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         });
 
         setNeedsSettlement(needsSettlementResult);
+        setSettlementCheckComplete(true);
       } catch (error) {
-        debugLog("Failed to check settlement status:", error);
+        debugLog(worldName, "Failed to check settlement status:", error);
         // On error, assume no settlement needed and let user enter game
         setNeedsSettlement(false);
+        setSettlementCheckComplete(true);
       }
     };
 
-    // Run initial check
+    // Run the check
     checkSettlementStatus();
-
-    // Re-check after a short delay to catch late-syncing registration data
-    const retryTimeout = setTimeout(() => {
-      debugLog("Re-checking settlement status after delay...");
-      checkSettlementStatus();
-    }, 2000);
-
-    return () => clearTimeout(retryTimeout);
-  }, [bootstrapStatus, setupResult, account, isSpectateMode]);
+  }, [bootstrapStatus, setupResult, account, isSpectateMode, worldName]);
 
   // Check hyperstructure initialization status after bootstrap completes
   useEffect(() => {
     debugLog(
+      worldName,
       "Hyperstructure check effect - bootstrapStatus:",
       bootstrapStatus,
       "hasSetupResult:",
@@ -712,13 +714,19 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       isSpectateMode,
     );
 
-    if (bootstrapStatus !== "ready" || !setupResult || isSpectateMode) {
-      debugLog("Skipping hyperstructure check");
+    if (bootstrapStatus !== "ready" || !setupResult) {
+      debugLog(worldName, "Skipping hyperstructure check - bootstrap not ready");
+      return;
+    }
+
+    if (isSpectateMode) {
+      debugLog(worldName, "Skipping hyperstructure check - spectate mode");
+      setHyperstructureCheckComplete(true);
       return;
     }
 
     const checkHyperstructures = async () => {
-      debugLog("Running hyperstructure status check...");
+      debugLog(worldName, "Running hyperstructure status check...");
       try {
         const { components } = setupResult;
 
@@ -728,7 +736,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
         // Get all hyperstructures
         const hyperstructureEntities = runQuery([Has(components.Hyperstructure)]);
-        debugLog("Found hyperstructure entities:", hyperstructureEntities.size);
+        debugLog(worldName, "Found hyperstructure entities:", hyperstructureEntities.size);
 
         const hsInfoList: HyperstructureInfo[] = [];
 
@@ -745,35 +753,47 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
             initialized: progress.initialized,
             name,
           });
+
+          debugLog(worldName, "Hyperstructure:", name, "entityId:", entityId, "initialized:", progress.initialized);
         }
 
-        debugLog("Hyperstructure info:", hsInfoList);
+        debugLog(worldName, "Hyperstructure info:", hsInfoList);
         setHyperstructures(hsInfoList);
 
         // Check if any hyperstructures need initialization
         const uninitializedCount = hsInfoList.filter((h) => !h.initialized).length;
         const needsInit = uninitializedCount > 0;
 
-        debugLog("Hyperstructures need initialization:", needsInit, "uninitialized count:", uninitializedCount);
+        debugLog(
+          worldName,
+          "Hyperstructures need initialization:",
+          needsInit,
+          "uninitialized count:",
+          uninitializedCount,
+          "total:",
+          hsInfoList.length,
+        );
         setNeedsHyperstructureInit(needsInit);
+        setHyperstructureCheckComplete(true);
       } catch (error) {
-        debugLog("Failed to check hyperstructure status:", error);
+        debugLog(worldName, "Failed to check hyperstructure status:", error);
         // On error, assume no initialization needed
         setNeedsHyperstructureInit(false);
+        setHyperstructureCheckComplete(true);
       }
     };
 
     checkHyperstructures();
-  }, [bootstrapStatus, setupResult, isSpectateMode]);
+  }, [bootstrapStatus, setupResult, isSpectateMode, worldName]);
 
   // Start bootstrap when modal opens
   useEffect(() => {
     if (!isOpen) {
-      debugLog("Modal not open, skipping bootstrap");
+      debugLog(worldName, "Modal not open, skipping bootstrap");
       return;
     }
 
-    debugLog("Starting bootstrap for", worldName, "chain:", chain);
+    debugLog(worldName, "Starting bootstrap for", worldName, "chain:", chain);
 
     const startBootstrap = async () => {
       try {
@@ -781,30 +801,32 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         setBootstrapError(null);
         setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
         setNeedsSettlement(false);
+        setSettlementCheckComplete(false);
         setSettleStage("idle");
         setHyperstructures([]);
         setNeedsHyperstructureInit(false);
+        setHyperstructureCheckComplete(false);
 
         // Apply world selection first
-        debugLog("Applying world selection...");
+        debugLog(worldName, "Applying world selection...");
         updateTask("world", "running");
         await applyWorldSelection({ name: worldName, chain }, chain);
         updateTask("world", "complete");
-        debugLog("World selection complete");
+        debugLog(worldName, "World selection complete");
 
         // Start bootstrap
-        debugLog("Starting game bootstrap...");
+        debugLog(worldName, "Starting game bootstrap...");
         updateTask("manifest", "running");
         const result = await bootstrapGame();
-        debugLog("Bootstrap complete, got setupResult:", !!result);
+        debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
 
         // Mark all tasks complete
         setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
         setSetupResult(result);
         setBootstrapStatus("ready");
-        debugLog("Bootstrap status set to ready");
+        debugLog(worldName, "Bootstrap status set to ready");
       } catch (error) {
-        debugLog("Bootstrap failed:", error);
+        debugLog(worldName, "Bootstrap failed:", error);
         setBootstrapError(error instanceof Error ? error : new Error("Bootstrap failed"));
         setBootstrapStatus("error");
         setTasks((prev) => prev.map((t) => (t.status === "running" ? { ...t, status: "error" } : t)));
@@ -835,9 +857,11 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     setSetupResult(null);
     setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
     setNeedsSettlement(false);
+    setSettlementCheckComplete(false);
     setSettleStage("idle");
     setHyperstructures([]);
     setNeedsHyperstructureInit(false);
+    setHyperstructureCheckComplete(false);
     setIsInitializingHyperstructure(false);
     setCurrentInitializingId(null);
     // Trigger re-bootstrap
@@ -874,12 +898,12 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
               col = Number(structure.base.coord_x);
               row = Number(structure.base.coord_y);
               structureId = Number(structure.entity_id);
-              debugLog("Centering on player structure at:", col, row, "structureId:", structureId);
+              debugLog(worldName, "Centering on player structure at:", col, row, "structureId:", structureId);
             }
           }
         }
       } catch (error) {
-        debugLog("Failed to get player structure position, using default:", error);
+        debugLog(worldName, "Failed to get player structure position, using default:", error);
       }
     }
 
@@ -906,7 +930,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
-    debugLog("handleSettle called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
+    debugLog(worldName, "handleSettle called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
     if (!setupResult || !account) return;
 
     setIsSettling(true);
@@ -921,7 +945,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       const blitzConfig = configManager.getBlitzConfig?.();
       const singleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
 
-      debugLog("Settlement config:", { isMainnet, singleRealmMode, blitzConfig });
+      debugLog(worldName, "Settlement config:", { isMainnet, singleRealmMode, blitzConfig });
 
       // Settlement configuration
       const SETTLEMENT_CONFIG = {
@@ -938,7 +962,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       if (isMainnet) {
         const config = singleRealmMode ? SETTLEMENT_CONFIG.MAINNET.SINGLE_REALM : SETTLEMENT_CONFIG.MAINNET.MULTI_REALM;
 
-        debugLog("Starting settlement (mainnet):", config);
+        debugLog(worldName, "Starting settlement (mainnet):", config);
         await systemCalls.blitz_realm_assign_and_settle_realms({
           signer: account,
           settlement_count: config.INITIAL_SETTLE_COUNT,
@@ -947,7 +971,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         if (config.EXTRA_CALLS > 0) {
           setSettleStage("settling");
           for (let i = 0; i < config.EXTRA_CALLS; i++) {
-            debugLog(`Extra settle call ${i + 1}/${config.EXTRA_CALLS}`);
+            debugLog(worldName, `Extra settle call ${i + 1}/${config.EXTRA_CALLS}`);
             await systemCalls.blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
           }
         }
@@ -956,14 +980,14 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
           ? SETTLEMENT_CONFIG.NON_MAINNET.SINGLE_REALM
           : SETTLEMENT_CONFIG.NON_MAINNET.MULTI_REALM;
 
-        debugLog("Starting settlement (non-mainnet):", config);
+        debugLog(worldName, "Starting settlement (non-mainnet):", config);
         await systemCalls.blitz_realm_assign_and_settle_realms({
           signer: account,
           settlement_count: config.INITIAL_SETTLE_COUNT,
         });
       }
 
-      debugLog("Settlement complete!");
+      debugLog(worldName, "Settlement complete!");
       setSettleStage("done");
       setNeedsSettlement(false);
 
@@ -972,17 +996,17 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         handleEnterGame();
       }, 1000);
     } catch (error) {
-      debugLog("Settlement failed:", error);
+      debugLog(worldName, "Settlement failed:", error);
       setSettleStage("error");
     } finally {
       setIsSettling(false);
     }
-  }, [setupResult, account, handleEnterGame]);
+  }, [setupResult, account, handleEnterGame, worldName]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
     async (entityId: number) => {
-      debugLog("handleInitializeHyperstructure called for entityId:", entityId);
+      debugLog(worldName, "handleInitializeHyperstructure called for entityId:", entityId);
       if (!setupResult || !account) return;
 
       setIsInitializingHyperstructure(true);
@@ -996,7 +1020,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
           hyperstructure_id: entityId,
         });
 
-        debugLog("Hyperstructure initialized:", entityId);
+        debugLog(worldName, "Hyperstructure initialized:", entityId);
 
         // Update local state
         setHyperstructures((prev) => prev.map((h) => (h.entityId === entityId ? { ...h, initialized: true } : h)));
@@ -1004,22 +1028,22 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         // Check if all are now initialized
         const remaining = hyperstructures.filter((h) => !h.initialized && h.entityId !== entityId);
         if (remaining.length === 0) {
-          debugLog("All hyperstructures initialized!");
+          debugLog(worldName, "All hyperstructures initialized!");
           setNeedsHyperstructureInit(false);
         }
       } catch (error) {
-        debugLog("Failed to initialize hyperstructure:", error);
+        debugLog(worldName, "Failed to initialize hyperstructure:", error);
       } finally {
         setIsInitializingHyperstructure(false);
         setCurrentInitializingId(null);
       }
     },
-    [setupResult, account, hyperstructures],
+    [setupResult, account, hyperstructures, worldName],
   );
 
   // Initialize all hyperstructures
   const handleInitializeAllHyperstructures = useCallback(async () => {
-    debugLog("handleInitializeAllHyperstructures called");
+    debugLog(worldName, "handleInitializeAllHyperstructures called");
     if (!setupResult || !account) return;
 
     const uninitialized = hyperstructures.filter((h) => !h.initialized);
@@ -1032,7 +1056,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
       for (const hs of uninitialized) {
         setCurrentInitializingId(hs.entityId);
-        debugLog("Initializing hyperstructure:", hs.entityId);
+        debugLog(worldName, "Initializing hyperstructure:", hs.entityId);
 
         try {
           await systemCalls.initialize_hyperstructure({
@@ -1043,45 +1067,45 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
           // Update local state
           setHyperstructures((prev) => prev.map((h) => (h.entityId === hs.entityId ? { ...h, initialized: true } : h)));
         } catch (error) {
-          debugLog("Failed to initialize hyperstructure:", hs.entityId, error);
+          debugLog(worldName, "Failed to initialize hyperstructure:", hs.entityId, error);
           // Continue with next hyperstructure even if one fails
         }
       }
 
-      debugLog("All hyperstructures initialization complete!");
+      debugLog(worldName, "All hyperstructures initialization complete!");
       setNeedsHyperstructureInit(false);
     } catch (error) {
-      debugLog("Failed to initialize hyperstructures:", error);
+      debugLog(worldName, "Failed to initialize hyperstructures:", error);
     } finally {
       setIsInitializingHyperstructure(false);
       setCurrentInitializingId(null);
     }
-  }, [setupResult, account, hyperstructures]);
+  }, [setupResult, account, hyperstructures, worldName]);
 
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
-    debugLog("Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
+    debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
     if (phase === "ready") {
-      debugLog("Auto-entering game...");
+      debugLog(worldName, "Auto-entering game...");
       const timer = setTimeout(() => {
         handleEnterGame();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [phase, handleEnterGame]);
+  }, [phase, handleEnterGame, worldName]);
 
-  debugLog("Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
+  debugLog(worldName, "Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
 
   if (!isOpen) return null;
 
   const handleClose = () => {
-    debugLog("Close button clicked");
+    debugLog(worldName, "Close button clicked");
     onClose();
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      debugLog("Backdrop clicked");
+      debugLog(worldName, "Backdrop clicked");
       onClose();
     }
   };
