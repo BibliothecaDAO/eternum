@@ -20,10 +20,8 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
-import { Position } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 
 const DEBUG_MODAL = false;
@@ -666,8 +664,6 @@ export const GameEntryModal = ({
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
   const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
 
-  // Navigation hook - uses same approach as /play/ page for consistent behavior
-  const goToStructure = useGoToStructure(setupResult);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
   const [tasks, setTasks] = useState<BootstrapTask[]>(BOOTSTRAP_TASKS);
 
@@ -1026,7 +1022,7 @@ export const GameEntryModal = ({
     }, 100);
   }, []);
 
-  // Enter game handler - uses same navigation approach as /play/ page for consistent behavior
+  // Enter game handler - sets up state and navigates to the game
   const handleEnterGame = useCallback(async () => {
     // Hide the onboarding overlay since we're entering through the new flow
     setShowBlankOverlay(false);
@@ -1063,24 +1059,32 @@ export const GameEntryModal = ({
       }
     }
 
-    // Navigate to the game route first (required for the game to load)
-    navigate("/play");
+    // Set structureEntityId in UI store BEFORE navigation
+    // This ensures the game loads with the correct structure selected
+    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
+    setStructureEntityId(structureId, {
+      spectator: isSpectateMode,
+      worldMapPosition: { col, row },
+    });
 
-    // Use goToStructure for proper state management (same as /play/ page "Play Blitz" button)
-    // This sets structureEntityId in UI store, updates selectedHex, and navigates with wouter
-    const position = new Position({ x: col, y: row });
-
+    // Build URL - use /hex for local view when player has a structure, /map for spectators
+    let url: string;
     if (isSpectateMode) {
-      // Spectators go to map view
-      await goToStructure(structureId, position, true, { spectator: true });
+      url = `/play/map?col=${col}&row=${row}&spectate=true`;
     } else if (structureId > 0) {
-      // Players with a structure go to hex/local view
-      await goToStructure(structureId, position, false);
+      // Player entering their realm - use local/hex view
+      url = `/play/hex?col=${col}&row=${row}`;
     } else {
-      // Fallback: no structure found, go to map view
-      await goToStructure(0, position, true);
+      // Fallback to map view
+      url = `/play/map?col=${col}&row=${row}`;
     }
-  }, [navigate, goToStructure, isSpectateMode, setShowBlankOverlay, setupResult, account, worldName]);
+
+    // Navigate directly to the final URL
+    navigate(url);
+
+    // Dispatch urlChanged event to notify Three.js GameRenderer about the route change
+    window.dispatchEvent(new Event("urlChanged"));
+  }, [navigate, isSpectateMode, setShowBlankOverlay, setupResult, account, worldName]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
