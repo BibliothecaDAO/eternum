@@ -19,8 +19,12 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
-import { ModalContainer } from "@/ui/shared";
 import type { Chain } from "@contracts";
+
+const DEBUG_MODAL = true;
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_MODAL) console.log("[GameEntryModal]", ...args);
+};
 
 // Types
 type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
@@ -390,50 +394,80 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
   // Determine current phase
   const phase: ModalPhase = useMemo(() => {
-    if (bootstrapError || bootstrapStatus === "error") return "error";
-    if (bootstrapStatus !== "ready") return "loading";
+    let result: ModalPhase;
+    if (bootstrapError || bootstrapStatus === "error") {
+      result = "error";
+    } else if (bootstrapStatus !== "ready") {
+      result = "loading";
+    } else if (isSpectateMode) {
+      result = "ready";
+    } else if (needsSettlement) {
+      result = "settlement";
+    } else {
+      result = "ready";
+    }
 
-    // In spectate mode, go directly to ready
-    if (isSpectateMode) return "ready";
+    debugLog("Phase determined:", result, {
+      bootstrapStatus,
+      hasError: !!bootstrapError,
+      isSpectateMode,
+      needsSettlement,
+    });
 
-    // Check if settlement is needed (registered but not settled)
-    if (needsSettlement) return "settlement";
-
-    return "ready";
+    return result;
   }, [bootstrapStatus, bootstrapError, isSpectateMode, needsSettlement]);
 
   // Check settlement status after bootstrap completes
   useEffect(() => {
-    if (bootstrapStatus !== "ready" || !setupResult || isSpectateMode) return;
+    debugLog(
+      "Settlement check effect - bootstrapStatus:",
+      bootstrapStatus,
+      "hasSetupResult:",
+      !!setupResult,
+      "isSpectateMode:",
+      isSpectateMode,
+    );
+
+    if (bootstrapStatus !== "ready" || !setupResult || isSpectateMode) {
+      debugLog("Skipping settlement check");
+      return;
+    }
 
     // Query player's settlement status from Dojo components
     const checkSettlementStatus = async () => {
+      debugLog("Running settlement status check...");
       try {
         const { components } = setupResult;
         const playerAddress = account?.address;
+        debugLog("Player address:", playerAddress);
 
         if (!playerAddress) {
-          // No account, can't check settlement
+          debugLog("No player address, skipping settlement check");
           setNeedsSettlement(false);
           return;
         }
 
         // Import Dojo utilities
+        debugLog("Importing Dojo utilities...");
         const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
         const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
 
         const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
+        debugLog("Entity ID:", entityId);
 
         // Check if player is registered
         const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId);
+        debugLog("playerRegister:", playerRegister);
         const isRegistered = playerRegister?.registered === true;
 
         // Check if player has any structures (meaning they've settled)
         const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
+        debugLog("playerStructures count:", playerStructures.size);
         const hasSettled = playerStructures.size > 0;
 
         // Check settlement finish status
         const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId);
+        debugLog("settleFinish:", settleFinish);
         const coordsCount = (settleFinish as any)?.coords?.length ?? 0;
         const settledCount = (settleFinish as any)?.structure_ids?.length ?? 0;
 
@@ -442,17 +476,20 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
         // Player needs settlement if registered but not fully settled
         const canPlay = hasSettled && coordsCount + settledCount > 0 && settledCount === coordsCount + settledCount;
-        setNeedsSettlement(isRegistered && !canPlay);
+        const needsSettlementResult = isRegistered && !canPlay;
 
-        console.log("[GameEntryModal] Settlement check:", {
+        debugLog("Settlement check result:", {
           isRegistered,
           hasSettled,
           coordsCount,
           settledCount,
-          needsSettlement: isRegistered && !canPlay,
+          canPlay,
+          needsSettlement: needsSettlementResult,
         });
+
+        setNeedsSettlement(needsSettlementResult);
       } catch (error) {
-        console.error("[GameEntryModal] Failed to check settlement status:", error);
+        debugLog("Failed to check settlement status:", error);
         // On error, assume no settlement needed and let user enter game
         setNeedsSettlement(false);
       }
@@ -463,7 +500,12 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
   // Start bootstrap when modal opens
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      debugLog("Modal not open, skipping bootstrap");
+      return;
+    }
+
+    debugLog("Starting bootstrap for", worldName, "chain:", chain);
 
     const startBootstrap = async () => {
       try {
@@ -474,20 +516,25 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         setSettleStage("idle");
 
         // Apply world selection first
+        debugLog("Applying world selection...");
         updateTask("world", "running");
         await applyWorldSelection({ name: worldName, chain }, chain);
         updateTask("world", "complete");
+        debugLog("World selection complete");
 
         // Start bootstrap
+        debugLog("Starting game bootstrap...");
         updateTask("manifest", "running");
         const result = await bootstrapGame();
+        debugLog("Bootstrap complete, got setupResult:", !!result);
 
         // Mark all tasks complete
         setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
         setSetupResult(result);
         setBootstrapStatus("ready");
+        debugLog("Bootstrap status set to ready");
       } catch (error) {
-        console.error("[GameEntryModal] Bootstrap failed:", error);
+        debugLog("Bootstrap failed:", error);
         setBootstrapError(error instanceof Error ? error : new Error("Bootstrap failed"));
         setBootstrapStatus("error");
         setTasks((prev) => prev.map((t) => (t.status === "running" ? { ...t, status: "error" } : t)));
@@ -533,6 +580,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
+    debugLog("handleSettle called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
     if (!setupResult || !account) return;
 
     setIsSettling(true);
@@ -546,6 +594,8 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
       const blitzConfig = configManager.getBlitzConfig?.();
       const singleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
+
+      debugLog("Settlement config:", { isMainnet, singleRealmMode, blitzConfig });
 
       // Settlement configuration
       const SETTLEMENT_CONFIG = {
@@ -562,7 +612,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       if (isMainnet) {
         const config = singleRealmMode ? SETTLEMENT_CONFIG.MAINNET.SINGLE_REALM : SETTLEMENT_CONFIG.MAINNET.MULTI_REALM;
 
-        console.log("[GameEntryModal] Starting settlement (mainnet):", config);
+        debugLog("Starting settlement (mainnet):", config);
         await systemCalls.blitz_realm_assign_and_settle_realms({
           signer: account,
           settlement_count: config.INITIAL_SETTLE_COUNT,
@@ -571,7 +621,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         if (config.EXTRA_CALLS > 0) {
           setSettleStage("settling");
           for (let i = 0; i < config.EXTRA_CALLS; i++) {
-            console.log(`[GameEntryModal] Extra settle call ${i + 1}/${config.EXTRA_CALLS}`);
+            debugLog(`Extra settle call ${i + 1}/${config.EXTRA_CALLS}`);
             await systemCalls.blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
           }
         }
@@ -580,13 +630,14 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
           ? SETTLEMENT_CONFIG.NON_MAINNET.SINGLE_REALM
           : SETTLEMENT_CONFIG.NON_MAINNET.MULTI_REALM;
 
-        console.log("[GameEntryModal] Starting settlement (non-mainnet):", config);
+        debugLog("Starting settlement (non-mainnet):", config);
         await systemCalls.blitz_realm_assign_and_settle_realms({
           signer: account,
           settlement_count: config.INITIAL_SETTLE_COUNT,
         });
       }
 
+      debugLog("Settlement complete!");
       setSettleStage("done");
       setNeedsSettlement(false);
 
@@ -595,7 +646,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         handleEnterGame();
       }, 1000);
     } catch (error) {
-      console.error("[GameEntryModal] Settlement failed:", error);
+      debugLog("Settlement failed:", error);
       setSettleStage("error");
     } finally {
       setIsSettling(false);
@@ -604,7 +655,9 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
   // Auto-enter game when ready (spectate mode or already settled)
   useEffect(() => {
+    debugLog("Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
     if (phase === "ready" && isSpectateMode) {
+      debugLog("Auto-entering game in spectate mode...");
       const timer = setTimeout(() => {
         handleEnterGame();
       }, 500);
@@ -612,85 +665,101 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     }
   }, [phase, isSpectateMode, handleEnterGame]);
 
+  debugLog("Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
+
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    debugLog("Close button clicked");
+    onClose();
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      debugLog("Backdrop clicked");
+      onClose();
+    }
+  };
+
   return (
-    <ModalContainer>
-      <div className="flex items-start justify-center pt-16 sm:pt-24">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-md mx-4 bg-brown/95 backdrop-blur-sm rounded-xl border border-gold/40 shadow-2xl"
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 bg-black/70 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="relative w-full max-w-md mx-4 bg-brown/95 backdrop-blur-sm rounded-xl border border-gold/40 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors z-10"
         >
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors z-10"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <X className="w-4 h-4" />
+        </button>
 
-          {/* Header */}
-          <div className="px-6 pt-6 pb-2">
-            <div className="flex items-center gap-2 text-xs text-gold/60 mb-1">
-              {isSpectateMode ? <Eye className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-              <span>{isSpectateMode ? "Spectating" : "Entering"}</span>
-            </div>
-            <h3 className="text-lg font-bold text-gold truncate">{worldName}</h3>
+        {/* Header */}
+        <div className="px-6 pt-6 pb-2">
+          <div className="flex items-center gap-2 text-xs text-gold/60 mb-1">
+            {isSpectateMode ? <Eye className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+            <span>{isSpectateMode ? "Spectating" : "Entering"}</span>
           </div>
+          <h3 className="text-lg font-bold text-gold truncate">{worldName}</h3>
+        </div>
 
-          {/* Content */}
-          <div className="px-6 pb-6">
-            <AnimatePresence mode="wait">
-              {(phase === "loading" || phase === "error") && (
-                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <LoadingPhase tasks={tasks} progress={progress} error={bootstrapError} onRetry={handleRetry} />
-                </motion.div>
-              )}
-              {phase === "settlement" && (
-                <motion.div key="settlement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <SettlementPhase
-                    stage={settleStage}
-                    assignedCount={assignedRealmCount}
-                    settledCount={settledRealmCount}
-                    isSettling={isSettling}
-                    onSettle={handleSettle}
-                    onEnterGame={handleEnterGame}
-                  />
-                </motion.div>
-              )}
-              {phase === "ready" && (
-                <motion.div
-                  key="ready"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-center py-4"
-                >
-                  <Check className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-                  <h2 className="text-lg font-semibold text-gold mb-2">Ready!</h2>
-                  <p className="text-sm text-white/60 mb-4">
-                    {isSpectateMode ? "Entering spectate mode..." : "Your realm awaits"}
-                  </p>
-                  {!isSpectateMode && (
-                    <Button
-                      onClick={handleEnterGame}
-                      className="w-full h-11 !text-brown !bg-gold rounded-md"
-                      forceUppercase={false}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <Play className="w-4 h-4" />
-                        <span>Enter Game</span>
-                      </div>
-                    </Button>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
-      </div>
-    </ModalContainer>
+        {/* Content */}
+        <div className="px-6 pb-6">
+          <AnimatePresence mode="wait">
+            {(phase === "loading" || phase === "error") && (
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <LoadingPhase tasks={tasks} progress={progress} error={bootstrapError} onRetry={handleRetry} />
+              </motion.div>
+            )}
+            {phase === "settlement" && (
+              <motion.div key="settlement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <SettlementPhase
+                  stage={settleStage}
+                  assignedCount={assignedRealmCount}
+                  settledCount={settledRealmCount}
+                  isSettling={isSettling}
+                  onSettle={handleSettle}
+                  onEnterGame={handleEnterGame}
+                />
+              </motion.div>
+            )}
+            {phase === "ready" && (
+              <motion.div
+                key="ready"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-4"
+              >
+                <Check className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+                <h2 className="text-lg font-semibold text-gold mb-2">Ready!</h2>
+                <p className="text-sm text-white/60 mb-4">
+                  {isSpectateMode ? "Entering spectate mode..." : "Your realm awaits"}
+                </p>
+                {!isSpectateMode && (
+                  <Button
+                    onClick={handleEnterGame}
+                    className="w-full h-11 !text-brown !bg-gold rounded-md"
+                    forceUppercase={false}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Play className="w-4 h-4" />
+                      <span>Enter Game</span>
+                    </div>
+                  </Button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </div>
   );
 };
