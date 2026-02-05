@@ -252,7 +252,7 @@ const NewsContent = () => (
 
 /**
  * Play tab content with centered hero + 3 columns layout:
- * - Hero centered at top
+ * - Hero centered at top with CTA
  * - Three columns below: Live | Upcoming | Ended
  * - Vertical scroll within each column
  */
@@ -270,16 +270,16 @@ const PlayTabContent = ({
   disabled?: boolean;
 }) => {
   return (
-    <div className={cn("flex flex-col gap-6", disabled && "opacity-50 pointer-events-none")}>
+    <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
       {/* Centered Hero */}
-      <div className="flex justify-center py-4">
+      <div className="flex justify-center py-2">
         <HeroTitle />
       </div>
 
       {/* Three columns: Live | Upcoming | Ended */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
         {/* Live Games Column */}
-        <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[320px]">
+        <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
               <Zap className="h-3.5 w-3.5 text-emerald-400" />
@@ -303,7 +303,7 @@ const PlayTabContent = ({
         </div>
 
         {/* Upcoming Games Column */}
-        <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[320px]">
+        <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
               <Clock className="h-3.5 w-3.5 text-amber-400" />
@@ -326,7 +326,7 @@ const PlayTabContent = ({
         </div>
 
         {/* Ended Games Column */}
-        <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[320px] md:col-span-2 xl:col-span-1">
+        <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px] md:col-span-2 xl:col-span-1">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
               <Trophy className="h-3.5 w-3.5 text-gold" />

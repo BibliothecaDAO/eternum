@@ -30,6 +30,15 @@ type BootstrapResult = SetupResult;
 
 let bootstrapPromise: Promise<BootstrapResult> | null = null;
 let bootstrappedWorldName: string | null = null;
+let cachedSetupResult: BootstrapResult | null = null;
+
+/**
+ * Get the cached setup result if bootstrap has already completed.
+ * Returns null if bootstrap hasn't run or is still in progress.
+ */
+export const getCachedSetupResult = (): BootstrapResult | null => {
+  return cachedSetupResult;
+};
 
 const deriveWorldFromPath = (): string | null => {
   try {
@@ -206,7 +215,10 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
 
   if (!bootstrapPromise) {
     bootstrappedWorldName = currentWorldName;
-    bootstrapPromise = runBootstrap();
+    bootstrapPromise = runBootstrap().then((result) => {
+      cachedSetupResult = result;
+      return result;
+    });
   }
 
   try {
@@ -214,6 +226,7 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
   } catch (error) {
     bootstrapPromise = null;
     bootstrappedWorldName = null;
+    cachedSetupResult = null;
     captureSystemError(error, {
       error_type: "dojo_setup",
       setup_phase: "bootstrap",
