@@ -11,7 +11,7 @@ import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Chain } from "@contracts";
 
@@ -409,7 +409,9 @@ export const UnifiedGameGrid = ({
     refetchAll: refetchFactory,
   } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
 
-  // Fetch player registration status
+  // Fetch player registration status - use ref to track what's been checked to avoid infinite loops
+  const checkedWorldsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (!playerFeltLiteral) return;
     let cancelled = false;
@@ -419,9 +421,10 @@ export const UnifiedGameGrid = ({
       return availability?.isAvailable && !availability.isLoading;
     });
 
+    // Use ref to track checked worlds instead of state (avoids re-triggering effect)
     const uniqueWorlds = onlineWorlds.filter((world) => {
       const key = getWorldKey(world);
-      return playerRegistration[key] === undefined;
+      return !checkedWorldsRef.current.has(key);
     });
 
     if (uniqueWorlds.length === 0) return;
@@ -430,10 +433,17 @@ export const UnifiedGameGrid = ({
       "[UnifiedGameGrid] uniqueWorlds to check registration:",
       uniqueWorlds.map((w) => ({ name: w.name, chain: w.chain })),
     );
+
     const run = async () => {
+      // Batch all results and update state once at the end
+      const results: Record<string, boolean | null> = {};
+
       for (const world of uniqueWorlds) {
         if (cancelled) break;
         const key = getWorldKey(world);
+        // Mark as checked immediately to prevent re-checking
+        checkedWorldsRef.current.add(key);
+
         console.log("[UnifiedGameGrid] Checking registration for world:", {
           worldName: world.name,
           chain: world.chain,
@@ -441,9 +451,12 @@ export const UnifiedGameGrid = ({
         });
         const torii = buildToriiBaseUrl(world.name);
         const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral);
-        if (!cancelled) {
-          setPlayerRegistration((prev) => ({ ...prev, [key]: status }));
-        }
+        results[key] = status;
+      }
+
+      // Update state once with all results
+      if (!cancelled && Object.keys(results).length > 0) {
+        setPlayerRegistration((prev) => ({ ...prev, ...results }));
       }
     };
 
@@ -451,7 +464,7 @@ export const UnifiedGameGrid = ({
     return () => {
       cancelled = true;
     };
-  }, [playerFeltLiteral, factoryWorlds, factoryAvailability, playerRegistration]);
+  }, [playerFeltLiteral, factoryWorlds, factoryAvailability]); // Removed playerRegistration from deps!
 
   // Build game data - only include online games from both chains
   const games = useMemo<GameData[]>(() => {
@@ -500,6 +513,7 @@ export const UnifiedGameGrid = ({
 
   const handleRefresh = useCallback(async () => {
     setPlayerRegistration({});
+    checkedWorldsRef.current.clear(); // Reset checked worlds on refresh
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
   }, [refetchFactoryWorlds, refetchFactory]);
 
