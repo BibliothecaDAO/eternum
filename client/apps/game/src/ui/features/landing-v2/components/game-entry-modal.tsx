@@ -747,6 +747,8 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
         setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
         setNeedsSettlement(false);
         setSettleStage("idle");
+        setHyperstructures([]);
+        setNeedsHyperstructureInit(false);
 
         // Apply world selection first
         debugLog("Applying world selection...");
@@ -799,6 +801,10 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
     setNeedsSettlement(false);
     setSettleStage("idle");
+    setHyperstructures([]);
+    setNeedsHyperstructureInit(false);
+    setIsInitializingHyperstructure(false);
+    setCurrentInitializingId(null);
     // Trigger re-bootstrap
     setTimeout(() => {
       setBootstrapStatus("loading");
