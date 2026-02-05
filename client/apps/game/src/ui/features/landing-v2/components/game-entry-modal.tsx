@@ -871,6 +871,11 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     }
 
     navigate(url);
+
+    // Dispatch urlChanged event to notify Three.js GameRenderer about the route change
+    // This is needed because react-router-dom's navigate() doesn't trigger the custom event
+    // that the game's scene manager listens for to switch between WorldMap and Hexception views
+    window.dispatchEvent(new Event("urlChanged"));
   }, [navigate, isSpectateMode, setShowBlankOverlay, setupResult, account]);
 
   // Settlement handler - calls actual Dojo system calls

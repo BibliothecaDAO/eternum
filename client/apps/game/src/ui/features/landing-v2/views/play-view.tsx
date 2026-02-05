@@ -260,12 +260,14 @@ const PlayTabContent = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
+  onBuildHyperstructures,
   onRegistrationComplete,
   disabled = false,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
+  onBuildHyperstructures: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
   disabled?: boolean;
 }) => {
@@ -314,6 +316,7 @@ const PlayTabContent = ({
             <UnifiedGameGrid
               onSelectGame={onSelectGame}
               onSpectate={onSpectate}
+              onBuildHyperstructures={onBuildHyperstructures}
               onRegistrationComplete={onRegistrationComplete}
               devModeFilter={false}
               statusFilter="upcoming"
@@ -404,6 +407,26 @@ export const PlayView = ({ className }: PlayViewProps) => {
     setEntryModalOpen(true);
   }, []);
 
+  const handleBuildHyperstructures = useCallback(
+    (selection: WorldSelection) => {
+      const hasAccount = Boolean(account) || isConnected;
+
+      console.log("[PlayView] handleBuildHyperstructures:", selection.name, "hasAccount:", hasAccount);
+
+      // Check if user needs to sign in
+      if (!hasAccount) {
+        setModal(<SignInPromptModal />, true);
+        return;
+      }
+
+      // Open game entry modal - it will show hyperstructure phase if needed
+      setSelectedWorld(selection);
+      setIsSpectateMode(false);
+      setEntryModalOpen(true);
+    },
+    [account, isConnected, setModal],
+  );
+
   const handleCloseModal = useCallback(() => {
     setEntryModalOpen(false);
     setSelectedWorld(null);
@@ -445,6 +468,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
+            onBuildHyperstructures={handleBuildHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
             disabled={entryModalOpen || scoreModalOpen}
           />

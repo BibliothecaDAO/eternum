@@ -10,10 +10,11 @@ import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy } from "lucide-react";
+import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Chain } from "@contracts";
+import { useQueryClient } from "@tanstack/react-query";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
@@ -108,6 +109,7 @@ interface GameCardProps {
   onPlay: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
+  onBuildHyperstructures?: () => void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -121,6 +123,7 @@ const GameCard = ({
   onPlay,
   onSpectate,
   onSeeScore,
+  onBuildHyperstructures,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
@@ -134,6 +137,8 @@ const GameCard = ({
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);
+  // Can build hyperstructures if registered for an upcoming game
+  const canBuildHyperstructures = isUpcoming && game.isRegistered;
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
@@ -239,9 +244,9 @@ const GameCard = ({
           />
         </div>
 
-        {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
+        {/* Action buttons - compact: [Play/Register/Build] [Spectate] layout */}
         <div className="flex gap-1.5">
-          {/* Left slot: Play OR Register (share same space) */}
+          {/* Left slot: Play OR Build Hyperstructures OR Register (share same space) */}
           {canPlay ? (
             <button
               onClick={onPlay}
@@ -252,6 +257,17 @@ const GameCard = ({
             >
               <Play className="w-3 h-3" />
               Play
+            </button>
+          ) : canBuildHyperstructures && onBuildHyperstructures ? (
+            <button
+              onClick={onBuildHyperstructures}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                "bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors",
+              )}
+            >
+              <Sparkles className="w-3 h-3" />
+              Build Hyperstructures
             </button>
           ) : !showRegistered && canRegisterPeriod && playerAddress ? (
             <>
@@ -333,6 +349,7 @@ interface UnifiedGameGridProps {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
+  onBuildHyperstructures?: (selection: WorldSelection) => void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */
@@ -358,6 +375,7 @@ export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
+  onBuildHyperstructures,
   onRegistrationComplete,
   className,
   devModeFilter,
@@ -371,6 +389,7 @@ export const UnifiedGameGrid = ({
   // Track locally completed registrations (to show immediately before refetch)
   const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
 
+  const queryClient = useQueryClient();
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
@@ -490,13 +509,19 @@ export const UnifiedGameGrid = ({
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
   }, [refetchFactoryWorlds, refetchFactory]);
 
-  // Callback for when a registration completes - update local state immediately
+  // Callback for when a registration completes - update local state immediately and invalidate cache
   const handleRegistrationComplete = useCallback(
     (worldKey: string) => {
+      // Update local state for immediate UI feedback
       setLocalRegistrations((prev) => ({ ...prev, [worldKey]: true }));
+
+      // Invalidate the query cache so fresh data is fetched when navigating back
+      // This ensures the registration status persists across tab switches
+      queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+
       onRegistrationComplete?.();
     },
-    [onRegistrationComplete],
+    [onRegistrationComplete, queryClient],
   );
 
   const isLoading = factoryWorldsLoading || factoryCheckingAvailability;
@@ -587,6 +612,11 @@ export const UnifiedGameGrid = ({
                 onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
                 onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
                 onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                onBuildHyperstructures={
+                  onBuildHyperstructures
+                    ? () => onBuildHyperstructures({ name: game.name, chain: game.chain })
+                    : undefined
+                }
                 onRegistrationComplete={handleRegistrationComplete}
                 playerAddress={playerAddress}
                 showChainBadge={true}
@@ -602,6 +632,11 @@ export const UnifiedGameGrid = ({
                   onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
                   onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
                   onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                  onBuildHyperstructures={
+                    onBuildHyperstructures
+                      ? () => onBuildHyperstructures({ name: game.name, chain: game.chain })
+                      : undefined
+                  }
                   onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}

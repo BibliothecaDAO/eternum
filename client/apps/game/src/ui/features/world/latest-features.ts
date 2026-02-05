@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-02-05",
+    title: "Build Hyperstructures Button",
+    description:
+      "Registered players in upcoming games can now click 'Build Hyperstructures' to initialize hyperstructures before the game starts. Registration status now persists correctly when switching between tabs.",
+    type: "improvement",
+  },
+  {
+    date: "2026-02-05",
     title: "New Landing Experience",
     description:
       "The landing page has been completely refreshed! Browse and join games directly from the home screen with inline registration, see fee info in LORDS, and get instant confirmation. The markets section features split panels for Live and Past markets. Enjoy dynamic backgrounds, a new sidebar navigation, and a mobile-friendly bottom nav bar.",
