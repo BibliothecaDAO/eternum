@@ -434,8 +434,8 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   public selectStructure(
     structureId: number,
-    _col: number,
-    _row: number,
+    col: number,
+    row: number,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
   ): ActionPaths | null {
     if (!this.dojo) {
@@ -445,10 +445,15 @@ export class StructureManager extends EntityManager<StructureObject> {
 
     this.selectObject(structureId);
 
-    const structureActionManager = new StructureActionManager(this.dojo.setup.components, structureId);
+    const structureActionManager = new StructureActionManager();
     const playerAddress = loggedInAccount();
 
-    const actionPaths = structureActionManager.findActionPaths(armyHexes, this.exploredTiles, playerAddress);
+    const actionPaths = structureActionManager.findActionPaths(
+      { col, row },
+      armyHexes,
+      this.exploredTiles,
+      playerAddress,
+    );
     return actionPaths;
   }
 

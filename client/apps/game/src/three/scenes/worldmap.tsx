@@ -1,7 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
-import { ensureStructureSynced, getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
+import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -1213,6 +1213,11 @@ export default class WorldmapScene extends HexagonScene {
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     const { army, structure, chest } = this.getHexagonEntity(hexCoords);
+
+    if (structure) {
+      console.log("[Worldmap] Structure entity id clicked:", structure.id);
+    }
+
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
     this.handleHexSelection(hexCoords, isMine);
 
@@ -1471,13 +1476,20 @@ export default class WorldmapScene extends HexagonScene {
   private onStructureSelection(selectedEntityId: ID, hexCoords?: HexPosition) {
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
-    const structure = new StructureActionManager(this.dojo.components, selectedEntityId);
+    if (!hexCoords) return;
+
+    const structure = new StructureActionManager();
 
     const playerAddress = useAccountStore.getState().account?.address;
 
     if (!playerAddress) return;
 
-    const actionPaths = structure.findActionPaths(this.armyHexes, this.exploredTiles, ContractAddress(playerAddress));
+    const actionPaths = structure.findActionPaths(
+      hexCoords,
+      this.armyHexes,
+      this.exploredTiles,
+      ContractAddress(playerAddress),
+    );
 
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
 
