@@ -365,3 +365,15 @@ const resubscribeEntityStream = async (
     reportProgress: false,
   });
 };
+
+/**
+ * Cancel the active entity stream subscription.
+ * Call this when navigating away from a game to free Torii connection resources.
+ */
+export const cancelEntityStreamSubscription = () => {
+  if (entityStreamSubscription) {
+    console.log("[sync] Cancelling entity stream subscription");
+    entityStreamSubscription.cancel();
+    entityStreamSubscription = null;
+  }
+};

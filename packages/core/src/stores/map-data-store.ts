@@ -254,6 +254,18 @@ export class MapDataStore {
   }
 
   /**
+   * Reset the singleton instance, cleaning up resources.
+   * Call this when switching worlds to prevent stale data and stop auto-refresh timers.
+   */
+  public static resetInstance(): void {
+    if (MapDataStore.instance) {
+      MapDataStore.instance.destroy();
+      MapDataStore.instance = null as unknown as MapDataStore;
+      console.log("MapDataStore: Instance reset");
+    }
+  }
+
+  /**
    * Start automatic refresh timer
    */
   public startAutoRefresh(): void {
