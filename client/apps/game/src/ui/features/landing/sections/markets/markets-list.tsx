@@ -206,7 +206,7 @@ export function MarketsList({
       <div className="4xl:grid-cols-4 relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {sortedMarkets.map((market, index) => (
           <MarketCard
-            key={market.market_id?.toString() ?? Math.random()}
+            key={market.market_id?.toString() ?? `market-${index}`}
             market={market}
             allBalances={allBalances}
             animationDelay={index * 50}
