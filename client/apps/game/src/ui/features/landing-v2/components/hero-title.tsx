@@ -10,7 +10,7 @@ interface HeroTitleProps {
  */
 export const HeroTitle = ({ tagline = "Forge your destiny", className }: HeroTitleProps) => {
   return (
-    <div className={cn("flex flex-col items-center gap-6", className)}>
+    <div className={cn("flex flex-col items-start gap-6", className)}>
       {/* Blitz Logo */}
       <img
         src="/assets/icons/blitz-words-logo-g.svg"
@@ -34,7 +34,7 @@ export const HeroTitle = ({ tagline = "Forge your destiny", className }: HeroTit
       {tagline && (
         <p
           className={cn(
-            "text-base text-gold/70 sm:text-lg md:text-xl text-center",
+            "text-base text-gold/70 sm:text-lg md:text-xl text-left",
             "font-light tracking-wide leading-relaxed",
             "animate-[fadeIn_1s_ease-out_0.3s_both]",
           )}

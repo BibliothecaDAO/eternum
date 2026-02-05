@@ -274,7 +274,7 @@ const PlayTabContent = ({
   return (
     <div
       className={cn(
-        "grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-8 items-start lg:pr-[10%]",
+        "grid grid-cols-1 xl:grid-cols-[minmax(280px,420px)_1fr] gap-8 items-start",
         disabled && "opacity-50 pointer-events-none",
       )}
     >
@@ -283,8 +283,8 @@ const PlayTabContent = ({
         <HeroTitle />
       </div>
 
-      {/* Right: All game panels stacked vertically */}
-      <div className="flex flex-col gap-3">
+      {/* Right: All game panels stacked vertically - wide enough for 2 cards (2x320px + gap + padding) */}
+      <div className="flex flex-col gap-3 max-w-[720px]">
         {/* Live Games Panel */}
         <div className="rounded-2xl border border-emerald-500/30 bg-black/60 p-4 backdrop-blur-xl">
           <div className="flex items-center gap-2 mb-3">
