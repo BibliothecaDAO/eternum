@@ -6,7 +6,7 @@ import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useState } from "react";
 import { HeroTitle } from "../components/hero-title";
-import { HexGameMap, type WorldSelection } from "../components/game-selector/hex-game-map";
+import { GameCardGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
 import type { Chain } from "@contracts";
 import { env } from "../../../../../env";
 
@@ -18,7 +18,7 @@ interface PlayViewProps {
 }
 
 /**
- * Main play view - shows hex-based game maps for Mainnet and Slot.
+ * Main play view - shows card-based game selector for Mainnet and Slot.
  * This is the default landing page content.
  */
 export const PlayView = ({ className }: PlayViewProps) => {
@@ -116,11 +116,11 @@ export const PlayView = ({ className }: PlayViewProps) => {
         <HeroTitle />
       </div>
 
-      {/* Game maps */}
+      {/* Game grids */}
       <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-8", isEntering && "opacity-50 pointer-events-none")}>
-        {/* Mainnet Map */}
+        {/* Mainnet Games */}
         <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-brilliance/20 p-6">
-          <HexGameMap
+          <GameCardGrid
             chain="mainnet"
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
@@ -128,9 +128,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
           />
         </div>
 
-        {/* Slot Map */}
+        {/* Slot Games */}
         <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-gold/20 p-6">
-          <HexGameMap
+          <GameCardGrid
             chain="slot"
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}

@@ -18,7 +18,7 @@ export { EmptyStateCard } from "./components/game-selector/empty-state-card";
 export { GameCard, type GameInfo } from "./components/game-selector/game-card";
 export { GameCarousel } from "./components/game-selector/game-carousel";
 export { InlineGameSelector } from "./components/game-selector/inline-game-selector";
-export { HexGameMap, type WorldSelection } from "./components/game-selector/hex-game-map";
+export { GameCardGrid, type WorldSelection } from "./components/game-selector/game-card-grid";
 
 // Views
 export { PlayView } from "./views/play-view";
