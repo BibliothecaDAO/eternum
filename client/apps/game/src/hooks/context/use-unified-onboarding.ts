@@ -73,14 +73,26 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
-  // Local state
-  const [isSpectating, setIsSpectating] = useState(false);
+  // Check URL for spectate mode
+  const urlSpectateMode =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("spectate") === "true";
+
+  // Local state - initialize isSpectating from URL param
+  const [isSpectating, setIsSpectating] = useState(urlSpectateMode);
   const [selectedWorldName, setSelectedWorldName] = useState<string | null>(() => {
     const active = getActiveWorld();
     return active?.name ?? null;
   });
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [hasCompletedAvatar, setHasCompletedAvatar] = useState(false);
+
+  // If URL has spectate param and we have a world, auto-trigger spectate mode
+  useEffect(() => {
+    if (urlSpectateMode && selectedWorldName && !isSpectating) {
+      console.log("[useUnifiedOnboarding] Auto-enabling spectate mode from URL param");
+      setIsSpectating(true);
+    }
+  }, [urlSpectateMode, selectedWorldName, isSpectating]);
 
   // Spectator navigation
   const spectatorNavigate = useSpectatorModeClick(bootstrap.setupResult);
@@ -136,10 +148,20 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   }, [connect, connectors, isConnected, isConnecting]);
 
   const spectate = useCallback(() => {
+    console.log("[useUnifiedOnboarding] spectate() called");
     setIsSpectating(true);
     spectatorNavigate();
     setShowBlankOverlay(false);
   }, [spectatorNavigate, setShowBlankOverlay]);
+
+  // Auto-spectate when bootstrap is ready and spectating from URL
+  useEffect(() => {
+    if (urlSpectateMode && isSpectating && bootstrap.status === "ready" && showBlankOverlay) {
+      console.log("[useUnifiedOnboarding] Auto-spectating: bootstrap ready, hiding overlay");
+      spectatorNavigate();
+      setShowBlankOverlay(false);
+    }
+  }, [urlSpectateMode, isSpectating, bootstrap.status, showBlankOverlay, spectatorNavigate, setShowBlankOverlay]);
 
   const completeAvatar = useCallback(() => {
     setHasCompletedAvatar(true);
@@ -159,20 +181,32 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
 
   // Determine current phase
   const phase: OnboardingPhase = useMemo(() => {
+    console.log("[useUnifiedOnboarding] Calculating phase:", {
+      selectedWorldName,
+      connected,
+      isSpectating,
+      showBlankOverlay,
+      bootstrapStatus: bootstrap.status,
+      hasCompletedAvatar,
+    });
+
     // 1. No world selected - must select world first
     if (!selectedWorldName) {
+      console.log("[useUnifiedOnboarding] -> world-select (no world)");
       return "world-select";
     }
 
     // 2. World selected but not connected and not spectating
     //    Show account panel, bootstrap runs in background
     if (!connected && !isSpectating && showBlankOverlay) {
+      console.log("[useUnifiedOnboarding] -> account (not connected, not spectating, showBlankOverlay)");
       return "account";
     }
 
     // 2.5. Connected but haven't completed avatar creation (optional step)
     //      Only show avatar phase if connected (not spectating) and haven't completed it yet
     if (connected && !isSpectating && !hasCompletedAvatar && showBlankOverlay) {
+      console.log("[useUnifiedOnboarding] -> avatar (connected, no avatar, showBlankOverlay)");
       return "avatar";
     }
 
@@ -181,22 +215,27 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     if (bootstrap.status !== "ready" && bootstrap.status !== "error") {
       // If we're in account phase, stay there while bootstrap runs in background
       if (!connected && !isSpectating) {
+        console.log("[useUnifiedOnboarding] -> account (bootstrap loading, not connected)");
         return "account";
       }
+      console.log("[useUnifiedOnboarding] -> loading (bootstrap not ready)");
       return "loading";
     }
 
     // 4. Bootstrap errored
     if (bootstrap.status === "error") {
+      console.log("[useUnifiedOnboarding] -> loading (bootstrap error)");
       return "loading"; // Show error in loading panel
     }
 
     // 5. Bootstrap ready, show onboarding/settlement if needed
     if (showBlankOverlay && (connected || isSpectating)) {
+      console.log("[useUnifiedOnboarding] -> settlement (ready, showBlankOverlay)");
       return "settlement";
     }
 
     // 6. All done
+    console.log("[useUnifiedOnboarding] -> ready");
     return "ready";
   }, [selectedWorldName, connected, isSpectating, showBlankOverlay, bootstrap.status, hasCompletedAvatar]);
 

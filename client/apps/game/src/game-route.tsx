@@ -73,7 +73,18 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, setupResult, account } = state;
+  const { phase, setupResult, account, bootstrap, isConnected, isSpectating, selectedWorldName } = state;
+
+  // Debug logging
+  useEffect(() => {
+    console.log("[GameRoute] Phase:", phase);
+    console.log("[GameRoute] Bootstrap status:", bootstrap.status);
+    console.log("[GameRoute] isConnected:", isConnected);
+    console.log("[GameRoute] isSpectating:", isSpectating);
+    console.log("[GameRoute] selectedWorldName:", selectedWorldName);
+    console.log("[GameRoute] setupResult:", !!setupResult);
+    console.log("[GameRoute] account:", !!account);
+  }, [phase, bootstrap.status, isConnected, isSpectating, selectedWorldName, setupResult, account]);
 
   // Phases that don't need Dojo: world-select, account, loading
   if (phase === "world-select" || phase === "account" || phase === "loading") {

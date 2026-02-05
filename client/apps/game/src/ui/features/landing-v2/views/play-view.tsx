@@ -10,8 +10,9 @@ import { GameCardGrid, type WorldSelection } from "../components/game-selector/g
 import type { Chain } from "@contracts";
 import { env } from "../../../../../env";
 
-// Default map position when entering a game
-const DEFAULT_MAP_URL = "/play/map?col=0&row=0";
+// URL for entering game
+const GAME_MAP_URL = "/play/map?col=0&row=0";
+const SPECTATE_MAP_URL = "/play/map?col=0&row=0&spectate=true";
 
 interface PlayViewProps {
   className?: string;
@@ -33,14 +34,16 @@ export const PlayView = ({ className }: PlayViewProps) => {
     async (selection: WorldSelection) => {
       const hasAccount = Boolean(account) || isConnected;
 
+      console.log("[PlayView] handleSelectGame:", selection.name, "hasAccount:", hasAccount);
       setIsEntering(true);
 
       try {
         const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
+        console.log("[PlayView] World selected, chainChanged:", chainChanged);
 
         // If chain changed, need to reload - go directly to map
         if (chainChanged) {
-          window.location.href = DEFAULT_MAP_URL;
+          window.location.href = GAME_MAP_URL;
           return;
         }
 
@@ -52,7 +55,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
         }
 
         // Navigate directly to map view
-        window.location.href = DEFAULT_MAP_URL;
+        console.log("[PlayView] Navigating to game map...");
+        window.location.href = GAME_MAP_URL;
       } catch (error) {
         console.error("Failed to select game:", error);
         setIsEntering(false);
@@ -62,18 +66,21 @@ export const PlayView = ({ className }: PlayViewProps) => {
   );
 
   const handleSpectate = useCallback(async (selection: WorldSelection) => {
+    console.log("[PlayView] handleSpectate:", selection.name);
     setIsEntering(true);
 
     try {
       const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
+      console.log("[PlayView] World selected for spectate, chainChanged:", chainChanged);
 
       if (chainChanged) {
-        window.location.href = DEFAULT_MAP_URL;
+        window.location.href = SPECTATE_MAP_URL;
         return;
       }
 
-      // Navigate directly to map view for spectating
-      window.location.href = DEFAULT_MAP_URL;
+      // Navigate directly to map view for spectating (with spectate param)
+      console.log("[PlayView] Navigating to spectate...");
+      window.location.href = SPECTATE_MAP_URL;
     } catch (error) {
       console.error("Failed to spectate game:", error);
       setIsEntering(false);
@@ -83,6 +90,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const handleRegister = useCallback(
     async (selection: WorldSelection) => {
       const hasAccount = Boolean(account) || isConnected;
+      console.log("[PlayView] handleRegister:", selection.name, "hasAccount:", hasAccount);
 
       if (!hasAccount) {
         setModal(<SignInPromptModal />, true);
@@ -93,14 +101,17 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       try {
         const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
+        console.log("[PlayView] World selected for registration, chainChanged:", chainChanged);
 
         if (chainChanged) {
-          window.location.href = DEFAULT_MAP_URL;
+          // Go to play route which will show registration flow
+          window.location.href = "/play";
           return;
         }
 
-        // Navigate directly to map view for registration
-        window.location.href = DEFAULT_MAP_URL;
+        // Navigate to play route for registration (onboarding flow will handle it)
+        console.log("[PlayView] Navigating to registration flow...");
+        window.location.href = "/play";
       } catch (error) {
         console.error("Failed to register for game:", error);
         setIsEntering(false);
@@ -110,16 +121,16 @@ export const PlayView = ({ className }: PlayViewProps) => {
   );
 
   return (
-    <div className={cn("flex flex-col gap-8", className)}>
+    <div className={cn("flex flex-col gap-6", className)}>
       {/* Hero title */}
-      <div className="mb-4">
+      <div className="mb-2">
         <HeroTitle />
       </div>
 
       {/* Game grids */}
-      <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-8", isEntering && "opacity-50 pointer-events-none")}>
+      <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-4", isEntering && "opacity-50 pointer-events-none")}>
         {/* Mainnet Games */}
-        <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-brilliance/20 p-6">
+        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-brilliance/20 p-4">
           <GameCardGrid
             chain="mainnet"
             onSelectGame={handleSelectGame}
@@ -129,7 +140,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
         </div>
 
         {/* Slot Games */}
-        <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-gold/20 p-6">
+        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-gold/20 p-4">
           <GameCardGrid
             chain="slot"
             onSelectGame={handleSelectGame}
