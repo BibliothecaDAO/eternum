@@ -8,12 +8,9 @@ interface HeroTitleProps {
 /**
  * Blitz logo with tagline.
  */
-export const HeroTitle = ({
-  tagline = "Forge your destiny in a world of relentless battles",
-  className,
-}: HeroTitleProps) => {
+export const HeroTitle = ({ tagline = "Forge your destiny", className }: HeroTitleProps) => {
   return (
-    <div className={cn("flex flex-col items-start gap-6", className)}>
+    <div className={cn("flex flex-col items-center gap-6", className)}>
       {/* Blitz Logo */}
       <img
         src="/assets/icons/blitz-words-logo-g.svg"
@@ -28,16 +25,16 @@ export const HeroTitle = ({
 
       {/* Decorative line */}
       <div className="flex items-center gap-4 w-full max-w-md">
-        <div className="h-px flex-1 bg-gradient-to-r from-gold/50 to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
         <div className="h-2 w-2 rotate-45 border border-gold/50" />
-        <div className="h-px flex-1 bg-gradient-to-l from-gold/50 to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
       </div>
 
       {/* Tagline */}
       {tagline && (
         <p
           className={cn(
-            "max-w-md text-base text-gold/70 sm:text-lg md:text-xl",
+            "text-base text-gold/70 sm:text-lg md:text-xl text-center",
             "font-light tracking-wide leading-relaxed",
             "animate-[fadeIn_1s_ease-out_0.3s_both]",
           )}
