@@ -318,7 +318,7 @@ const GameCard = ({
               )}
             >
               <Sparkles className="w-3 h-3" />
-              Forge {numHyperstructuresLeft}
+              Forge {numHyperstructuresLeft} Hyperstructure{numHyperstructuresLeft !== 1 ? "s" : ""}
             </button>
           )}
 
