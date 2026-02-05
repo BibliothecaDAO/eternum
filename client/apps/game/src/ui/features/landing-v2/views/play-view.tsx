@@ -79,7 +79,9 @@ const WRITTEN_GUIDES = [
 ];
 
 /**
- * Learn tab content - Video Guides, Written Guides, and Practice Games in 3 columns
+ * Learn tab content - 2 columns, 2 rows
+ * Row 1: Video Guides + Written Guides
+ * Row 2: Practice Games (full width)
  */
 const LearnContent = ({
   onSelectGame,
@@ -90,80 +92,83 @@ const LearnContent = ({
   onSpectate: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
 }) => (
-  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-    {/* Video Guides */}
-    <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
-          <Video className="h-4 w-4 text-red-400" />
+  <div className="flex flex-col gap-4">
+    {/* Row 1: Video Guides + Written Guides */}
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* Video Guides */}
+      <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
+            <Video className="h-4 w-4 text-red-400" />
+          </div>
+          <div>
+            <h2 className="font-serif text-lg text-gold">Video Guides</h2>
+            <p className="text-xs text-gold/60">Learn from the best</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-serif text-lg text-gold">Video Guides</h2>
-          <p className="text-xs text-gold/60">Learn from the best</p>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 flex-1">
-        {VIDEO_GUIDES.map((video) => (
-          <a
-            key={video.url}
-            href={video.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-3 rounded-lg border border-gold/10 bg-black/40 p-3 transition-all hover:border-gold/30 hover:bg-black/50"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 transition-colors group-hover:bg-red-500/20 flex-shrink-0">
-              <Play className="h-4 w-4 text-red-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-xs font-semibold text-gold truncate group-hover:text-gold/80">{video.title}</h3>
-              <p className="text-[10px] text-gold/50">{video.author}</p>
-            </div>
-            <ExternalLink className="h-3 w-3 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
-          </a>
-        ))}
-      </div>
-    </div>
-
-    {/* Written Guides */}
-    <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
-          <BookOpen className="h-4 w-4 text-blue-400" />
-        </div>
-        <div>
-          <h2 className="font-serif text-lg text-gold">Written Guides</h2>
-          <p className="text-xs text-gold/60">Documentation & tutorials</p>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 flex-1">
-        {WRITTEN_GUIDES.map((guide) => (
-          <a
-            key={guide.url}
-            href={guide.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-3 rounded-lg border border-gold/10 bg-black/40 p-3 transition-all hover:border-gold/30 hover:bg-black/50"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 transition-colors group-hover:bg-blue-500/20 flex-shrink-0">
-              <BookOpen className="h-4 w-4 text-blue-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-xs font-semibold text-gold truncate group-hover:text-gold/80">{guide.title}</h3>
-              <div className="flex items-center gap-1">
-                <p className="text-[10px] text-gold/50">{guide.source}</p>
-                {guide.lang && (
-                  <span className="text-[8px] px-1 py-0.5 rounded bg-gold/10 text-gold/70">{guide.lang}</span>
-                )}
+        <div className="flex flex-col gap-2 flex-1">
+          {VIDEO_GUIDES.map((video) => (
+            <a
+              key={video.url}
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-3 rounded-lg border border-gold/10 bg-black/40 p-3 transition-all hover:border-gold/30 hover:bg-black/50"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 transition-colors group-hover:bg-red-500/20 flex-shrink-0">
+                <Play className="h-4 w-4 text-red-400" />
               </div>
-            </div>
-            <ExternalLink className="h-3 w-3 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
-          </a>
-        ))}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-semibold text-gold truncate group-hover:text-gold/80">{video.title}</h3>
+                <p className="text-[10px] text-gold/50">{video.author}</p>
+              </div>
+              <ExternalLink className="h-3 w-3 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Written Guides */}
+      <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
+            <BookOpen className="h-4 w-4 text-blue-400" />
+          </div>
+          <div>
+            <h2 className="font-serif text-lg text-gold">Written Guides</h2>
+            <p className="text-xs text-gold/60">Documentation & tutorials</p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 flex-1">
+          {WRITTEN_GUIDES.map((guide) => (
+            <a
+              key={guide.url}
+              href={guide.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-3 rounded-lg border border-gold/10 bg-black/40 p-3 transition-all hover:border-gold/30 hover:bg-black/50"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 transition-colors group-hover:bg-blue-500/20 flex-shrink-0">
+                <BookOpen className="h-4 w-4 text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-semibold text-gold truncate group-hover:text-gold/80">{guide.title}</h3>
+                <div className="flex items-center gap-1">
+                  <p className="text-[10px] text-gold/50">{guide.source}</p>
+                  {guide.lang && (
+                    <span className="text-[8px] px-1 py-0.5 rounded bg-gold/10 text-gold/70">{guide.lang}</span>
+                  )}
+                </div>
+              </div>
+              <ExternalLink className="h-3 w-3 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
+            </a>
+          ))}
+        </div>
       </div>
     </div>
 
-    {/* Practice Games (Dev Mode) */}
-    <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl min-h-0">
+    {/* Row 2: Practice Games (full width) */}
+    <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl">
       <div className="flex items-center gap-3 mb-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
           <Wrench className="h-4 w-4 text-amber-400" />
@@ -173,15 +178,13 @@ const LearnContent = ({
           <p className="text-xs text-gold/60">Dev mode - join anytime!</p>
         </div>
       </div>
-      <div className="flex-1 min-h-0">
-        <UnifiedGameGrid
-          onSelectGame={onSelectGame}
-          onSpectate={onSpectate}
-          onRegistrationComplete={onRegistrationComplete}
-          devModeFilter={true}
-          title="Practice"
-        />
-      </div>
+      <UnifiedGameGrid
+        onSelectGame={onSelectGame}
+        onSpectate={onSpectate}
+        onRegistrationComplete={onRegistrationComplete}
+        devModeFilter={true}
+        title="Practice"
+      />
     </div>
   </div>
 );
