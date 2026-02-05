@@ -157,7 +157,7 @@ const LearnContent = ({
           <p className="text-xs text-gold/60">Dev mode - join anytime!</p>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto min-h-0 max-h-[400px]">
+      <div className="flex-1 overflow-y-auto min-h-0 max-h-[500px]">
         <UnifiedGameGrid
           onSelectGame={onSelectGame}
           onSpectate={onSpectate}

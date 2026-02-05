@@ -519,7 +519,7 @@ export const UnifiedGameGrid = ({
           <div
             className={cn(
               "grid gap-3 p-1",
-              compact ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+              compact ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
             )}
           >
             {games.map((game) => (
