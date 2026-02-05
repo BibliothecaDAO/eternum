@@ -77,9 +77,9 @@ export const MarketsView = ({ className }: MarketsViewProps) => {
 
   return (
     <MarketsProviders>
-      <div className={cn("flex flex-col gap-6", className)}>
+      <div className={cn("flex h-full flex-col gap-6", className)}>
         {/* Content based on active tab */}
-        <div className="rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl md:p-6">
+        <div className="flex-1 overflow-y-auto rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl md:p-6">
           {activeTab === "live" ? <LiveMarketsContent /> : <PastMarketsContent />}
         </div>
       </div>
