@@ -857,11 +857,17 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       }
     }
 
-    // Build URL with optional structureId parameter
-    let url = isSpectateMode ? `/play/map?col=${col}&row=${row}&spectate=true` : `/play/map?col=${col}&row=${row}`;
-
-    if (structureId !== null) {
-      url += `&structureId=${structureId}`;
+    // Build URL - use /hex for local view when player has a structure, /map for spectators
+    // structureId param ensures the correct structure is selected
+    let url: string;
+    if (isSpectateMode) {
+      url = `/play/map?col=${col}&row=${row}&spectate=true`;
+    } else if (structureId !== null) {
+      // Player entering their realm - use local/hex view
+      url = `/play/hex?col=${col}&row=${row}&structureId=${structureId}`;
+    } else {
+      // Fallback to map view
+      url = `/play/map?col=${col}&row=${row}`;
     }
 
     navigate(url);
