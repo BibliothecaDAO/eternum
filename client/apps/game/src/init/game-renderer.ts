@@ -3,6 +3,13 @@ import type { SetupResult } from "@bibliothecadao/dojo";
 import GameRenderer from "../three/game-renderer";
 
 export const initializeGameRenderer = (setupResult: SetupResult, enableDevTools: boolean) => {
+  // CRITICAL: Clean up any existing GameRenderer before creating a new one
+  // This prevents memory leaks when navigating home and back to the game
+  if ((window as any).__cleanupGameRenderer) {
+    console.log("[initializeGameRenderer] Cleaning up existing GameRenderer before creating new one");
+    (window as any).__cleanupGameRenderer();
+  }
+
   const renderer = new GameRenderer(setupResult);
 
   renderer.initScene();

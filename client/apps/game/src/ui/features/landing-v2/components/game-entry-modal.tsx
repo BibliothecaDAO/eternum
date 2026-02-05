@@ -1067,16 +1067,13 @@ export const GameEntryModal = ({
       worldMapPosition: { col, row },
     });
 
-    // Build URL - use /hex for local view when player has a structure, /map for spectators
+    // Build URL - always use /hex for local view for players, /map for spectators
     let url: string;
     if (isSpectateMode) {
       url = `/play/map?col=${col}&row=${row}&spectate=true`;
-    } else if (structureId > 0) {
-      // Player entering their realm - use local/hex view
-      url = `/play/hex?col=${col}&row=${row}`;
     } else {
-      // Fallback to map view
-      url = `/play/map?col=${col}&row=${row}`;
+      // Player entering - always use local/hex view by default
+      url = `/play/hex?col=${col}&row=${row}`;
     }
 
     // Navigate directly to the final URL

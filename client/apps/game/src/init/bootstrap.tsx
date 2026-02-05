@@ -32,6 +32,7 @@ let bootstrapPromise: Promise<BootstrapResult> | null = null;
 let bootstrappedWorldName: string | null = null;
 let bootstrappedChain: string | null = null;
 let cachedSetupResult: BootstrapResult | null = null;
+let gameRendererCleanup: (() => void) | null = null;
 
 /**
  * Get the cached setup result if bootstrap has already completed.
@@ -189,11 +190,24 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG());
 
-  initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+  // Store the cleanup function so we can call it when navigating away
+  gameRendererCleanup = initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
 
   inject();
 
   return setupResult;
+};
+
+/**
+ * Clean up the game renderer to prevent memory leaks.
+ * This should be called before navigating away from the game.
+ */
+export const cleanupGameRenderer = () => {
+  if (gameRendererCleanup) {
+    console.log("[BOOTSTRAP] Cleaning up GameRenderer");
+    gameRendererCleanup();
+    gameRendererCleanup = null;
+  }
 };
 
 /**
@@ -202,6 +216,10 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
  */
 export const resetBootstrap = () => {
   console.log("[BOOTSTRAP] Resetting bootstrap state");
+
+  // CRITICAL: Clean up the GameRenderer first to prevent memory leaks
+  cleanupGameRenderer();
+
   bootstrapPromise = null;
   bootstrappedWorldName = null;
   bootstrappedChain = null;

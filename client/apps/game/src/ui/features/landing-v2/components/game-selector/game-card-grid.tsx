@@ -10,6 +10,7 @@ import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { useAccount } from "@starknet-react/core";
 import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -403,6 +404,7 @@ export const UnifiedGameGrid = ({
 
   const queryClient = useQueryClient();
   const account = useAccountStore((state) => state.account);
+  const { isConnecting } = useAccount();
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
 
@@ -523,7 +525,8 @@ export const UnifiedGameGrid = ({
     [onRegistrationComplete, queryClient],
   );
 
-  const isLoading = factoryWorldsLoading || factoryCheckingAvailability;
+  // Include isConnecting so we wait for controller to reconnect before showing games
+  const isLoading = factoryWorldsLoading || factoryCheckingAvailability || isConnecting;
 
   // Count by status
   const counts = useMemo(() => {
