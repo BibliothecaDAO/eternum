@@ -98,6 +98,7 @@ pub mod season {
 }
 
 pub mod utils {
+    pub mod bitcoin_mine;
     pub mod bridge;
     pub mod camp;
     pub mod distance;
@@ -146,6 +147,13 @@ pub mod mmr {
 pub mod faith {
     pub mod contracts;
     pub mod prize_contracts;
+    #[cfg(test)]
+    mod tests;
+}
+
+pub mod bitcoin_mine {
+    pub mod contracts;
+    pub mod discovery_systems;
     #[cfg(test)]
     mod tests;
 }

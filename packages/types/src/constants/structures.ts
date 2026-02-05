@@ -120,7 +120,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceWheat]: "Farm",
   [BuildingType.ResourceFish]: "Fishing Village",
   [BuildingType.ResourceEssence]: "Essence Mine",
-  [BuildingType.ResourceResearch]: "Research",
+  [BuildingType.ResourceResearch]: "Research Lab",
 };
 
 export function getBuildingCategory(category: BuildingType): CairoCustomEnum {
@@ -392,7 +392,8 @@ export const isEconomyBuilding = (buildingType: BuildingType) => {
     buildingType === BuildingType.ResourceFish ||
     buildingType === BuildingType.ResourceDonkey ||
     buildingType === BuildingType.WorkersHut ||
-    buildingType === BuildingType.Storehouse
+    buildingType === BuildingType.Storehouse ||
+    buildingType === BuildingType.ResourceResearch
   );
 };
 

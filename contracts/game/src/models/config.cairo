@@ -60,6 +60,7 @@ pub struct WorldConfig {
     pub mmr_config: MMRConfig,
     pub faith_config: FaithConfig,
     pub artificer_config: ArtificerConfig,
+    pub bitcoin_mine_config: BitcoinMineConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -273,7 +274,8 @@ pub struct StructureCapacityConfig {
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
     pub holysite_capacity: u64, // grams
-    pub camp_capacity: u64 // grams
+    pub camp_capacity: u64, // grams
+    pub bitcoin_mine_capacity: u64 // grams
 }
 
 // speed
@@ -301,6 +303,8 @@ pub struct MapConfig {
     pub camp_fail_probability: u16,
     pub holysite_win_probability: u16,
     pub holysite_fail_probability: u16,
+    pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
+    pub bitcoin_mine_fail_probability: u16, // 9800
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -328,6 +332,13 @@ pub struct FaithConfig {
     pub village_fp_per_sec: u16,
     pub owner_share_percent: u16,
     pub reward_token: starknet::ContractAddress,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BitcoinMineConfig {
+    pub enabled: bool,
+    pub prize_per_phase: u128, // Amount of SATOSHI awarded per phase
+    pub min_labor_per_contribution: u128 // Minimum labor required per contribution
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
@@ -741,6 +752,7 @@ pub struct VictoryPointsWinConfig {
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
     pub delivery_tick_in_seconds: u64,
+    pub bitcoin_phase_in_seconds: u64 // 600 = 10 minutes
 }
 
 
@@ -842,6 +854,11 @@ pub impl TickImpl of TickTrait {
     fn get_delivery_tick_interval(ref world: WorldStorage) -> TickInterval {
         let tick_config: TickConfig = Self::_tick_config(ref world);
         return TickInterval { tick_interval: tick_config.delivery_tick_in_seconds };
+    }
+
+    fn get_bitcoin_phase_interval(ref world: WorldStorage) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world);
+        return TickInterval { tick_interval: tick_config.bitcoin_phase_in_seconds };
     }
 
     fn interval(self: TickInterval) -> u64 {

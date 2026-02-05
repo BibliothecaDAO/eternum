@@ -55,6 +55,9 @@ pub enum Story {
     FaithPledgedStory: FaithPledgedStory,
     FaithRemovedStory: FaithRemovedStory,
     FaithPointsClaimedStory: FaithPointsClaimedStory,
+    // Bitcoin Mine System
+    BitcoinMineProductionStory: BitcoinMineProductionStory,
+    BitcoinPhaseLotteryStory: BitcoinPhaseLotteryStory,
 }
 
 ///////////////////////////////////////////////
@@ -148,6 +151,7 @@ pub enum ExploreFind {
     Village,
     HolySite,
     Camp,
+    BitcoinMine,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -361,4 +365,27 @@ pub struct FaithPointsClaimedStory {
     pub wonder_id: ID,
     pub new_points: u128,
     pub total_points: u128,
+}
+
+///////////////////////////////////////////////
+///  Bitcoin Mine System
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct BitcoinMineProductionStory {
+    pub mine_id: ID,
+    pub owner: ContractAddress,
+    pub phase_id: u64,
+    pub labor_deposited: u128,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct BitcoinPhaseLotteryStory {
+    pub phase_id: u64,
+    pub total_labor: u128,
+    pub winner_mine_id: ID,
+    pub winner_owner: ContractAddress,
+    pub winner_labor: u128,
+    pub prize_awarded: u128,
 }

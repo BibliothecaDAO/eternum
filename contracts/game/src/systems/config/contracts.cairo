@@ -90,7 +90,9 @@ pub trait ITradeConfig<T> {
 
 #[starknet::interface]
 pub trait ITickConfig<T> {
-    fn set_tick_config(ref self: T, armies_tick_in_seconds: u64, delivery_tick_in_seconds: u64);
+    fn set_tick_config(
+        ref self: T, armies_tick_in_seconds: u64, delivery_tick_in_seconds: u64, bitcoin_phase_in_seconds: u64,
+    );
 }
 
 #[starknet::interface]
@@ -254,6 +256,11 @@ pub trait IFaithConfig<T> {
 }
 
 #[starknet::interface]
+pub trait IBitcoinMineConfig<T> {
+    fn set_bitcoin_mine_config(ref self: T, enabled: bool, prize_per_phase: u128, min_labor_per_contribution: u128);
+}
+
+#[starknet::interface]
 pub trait IArtificerConfig<T> {
     fn set_artificer_config(ref self: T, research_cost_for_relic: u128);
 }
@@ -266,15 +273,16 @@ pub mod config_systems {
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl,
-        BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfigImpl, BuildingCategoryConfig,
-        BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
-        HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig,
-        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
-        WorldConfig, WorldConfigUtilImpl,
+        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig,
+        BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl,
+        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, FaithConfig,
+        HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
+        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
+        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
+        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
     use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;
@@ -522,12 +530,18 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl TickConfigImpl of super::ITickConfig<ContractState> {
-        fn set_tick_config(ref self: ContractState, armies_tick_in_seconds: u64, delivery_tick_in_seconds: u64) {
+        fn set_tick_config(
+            ref self: ContractState,
+            armies_tick_in_seconds: u64,
+            delivery_tick_in_seconds: u64,
+            bitcoin_phase_in_seconds: u64,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
             let mut tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
             tick_config.armies_tick_in_seconds = armies_tick_in_seconds;
             tick_config.delivery_tick_in_seconds = delivery_tick_in_seconds;
+            tick_config.bitcoin_phase_in_seconds = bitcoin_phase_in_seconds;
             WorldConfigUtilImpl::set_member(ref world, selector!("tick_config"), tick_config);
         }
     }
@@ -1077,6 +1091,20 @@ pub mod config_systems {
                 reward_token,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("faith_config"), faith_config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl BitcoinMineConfigImpl of super::IBitcoinMineConfig<ContractState> {
+        fn set_bitcoin_mine_config(
+            ref self: ContractState, enabled: bool, prize_per_phase: u128, min_labor_per_contribution: u128,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            assert!(min_labor_per_contribution > 0, "min_labor_per_contribution must be > 0");
+
+            let config = BitcoinMineConfig { enabled, prize_per_phase, min_labor_per_contribution };
+            WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), config);
         }
     }
 

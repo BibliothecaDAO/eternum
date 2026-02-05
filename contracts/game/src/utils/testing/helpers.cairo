@@ -96,6 +96,8 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         camp_win_probability: 0,
         holysite_win_probability: 5000,
         holysite_fail_probability: 5000,
+        bitcoin_mine_win_probability: 200, // 2%
+        bitcoin_mine_fail_probability: 9800,
     }
 }
 
@@ -162,7 +164,8 @@ pub fn MOCK_STRUCTURE_CAPACITY_CONFIG() -> StructureCapacityConfig {
         fragment_mine_capacity: 1000000000000000, // grams
         bank_structure_capacity: 1000000000000000, // grams
         holysite_capacity: 1000000000000000, // grams
-        camp_capacity: 1000000000000000 // grams
+        camp_capacity: 1000000000000000, // grams
+        bitcoin_mine_capacity: 1000000000000000 // grams
     }
 }
 
@@ -171,7 +174,7 @@ pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
 }
 
 pub fn MOCK_TICK_CONFIG() -> TickConfig {
-    TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1 }
+    TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1, bitcoin_phase_in_seconds: 600 }
 }
 
 pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
