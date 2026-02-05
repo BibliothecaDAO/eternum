@@ -550,11 +550,11 @@ export const UnifiedGameGrid = ({
         </div>
       )}
 
-      {/* Game cards - scrollable */}
+      {/* Game cards */}
       <div
         className={cn(
-          "scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent",
-          layout === "vertical" ? "max-h-[calc(100vh-320px)] overflow-y-auto pr-1" : "overflow-x-auto",
+          layout === "horizontal" &&
+            "overflow-x-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent",
         )}
       >
         {isLoading && games.length === 0 ? (

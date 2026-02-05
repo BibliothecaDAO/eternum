@@ -277,70 +277,76 @@ const PlayTabContent = ({
       </div>
 
       {/* Three columns: Live | Upcoming | Ended */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
         {/* Live Games Column */}
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-3 px-1">
+        <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-4 backdrop-blur-sm min-h-0 max-h-[calc(100vh-280px)]">
+          <div className="flex items-center gap-2 mb-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20">
               <Zap className="h-4 w-4 text-emerald-400" />
             </div>
             <h2 className="font-serif text-lg text-emerald-400">Live</h2>
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
           </div>
-          <UnifiedGameGrid
-            onSelectGame={onSelectGame}
-            onSpectate={onSpectate}
-            onRegistrationComplete={onRegistrationComplete}
-            devModeFilter={false}
-            statusFilter="ongoing"
-            hideHeader
-            hideLegend
-            layout="vertical"
-            sortRegisteredFirst
-          />
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
+            <UnifiedGameGrid
+              onSelectGame={onSelectGame}
+              onSpectate={onSpectate}
+              onRegistrationComplete={onRegistrationComplete}
+              devModeFilter={false}
+              statusFilter="ongoing"
+              hideHeader
+              hideLegend
+              layout="vertical"
+              sortRegisteredFirst
+            />
+          </div>
         </div>
 
         {/* Upcoming Games Column */}
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-3 px-1">
+        <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-4 backdrop-blur-sm min-h-0 max-h-[calc(100vh-280px)]">
+          <div className="flex items-center gap-2 mb-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/20">
               <Clock className="h-4 w-4 text-amber-400" />
             </div>
             <h2 className="font-serif text-lg text-amber-400">Upcoming</h2>
           </div>
-          <UnifiedGameGrid
-            onSelectGame={onSelectGame}
-            onSpectate={onSpectate}
-            onRegistrationComplete={onRegistrationComplete}
-            devModeFilter={false}
-            statusFilter="upcoming"
-            hideHeader
-            hideLegend
-            layout="vertical"
-            sortRegisteredFirst
-          />
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
+            <UnifiedGameGrid
+              onSelectGame={onSelectGame}
+              onSpectate={onSpectate}
+              onRegistrationComplete={onRegistrationComplete}
+              devModeFilter={false}
+              statusFilter="upcoming"
+              hideHeader
+              hideLegend
+              layout="vertical"
+              sortRegisteredFirst
+            />
+          </div>
         </div>
 
         {/* Ended Games Column */}
-        <div className="flex flex-col md:col-span-2 xl:col-span-1">
-          <div className="flex items-center gap-2 mb-3 px-1">
+        <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-4 backdrop-blur-sm min-h-0 max-h-[calc(100vh-280px)] md:col-span-2 xl:col-span-1">
+          <div className="flex items-center gap-2 mb-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gold/20">
               <Trophy className="h-4 w-4 text-gold" />
             </div>
             <h2 className="font-serif text-lg text-gold">Ended</h2>
           </div>
-          <UnifiedGameGrid
-            onSelectGame={onSelectGame}
-            onSpectate={onSpectate}
-            onSeeScore={onSeeScore}
-            onRegistrationComplete={onRegistrationComplete}
-            devModeFilter={false}
-            statusFilter="ended"
-            hideHeader
-            hideLegend
-            layout="vertical"
-            sortRegisteredFirst
-          />
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            <UnifiedGameGrid
+              onSelectGame={onSelectGame}
+              onSpectate={onSpectate}
+              onSeeScore={onSeeScore}
+              onRegistrationComplete={onRegistrationComplete}
+              devModeFilter={false}
+              statusFilter="ended"
+              hideHeader
+              hideLegend
+              layout="vertical"
+              sortRegisteredFirst
+            />
+          </div>
         </div>
       </div>
     </div>
