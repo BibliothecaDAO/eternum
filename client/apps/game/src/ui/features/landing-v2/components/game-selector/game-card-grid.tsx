@@ -426,11 +426,19 @@ export const UnifiedGameGrid = ({
 
     if (uniqueWorlds.length === 0) return;
 
+    console.log(
+      "[UnifiedGameGrid] uniqueWorlds to check registration:",
+      uniqueWorlds.map((w) => ({ name: w.name, chain: w.chain })),
+    );
     const run = async () => {
       for (const world of uniqueWorlds) {
         if (cancelled) break;
         const key = getWorldKey(world);
-        console.log("[UnifiedGameGrid] Checking registration for world:", { worldName: world.name, key, world });
+        console.log("[UnifiedGameGrid] Checking registration for world:", {
+          worldName: world.name,
+          chain: world.chain,
+          key,
+        });
         const torii = buildToriiBaseUrl(world.name);
         const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral);
         if (!cancelled) {
