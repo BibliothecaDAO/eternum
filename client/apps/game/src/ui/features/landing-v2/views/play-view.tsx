@@ -25,6 +25,7 @@ import { useSearchParams } from "react-router-dom";
 import { HeroTitle } from "../components/hero-title";
 import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
+import { ScoreCardModal } from "../components/score-card-modal";
 
 interface PlayViewProps {
   className?: string;
@@ -172,7 +173,7 @@ const LearnContent = ({
           <p className="text-xs text-gold/60">Dev mode - join anytime!</p>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto min-h-0 max-h-[500px]">
+      <div className="flex-1 min-h-0">
         <UnifiedGameGrid
           onSelectGame={onSelectGame}
           onSpectate={onSpectate}
@@ -258,11 +259,13 @@ const NewsContent = () => (
 const PlayTabContent = ({
   onSelectGame,
   onSpectate,
+  onSeeScore,
   onRegistrationComplete,
   disabled = false,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
+  onSeeScore: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
   disabled?: boolean;
 }) => {
@@ -300,7 +303,6 @@ const PlayTabContent = ({
             statusFilter="ongoing"
             hideHeader
             hideLegend
-            columns={2}
           />
         </div>
 
@@ -320,7 +322,6 @@ const PlayTabContent = ({
             statusFilter="upcoming"
             hideHeader
             hideLegend
-            columns={2}
           />
         </div>
 
@@ -348,12 +349,12 @@ const PlayTabContent = ({
               <UnifiedGameGrid
                 onSelectGame={onSelectGame}
                 onSpectate={onSpectate}
+                onSeeScore={onSeeScore}
                 onRegistrationComplete={onRegistrationComplete}
                 devModeFilter={false}
                 statusFilter="ended"
                 hideHeader
                 hideLegend
-                columns={2}
               />
             </div>
           )}
@@ -375,6 +376,10 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const [entryModalOpen, setEntryModalOpen] = useState(false);
   const [selectedWorld, setSelectedWorld] = useState<WorldSelection | null>(null);
   const [isSpectateMode, setIsSpectateMode] = useState(false);
+
+  // Modal state for score card
+  const [scoreModalOpen, setScoreModalOpen] = useState(false);
+  const [scoreWorld, setScoreWorld] = useState<WorldSelection | null>(null);
 
   // Auth state
   const account = useAccountStore((state) => state.account);
@@ -415,6 +420,17 @@ export const PlayView = ({ className }: PlayViewProps) => {
     setSelectedWorld(null);
   }, []);
 
+  const handleSeeScore = useCallback((selection: WorldSelection) => {
+    console.log("[PlayView] handleSeeScore:", selection.name);
+    setScoreWorld(selection);
+    setScoreModalOpen(true);
+  }, []);
+
+  const handleCloseScoreModal = useCallback(() => {
+    setScoreModalOpen(false);
+    setScoreWorld(null);
+  }, []);
+
   // Registration is handled inline by GameCardGrid - this callback is for any post-registration actions
   const handleRegistrationComplete = useCallback(() => {
     console.log("[PlayView] Registration completed");
@@ -439,8 +455,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
           <PlayTabContent
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
+            onSeeScore={handleSeeScore}
             onRegistrationComplete={handleRegistrationComplete}
-            disabled={entryModalOpen}
+            disabled={entryModalOpen || scoreModalOpen}
           />
         );
     }
@@ -461,6 +478,16 @@ export const PlayView = ({ className }: PlayViewProps) => {
           worldName={selectedWorld.name}
           chain={selectedWorld.chain}
           isSpectateMode={isSpectateMode}
+        />
+      )}
+
+      {/* Score Card Modal - for ended games */}
+      {scoreWorld && scoreWorld.chain && (
+        <ScoreCardModal
+          isOpen={scoreModalOpen}
+          onClose={handleCloseScoreModal}
+          worldName={scoreWorld.name}
+          chain={scoreWorld.chain}
         />
       )}
     </>
