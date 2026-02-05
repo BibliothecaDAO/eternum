@@ -31,39 +31,31 @@ const parseMaybeBool = (v: unknown): boolean | null => {
   return null;
 };
 
+const DEBUG_WORLD = "test-snow-soft-71";
+
 const fetchPlayerRegistrationStatus = async (
   toriiBaseUrl: string,
   playerLiteral: string | null,
+  worldName?: string,
 ): Promise<boolean | null> => {
-  if (!playerLiteral) {
-    console.log("[fetchPlayerRegistrationStatus] No playerLiteral provided");
-    return null;
-  }
+  if (!playerLiteral) return null;
+  const isDebugWorld = worldName === DEBUG_WORLD;
   try {
     const query = `SELECT registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerLiteral}" LIMIT 1;`;
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
-    console.log("[fetchPlayerRegistrationStatus] Checking registration:", {
-      playerLiteral,
-      toriiBaseUrl,
-      query,
-      url,
-    });
     const response = await fetch(url);
-    if (!response.ok) {
-      console.log("[fetchPlayerRegistrationStatus] Response not ok:", response.status, response.statusText);
-      return null;
-    }
+    if (!response.ok) return null;
     const data = (await response.json()) as Record<string, unknown>[];
-    console.log("[fetchPlayerRegistrationStatus] Response data:", data);
     const [row] = data;
     if (row && row.registered != null) {
       const result = parseMaybeBool(row.registered);
-      console.log("[fetchPlayerRegistrationStatus] Parsed result:", result);
+      if (isDebugWorld) {
+        console.log(`[DEBUG ${DEBUG_WORLD}] fetch result:`, { data, result });
+      }
       return result;
     }
-    console.log("[fetchPlayerRegistrationStatus] No registration found");
-  } catch (error) {
-    console.error("[fetchPlayerRegistrationStatus] Error:", error);
+  } catch {
+    // ignore
   }
   return null;
 };
@@ -227,13 +219,14 @@ const GameCard = ({
 
   const showRegistered = game.isRegistered || registrationStage === "done";
 
-  // Debug log
-  console.log(`[GameCard] ${game.name}:`, {
-    isRegistered: game.isRegistered,
-    registrationStage,
-    showRegistered,
-    gameStatus: game.gameStatus,
-  });
+  // Debug log for specific world only
+  if (game.name === DEBUG_WORLD) {
+    console.log(`[DEBUG ${DEBUG_WORLD}] GameCard render:`, {
+      isRegistered: game.isRegistered,
+      registrationStage,
+      showRegistered,
+    });
+  }
 
   return (
     <div
@@ -393,14 +386,13 @@ export const UnifiedGameGrid = ({
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
 
-  // Debug log for player address conversion
+  // Debug: log when playerRegistration state changes for debug world
   useEffect(() => {
-    console.log("[UnifiedGameGrid] Player address info:", {
-      rawAccountAddress: account?.address,
-      playerAddress,
-      playerFeltLiteral,
-    });
-  }, [account?.address, playerAddress, playerFeltLiteral]);
+    const debugKey = `slot:${DEBUG_WORLD}`;
+    if (debugKey in playerRegistration) {
+      console.log(`[DEBUG ${DEBUG_WORLD}] playerRegistration state:`, playerRegistration[debugKey]);
+    }
+  }, [playerRegistration]);
 
   const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
@@ -438,11 +430,6 @@ export const UnifiedGameGrid = ({
 
     if (uniqueWorlds.length === 0) return;
 
-    console.log(
-      "[UnifiedGameGrid] uniqueWorlds to check registration:",
-      uniqueWorlds.map((w) => ({ name: w.name, chain: w.chain })),
-    );
-
     const run = async () => {
       // Batch all results and update state once at the end
       const results: Record<string, boolean | null> = {};
@@ -453,24 +440,34 @@ export const UnifiedGameGrid = ({
         // Mark as checked immediately to prevent re-checking
         checkedWorldsRef.current.add(key);
 
-        console.log("[UnifiedGameGrid] Checking registration for world:", {
-          worldName: world.name,
-          chain: world.chain,
-          key,
-        });
         const torii = buildToriiBaseUrl(world.name);
-        const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral);
+        const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral, world.name);
         results[key] = status;
+
+        if (world.name === DEBUG_WORLD) {
+          console.log(`[DEBUG ${DEBUG_WORLD}] fetched status:`, { key, status });
+        }
       }
 
       // Update state once with all results
-      if (!cancelled && Object.keys(results).length > 0) {
-        console.log("[UnifiedGameGrid] Updating playerRegistration with results:", results);
-        setPlayerRegistration((prev) => {
-          const newState = { ...prev, ...results };
-          console.log("[UnifiedGameGrid] New playerRegistration state:", newState);
-          return newState;
-        });
+      if (Object.keys(results).length > 0) {
+        const debugKey = `slot:${DEBUG_WORLD}`;
+        if (cancelled) {
+          if (debugKey in results) {
+            console.log(`[DEBUG ${DEBUG_WORLD}] CANCELLED before setState, result was:`, results[debugKey]);
+          }
+        } else {
+          if (debugKey in results) {
+            console.log(`[DEBUG ${DEBUG_WORLD}] calling setPlayerRegistration with:`, results[debugKey]);
+          }
+          setPlayerRegistration((prev) => {
+            const newState = { ...prev, ...results };
+            if (debugKey in results) {
+              console.log(`[DEBUG ${DEBUG_WORLD}] inside setState updater, newState[key]:`, newState[debugKey]);
+            }
+            return newState;
+          });
+        }
       }
     };
 
@@ -482,7 +479,14 @@ export const UnifiedGameGrid = ({
 
   // Build game data - only include online games from both chains
   const games = useMemo<GameData[]>(() => {
-    console.log("[UnifiedGameGrid] Computing games memo, playerRegistration:", playerRegistration);
+    const debugKey = `slot:${DEBUG_WORLD}`;
+    if (debugKey in playerRegistration) {
+      console.log(
+        `[DEBUG ${DEBUG_WORLD}] games memo computing, playerRegistration[key]:`,
+        playerRegistration[debugKey],
+      );
+    }
+
     const nodes = factoryWorlds
       .map((world) => {
         const worldKey = getWorldKey(world);
@@ -498,6 +502,12 @@ export const UnifiedGameGrid = ({
           else if (isUpcoming(startMainAt)) gameStatus = "upcoming";
         }
 
+        const isRegistered = playerRegistration[worldKey] ?? null;
+
+        if (world.name === DEBUG_WORLD) {
+          console.log(`[DEBUG ${DEBUG_WORLD}] building game data:`, { worldKey, isRegistered });
+        }
+
         return {
           name: world.name,
           chain: world.chain,
@@ -507,7 +517,7 @@ export const UnifiedGameGrid = ({
           startMainAt,
           endAt,
           registrationCount: availability?.meta?.registrationCount ?? null,
-          isRegistered: playerRegistration[worldKey] ?? null,
+          isRegistered,
           config: availability?.meta ?? null,
         };
       })
