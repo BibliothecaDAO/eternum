@@ -1,18 +1,7 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { NavLink } from "react-router-dom";
-
-interface NavItem {
-  label: string;
-  path: string;
-}
-
-const navItems: NavItem[] = [
-  { label: "Play", path: "/" },
-  { label: "Profile", path: "/profile" },
-  { label: "Markets", path: "/markets" },
-  { label: "Leaderboard", path: "/leaderboard" },
-];
+import { NavLink, useLocation, useSearchParams } from "react-router-dom";
+import { getSectionFromPath, getActiveSubItem } from "../context/navigation-config";
 
 interface LandingHeaderProps {
   walletButton?: React.ReactNode;
@@ -20,9 +9,25 @@ interface LandingHeaderProps {
 }
 
 /**
- * Minimal top navigation header with nav items and wallet button.
+ * Top navigation header with dynamic submenu based on active sidebar section.
  */
 export const LandingHeader = ({ walletButton, className }: LandingHeaderProps) => {
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeSection = getSectionFromPath(location.pathname);
+  const currentTab = searchParams.get("tab");
+  const activeSubItem = getActiveSubItem(activeSection, currentTab);
+
+  const handleSubItemClick = (tab: string | null) => {
+    if (tab === null) {
+      // Remove tab param for default tab
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab });
+    }
+  };
+
   return (
     <header
       className={cn(
@@ -41,15 +46,16 @@ export const LandingHeader = ({ walletButton, className }: LandingHeaderProps) =
         </NavLink>
       </div>
 
-      {/* Desktop navigation */}
+      {/* Desktop navigation - dynamic submenu based on active section */}
       <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === "/"}
-            className={({ isActive }) =>
-              cn(
+        {activeSection.subMenu.map((item) => {
+          const isActive = activeSubItem.id === item.id;
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleSubItemClick(item.tab)}
+              className={cn(
                 "relative px-4 py-2 text-sm font-medium uppercase tracking-wider",
                 "transition-all duration-200",
                 "hover:text-gold",
@@ -59,12 +65,12 @@ export const LandingHeader = ({ walletButton, className }: LandingHeaderProps) =
                 "after:bg-gold after:transition-all after:duration-200",
                 "hover:after:w-1/2",
                 isActive && "after:w-3/4 after:shadow-[0_0_8px_rgba(223,170,84,0.5)]",
-              )
-            }
-          >
-            {item.label}
-          </NavLink>
-        ))}
+              )}
+            >
+              {item.label}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Spacer for centering on desktop */}

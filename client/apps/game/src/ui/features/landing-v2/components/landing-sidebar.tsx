@@ -1,20 +1,8 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Home, Settings, Trophy, User } from "lucide-react";
-import { NavLink } from "react-router-dom";
-
-interface SidebarItem {
-  icon: React.ElementType;
-  path?: string;
-  action?: () => void;
-  tooltip: string;
-}
-
-const sidebarItems: SidebarItem[] = [
-  { icon: Home, path: "/", tooltip: "Home" },
-  { icon: Trophy, path: "/leaderboard", tooltip: "Leaderboard" },
-  { icon: User, path: "/profile", tooltip: "Profile" },
-];
+import { Settings } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { NAVIGATION_SECTIONS, getSectionFromPath } from "../context/navigation-config";
 
 interface LandingSidebarProps {
   onSettingsClick?: () => void;
@@ -26,6 +14,9 @@ interface LandingSidebarProps {
  * Only visible on desktop (hidden on mobile, replaced by bottom nav).
  */
 export const LandingSidebar = ({ onSettingsClick, className }: LandingSidebarProps) => {
+  const location = useLocation();
+  const activeSection = getSectionFromPath(location.pathname);
+
   return (
     <aside
       className={cn(
@@ -44,44 +35,37 @@ export const LandingSidebar = ({ onSettingsClick, className }: LandingSidebarPro
 
       {/* Navigation items */}
       <nav className="flex flex-1 flex-col items-center gap-2">
-        {sidebarItems.map((item) => {
-          const Icon = item.icon;
+        {NAVIGATION_SECTIONS.map((section) => {
+          const Icon = section.icon;
+          const isActive = activeSection.id === section.id;
 
-          if (item.path) {
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === "/"}
-                className={({ isActive }) =>
-                  cn(
-                    "group relative flex h-12 w-12 items-center justify-center rounded-lg",
-                    "transition-all duration-200",
-                    "hover:bg-gold/10 hover:scale-105",
-                    "active:scale-95",
-                    isActive && [
-                      "bg-gold/15",
-                      // Active indicator bar
-                      "before:absolute before:left-0 before:h-8 before:w-1 before:rounded-r before:bg-gold",
-                      "before:shadow-[0_0_10px_rgba(223,170,84,0.5)]",
-                    ],
-                  )
-                }
-                title={item.tooltip}
-              >
-                {({ isActive }) => (
-                  <Icon
-                    className={cn(
-                      "h-5 w-5 transition-all duration-200",
-                      isActive ? "text-gold" : "text-gold/60 group-hover:text-gold",
-                    )}
-                  />
+          return (
+            <NavLink
+              key={section.id}
+              to={section.basePath}
+              end={section.basePath === "/"}
+              className={cn(
+                "group relative flex h-12 w-12 items-center justify-center rounded-lg",
+                "transition-all duration-200",
+                "hover:bg-gold/10 hover:scale-105",
+                "active:scale-95",
+                isActive && [
+                  "bg-gold/15",
+                  // Active indicator bar
+                  "before:absolute before:left-0 before:h-8 before:w-1 before:rounded-r before:bg-gold",
+                  "before:shadow-[0_0_10px_rgba(223,170,84,0.5)]",
+                ],
+              )}
+              title={section.label}
+            >
+              <Icon
+                className={cn(
+                  "h-5 w-5 transition-all duration-200",
+                  isActive ? "text-gold" : "text-gold/60 group-hover:text-gold",
                 )}
-              </NavLink>
-            );
-          }
-
-          return null;
+              />
+            </NavLink>
+          );
         })}
       </nav>
 

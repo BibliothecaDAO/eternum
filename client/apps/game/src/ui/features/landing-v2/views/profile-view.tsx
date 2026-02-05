@@ -1,6 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Tabs } from "@/ui/design-system/atoms/tab";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 
 // Lazy load heavy components
@@ -13,10 +12,26 @@ const LandingCosmetics = lazy(() =>
 );
 
 // Wallet view placeholder - can be expanded later
-const WalletView = () => (
+const WalletContent = () => (
   <div className="rounded-2xl border border-gold/20 bg-black/60 p-6 backdrop-blur-xl">
     <h3 className="mb-4 font-serif text-lg text-gold">Wallet</h3>
-    <p className="text-sm text-gold/70">Wallet management and transaction history coming soon...</p>
+    <p className="text-sm text-gold/70 mb-6">Manage your assets and view transaction history.</p>
+    <div className="space-y-4">
+      {/* Placeholder wallet info */}
+      <div className="rounded-lg border border-gold/10 bg-black/40 p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-gold/60 text-sm">$LORDS Balance</span>
+          <span className="text-gold font-semibold">0.00</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-gold/60 text-sm">ETH Balance</span>
+          <span className="text-gold font-semibold">0.00</span>
+        </div>
+      </div>
+      <button className="w-full px-4 py-3 rounded-lg border border-gold/30 text-gold/70 hover:text-gold hover:border-gold/50 transition-colors">
+        View Full Wallet
+      </button>
+    </div>
   </div>
 );
 
@@ -24,86 +39,68 @@ interface ProfileViewProps {
   className?: string;
 }
 
-type ProfileTab = "stats" | "cosmetics" | "wallet";
-
-const TAB_CONFIG: { id: ProfileTab; label: string }[] = [
-  { id: "stats", label: "Stats" },
-  { id: "cosmetics", label: "Cosmetics" },
-  { id: "wallet", label: "Wallet" },
-];
+type ProfileTab = "profile" | "cosmetics" | "wallet";
 
 /**
- * Profile view with sub-tabs for Stats, Cosmetics, and Wallet.
- * Wraps existing landing components in the new layout.
+ * Profile view with sub-tabs for Profile (Stats), Cosmetics, and Wallet.
+ * Tab navigation is handled by the header - this view just renders the content.
  */
 export const ProfileView = ({ className }: ProfileViewProps) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") as ProfileTab) || "stats";
-  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+  const [searchParams] = useSearchParams();
+  const activeTab = (searchParams.get("tab") as ProfileTab) || "profile";
 
-  const handleTabChange = (index: number) => {
-    const tab = TAB_CONFIG[index].id;
-    setActiveTab(tab);
-    setSearchParams({ tab });
+  const renderContent = () => {
+    switch (activeTab) {
+      case "cosmetics":
+        return (
+          <Suspense
+            fallback={
+              <div className="flex h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+              </div>
+            }
+          >
+            <LandingCosmetics />
+          </Suspense>
+        );
+      case "wallet":
+        return <WalletContent />;
+      case "profile":
+      default:
+        return (
+          <Suspense
+            fallback={
+              <div className="flex h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+              </div>
+            }
+          >
+            <LandingPlayer />
+          </Suspense>
+        );
+    }
   };
 
-  const activeIndex = TAB_CONFIG.findIndex((t) => t.id === activeTab);
+  const getTitle = () => {
+    switch (activeTab) {
+      case "cosmetics":
+        return "Cosmetics";
+      case "wallet":
+        return "Wallet";
+      default:
+        return "Profile";
+    }
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
       {/* Profile header */}
       <div className="flex items-center justify-between">
-        <h1 className="font-serif text-2xl font-bold text-gold sm:text-3xl">Profile</h1>
+        <h1 className="font-serif text-2xl font-bold text-gold sm:text-3xl">{getTitle()}</h1>
       </div>
 
-      {/* Sub-tabs */}
-      <Tabs
-        variant="primary"
-        selectedIndex={activeIndex >= 0 ? activeIndex : 0}
-        onChange={handleTabChange}
-        className="w-full"
-      >
-        <Tabs.List className="mb-6 flex gap-2">
-          {TAB_CONFIG.map((tab) => (
-            <Tabs.Tab key={tab.id} className="px-4 py-2">
-              {tab.label}
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-
-        <Tabs.Panels>
-          {/* Stats Tab */}
-          <Tabs.Panel>
-            <Suspense
-              fallback={
-                <div className="flex h-64 items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
-                </div>
-              }
-            >
-              <LandingPlayer />
-            </Suspense>
-          </Tabs.Panel>
-
-          {/* Cosmetics Tab */}
-          <Tabs.Panel>
-            <Suspense
-              fallback={
-                <div className="flex h-64 items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
-                </div>
-              }
-            >
-              <LandingCosmetics />
-            </Suspense>
-          </Tabs.Panel>
-
-          {/* Wallet Tab */}
-          <Tabs.Panel>
-            <WalletView />
-          </Tabs.Panel>
-        </Tabs.Panels>
-      </Tabs>
+      {/* Tab content */}
+      {renderContent()}
     </div>
   );
 };
