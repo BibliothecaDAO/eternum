@@ -11,54 +11,11 @@ import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Chain } from "@contracts";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
-
-const parseMaybeBool = (v: unknown): boolean | null => {
-  if (v == null) return null;
-  if (typeof v === "boolean") return v;
-  if (typeof v === "number") return v !== 0; // 1 = true, 0 = false
-  if (typeof v === "string") {
-    const trimmed = v.trim().toLowerCase();
-    if (trimmed === "true" || trimmed === "1") return true;
-    if (trimmed === "false" || trimmed === "0") return false;
-  }
-  return null;
-};
-
-const DEBUG_WORLD = "test-snow-soft-71";
-
-const fetchPlayerRegistrationStatus = async (
-  toriiBaseUrl: string,
-  playerLiteral: string | null,
-  worldName?: string,
-): Promise<boolean | null> => {
-  if (!playerLiteral) return null;
-  const isDebugWorld = worldName === DEBUG_WORLD;
-  try {
-    const query = `SELECT registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerLiteral}" LIMIT 1;`;
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const data = (await response.json()) as Record<string, unknown>[];
-    const [row] = data;
-    if (row && row.registered != null) {
-      const result = parseMaybeBool(row.registered);
-      if (isDebugWorld) {
-        console.log(`[DEBUG ${DEBUG_WORLD}] fetch result:`, { data, result });
-      }
-      return result;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-};
 
 /**
  * Format fee amount from wei to human-readable LORDS
@@ -219,15 +176,6 @@ const GameCard = ({
 
   const showRegistered = game.isRegistered || registrationStage === "done";
 
-  // Debug log for specific world only
-  if (game.name === DEBUG_WORLD) {
-    console.log(`[DEBUG ${DEBUG_WORLD}] GameCard render:`, {
-      isRegistered: game.isRegistered,
-      registrationStage,
-      showRegistered,
-    });
-  }
-
   return (
     <div
       className={cn(
@@ -380,19 +328,12 @@ export const UnifiedGameGrid = ({
   onRegistrationComplete,
   className,
 }: UnifiedGameGridProps) => {
-  const [playerRegistration, setPlayerRegistration] = useState<Record<string, boolean | null>>({});
+  // Track locally completed registrations (to show immediately before refetch)
+  const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
 
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
-
-  // Debug: log when playerRegistration state changes for debug world
-  useEffect(() => {
-    const debugKey = `slot:${DEBUG_WORLD}`;
-    if (debugKey in playerRegistration) {
-      console.log(`[DEBUG ${DEBUG_WORLD}] playerRegistration state:`, playerRegistration[debugKey]);
-    }
-  }, [playerRegistration]);
 
   const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
@@ -404,89 +345,16 @@ export const UnifiedGameGrid = ({
     refetchAll: refetchFactoryWorlds,
   } = useFactoryWorlds(["mainnet", "slot"]);
 
+  // Fetch world availability AND player registration status together
+  // When playerFeltLiteral changes (user connects), React Query will refetch
   const {
     results: factoryAvailability,
     isAnyLoading: factoryCheckingAvailability,
     refetchAll: refetchFactory,
-  } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
-
-  // Fetch player registration status - use ref to track what's been checked to avoid infinite loops
-  const checkedWorldsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!playerFeltLiteral) return;
-    let cancelled = false;
-
-    const onlineWorlds = factoryWorlds.filter((world) => {
-      const availability = factoryAvailability.get(getWorldKey(world));
-      return availability?.isAvailable && !availability.isLoading;
-    });
-
-    // Use ref to track checked worlds instead of state (avoids re-triggering effect)
-    const uniqueWorlds = onlineWorlds.filter((world) => {
-      const key = getWorldKey(world);
-      return !checkedWorldsRef.current.has(key);
-    });
-
-    if (uniqueWorlds.length === 0) return;
-
-    const run = async () => {
-      // Batch all results and update state once at the end
-      const results: Record<string, boolean | null> = {};
-
-      for (const world of uniqueWorlds) {
-        if (cancelled) break;
-        const key = getWorldKey(world);
-        // Mark as checked immediately to prevent re-checking
-        checkedWorldsRef.current.add(key);
-
-        const torii = buildToriiBaseUrl(world.name);
-        const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral, world.name);
-        results[key] = status;
-
-        if (world.name === DEBUG_WORLD) {
-          console.log(`[DEBUG ${DEBUG_WORLD}] fetched status:`, { key, status });
-        }
-      }
-
-      // Update state once with all results
-      if (Object.keys(results).length > 0) {
-        const debugKey = `slot:${DEBUG_WORLD}`;
-        if (cancelled) {
-          if (debugKey in results) {
-            console.log(`[DEBUG ${DEBUG_WORLD}] CANCELLED before setState, result was:`, results[debugKey]);
-          }
-        } else {
-          if (debugKey in results) {
-            console.log(`[DEBUG ${DEBUG_WORLD}] calling setPlayerRegistration with:`, results[debugKey]);
-          }
-          setPlayerRegistration((prev) => {
-            const newState = { ...prev, ...results };
-            if (debugKey in results) {
-              console.log(`[DEBUG ${DEBUG_WORLD}] inside setState updater, newState[key]:`, newState[debugKey]);
-            }
-            return newState;
-          });
-        }
-      }
-    };
-
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [playerFeltLiteral, factoryWorlds, factoryAvailability]); // Removed playerRegistration from deps!
+  } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0, playerFeltLiteral);
 
   // Build game data - only include online games from both chains
   const games = useMemo<GameData[]>(() => {
-    const debugKey = `slot:${DEBUG_WORLD}`;
-    if (debugKey in playerRegistration) {
-      console.log(
-        `[DEBUG ${DEBUG_WORLD}] games memo computing, playerRegistration[key]:`,
-        playerRegistration[debugKey],
-      );
-    }
-
     const nodes = factoryWorlds
       .map((world) => {
         const worldKey = getWorldKey(world);
@@ -502,11 +370,8 @@ export const UnifiedGameGrid = ({
           else if (isUpcoming(startMainAt)) gameStatus = "upcoming";
         }
 
-        const isRegistered = playerRegistration[worldKey] ?? null;
-
-        if (world.name === DEBUG_WORLD) {
-          console.log(`[DEBUG ${DEBUG_WORLD}] building game data:`, { worldKey, isRegistered });
-        }
+        // Use local registration state first, then fall back to server state
+        const isRegistered = localRegistrations[worldKey] ?? availability?.meta?.isPlayerRegistered ?? null;
 
         return {
           name: world.name,
@@ -534,18 +399,17 @@ export const UnifiedGameGrid = ({
       const bStart = b.startMainAt ?? Infinity;
       return aStart - bStart;
     });
-  }, [factoryWorlds, factoryAvailability, playerRegistration, isOngoing, isEnded, isUpcoming]);
+  }, [factoryWorlds, factoryAvailability, localRegistrations, isOngoing, isEnded, isUpcoming]);
 
   const handleRefresh = useCallback(async () => {
-    setPlayerRegistration({});
-    checkedWorldsRef.current.clear(); // Reset checked worlds on refresh
+    setLocalRegistrations({});
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
   }, [refetchFactoryWorlds, refetchFactory]);
 
-  // Callback for when a registration completes - update that specific game's status
+  // Callback for when a registration completes - update local state immediately
   const handleRegistrationComplete = useCallback(
     (worldKey: string) => {
-      setPlayerRegistration((prev) => ({ ...prev, [worldKey]: true }));
+      setLocalRegistrations((prev) => ({ ...prev, [worldKey]: true }));
       onRegistrationComplete?.();
     },
     [onRegistrationComplete],
