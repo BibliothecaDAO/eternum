@@ -263,7 +263,7 @@ const checkWorldAvailability = async (
 /**
  * Hook to check multiple worlds' availability with batched queries.
  * Uses React Query's useQueries for parallel execution with caching.
- * Results are cached for 5 minutes.
+ * Auto-refreshes every 30 seconds to catch registration/hyperstructure updates.
  * @param worlds - List of worlds to check
  * @param enabled - Whether to enable the queries
  * @param playerAddress - Optional player address (padded felt) to check registration status
@@ -275,8 +275,10 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
       queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
       queryFn: () => checkWorldAvailability(world.name, playerAddress),
       enabled: enabled && !!world.name,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchInterval: 30 * 1000, // Auto-refresh every 30s to catch new registrations/forges
+      refetchIntervalInBackground: false, // Only refetch when tab is active
       retry: 1,
     })),
   });
