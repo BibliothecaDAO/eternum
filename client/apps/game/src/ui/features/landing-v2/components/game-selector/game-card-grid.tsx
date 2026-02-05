@@ -10,7 +10,6 @@ import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useAccount } from "@starknet-react/core";
 import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -404,9 +403,17 @@ export const UnifiedGameGrid = ({
 
   const queryClient = useQueryClient();
   const account = useAccountStore((state) => state.account);
-  const { isConnecting } = useAccount();
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
+
+  // Check if there's a stored controller session that's still reconnecting
+  // starknet-react stores the last connected connector in localStorage
+  const hasStoredSession = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const storedConnector = window.localStorage.getItem("starknet-last-connected-connector");
+    return storedConnector !== null;
+  }, []);
+  const isWaitingForReconnect = hasStoredSession && !playerAddress;
 
   const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
@@ -525,8 +532,9 @@ export const UnifiedGameGrid = ({
     [onRegistrationComplete, queryClient],
   );
 
-  // Include isConnecting so we wait for controller to reconnect before showing games
-  const isLoading = factoryWorldsLoading || factoryCheckingAvailability || isConnecting;
+  // Wait for controller to reconnect if there's a stored session before showing games
+  // This prevents the flash of "logged out" state on page refresh
+  const isLoading = factoryWorldsLoading || factoryCheckingAvailability || isWaitingForReconnect;
 
   // Count by status
   const counts = useMemo(() => {
