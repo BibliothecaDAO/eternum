@@ -284,8 +284,8 @@ Bitcoin mines are discovered during exploration in the Ethereal layer:
 
 3. **In-game SATOSHI**: Prize is in-game SATOSHI resource (minted at winning mine), not ERC20 transfer.
 
-4. **Weighted lottery**: Uses `get_weighted_choice_bool_simple(labor_contributed, total_labor - labor_contributed, seed)`
-   for fair probability.
+4. **Weighted lottery**: Uses
+   `get_weighted_choice_bool_simple(labor_contributed, total_labor - labor_contributed, seed)` for fair probability.
 
 5. **reward_receiver_phase tracking**: Single field tracks:
    - Winner found (self)
@@ -304,13 +304,13 @@ Bitcoin mines are discovered during exploration in the Ethereal layer:
 
 ## File Summary
 
-| File                                                  | Purpose                             |
-| ----------------------------------------------------- | ----------------------------------- |
-| `contracts/game/src/constants.cairo`                  | SATOSHI type, MAX_FUTURE/ROLLOVER   |
-| `contracts/game/src/models/bitcoin_mine.cairo`        | BitcoinPhaseLabor, BitcoinPhaseImpl |
-| `contracts/game/src/models/config.cairo`              | BitcoinMineConfig, TickConfig       |
-| `contracts/game/src/models/events.cairo`              | Production and Lottery story events |
-| `contracts/game/src/systems/bitcoin_mine/contracts.cairo` | Main system contract            |
-| `contracts/game/src/systems/bitcoin_mine/tests.cairo` | Unit tests                          |
-| `contracts/game/src/systems/utils/bitcoin_mine.cairo` | Discovery utility                   |
-| `contracts/game/src/systems/config/contracts.cairo`   | Config setter (with validation)     |
+| File                                                      | Purpose                             |
+| --------------------------------------------------------- | ----------------------------------- |
+| `contracts/game/src/constants.cairo`                      | SATOSHI type, MAX_FUTURE/ROLLOVER   |
+| `contracts/game/src/models/bitcoin_mine.cairo`            | BitcoinPhaseLabor, BitcoinPhaseImpl |
+| `contracts/game/src/models/config.cairo`                  | BitcoinMineConfig, TickConfig       |
+| `contracts/game/src/models/events.cairo`                  | Production and Lottery story events |
+| `contracts/game/src/systems/bitcoin_mine/contracts.cairo` | Main system contract                |
+| `contracts/game/src/systems/bitcoin_mine/tests.cairo`     | Unit tests                          |
+| `contracts/game/src/systems/utils/bitcoin_mine.cairo`     | Discovery utility                   |
+| `contracts/game/src/systems/config/contracts.cairo`       | Config setter (with validation)     |

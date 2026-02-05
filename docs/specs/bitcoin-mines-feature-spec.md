@@ -91,22 +91,22 @@ If all participants claim and no one wins the lottery:
 
 ### Contribution Rules
 
-| Rule | Description |
-|------|-------------|
-| Ownership required | Only the mine owner can contribute labor from that mine |
-| Minimum contribution | Each contribution must meet the minimum labor amount |
-| No past phases | Cannot contribute to phases that have already ended |
-| Future limit | Can only contribute up to 30 phases ahead |
-| Window closes | Each phase has a contribution deadline (1 second before next phase starts) |
+| Rule                 | Description                                                                |
+| -------------------- | -------------------------------------------------------------------------- |
+| Ownership required   | Only the mine owner can contribute labor from that mine                    |
+| Minimum contribution | Each contribution must meet the minimum labor amount                       |
+| No past phases       | Cannot contribute to phases that have already ended                        |
+| Future limit         | Can only contribute up to 30 phases ahead                                  |
+| Window closes        | Each phase has a contribution deadline (1 second before next phase starts) |
 
 ### Claiming Rules
 
-| Rule | Description |
-|------|-------------|
-| Anyone can claim | Any player can trigger the lottery for any phase |
-| Phase must end | Can only claim after the phase's contribution window closes |
-| One winner | Once a winner is found, claiming stops for that phase |
-| Season limit | Phases that end after the season ends cannot be claimed |
+| Rule             | Description                                                 |
+| ---------------- | ----------------------------------------------------------- |
+| Anyone can claim | Any player can trigger the lottery for any phase            |
+| Phase must end   | Can only claim after the phase's contribution window closes |
+| One winner       | Once a winner is found, claiming stops for that phase       |
+| Season limit     | Phases that end after the season ends cannot be claimed     |
 
 ---
 
@@ -131,6 +131,7 @@ If all participants claim and no one wins the lottery:
 ## Example Scenario
 
 **Setup:**
+
 - Phase 5 has a prize pool of 100 SATOSHI
 - Three players participate:
   - Alice contributes 500 labor (50%)
@@ -139,11 +140,13 @@ If all participants claim and no one wins the lottery:
 - Total labor in Phase 5: 1,000
 
 **Outcome possibilities:**
+
 - Alice has 50% chance to win
 - Bob has 30% chance to win
 - Charlie has 20% chance to win
 
 **If no one wins:**
+
 - Prize rolls to the next phase (e.g., Phase 10 if we're currently in Phase 10)
 - That phase now has 100 + its base prize = bigger jackpot
 
@@ -151,16 +154,16 @@ If all participants claim and no one wins the lottery:
 
 ## Summary
 
-| Aspect | Detail |
-|--------|--------|
-| Location | Ethereal layer only |
-| Discovery chance | 1 in 50 (2%) |
-| Phase duration | 10 minutes |
-| Prize type | SATOSHI (in-game resource) |
-| Win odds | Proportional to labor contributed |
-| Max future contribution | 30 phases ahead |
-| Max rollover | 6 phases before prize burns |
-| Who can claim | Anyone (permissionless) |
+| Aspect                  | Detail                            |
+| ----------------------- | --------------------------------- |
+| Location                | Ethereal layer only               |
+| Discovery chance        | 1 in 50 (2%)                      |
+| Phase duration          | 10 minutes                        |
+| Prize type              | SATOSHI (in-game resource)        |
+| Win odds                | Proportional to labor contributed |
+| Max future contribution | 30 phases ahead                   |
+| Max rollover            | 6 phases before prize burns       |
+| Who can claim           | Anyone (permissionless)           |
 
 ---
 

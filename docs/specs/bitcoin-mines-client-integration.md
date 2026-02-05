@@ -36,15 +36,16 @@ Tracks global state for each phase. Key: `phase_id`
 ```typescript
 interface BitcoinPhaseLabor {
   phase_id: u64;
-  prize_pool: u128;           // SATOSHI allocated (base + rollover)
-  total_labor: u128;          // Cumulative labor deposited
-  participant_count: u32;     // Distinct mines that contributed
-  claim_count: u32;           // Mines that have attempted claim
+  prize_pool: u128; // SATOSHI allocated (base + rollover)
+  total_labor: u128; // Cumulative labor deposited
+  participant_count: u32; // Distinct mines that contributed
+  claim_count: u32; // Mines that have attempted claim
   reward_receiver_phase: u64; // See interpretation below
 }
 ```
 
 **`reward_receiver_phase` interpretation:**
+
 - `0` = Pending (lottery not yet complete) or burned (no qualifying phase found)
 - `phase_id` (same as key) = Winner found in this phase
 - Other value = Prize forwarded to that phase
@@ -58,7 +59,7 @@ interface BitcoinMinePhaseLabor {
   phase_id: u64;
   mine_id: ID;
   labor_contributed: u128;
-  claimed: bool;  // Has this mine attempted claim
+  claimed: bool; // Has this mine attempted claim
 }
 ```
 
@@ -73,7 +74,7 @@ Retrieved via `WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_co
 ```typescript
 interface BitcoinMineConfig {
   enabled: bool;
-  prize_per_phase: u128;           // Base SATOSHI prize per phase
+  prize_per_phase: u128; // Base SATOSHI prize per phase
   min_labor_per_contribution: u128; // Minimum labor per contribution (must be > 0)
 }
 ```
@@ -86,7 +87,7 @@ Phase timing is derived from `bitcoin_phase_in_seconds`:
 interface TickConfig {
   armies_tick_in_seconds: u64;
   delivery_tick_in_seconds: u64;
-  bitcoin_phase_in_seconds: u64;  // Default: 600 (10 minutes)
+  bitcoin_phase_in_seconds: u64; // Default: 600 (10 minutes)
 }
 ```
 
@@ -123,14 +124,15 @@ function hasContributionClosed(phaseId: number, phaseInterval: number): boolean 
 ### Valid Contribution Targets
 
 Players can contribute to:
+
 - Current phase (if window still open)
 - Up to 30 phases ahead (`MAX_FUTURE_PHASES = 30`)
 
 ```typescript
 function isValidTargetPhase(targetPhase: number, currentPhase: number): boolean {
-  if (targetPhase === 0) return false;  // Phase 0 is invalid
-  if (targetPhase < currentPhase) return false;  // No past phases
-  if (targetPhase > currentPhase + 30) return false;  // Max 30 ahead
+  if (targetPhase === 0) return false; // Phase 0 is invalid
+  if (targetPhase < currentPhase) return false; // No past phases
+  if (targetPhase > currentPhase + 30) return false; // Max 30 ahead
   return true;
 }
 ```
@@ -187,8 +189,7 @@ async function getPhaseInfo(phaseId: number) {
     isActive: phaseId >= currentPhase,
     contributionOpen: isContributionOpen(phaseId, phaseInterval),
     hasWinner: phaseLabor.reward_receiver_phase === phaseId,
-    wasForwarded: phaseLabor.reward_receiver_phase !== 0 &&
-                  phaseLabor.reward_receiver_phase !== phaseId,
+    wasForwarded: phaseLabor.reward_receiver_phase !== 0 && phaseLabor.reward_receiver_phase !== phaseId,
     endTime: getPhaseEndTime(phaseId, phaseInterval),
   };
 }
@@ -204,8 +205,8 @@ async function getMineContributionInfo(mineId: ID, phaseId: number) {
   return {
     laborContributed: minePhaseLabor.labor_contributed,
     claimed: minePhaseLabor.claimed,
-    contributionPercent: contributionBps / 100,  // Convert bps to percentage
-    winProbability: contributionBps / 10000,     // Convert bps to decimal
+    contributionPercent: contributionBps / 100, // Convert bps to percentage
+    winProbability: contributionBps / 10000, // Convert bps to decimal
   };
 }
 ```
@@ -213,11 +214,7 @@ async function getMineContributionInfo(mineId: ID, phaseId: number) {
 ### 3. Contribute Labor
 
 ```typescript
-async function contributeLabor(
-  mineId: ID,
-  targetPhaseId: number,
-  laborAmount: bigint
-) {
+async function contributeLabor(mineId: ID, targetPhaseId: number, laborAmount: bigint) {
   // Validations client should check before calling
   const currentPhase = await bitcoinMineSystem.get_current_phase();
   const config = await getConfig<BitcoinMineConfig>("bitcoin_mine_config");
@@ -326,7 +323,7 @@ function isJackpotPhase(phaseLabor: BitcoinPhaseLabor, basePrize: bigint): boole
 const SATOSHI_RESOURCE_TYPE = 58;
 const MAX_FUTURE_PHASES = 30;
 const MAX_ROLLOVER_PHASES = 6;
-const RESOURCE_PRECISION = 1_000_000_000_000_000_000n;  // 10^18
+const RESOURCE_PRECISION = 1_000_000_000_000_000_000n; // 10^18
 ```
 
 ---
@@ -392,21 +389,21 @@ subscription OnLotteryWinner {
 
 ## Error Handling
 
-| Error Message | Cause | Client Action |
-|--------------|-------|---------------|
-| "Bitcoin mine system is not enabled" | System disabled in config | Hide Bitcoin Mine UI |
-| "caller is not owner" | Non-owner trying to contribute | Check ownership |
-| "Structure is not a bitcoin mine" | Wrong structure type | Validate structure type |
-| "Phase ID must be greater than 0" | Invalid phase | Use phase >= 1 |
-| "Cannot contribute to past phase" | Phase already ended | Target current or future |
-| "Cannot contribute to phase more than 30 phases in the future" | Phase too far ahead | Limit phase selection |
-| "Contribution window has closed" | Phase ended | Target next phase |
-| "Labor amount must be > 0" | Zero contribution | Validate input |
-| "Labor below minimum contribution" | Below min threshold | Show minimum required |
-| "Not enough labor" | Insufficient balance | Show available labor |
-| "Phase has no participants" | Empty phase | Skip claim |
-| "Contribution window has not closed yet" | Too early to claim | Wait for phase end |
-| "phase ends after season" | Season ended | Disable contributions |
+| Error Message                                                  | Cause                          | Client Action            |
+| -------------------------------------------------------------- | ------------------------------ | ------------------------ |
+| "Bitcoin mine system is not enabled"                           | System disabled in config      | Hide Bitcoin Mine UI     |
+| "caller is not owner"                                          | Non-owner trying to contribute | Check ownership          |
+| "Structure is not a bitcoin mine"                              | Wrong structure type           | Validate structure type  |
+| "Phase ID must be greater than 0"                              | Invalid phase                  | Use phase >= 1           |
+| "Cannot contribute to past phase"                              | Phase already ended            | Target current or future |
+| "Cannot contribute to phase more than 30 phases in the future" | Phase too far ahead            | Limit phase selection    |
+| "Contribution window has closed"                               | Phase ended                    | Target next phase        |
+| "Labor amount must be > 0"                                     | Zero contribution              | Validate input           |
+| "Labor below minimum contribution"                             | Below min threshold            | Show minimum required    |
+| "Not enough labor"                                             | Insufficient balance           | Show available labor     |
+| "Phase has no participants"                                    | Empty phase                    | Skip claim               |
+| "Contribution window has not closed yet"                       | Too early to claim             | Wait for phase end       |
+| "phase ends after season"                                      | Season ended                   | Disable contributions    |
 
 ---
 
