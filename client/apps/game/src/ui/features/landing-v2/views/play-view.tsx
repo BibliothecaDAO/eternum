@@ -1,6 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { applyWorldSelection } from "@/runtime/world";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
@@ -21,7 +20,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { HeroTitle } from "../components/hero-title";
 import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
@@ -391,7 +390,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const [searchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as PlayTab) || "play";
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   // Modal state for game entry
   const [entryModalOpen, setEntryModalOpen] = useState(false);
@@ -413,7 +411,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const setModal = useUIStore((state) => state.setModal);
 
   const handleSelectGame = useCallback(
-    async (selection: WorldSelection) => {
+    (selection: WorldSelection) => {
       const hasAccount = Boolean(account) || isConnected;
 
       // Check if user needs to sign in before entering game
@@ -422,13 +420,13 @@ export const PlayView = ({ className }: PlayViewProps) => {
         return;
       }
 
-      // Apply world selection and navigate to game route
-      // The game route handles bootstrap, sync, settlement, and loading overlay
-      const chain = selection.chain ?? "mainnet";
-      await applyWorldSelection({ name: selection.name, chain }, chain);
-      navigate("/play");
+      // Open game entry modal - handles bootstrap, settlement, and game entry
+      setSelectedWorld(selection);
+      setIsSpectateMode(false);
+      setIsForgeMode(false);
+      setEntryModalOpen(true);
     },
-    [account, isConnected, setModal, navigate],
+    [account, isConnected, setModal],
   );
 
   const handleSpectate = useCallback((selection: WorldSelection) => {

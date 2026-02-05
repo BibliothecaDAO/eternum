@@ -1,0 +1,49 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePlayerStructures } from "@bibliothecadao/react";
+import { useEffect, useRef } from "react";
+
+const SAFETY_TIMEOUT_MS = 15_000;
+
+/**
+ * Simple loading overlay that replaces BlitzOnboarding.
+ * Shows while player structure data syncs into RECS after <World> mounts.
+ * Auto-dismisses once player structures are detected or after a safety timeout.
+ */
+export const GameLoadingOverlay = () => {
+  const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const playerStructures = usePlayerStructures();
+  const hasDismissed = useRef(false);
+
+  // Auto-dismiss when player structures are loaded into RECS
+  useEffect(() => {
+    if (hasDismissed.current) return;
+    if (playerStructures.length > 0) {
+      hasDismissed.current = true;
+      setShowBlankOverlay(false);
+    }
+  }, [playerStructures, setShowBlankOverlay]);
+
+  // Safety timeout: dismiss even if structures never load (e.g. spectator, error)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!hasDismissed.current) {
+        hasDismissed.current = true;
+        setShowBlankOverlay(false);
+      }
+    }, SAFETY_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [setShowBlankOverlay]);
+
+  return (
+    <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black">
+      <div className="flex flex-col items-center gap-6">
+        <img
+          src="/images/logos/eternum-loader.png"
+          className="w-32 sm:w-24 lg:w-24 xl:w-28 animate-pulse"
+          alt="Loading"
+        />
+        <p className="font-cinzel text-xl text-gold tracking-wider animate-pulse">Entering game...</p>
+      </div>
+    </div>
+  );
+};

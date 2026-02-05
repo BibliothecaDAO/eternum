@@ -658,7 +658,6 @@ export const GameEntryModal = ({
   const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
-  const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -1024,12 +1023,9 @@ export const GameEntryModal = ({
 
   // Enter game handler - sets up state and navigates to the game
   const handleEnterGame = useCallback(async () => {
-    // Hide the onboarding overlay since we're entering through the new flow
-    setShowBlankOverlay(false);
-
-    // Enable loading screen so the user sees a loading overlay while the game world mounts
-    // TransitionManager.fadeIn() will dismiss it once the Three.js scene is ready
-    useUIStore.getState().setIsLoadingScreenEnabled(true);
+    // Keep showBlankOverlay=true so the GameLoadingOverlay shows while
+    // player structure data syncs into RECS after <World> mounts.
+    // The GameLoadingOverlay will dismiss it once structures are loaded.
 
     // Default coordinates (world center)
     let col = 0;
@@ -1085,7 +1081,7 @@ export const GameEntryModal = ({
 
     // Dispatch urlChanged event to notify Three.js GameRenderer about the route change
     window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, isSpectateMode, setShowBlankOverlay, setupResult, account, worldName]);
+  }, [navigate, isSpectateMode, setupResult, account, worldName]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
