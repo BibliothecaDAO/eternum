@@ -258,6 +258,11 @@ const GameCard = ({
               <Play className="w-3 h-3" />
               Play
             </button>
+          ) : game.isRegistered === null && playerAddress ? (
+            // Loading state while checking registration status
+            <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
+              <Loader2 className="w-3 h-3 animate-spin" />
+            </div>
           ) : game.isRegistered === false && !registrationStage && canRegisterPeriod && playerAddress ? (
             <>
               {isRegistering ? (
