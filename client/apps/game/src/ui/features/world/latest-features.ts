@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-02-05",
+    title: "Markets Page Redesign",
+    description:
+      "The markets section now features a split-panel layout with Active Markets and Past Markets side by side on desktop. The new TrendingUp icon makes markets easier to find, and the responsive design adapts to mobile with tab navigation.",
+    type: "improvement",
+  },
+  {
+    date: "2026-02-05",
     title: "Inline Game Registration",
     description:
       "Register for games directly from the landing page without navigating away. See registration progress, fee info in LORDS, and get instant confirmation with success toasts. Ranked games now show a trophy badge to distinguish them from sandbox games.",

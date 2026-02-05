@@ -1,4 +1,4 @@
-import { Home, Trophy, Store, User, type LucideIcon } from "lucide-react";
+import { Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
 
 export type SectionId = "home" | "leaderboard" | "markets" | "profile";
 
@@ -43,7 +43,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
   {
     id: "markets",
     label: "Markets",
-    icon: Store,
+    icon: TrendingUp,
     basePath: "/markets",
     subMenu: [
       { id: "live", label: "LIVE", tab: null },

@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Home, Settings, ShoppingCart, Trophy, User } from "lucide-react";
+import { Home, Settings, TrendingUp, Trophy, User } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 interface NavItem {
@@ -13,7 +13,7 @@ const navItems: NavItem[] = [
   { icon: Home, label: "Play", path: "/" },
   { icon: Trophy, label: "Ranks", path: "/leaderboard" },
   { icon: User, label: "Profile", path: "/profile" },
-  { icon: ShoppingCart, label: "Markets", path: "/markets" },
+  { icon: TrendingUp, label: "Markets", path: "/markets" },
 ];
 
 interface MobileBottomNavProps {
