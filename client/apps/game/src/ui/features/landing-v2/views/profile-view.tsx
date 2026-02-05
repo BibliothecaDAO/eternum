@@ -59,14 +59,5 @@ export const ProfileView = ({ className }: ProfileViewProps) => {
     }
   };
 
-  return (
-    <div
-      className={cn(
-        "h-[85vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl",
-        className,
-      )}
-    >
-      {renderContent()}
-    </div>
-  );
+  return <div className={cn("flex w-full max-w-6xl flex-col", className)}>{renderContent()}</div>;
 };

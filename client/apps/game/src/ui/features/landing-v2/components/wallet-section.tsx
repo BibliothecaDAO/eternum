@@ -140,22 +140,24 @@ export const WalletSection = () => {
 
   if (!isConnected || !address) {
     return (
-      <div className="flex h-full flex-col items-center justify-center py-16 text-center">
-        <p className="text-lg text-gold/60">Connect your wallet to view balances</p>
-      </div>
+      <section className="w-full max-w-4xl rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-lg text-gold/60">Connect your wallet to view balances</p>
+        </div>
+      </section>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <section className="w-full max-w-4xl space-y-6 rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gold/10 pb-6">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-gold/30 to-gold/10">
-            <span className="text-lg font-bold text-gold">{address.slice(2, 4).toUpperCase()}</span>
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-gold/30 to-gold/10">
+            <span className="text-xl font-bold text-gold">{address.slice(2, 4).toUpperCase()}</span>
           </div>
           <div>
-            <p className="text-lg font-medium text-gold">{displayAddress(address)}</p>
+            <p className="text-xl font-medium text-gold">{displayAddress(address)}</p>
             <p className="text-sm text-gold/50">Starknet Mainnet</p>
           </div>
         </div>
@@ -163,14 +165,14 @@ export const WalletSection = () => {
           type="button"
           onClick={() => void fetchAllBalances()}
           disabled={isLoading}
-          className="rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:bg-gold/20 disabled:opacity-50"
+          className="rounded-xl border border-gold/30 bg-gold/10 px-5 py-2.5 text-sm font-medium text-gold transition hover:bg-gold/20 disabled:opacity-50"
         >
           {isLoading ? "Loading..." : "Refresh"}
         </button>
       </div>
 
       {/* Token balances */}
-      <div className="flex-1 space-y-4 py-6">
+      <div className="space-y-4">
         <h3 className="text-sm font-medium uppercase tracking-wider text-gold/50">Token Balances</h3>
         <div className="grid gap-4 sm:grid-cols-3">
           {MAINNET_TOKENS.map((token) => {
@@ -178,20 +180,20 @@ export const WalletSection = () => {
             return (
               <div
                 key={token.symbol}
-                className="rounded-xl border border-gold/10 bg-black/30 p-4 transition hover:border-gold/20"
+                className="rounded-2xl border border-gold/10 bg-black/40 p-5 transition hover:border-gold/20"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-sm font-bold text-gold">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 text-base font-bold text-gold">
                     {token.symbol.slice(0, 2)}
                   </div>
                   <div>
                     <p className="text-sm text-gold/60">{token.symbol}</p>
                     {balance?.isLoading ? (
-                      <p className="text-lg font-semibold text-gold/50">...</p>
+                      <p className="text-2xl font-semibold text-gold/50">...</p>
                     ) : balance?.error ? (
                       <p className="text-sm text-red-400/70">Error</p>
                     ) : (
-                      <p className="text-xl font-semibold text-gold">{balance?.balance || "0.00"}</p>
+                      <p className="text-2xl font-semibold text-gold">{balance?.balance || "0.00"}</p>
                     )}
                   </div>
                 </div>
@@ -202,16 +204,14 @@ export const WalletSection = () => {
       </div>
 
       {/* Actions */}
-      <div className="border-t border-gold/10 pt-6">
-        <a
-          href={`https://voyager.online/contract/${address}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full rounded-xl border border-gold/20 bg-gold/5 py-3 text-center text-sm font-medium text-gold/70 transition hover:bg-gold/10 hover:text-gold"
-        >
-          View on Voyager Explorer
-        </a>
-      </div>
-    </div>
+      <a
+        href={`https://voyager.online/contract/${address}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block w-full rounded-xl border border-gold/20 bg-gold/5 py-4 text-center font-medium text-gold/70 transition hover:bg-gold/10 hover:text-gold"
+      >
+        View on Voyager Explorer
+      </a>
+    </section>
   );
 };
