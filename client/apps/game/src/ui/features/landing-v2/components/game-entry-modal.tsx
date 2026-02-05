@@ -22,9 +22,13 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import type { Chain } from "@contracts";
 
-const DEBUG_MODAL = true;
-const debugLog = (...args: unknown[]) => {
-  if (DEBUG_MODAL) console.log("[GameEntryModal]", ...args);
+const DEBUG_MODAL = false; // Set to true to enable debug logging
+const DEBUG_WORLD = "test-doom-sand-98"; // Log extra details for this specific world
+
+const debugLog = (worldName: string | null, ...args: unknown[]) => {
+  if (DEBUG_MODAL || worldName === DEBUG_WORLD) {
+    console.log("[GameEntryModal]", ...args);
+  }
 };
 
 // Types
@@ -528,10 +532,12 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
   const [assignedRealmCount, setAssignedRealmCount] = useState(0);
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
+  const [settlementCheckComplete, setSettlementCheckComplete] = useState(false);
 
   // Hyperstructure state
   const [hyperstructures, setHyperstructures] = useState<HyperstructureInfo[]>([]);
   const [needsHyperstructureInit, setNeedsHyperstructureInit] = useState(false);
+  const [hyperstructureCheckComplete, setHyperstructureCheckComplete] = useState(false);
   const [isInitializingHyperstructure, setIsInitializingHyperstructure] = useState(false);
   const [currentInitializingId, setCurrentInitializingId] = useState<number | null>(null);
 
@@ -557,6 +563,9 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     return Math.min(99, Math.round(completed));
   }, [bootstrapStatus, tasks, syncProgress]);
 
+  // Both checks must complete before we can determine the final phase
+  const checksComplete = settlementCheckComplete && hyperstructureCheckComplete;
+
   // Determine current phase
   const phase: ModalPhase = useMemo(() => {
     let result: ModalPhase;
@@ -566,7 +575,11 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       result = "loading";
     } else if (isSpectateMode) {
       result = "ready";
+    } else if (!checksComplete) {
+      // Still checking settlement/hyperstructure status - stay in loading
+      result = "loading";
     } else if (needsHyperstructureInit) {
+      // Hyperstructure init takes priority over settlement
       result = "hyperstructure";
     } else if (needsSettlement) {
       result = "settlement";
@@ -574,16 +587,29 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       result = "ready";
     }
 
-    debugLog("Phase determined:", result, {
+    debugLog(worldName, "Phase determined:", result, {
       bootstrapStatus,
       hasError: !!bootstrapError,
       isSpectateMode,
+      checksComplete,
+      settlementCheckComplete,
+      hyperstructureCheckComplete,
       needsHyperstructureInit,
       needsSettlement,
     });
 
     return result;
-  }, [bootstrapStatus, bootstrapError, isSpectateMode, needsHyperstructureInit, needsSettlement]);
+  }, [
+    bootstrapStatus,
+    bootstrapError,
+    isSpectateMode,
+    checksComplete,
+    settlementCheckComplete,
+    hyperstructureCheckComplete,
+    needsHyperstructureInit,
+    needsSettlement,
+    worldName,
+  ]);
 
   // Check settlement status after bootstrap completes
   useEffect(() => {
@@ -1032,17 +1058,17 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     }
   }, [setupResult, account, hyperstructures]);
 
-  // Auto-enter game when ready (spectate mode or already settled)
+  // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
     debugLog("Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
-    if (phase === "ready" && isSpectateMode) {
-      debugLog("Auto-entering game in spectate mode...");
+    if (phase === "ready") {
+      debugLog("Auto-entering game...");
       const timer = setTimeout(() => {
         handleEnterGame();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [phase, isSpectateMode, handleEnterGame]);
+  }, [phase, handleEnterGame]);
 
   debugLog("Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
 
