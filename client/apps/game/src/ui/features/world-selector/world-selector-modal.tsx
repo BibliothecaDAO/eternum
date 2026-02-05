@@ -27,7 +27,33 @@ import UserX from "lucide-react/dist/esm/icons/user-x";
 import Users from "lucide-react/dist/esm/icons/users";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chain } from "@contracts";
+import Zap from "lucide-react/dist/esm/icons/zap";
 import { env } from "../../../../env";
+
+type GameType = "blitz" | "sandbox" | null;
+
+const getGameType = (config: WorldConfigMeta | null): GameType => {
+  if (!config) return null;
+  // If MMR is enabled, it's a ranked Blitz game; otherwise it's Sandbox
+  return config.mmrEnabled ? "blitz" : "sandbox";
+};
+
+const GameTypeBadge = ({ type }: { type: GameType }) => {
+  if (!type) return null;
+  if (type === "blitz") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-orange/40 bg-orange/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-orange">
+        <Zap className="w-2.5 h-2.5" />
+        Ranked
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full border border-gold/20 bg-gold/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gold/50">
+      Sandbox
+    </span>
+  );
+};
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -92,6 +118,7 @@ type WorldMeta = {
   registrationCount: number | null;
   isRegistered: boolean | null;
   registrationCheckedFor: string | null;
+  config: WorldConfigMeta | null;
 };
 
 export type WorldSelection = WorldSelectionInput;
@@ -342,6 +369,7 @@ export const WorldSelectorModal = ({
           registrationCount: availability.meta.registrationCount,
           isRegistered: playerRegistration[world.worldKey] ?? null,
           registrationCheckedFor: playerAddress?.toLowerCase() ?? null,
+          config: availability.meta,
         };
       }
     });
@@ -483,6 +511,7 @@ export const WorldSelectorModal = ({
     const gameIsEnded = isEnded(fg.startMainAt, fg.endAt);
     const isInteractive = isOnline;
     const isSelected = selectedFactory ? getWorldKey(selectedFactory) === fg.worldKey : false;
+    const gameType = getGameType(fg.config);
 
     return (
       <div
@@ -524,6 +553,7 @@ export const WorldSelectorModal = ({
               >
                 {fg.chain}
               </span>
+              <GameTypeBadge type={gameType} />
               {isSelected && (
                 <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
                   <Check className="w-3 h-3 text-gold" />
@@ -781,13 +811,25 @@ export const WorldSelectorModal = ({
                     </div>
                   ) : (
                     (() => {
+                      // Sort helper: blitz games come before sandbox, then by secondary criteria
+                      const blitzFirst = (a: FactoryGameDisplay, b: FactoryGameDisplay): number => {
+                        const aType = getGameType(a.config);
+                        const bType = getGameType(b.config);
+                        if (aType === "blitz" && bType !== "blitz") return -1;
+                        if (aType !== "blitz" && bType === "blitz") return 1;
+                        return 0;
+                      };
+
                       const online = factoryGames.filter((fg) => fg.status === "ok");
                       const upcoming = online
                         .filter((fg) => isUpcoming(fg.startMainAt))
-                        .toSorted((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
+                        .toSorted((a, b) => blitzFirst(a, b) || (a.startMainAt as number) - (b.startMainAt as number));
                       const ongoing = online
                         .filter((fg) => isOngoing(fg.startMainAt, fg.endAt))
                         .toSorted((a, b) => {
+                          // Blitz games first
+                          const typeOrder = blitzFirst(a, b);
+                          if (typeOrder !== 0) return typeOrder;
                           // Infinite games (endAt === 0 or null) should be sorted by start time
                           if ((a.endAt === 0 || a.endAt == null) && (b.endAt === 0 || b.endAt == null)) {
                             return (a.startMainAt as number) - (b.startMainAt as number);
@@ -799,7 +841,7 @@ export const WorldSelectorModal = ({
                         });
                       const ended = online
                         .filter((fg) => isEnded(fg.startMainAt, fg.endAt))
-                        .toSorted((a, b) => (b.endAt as number) - (a.endAt as number));
+                        .toSorted((a, b) => blitzFirst(a, b) || (b.endAt as number) - (a.endAt as number));
                       const unknown = online
                         .filter((fg) => fg.startMainAt == null)
                         .toSorted((a, b) => a.name.localeCompare(b.name));
@@ -927,16 +969,29 @@ export const WorldSelectorModal = ({
                     };
                   });
 
+                  // Sort helper: blitz games before sandbox within each category
+                  const savedBlitzFirst = (
+                    a: (typeof categorized)[number],
+                    b: (typeof categorized)[number],
+                  ): number => {
+                    const aType = getGameType(a.meta?.config ?? null);
+                    const bType = getGameType(b.meta?.config ?? null);
+                    if (aType === "blitz" && bType !== "blitz") return -1;
+                    if (aType !== "blitz" && bType === "blitz") return 1;
+                    return 0;
+                  };
+
                   // Sort: live (ongoing) first, then upcoming, then ended, then others
-                  const live = categorized.filter((g) => g.isOngoing);
-                  const upcoming = categorized.filter((g) => g.isUpcoming);
-                  const ended = categorized.filter((g) => g.isEnded);
+                  const live = categorized.filter((g) => g.isOngoing).toSorted(savedBlitzFirst);
+                  const upcoming = categorized.filter((g) => g.isUpcoming).toSorted(savedBlitzFirst);
+                  const ended = categorized.filter((g) => g.isEnded).toSorted(savedBlitzFirst);
                   const others = categorized.filter((g) => !g.isOngoing && !g.isUpcoming && !g.isEnded);
 
                   const sorted = [...live, ...upcoming, ...ended, ...others];
 
                   return sorted.map(({ name: s, chain, isOnline, isEnded: gameIsEnded, meta }) => {
                     const isChainMatch = chain ? normalizeFactoryChain(chain) === activeFactoryChain : true;
+                    const savedGameType = getGameType(meta?.config ?? null);
                     return (
                       <div
                         key={s}
@@ -977,6 +1032,7 @@ export const WorldSelectorModal = ({
                                   {chain}
                                 </span>
                               )}
+                              <GameTypeBadge type={savedGameType} />
                               {selected === s && (
                                 <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
                                   <Check className="w-3 h-3 text-gold" />

@@ -7,7 +7,7 @@ import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { useQuery, useQueries } from "@tanstack/react-query";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -57,6 +57,8 @@ export interface WorldConfigMeta {
   feeAmount: bigint;
   registrationStartAt: number | null;
   registrationEndAt: number | null;
+  // MMR
+  mmrEnabled: boolean;
 }
 
 interface WorldRef {
@@ -90,6 +92,7 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string): Promise<WorldConfigMe
     feeAmount: 0n,
     registrationStartAt: null,
     registrationEndAt: null,
+    mmrEnabled: false,
   };
 
   try {
@@ -109,6 +112,10 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string): Promise<WorldConfigMe
         meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
       if (row.registration_end_at != null)
         meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
+      if (row.mmr_enabled != null) {
+        const mmrVal = parseMaybeHexToNumber(row.mmr_enabled);
+        meta.mmrEnabled = mmrVal != null && mmrVal !== 0;
+      }
     }
   } catch {
     // ignore fetch errors; caller handles defaults
