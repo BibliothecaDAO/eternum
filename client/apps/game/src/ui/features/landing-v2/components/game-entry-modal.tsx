@@ -20,8 +20,6 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
-import { getStructuresDataFromTorii } from "@/dojo/queries";
-import { sqlApi } from "@/services/api";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import type { Chain } from "@contracts";
@@ -973,30 +971,6 @@ export const GameEntryModal = ({
         updateTask("manifest", "running");
         const result = await bootstrapGame();
         debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
-
-        // Prefetch player's structure and building data into RECS before entering game
-        // This prevents the empty realm flash when hex scene mounts before usePlayerStructureSync runs
-        const currentAccount = useAccountStore.getState().account;
-        if (currentAccount?.address && !isSpectateMode) {
-          try {
-            debugLog(worldName, "Prefetching player structure data...");
-            const structures = await sqlApi.fetchStructuresByOwner(currentAccount.address);
-            if (structures.length > 0) {
-              await getStructuresDataFromTorii(
-                result.network.toriiClient,
-                result.network.contractComponents as never,
-                structures.map((s) => ({
-                  entityId: s.entity_id,
-                  position: { col: s.coord_x, row: s.coord_y },
-                })),
-              );
-              debugLog(worldName, "Player structure data prefetched:", structures.length, "structures");
-            }
-          } catch (error) {
-            // Non-fatal: buildings will load eventually via usePlayerStructureSync
-            debugLog(worldName, "Failed to prefetch player structures (non-fatal):", error);
-          }
-        }
 
         // Mark all tasks complete
         setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
