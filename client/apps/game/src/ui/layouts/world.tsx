@@ -1,4 +1,3 @@
-import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { Leva } from "leva";
 import { env } from "../../../env";
@@ -62,7 +61,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 const BackgroundSystems = () => (
   <>
     <StoreManagers />
-    <StructureSynchronizer />
     <BlockTimestampPoller />
     <ChainTimePoller />
     <NotLoggedInMessage />
@@ -73,11 +71,6 @@ const BackgroundSystems = () => (
     <ExplorationAutomationManager />
   </>
 );
-
-const StructureSynchronizer = () => {
-  useSyncPlayerStructures();
-  return null;
-};
 
 /**
  * Core game systems that render interactive content.
