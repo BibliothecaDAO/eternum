@@ -97,40 +97,46 @@ export const LandingPlayer = () => {
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }, [myAvatar?.nextResetAt]);
 
-  // Reset MMR when world changes
-  useEffect(() => {
-    setPlayerMMR(null);
-  }, [worldSelection.toriiBaseUrl]);
-
   // Fetch player MMR from the current world
-  const fetchPlayerMMR = useCallback(
-    async (address: string, worldNameOverride?: string) => {
-      const worldName = worldNameOverride || worldSelection.selectedWorld;
-      if (!worldName || !address) {
-        return;
-      }
+  useEffect(() => {
+    if (!playerAddress) {
+      setPlayerMMR(null);
+      setIsLoadingMMR(false);
+      return;
+    }
 
+    const worldName = worldSelection.selectedWorld;
+    if (!worldName) {
+      setPlayerMMR(null);
+      setIsLoadingMMR(false);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchMMR = async () => {
       const toriiUrl = `https://api.cartridge.gg/x/${worldName}/torii`;
+      const rpcUrl = `https://api.cartridge.gg/x/${worldName}/katana`;
 
       setIsLoadingMMR(true);
+      setPlayerMMR(null);
+
       try {
         // 1. Fetch MMR token address from WorldConfig
         const configUrl = `${toriiUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
         const configResponse = await fetch(configUrl);
-        if (!configResponse.ok) {
-          setIsLoadingMMR(false);
+        if (!configResponse.ok || cancelled) {
+          if (!cancelled) setIsLoadingMMR(false);
           return;
         }
         const [configRow] = (await configResponse.json()) as Record<string, unknown>[];
         const mmrTokenAddressRaw = parseMaybeHexToBigInt(configRow?.mmr_token_address);
-        if (!mmrTokenAddressRaw || mmrTokenAddressRaw === 0n) {
-          setIsLoadingMMR(false);
+        if (!mmrTokenAddressRaw || mmrTokenAddressRaw === 0n || cancelled) {
+          if (!cancelled) setIsLoadingMMR(false);
           return;
         }
         const mmrTokenAddress = toHexString(mmrTokenAddressRaw);
 
         // 2. Fetch player's MMR via JSON-RPC
-        const rpcUrl = `https://api.cartridge.gg/x/${worldName}/katana`;
         const rpcResponse = await fetch(rpcUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -142,19 +148,21 @@ export const LandingPlayer = () => {
               {
                 contract_address: mmrTokenAddress,
                 entry_point_selector: GET_PLAYER_MMR_SELECTOR,
-                calldata: [address],
+                calldata: [playerAddress],
               },
               "pending",
             ],
           }),
         });
 
-        if (!rpcResponse.ok) {
-          setIsLoadingMMR(false);
+        if (!rpcResponse.ok || cancelled) {
+          if (!cancelled) setIsLoadingMMR(false);
           return;
         }
 
         const rpcResult = await rpcResponse.json();
+        if (cancelled) return;
+
         if (rpcResult.error || !rpcResult.result) {
           setIsLoadingMMR(false);
           return;
@@ -169,21 +177,16 @@ export const LandingPlayer = () => {
         setIsLoadingMMR(false);
       } catch (e) {
         console.warn("Failed to fetch player MMR:", e);
-        setIsLoadingMMR(false);
+        if (!cancelled) setIsLoadingMMR(false);
       }
-    },
-    [worldSelection.selectedWorld],
-  );
+    };
 
-  // Fetch MMR when player address or world changes
-  useEffect(() => {
-    if (!playerAddress) return;
+    void fetchMMR();
 
-    const worldName = worldSelection.selectedWorld || worldSelection.availableWorlds[0]?.name;
-    if (worldName) {
-      void fetchPlayerMMR(playerAddress, worldName);
-    }
-  }, [playerAddress, worldSelection.selectedWorld, worldSelection.availableWorlds, fetchPlayerMMR]);
+    return () => {
+      cancelled = true;
+    };
+  }, [playerAddress, worldSelection.selectedWorld]);
 
   // Format MMR for display (convert from token units with 18 decimals)
   const formattedMMR = useMemo(() => {

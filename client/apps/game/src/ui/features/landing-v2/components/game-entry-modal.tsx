@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Eye, Loader2, Check, AlertCircle, RefreshCw, Castle, MapPin, Pickaxe } from "lucide-react";
+import { X, Play, Eye, Loader2, Check, AlertCircle, RefreshCw, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import type { SetupResult } from "@/init/bootstrap";
@@ -31,7 +31,14 @@ const debugLog = (...args: unknown[]) => {
 type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 type BootstrapTask = { id: string; label: string; status: "pending" | "running" | "complete" | "error" };
 type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
-type ModalPhase = "loading" | "settlement" | "ready" | "error";
+type ModalPhase = "loading" | "hyperstructure" | "settlement" | "ready" | "error";
+
+// Hyperstructure info type
+type HyperstructureInfo = {
+  entityId: number;
+  initialized: boolean;
+  name: string;
+};
 
 interface GameEntryModalProps {
   isOpen: boolean;
@@ -351,6 +358,156 @@ const SettlementPhase = ({
 };
 
 /**
+ * Hyperstructure initialization phase - shows hyperstructures that need to be initialized
+ */
+const HyperstructurePhase = ({
+  hyperstructures,
+  isInitializing,
+  currentInitializingId,
+  onInitialize,
+  onInitializeAll,
+}: {
+  hyperstructures: HyperstructureInfo[];
+  isInitializing: boolean;
+  currentInitializingId: number | null;
+  onInitialize: (entityId: number) => void;
+  onInitializeAll: () => void;
+}) => {
+  const uninitializedCount = hyperstructures.filter((h) => !h.initialized).length;
+  const initializedCount = hyperstructures.length - uninitializedCount;
+  const progress = hyperstructures.length > 0 ? (initializedCount / hyperstructures.length) * 100 : 0;
+  const allInitialized = uninitializedCount === 0;
+
+  return (
+    <div className="flex flex-col">
+      <div className="text-center mb-4">
+        <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-amber-400" />
+        </div>
+        <h2 className="text-lg font-semibold text-gold">
+          {allInitialized ? "Hyperstructures Ready!" : "Initialize Hyperstructures"}
+        </h2>
+        <p className="text-xs text-gold/60 mt-1">
+          {allInitialized
+            ? "All hyperstructures have been activated. Ready to settle!"
+            : "Hyperstructures must be activated before you can settle your realms"}
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-2 mb-4">
+        <div className="h-2 bg-brown/50 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-amber-500/80 to-amber-400 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gold/70">
+          <span>
+            {initializedCount} / {hyperstructures.length} initialized
+          </span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+      </div>
+
+      {/* Hyperstructure list */}
+      {!allInitialized && (
+        <div className="space-y-2 mb-4 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          {hyperstructures.map((hs) => (
+            <div
+              key={hs.entityId}
+              className={cn(
+                "flex items-center justify-between gap-2 p-2 rounded-lg transition-colors",
+                hs.initialized
+                  ? "bg-emerald-500/10 border border-emerald-500/20"
+                  : currentInitializingId === hs.entityId
+                    ? "bg-amber-500/10 border border-amber-500/30"
+                    : "bg-white/5 border border-white/10",
+              )}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className={cn(
+                    "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center",
+                    hs.initialized
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : currentInitializingId === hs.entityId
+                        ? "bg-amber-500/20 text-amber-400"
+                        : "bg-brown/30 text-gold/50",
+                  )}
+                >
+                  {hs.initialized ? (
+                    <Check className="w-3 h-3" />
+                  ) : currentInitializingId === hs.entityId ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3 h-3" />
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-sm truncate",
+                    hs.initialized
+                      ? "text-emerald-400"
+                      : currentInitializingId === hs.entityId
+                        ? "text-amber-400"
+                        : "text-gold/70",
+                  )}
+                >
+                  {hs.name}
+                </span>
+              </div>
+              {!hs.initialized && currentInitializingId !== hs.entityId && (
+                <Button
+                  onClick={() => onInitialize(hs.entityId)}
+                  disabled={isInitializing}
+                  variant="outline"
+                  size="xs"
+                  className="flex-shrink-0"
+                >
+                  Initialize
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action button */}
+      {!allInitialized && uninitializedCount > 1 && (
+        <Button
+          onClick={onInitializeAll}
+          disabled={isInitializing}
+          className="w-full h-11 !text-brown !bg-gold rounded-md mb-2"
+          forceUppercase={false}
+        >
+          {isInitializing ? (
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Initializing...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span>Initialize All ({uninitializedCount})</span>
+            </div>
+          )}
+        </Button>
+      )}
+
+      {allInitialized && (
+        <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm">
+          <Check className="w-4 h-4" />
+          <span>Proceeding to settlement...</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
  * Main GameEntryModal component
  */
 export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMode = false }: GameEntryModalProps) => {
@@ -371,6 +528,12 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
   const [assignedRealmCount, setAssignedRealmCount] = useState(0);
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
+
+  // Hyperstructure state
+  const [hyperstructures, setHyperstructures] = useState<HyperstructureInfo[]>([]);
+  const [needsHyperstructureInit, setNeedsHyperstructureInit] = useState(false);
+  const [isInitializingHyperstructure, setIsInitializingHyperstructure] = useState(false);
+  const [currentInitializingId, setCurrentInitializingId] = useState<number | null>(null);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -403,6 +566,8 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       result = "loading";
     } else if (isSpectateMode) {
       result = "ready";
+    } else if (needsHyperstructureInit) {
+      result = "hyperstructure";
     } else if (needsSettlement) {
       result = "settlement";
     } else {
@@ -413,11 +578,12 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       bootstrapStatus,
       hasError: !!bootstrapError,
       isSpectateMode,
+      needsHyperstructureInit,
       needsSettlement,
     });
 
     return result;
-  }, [bootstrapStatus, bootstrapError, isSpectateMode, needsSettlement]);
+  }, [bootstrapStatus, bootstrapError, isSpectateMode, needsHyperstructureInit, needsSettlement]);
 
   // Check settlement status after bootstrap completes
   useEffect(() => {
@@ -499,6 +665,71 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
 
     checkSettlementStatus();
   }, [bootstrapStatus, setupResult, account, isSpectateMode]);
+
+  // Check hyperstructure initialization status after bootstrap completes
+  useEffect(() => {
+    debugLog(
+      "Hyperstructure check effect - bootstrapStatus:",
+      bootstrapStatus,
+      "hasSetupResult:",
+      !!setupResult,
+      "isSpectateMode:",
+      isSpectateMode,
+    );
+
+    if (bootstrapStatus !== "ready" || !setupResult || isSpectateMode) {
+      debugLog("Skipping hyperstructure check");
+      return;
+    }
+
+    const checkHyperstructures = async () => {
+      debugLog("Running hyperstructure status check...");
+      try {
+        const { components } = setupResult;
+
+        // Import Dojo utilities
+        const { getHyperstructureProgress, getHyperstructureName } = await import("@bibliothecadao/eternum");
+        const { getComponentValue, Has, runQuery } = await import("@dojoengine/recs");
+
+        // Get all hyperstructures
+        const hyperstructureEntities = runQuery([Has(components.Hyperstructure)]);
+        debugLog("Found hyperstructure entities:", hyperstructureEntities.size);
+
+        const hsInfoList: HyperstructureInfo[] = [];
+
+        for (const entity of hyperstructureEntities) {
+          const structure = getComponentValue(components.Structure, entity);
+          if (!structure) continue;
+
+          const entityId = Number(structure.entity_id);
+          const progress = getHyperstructureProgress(entityId, components);
+          const name = getHyperstructureName(structure);
+
+          hsInfoList.push({
+            entityId,
+            initialized: progress.initialized,
+            name,
+          });
+        }
+
+        debugLog("Hyperstructure info:", hsInfoList);
+        setHyperstructures(hsInfoList);
+
+        // Check if any hyperstructures need initialization
+        const uninitializedCount = hsInfoList.filter((h) => !h.initialized).length;
+        const needsInit = uninitializedCount > 0;
+
+        debugLog("Hyperstructures need initialization:", needsInit, "uninitialized count:", uninitializedCount);
+        setNeedsHyperstructureInit(needsInit);
+      } catch (error) {
+        debugLog("Failed to check hyperstructure status:", error);
+        // On error, assume no initialization needed
+        setNeedsHyperstructureInit(false);
+      }
+    };
+
+    checkHyperstructures();
+  }, [bootstrapStatus, setupResult, isSpectateMode]);
 
   // Start bootstrap when modal opens
   useEffect(() => {
@@ -657,6 +888,85 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     }
   }, [setupResult, account, handleEnterGame]);
 
+  // Initialize a single hyperstructure
+  const handleInitializeHyperstructure = useCallback(
+    async (entityId: number) => {
+      debugLog("handleInitializeHyperstructure called for entityId:", entityId);
+      if (!setupResult || !account) return;
+
+      setIsInitializingHyperstructure(true);
+      setCurrentInitializingId(entityId);
+
+      try {
+        const { systemCalls } = setupResult;
+
+        await systemCalls.initialize_hyperstructure({
+          signer: account,
+          hyperstructure_id: entityId,
+        });
+
+        debugLog("Hyperstructure initialized:", entityId);
+
+        // Update local state
+        setHyperstructures((prev) => prev.map((h) => (h.entityId === entityId ? { ...h, initialized: true } : h)));
+
+        // Check if all are now initialized
+        const remaining = hyperstructures.filter((h) => !h.initialized && h.entityId !== entityId);
+        if (remaining.length === 0) {
+          debugLog("All hyperstructures initialized!");
+          setNeedsHyperstructureInit(false);
+        }
+      } catch (error) {
+        debugLog("Failed to initialize hyperstructure:", error);
+      } finally {
+        setIsInitializingHyperstructure(false);
+        setCurrentInitializingId(null);
+      }
+    },
+    [setupResult, account, hyperstructures],
+  );
+
+  // Initialize all hyperstructures
+  const handleInitializeAllHyperstructures = useCallback(async () => {
+    debugLog("handleInitializeAllHyperstructures called");
+    if (!setupResult || !account) return;
+
+    const uninitialized = hyperstructures.filter((h) => !h.initialized);
+    if (uninitialized.length === 0) return;
+
+    setIsInitializingHyperstructure(true);
+
+    try {
+      const { systemCalls } = setupResult;
+
+      for (const hs of uninitialized) {
+        setCurrentInitializingId(hs.entityId);
+        debugLog("Initializing hyperstructure:", hs.entityId);
+
+        try {
+          await systemCalls.initialize_hyperstructure({
+            signer: account,
+            hyperstructure_id: hs.entityId,
+          });
+
+          // Update local state
+          setHyperstructures((prev) => prev.map((h) => (h.entityId === hs.entityId ? { ...h, initialized: true } : h)));
+        } catch (error) {
+          debugLog("Failed to initialize hyperstructure:", hs.entityId, error);
+          // Continue with next hyperstructure even if one fails
+        }
+      }
+
+      debugLog("All hyperstructures initialization complete!");
+      setNeedsHyperstructureInit(false);
+    } catch (error) {
+      debugLog("Failed to initialize hyperstructures:", error);
+    } finally {
+      setIsInitializingHyperstructure(false);
+      setCurrentInitializingId(null);
+    }
+  }, [setupResult, account, hyperstructures]);
+
   // Auto-enter game when ready (spectate mode or already settled)
   useEffect(() => {
     debugLog("Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
@@ -720,6 +1030,17 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <LoadingPhase tasks={tasks} progress={progress} error={bootstrapError} onRetry={handleRetry} />
+              </motion.div>
+            )}
+            {phase === "hyperstructure" && (
+              <motion.div key="hyperstructure" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <HyperstructurePhase
+                  hyperstructures={hyperstructures}
+                  isInitializing={isInitializingHyperstructure}
+                  currentInitializingId={currentInitializingId}
+                  onInitialize={handleInitializeHyperstructure}
+                  onInitializeAll={handleInitializeAllHyperstructures}
+                />
               </motion.div>
             )}
             {phase === "settlement" && (
