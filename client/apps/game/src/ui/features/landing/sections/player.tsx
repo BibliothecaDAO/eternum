@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
@@ -14,21 +14,10 @@ import {
 import TextInput from "@/ui/design-system/atoms/text-input";
 
 import { Button } from "@/ui/design-system/atoms";
-import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
-import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
-import {
-  BLITZ_CARD_DIMENSIONS,
-  BLITZ_DEFAULT_SHARE_ORIGIN,
-  BlitzHighlightPlayer,
-  buildBlitzShareMessage,
-} from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
-import { toPng } from "html-to-image";
-import Copy from "lucide-react/dist/esm/icons/copy";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import Share2 from "lucide-react/dist/esm/icons/share-2";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
@@ -36,12 +25,6 @@ import { toast } from "sonner";
 import { hash } from "starknet";
 
 import { LandingWorldSelector } from "../components/landing-world-selector";
-import {
-  fetchLandingLeaderboard,
-  fetchLandingLeaderboardEntryByAddress,
-  type LandingLeaderboardEntry,
-} from "../lib/landing-leaderboard-service";
-import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
 import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
 
 // MMR fetching utilities
@@ -70,42 +53,10 @@ const toHexString = (value: bigint | number | string): string => {
   return `0x${BigInt(value).toString(16)}`;
 };
 
-const getDisplayName = (entry: LandingLeaderboardEntry): string => {
-  const candidate = entry.displayName?.trim();
-  if (candidate) {
-    return candidate;
-  }
-
-  return displayAddress(entry.address);
-};
-
-const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer => ({
-  rank: entry.rank,
-  name: getDisplayName(entry),
-  points: entry.points,
-  address: entry.address,
-  exploredTiles: entry.exploredTiles ?? null,
-  exploredTilePoints: entry.exploredTilePoints ?? null,
-  riftsTaken: entry.riftsTaken ?? null,
-  riftPoints: entry.riftPoints ?? null,
-  hyperstructuresConquered: entry.hyperstructuresConquered ?? null,
-  hyperstructurePoints: entry.hyperstructurePoints ?? null,
-  relicCratesOpened: entry.relicCratesOpened ?? null,
-  relicCratePoints: entry.relicCratePoints ?? null,
-  campsTaken: entry.campsTaken ?? null,
-  campPoints: entry.campPoints ?? null,
-  hyperstructuresHeld: entry.hyperstructuresHeld ?? null,
-  hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
-});
-
-const LEADERBOARD_LIMIT = 30;
-
 export const LandingPlayer = () => {
   const account = useAccountStore((state) => state.account);
   const accountName = useAccountStore((state) => state.accountName);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
-
-  const normalizedPlayerAddress = playerAddress?.toLowerCase() ?? null;
 
   const { username: cartridgeUsername, isLoading: isCartridgeUsernameLoading } = useCartridgeUsername();
   const displayName = accountName || cartridgeUsername || "";
@@ -115,20 +66,9 @@ export const LandingPlayer = () => {
   // World selection for player section
   const worldSelection = useLandingWorldSelection({ storageKeyPrefix: "player" });
 
-  // Local state for world-specific data
-  const [worldChampionEntry, setWorldChampionEntry] = useState<LandingLeaderboardEntry | null>(null);
-  const [worldPlayerEntry, setWorldPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
-  const [worldIsFetching, setWorldIsFetching] = useState(false);
-  const [worldPlayerIsFetching, setWorldPlayerIsFetching] = useState(false);
-  const [worldError, setWorldError] = useState<string | null>(null);
-  const [worldLastFetchAt, setWorldLastFetchAt] = useState<number | null>(null);
-  const [worldPlayerLastFetchAt, setWorldPlayerLastFetchAt] = useState<number | null>(null);
-
   // MMR state
   const [playerMMR, setPlayerMMR] = useState<bigint | null>(null);
   const [isLoadingMMR, setIsLoadingMMR] = useState(false);
-
-  const useCustomWorld = worldSelection.toriiBaseUrl !== null;
 
   // Avatar management
   const [avatarPrompt, setAvatarPrompt] = useState("");
@@ -157,103 +97,14 @@ export const LandingPlayer = () => {
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }, [myAvatar?.nextResetAt]);
 
-  const storeFetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
-  const storeChampionEntry = useLandingLeaderboardStore((state) => state.championEntry);
-  const storeIsLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
-  const storeFetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
-  const storePlayerEntryState = useLandingLeaderboardStore((state) =>
-    normalizedPlayerAddress ? state.playerEntries[normalizedPlayerAddress] : undefined,
-  );
-  const storeLastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
-
-  // Use world-specific or store data depending on selection
-  const championEntry = useCustomWorld ? worldChampionEntry : storeChampionEntry;
-  const isLeaderboardFetching = useCustomWorld ? worldIsFetching : storeIsLeaderboardFetching;
-  const lastLeaderboardFetchAt = useCustomWorld ? worldLastFetchAt : storeLastLeaderboardFetchAt;
-
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  const [isCopyingImage, setIsCopyingImage] = useState(false);
-  const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
-
-  // Fetch world-specific leaderboard (for champion)
-  const fetchWorldLeaderboard = useCallback(async () => {
-    const toriiUrl = worldSelection.toriiBaseUrl;
-    if (!toriiUrl) {
-      return;
-    }
-
-    const now = Date.now();
-    if (worldIsFetching) {
-      return;
-    }
-
-    if (worldLastFetchAt && now - worldLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
-      return;
-    }
-
-    setWorldIsFetching(true);
-    setWorldLastFetchAt(now);
-
-    try {
-      const fetchedEntries = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, toriiUrl);
-      const champion = fetchedEntries[0] ?? null;
-      setWorldChampionEntry(champion);
-      setWorldIsFetching(false);
-      setWorldError(null);
-    } catch (caughtError) {
-      const message = caughtError instanceof Error ? caughtError.message : "Unable to load leaderboard.";
-      setWorldIsFetching(false);
-      setWorldError(message);
-    }
-  }, [worldSelection.toriiBaseUrl, worldIsFetching, worldLastFetchAt]);
-
-  // Fetch world-specific player entry
-  const fetchWorldPlayerEntry = useCallback(
-    async (address: string) => {
-      const toriiUrl = worldSelection.toriiBaseUrl;
-      if (!toriiUrl || !address) {
-        return null;
-      }
-
-      const now = Date.now();
-      if (worldPlayerIsFetching) {
-        return worldPlayerEntry;
-      }
-
-      if (worldPlayerLastFetchAt && now - worldPlayerLastFetchAt < MIN_REFRESH_INTERVAL_MS) {
-        return worldPlayerEntry;
-      }
-
-      setWorldPlayerIsFetching(true);
-      setWorldPlayerLastFetchAt(now);
-
-      try {
-        const entry = await fetchLandingLeaderboardEntryByAddress(address, toriiUrl);
-        setWorldPlayerEntry(entry);
-        setWorldPlayerIsFetching(false);
-        return entry;
-      } catch {
-        setWorldPlayerIsFetching(false);
-        return null;
-      }
-    },
-    [worldSelection.toriiBaseUrl, worldPlayerIsFetching, worldPlayerLastFetchAt, worldPlayerEntry],
-  );
-
-  // Reset world data when world changes
+  // Reset MMR when world changes
   useEffect(() => {
-    setWorldChampionEntry(null);
-    setWorldPlayerEntry(null);
-    setWorldError(null);
-    setWorldLastFetchAt(null);
-    setWorldPlayerLastFetchAt(null);
     setPlayerMMR(null);
   }, [worldSelection.toriiBaseUrl]);
 
   // Fetch player MMR from the current world
   const fetchPlayerMMR = useCallback(
     async (address: string, worldNameOverride?: string) => {
-      // Use provided world name or fall back to selected world
       const worldName = worldNameOverride || worldSelection.selectedWorld;
       if (!worldName || !address) {
         return;
@@ -324,8 +175,7 @@ export const LandingPlayer = () => {
     [worldSelection.selectedWorld],
   );
 
-  // Fetch MMR when player address changes
-  // Use first available world if no world is selected
+  // Fetch MMR when player address or world changes
   useEffect(() => {
     if (!playerAddress) return;
 
@@ -335,242 +185,12 @@ export const LandingPlayer = () => {
     }
   }, [playerAddress, worldSelection.selectedWorld, worldSelection.availableWorlds, fetchPlayerMMR]);
 
-  // Fetch leaderboard on mount and when world changes
-  useEffect(() => {
-    if (useCustomWorld) {
-      void fetchWorldLeaderboard();
-    } else {
-      void storeFetchLeaderboard();
-    }
-  }, [useCustomWorld, fetchWorldLeaderboard, storeFetchLeaderboard]);
-
-  // Fetch player entry when address changes or world changes
-  useEffect(() => {
-    if (!playerAddress) {
-      return;
-    }
-
-    if (useCustomWorld) {
-      void fetchWorldPlayerEntry(playerAddress);
-    } else {
-      void storeFetchPlayerEntry(playerAddress);
-    }
-  }, [playerAddress, useCustomWorld, fetchWorldPlayerEntry, storeFetchPlayerEntry]);
-
-  // Derive player entry from world-specific or store data
-  const playerEntry = useCustomWorld ? worldPlayerEntry : (storePlayerEntryState?.data ?? null);
-  const isPlayerLoading = useCustomWorld
-    ? Boolean(playerAddress) && worldPlayerIsFetching
-    : Boolean(playerAddress) && (!storePlayerEntryState || storePlayerEntryState.isFetching);
-  const playerError = useCustomWorld ? worldError : (storePlayerEntryState?.error ?? null);
-  const playerLastFetchAt = useCustomWorld ? worldPlayerLastFetchAt : (storePlayerEntryState?.lastFetchedAt ?? null);
-
-  useEffect(() => {
-    const updateCooldown = () => {
-      const timestamps = [lastLeaderboardFetchAt, playerLastFetchAt].filter((value): value is number => Boolean(value));
-      if (timestamps.length === 0) {
-        setRefreshCooldownMs(0);
-        return;
-      }
-
-      const last = Math.max(...timestamps);
-      const elapsed = Date.now() - last;
-      const remaining = Math.max(0, MIN_REFRESH_INTERVAL_MS - elapsed);
-      setRefreshCooldownMs(remaining);
-    };
-
-    updateCooldown();
-    const interval = window.setInterval(updateCooldown, 250);
-
-    return () => window.clearInterval(interval);
-  }, [lastLeaderboardFetchAt, playerLastFetchAt]);
-
   // Format MMR for display (convert from token units with 18 decimals)
   const formattedMMR = useMemo(() => {
     if (playerMMR === null) return null;
     const mmrValue = playerMMR / 10n ** 18n;
     return mmrValue.toString();
   }, [playerMMR]);
-
-  const statusMessage = useMemo(() => {
-    if (!playerAddress) {
-      return "Connect a wallet to view your Blitz standing.";
-    }
-
-    // If we have MMR but no leaderboard entry, we'll show MMR in a special section
-    // So don't show the "no points" message
-    if (!isPlayerLoading && !playerError && !playerEntry && (playerMMR === null || playerMMR === 0n) && !isLoadingMMR) {
-      return "You haven't earned Blitz points yet. Play a round to climb the leaderboard.";
-    }
-
-    return null;
-  }, [playerAddress, isPlayerLoading, playerError, playerEntry, playerMMR, isLoadingMMR]);
-
-  const highlightPlayer = useMemo<BlitzHighlightPlayer | null>(
-    () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
-    [playerEntry],
-  );
-
-  const championLabel = useMemo(() => {
-    if (!championEntry) {
-      return null;
-    }
-
-    const name = championEntry.displayName?.trim();
-    return name && name.length > 0 ? name : "Unknown champion";
-  }, [championEntry]);
-
-  const highlightRank = highlightPlayer?.rank ?? null;
-  const highlightPoints = highlightPlayer?.points ?? null;
-
-  const shareMessage = useMemo(
-    () =>
-      buildBlitzShareMessage({
-        rank: highlightRank,
-        points: highlightPoints,
-        origin: typeof window !== "undefined" ? window.location.origin : BLITZ_DEFAULT_SHARE_ORIGIN,
-      }),
-    [highlightPoints, highlightRank],
-  );
-
-  const isRefreshing = isLeaderboardFetching || isPlayerLoading;
-  const isCooldownActive = refreshCooldownMs > 0;
-  const refreshSecondsLeft = Math.ceil(refreshCooldownMs / 1000);
-
-  const handleRefresh = useCallback(() => {
-    if (isRefreshing || isCooldownActive) {
-      return;
-    }
-
-    if (useCustomWorld) {
-      void fetchWorldLeaderboard();
-      if (playerAddress) {
-        void fetchWorldPlayerEntry(playerAddress);
-      }
-    } else {
-      void storeFetchLeaderboard();
-      if (playerAddress) {
-        void storeFetchPlayerEntry(playerAddress);
-      }
-    }
-  }, [
-    useCustomWorld,
-    fetchWorldLeaderboard,
-    fetchWorldPlayerEntry,
-    storeFetchLeaderboard,
-    storeFetchPlayerEntry,
-    playerAddress,
-    isRefreshing,
-    isCooldownActive,
-  ]);
-
-  const handleShareOnX = useCallback(() => {
-    if (!highlightPlayer) {
-      toast.error("Final standings are still loading.");
-      return;
-    }
-
-    const shareIntent = new URL("https://twitter.com/intent/tweet");
-    shareIntent.searchParams.set("text", shareMessage);
-
-    if (typeof window === "undefined") {
-      toast.error("Sharing is not supported in this environment.");
-      return;
-    }
-
-    window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
-  }, [highlightPlayer, shareMessage]);
-
-  const handleCopyImage = useCallback(async () => {
-    if (typeof window === "undefined") {
-      toast.error("Copying the image is not supported in this environment.");
-      return;
-    }
-
-    if (!highlightPlayer || !cardRef.current) {
-      toast.error("Your highlight card is still loading.");
-      return;
-    }
-
-    if (!("ClipboardItem" in window) || !navigator.clipboard?.write) {
-      toast.error("Copying images is not supported in this browser.");
-      return;
-    }
-
-    setIsCopyingImage(true);
-
-    try {
-      const cardNode = cardRef.current.querySelector(".blitz-card-root") as HTMLElement | null;
-
-      if (!cardNode) {
-        throw new Error("Unable to find the highlight card markup.");
-      }
-
-      const { width, height } = BLITZ_CARD_DIMENSIONS;
-      const fontReady =
-        typeof document !== "undefined" && "fonts" in document ? document.fonts.ready.catch(() => undefined) : null;
-      const waiters = fontReady ? [fontReady] : [];
-      await Promise.all(waiters);
-
-      const dataUrl = await toPng(cardNode, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#030d14",
-        canvasWidth: width,
-        canvasHeight: height,
-        style: {
-          width: `${width}px`,
-          height: `${height}px`,
-        },
-      });
-
-      const blob = await fetch(dataUrl).then((response) => response.blob());
-      const clipboardItem = new ClipboardItem({ "image/png": blob });
-
-      try {
-        await navigator.clipboard.write([clipboardItem]);
-        toast.success("Copied highlight image to clipboard!");
-      } catch (clipboardError) {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `realms-highlight-${Date.now()}.png`;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        toast.info("Clipboard not available; downloaded image instead.");
-      }
-    } catch (caughtError) {
-      console.error("Failed to copy highlight image", caughtError);
-      toast.error("Copy failed. Please try again.");
-    } finally {
-      setIsCopyingImage(false);
-    }
-  }, [highlightPlayer]);
-
-  const handleCopyMessage = useCallback(async () => {
-    if (!shareMessage.trim()) {
-      toast.error("Nothing to copy yet.");
-      return;
-    }
-
-    if (
-      typeof navigator === "undefined" ||
-      !navigator.clipboard ||
-      typeof navigator.clipboard.writeText !== "function"
-    ) {
-      toast.error("Clipboard access is not available in this environment.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareMessage);
-      toast.success("Winner message copied to clipboard.");
-    } catch (caughtError) {
-      console.error("Failed to copy winner message", caughtError);
-      toast.error("Unable to copy the winner message.");
-    }
-  }, [shareMessage]);
 
   const handleGenerateAvatar = useCallback(async () => {
     if (!avatarPrompt.trim()) {
@@ -871,167 +491,37 @@ export const LandingPlayer = () => {
         </button>
       )}
 
-      {isPlayerLoading ? (
-        <div className="space-y-4" aria-busy aria-live="polite">
-          <div className="h-20 animate-pulse rounded-2xl border border-white/5 bg-white/5" />
-          <div className="h-36 animate-pulse rounded-2xl border border-white/5 bg-white/5" />
-        </div>
-      ) : playerError ? (
-        <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200" role="alert">
-          <p className="font-semibold text-red-100">Leaderboard unavailable</p>
-          <p className="mt-1 text-red-200/80">{playerError}</p>
-          <div className="mt-3 flex items-center justify-end gap-2">
-            {isRefreshing ? (
-              <span className="text-xs text-white/70" aria-live="polite">
-                Refreshing…
-              </span>
-            ) : isCooldownActive ? (
-              <span className="text-xs text-white/50" aria-live="polite">
-                Wait {refreshSecondsLeft}s
-              </span>
-            ) : null}
-            <RefreshButton
-              onClick={handleRefresh}
-              isLoading={isRefreshing}
-              disabled={isCooldownActive || isRefreshing}
-              size="md"
-              aria-label="Refresh your Blitz standings"
-            />
-          </div>
-        </div>
-      ) : statusMessage ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80" role="status">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p>{statusMessage}</p>
-            <div className="flex items-center gap-2">
-              {isRefreshing ? (
-                <span className="text-xs text-white/70" aria-live="polite">
-                  Refreshing…
-                </span>
-              ) : isCooldownActive ? (
-                <span className="text-xs text-white/50" aria-live="polite">
-                  Wait {refreshSecondsLeft}s
-                </span>
-              ) : null}
-              <RefreshButton
-                onClick={handleRefresh}
-                isLoading={isRefreshing}
-                disabled={isCooldownActive || isRefreshing}
-                size="md"
-                aria-label="Refresh your Blitz standings"
-              />
-            </div>
-          </div>
-        </div>
-      ) : !playerEntry && playerMMR !== null && playerMMR > 0n ? (
-        /* Player has MMR but no leaderboard entry yet */
-        <div
-          className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/10 to-transparent p-6"
-          role="status"
-        >
+      {/* Player MMR Display */}
+      {playerAddress ? (
+        <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/10 to-transparent p-6">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex items-center gap-3">
-              <span className="text-lg text-gold/70">Your MMR:</span>
-              <span className="text-4xl font-bold text-gold">{formattedMMR}</span>
-            </div>
-            <p className="text-sm text-gold/60">Complete a Blitz round to appear on the leaderboard and earn points!</p>
-            <div className="flex items-center gap-2">
-              {isRefreshing || isLoadingMMR ? (
-                <span className="text-xs text-white/70" aria-live="polite">
-                  Refreshing…
-                </span>
-              ) : isCooldownActive ? (
-                <span className="text-xs text-white/50" aria-live="polite">
-                  Wait {refreshSecondsLeft}s
-                </span>
-              ) : null}
-              <RefreshButton
-                onClick={handleRefresh}
-                isLoading={isRefreshing || isLoadingMMR}
-                disabled={isCooldownActive || isRefreshing || isLoadingMMR}
-                size="md"
-                aria-label="Refresh your stats"
-              />
-            </div>
+            {isLoadingMMR ? (
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-gold" />
+                <span className="text-gold/70">Loading MMR...</span>
+              </div>
+            ) : playerMMR !== null && playerMMR > 0n ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg text-gold/70">Your MMR:</span>
+                  <span className="text-4xl font-bold text-gold">{formattedMMR}</span>
+                </div>
+                <p className="text-sm text-gold/60">
+                  Your ranking score for {worldSelection.selectedWorld || "this world"}
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="text-lg text-gold/70">No MMR yet</span>
+                <p className="text-sm text-gold/60">Play a Blitz round to earn MMR and climb the leaderboard!</p>
+              </>
+            )}
           </div>
         </div>
       ) : (
-        <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            {/* Filler span pushes refresh button to right in row layout */}
-            <div className="flex items-center justify-between w-full">
-              <div />
-              <div className="flex items-center gap-2">
-                {isRefreshing ? (
-                  <span className="text-xs text-white/70" aria-live="polite">
-                    Refreshing…
-                  </span>
-                ) : isCooldownActive ? (
-                  <span className="text-xs text-white/50" aria-live="polite">
-                    Wait {refreshSecondsLeft}s
-                  </span>
-                ) : null}
-                <RefreshButton
-                  onClick={handleRefresh}
-                  isLoading={isRefreshing}
-                  disabled={isCooldownActive || isRefreshing}
-                  size="md"
-                  aria-label="Refresh your Blitz standings"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex justify-center sm:mt-5 xl:mt-6">
-            {highlightPlayer ? (
-              <div className="w-full max-w-[420px] sm:max-w-[620px] xl:max-w-[780px] 2xl:max-w-[940px]" ref={cardRef}>
-                <BlitzHighlightCardWithSelector
-                  title="Realms Blitz"
-                  subtitle="Blitz Leaderboard"
-                  winnerLine={championLabel}
-                  highlight={highlightPlayer}
-                />
-              </div>
-            ) : (
-              <div className="flex h-[170px] w-full max-w-[420px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-xs text-white/60 sm:h-[190px] sm:max-w-[520px] sm:text-sm xl:max-w-[580px] xl:text-sm 2xl:max-w-[720px] 2xl:h-[220px]">
-                Final standings will appear once the next Blitz round completes.
-              </div>
-            )}
-          </div>
-
-          <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:gap-2.5 md:flex-row xl:mt-6">
-            <Button
-              onClick={handleCopyImage}
-              variant="gold"
-              className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
-              forceUppercase={false}
-              isLoading={isCopyingImage}
-              disabled={isCopyingImage || !highlightPlayer}
-            >
-              <Copy className="h-4 w-4" />
-              <span>{isCopyingImage ? "Preparing image…" : "Copy highlight image"}</span>
-            </Button>
-            <Button
-              onClick={handleShareOnX}
-              variant="outline"
-              className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
-              forceUppercase={false}
-              disabled={!highlightPlayer}
-            >
-              <Share2 className="h-4 w-4" />
-              <span>Share on X</span>
-            </Button>
-            <Button
-              onClick={handleCopyMessage}
-              variant="secondary"
-              className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
-              forceUppercase={false}
-            >
-              <Copy className="h-4 w-4" />
-              <span>Copy message</span>
-            </Button>
-          </div>
-        </>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+          <p className="text-white/70">Connect a wallet to view your profile and MMR.</p>
+        </div>
       )}
     </section>
   );
