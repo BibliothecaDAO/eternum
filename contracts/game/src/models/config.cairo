@@ -60,6 +60,7 @@ pub struct WorldConfig {
     pub mmr_config: MMRConfig,
     pub faith_config: FaithConfig,
     pub artificer_config: ArtificerConfig,
+    pub bitcoin_mine_config: BitcoinMineConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]

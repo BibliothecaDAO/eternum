@@ -128,7 +128,7 @@ pub mod ResourceTypes {
     pub const RESEARCH: u8 = 57;
 
     // Bitcoin Mine Resources (work is tracked internally, not as a resource)
-    pub const SATOSHI: u8 = 58;
+    pub const SATOSHI: u8 = 59;
 }
 
 // Bitcoin Mine constants

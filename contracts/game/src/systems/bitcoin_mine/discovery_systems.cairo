@@ -59,6 +59,11 @@ pub mod bitcoin_mine_discovery_systems {
                 return (false, ExploreFind::None);
             }
 
+            // Bitcoin mines are only discoverable in season mode (not blitz)
+            if !season_mode_on {
+                return (false, ExploreFind::None);
+            }
+
             // Bitcoin mines can only be in Ethereal (alt) layer
             let coord: Coord = tile.into();
             if !coord.alt {
