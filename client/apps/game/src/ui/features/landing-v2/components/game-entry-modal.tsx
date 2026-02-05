@@ -847,7 +847,7 @@ export const GameEntryModal = ({
 
     // Run the check
     checkSettlementStatus();
-  }, [bootstrapStatus, setupResult, account, isSpectateMode, worldName]);
+  }, [bootstrapStatus, setupResult, account, isSpectateMode, isForgeMode, worldName]);
 
   // Check hyperstructure initialization status after bootstrap completes
   useEffect(() => {
@@ -859,6 +859,8 @@ export const GameEntryModal = ({
       !!setupResult,
       "isSpectateMode:",
       isSpectateMode,
+      "isForgeMode:",
+      isForgeMode,
     );
 
     if (bootstrapStatus !== "ready" || !setupResult) {
@@ -866,8 +868,8 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode) {
-      debugLog(worldName, "Skipping hyperstructure check - spectate mode");
+    if (isSpectateMode || isForgeMode) {
+      debugLog(worldName, "Skipping hyperstructure check - spectate or forge mode");
       setHyperstructureCheckComplete(true);
       return;
     }
@@ -931,7 +933,7 @@ export const GameEntryModal = ({
     };
 
     checkHyperstructures();
-  }, [bootstrapStatus, setupResult, isSpectateMode, worldName]);
+  }, [bootstrapStatus, setupResult, isSpectateMode, isForgeMode, worldName]);
 
   // Start bootstrap when modal opens
   useEffect(() => {
@@ -1150,6 +1152,36 @@ export const GameEntryModal = ({
     }
   }, [setupResult, account, handleEnterGame, worldName]);
 
+  // Forge hyperstructures handler - creates new hyperstructures during registration period
+  const handleForgeHyperstructures = useCallback(async () => {
+    debugLog(worldName, "handleForgeHyperstructures called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
+    if (!setupResult || !account) return;
+
+    setIsForging(true);
+
+    try {
+      const { systemCalls } = setupResult;
+      const { env } = await import("../../../../../env");
+
+      // Determine how many hyperstructures to forge based on chain
+      const hyperstructureCount = env.VITE_PUBLIC_CHAIN === "mainnet" ? 1 : 4;
+
+      debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
+      await systemCalls.blitz_realm_make_hyperstructures({
+        signer: account,
+        count: hyperstructureCount,
+      });
+
+      debugLog(worldName, "Hyperstructures forged!");
+      // Update local count
+      setNumHyperstructuresLeft((prev) => Math.max(0, prev - hyperstructureCount));
+    } catch (error) {
+      debugLog(worldName, "Forge hyperstructures failed:", error);
+    } finally {
+      setIsForging(false);
+    }
+  }, [setupResult, account, worldName]);
+
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
     async (entityId: number) => {
@@ -1280,8 +1312,14 @@ export const GameEntryModal = ({
         {/* Header */}
         <div className="px-6 pt-6 pb-2">
           <div className="flex items-center gap-2 text-xs text-gold/60 mb-1">
-            {isSpectateMode ? <Eye className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-            <span>{isSpectateMode ? "Spectating" : "Entering"}</span>
+            {isForgeMode ? (
+              <Sparkles className="w-3 h-3" />
+            ) : isSpectateMode ? (
+              <Eye className="w-3 h-3" />
+            ) : (
+              <Play className="w-3 h-3" />
+            )}
+            <span>{isForgeMode ? "Forging Hyperstructures" : isSpectateMode ? "Spectating" : "Entering"}</span>
           </div>
           <h3 className="text-lg font-bold text-gold truncate">{worldName}</h3>
         </div>
@@ -1292,6 +1330,16 @@ export const GameEntryModal = ({
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <LoadingPhase tasks={tasks} progress={progress} error={bootstrapError} onRetry={handleRetry} />
+              </motion.div>
+            )}
+            {phase === "forge" && (
+              <motion.div key="forge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <ForgeHyperstructuresPhase
+                  numHyperstructuresLeft={numHyperstructuresLeft}
+                  isForging={isForging}
+                  onForge={handleForgeHyperstructures}
+                  onClose={onClose}
+                />
               </motion.div>
             )}
             {phase === "hyperstructure" && (

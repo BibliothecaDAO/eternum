@@ -10,7 +10,7 @@ import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy } from "lucide-react";
+import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Chain } from "@contracts";
@@ -109,6 +109,7 @@ interface GameCardProps {
   onPlay: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
+  onForgeHyperstructures?: () => void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -122,6 +123,7 @@ const GameCard = ({
   onPlay,
   onSpectate,
   onSeeScore,
+  onForgeHyperstructures,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
@@ -135,6 +137,9 @@ const GameCard = ({
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);
+  // Can forge hyperstructures during upcoming if there are any left
+  const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
+  const canForgeHyperstructures = isUpcoming && numHyperstructuresLeft > 0 && playerAddress;
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
@@ -299,6 +304,27 @@ const GameCard = ({
             </button>
           )}
 
+          {/* Forge Hyperstructures button for upcoming games - golden orb style */}
+          {canForgeHyperstructures && onForgeHyperstructures && (
+            <button
+              onClick={onForgeHyperstructures}
+              className="relative flex-shrink-0 w-10 h-10 rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-300/50 transition-transform hover:scale-105"
+              style={{
+                background: "radial-gradient(circle at 30% 30%, #facc15, #ca8a04, #f59e0b)",
+                boxShadow:
+                  "0 4px 16px rgba(251, 191, 36, 0.4), inset 0 1px 4px rgba(255, 255, 255, 0.4), inset 0 -1px 4px rgba(0, 0, 0, 0.1)",
+                border: "2px solid #fef3c7",
+              }}
+              title={`Forge ${numHyperstructuresLeft} Hyperstructure${numHyperstructuresLeft !== 1 ? "s" : ""}`}
+            >
+              <div className="flex items-center justify-center w-full h-full text-base font-black text-amber-900">
+                {numHyperstructuresLeft}
+              </div>
+              {/* Sparkle indicator */}
+              <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-amber-300" />
+            </button>
+          )}
+
           {/* Right slot: Spectate (always in same position) */}
           {canSpectate && (
             <button
@@ -334,6 +360,8 @@ interface UnifiedGameGridProps {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
+  /** Callback for forging hyperstructures - receives world selection and numHyperstructuresLeft */
+  onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */
@@ -359,6 +387,7 @@ export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
+  onForgeHyperstructures,
   onRegistrationComplete,
   className,
   devModeFilter,
@@ -595,6 +624,15 @@ export const UnifiedGameGrid = ({
                 onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
                 onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
                 onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                onForgeHyperstructures={
+                  onForgeHyperstructures
+                    ? () =>
+                        onForgeHyperstructures(
+                          { name: game.name, chain: game.chain },
+                          game.config?.numHyperstructuresLeft ?? 0,
+                        )
+                    : undefined
+                }
                 onRegistrationComplete={handleRegistrationComplete}
                 playerAddress={playerAddress}
                 showChainBadge={true}
@@ -610,6 +648,15 @@ export const UnifiedGameGrid = ({
                   onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
                   onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
                   onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                  onForgeHyperstructures={
+                    onForgeHyperstructures
+                      ? () =>
+                          onForgeHyperstructures(
+                            { name: game.name, chain: game.chain },
+                            game.config?.numHyperstructuresLeft ?? 0,
+                          )
+                      : undefined
+                  }
                   onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}

@@ -10,16 +10,9 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-02-05",
-    title: "Registration Status Fix",
-    description:
-      "Registration status now persists correctly when switching between tabs. The Play button for ongoing games will automatically guide you through hyperstructure initialization if needed before settlement.",
-    type: "fix",
-  },
-  {
-    date: "2026-02-05",
     title: "New Landing Experience",
     description:
-      "The landing page has been completely refreshed! Browse and join games directly from the home screen with inline registration, see fee info in LORDS, and get instant confirmation. The markets section features split panels for Live and Past markets. Enjoy dynamic backgrounds, a new sidebar navigation, and a mobile-friendly bottom nav bar.",
+      "The landing page has been completely redesigned! Browse Live, Upcoming, and Ended games in organized columns. Register for games directly from the home screen. Faster game loading with instant entry - you'll land right at your realm. Mobile users get a new hamburger menu and contextual bottom tabs that change based on your current section.",
     type: "feature",
   },
   {

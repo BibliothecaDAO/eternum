@@ -260,12 +260,14 @@ const PlayTabContent = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
+  onForgeHyperstructures,
   onRegistrationComplete,
   disabled = false,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
+  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => void;
   onRegistrationComplete: () => void;
   disabled?: boolean;
 }) => {
@@ -314,6 +316,7 @@ const PlayTabContent = ({
             <UnifiedGameGrid
               onSelectGame={onSelectGame}
               onSpectate={onSpectate}
+              onForgeHyperstructures={onForgeHyperstructures}
               onRegistrationComplete={onRegistrationComplete}
               devModeFilter={false}
               statusFilter="upcoming"
@@ -365,6 +368,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const [entryModalOpen, setEntryModalOpen] = useState(false);
   const [selectedWorld, setSelectedWorld] = useState<WorldSelection | null>(null);
   const [isSpectateMode, setIsSpectateMode] = useState(false);
+  const [isForgeMode, setIsForgeMode] = useState(false);
+  const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
 
   // Modal state for score card
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
@@ -390,6 +395,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
       // Open game entry modal
       setSelectedWorld(selection);
       setIsSpectateMode(false);
+      setIsForgeMode(false);
       setEntryModalOpen(true);
     },
     [account, isConnected, setModal],
@@ -401,12 +407,44 @@ export const PlayView = ({ className }: PlayViewProps) => {
     // Open game entry modal in spectate mode (no account required)
     setSelectedWorld(selection);
     setIsSpectateMode(true);
+    setIsForgeMode(false);
     setEntryModalOpen(true);
   }, []);
+
+  const handleForgeHyperstructures = useCallback(
+    (selection: WorldSelection, numLeft: number) => {
+      const hasAccount = Boolean(account) || isConnected;
+
+      console.log(
+        "[PlayView] handleForgeHyperstructures:",
+        selection.name,
+        "numLeft:",
+        numLeft,
+        "hasAccount:",
+        hasAccount,
+      );
+
+      // Check if user needs to sign in before forging
+      if (!hasAccount) {
+        setModal(<SignInPromptModal />, true);
+        return;
+      }
+
+      // Open game entry modal in forge mode
+      setSelectedWorld(selection);
+      setIsSpectateMode(false);
+      setIsForgeMode(true);
+      setNumHyperstructuresLeft(numLeft);
+      setEntryModalOpen(true);
+    },
+    [account, isConnected, setModal],
+  );
 
   const handleCloseModal = useCallback(() => {
     setEntryModalOpen(false);
     setSelectedWorld(null);
+    setIsForgeMode(false);
+    setNumHyperstructuresLeft(0);
   }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
@@ -445,6 +483,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
+            onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
             disabled={entryModalOpen || scoreModalOpen}
           />
@@ -459,7 +498,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
         {renderContent()}
       </div>
 
-      {/* Game Entry Modal - Loading + Settlement */}
+      {/* Game Entry Modal - Loading + Settlement + Forge */}
       {selectedWorld && selectedWorld.chain && (
         <GameEntryModal
           isOpen={entryModalOpen}
@@ -467,6 +506,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
           worldName={selectedWorld.name}
           chain={selectedWorld.chain}
           isSpectateMode={isSpectateMode}
+          isForgeMode={isForgeMode}
+          numHyperstructuresLeft={numHyperstructuresLeft}
         />
       )}
 
