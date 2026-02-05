@@ -1053,6 +1053,10 @@ export const GameEntryModal = ({
     // Hide the onboarding overlay since we're entering through the new flow
     setShowBlankOverlay(false);
 
+    // Enable loading screen so the user sees a loading overlay while the game world mounts
+    // TransitionManager.fadeIn() will dismiss it once the Three.js scene is ready
+    useUIStore.getState().setIsLoadingScreenEnabled(true);
+
     // Default coordinates (world center)
     let col = 0;
     let row = 0;
