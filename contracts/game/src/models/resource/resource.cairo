@@ -312,7 +312,10 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
-        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
+        // Skip production for resources that don't have production mechanics
+        if RelicResourceImpl::is_relic(resource_type)
+            || resource_type == ResourceTypes::LORDS
+            || resource_type == ResourceTypes::SATOSHI {
             return Zero::zero();
         }
         return world
@@ -328,7 +331,10 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
-        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
+        // Skip production for resources that don't have production mechanics
+        if RelicResourceImpl::is_relic(resource_type)
+            || resource_type == ResourceTypes::LORDS
+            || resource_type == ResourceTypes::SATOSHI {
             return;
         }
         world

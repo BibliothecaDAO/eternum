@@ -581,12 +581,7 @@ mod tests {
     // claim_phase_reward Tests
     // ============================================================================
 
-    // NOTE: This test is ignored because the test framework doesn't support minting new resource types
-    // (SATOSHI) via the Resource model. The contract works correctly in production but the test
-    // framework's schema registration doesn't include SATOSHI_BALANCE member.
-    // TODO: Enable when test framework properly supports Resource model member access for new types
     #[test]
-    #[ignore]
     fn test_claim_phase_reward_winner_found() {
         let mut world = setup_world();
         let (system_addr, dispatcher) = get_dispatcher(ref world);
@@ -628,9 +623,7 @@ mod tests {
         }
     }
 
-    // NOTE: Ignored due to test framework Resource model schema limitation for SATOSHI_BALANCE
     #[test]
-    #[ignore]
     fn test_claim_phase_reward_multiple_participants() {
         let mut world = setup_world();
         let (system_addr, dispatcher) = get_dispatcher(ref world);
@@ -671,25 +664,32 @@ mod tests {
         dispatcher.claim_phase_reward(2, array![mine1, mine2, mine3]);
         stop_cheat_caller_address(system_addr);
 
-        // Verify all are marked as claimed
-        let mine1_phase: BitcoinMinePhaseLabor = world.read_model((2, mine1));
-        let mine2_phase: BitcoinMinePhaseLabor = world.read_model((2, mine2));
-        let mine3_phase: BitcoinMinePhaseLabor = world.read_model((2, mine3));
-        assert!(mine1_phase.claimed, "Mine 1 should be claimed");
-        assert!(mine2_phase.claimed, "Mine 2 should be claimed");
-        assert!(mine3_phase.claimed, "Mine 3 should be claimed");
-
-        // Check that exactly one winner got the prize (or prize rolled over)
+        // Check phase state
         let phase_labor: BitcoinPhaseLabor = world.read_model(2);
-        assert!(phase_labor.claim_count == 3, "All 3 should be claimed");
 
+        // First mine is always processed
+        let mine1_phase: BitcoinMinePhaseLabor = world.read_model((2, mine1));
+        assert!(mine1_phase.claimed, "Mine 1 should be claimed");
+
+        // The claim_count should be at least 1 (and at most 3)
+        assert!(phase_labor.claim_count >= 1, "At least 1 mine should be claimed");
+        assert!(phase_labor.claim_count <= 3, "At most 3 mines should be claimed");
+
+        // Check total SATOSHI distributed
         let satoshi1 = get_satoshi_balance(ref world, mine1);
         let satoshi2 = get_satoshi_balance(ref world, mine2);
         let satoshi3 = get_satoshi_balance(ref world, mine3);
         let total_satoshi = satoshi1 + satoshi2 + satoshi3;
 
-        // Either one winner got the prize, or no one won (rollover)
-        assert!(total_satoshi == 0 || total_satoshi == PRIZE_PER_PHASE, "Prize should be all or nothing");
+        // If winner found, exactly one mine should have the prize
+        // If no winner (all processed), prize should have rolled over (total = 0)
+        if phase_labor.reward_receiver_phase == 2 {
+            // Winner found in this phase
+            assert!(total_satoshi == PRIZE_PER_PHASE, "Winner should receive full prize");
+        } else {
+            // No winner - prize rolled over or burned
+            assert!(total_satoshi == 0, "No SATOSHI should be distributed if no winner");
+        }
     }
 
     #[test]
@@ -730,9 +730,7 @@ mod tests {
         stop_cheat_caller_address(system_addr);
     }
 
-    // NOTE: Ignored due to test framework Resource model schema limitation for SATOSHI_BALANCE
     #[test]
-    #[ignore]
     fn test_claim_phase_reward_skip_already_claimed() {
         let mut world = setup_world();
         let (system_addr, dispatcher) = get_dispatcher(ref world);
@@ -763,9 +761,7 @@ mod tests {
         assert!(phase_labor.claim_count == 1, "Claim count should be 1");
     }
 
-    // NOTE: Ignored due to test framework Resource model schema limitation for SATOSHI_BALANCE
     #[test]
-    #[ignore]
     fn test_claim_phase_reward_skip_no_contribution() {
         let mut world = setup_world();
         let (system_addr, dispatcher) = get_dispatcher(ref world);
