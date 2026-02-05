@@ -206,6 +206,10 @@ export const resetBootstrap = () => {
   bootstrappedWorldName = null;
   bootstrappedChain = null;
   cachedSetupResult = null;
+
+  // Reset structure selection so the next game loads fresh
+  const uiStore = useUIStore.getState();
+  uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
 };
 
 export const bootstrapGame = async (): Promise<BootstrapResult> => {
