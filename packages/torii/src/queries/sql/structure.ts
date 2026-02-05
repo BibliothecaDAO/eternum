@@ -185,7 +185,7 @@ export const STRUCTURE_QUERIES = {
         s.\`metadata.realm_id\` as realm_id,
         s.resources_packed,
         sos.name as owner_name,
-        s.internal_entity_id,
+        SUBSTR(s.internal_entity_id, INSTR(s.internal_entity_id, ':') + 1) as internal_entity_id,
     
         -- Guard army data
         s.\`troop_guards.delta.category\` as delta_category,
@@ -284,7 +284,7 @@ export const STRUCTURE_QUERIES = {
       et.\`troops.battle_cooldown_end\` as battle_cooldown_end,
       s.owner as owner_address,
       sos.name as owner_name,
-      et.internal_entity_id,
+      SUBSTR(et.internal_entity_id, INSTR(et.internal_entity_id, ':') + 1) as internal_entity_id,
     
       -- Battle data with coordinates
       lb.latest_attacker_id,

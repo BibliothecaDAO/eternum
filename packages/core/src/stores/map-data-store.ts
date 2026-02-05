@@ -147,7 +147,12 @@ export class MapDataStore {
     if (!entity) return undefined;
     const trimmed = entity.trim();
     if (!trimmed) return undefined;
-    return trimmed.toLowerCase();
+    const lower = trimmed.toLowerCase();
+    if (lower.startsWith("0x")) {
+      const stripped = lower.slice(2).replace(/^0+/, "") || "0";
+      return "0x" + stripped;
+    }
+    return lower;
   }
 
   private parseActiveProductions(

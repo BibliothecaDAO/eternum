@@ -560,6 +560,17 @@ export class WorldUpdateListener {
               this.dataEnhancer.updateStructureOwner(entityId, ownerValue, playerName);
 
               const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
+              let col = baseCoords.coord_x ?? 0;
+              let row = baseCoords.coord_y ?? 0;
+
+              // Fall back to mapDataStore if coords are 0,0 (partial update, e.g. ownership change)
+              if (col === 0 && row === 0) {
+                const existing = this.mapDataStore.getStructureById(entityId);
+                if (existing) {
+                  col = existing.coordX;
+                  row = existing.coordY;
+                }
+              }
 
               const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
 
@@ -573,11 +584,9 @@ export class WorldUpdateListener {
                   ownerName: playerName,
                   guildName: "",
                 },
-                hexCoords: { col: baseCoords.coord_x ?? 0, row: baseCoords.coord_y ?? 0 },
+                hexCoords: { col, row },
                 battleCooldownEnd,
               };
-
-              // console.log("[onStructureUpdate] StructureSystemUpdate:", structureSystemUpdate);
 
               return structureSystemUpdate;
             }
@@ -665,6 +674,7 @@ export class WorldUpdateListener {
               biome:
                 newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
             };
+
             // Log the update value
             // console.log("[onTileUpdate] TileSystemUpdate:", result);
             return result;
