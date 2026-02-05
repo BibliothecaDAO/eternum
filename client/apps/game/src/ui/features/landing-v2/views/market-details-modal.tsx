@@ -85,7 +85,14 @@ export const MarketDetailsModal = ({ market: initialMarket, onClose }: MarketDet
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
 
   // Fetch fresh market data
-  const { market: fetchedMarket, refresh: refreshMarket, isLoading } = useMarket(initialMarket.market_id ?? 0n);
+  const marketId = useMemo(() => {
+    try {
+      return initialMarket.market_id ? BigInt(initialMarket.market_id) : 0n;
+    } catch {
+      return 0n;
+    }
+  }, [initialMarket.market_id]);
+  const { market: fetchedMarket, refresh: refreshMarket, isLoading } = useMarket(marketId);
   const market = fetchedMarket ?? initialMarket;
 
   const watchState = getWatchState(market);
