@@ -452,6 +452,60 @@ const PlayerStructuresStoreManager = () => {
   return null;
 };
 
+/**
+ * Handles initial structure selection from URL parameters.
+ * When entering the game with ?structureId=X, this will select that structure
+ * instead of defaulting to the hyperstructure.
+ */
+const InitialStructureSelectionManager = () => {
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const playerStructures = useUIStore((state) => state.playerStructures);
+  const hasSelectedInitial = useRef(false);
+
+  useEffect(() => {
+    // Only run once when player structures are loaded
+    if (hasSelectedInitial.current || playerStructures.length === 0) {
+      return;
+    }
+
+    // Check for structureId in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlStructureId = urlParams.get("structureId");
+
+    if (urlStructureId) {
+      const structureId = parseInt(urlStructureId, 10);
+      if (!isNaN(structureId) && structureId > 0) {
+        // Verify this structure belongs to the player
+        const isPlayerStructure = playerStructures.some((s) => Number(s.entityId) === structureId);
+
+        if (isPlayerStructure) {
+          console.log("[InitialStructureSelection] Setting initial structure from URL:", structureId);
+          setStructureEntityId(structureId);
+          hasSelectedInitial.current = true;
+          return;
+        }
+      }
+    }
+
+    // Fallback: if no URL param or invalid, select first player structure
+    // (only if current selection is invalid/undefined)
+    if (structureEntityId === 0 || structureEntityId === undefined) {
+      const firstStructure = playerStructures[0];
+      if (firstStructure) {
+        const firstId = Number(firstStructure.entityId);
+        if (firstId > 0) {
+          console.log("[InitialStructureSelection] Setting first player structure:", firstId);
+          setStructureEntityId(firstId);
+          hasSelectedInitial.current = true;
+        }
+      }
+    }
+  }, [playerStructures, structureEntityId, setStructureEntityId]);
+
+  return null;
+};
+
 const ButtonStateStoreManager = () => {
   const {
     account: { account },
@@ -620,6 +674,7 @@ export const StoreManagers = () => {
       <RelicsStoreManager />
       <AutoRegisterPointsStoreManager />
       <PlayerStructuresStoreManager />
+      <InitialStructureSelectionManager />
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
       <SeasonWinnerStoreManager />

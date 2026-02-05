@@ -828,6 +828,7 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
     // Default coordinates (hyperstructure center)
     let col = 0;
     let row = 0;
+    let structureId: number | null = null;
 
     // For players (not spectators), try to find their owned structure
     if (!isSpectateMode && setupResult && account?.address) {
@@ -846,7 +847,8 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
             if (structure?.base) {
               col = Number(structure.base.coord_x);
               row = Number(structure.base.coord_y);
-              debugLog("Centering on player structure at:", col, row);
+              structureId = Number(structure.entity_id);
+              debugLog("Centering on player structure at:", col, row, "structureId:", structureId);
             }
           }
         }
@@ -855,7 +857,13 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       }
     }
 
-    const url = isSpectateMode ? `/play/map?col=${col}&row=${row}&spectate=true` : `/play/map?col=${col}&row=${row}`;
+    // Build URL with optional structureId parameter
+    let url = isSpectateMode ? `/play/map?col=${col}&row=${row}&spectate=true` : `/play/map?col=${col}&row=${row}`;
+
+    if (structureId !== null) {
+      url += `&structureId=${structureId}`;
+    }
+
     navigate(url);
   }, [navigate, isSpectateMode, setShowBlankOverlay, setupResult, account]);
 
