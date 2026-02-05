@@ -7,7 +7,6 @@ import {
   type WorldConfigMeta,
 } from "@/hooks/use-world-availability";
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
-import { resolveChain } from "@/runtime/world";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -15,12 +14,6 @@ import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy } 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Chain } from "@contracts";
-import { env } from "../../../../../../env";
-
-const normalizeFactoryChain = (chain: Chain): Chain => {
-  if (chain === "slottest" || chain === "local") return "slot";
-  return chain;
-};
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
@@ -145,7 +138,7 @@ interface GameCardProps {
   game: GameData;
   onPlay: () => void;
   onSpectate: () => void;
-  onRegistrationComplete?: () => void;
+  onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
 }
@@ -191,9 +184,9 @@ const GameCard = ({
       toast.success("Registration successful!", {
         description: `You are now registered for ${game.name}`,
       });
-      onRegistrationComplete?.();
+      onRegistrationComplete?.(game.worldKey);
     }
-  }, [registrationStage, game.name, onRegistrationComplete]);
+  }, [registrationStage, game.name, game.worldKey, onRegistrationComplete]);
 
   // Status colors - enhanced yellow for upcoming
   const statusColors = {
@@ -459,17 +452,15 @@ export const UnifiedGameGrid = ({
       // Only show online games
       .filter((game) => game.status === "ok");
 
-    // Sort: registered first, then by status (live > soon > ended), then by chain (mainnet first)
+    // Sort: live first, then upcoming (by start time asc), then ended (by start time asc)
     return nodes.toSorted((a, b) => {
-      if (a.isRegistered && !b.isRegistered) return -1;
-      if (!a.isRegistered && b.isRegistered) return 1;
       const order: Record<GameStatus, number> = { ongoing: 0, upcoming: 1, ended: 2, unknown: 3 };
       const statusDiff = order[a.gameStatus] - order[b.gameStatus];
       if (statusDiff !== 0) return statusDiff;
-      // Mainnet first
-      if (a.chain === "mainnet" && b.chain !== "mainnet") return -1;
-      if (a.chain !== "mainnet" && b.chain === "mainnet") return 1;
-      return 0;
+      // Within same status, sort by start time ascending
+      const aStart = a.startMainAt ?? Infinity;
+      const bStart = b.startMainAt ?? Infinity;
+      return aStart - bStart;
     });
   }, [factoryWorlds, factoryAvailability, playerRegistration, isOngoing, isEnded, isUpcoming]);
 
@@ -478,12 +469,14 @@ export const UnifiedGameGrid = ({
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
   }, [refetchFactoryWorlds, refetchFactory]);
 
-  // Callback for when a registration completes - refresh data
-  const handleRegistrationComplete = useCallback(() => {
-    setPlayerRegistration({});
-    void refetchFactory();
-    onRegistrationComplete?.();
-  }, [refetchFactory, onRegistrationComplete]);
+  // Callback for when a registration completes - update that specific game's status
+  const handleRegistrationComplete = useCallback(
+    (worldKey: string) => {
+      setPlayerRegistration((prev) => ({ ...prev, [worldKey]: true }));
+      onRegistrationComplete?.();
+    },
+    [onRegistrationComplete],
+  );
 
   const isLoading = factoryWorldsLoading || factoryCheckingAvailability;
 
@@ -557,7 +550,7 @@ export const UnifiedGameGrid = ({
             <p className="text-[10px] text-white/30 mt-1">Games appear when servers are online</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
             {games.map((game) => (
               <GameCard
                 key={game.worldKey}
@@ -567,244 +560,6 @@ export const UnifiedGameGrid = ({
                 onRegistrationComplete={handleRegistrationComplete}
                 playerAddress={playerAddress}
                 showChainBadge={true}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Keep the old single-chain grid for backwards compatibility if needed
-interface GameCardGridProps {
-  chain: Chain;
-  onSelectGame: (selection: WorldSelection) => void;
-  onSpectate: (selection: WorldSelection) => void;
-  onRegistrationComplete?: () => void;
-  className?: string;
-}
-
-/**
- * Card grid for displaying games on a single chain
- * @deprecated Use UnifiedGameGrid instead
- */
-export const GameCardGrid = ({
-  chain,
-  onSelectGame,
-  onSpectate,
-  onRegistrationComplete,
-  className,
-}: GameCardGridProps) => {
-  const [playerRegistration, setPlayerRegistration] = useState<Record<string, boolean | null>>({});
-
-  const account = useAccountStore((state) => state.account);
-  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
-  const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
-
-  const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
-
-  const resolvedChain = resolveChain(env.VITE_PUBLIC_CHAIN as Chain);
-  const activeFactoryChain = normalizeFactoryChain(resolvedChain);
-  const targetChain = normalizeFactoryChain(chain);
-
-  const {
-    worlds: factoryWorlds,
-    isLoading: factoryWorldsLoading,
-    error: factoryError,
-    refetchAll: refetchFactoryWorlds,
-  } = useFactoryWorlds([chain]);
-
-  const {
-    results: factoryAvailability,
-    isAnyLoading: factoryCheckingAvailability,
-    refetchAll: refetchFactory,
-  } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
-
-  // Fetch player registration status
-  useEffect(() => {
-    if (!playerFeltLiteral) return;
-    let cancelled = false;
-
-    const onlineWorlds = factoryWorlds.filter((world) => {
-      const availability = factoryAvailability.get(getWorldKey(world));
-      return availability?.isAvailable && !availability.isLoading;
-    });
-
-    const uniqueWorlds = onlineWorlds.filter((world) => {
-      const key = getWorldKey(world);
-      return playerRegistration[key] === undefined;
-    });
-
-    if (uniqueWorlds.length === 0) return;
-
-    const run = async () => {
-      for (const world of uniqueWorlds) {
-        if (cancelled) break;
-        const key = getWorldKey(world);
-        const torii = buildToriiBaseUrl(world.name);
-        const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral);
-        if (!cancelled) {
-          setPlayerRegistration((prev) => ({ ...prev, [key]: status }));
-        }
-      }
-    };
-
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [playerFeltLiteral, factoryWorlds, factoryAvailability, playerRegistration]);
-
-  // Build game data - only include online games
-  const games = useMemo<GameData[]>(() => {
-    const nodes = factoryWorlds
-      .filter((world) => normalizeFactoryChain(world.chain) === targetChain)
-      .map((world) => {
-        const worldKey = getWorldKey(world);
-        const availability = factoryAvailability.get(worldKey);
-        const status = getAvailabilityStatus(availability);
-        const startMainAt = availability?.meta?.startMainAt ?? null;
-        const endAt = availability?.meta?.endAt ?? null;
-
-        let gameStatus: GameStatus = "unknown";
-        if (status === "ok") {
-          if (isEnded(startMainAt, endAt)) gameStatus = "ended";
-          else if (isOngoing(startMainAt, endAt)) gameStatus = "ongoing";
-          else if (isUpcoming(startMainAt)) gameStatus = "upcoming";
-        }
-
-        return {
-          name: world.name,
-          chain: world.chain,
-          worldKey,
-          status,
-          gameStatus,
-          startMainAt,
-          endAt,
-          registrationCount: availability?.meta?.registrationCount ?? null,
-          isRegistered: playerRegistration[worldKey] ?? null,
-          config: availability?.meta ?? null,
-        };
-      })
-      // Only show online games
-      .filter((game) => game.status === "ok");
-
-    // Sort: registered first, then by status (live > soon > ended)
-    return nodes.toSorted((a, b) => {
-      if (a.isRegistered && !b.isRegistered) return -1;
-      if (!a.isRegistered && b.isRegistered) return 1;
-      const order: Record<GameStatus, number> = { ongoing: 0, upcoming: 1, ended: 2, unknown: 3 };
-      return order[a.gameStatus] - order[b.gameStatus];
-    });
-  }, [factoryWorlds, factoryAvailability, playerRegistration, targetChain, isOngoing, isEnded, isUpcoming]);
-
-  const handleRefresh = useCallback(async () => {
-    setPlayerRegistration({});
-    await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
-  }, [refetchFactoryWorlds, refetchFactory]);
-
-  // Callback for when a registration completes - refresh data
-  const handleRegistrationComplete = useCallback(() => {
-    setPlayerRegistration({});
-    void refetchFactory();
-    onRegistrationComplete?.();
-  }, [refetchFactory, onRegistrationComplete]);
-
-  const isLoading = factoryWorldsLoading || factoryCheckingAvailability;
-  const isChainMatch = targetChain === activeFactoryChain;
-
-  // Count by status
-  const counts = useMemo(() => {
-    return {
-      ongoing: games.filter((g) => g.gameStatus === "ongoing").length,
-      upcoming: games.filter((g) => g.gameStatus === "upcoming").length,
-      ended: games.filter((g) => g.gameStatus === "ended").length,
-    };
-  }, [games]);
-
-  return (
-    <div className={cn("relative", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h3
-            className={cn(
-              "text-lg font-bold uppercase tracking-wider",
-              chain === "mainnet" ? "text-brilliance" : "text-gold",
-            )}
-          >
-            {chain === "mainnet" ? "Mainnet" : "Slot"}
-          </h3>
-          {!isChainMatch && (
-            <span className="text-[10px] text-white/40 px-2 py-0.5 rounded border border-white/20">
-              Different chain
-            </span>
-          )}
-          <span className="text-xs text-white/40">
-            {games.length} game{games.length !== 1 ? "s" : ""} online
-          </span>
-        </div>
-        <button
-          onClick={() => void handleRefresh()}
-          disabled={isLoading}
-          className="p-1.5 rounded-md bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
-          title="Refresh"
-        >
-          <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-        </button>
-      </div>
-
-      {/* Legend - compact */}
-      <div className="flex items-center gap-3 mb-3 text-[10px]">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-white/50">Live ({counts.ongoing})</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-amber-400" />
-          <span className="text-white/50">Soon ({counts.upcoming})</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-gray-500" />
-          <span className="text-white/50">Ended ({counts.ended})</span>
-        </div>
-      </div>
-
-      {/* Game cards - scrollable */}
-      <div className="max-h-[400px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-        {isLoading && games.length === 0 ? (
-          <div className="flex items-center justify-center h-[150px]">
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
-              <span className="text-xs text-white/40">Checking games...</span>
-            </div>
-          </div>
-        ) : factoryError ? (
-          <div className="flex flex-col items-center justify-center h-[150px] text-center">
-            <p className="text-xs text-red-400">Failed to load games</p>
-            <button
-              onClick={() => void handleRefresh()}
-              className="mt-2 px-2 py-1 text-[10px] rounded bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20"
-            >
-              Retry
-            </button>
-          </div>
-        ) : games.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[150px] text-center">
-            <p className="text-xs text-white/40">No games on {chain}</p>
-            <p className="text-[10px] text-white/30 mt-1">Games appear when servers are online</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {games.map((game) => (
-              <GameCard
-                key={game.worldKey}
-                game={game}
-                onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
-                onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
-                onRegistrationComplete={handleRegistrationComplete}
-                playerAddress={playerAddress}
               />
             ))}
           </div>
