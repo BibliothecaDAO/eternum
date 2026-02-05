@@ -27,7 +27,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     subMenu: [
       { id: "play", label: "PLAY", tab: null },
       { id: "learn", label: "LEARN", tab: "learn" },
-      { id: "lore", label: "LORE", tab: "lore" },
+      { id: "news", label: "NEWS", tab: "news" },
     ],
   },
   {

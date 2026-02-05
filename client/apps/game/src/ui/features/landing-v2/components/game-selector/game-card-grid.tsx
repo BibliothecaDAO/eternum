@@ -318,6 +318,10 @@ interface UnifiedGameGridProps {
   onSpectate: (selection: WorldSelection) => void;
   onRegistrationComplete?: () => void;
   className?: string;
+  /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */
+  devModeFilter?: boolean;
+  /** Custom title for the grid */
+  title?: string;
 }
 
 /**
@@ -328,6 +332,8 @@ export const UnifiedGameGrid = ({
   onSpectate,
   onRegistrationComplete,
   className,
+  devModeFilter,
+  title = "Games",
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
   const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
@@ -401,7 +407,13 @@ export const UnifiedGameGrid = ({
         };
       })
       // Only show online games
-      .filter((game) => game.status === "ok");
+      .filter((game) => game.status === "ok")
+      // Filter by dev mode if specified
+      .filter((game) => {
+        if (devModeFilter === undefined) return true;
+        const gameDevMode = game.config?.devModeOn ?? false;
+        return devModeFilter === gameDevMode;
+      });
 
     // Sort: live first, then upcoming (by start time asc), then ended (by start time asc)
     return nodes.toSorted((a, b) => {
@@ -413,7 +425,7 @@ export const UnifiedGameGrid = ({
       const bStart = b.startMainAt ?? Infinity;
       return aStart - bStart;
     });
-  }, [factoryWorlds, factoryAvailability, localRegistrations, isOngoing, isEnded, isUpcoming]);
+  }, [factoryWorlds, factoryAvailability, localRegistrations, isOngoing, isEnded, isUpcoming, devModeFilter]);
 
   const handleRefresh = useCallback(async () => {
     setLocalRegistrations({});
@@ -445,7 +457,7 @@ export const UnifiedGameGrid = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold uppercase tracking-wider text-gold">Games</h3>
+          <h3 className="text-lg font-bold uppercase tracking-wider text-gold">{title}</h3>
           <span className="text-xs text-white/40">
             {games.length} game{games.length !== 1 ? "s" : ""} online
           </span>
