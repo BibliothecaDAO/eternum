@@ -189,11 +189,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG());
 
-  console.log("[GAME RENDERER INITIALIZED]");
-
   initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
-
-  console.log("[GAME RENDERER INITIALIZED]");
 
   inject();
 
