@@ -149,10 +149,12 @@ export const PlayView = ({ className }: PlayViewProps) => {
   return (
     <>
       <div className={cn("flex flex-col gap-6", className)}>
-        {/* Hero title */}
-        <div className="mb-2">
-          <HeroTitle />
-        </div>
+        {/* Hero title - only show on Play tab */}
+        {activeTab === "play" && (
+          <div className="mb-2">
+            <HeroTitle />
+          </div>
+        )}
 
         {/* Tab content */}
         {renderContent()}
