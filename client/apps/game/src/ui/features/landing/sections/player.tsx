@@ -252,12 +252,14 @@ export const LandingPlayer = () => {
 
   // Fetch player MMR from the current world
   const fetchPlayerMMR = useCallback(
-    async (address: string) => {
-      const toriiUrl = worldSelection.toriiBaseUrl;
-      const worldName = worldSelection.selectedWorld;
-      if (!toriiUrl || !worldName || !address) {
+    async (address: string, worldNameOverride?: string) => {
+      // Use provided world name or fall back to selected world
+      const worldName = worldNameOverride || worldSelection.selectedWorld;
+      if (!worldName || !address) {
         return;
       }
+
+      const toriiUrl = `https://api.cartridge.gg/x/${worldName}/torii`;
 
       setIsLoadingMMR(true);
       try {
@@ -314,19 +316,24 @@ export const LandingPlayer = () => {
 
         setPlayerMMR(mmr);
         setIsLoadingMMR(false);
-      } catch {
+      } catch (e) {
+        console.warn("Failed to fetch player MMR:", e);
         setIsLoadingMMR(false);
       }
     },
-    [worldSelection.toriiBaseUrl, worldSelection.selectedWorld],
+    [worldSelection.selectedWorld],
   );
 
-  // Fetch MMR when player address changes and world is selected
+  // Fetch MMR when player address changes
+  // Use first available world if no world is selected
   useEffect(() => {
-    if (playerAddress && worldSelection.selectedWorld) {
-      void fetchPlayerMMR(playerAddress);
+    if (!playerAddress) return;
+
+    const worldName = worldSelection.selectedWorld || worldSelection.availableWorlds[0]?.name;
+    if (worldName) {
+      void fetchPlayerMMR(playerAddress, worldName);
     }
-  }, [playerAddress, worldSelection.selectedWorld, fetchPlayerMMR]);
+  }, [playerAddress, worldSelection.selectedWorld, worldSelection.availableWorlds, fetchPlayerMMR]);
 
   // Fetch leaderboard on mount and when world changes
   useEffect(() => {
@@ -397,7 +404,7 @@ export const LandingPlayer = () => {
     }
 
     return null;
-  }, [playerAddress, isPlayerLoading, playerError, playerEntry]);
+  }, [playerAddress, isPlayerLoading, playerError, playerEntry, playerMMR, isLoadingMMR]);
 
   const highlightPlayer = useMemo<BlitzHighlightPlayer | null>(
     () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
