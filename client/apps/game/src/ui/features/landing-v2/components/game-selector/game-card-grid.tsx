@@ -137,9 +137,10 @@ const GameCard = ({
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);
-  // Can forge hyperstructures during upcoming if there are any left
+  // Forge hyperstructures button shown for upcoming games
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
-  const canForgeHyperstructures = isUpcoming && numHyperstructuresLeft > 0 && playerAddress;
+  // Show forge button for upcoming games when we have the config (even if 0 left, show disabled)
+  const showForgeButton = isUpcoming && game.config?.numHyperstructuresLeft !== null && playerAddress;
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
@@ -304,24 +305,20 @@ const GameCard = ({
             </button>
           )}
 
-          {/* Forge Hyperstructures button for upcoming games - golden orb style */}
-          {canForgeHyperstructures && onForgeHyperstructures && (
+          {/* Forge Hyperstructures button for upcoming games */}
+          {showForgeButton && onForgeHyperstructures && (
             <button
               onClick={onForgeHyperstructures}
-              className="relative flex-shrink-0 w-10 h-10 rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-300/50 transition-transform hover:scale-105"
-              style={{
-                background: "radial-gradient(circle at 30% 30%, #facc15, #ca8a04, #f59e0b)",
-                boxShadow:
-                  "0 4px 16px rgba(251, 191, 36, 0.4), inset 0 1px 4px rgba(255, 255, 255, 0.4), inset 0 -1px 4px rgba(0, 0, 0, 0.1)",
-                border: "2px solid #fef3c7",
-              }}
-              title={`Forge ${numHyperstructuresLeft} Hyperstructure${numHyperstructuresLeft !== 1 ? "s" : ""}`}
+              disabled={numHyperstructuresLeft <= 0}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors",
+                numHyperstructuresLeft > 0
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                  : "bg-gray-500/10 text-gray-500 border border-gray-500/20 cursor-not-allowed",
+              )}
             >
-              <div className="flex items-center justify-center w-full h-full text-base font-black text-amber-900">
-                {numHyperstructuresLeft}
-              </div>
-              {/* Sparkle indicator */}
-              <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-amber-300" />
+              <Sparkles className="w-3 h-3" />
+              Forge {numHyperstructuresLeft}
             </button>
           )}
 

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Eye, Loader2, Check, AlertCircle, RefreshCw, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import type { SetupResult } from "@/init/bootstrap";
@@ -18,6 +19,7 @@ import { applyWorldSelection } from "@/runtime/world";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getWorldKey } from "@/hooks/use-world-availability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import type { Chain } from "@contracts";
@@ -654,6 +656,7 @@ export const GameEntryModal = ({
   numHyperstructuresLeft: initialNumHyperstructuresLeft,
 }: GameEntryModalProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -1175,12 +1178,16 @@ export const GameEntryModal = ({
       debugLog(worldName, "Hyperstructures forged!");
       // Update local count
       setNumHyperstructuresLeft((prev) => Math.max(0, prev - hyperstructureCount));
+
+      // Invalidate the world availability cache so the count updates on the landing page
+      const worldKey = getWorldKey({ name: worldName, chain });
+      queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
     } catch (error) {
       debugLog(worldName, "Forge hyperstructures failed:", error);
     } finally {
       setIsForging(false);
     }
-  }, [setupResult, account, worldName]);
+  }, [setupResult, account, worldName, chain, queryClient]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
