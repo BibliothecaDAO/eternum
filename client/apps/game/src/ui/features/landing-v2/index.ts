@@ -17,9 +17,10 @@ export { MobileBottomNav } from "./components/mobile-bottom-nav";
 export { EmptyStateCard } from "./components/game-selector/empty-state-card";
 export { GameCard, type GameInfo } from "./components/game-selector/game-card";
 export { GameCarousel } from "./components/game-selector/game-carousel";
+export { InlineGameSelector, type WorldSelection } from "./components/game-selector/inline-game-selector";
 
 // Views
-export { DEMO_GAMES, PlayView } from "./views/play-view";
+export { PlayView } from "./views/play-view";
 export { ProfileView } from "./views/profile-view";
 export { MarketsView } from "./views/markets-view";
 export { LeaderboardView } from "./views/leaderboard-view";

@@ -23,7 +23,7 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
  * Main layout wrapper for the new unified landing page.
  * Features:
  * - Full-bleed dynamic background with crossfade transitions
- * - Icon-only sidebar on desktop
+ * - Icon-only sidebar on desktop with wallet connector
  * - Bottom tab bar on mobile
  * - Minimal top header with navigation
  */
@@ -66,11 +66,11 @@ const LandingLayoutContent = () => {
       {/* Dynamic background */}
       <DynamicBackground backgroundId={backgroundId} />
 
-      {/* Left sidebar (desktop only) */}
-      <LandingSidebar onSettingsClick={handleSettingsClick} />
+      {/* Left sidebar (desktop only) - includes wallet connector */}
+      <LandingSidebar onSettingsClick={handleSettingsClick} walletButton={<Controller />} />
 
-      {/* Top header with wallet controller */}
-      <LandingHeader walletButton={<Controller />} />
+      {/* Top header - wallet shown on mobile only */}
+      <LandingHeader mobileWalletButton={<Controller />} />
 
       {/* Main content area */}
       <main

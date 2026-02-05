@@ -1,3 +1,4 @@
+import { ReactComponent as BlitzLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NavLink } from "react-router-dom";
 
@@ -14,14 +15,16 @@ const navItems: NavItem[] = [
 ];
 
 interface LandingHeaderProps {
-  walletButton?: React.ReactNode;
+  /** Wallet button for mobile - hidden on desktop (shown in sidebar) */
+  mobileWalletButton?: React.ReactNode;
   className?: string;
 }
 
 /**
- * Minimal top navigation header with logo, nav items, and wallet connect.
+ * Minimal top navigation header with nav items.
+ * Wallet is shown in sidebar on desktop, in header on mobile.
  */
-export const LandingHeader = ({ walletButton, className }: LandingHeaderProps) => {
+export const LandingHeader = ({ mobileWalletButton, className }: LandingHeaderProps) => {
   return (
     <header
       className={cn(
@@ -36,7 +39,7 @@ export const LandingHeader = ({ walletButton, className }: LandingHeaderProps) =
       {/* Logo - visible on mobile, hidden on desktop (shown in sidebar) */}
       <div className="flex items-center gap-3 lg:hidden">
         <NavLink to="/" className="transition-transform duration-200 hover:scale-105">
-          <img src="/assets/icons/eternum-new-logo.svg" alt="Eternum" className="h-8 w-8" />
+          <BlitzLogo className="h-8 w-auto text-gold" />
         </NavLink>
       </div>
 
@@ -69,8 +72,11 @@ export const LandingHeader = ({ walletButton, className }: LandingHeaderProps) =
       {/* Spacer for centering on desktop */}
       <div className="hidden flex-1 lg:block" />
 
-      {/* Wallet button */}
-      <div className="flex items-center gap-4">{walletButton}</div>
+      {/* Wallet button - mobile only, desktop shows in sidebar */}
+      <div className="flex items-center gap-4 lg:hidden">{mobileWalletButton}</div>
+
+      {/* Empty div to balance header on desktop */}
+      <div className="hidden lg:block" />
     </header>
   );
 };
