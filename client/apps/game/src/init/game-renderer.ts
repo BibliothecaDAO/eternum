@@ -8,7 +8,6 @@ export const initializeGameRenderer = (setupResult: SetupResult, enableDevTools:
   renderer.initScene();
   if (enableDevTools) {
     renderer.initStats();
-    renderer.initMemoryMonitoring();
   }
 
   const existingUnloadHandler = window.onbeforeunload;
