@@ -592,7 +592,15 @@ export const UnifiedGameGrid = ({
             "overflow-x-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent",
         )}
       >
-        {isLoading && games.length === 0 ? (
+        {isWaitingForReconnect ? (
+          // Always show loading when waiting for controller to reconnect, even if games are cached
+          <div className="flex items-center justify-center h-[120px]">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
+              <span className="text-xs text-white/40">Loading account...</span>
+            </div>
+          </div>
+        ) : isLoading && games.length === 0 ? (
           <div className="flex items-center justify-center h-[120px]">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
