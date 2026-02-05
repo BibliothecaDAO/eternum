@@ -1,66 +1,44 @@
 /**
  * Wallet section for the profile page.
- * Fetches and displays token balances from the connected wallet.
+ * Always fetches mainnet balances from the connected wallet.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@starknet-react/core";
-import { RpcProvider, uint256, hash } from "starknet";
-import { Chain, getSeasonAddresses } from "@contracts";
-import { env } from "../../../../../env";
+import { RpcProvider, uint256 } from "starknet";
+import { getSeasonAddresses } from "@contracts";
 import { displayAddress } from "@/ui/utils/utils";
 
-// ERC20 balanceOf selector
-const BALANCE_OF_SELECTOR = hash.getSelectorFromName("balanceOf");
-
-// Token configs by chain
+// Token configs - always mainnet
 interface TokenConfig {
   symbol: string;
   address: string;
   decimals: number;
 }
 
-const getTokensForChain = (chain: Chain): TokenConfig[] => {
-  const addresses = getSeasonAddresses(chain);
-  const tokens: TokenConfig[] = [];
-
-  // LORDS token
-  if (chain === "mainnet") {
-    tokens.push({
+// Always use mainnet tokens
+const MAINNET_TOKENS: TokenConfig[] = (() => {
+  const addresses = getSeasonAddresses("mainnet");
+  return [
+    {
       symbol: "LORDS",
       address: addresses.lords || "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
       decimals: 18,
-    });
-    // ETH on mainnet
-    tokens.push({
+    },
+    {
       symbol: "ETH",
       address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
       decimals: 18,
-    });
-  } else {
-    // On testnet/slot, use STRK
-    tokens.push({
+    },
+    {
       symbol: "STRK",
-      address: addresses.strk || "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      address: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
       decimals: 18,
-    });
-    // ETH on sepolia
-    tokens.push({
-      symbol: "ETH",
-      address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-      decimals: 18,
-    });
-  }
+    },
+  ];
+})();
 
-  return tokens;
-};
-
-// RPC URL for balance queries (always use mainnet/sepolia for balances, not katana)
-const getRpcUrl = (chain: Chain): string => {
-  if (chain === "mainnet") {
-    return "https://api.cartridge.gg/x/starknet/mainnet";
-  }
-  return "https://api.cartridge.gg/x/starknet/sepolia";
-};
+// Always use mainnet RPC
+const MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet";
 
 interface TokenBalance {
   symbol: string;
@@ -75,56 +53,49 @@ export const WalletSection = () => {
   const [balances, setBalances] = useState<Map<string, TokenBalance>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
 
-  const chain = env.VITE_PUBLIC_CHAIN as Chain;
-  const tokens = useMemo(() => getTokensForChain(chain), [chain]);
-  const rpcUrl = useMemo(() => getRpcUrl(chain), [chain]);
-
   /**
    * Fetch balance for a single token
    */
-  const fetchTokenBalance = useCallback(
-    async (token: TokenConfig, walletAddress: string): Promise<TokenBalance> => {
-      try {
-        const provider = new RpcProvider({ nodeUrl: rpcUrl });
+  const fetchTokenBalance = useCallback(async (token: TokenConfig, walletAddress: string): Promise<TokenBalance> => {
+    try {
+      const provider = new RpcProvider({ nodeUrl: MAINNET_RPC_URL });
 
-        const result = await provider.callContract({
-          contractAddress: token.address,
-          entrypoint: "balanceOf",
-          calldata: [walletAddress],
-        });
+      const result = await provider.callContract({
+        contractAddress: token.address,
+        entrypoint: "balanceOf",
+        calldata: [walletAddress],
+      });
 
-        // Result is uint256 (low, high)
-        const low = BigInt(result[0] || "0");
-        const high = BigInt(result[1] || "0");
-        const rawBalance = uint256.uint256ToBN({ low, high });
+      // Result is uint256 (low, high)
+      const low = BigInt(result[0] || "0");
+      const high = BigInt(result[1] || "0");
+      const rawBalance = uint256.uint256ToBN({ low, high });
 
-        // Format with decimals
-        const divisor = BigInt(10 ** token.decimals);
-        const wholePart = rawBalance / divisor;
-        const fractionalPart = rawBalance % divisor;
-        const fractionalStr = fractionalPart.toString().padStart(token.decimals, "0").slice(0, 4);
-        const balance = `${wholePart}.${fractionalStr}`;
+      // Format with decimals
+      const divisor = BigInt(10 ** token.decimals);
+      const wholePart = rawBalance / divisor;
+      const fractionalPart = rawBalance % divisor;
+      const fractionalStr = fractionalPart.toString().padStart(token.decimals, "0").slice(0, 4);
+      const balance = `${wholePart}.${fractionalStr}`;
 
-        return {
-          symbol: token.symbol,
-          balance,
-          rawBalance,
-          isLoading: false,
-          error: null,
-        };
-      } catch (e) {
-        console.warn(`Failed to fetch ${token.symbol} balance:`, e);
-        return {
-          symbol: token.symbol,
-          balance: "0.00",
-          rawBalance: 0n,
-          isLoading: false,
-          error: "Failed to fetch",
-        };
-      }
-    },
-    [rpcUrl],
-  );
+      return {
+        symbol: token.symbol,
+        balance,
+        rawBalance,
+        isLoading: false,
+        error: null,
+      };
+    } catch (e) {
+      console.warn(`Failed to fetch ${token.symbol} balance:`, e);
+      return {
+        symbol: token.symbol,
+        balance: "0.00",
+        rawBalance: 0n,
+        isLoading: false,
+        error: "Failed to fetch",
+      };
+    }
+  }, []);
 
   /**
    * Fetch all token balances
@@ -139,7 +110,7 @@ export const WalletSection = () => {
 
     // Initialize with loading state
     const initialBalances = new Map<string, TokenBalance>();
-    tokens.forEach((token) => {
+    MAINNET_TOKENS.forEach((token) => {
       initialBalances.set(token.symbol, {
         symbol: token.symbol,
         balance: "...",
@@ -151,7 +122,7 @@ export const WalletSection = () => {
     setBalances(initialBalances);
 
     // Fetch all balances in parallel
-    const results = await Promise.all(tokens.map((token) => fetchTokenBalance(token, address)));
+    const results = await Promise.all(MAINNET_TOKENS.map((token) => fetchTokenBalance(token, address)));
 
     const newBalances = new Map<string, TokenBalance>();
     results.forEach((result) => {
@@ -160,7 +131,7 @@ export const WalletSection = () => {
 
     setBalances(newBalances);
     setIsLoading(false);
-  }, [address, isConnected, tokens, fetchTokenBalance]);
+  }, [address, isConnected, fetchTokenBalance]);
 
   // Fetch balances when address changes
   useEffect(() => {
@@ -169,75 +140,76 @@ export const WalletSection = () => {
 
   if (!isConnected || !address) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-gold/60">Connect your wallet to view balances</p>
+      <div className="flex h-full flex-col items-center justify-center py-16 text-center">
+        <p className="text-lg text-gold/60">Connect your wallet to view balances</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Address display */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gold/30 to-gold/10" />
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gold/10 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-gold/30 to-gold/10">
+            <span className="text-lg font-bold text-gold">{address.slice(2, 4).toUpperCase()}</span>
+          </div>
           <div>
-            <p className="font-medium text-gold">{displayAddress(address)}</p>
-            <p className="text-xs text-gold/50">{chain === "mainnet" ? "Starknet Mainnet" : "Starknet Sepolia"}</p>
+            <p className="text-lg font-medium text-gold">{displayAddress(address)}</p>
+            <p className="text-sm text-gold/50">Starknet Mainnet</p>
           </div>
         </div>
         <button
           type="button"
           onClick={() => void fetchAllBalances()}
           disabled={isLoading}
-          className="rounded-lg border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold transition hover:bg-gold/20 disabled:opacity-50"
+          className="rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:bg-gold/20 disabled:opacity-50"
         >
           {isLoading ? "Loading..." : "Refresh"}
         </button>
       </div>
 
       {/* Token balances */}
-      <div className="space-y-3">
-        {tokens.map((token) => {
-          const balance = balances.get(token.symbol);
-          return (
-            <div
-              key={token.symbol}
-              className="flex items-center justify-between rounded-xl border border-gold/10 bg-black/30 px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">
-                  {token.symbol.slice(0, 2)}
+      <div className="flex-1 space-y-4 py-6">
+        <h3 className="text-sm font-medium uppercase tracking-wider text-gold/50">Token Balances</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {MAINNET_TOKENS.map((token) => {
+            const balance = balances.get(token.symbol);
+            return (
+              <div
+                key={token.symbol}
+                className="rounded-xl border border-gold/10 bg-black/30 p-4 transition hover:border-gold/20"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-sm font-bold text-gold">
+                    {token.symbol.slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gold/60">{token.symbol}</p>
+                    {balance?.isLoading ? (
+                      <p className="text-lg font-semibold text-gold/50">...</p>
+                    ) : balance?.error ? (
+                      <p className="text-sm text-red-400/70">Error</p>
+                    ) : (
+                      <p className="text-xl font-semibold text-gold">{balance?.balance || "0.00"}</p>
+                    )}
+                  </div>
                 </div>
-                <span className="font-medium text-gold/80">{token.symbol}</span>
               </div>
-              <div className="text-right">
-                {balance?.isLoading ? (
-                  <span className="text-gold/50">...</span>
-                ) : balance?.error ? (
-                  <span className="text-red-400/70 text-sm">Error</span>
-                ) : (
-                  <span className="text-lg font-semibold text-gold">{balance?.balance || "0.00"}</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="border-t border-gold/10 pt-6">
         <a
-          href={
-            chain === "mainnet"
-              ? `https://voyager.online/contract/${address}`
-              : `https://sepolia.voyager.online/contract/${address}`
-          }
+          href={`https://voyager.online/contract/${address}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 rounded-xl border border-gold/20 bg-gold/5 py-3 text-center text-sm font-medium text-gold/70 transition hover:bg-gold/10 hover:text-gold"
+          className="block w-full rounded-xl border border-gold/20 bg-gold/5 py-3 text-center text-sm font-medium text-gold/70 transition hover:bg-gold/10 hover:text-gold"
         >
-          View on Explorer
+          View on Voyager Explorer
         </a>
       </div>
     </div>
