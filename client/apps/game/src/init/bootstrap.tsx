@@ -35,7 +35,10 @@ const deriveWorldFromPath = (): string | null => {
   try {
     const match = window.location.pathname.match(/^\/play\/([^/]+)(?:\/|$)/);
     if (!match || !match[1]) return null;
-    return decodeURIComponent(match[1]);
+    const candidate = decodeURIComponent(match[1]);
+    // "map" and "hex" are view modes, not world names
+    if (candidate === "map" || candidate === "hex") return null;
+    return candidate;
   } catch {
     return null;
   }
