@@ -6,7 +6,7 @@ import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useState } from "react";
 import { HeroTitle } from "../components/hero-title";
-import { GameCardGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
+import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
 import type { Chain } from "@contracts";
 import { env } from "../../../../../env";
 
@@ -100,27 +100,18 @@ export const PlayView = ({ className }: PlayViewProps) => {
         <HeroTitle />
       </div>
 
-      {/* Game grids */}
-      <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-4", isEntering && "opacity-50 pointer-events-none")}>
-        {/* Mainnet Games */}
-        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-brilliance/20 p-4">
-          <GameCardGrid
-            chain="mainnet"
-            onSelectGame={handleSelectGame}
-            onSpectate={handleSpectate}
-            onRegistrationComplete={handleRegistrationComplete}
-          />
-        </div>
-
-        {/* Slot Games */}
-        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-gold/20 p-4">
-          <GameCardGrid
-            chain="slot"
-            onSelectGame={handleSelectGame}
-            onSpectate={handleSpectate}
-            onRegistrationComplete={handleRegistrationComplete}
-          />
-        </div>
+      {/* Unified Game Grid */}
+      <div
+        className={cn(
+          "bg-black/30 backdrop-blur-sm rounded-lg border border-gold/20 p-4",
+          isEntering && "opacity-50 pointer-events-none",
+        )}
+      >
+        <UnifiedGameGrid
+          onSelectGame={handleSelectGame}
+          onSpectate={handleSpectate}
+          onRegistrationComplete={handleRegistrationComplete}
+        />
       </div>
     </div>
   );
