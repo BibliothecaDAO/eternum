@@ -24,6 +24,9 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Account as StarknetAccount } from "starknet";
 
+/** Delay in ms between sequential realm plan executions to avoid log/tx bursts */
+const REALM_EXECUTION_DELAY_MS = 2_000;
+
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
   return typeof label === "string" ? label : `Resource ${resourceId}`;
@@ -352,13 +355,20 @@ export const useAutomation = () => {
         });
       }
 
-      // Phase 2: Execute all plans in parallel (enqueue all at once before any user actions can interleave)
+      // Phase 2: Execute plans sequentially with a delay between each to avoid log/tx bursts
       if (executablePlans.length > 0) {
-        console.log(`[Automation] Executing ${executablePlans.length} production plans in parallel`);
+        console.log(`[Automation] Queued ${executablePlans.length} production plans for sequential execution`);
 
-        const results = await Promise.allSettled(
-          executablePlans.map(async ({ plan, realmConfig, realmLabel, planLogPayload }) => {
-            console.log("[Automation] Executing production plan", planLogPayload);
+        for (let i = 0; i < executablePlans.length; i++) {
+          const { plan, realmConfig, realmLabel, planLogPayload } = executablePlans[i];
+
+          // Space out executions: wait between each realm (skip delay for the first one)
+          if (i > 0) {
+            await new Promise((resolve) => setTimeout(resolve, REALM_EXECUTION_DELAY_MS));
+          }
+
+          try {
+            console.log(`[Automation] Executing production plan (${i + 1}/${executablePlans.length})`, planLogPayload);
             const callset = plan.callset;
             await execute_realm_production_plan({
               signer: starknetSignerAccount as StarknetAccount,
@@ -372,14 +382,7 @@ export const useAutomation = () => {
                 cycles: item.cycles,
               })),
             });
-            return { plan, realmConfig, realmLabel, planLogPayload };
-          }),
-        );
 
-        // Phase 3: Process results
-        for (const result of results) {
-          if (result.status === "fulfilled") {
-            const { plan, realmConfig, realmLabel, planLogPayload } = result.value;
             const summary = buildExecutionSummary(plan, Date.now());
             recordExecution(realmConfig.realmId, summary);
             console.log("[Automation] Automation execution complete", {
@@ -405,11 +408,10 @@ export const useAutomation = () => {
             } else {
               toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
             }
-          } else {
-            // Extract realm info from the error if possible
-            const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
-            console.error(`Automation: Failed to execute plan`, errorMessage);
-            toast.error(`Automation failed. Check console for details.`);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Automation: Failed to execute plan for ${realmLabel}`, errorMessage);
+            toast.error(`Automation failed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}. Check console.`);
           }
         }
       }
