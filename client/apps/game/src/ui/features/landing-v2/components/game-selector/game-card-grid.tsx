@@ -430,6 +430,7 @@ export const UnifiedGameGrid = ({
       for (const world of uniqueWorlds) {
         if (cancelled) break;
         const key = getWorldKey(world);
+        console.log("[UnifiedGameGrid] Checking registration for world:", { worldName: world.name, key, world });
         const torii = buildToriiBaseUrl(world.name);
         const status = await fetchPlayerRegistrationStatus(torii, playerFeltLiteral);
         if (!cancelled) {
