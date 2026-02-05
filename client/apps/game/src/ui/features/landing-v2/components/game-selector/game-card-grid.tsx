@@ -10,7 +10,7 @@ import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
+import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Chain } from "@contracts";
@@ -109,7 +109,6 @@ interface GameCardProps {
   onPlay: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
-  onBuildHyperstructures?: () => void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -123,7 +122,6 @@ const GameCard = ({
   onPlay,
   onSpectate,
   onSeeScore,
-  onBuildHyperstructures,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
@@ -137,8 +135,6 @@ const GameCard = ({
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);
-  // Can build hyperstructures if registered for an upcoming game
-  const canBuildHyperstructures = isUpcoming && game.isRegistered;
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
@@ -244,9 +240,9 @@ const GameCard = ({
           />
         </div>
 
-        {/* Action buttons - compact: [Play/Register/Build] [Spectate] layout */}
+        {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
         <div className="flex gap-1.5">
-          {/* Left slot: Play OR Build Hyperstructures OR Register (share same space) */}
+          {/* Left slot: Play OR Register (share same space) */}
           {canPlay ? (
             <button
               onClick={onPlay}
@@ -257,17 +253,6 @@ const GameCard = ({
             >
               <Play className="w-3 h-3" />
               Play
-            </button>
-          ) : canBuildHyperstructures && onBuildHyperstructures ? (
-            <button
-              onClick={onBuildHyperstructures}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
-                "bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors",
-              )}
-            >
-              <Sparkles className="w-3 h-3" />
-              Build Hyperstructures
             </button>
           ) : !showRegistered && canRegisterPeriod && playerAddress ? (
             <>
@@ -349,7 +334,6 @@ interface UnifiedGameGridProps {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
-  onBuildHyperstructures?: (selection: WorldSelection) => void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */

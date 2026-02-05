@@ -1,20 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Home, Settings, TrendingUp, Trophy, User } from "lucide-react";
-import { NavLink } from "react-router-dom";
-
-interface NavItem {
-  icon: React.ElementType;
-  label: string;
-  path?: string;
-  action?: () => void;
-}
-
-const navItems: NavItem[] = [
-  { icon: Home, label: "Play", path: "/" },
-  { icon: Trophy, label: "Ranks", path: "/leaderboard" },
-  { icon: User, label: "Profile", path: "/profile" },
-  { icon: TrendingUp, label: "Markets", path: "/markets" },
-];
+import { useLocation, useSearchParams } from "react-router-dom";
+import { getSectionFromPath, getActiveSubItem } from "../context/navigation-config";
 
 interface MobileBottomNavProps {
   onSettingsClick?: () => void;
@@ -23,9 +9,26 @@ interface MobileBottomNavProps {
 
 /**
  * Bottom tab bar navigation for mobile devices.
+ * Shows contextual sub-items based on the current section.
  * Hidden on desktop (replaced by sidebar).
  */
 export const MobileBottomNav = ({ onSettingsClick, className }: MobileBottomNavProps) => {
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeSection = getSectionFromPath(location.pathname);
+  const currentTab = searchParams.get("tab");
+  const activeSubItem = getActiveSubItem(activeSection, currentTab);
+
+  const handleTabClick = (tab: string | null) => {
+    if (tab === null) {
+      // Remove tab param for default tab
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab });
+    }
+  };
+
   return (
     <nav
       className={cn(
@@ -40,54 +43,31 @@ export const MobileBottomNav = ({ onSettingsClick, className }: MobileBottomNavP
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}
       aria-label="Mobile navigation"
     >
-      {navItems.map((item) => {
-        const Icon = item.icon;
+      {activeSection.subMenu.map((item) => {
+        const isActive = activeSubItem.id === item.id;
 
-        if (item.path) {
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === "/"}
-              className={({ isActive }) =>
-                cn(
-                  "relative flex flex-col items-center gap-1 px-3 py-2 rounded-lg",
-                  "transition-all duration-200",
-                  "active:scale-95",
-                  isActive ? "text-gold" : "text-gold/50 hover:text-gold/70",
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110")} />
-                  <span className="text-[10px] font-medium">{item.label}</span>
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <span className="absolute -top-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-gold shadow-[0_0_6px_rgba(223,170,84,0.8)]" />
-                  )}
-                </>
-              )}
-            </NavLink>
-          );
-        }
-
-        return null;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => handleTabClick(item.tab)}
+            className={cn(
+              "relative flex flex-col items-center gap-1 px-4 py-2 rounded-lg flex-1",
+              "transition-all duration-200",
+              "active:scale-95",
+              isActive ? "text-gold" : "text-gold/50 hover:text-gold/70",
+            )}
+          >
+            <span className={cn("text-xs font-semibold uppercase tracking-wide", isActive && "scale-105")}>
+              {item.label}
+            </span>
+            {/* Active indicator line */}
+            {isActive && (
+              <span className="absolute -bottom-1 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-gold shadow-[0_0_6px_rgba(223,170,84,0.8)]" />
+            )}
+          </button>
+        );
       })}
-
-      {/* Settings button */}
-      <button
-        type="button"
-        onClick={onSettingsClick}
-        className={cn(
-          "flex flex-col items-center gap-1 px-3 py-2 rounded-lg",
-          "text-gold/50 transition-all duration-200",
-          "hover:text-gold/70 active:scale-95",
-        )}
-      >
-        <Settings className="h-5 w-5" />
-        <span className="text-[10px] font-medium">Settings</span>
-      </button>
     </nav>
   );
 };
