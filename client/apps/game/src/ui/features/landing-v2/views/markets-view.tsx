@@ -1,9 +1,12 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import type { MarketClass } from "@/pm/class";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { MarketsProviders } from "@/ui/features/landing/sections/markets";
 import { MarketsList } from "@/ui/features/landing/sections/markets/markets-list";
 import { MarketStatusFilter, MarketTypeFilter, type MarketFiltersParams } from "@pm/sdk";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { MarketDetailsModal } from "./market-details-modal";
 
 interface MarketsViewProps {
   className?: string;
@@ -14,7 +17,7 @@ type MarketsTab = "live" | "past";
 /**
  * Live markets content - shows only OPEN prediction markets
  */
-const LiveMarketsContent = () => {
+const LiveMarketsContent = ({ onCardClick }: { onCardClick: (market: MarketClass) => void }) => {
   const marketFilters: MarketFiltersParams = useMemo(
     () => ({
       status: MarketStatusFilter.Open,
@@ -24,13 +27,13 @@ const LiveMarketsContent = () => {
     [],
   );
 
-  return <MarketsList marketFilters={marketFilters} />;
+  return <MarketsList marketFilters={marketFilters} onCardClick={onCardClick} />;
 };
 
 /**
  * Past markets content - shows RESOLVABLE and RESOLVED prediction markets
  */
-const PastMarketsContent = () => {
+const PastMarketsContent = ({ onCardClick }: { onCardClick: (market: MarketClass) => void }) => {
   const resolvableFilters: MarketFiltersParams = useMemo(
     () => ({
       status: MarketStatusFilter.Resolvable,
@@ -54,13 +57,13 @@ const PastMarketsContent = () => {
       {/* Resolvable Markets */}
       <div>
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-amber-400/80">Awaiting Resolution</h3>
-        <MarketsList marketFilters={resolvableFilters} />
+        <MarketsList marketFilters={resolvableFilters} onCardClick={onCardClick} />
       </div>
 
       {/* Resolved Markets */}
       <div>
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gold/60">Resolved</h3>
-        <MarketsList marketFilters={resolvedFilters} />
+        <MarketsList marketFilters={resolvedFilters} onCardClick={onCardClick} />
       </div>
     </div>
   );
@@ -74,13 +77,25 @@ const PastMarketsContent = () => {
 export const MarketsView = ({ className }: MarketsViewProps) => {
   const [searchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as MarketsTab) || "live";
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
+  const handleCardClick = useCallback(
+    (market: MarketClass) => {
+      toggleModal(<MarketDetailsModal market={market} onClose={() => toggleModal(null)} />);
+    },
+    [toggleModal],
+  );
 
   return (
     <MarketsProviders>
       <div className={cn("flex h-full flex-col gap-6", className)}>
         {/* Content based on active tab */}
-        <div className="flex-1 overflow-y-auto rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl md:p-6">
-          {activeTab === "live" ? <LiveMarketsContent /> : <PastMarketsContent />}
+        <div className="max-h-[calc(100vh-180px)] flex-1 overflow-y-auto rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl md:p-6">
+          {activeTab === "live" ? (
+            <LiveMarketsContent onCardClick={handleCardClick} />
+          ) : (
+            <PastMarketsContent onCardClick={handleCardClick} />
+          )}
         </div>
       </div>
     </MarketsProviders>

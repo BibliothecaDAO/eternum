@@ -338,127 +338,125 @@ export const MMRLeaderboard = () => {
   const isLoadingAny = isLoadingWorlds || isCheckingWorlds || state.isLoading;
 
   return (
-    <div className="space-y-5 rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-6 text-white shadow-[0_30px_65px_-30px_rgba(255,196,86,0.35)]">
+    <div className="h-[85vh] w-full space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
       {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gold/70">MMR Rankings</p>
-          <p className="mt-2 text-sm text-gold/60">Player rankings based on Match Making Rating across Blitz games.</p>
+          <h2 className="text-xl font-semibold text-gold">MMR Rankings</h2>
+          <p className="mt-1 text-sm text-gold/60">Player rankings based on Match Making Rating.</p>
         </div>
         <button
           type="button"
           onClick={handleRefresh}
           disabled={isLoadingAny || !state.selectedWorld}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gold/30 bg-gold/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {state.isLoading ? "Loading..." : "Refresh"}
         </button>
       </div>
 
-      {/* Selectors */}
-      <div className="rounded-2xl border border-gold/20 bg-black/40 p-4 shadow-inner shadow-gold/5">
-        <div className="space-y-3">
-          {/* Chain selector */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-gold/60">Chain:</span>
-            <div className="flex gap-1">
-              {CHAIN_OPTIONS.map((chain) => (
+      {/* Selectors - inline */}
+      <div className="flex flex-wrap items-center gap-6">
+        {/* Chain selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gold/60">Chain:</span>
+          <div className="flex gap-1">
+            {CHAIN_OPTIONS.map((chain) => (
+              <button
+                key={chain}
+                type="button"
+                onClick={() => handleChainChange(chain)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
+                  state.selectedChain === chain
+                    ? "bg-gold/20 text-gold"
+                    : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                }`}
+              >
+                {chain}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* World selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gold/60">World:</span>
+          {isLoadingWorlds || isCheckingWorlds ? (
+            <span className="text-sm text-gold/50">Loading...</span>
+          ) : mmrEnabledWorlds.length === 0 ? (
+            <span className="text-sm text-gold/50">No MMR-enabled worlds on {state.selectedChain}</span>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {mmrEnabledWorlds.map((world) => (
                 <button
-                  key={chain}
+                  key={world.name}
                   type="button"
-                  onClick={() => handleChainChange(chain)}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/70 ${
-                    state.selectedChain === chain
-                      ? "border border-gold/60 bg-gold/30 text-gold"
-                      : "border border-gold/15 bg-gold/5 text-gold/70 hover:border-gold/30 hover:bg-gold/10"
+                  onClick={() => handleWorldChange(world.name)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    state.selectedWorld === world.name
+                      ? "bg-gold/20 text-gold"
+                      : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                   }`}
                 >
-                  {chain}
+                  {world.name}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* World selector */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-gold/60">World:</span>
-            {isLoadingWorlds || isCheckingWorlds ? (
-              <span className="text-xs text-gold/50">Loading worlds...</span>
-            ) : mmrEnabledWorlds.length === 0 ? (
-              <span className="text-xs text-gold/50">No MMR-enabled worlds found on {state.selectedChain}</span>
-            ) : (
-              <div className="flex flex-wrap gap-1">
-                {mmrEnabledWorlds.map((world) => (
-                  <button
-                    key={world.name}
-                    type="button"
-                    onClick={() => handleWorldChange(world.name)}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/70 ${
-                      state.selectedWorld === world.name
-                        ? "border border-gold/60 bg-gold/30 text-gold"
-                        : "border border-gold/15 bg-gold/5 text-gold/70 hover:border-gold/30 hover:bg-gold/10"
-                    }`}
-                  >
-                    {world.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
       {/* Error message */}
       {state.error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {state.error}
         </div>
       )}
 
       {/* Loading state */}
       {state.isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+        <div className="flex flex-1 items-center justify-center py-16">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold border-t-transparent" />
         </div>
       )}
 
       {/* Empty state */}
       {!state.isLoading && !state.error && state.players.length === 0 && state.selectedWorld && (
-        <div className="rounded-2xl border border-dashed border-gold/20 bg-black/30 px-4 py-8 text-center text-sm text-gold/60">
+        <div className="flex flex-1 items-center justify-center py-16 text-gold/50">
           No players with MMR found in this world yet.
         </div>
       )}
 
       {/* Player list */}
       {!state.isLoading && state.players.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/40">
-          <div className="max-h-[500px] overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-black/90 backdrop-blur-sm">
-                <tr className="border-b border-gold/10 text-gold/70">
-                  <th className="px-4 py-3 text-left font-medium">#</th>
-                  <th className="px-4 py-3 text-left font-medium">Player</th>
-                  <th className="px-4 py-3 text-right font-medium">MMR</th>
+        <div className="flex-1 overflow-hidden rounded-xl border border-gold/10 bg-black/30">
+          <div className="max-h-[60vh] overflow-y-auto">
+            <table className="w-full">
+              <thead className="sticky top-0 border-b border-gold/10 bg-black/80 backdrop-blur-sm">
+                <tr className="text-left text-sm text-gold/60">
+                  <th className="px-6 py-4 font-medium">Rank</th>
+                  <th className="px-6 py-4 font-medium">Player</th>
+                  <th className="px-6 py-4 text-right font-medium">MMR</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/5">
                 {state.players.map((player, idx) => (
                   <tr key={player.address} className="transition-colors hover:bg-gold/5">
-                    <td className="px-4 py-3 text-gold/50">{idx + 1}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4 text-gold/50">#{idx + 1}</td>
+                    <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="font-medium text-gold">{player.name || displayAddress(player.address)}</span>
-                        {player.name && <span className="text-xs text-gold/50">{displayAddress(player.address)}</span>}
+                        {player.name && <span className="text-xs text-gold/40">{displayAddress(player.address)}</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gold">{formatMMR(player.mmr)}</td>
+                    <td className="px-6 py-4 text-right text-lg font-semibold text-gold">{formatMMR(player.mmr)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="border-t border-gold/10 px-4 py-2 text-center text-xs text-gold/50">
-            {state.players.length} player{state.players.length !== 1 ? "s" : ""} ranked by MMR
+          <div className="border-t border-gold/10 bg-black/40 px-6 py-3 text-center text-sm text-gold/50">
+            {state.players.length} player{state.players.length !== 1 ? "s" : ""} ranked
           </div>
         </div>
       )}

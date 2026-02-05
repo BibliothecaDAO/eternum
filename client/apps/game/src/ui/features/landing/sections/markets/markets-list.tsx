@@ -26,10 +26,12 @@ const MarketCard = memo(function MarketCard({
   market,
   allBalances,
   animationDelay = 0,
+  onCardClick,
 }: {
   market: MarketClass;
   allBalances: TokenBalance[];
   animationDelay?: number;
+  onCardClick?: (market: MarketClass) => void;
 }) {
   const href = useMemo(() => {
     try {
@@ -41,6 +43,14 @@ const MarketCard = memo(function MarketCard({
   }, [market.market_id]);
 
   const isLinkable = href !== "#";
+  const useModal = Boolean(onCardClick);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (onCardClick) {
+      e.preventDefault();
+      onCardClick(market);
+    }
+  };
 
   return (
     <Panel
@@ -57,11 +67,19 @@ const MarketCard = memo(function MarketCard({
         <MarketImage market={market} className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-md" />
         <div className="min-w-0 flex-1">
           {isLinkable ? (
-            <Link to={href} className="block">
-              <h3 className="font-cinzel text-base font-semibold leading-tight text-gold transition-colors group-hover:text-gold/80">
-                {market.title || "Untitled market"}
-              </h3>
-            </Link>
+            useModal ? (
+              <button type="button" onClick={handleClick} className="block text-left">
+                <h3 className="font-cinzel text-base font-semibold leading-tight text-gold transition-colors group-hover:text-gold/80">
+                  {market.title || "Untitled market"}
+                </h3>
+              </button>
+            ) : (
+              <Link to={href} className="block">
+                <h3 className="font-cinzel text-base font-semibold leading-tight text-gold transition-colors group-hover:text-gold/80">
+                  {market.title || "Untitled market"}
+                </h3>
+              </Link>
+            )
           ) : (
             <h3 className="font-cinzel text-base font-semibold leading-tight text-gold">
               {market.title || "Untitled market"}
@@ -90,19 +108,34 @@ const MarketCard = memo(function MarketCard({
       </div>
 
       {/* Hover Overlay - Quick Action */}
-      {isLinkable && (
-        <Link
-          to={href}
-          className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-gold/20 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
-        >
-          View Market
-        </Link>
-      )}
+      {isLinkable &&
+        (useModal ? (
+          <button
+            type="button"
+            onClick={handleClick}
+            className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-gold/20 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
+          >
+            View Market
+          </button>
+        ) : (
+          <Link
+            to={href}
+            className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-gold/20 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
+          >
+            View Market
+          </Link>
+        ))}
     </Panel>
   );
 });
 
-export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersParams }) {
+export function MarketsList({
+  marketFilters,
+  onCardClick,
+}: {
+  marketFilters: MarketFiltersParams;
+  onCardClick?: (market: MarketClass) => void;
+}) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const offset = (currentPage - 1) * PAGE_SIZE;
@@ -177,6 +210,7 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
             market={market}
             allBalances={allBalances}
             animationDelay={index * 50}
+            onCardClick={onCardClick}
           />
         ))}
       </div>

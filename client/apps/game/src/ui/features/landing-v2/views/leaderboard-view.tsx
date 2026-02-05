@@ -48,14 +48,5 @@ export const LeaderboardView = ({ className }: LeaderboardViewProps) => {
     }
   };
 
-  return (
-    <section
-      className={cn(
-        "relative h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-gold shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl md:max-h-[80vh]",
-        className,
-      )}
-    >
-      {renderContent()}
-    </section>
-  );
+  return <div className={cn("flex w-full max-w-6xl flex-col", className)}>{renderContent()}</div>;
 };

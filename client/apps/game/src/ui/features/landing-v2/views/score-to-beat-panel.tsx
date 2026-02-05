@@ -276,323 +276,243 @@ export const ScoreToBeatPanel = () => {
   }, [expandedAddress, scoreToBeatTopTen]);
 
   return (
-    <div className="space-y-5 rounded-3xl border border-amber-200/25 bg-gradient-to-br from-amber-500/10 via-black/40 to-black/80 p-6 text-white shadow-[0_30px_65px_-30px_rgba(255,196,86,0.55)]">
+    <div className="h-[85vh] w-full space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
       {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-100/70">Score to beat</p>
+          <h2 className="text-xl font-semibold text-gold">Score to Beat</h2>
           {topScoreToBeat ? (
             <>
-              <p className="mt-2 flex items-baseline gap-2 text-4xl font-extrabold leading-tight text-white">
+              <p className="mt-2 flex items-baseline gap-2 text-4xl font-bold text-gold">
                 {formatPoints(topScoreToBeat.combinedPoints)}
-                <span className="text-base font-semibold text-white/70">pts</span>
+                <span className="text-lg font-normal text-gold/60">pts</span>
               </p>
-              <p className="mt-2 text-sm text-white/70">
-                {(topScoreToBeatLabel ?? "Unknown captain").trim()} has conquered Realms Blitz.
-              </p>
-              {topScoreToBeatAddressLabel &&
-              topScoreToBeatLabel &&
-              topScoreToBeatLabel.toLowerCase() !== topScoreToBeatAddressLabel.toLowerCase() ? (
-                <p className="text-xs text-white/50">{topScoreToBeatAddressLabel}</p>
-              ) : null}
+              <p className="mt-1 text-sm text-gold/60">{(topScoreToBeatLabel ?? "Unknown").trim()} leads the pack</p>
             </>
           ) : (
-            <p className="mt-2 text-sm text-white/70">
+            <p className="mt-2 text-sm text-gold/60">
               {runsToAggregate === 1
-                ? "Get the best single run and you become the number everyone else has to chase."
-                : `Chain your best ${runsToAggregate} runs and you become the number everyone else has to chase.`}
+                ? "Get the best single run to top the leaderboard."
+                : `Combine your best ${runsToAggregate} runs to climb the ranks.`}
             </p>
           )}
         </div>
-        <div className="flex flex-col items-end gap-2 text-right">
-          {error ? (
-            <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-200" role="alert">
-              {error}
-            </span>
-          ) : null}
-          <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
-            <button
-              type="button"
-              onClick={handleDownloadData}
-              disabled={scoreToBeatTopTen.length === 0}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:border-amber-200/60 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Download score to beat scores"
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <div className="flex items-center gap-2">
-              {isLoading ? (
-                <span className="text-xs text-white/70" aria-live="polite">
-                  Syncing...
-                </span>
-              ) : null}
-              <RefreshButton
-                onClick={refresh}
-                isLoading={isLoading}
-                disabled={isLoading}
-                size="sm"
-                aria-label="Refresh score to beat"
-              />
-            </div>
+        <div className="flex items-center gap-2">
+          {error && <span className="rounded-lg bg-red-500/10 px-3 py-1.5 text-sm text-red-300">{error}</span>}
+          <button
+            type="button"
+            onClick={handleDownloadData}
+            disabled={scoreToBeatTopTen.length === 0}
+            className="rounded-xl border border-gold/30 bg-gold/10 p-2 text-gold transition hover:bg-gold/20 disabled:opacity-40"
+            aria-label="Download scores"
+          >
+            <Download className="h-5 w-5" />
+          </button>
+          <RefreshButton onClick={refresh} isLoading={isLoading} disabled={isLoading} size="md" />
+        </div>
+      </div>
+
+      {/* Selectors - inline */}
+      <div className="flex flex-wrap items-center gap-6">
+        {/* Chain */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gold/60">Chain:</span>
+          <div className="flex gap-1">
+            {CHAIN_OPTIONS.map((chain) => (
+              <button
+                key={chain}
+                type="button"
+                onClick={() => setSelectedChain(chain)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
+                  selectedChain === chain ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                }`}
+              >
+                {chain}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Best of */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gold/60">Best of:</span>
+          <div className="flex gap-1">
+            {RUNS_TO_AGGREGATE_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setRunsToAggregate(option)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                  runsToAggregate === option ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Game Selector */}
-      <div className="rounded-2xl border border-amber-100/20 bg-black/40 p-4 shadow-inner shadow-amber-500/5">
+      <div>
         <button
           type="button"
-          onClick={() => setIsGameSelectorOpen((current) => !current)}
-          aria-expanded={isGameSelectorOpen}
-          className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-start sm:justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
+          onClick={() => setIsGameSelectorOpen((c) => !c)}
+          className="flex items-center gap-2 text-sm text-gold/70 hover:text-gold"
         >
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-white/60">
-            <span>{gameLabel}</span>
-            {isLoading ? <span className="text-amber-100">• syncing</span> : null}
-            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/70">
-              {isGameSelectorOpen ? "Hide" : "Select games"}
-            </span>
-          </div>
+          <span>{gameLabel}</span>
+          <span className="text-xs">({isGameSelectorOpen ? "hide" : "show"})</span>
         </button>
 
-        {isGameSelectorOpen ? (
-          <div className="mt-3 space-y-3">
-            {/* Chain selector */}
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs text-white/60">Chain:</span>
-              <div className="flex gap-1">
-                {CHAIN_OPTIONS.map((chain) => (
-                  <button
-                    key={chain}
-                    type="button"
-                    onClick={() => setSelectedChain(chain)}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 ${
-                      selectedChain === chain
-                        ? "border border-amber-200/60 bg-amber-200/30 text-amber-50"
-                        : "border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
-                    }`}
-                  >
-                    {chain}
-                  </button>
-                ))}
+        {isGameSelectorOpen && (
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gold/60">
+                Available games {isLoadingGames || isCheckingWorlds ? "(checking...)" : `(${availableGames.length})`}
+              </span>
+              <span className="text-gold/50">
+                {selectedGames.length}/{MAX_GAMES} selected
+              </span>
+            </div>
+
+            {isLoadingGames || isCheckingWorlds ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
               </div>
-            </div>
-
-            {/* Best of selector */}
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs text-white/60">Best of:</span>
-              <div className="flex gap-1">
-                {RUNS_TO_AGGREGATE_OPTIONS.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setRunsToAggregate(option)}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 ${
-                      runsToAggregate === option
-                        ? "border border-amber-200/60 bg-amber-200/30 text-amber-50"
-                        : "border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
+            ) : availableGames.length === 0 ? (
+              <p className="py-4 text-center text-sm text-gold/50">No games with active indexers on {selectedChain}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {availableGames.map((game) => {
+                  const isSelected = selectedGames.includes(game.name);
+                  const isDisabled = !isSelected && selectedGames.length >= MAX_GAMES;
+                  return (
+                    <button
+                      key={game.name}
+                      type="button"
+                      onClick={() => handleToggleGame(game.name)}
+                      disabled={isDisabled}
+                      className={`rounded-lg px-3 py-2 text-left text-sm transition ${
+                        isSelected
+                          ? "bg-gold/20 text-gold"
+                          : isDisabled
+                            ? "cursor-not-allowed text-gold/30"
+                            : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                      }`}
+                    >
+                      <span className="block truncate">{game.name}</span>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            )}
 
-            {/* Available games from factory */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/60">
-                  Available games {isLoadingGames || isCheckingWorlds ? "(checking...)" : `(${availableGames.length})`}
-                </span>
-                <span className="text-xs text-white/50">
-                  {selectedGames.length}/{MAX_GAMES} selected
-                </span>
-              </div>
-              {isLoadingGames || isCheckingWorlds ? (
-                <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
-                  Checking available games on {selectedChain}...
-                </div>
-              ) : availableGames.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
-                  No games with active indexers found on {selectedChain}
-                </div>
-              ) : (
-                <div className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2">
-                  <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
-                    {availableGames.map((game) => {
-                      const isSelected = selectedGames.includes(game.name);
-                      const isDisabled = !isSelected && selectedGames.length >= MAX_GAMES;
-                      return (
-                        <button
-                          key={game.name}
-                          type="button"
-                          onClick={() => handleToggleGame(game.name)}
-                          disabled={isDisabled}
-                          className={`rounded-lg px-2 py-1.5 text-left text-xs transition ${
-                            isSelected
-                              ? "border border-amber-200/60 bg-amber-200/20 text-amber-50"
-                              : isDisabled
-                                ? "cursor-not-allowed border border-white/5 bg-white/5 text-white/30"
-                                : "border border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:bg-white/10"
-                          }`}
-                        >
-                          <span className="block truncate">{game.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Selected games and clear button */}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleClearSelectedGames}
-                disabled={selectedGames.length === 0}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:border-white/40 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Clear selection
-              </button>
-            </div>
-
-            {/* Show selected games as chips */}
-            {selectedGames.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
+            {selectedGames.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearSelectedGames}
+                  className="text-sm text-gold/50 hover:text-gold"
+                >
+                  Clear all
+                </button>
+                <span className="text-gold/30">|</span>
                 {selectedGames.map((name) => (
                   <span
                     key={name}
-                    className="inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-200/10 px-3 py-1 text-xs font-semibold text-amber-50"
+                    className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-1 text-xs text-gold"
                   >
                     {name}
                     <button
                       type="button"
                       onClick={() => handleToggleGame(name)}
-                      className="rounded-full border border-white/20 bg-white/10 px-1 text-[10px] font-bold text-white/80 transition hover:border-white/40 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
-                      aria-label={`Remove ${name} from selection`}
+                      className="ml-1 text-gold/50 hover:text-gold"
                     >
                       x
                     </button>
                   </span>
                 ))}
               </div>
-            ) : (
-              <p className="text-xs text-white/60">
-                No games selected. Select games above to see the combined leaderboard.
-              </p>
             )}
           </div>
-        ) : (
-          <p className="mt-3 text-xs text-white/60">Expand to select games for the combined leaderboard.</p>
         )}
       </div>
 
-      {/* Top score runs breakdown */}
-      <div className="grid gap-3 md:grid-cols-2">
-        {scoreToBeatRuns.length ? (
-          scoreToBeatRuns.map((run, index) => (
-            <div
-              key={`${run.endpoint}-${index}`}
-              className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm"
-            >
-              <p className="text-xs uppercase tracking-wide text-white/60">Run #{index + 1}</p>
-              <p className="mt-1 text-2xl font-semibold text-white">{formatPoints(run.points)} pts</p>
-              <p className="text-xs text-white/50">{describeEndpoint(run.endpoint)}</p>
+      {/* Top score runs */}
+      {scoreToBeatRuns.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {scoreToBeatRuns.map((run, index) => (
+            <div key={`${run.endpoint}-${index}`} className="rounded-xl border border-gold/10 bg-black/30 p-4">
+              <p className="text-xs text-gold/50">Run #{index + 1}</p>
+              <p className="mt-1 text-2xl font-semibold text-gold">{formatPoints(run.points)}</p>
+              <p className="text-xs text-gold/40">{describeEndpoint(run.endpoint)}</p>
             </div>
-          ))
-        ) : (
-          <div className="col-span-2 rounded-2xl border border-dashed border-white/20 bg-black/20 p-4 text-sm text-white/60">
-            Waiting for runs before we crown a pace setter.
-          </div>
-        )}
-      </div>
-
-      {/* Top 10 leaderboard */}
-      {scoreToBeatTopTen.length ? (
-        <div>
-          <p className="text-xs uppercase tracking-wide text-white/50">Top 10 {getRunsLabel(runsToAggregate)} totals</p>
-          <ol className="mt-3 divide-y divide-white/10 rounded-2xl border border-white/10 bg-black/30 text-sm">
-            {scoreToBeatTopTen.map((entry, index) => {
-              const rank = index + 1;
-              const challengerLabel = displayAddress(entry.address);
-              const isLeader = rank === 1;
-              const isExpanded = expandedAddress === entry.address;
-              const runSummaryLabel = getBestRunsLabel(Math.min(entry.runs.length, runsToAggregate));
-
-              return (
-                <li
-                  key={entry.address}
-                  className={`${isLeader ? "bg-amber-500/5" : ""} ${isExpanded ? "bg-white/5" : ""}`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setExpandedAddress((current) => (current === entry.address ? null : entry.address))}
-                    aria-expanded={isExpanded}
-                    className="flex w-full flex-col gap-1 px-4 py-3 text-left sm:flex-row sm:items-center sm:justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/60"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                          isLeader ? "bg-amber-400/30 text-amber-200" : "bg-white/10 text-white/60"
-                        }`}
-                      >
-                        {rank}
-                      </span>
-                      <div>
-                        <p className="font-semibold text-white">{entry.displayName ?? challengerLabel}</p>
-                        <p className="text-xs text-white/50">{entry.displayName ? challengerLabel : entry.address}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-base font-semibold text-white">{formatPoints(entry.combinedPoints)}</p>
-                      <p className="text-[11px] uppercase tracking-wide text-white/50">{runSummaryLabel}</p>
-                    </div>
-                  </button>
-                  {isExpanded ? (
-                    <div className="space-y-2 border-t border-white/10 px-4 pb-4 pt-3 text-sm text-white/80 sm:text-xs">
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">{runSummaryLabel}</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {entry.runs.map((run, runIndex) => (
-                          <div
-                            key={`${run.endpoint}-${runIndex}`}
-                            className="rounded-2xl border border-white/10 bg-black/30 p-3"
-                          >
-                            <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-white/60">
-                              <span>Run #{runIndex + 1}</span>
-                              <span className="text-sm font-semibold text-white">{formatPoints(run.points)} pts</span>
-                            </div>
-                            <p className="mt-1 text-[11px] uppercase tracking-wide text-white/50">
-                              {describeEndpoint(run.endpoint)}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ol>
+          ))}
         </div>
-      ) : null}
+      )}
 
-      {/* Footer status */}
-      <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-        <span>{gameLabel}</span>
-        {updatedLabel ? (
-          <>
-            <span>·</span>
-            <span>{updatedLabel}</span>
-          </>
-        ) : null}
-        {failedGames > 0 ? (
-          <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-200">
-            {failedGames} down
-          </span>
-        ) : null}
-      </div>
+      {/* Leaderboard */}
+      {scoreToBeatTopTen.length > 0 ? (
+        <div className="flex-1 overflow-hidden rounded-xl border border-gold/10 bg-black/30">
+          <div className="max-h-[50vh] overflow-y-auto">
+            <table className="w-full">
+              <thead className="sticky top-0 border-b border-gold/10 bg-black/80 backdrop-blur-sm">
+                <tr className="text-left text-sm text-gold/60">
+                  <th className="px-6 py-4 font-medium">Rank</th>
+                  <th className="px-6 py-4 font-medium">Player</th>
+                  <th className="px-6 py-4 text-right font-medium">Score</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gold/5">
+                {scoreToBeatTopTen.map((entry, index) => {
+                  const rank = index + 1;
+                  const isExpanded = expandedAddress === entry.address;
+
+                  return (
+                    <tr
+                      key={entry.address}
+                      onClick={() => setExpandedAddress(isExpanded ? null : entry.address)}
+                      className={`cursor-pointer transition-colors hover:bg-gold/5 ${isExpanded ? "bg-gold/5" : ""}`}
+                    >
+                      <td className="px-6 py-4 text-gold/50">#{rank}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gold">
+                            {entry.displayName ?? displayAddress(entry.address)}
+                          </span>
+                          {entry.displayName && (
+                            <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
+                          )}
+                          {isExpanded && entry.runs.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {entry.runs.map((run, i) => (
+                                <span key={i} className="rounded bg-gold/10 px-2 py-1 text-xs text-gold/70">
+                                  {describeEndpoint(run.endpoint)}: {formatPoints(run.points)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right text-lg font-semibold text-gold">
+                        {formatPoints(entry.combinedPoints)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t border-gold/10 bg-black/40 px-6 py-3 text-center text-sm text-gold/50">
+            {gameLabel} · {updatedLabel}
+            {failedGames > 0 && <span className="ml-2 text-red-300">({failedGames} failed)</span>}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center py-16 text-gold/50">
+          {selectedGames.length === 0 ? "Select games above to see the leaderboard" : "No scores found yet"}
+        </div>
+      )}
     </div>
   );
 };
