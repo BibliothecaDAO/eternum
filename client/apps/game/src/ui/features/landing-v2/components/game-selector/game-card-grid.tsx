@@ -407,13 +407,22 @@ export const UnifiedGameGrid = ({
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
 
   // Check if there's a stored controller session that's still reconnecting
-  // starknet-react stores the last connected connector in localStorage
-  const hasStoredSession = useMemo(() => {
+  // starknet-react stores the last connected connector as "lastUsedConnector" in localStorage
+  const [hasStoredSession] = useState(() => {
     if (typeof window === "undefined") return false;
-    const storedConnector = window.localStorage.getItem("starknet-last-connected-connector");
+    const storedConnector = window.localStorage.getItem("lastUsedConnector");
     return storedConnector !== null;
-  }, []);
-  const isWaitingForReconnect = hasStoredSession && !playerAddress;
+  });
+
+  // Safety timeout: don't wait forever if auto-connect fails silently
+  const [reconnectTimedOut, setReconnectTimedOut] = useState(false);
+  useEffect(() => {
+    if (!hasStoredSession || playerAddress) return;
+    const timeout = setTimeout(() => setReconnectTimedOut(true), 5000);
+    return () => clearTimeout(timeout);
+  }, [hasStoredSession, playerAddress]);
+
+  const isWaitingForReconnect = hasStoredSession && !playerAddress && !reconnectTimedOut;
 
   const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
