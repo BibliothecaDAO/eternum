@@ -30,6 +30,7 @@ type BootstrapResult = SetupResult;
 
 let bootstrapPromise: Promise<BootstrapResult> | null = null;
 let bootstrappedWorldName: string | null = null;
+let bootstrappedChain: string | null = null;
 let cachedSetupResult: BootstrapResult | null = null;
 
 /**
@@ -207,6 +208,7 @@ export const resetBootstrap = () => {
   console.log("[BOOTSTRAP] Resetting bootstrap state");
   bootstrapPromise = null;
   bootstrappedWorldName = null;
+  bootstrappedChain = null;
   cachedSetupResult = null;
 };
 
@@ -214,10 +216,17 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
   // Check if we need to re-bootstrap for a different world
   const currentWorld = getActiveWorld();
   const currentWorldName = currentWorld?.name ?? null;
+  const currentChain = currentWorld?.chain ?? null;
 
+  // If chain changed, we MUST reload the page for proper cleanup
+  if (bootstrapPromise && bootstrappedChain && currentChain && bootstrappedChain !== currentChain) {
+    console.log(`[BOOTSTRAP] Chain changed from "${bootstrappedChain}" to "${currentChain}", reloading page...`);
+    window.location.reload();
+    return new Promise(() => {}); // Never resolves
+  }
+
+  // If only world changed (same chain), reset and re-bootstrap without reload
   if (bootstrapPromise && bootstrappedWorldName !== currentWorldName) {
-    // World changed - reset and re-bootstrap instead of forcing page reload
-    // This allows switching between worlds on the same chain without refresh
     console.log(
       `[BOOTSTRAP] World changed from "${bootstrappedWorldName}" to "${currentWorldName}", re-bootstrapping...`,
     );
@@ -226,6 +235,7 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
 
   if (!bootstrapPromise) {
     bootstrappedWorldName = currentWorldName;
+    bootstrappedChain = currentChain;
     bootstrapPromise = runBootstrap().then((result) => {
       cachedSetupResult = result;
       return result;
@@ -237,6 +247,7 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
   } catch (error) {
     bootstrapPromise = null;
     bootstrappedWorldName = null;
+    bootstrappedChain = null;
     cachedSetupResult = null;
     captureSystemError(error, {
       error_type: "dojo_setup",

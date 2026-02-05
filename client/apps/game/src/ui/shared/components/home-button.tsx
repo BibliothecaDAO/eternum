@@ -1,10 +1,13 @@
+import { useNavigate } from "react-router-dom";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { BuildingThumbs } from "../../config";
 
 export const HomeButton = () => {
+  const navigate = useNavigate();
+
   const handleHomeClick = () => {
-    // Navigate to landing page
-    window.location.href = "/";
+    // Navigate to landing page without page refresh
+    navigate("/");
   };
 
   return (
