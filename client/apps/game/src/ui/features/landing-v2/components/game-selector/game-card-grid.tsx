@@ -322,8 +322,10 @@ interface UnifiedGameGridProps {
   devModeFilter?: boolean;
   /** Custom title for the grid */
   title?: string;
-  /** Use compact 2-column layout */
+  /** Use compact 1-column layout */
   compact?: boolean;
+  /** Fixed number of columns (overrides compact and responsive) */
+  columns?: 1 | 2 | 3 | 4;
   /** Filter games by status */
   statusFilter?: GameStatus | GameStatus[];
   /** Hide the header (title, count, legend, refresh) */
@@ -343,6 +345,7 @@ export const UnifiedGameGrid = ({
   devModeFilter,
   title = "Games",
   compact = false,
+  columns,
   statusFilter,
   hideHeader = false,
   hideLegend = false,
@@ -547,7 +550,12 @@ export const UnifiedGameGrid = ({
           <div
             className={cn(
               "grid gap-3 p-1",
-              compact ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+              columns === 1 && "grid-cols-1",
+              columns === 2 && "grid-cols-2",
+              columns === 3 && "grid-cols-3",
+              columns === 4 && "grid-cols-4",
+              !columns && compact && "grid-cols-1",
+              !columns && !compact && "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
             )}
           >
             {games.map((game) => (

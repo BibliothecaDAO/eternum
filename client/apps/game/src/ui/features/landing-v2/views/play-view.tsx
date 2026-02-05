@@ -300,6 +300,7 @@ const PlayTabContent = ({
             statusFilter="ongoing"
             hideHeader
             hideLegend
+            columns={2}
           />
         </div>
 
@@ -319,6 +320,7 @@ const PlayTabContent = ({
             statusFilter="upcoming"
             hideHeader
             hideLegend
+            columns={2}
           />
         </div>
 
@@ -351,6 +353,7 @@ const PlayTabContent = ({
                 statusFilter="ended"
                 hideHeader
                 hideLegend
+                columns={2}
               />
             </div>
           )}

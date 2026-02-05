@@ -7,12 +7,16 @@ import { useAccount } from "@starknet-react/core";
 import { RpcProvider, uint256 } from "starknet";
 import { getSeasonAddresses } from "@contracts";
 import { displayAddress } from "@/ui/utils/utils";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
+import { getAvatarUrl, useMyAvatar } from "@/hooks/use-player-avatar";
 
 // Token configs - always mainnet
 interface TokenConfig {
   symbol: string;
   address: string;
   decimals: number;
+  logo: string;
 }
 
 // Always use mainnet tokens
@@ -23,16 +27,19 @@ const MAINNET_TOKENS: TokenConfig[] = (() => {
       symbol: "LORDS",
       address: addresses.lords || "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
       decimals: 18,
+      logo: "/tokens/lords.png",
     },
     {
       symbol: "ETH",
       address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
       decimals: 18,
+      logo: "/tokens/eth.png",
     },
     {
       symbol: "STRK",
       address: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
       decimals: 18,
+      logo: "/tokens/strk.png",
     },
   ];
 })();
@@ -52,6 +59,14 @@ export const WalletSection = () => {
   const { address, isConnected } = useAccount();
   const [balances, setBalances] = useState<Map<string, TokenBalance>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
+
+  // Avatar support
+  const accountName = useAccountStore((state) => state.accountName);
+  const { username: cartridgeUsername } = useCartridgeUsername();
+  const displayName = accountName || cartridgeUsername || "";
+  const playerId = address ?? "";
+  const { data: myAvatar } = useMyAvatar(playerId, playerId, displayName);
+  const avatarUrl = getAvatarUrl(address || "", myAvatar?.avatarUrl);
 
   /**
    * Fetch balance for a single token
@@ -153,11 +168,11 @@ export const WalletSection = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-gold/30 to-gold/10">
-            <span className="text-xl font-bold text-gold">{address.slice(2, 4).toUpperCase()}</span>
+          <div className="h-14 w-14 overflow-hidden rounded-full border-2 border-gold/30 bg-gradient-to-br from-gold/30 to-gold/10">
+            <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
           </div>
           <div>
-            <p className="text-xl font-medium text-gold">{displayAddress(address)}</p>
+            <p className="text-xl font-medium text-gold">{displayName || displayAddress(address)}</p>
             <p className="text-sm text-gold/50">Starknet Mainnet</p>
           </div>
         </div>
@@ -183,8 +198,8 @@ export const WalletSection = () => {
                 className="rounded-2xl border border-gold/10 bg-black/40 p-5 transition hover:border-gold/20"
               >
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 text-base font-bold text-gold">
-                    {token.symbol.slice(0, 2)}
+                  <div className="h-12 w-12 overflow-hidden rounded-full bg-gold/10 p-1">
+                    <img src={token.logo} alt={token.symbol} className="h-full w-full object-contain" />
                   </div>
                   <div>
                     <p className="text-sm text-gold/60">{token.symbol}</p>

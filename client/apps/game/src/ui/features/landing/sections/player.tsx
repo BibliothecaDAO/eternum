@@ -33,6 +33,8 @@ import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
+import { hash } from "starknet";
+
 import { LandingWorldSelector } from "../components/landing-world-selector";
 import {
   fetchLandingLeaderboard,
@@ -41,6 +43,32 @@ import {
 } from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
 import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
+
+// MMR fetching utilities
+const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
+const WORLD_CONFIG_QUERY = `SELECT "mmr_config.mmr_token_address" AS mmr_token_address FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+
+const parseMaybeHexToBigInt = (v: unknown): bigint | null => {
+  if (v == null) return null;
+  if (typeof v === "bigint") return v;
+  if (typeof v === "number") return BigInt(v);
+  if (typeof v === "string") {
+    try {
+      if (v.startsWith("0x") || v.startsWith("0X")) return BigInt(v);
+      return BigInt(v);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const toHexString = (value: bigint | number | string): string => {
+  if (typeof value === "string") {
+    return value.startsWith("0x") ? value : `0x${BigInt(value).toString(16)}`;
+  }
+  return `0x${BigInt(value).toString(16)}`;
+};
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
   const candidate = entry.displayName?.trim();
@@ -95,6 +123,10 @@ export const LandingPlayer = () => {
   const [worldError, setWorldError] = useState<string | null>(null);
   const [worldLastFetchAt, setWorldLastFetchAt] = useState<number | null>(null);
   const [worldPlayerLastFetchAt, setWorldPlayerLastFetchAt] = useState<number | null>(null);
+
+  // MMR state
+  const [playerMMR, setPlayerMMR] = useState<bigint | null>(null);
+  const [isLoadingMMR, setIsLoadingMMR] = useState(false);
 
   const useCustomWorld = worldSelection.toriiBaseUrl !== null;
 
@@ -215,7 +247,86 @@ export const LandingPlayer = () => {
     setWorldError(null);
     setWorldLastFetchAt(null);
     setWorldPlayerLastFetchAt(null);
+    setPlayerMMR(null);
   }, [worldSelection.toriiBaseUrl]);
+
+  // Fetch player MMR from the current world
+  const fetchPlayerMMR = useCallback(
+    async (address: string) => {
+      const toriiUrl = worldSelection.toriiBaseUrl;
+      const worldName = worldSelection.selectedWorld;
+      if (!toriiUrl || !worldName || !address) {
+        return;
+      }
+
+      setIsLoadingMMR(true);
+      try {
+        // 1. Fetch MMR token address from WorldConfig
+        const configUrl = `${toriiUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
+        const configResponse = await fetch(configUrl);
+        if (!configResponse.ok) {
+          setIsLoadingMMR(false);
+          return;
+        }
+        const [configRow] = (await configResponse.json()) as Record<string, unknown>[];
+        const mmrTokenAddressRaw = parseMaybeHexToBigInt(configRow?.mmr_token_address);
+        if (!mmrTokenAddressRaw || mmrTokenAddressRaw === 0n) {
+          setIsLoadingMMR(false);
+          return;
+        }
+        const mmrTokenAddress = toHexString(mmrTokenAddressRaw);
+
+        // 2. Fetch player's MMR via JSON-RPC
+        const rpcUrl = `https://api.cartridge.gg/x/${worldName}/katana`;
+        const rpcResponse = await fetch(rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "starknet_call",
+            params: [
+              {
+                contract_address: mmrTokenAddress,
+                entry_point_selector: GET_PLAYER_MMR_SELECTOR,
+                calldata: [address],
+              },
+              "pending",
+            ],
+          }),
+        });
+
+        if (!rpcResponse.ok) {
+          setIsLoadingMMR(false);
+          return;
+        }
+
+        const rpcResult = await rpcResponse.json();
+        if (rpcResult.error || !rpcResult.result) {
+          setIsLoadingMMR(false);
+          return;
+        }
+
+        // u256 is returned as two felts [low, high]
+        const low = BigInt(rpcResult.result[0] || "0");
+        const high = BigInt(rpcResult.result[1] || "0");
+        const mmr = low + (high << 128n);
+
+        setPlayerMMR(mmr);
+        setIsLoadingMMR(false);
+      } catch {
+        setIsLoadingMMR(false);
+      }
+    },
+    [worldSelection.toriiBaseUrl, worldSelection.selectedWorld],
+  );
+
+  // Fetch MMR when player address changes and world is selected
+  useEffect(() => {
+    if (playerAddress && worldSelection.selectedWorld) {
+      void fetchPlayerMMR(playerAddress);
+    }
+  }, [playerAddress, worldSelection.selectedWorld, fetchPlayerMMR]);
 
   // Fetch leaderboard on mount and when world changes
   useEffect(() => {
@@ -267,12 +378,21 @@ export const LandingPlayer = () => {
     return () => window.clearInterval(interval);
   }, [lastLeaderboardFetchAt, playerLastFetchAt]);
 
+  // Format MMR for display (convert from token units with 18 decimals)
+  const formattedMMR = useMemo(() => {
+    if (playerMMR === null) return null;
+    const mmrValue = playerMMR / 10n ** 18n;
+    return mmrValue.toString();
+  }, [playerMMR]);
+
   const statusMessage = useMemo(() => {
     if (!playerAddress) {
       return "Connect a wallet to view your Blitz standing.";
     }
 
-    if (!isPlayerLoading && !playerError && !playerEntry) {
+    // If we have MMR but no leaderboard entry, we'll show MMR in a special section
+    // So don't show the "no points" message
+    if (!isPlayerLoading && !playerError && !playerEntry && (playerMMR === null || playerMMR === 0n) && !isLoadingMMR) {
       return "You haven't earned Blitz points yet. Play a round to climb the leaderboard.";
     }
 
@@ -792,6 +912,38 @@ export const LandingPlayer = () => {
                 disabled={isCooldownActive || isRefreshing}
                 size="md"
                 aria-label="Refresh your Blitz standings"
+              />
+            </div>
+          </div>
+        </div>
+      ) : !playerEntry && playerMMR !== null && playerMMR > 0n ? (
+        /* Player has MMR but no leaderboard entry yet */
+        <div
+          className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/10 to-transparent p-6"
+          role="status"
+        >
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex items-center gap-3">
+              <span className="text-lg text-gold/70">Your MMR:</span>
+              <span className="text-4xl font-bold text-gold">{formattedMMR}</span>
+            </div>
+            <p className="text-sm text-gold/60">Complete a Blitz round to appear on the leaderboard and earn points!</p>
+            <div className="flex items-center gap-2">
+              {isRefreshing || isLoadingMMR ? (
+                <span className="text-xs text-white/70" aria-live="polite">
+                  Refreshing…
+                </span>
+              ) : isCooldownActive ? (
+                <span className="text-xs text-white/50" aria-live="polite">
+                  Wait {refreshSecondsLeft}s
+                </span>
+              ) : null}
+              <RefreshButton
+                onClick={handleRefresh}
+                isLoading={isRefreshing || isLoadingMMR}
+                disabled={isCooldownActive || isRefreshing || isLoadingMMR}
+                size="md"
+                aria-label="Refresh your stats"
               />
             </div>
           </div>
