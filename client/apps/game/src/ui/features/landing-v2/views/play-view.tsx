@@ -384,8 +384,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
     (selection: WorldSelection) => {
       const hasAccount = Boolean(account) || isConnected;
 
-      console.log("[PlayView] handleSelectGame:", selection.name, "hasAccount:", hasAccount);
-
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
         setModal(<SignInPromptModal />, true);
@@ -402,8 +400,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   );
 
   const handleSpectate = useCallback((selection: WorldSelection) => {
-    console.log("[PlayView] handleSpectate:", selection.name);
-
     // Open game entry modal in spectate mode (no account required)
     setSelectedWorld(selection);
     setIsSpectateMode(true);
@@ -414,15 +410,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const handleForgeHyperstructures = useCallback(
     (selection: WorldSelection, numLeft: number) => {
       const hasAccount = Boolean(account) || isConnected;
-
-      console.log(
-        "[PlayView] handleForgeHyperstructures:",
-        selection.name,
-        "numLeft:",
-        numLeft,
-        "hasAccount:",
-        hasAccount,
-      );
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
@@ -448,7 +435,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
-    console.log("[PlayView] handleSeeScore:", selection.name);
     setScoreWorld(selection);
     setScoreModalOpen(true);
   }, []);
@@ -460,7 +446,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   // Registration is handled inline by GameCardGrid - this callback is for any post-registration actions
   const handleRegistrationComplete = useCallback(() => {
-    console.log("[PlayView] Registration completed");
     // The toast is already shown by the GameCard component
   }, []);
 

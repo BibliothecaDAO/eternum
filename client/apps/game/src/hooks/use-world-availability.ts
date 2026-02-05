@@ -7,7 +7,19 @@ import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { useQueries } from "@tanstack/react-query";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.num_hyperstructures_left" AS num_hyperstructures_left FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+
+// Query to get hyperstructure created count (separate table)
+const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
+
+/**
+ * Calculate number of hyperstructures left to create based on max ring count and created count.
+ * Formula: total = 1 + 6*1 + 6*2 + ... + 6*max_ring_count = 1 + 6*(1+2+...+max_ring_count) = 1 + 6*max_ring_count*(max_ring_count+1)/2
+ */
+const calculateHyperstructuresLeft = (maxRingCount: number, createdCount: number): number => {
+  const total = 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
+  return Math.max(0, total - createdCount);
+};
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -185,8 +197,26 @@ const fetchWorldConfigMeta = async (
         const devVal = parseMaybeHexToNumber(row.dev_mode_on);
         meta.devModeOn = devVal != null && devVal !== 0;
       }
-      if (row.num_hyperstructures_left != null) {
-        meta.numHyperstructuresLeft = parseMaybeHexToNumber(row.num_hyperstructures_left);
+
+      // Calculate hyperstructures left from max_ring_count
+      const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
+      if (maxRingCount > 0) {
+        // Fetch created count from HyperstructureGlobals
+        try {
+          const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
+          const globalsResponse = await fetch(globalsUrl);
+          if (globalsResponse.ok) {
+            const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
+            const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount);
+          } else {
+            // If no globals exist yet, all hyperstructures are available
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
+          }
+        } catch {
+          // If query fails, calculate based on zero created
+          meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
+        }
       }
     }
 
