@@ -3,23 +3,34 @@ import { usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useRef } from "react";
 
 const SAFETY_TIMEOUT_MS = 15_000;
+// Minimum time the overlay stays visible after structures are detected,
+// giving the hex scene time to render buildings from RECS data.
+const MIN_DISPLAY_MS = 3_000;
 
 /**
  * Simple loading overlay that replaces BlitzOnboarding.
  * Shows while player structure data syncs into RECS after <World> mounts.
- * Auto-dismisses once player structures are detected or after a safety timeout.
+ * Auto-dismisses once player structures are detected (+ min delay) or after a safety timeout.
  */
 export const GameLoadingOverlay = () => {
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const playerStructures = usePlayerStructures();
   const hasDismissed = useRef(false);
+  const mountTime = useRef(0);
 
-  // Auto-dismiss when player structures are loaded into RECS
+  // Capture mount time in an effect to satisfy React purity rules
+  useEffect(() => {
+    mountTime.current = Date.now();
+  }, []);
+
+  // Auto-dismiss when player structures are loaded into RECS (with min delay)
   useEffect(() => {
     if (hasDismissed.current) return;
     if (playerStructures.length > 0) {
       hasDismissed.current = true;
-      setShowBlankOverlay(false);
+      const elapsed = Date.now() - mountTime.current;
+      const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
+      setTimeout(() => setShowBlankOverlay(false), remaining);
     }
   }, [playerStructures, setShowBlankOverlay]);
 
