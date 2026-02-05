@@ -84,22 +84,19 @@ export function Header() {
   };
 
   const currentTitle = routeTitles[currentPath || ""] || "Eternum";
-  const isHomePage = currentPath === ROUTES.HOME;
+
+  if (currentPath === ROUTES.HOME) {
+    return null;
+  }
 
   return (
-    <header className={`px-4 ${isHomePage ? "absolute top-0 left-0 right-0 z-50" : "border-b"}`}>
+    <header className="border-b px-4 absolute">
       <div className="flex h-14 items-center justify-between relative">
-        {/* Back button - only show on non-home pages */}
-        {isHomePage ? (
-          <div className="w-8" /> // Spacer
-        ) : (
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center space-x-2">
-            <ArrowLeft size={16} />
-          </Button>
-        )}
+        <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center space-x-2">
+          <ArrowLeft size={16} />
+        </Button>
 
-        {/* Title - only show on non-home pages */}
-        {!isHomePage && <h1 className="text-lg font-semibold absolute left-1/2 -translate-x-1/2">{currentTitle}</h1>}
+        <h1 className="text-lg font-semibold absolute left-1/2 -translate-x-1/2">{currentTitle}</h1>
 
         {/* Hamburger Menu */}
         <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
