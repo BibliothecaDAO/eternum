@@ -658,7 +658,7 @@ export const LandingPlayer = () => {
   const canSelectFromGallery = Boolean(playerAddress && hasDisplayName);
 
   return (
-    <section className="w-full mb-2 max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-3xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[70vh] xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-4xl 2xl:p-8">
+    <section className="w-full mb-2 max-w-3xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-4xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[70vh] xl:max-w-5xl xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-6xl 2xl:p-8">
       {/* World Selector */}
       <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4">
         <LandingWorldSelector
