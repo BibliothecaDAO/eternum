@@ -96,8 +96,6 @@ interface WorldAvailability {
   error: Error | null;
 }
 
-const DEBUG_WORLD = "test-snow-true-64";
-
 const parseMaybeBool = (v: unknown): boolean | null => {
   if (v == null) return null;
   if (typeof v === "boolean") return v;
@@ -115,33 +113,20 @@ const parseMaybeBool = (v: unknown): boolean | null => {
  * Uses `once_registered` field which stays true even after settlement
  * (the `registered` field gets set to 0 after settlement)
  */
-const fetchPlayerRegistration = async (
-  toriiBaseUrl: string,
-  playerAddress: string,
-  worldName?: string,
-): Promise<boolean | null> => {
-  const isDebug = worldName === DEBUG_WORLD;
+const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
   try {
     // Use once_registered - it stays true after settlement, while registered gets set to 0
     const query = `SELECT once_registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerAddress}" LIMIT 1;`;
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
-    if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Fetching registration:`, { playerAddress, url });
     const response = await fetch(url);
-    if (!response.ok) {
-      if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Response not ok:`, response.status);
-      return null;
-    }
+    if (!response.ok) return null;
     const data = (await response.json()) as Record<string, unknown>[];
-    if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Registration data:`, data);
     const [row] = data;
     if (row && row.once_registered != null) {
-      const result = parseMaybeBool(row.once_registered);
-      if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Parsed once_registered:`, result);
-      return result;
+      return parseMaybeBool(row.once_registered);
     }
-    if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] No registration row found`);
-  } catch (err) {
-    if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Fetch error:`, err);
+  } catch {
+    // Silently fail - registration check is best-effort
   }
   return null;
 };
@@ -151,12 +136,7 @@ const fetchPlayerRegistration = async (
  * Optionally fetches player registration status if playerAddress is provided.
  * Cached by React Query.
  */
-const fetchWorldConfigMeta = async (
-  toriiBaseUrl: string,
-  playerAddress?: string | null,
-  worldName?: string,
-): Promise<WorldConfigMeta> => {
-  const isDebug = worldName === DEBUG_WORLD;
+const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string | null): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
     startMainAt: null,
     endAt: null,
@@ -222,14 +202,10 @@ const fetchWorldConfigMeta = async (
 
     // Fetch player registration status if address provided
     if (playerAddress) {
-      if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Fetching player registration, playerAddress:`, playerAddress);
-      meta.isPlayerRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress, worldName);
-      if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] meta.isPlayerRegistered:`, meta.isPlayerRegistered);
-    } else {
-      if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] No playerAddress provided, skipping registration check`);
+      meta.isPlayerRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress);
     }
-  } catch (err) {
-    if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] fetchWorldConfigMeta error:`, err);
+  } catch {
+    // Silently fail - metadata fetch is best-effort
   }
   return meta;
 };
@@ -243,20 +219,14 @@ const checkWorldAvailability = async (
   worldName: string,
   playerAddress?: string | null,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
-  const isDebug = worldName === DEBUG_WORLD;
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
-
-  if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] checkWorldAvailability called, playerAddress:`, playerAddress);
-
   const isAvailable = await isToriiAvailable(toriiBaseUrl);
 
   if (!isAvailable) {
-    if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] World not available`);
     return { isAvailable: false, meta: null };
   }
 
-  const meta = await fetchWorldConfigMeta(toriiBaseUrl, playerAddress, worldName);
-  if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Final meta:`, { ...meta, feeAmount: meta.feeAmount.toString() });
+  const meta = await fetchWorldConfigMeta(toriiBaseUrl, playerAddress);
   return { isAvailable: true, meta };
 };
 
