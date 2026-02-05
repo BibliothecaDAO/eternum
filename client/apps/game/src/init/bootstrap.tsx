@@ -199,18 +199,29 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   return setupResult;
 };
 
+/**
+ * Reset the bootstrap state to allow re-bootstrapping without a page reload.
+ * Used when switching between worlds on the same chain.
+ */
+export const resetBootstrap = () => {
+  console.log("[BOOTSTRAP] Resetting bootstrap state");
+  bootstrapPromise = null;
+  bootstrappedWorldName = null;
+  cachedSetupResult = null;
+};
+
 export const bootstrapGame = async (): Promise<BootstrapResult> => {
   // Check if we need to re-bootstrap for a different world
   const currentWorld = getActiveWorld();
   const currentWorldName = currentWorld?.name ?? null;
 
   if (bootstrapPromise && bootstrappedWorldName !== currentWorldName) {
-    // World changed, need to re-bootstrap
-    // Note: This requires a page reload for proper cleanup of the old Dojo context
-    console.log(`[BOOTSTRAP] World changed from "${bootstrappedWorldName}" to "${currentWorldName}", reloading...`);
-    window.location.reload();
-    // Return a never-resolving promise to prevent further execution
-    return new Promise(() => {});
+    // World changed - reset and re-bootstrap instead of forcing page reload
+    // This allows switching between worlds on the same chain without refresh
+    console.log(
+      `[BOOTSTRAP] World changed from "${bootstrappedWorldName}" to "${currentWorldName}", re-bootstrapping...`,
+    );
+    resetBootstrap();
   }
 
   if (!bootstrapPromise) {

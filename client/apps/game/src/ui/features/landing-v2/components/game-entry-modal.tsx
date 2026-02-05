@@ -663,7 +663,16 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
       }
     };
 
+    // Run initial check
     checkSettlementStatus();
+
+    // Re-check after a short delay to catch late-syncing registration data
+    const retryTimeout = setTimeout(() => {
+      debugLog("Re-checking settlement status after delay...");
+      checkSettlementStatus();
+    }, 2000);
+
+    return () => clearTimeout(retryTimeout);
   }, [bootstrapStatus, setupResult, account, isSpectateMode]);
 
   // Check hyperstructure initialization status after bootstrap completes
