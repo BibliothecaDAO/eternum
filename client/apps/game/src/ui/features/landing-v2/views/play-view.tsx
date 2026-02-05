@@ -274,7 +274,7 @@ const PlayTabContent = ({
   return (
     <div
       className={cn(
-        "grid grid-cols-1 lg:grid-cols-[1fr_480px] gap-6 items-start",
+        "grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-8 items-start lg:pr-[10%]",
         disabled && "opacity-50 pointer-events-none",
       )}
     >
