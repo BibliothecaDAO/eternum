@@ -180,7 +180,6 @@ const LearnContent = ({
           onRegistrationComplete={onRegistrationComplete}
           devModeFilter={true}
           title="Practice"
-          compact
         />
       </div>
     </div>
@@ -482,13 +481,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
       )}
 
       {/* Score Card Modal - for ended games */}
-      {scoreWorld && scoreWorld.chain && (
-        <ScoreCardModal
-          isOpen={scoreModalOpen}
-          onClose={handleCloseScoreModal}
-          worldName={scoreWorld.name}
-          chain={scoreWorld.chain}
-        />
+      {scoreWorld && (
+        <ScoreCardModal isOpen={scoreModalOpen} onClose={handleCloseScoreModal} worldName={scoreWorld.name} />
       )}
     </>
   );

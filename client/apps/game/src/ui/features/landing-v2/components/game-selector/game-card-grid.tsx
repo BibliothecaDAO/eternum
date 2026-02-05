@@ -107,6 +107,7 @@ interface GameCardProps {
   game: GameData;
   onPlay: () => void;
   onSpectate: () => void;
+  onSeeScore?: () => void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -119,6 +120,7 @@ const GameCard = ({
   game,
   onPlay,
   onSpectate,
+  onSeeScore,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
@@ -282,6 +284,20 @@ const GameCard = ({
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
           ) : null}
 
+          {/* See Score button for ended games where player participated */}
+          {isEnded && showRegistered && onSeeScore && (
+            <button
+              onClick={onSeeScore}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                "bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30 transition-colors",
+              )}
+            >
+              <Trophy className="w-3 h-3" />
+              See Score
+            </button>
+          )}
+
           {/* Right slot: Spectate (always in same position) */}
           {canSpectate && (
             <button
@@ -316,16 +332,13 @@ const GameCard = ({
 interface UnifiedGameGridProps {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
+  onSeeScore?: (selection: WorldSelection) => void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */
   devModeFilter?: boolean;
   /** Custom title for the grid */
   title?: string;
-  /** Use compact 1-column layout */
-  compact?: boolean;
-  /** Fixed number of columns (overrides compact and responsive) */
-  columns?: 1 | 2 | 3 | 4;
   /** Filter games by status */
   statusFilter?: GameStatus | GameStatus[];
   /** Hide the header (title, count, legend, refresh) */
@@ -340,12 +353,11 @@ interface UnifiedGameGridProps {
 export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
+  onSeeScore,
   onRegistrationComplete,
   className,
   devModeFilter,
   title = "Games",
-  compact = false,
-  columns,
   statusFilter,
   hideHeader = false,
   hideLegend = false,
@@ -542,32 +554,24 @@ export const UnifiedGameGrid = ({
             </button>
           </div>
         ) : games.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[200px] text-center">
+          <div className="flex flex-col items-center justify-center h-[100px] text-center">
             <p className="text-xs text-white/40">No games available</p>
             <p className="text-[10px] text-white/30 mt-1">Games appear when servers are online</p>
           </div>
         ) : (
-          <div
-            className={cn(
-              "grid gap-3 p-1",
-              columns === 1 && "grid-cols-1",
-              columns === 2 && "grid-cols-2",
-              columns === 3 && "grid-cols-3",
-              columns === 4 && "grid-cols-4",
-              !columns && compact && "grid-cols-1",
-              !columns && !compact && "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
-            )}
-          >
+          <div className="flex gap-3 p-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             {games.map((game) => (
-              <GameCard
-                key={game.worldKey}
-                game={game}
-                onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
-                onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
-                onRegistrationComplete={handleRegistrationComplete}
-                playerAddress={playerAddress}
-                showChainBadge={true}
-              />
+              <div key={game.worldKey} className="flex-shrink-0 w-[280px]">
+                <GameCard
+                  game={game}
+                  onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
+                  onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
+                  onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                  onRegistrationComplete={handleRegistrationComplete}
+                  playerAddress={playerAddress}
+                  showChainBadge={true}
+                />
+              </div>
             ))}
           </div>
         )}
