@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-05",
+    title: "Witcher-Inspired Landing Page",
+    description:
+      "Redesigned the landing page with a cinematic Witcher-inspired UI. Features dynamic full-bleed backgrounds that change per route, a game selector carousel with smooth transitions, icon-only sidebar navigation on desktop, bottom tab bar on mobile, and an immersive hero title with glow effects.",
+    type: "feature",
+  },
+  {
     date: "2026-01-19",
     title: "Mobile Game Registration",
     description:
