@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Download from "lucide-react/dist/esm/icons/download";
 
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
+import { useWorldsAvailability } from "@/hooks/use-world-availability";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
@@ -14,7 +15,7 @@ import { useScoreToBeat } from "@/ui/features/landing/lib/use-score-to-beat";
 
 const MAX_GAMES = 10;
 const DEFAULT_RUNS_TO_AGGREGATE = 3;
-const RUNS_TO_AGGREGATE_OPTIONS = [2, 3, 4] as const;
+const RUNS_TO_AGGREGATE_OPTIONS = [1, 2, 3, 4] as const;
 const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
 
 const SCORE_TO_BEAT_GAMES_STORAGE_KEY = "landing-score-to-beat-games-v2";
@@ -136,7 +137,22 @@ export const ScoreToBeatPanel = () => {
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
 
   // Fetch available games from factory
-  const { worlds: availableGames, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
+  const { worlds: factoryWorlds, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
+
+  // Check which worlds have working indexers
+  const worldRefs = useMemo(
+    () => factoryWorlds.map((w) => ({ name: w.name, chain: selectedChain })),
+    [factoryWorlds, selectedChain],
+  );
+  const { results: worldAvailability, isAnyLoading: isCheckingWorlds } = useWorldsAvailability(worldRefs, true);
+
+  // Filter to only show games with working indexers
+  const availableGames = useMemo(() => {
+    return factoryWorlds.filter((w) => {
+      const availability = worldAvailability.get(`${selectedChain}:${w.name}`);
+      return availability?.isAvailable;
+    });
+  }, [factoryWorlds, worldAvailability, selectedChain]);
 
   // Load stored preferences
   useEffect(() => {
@@ -282,7 +298,9 @@ export const ScoreToBeatPanel = () => {
             </>
           ) : (
             <p className="mt-2 text-sm text-white/70">
-              Chain your best {runsToAggregate} runs and you become the number everyone else has to chase.
+              {runsToAggregate === 1
+                ? "Get the best single run and you become the number everyone else has to chase."
+                : `Chain your best ${runsToAggregate} runs and you become the number everyone else has to chase.`}
             </p>
           )}
         </div>
@@ -385,19 +403,19 @@ export const ScoreToBeatPanel = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-white/60">
-                  Available games {isLoadingGames ? "(loading...)" : `(${availableGames.length})`}
+                  Available games {isLoadingGames || isCheckingWorlds ? "(checking...)" : `(${availableGames.length})`}
                 </span>
                 <span className="text-xs text-white/50">
                   {selectedGames.length}/{MAX_GAMES} selected
                 </span>
               </div>
-              {isLoadingGames ? (
+              {isLoadingGames || isCheckingWorlds ? (
                 <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
-                  Loading games from {selectedChain}...
+                  Checking available games on {selectedChain}...
                 </div>
               ) : availableGames.length === 0 ? (
                 <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center text-xs text-white/50">
-                  No games found on {selectedChain}
+                  No games with active indexers found on {selectedChain}
                 </div>
               ) : (
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2">
