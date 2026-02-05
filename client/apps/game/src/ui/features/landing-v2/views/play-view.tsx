@@ -284,7 +284,7 @@ const PlayTabContent = ({
       </div>
 
       {/* Right: All game panels stacked vertically - wide enough for 2 cards (2x320px + gap + padding) */}
-      <div className="flex flex-col gap-3 max-w-[720px]">
+      <div className="flex flex-col gap-3 max-w-[720px] ml-auto">
         {/* Live Games Panel */}
         <div className="rounded-2xl border border-emerald-500/30 bg-black/60 p-4 backdrop-blur-xl">
           <div className="flex items-center gap-2 mb-3">

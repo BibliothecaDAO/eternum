@@ -34,7 +34,7 @@ export const HeroTitle = ({ tagline = "Forge your destiny", className }: HeroTit
       {tagline && (
         <p
           className={cn(
-            "text-base text-gold/70 sm:text-lg md:text-xl text-left",
+            "text-base text-gold/70 sm:text-lg md:text-xl text-center w-full max-w-md",
             "font-light tracking-wide leading-relaxed",
             "animate-[fadeIn_1s_ease-out_0.3s_both]",
           )}
