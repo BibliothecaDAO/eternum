@@ -184,7 +184,7 @@ const GameCard = ({
     <div
       className={cn(
         "relative group rounded-lg border bg-gradient-to-b backdrop-blur-sm",
-        "transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:z-10",
+        "transition-all duration-200 hover:brightness-110 hover:shadow-lg",
         statusColors[game.gameStatus],
         isOngoing && "shadow-emerald-500/10",
         isUpcoming && "shadow-amber-500/15",
