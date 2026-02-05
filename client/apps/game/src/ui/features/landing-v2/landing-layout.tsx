@@ -75,10 +75,11 @@ const LandingLayoutContent = () => {
       {/* Main content area */}
       <main
         className={cn(
-          "relative z-10 min-h-screen",
+          "relative z-10 h-screen",
           // Padding for header and sidebar/bottom nav
           "pt-20 pb-24 lg:pb-8 lg:pl-16",
           "flex flex-col",
+          "overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
         )}
       >
         {/* Modal host for landing routes */}
