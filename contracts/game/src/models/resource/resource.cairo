@@ -253,7 +253,6 @@ pub struct Resource {
     RELIC_E18_BALANCE: u128,
     RESEARCH_BALANCE: u128,
     // Bitcoin Mine Resources
-    WORK_BALANCE: u128,
     SATOSHI_BALANCE: u128,
     weight: Weight,
     STONE_PRODUCTION: Production,
@@ -295,6 +294,7 @@ pub struct Resource {
     LORDS_PRODUCTION: Production,
     ESSENCE_PRODUCTION: Production,
     RESEARCH_PRODUCTION: Production,
+    SATOSHI_PRODUCTION: Production,
 }
 
 
@@ -313,9 +313,7 @@ pub impl ResourceImpl of ResourceTrait {
 
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
         // Skip production for resources that don't have production mechanics
-        if RelicResourceImpl::is_relic(resource_type)
-            || resource_type == ResourceTypes::LORDS
-            || resource_type == ResourceTypes::SATOSHI {
+        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
             return Zero::zero();
         }
         return world
@@ -332,9 +330,7 @@ pub impl ResourceImpl of ResourceTrait {
 
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
         // Skip production for resources that don't have production mechanics
-        if RelicResourceImpl::is_relic(resource_type)
-            || resource_type == ResourceTypes::LORDS
-            || resource_type == ResourceTypes::SATOSHI {
+        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
             return;
         }
         world
@@ -414,8 +410,7 @@ pub impl ResourceImpl of ResourceTrait {
             56 => selector!("RELIC_E18_BALANCE"),
             57 => selector!("RESEARCH_BALANCE"),
             // Bitcoin Mine Resources
-            58 => selector!("WORK_BALANCE"),
-            59 => selector!("SATOSHI_BALANCE"),
+            58 => selector!("SATOSHI_BALANCE"),
             _ => panic!("Invalid resource type"),
         }
     }
@@ -463,6 +458,7 @@ pub impl ResourceImpl of ResourceTrait {
             37 => selector!("LORDS_PRODUCTION"),
             38 => selector!("ESSENCE_PRODUCTION"),
             57 => selector!("RESEARCH_PRODUCTION"),
+            58 => selector!("SATOSHI_PRODUCTION"),
             _ => panic!("Invalid resource type"),
         }
     }
