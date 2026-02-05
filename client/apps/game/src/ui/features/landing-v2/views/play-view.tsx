@@ -4,7 +4,22 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
 import { useAccount } from "@starknet-react/core";
-import { BookOpen, ExternalLink, Play, Sparkles, Video, Newspaper, Wrench, TrendingUp, Bug } from "lucide-react";
+import {
+  BookOpen,
+  ExternalLink,
+  Play,
+  Sparkles,
+  Video,
+  Newspaper,
+  Wrench,
+  TrendingUp,
+  Bug,
+  ChevronDown,
+  ChevronUp,
+  Zap,
+  Clock,
+  History,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { HeroTitle } from "../components/hero-title";
@@ -235,6 +250,117 @@ const NewsContent = () => (
 );
 
 /**
+ * Play tab content with split layout: Hero left + Stacked game panels right
+ * - Live Games: prominent panel with green accent
+ * - Upcoming Games: amber accent, shows when games start
+ * - Ended Games: collapsed by default, expandable
+ */
+const PlayTabContent = ({
+  onSelectGame,
+  onSpectate,
+  onRegistrationComplete,
+  disabled = false,
+}: {
+  onSelectGame: (selection: WorldSelection) => void;
+  onSpectate: (selection: WorldSelection) => void;
+  onRegistrationComplete: () => void;
+  disabled?: boolean;
+}) => {
+  const [showEnded, setShowEnded] = useState(false);
+
+  return (
+    <div
+      className={cn("grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6", disabled && "opacity-50 pointer-events-none")}
+    >
+      {/* Left: Hero Title */}
+      <div className="flex flex-col justify-center">
+        <HeroTitle />
+      </div>
+
+      {/* Right: Stacked Game Panels */}
+      <div className="flex flex-col gap-4">
+        {/* Live Games Panel */}
+        <div className="rounded-2xl border border-emerald-500/30 bg-black/60 p-4 backdrop-blur-xl">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
+              <Zap className="h-4 w-4 text-emerald-400" />
+            </div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-serif text-lg text-emerald-400">Live Games</h2>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+              </span>
+            </div>
+          </div>
+          <UnifiedGameGrid
+            onSelectGame={onSelectGame}
+            onSpectate={onSpectate}
+            onRegistrationComplete={onRegistrationComplete}
+            devModeFilter={false}
+            statusFilter="ongoing"
+            hideHeader
+            hideLegend
+          />
+        </div>
+
+        {/* Upcoming Games Panel */}
+        <div className="rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
+              <Clock className="h-4 w-4 text-amber-400" />
+            </div>
+            <h2 className="font-serif text-lg text-amber-400">Upcoming Games</h2>
+          </div>
+          <UnifiedGameGrid
+            onSelectGame={onSelectGame}
+            onSpectate={onSpectate}
+            onRegistrationComplete={onRegistrationComplete}
+            devModeFilter={false}
+            statusFilter="upcoming"
+            hideHeader
+            hideLegend
+          />
+        </div>
+
+        {/* Ended Games Panel - Collapsed by default */}
+        <div className="rounded-2xl border border-gray-500/30 bg-black/60 backdrop-blur-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowEnded(!showEnded)}
+            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-500/20">
+                <History className="h-4 w-4 text-gray-400" />
+              </div>
+              <h2 className="font-serif text-lg text-gray-400">Ended Games</h2>
+            </div>
+            {showEnded ? (
+              <ChevronUp className="h-5 w-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
+          {showEnded && (
+            <div className="px-4 pb-4">
+              <UnifiedGameGrid
+                onSelectGame={onSelectGame}
+                onSpectate={onSpectate}
+                onRegistrationComplete={onRegistrationComplete}
+                devModeFilter={false}
+                statusFilter="ended"
+                hideHeader
+                hideLegend
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
  * Main play view - shows card-based game selector for production games only.
  * This is the default landing page content.
  */
@@ -307,19 +433,12 @@ export const PlayView = ({ className }: PlayViewProps) => {
       case "play":
       default:
         return (
-          <div
-            className={cn(
-              "bg-black/30 backdrop-blur-sm rounded-lg border border-gold/20 p-4",
-              entryModalOpen && "opacity-50 pointer-events-none",
-            )}
-          >
-            <UnifiedGameGrid
-              onSelectGame={handleSelectGame}
-              onSpectate={handleSpectate}
-              onRegistrationComplete={handleRegistrationComplete}
-              devModeFilter={false}
-            />
-          </div>
+          <PlayTabContent
+            onSelectGame={handleSelectGame}
+            onSpectate={handleSpectate}
+            onRegistrationComplete={handleRegistrationComplete}
+            disabled={entryModalOpen}
+          />
         );
     }
   };
@@ -327,13 +446,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   return (
     <>
       <div className={cn("flex flex-col gap-6", className)}>
-        {/* Hero title - only show on Play tab */}
-        {activeTab === "play" && (
-          <div className="mb-2">
-            <HeroTitle />
-          </div>
-        )}
-
         {/* Tab content */}
         {renderContent()}
       </div>

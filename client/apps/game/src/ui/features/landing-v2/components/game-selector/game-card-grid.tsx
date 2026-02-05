@@ -88,7 +88,7 @@ const ChainBadge = ({ chain }: { chain: Chain }) => {
 
 export type WorldSelection = WorldSelectionInput;
 
-type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
+export type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
 
 interface GameData {
   name: string;
@@ -324,6 +324,12 @@ interface UnifiedGameGridProps {
   title?: string;
   /** Use compact 2-column layout */
   compact?: boolean;
+  /** Filter games by status */
+  statusFilter?: GameStatus | GameStatus[];
+  /** Hide the header (title, count, legend, refresh) */
+  hideHeader?: boolean;
+  /** Hide the legend */
+  hideLegend?: boolean;
 }
 
 /**
@@ -337,6 +343,9 @@ export const UnifiedGameGrid = ({
   devModeFilter,
   title = "Games",
   compact = false,
+  statusFilter,
+  hideHeader = false,
+  hideLegend = false,
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
   const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
@@ -416,6 +425,12 @@ export const UnifiedGameGrid = ({
         if (devModeFilter === undefined) return true;
         const gameDevMode = game.config?.devModeOn ?? false;
         return devModeFilter === gameDevMode;
+      })
+      // Filter by game status if specified
+      .filter((game) => {
+        if (!statusFilter) return true;
+        const statuses = Array.isArray(statusFilter) ? statusFilter : [statusFilter];
+        return statuses.includes(game.gameStatus);
       });
 
     // Sort: live first, then upcoming (by start time asc), then ended (by start time asc)
@@ -428,7 +443,16 @@ export const UnifiedGameGrid = ({
       const bStart = b.startMainAt ?? Infinity;
       return aStart - bStart;
     });
-  }, [factoryWorlds, factoryAvailability, localRegistrations, isOngoing, isEnded, isUpcoming, devModeFilter]);
+  }, [
+    factoryWorlds,
+    factoryAvailability,
+    localRegistrations,
+    isOngoing,
+    isEnded,
+    isUpcoming,
+    devModeFilter,
+    statusFilter,
+  ]);
 
   const handleRefresh = useCallback(async () => {
     setLocalRegistrations({});
@@ -458,38 +482,42 @@ export const UnifiedGameGrid = ({
   return (
     <div className={cn("relative", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold uppercase tracking-wider text-gold">{title}</h3>
-          <span className="text-xs text-white/40">
-            {games.length} game{games.length !== 1 ? "s" : ""} online
-          </span>
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-bold uppercase tracking-wider text-gold">{title}</h3>
+            <span className="text-xs text-white/40">
+              {games.length} game{games.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <button
+            onClick={() => void handleRefresh()}
+            disabled={isLoading}
+            className="p-1.5 rounded-md bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
+            title="Refresh"
+          >
+            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+          </button>
         </div>
-        <button
-          onClick={() => void handleRefresh()}
-          disabled={isLoading}
-          className="p-1.5 rounded-md bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
-          title="Refresh"
-        >
-          <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-        </button>
-      </div>
+      )}
 
       {/* Legend - compact */}
-      <div className="flex items-center gap-3 mb-3 text-[10px]">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-white/50">Live ({counts.ongoing})</span>
+      {!hideLegend && (
+        <div className="flex items-center gap-3 mb-3 text-[10px]">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-white/50">Live ({counts.ongoing})</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="text-white/50">Soon ({counts.upcoming})</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-gray-500" />
+            <span className="text-white/50">Ended ({counts.ended})</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-amber-400" />
-          <span className="text-white/50">Soon ({counts.upcoming})</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-gray-500" />
-          <span className="text-white/50">Ended ({counts.ended})</span>
-        </div>
-      </div>
+      )}
 
       {/* Game cards - scrollable */}
       <div className="max-h-[500px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
