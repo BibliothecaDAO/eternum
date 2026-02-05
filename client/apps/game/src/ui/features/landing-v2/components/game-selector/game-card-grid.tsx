@@ -227,6 +227,14 @@ const GameCard = ({
 
   const showRegistered = game.isRegistered || registrationStage === "done";
 
+  // Debug log
+  console.log(`[GameCard] ${game.name}:`, {
+    isRegistered: game.isRegistered,
+    registrationStage,
+    showRegistered,
+    gameStatus: game.gameStatus,
+  });
+
   return (
     <div
       className={cn(
