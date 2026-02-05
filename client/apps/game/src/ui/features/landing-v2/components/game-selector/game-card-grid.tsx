@@ -415,7 +415,7 @@ export const GameCardGrid = ({ chain, onSelectGame, onSpectate, onRegister, clas
             <p className="text-[10px] text-white/30 mt-1">Games appear when servers are online</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {games.map((game) => (
               <GameCard
                 key={game.worldKey}
