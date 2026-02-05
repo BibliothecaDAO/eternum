@@ -5,11 +5,13 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { HeroTitle } from "../components/hero-title";
 import { HexGameMap, type WorldSelection } from "../components/game-selector/hex-game-map";
 import type { Chain } from "@contracts";
 import { env } from "../../../../../env";
+
+// Default map position when entering a game
+const DEFAULT_MAP_URL = "/play/map?col=0&row=0";
 
 interface PlayViewProps {
   className?: string;
@@ -20,7 +22,6 @@ interface PlayViewProps {
  * This is the default landing page content.
  */
 export const PlayView = ({ className }: PlayViewProps) => {
-  const navigate = useNavigate();
   const [isEntering, setIsEntering] = useState(false);
 
   // Auth state
@@ -37,51 +38,47 @@ export const PlayView = ({ className }: PlayViewProps) => {
       try {
         const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
 
-        // If chain changed, need to reload
+        // If chain changed, need to reload - go directly to map
         if (chainChanged) {
-          window.location.href = "/play";
+          window.location.href = DEFAULT_MAP_URL;
           return;
         }
 
         // Check if user needs to sign in before entering game
         if (!hasAccount) {
           setModal(<SignInPromptModal />, true);
+          setIsEntering(false);
           return;
         }
 
-        // Navigate to game
-        navigate("/play");
+        // Navigate directly to map view
+        window.location.href = DEFAULT_MAP_URL;
       } catch (error) {
         console.error("Failed to select game:", error);
-      } finally {
         setIsEntering(false);
       }
     },
-    [account, isConnected, navigate, setModal],
+    [account, isConnected, setModal],
   );
 
-  const handleSpectate = useCallback(
-    async (selection: WorldSelection) => {
-      setIsEntering(true);
+  const handleSpectate = useCallback(async (selection: WorldSelection) => {
+    setIsEntering(true);
 
-      try {
-        const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
+    try {
+      const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
 
-        if (chainChanged) {
-          window.location.href = "/play";
-          return;
-        }
-
-        // Navigate to game in spectate mode
-        navigate("/play");
-      } catch (error) {
-        console.error("Failed to spectate game:", error);
-      } finally {
-        setIsEntering(false);
+      if (chainChanged) {
+        window.location.href = DEFAULT_MAP_URL;
+        return;
       }
-    },
-    [navigate],
-  );
+
+      // Navigate directly to map view for spectating
+      window.location.href = DEFAULT_MAP_URL;
+    } catch (error) {
+      console.error("Failed to spectate game:", error);
+      setIsEntering(false);
+    }
+  }, []);
 
   const handleRegister = useCallback(
     async (selection: WorldSelection) => {
@@ -98,19 +95,18 @@ export const PlayView = ({ className }: PlayViewProps) => {
         const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
 
         if (chainChanged) {
-          window.location.href = "/play";
+          window.location.href = DEFAULT_MAP_URL;
           return;
         }
 
-        // Navigate to game for registration
-        navigate("/play");
+        // Navigate directly to map view for registration
+        window.location.href = DEFAULT_MAP_URL;
       } catch (error) {
         console.error("Failed to register for game:", error);
-      } finally {
         setIsEntering(false);
       }
     },
-    [account, isConnected, navigate, setModal],
+    [account, isConnected, setModal],
   );
 
   return (
