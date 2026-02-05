@@ -22,10 +22,11 @@ const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${w
 const parseMaybeBool = (v: unknown): boolean | null => {
   if (v == null) return null;
   if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v !== 0; // 1 = true, 0 = false
   if (typeof v === "string") {
     const trimmed = v.trim().toLowerCase();
-    if (trimmed === "true") return true;
-    if (trimmed === "false") return false;
+    if (trimmed === "true" || trimmed === "1") return true;
+    if (trimmed === "false" || trimmed === "0") return false;
   }
   return null;
 };
