@@ -812,12 +812,43 @@ export const GameEntryModal = ({ isOpen, onClose, worldName, chain, isSpectateMo
   }, []);
 
   // Enter game handler
-  const handleEnterGame = useCallback(() => {
+  const handleEnterGame = useCallback(async () => {
     // Hide the onboarding overlay since we're entering through the new flow
     setShowBlankOverlay(false);
-    const url = isSpectateMode ? "/play/map?col=0&row=0&spectate=true" : "/play/map?col=0&row=0";
+
+    // Default coordinates (hyperstructure center)
+    let col = 0;
+    let row = 0;
+
+    // For players (not spectators), try to find their owned structure
+    if (!isSpectateMode && setupResult && account?.address) {
+      try {
+        const { components } = setupResult;
+        const { HasValue, runQuery, getComponentValue } = await import("@dojoengine/recs");
+
+        // Find player's structures
+        const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]);
+
+        if (playerStructures.size > 0) {
+          // Get the first structure's coordinates from its base
+          const firstStructureEntity = playerStructures.values().next().value;
+          if (firstStructureEntity) {
+            const structure = getComponentValue(components.Structure, firstStructureEntity);
+            if (structure?.base) {
+              col = Number(structure.base.coord_x);
+              row = Number(structure.base.coord_y);
+              debugLog("Centering on player structure at:", col, row);
+            }
+          }
+        }
+      } catch (error) {
+        debugLog("Failed to get player structure position, using default:", error);
+      }
+    }
+
+    const url = isSpectateMode ? `/play/map?col=${col}&row=${row}&spectate=true` : `/play/map?col=${col}&row=${row}`;
     navigate(url);
-  }, [navigate, isSpectateMode, setShowBlankOverlay]);
+  }, [navigate, isSpectateMode, setShowBlankOverlay, setupResult, account]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
