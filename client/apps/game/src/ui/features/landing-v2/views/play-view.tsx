@@ -96,71 +96,71 @@ const LearnContent = ({
     {/* Row 1: Video Guides + Written Guides */}
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Video Guides */}
-      <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
+      <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-5 backdrop-blur-xl">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
-            <Video className="h-4 w-4 text-red-400" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/20">
+            <Video className="h-5 w-5 text-red-400" />
           </div>
           <div>
-            <h2 className="font-serif text-lg text-gold">Video Guides</h2>
-            <p className="text-xs text-gold/60">Learn from the best</p>
+            <h2 className="font-serif text-xl text-gold">Video Guides</h2>
+            <p className="text-sm text-gold/60">Learn from the best</p>
           </div>
         </div>
-        <div className="flex flex-col gap-2 flex-1">
+        <div className="flex flex-col gap-3 flex-1">
           {VIDEO_GUIDES.map((video) => (
             <a
               key={video.url}
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-3 rounded-lg border border-gold/10 bg-black/40 p-3 transition-all hover:border-gold/30 hover:bg-black/50"
+              className="group flex items-center gap-4 rounded-lg border border-gold/10 bg-black/40 p-4 transition-all hover:border-gold/30 hover:bg-black/50"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 transition-colors group-hover:bg-red-500/20 flex-shrink-0">
-                <Play className="h-4 w-4 text-red-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10 transition-colors group-hover:bg-red-500/20 flex-shrink-0">
+                <Play className="h-5 w-5 text-red-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-semibold text-gold truncate group-hover:text-gold/80">{video.title}</h3>
-                <p className="text-[10px] text-gold/50">{video.author}</p>
+                <h3 className="text-sm font-semibold text-gold group-hover:text-gold/80">{video.title}</h3>
+                <p className="text-xs text-gold/50">{video.author}</p>
               </div>
-              <ExternalLink className="h-3 w-3 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
+              <ExternalLink className="h-4 w-4 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
             </a>
           ))}
         </div>
       </div>
 
       {/* Written Guides */}
-      <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
+      <div className="flex flex-col rounded-2xl border border-gold/20 bg-black/60 p-5 backdrop-blur-xl">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
-            <BookOpen className="h-4 w-4 text-blue-400" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/20">
+            <BookOpen className="h-5 w-5 text-blue-400" />
           </div>
           <div>
-            <h2 className="font-serif text-lg text-gold">Written Guides</h2>
-            <p className="text-xs text-gold/60">Documentation & tutorials</p>
+            <h2 className="font-serif text-xl text-gold">Written Guides</h2>
+            <p className="text-sm text-gold/60">Documentation & tutorials</p>
           </div>
         </div>
-        <div className="flex flex-col gap-2 flex-1">
+        <div className="flex flex-col gap-3 flex-1">
           {WRITTEN_GUIDES.map((guide) => (
             <a
               key={guide.url}
               href={guide.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-3 rounded-lg border border-gold/10 bg-black/40 p-3 transition-all hover:border-gold/30 hover:bg-black/50"
+              className="group flex items-center gap-4 rounded-lg border border-gold/10 bg-black/40 p-4 transition-all hover:border-gold/30 hover:bg-black/50"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 transition-colors group-hover:bg-blue-500/20 flex-shrink-0">
-                <BookOpen className="h-4 w-4 text-blue-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 transition-colors group-hover:bg-blue-500/20 flex-shrink-0">
+                <BookOpen className="h-5 w-5 text-blue-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-semibold text-gold truncate group-hover:text-gold/80">{guide.title}</h3>
-                <div className="flex items-center gap-1">
-                  <p className="text-[10px] text-gold/50">{guide.source}</p>
+                <h3 className="text-sm font-semibold text-gold group-hover:text-gold/80">{guide.title}</h3>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gold/50">{guide.source}</p>
                   {guide.lang && (
-                    <span className="text-[8px] px-1 py-0.5 rounded bg-gold/10 text-gold/70">{guide.lang}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold/70">{guide.lang}</span>
                   )}
                 </div>
               </div>
-              <ExternalLink className="h-3 w-3 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
+              <ExternalLink className="h-4 w-4 text-gold/30 group-hover:text-gold/60 flex-shrink-0" />
             </a>
           ))}
         </div>
@@ -168,14 +168,14 @@ const LearnContent = ({
     </div>
 
     {/* Row 2: Practice Games (full width) */}
-    <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl">
+    <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/60 p-5 backdrop-blur-xl">
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
-          <Wrench className="h-4 w-4 text-amber-400" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20">
+          <Wrench className="h-5 w-5 text-amber-400" />
         </div>
         <div>
-          <h2 className="font-serif text-lg text-gold">Practice Games</h2>
-          <p className="text-xs text-gold/60">Dev mode - join anytime!</p>
+          <h2 className="font-serif text-xl text-gold">Practice Games</h2>
+          <p className="text-sm text-gold/60">Dev mode - join anytime!</p>
         </div>
       </div>
       <UnifiedGameGrid
@@ -183,7 +183,7 @@ const LearnContent = ({
         onSpectate={onSpectate}
         onRegistrationComplete={onRegistrationComplete}
         devModeFilter={true}
-        title="Practice"
+        hideHeader
       />
     </div>
   </div>
@@ -253,10 +253,9 @@ const NewsContent = () => (
 );
 
 /**
- * Play tab content with split layout: Hero left + Stacked game panels right
- * - Live Games: prominent panel with green accent
- * - Upcoming Games: amber accent, shows when games start
- * - Ended Games: collapsed by default, expandable
+ * Play tab content with split layout:
+ * - Top row: Hero left + Live/Upcoming side by side on right
+ * - Bottom row: Ended Games full width, collapsed by default
  */
 const PlayTabContent = ({
   onSelectGame,
@@ -274,92 +273,90 @@ const PlayTabContent = ({
   const [showEnded, setShowEnded] = useState(false);
 
   return (
-    <div
-      className={cn(
-        "grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start",
-        disabled && "opacity-50 pointer-events-none",
-      )}
-    >
-      {/* Left: Hero Title */}
-      <div className="flex flex-col justify-center min-h-[400px]">
-        <HeroTitle />
+    <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
+      {/* Top Row: Hero + Live/Upcoming */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 items-start">
+        {/* Left: Hero Title */}
+        <div className="flex flex-col justify-center min-h-[300px]">
+          <HeroTitle />
+        </div>
+
+        {/* Right: Live and Upcoming side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Live Games Panel */}
+          <div className="rounded-2xl border border-emerald-500/30 bg-black/60 p-4 backdrop-blur-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20">
+                <Zap className="h-4 w-4 text-emerald-400" />
+              </div>
+              <h2 className="font-serif text-base text-emerald-400">Live Games</h2>
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            </div>
+            <UnifiedGameGrid
+              onSelectGame={onSelectGame}
+              onSpectate={onSpectate}
+              onRegistrationComplete={onRegistrationComplete}
+              devModeFilter={false}
+              statusFilter="ongoing"
+              hideHeader
+              hideLegend
+            />
+          </div>
+
+          {/* Upcoming Games Panel */}
+          <div className="rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/20">
+                <Clock className="h-4 w-4 text-amber-400" />
+              </div>
+              <h2 className="font-serif text-base text-amber-400">Upcoming Games</h2>
+            </div>
+            <UnifiedGameGrid
+              onSelectGame={onSelectGame}
+              onSpectate={onSpectate}
+              onRegistrationComplete={onRegistrationComplete}
+              devModeFilter={false}
+              statusFilter="upcoming"
+              hideHeader
+              hideLegend
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Right: Stacked Game Panels */}
-      <div className="flex flex-col gap-3">
-        {/* Live Games Panel */}
-        <div className="rounded-2xl border border-emerald-500/30 bg-black/60 p-3 backdrop-blur-xl">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/20">
-              <Zap className="h-3 w-3 text-emerald-400" />
+      {/* Bottom Row: Ended Games - Full Width, Collapsed by default */}
+      <div className="rounded-2xl border border-gray-500/30 bg-black/60 backdrop-blur-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowEnded(!showEnded)}
+          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-500/20">
+              <History className="h-4 w-4 text-gray-400" />
             </div>
-            <h2 className="font-serif text-sm text-emerald-400">Live Games</h2>
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+            <h2 className="font-serif text-base text-gray-400">Ended Games</h2>
           </div>
-          <UnifiedGameGrid
-            onSelectGame={onSelectGame}
-            onSpectate={onSpectate}
-            onRegistrationComplete={onRegistrationComplete}
-            devModeFilter={false}
-            statusFilter="ongoing"
-            hideHeader
-            hideLegend
-          />
-        </div>
-
-        {/* Upcoming Games Panel */}
-        <div className="rounded-2xl border border-amber-500/30 bg-black/60 p-3 backdrop-blur-xl">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/20">
-              <Clock className="h-3 w-3 text-amber-400" />
-            </div>
-            <h2 className="font-serif text-sm text-amber-400">Upcoming Games</h2>
-          </div>
-          <UnifiedGameGrid
-            onSelectGame={onSelectGame}
-            onSpectate={onSpectate}
-            onRegistrationComplete={onRegistrationComplete}
-            devModeFilter={false}
-            statusFilter="upcoming"
-            hideHeader
-            hideLegend
-          />
-        </div>
-
-        {/* Ended Games Panel - Collapsed by default */}
-        <div className="rounded-2xl border border-gray-500/30 bg-black/60 backdrop-blur-xl overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowEnded(!showEnded)}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gray-500/20">
-                <History className="h-3 w-3 text-gray-400" />
-              </div>
-              <h2 className="font-serif text-sm text-gray-400">Ended Games</h2>
-            </div>
-            {showEnded ? (
-              <ChevronUp className="h-4 w-4 text-gray-400" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
-            )}
-          </button>
-          {showEnded && (
-            <div className="px-3 pb-3">
-              <UnifiedGameGrid
-                onSelectGame={onSelectGame}
-                onSpectate={onSpectate}
-                onSeeScore={onSeeScore}
-                onRegistrationComplete={onRegistrationComplete}
-                devModeFilter={false}
-                statusFilter="ended"
-                hideHeader
-                hideLegend
-              />
-            </div>
+          {showEnded ? (
+            <ChevronUp className="h-5 w-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-gray-400" />
           )}
-        </div>
+        </button>
+        {showEnded && (
+          <div className="px-4 pb-4">
+            <UnifiedGameGrid
+              onSelectGame={onSelectGame}
+              onSpectate={onSpectate}
+              onSeeScore={onSeeScore}
+              onRegistrationComplete={onRegistrationComplete}
+              devModeFilter={false}
+              statusFilter="ended"
+              hideHeader
+              hideLegend
+            />
+          </div>
+        )}
       </div>
     </div>
   );
