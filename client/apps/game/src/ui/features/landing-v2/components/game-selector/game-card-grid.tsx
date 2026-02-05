@@ -322,6 +322,8 @@ interface UnifiedGameGridProps {
   devModeFilter?: boolean;
   /** Custom title for the grid */
   title?: string;
+  /** Use compact 2-column layout */
+  compact?: boolean;
 }
 
 /**
@@ -334,6 +336,7 @@ export const UnifiedGameGrid = ({
   className,
   devModeFilter,
   title = "Games",
+  compact = false,
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
   const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
@@ -513,7 +516,12 @@ export const UnifiedGameGrid = ({
             <p className="text-[10px] text-white/30 mt-1">Games appear when servers are online</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-1">
+          <div
+            className={cn(
+              "grid gap-3 p-1",
+              compact ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+            )}
+          >
             {games.map((game) => (
               <GameCard
                 key={game.worldKey}

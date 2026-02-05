@@ -17,11 +17,11 @@ interface PlayViewProps {
 
 type PlayTab = "play" | "learn" | "news";
 
-// Video guide data
+// Video guide data - ordered from basic to advanced
 const VIDEO_GUIDES = [
   {
-    title: "Advanced Combat Tactics",
-    url: "https://x.com/lordcumberlord/status/2011095751196360980",
+    title: "Getting Started Tutorial",
+    url: "https://x.com/lordcumberlord/status/1986947491640598776",
     author: "@lordcumberlord",
   },
   {
@@ -30,34 +30,34 @@ const VIDEO_GUIDES = [
     author: "@lordcumberlord",
   },
   {
-    title: "Getting Started Tutorial",
-    url: "https://x.com/lordcumberlord/status/1986947491640598776",
+    title: "Advanced Combat Tactics",
+    url: "https://x.com/lordcumberlord/status/2011095751196360980",
     author: "@lordcumberlord",
   },
 ];
 
-// Written guide data
+// Written guide data - ordered from basic to advanced
 const WRITTEN_GUIDES = [
-  {
-    title: "How to Build Your Legacy",
-    url: "https://legacygg.substack.com/p/how-to-build-your-legacy-in-realms",
-    source: "Legacy GG",
-  },
   {
     title: "Blitz Key Concepts",
     url: "https://docs.realms.world/blitz/key-concepts",
     source: "Official Docs",
   },
   {
+    title: "How to Build Your Legacy",
+    url: "https://legacygg.substack.com/p/how-to-build-your-legacy-in-realms",
+    source: "Legacy GG",
+  },
+  {
     title: "Complete Guide (English)",
     url: "https://docs.google.com/document/d/e/2PACX-1vQch9CAmt9zXc7bwFuvdCOWz0x9IzLbZlgvOMX96xV7lWza1d3dLMHpaWaDa6eAo5rasaC4KtpPpGuP/pub",
-    source: "Community",
+    source: "nexonik & tsuaurym",
     lang: "EN",
   },
   {
     title: "Guia Completo (Portuguese)",
     url: "https://docs.google.com/document/d/e/2PACX-1vQlOxLQ5snLk23-2rsla4tPh8I5ijNaecYl1r_Dgk-9-An42Sos4HVl2EQGr0P1avW-W94qIwM4QrJn/pub",
-    source: "Community",
+    source: "nexonik & tsuaurym",
     lang: "PT",
   },
 ];
@@ -147,7 +147,7 @@ const LearnContent = ({
     </div>
 
     {/* Practice Games (Dev Mode) */}
-    <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl">
+    <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl min-h-0">
       <div className="flex items-center gap-3 mb-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
           <Wrench className="h-4 w-4 text-amber-400" />
@@ -157,13 +157,14 @@ const LearnContent = ({
           <p className="text-xs text-gold/60">Dev mode - join anytime!</p>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0 max-h-[400px]">
         <UnifiedGameGrid
           onSelectGame={onSelectGame}
           onSpectate={onSpectate}
           onRegistrationComplete={onRegistrationComplete}
           devModeFilter={true}
           title="Practice"
+          compact
         />
       </div>
     </div>
