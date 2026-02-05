@@ -10,6 +10,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Chain } from "@contracts";
 import { env } from "../../../../../../env";
 
+// Simple hook to detect mobile viewport
+const useIsMobile = (breakpoint = 640) => {
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < breakpoint : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [breakpoint]);
+
+  return isMobile;
+};
+
 const normalizeFactoryChain = (chain: Chain): Chain => {
   if (chain === "slottest" || chain === "local") return "slot";
   return chain;
@@ -86,6 +99,7 @@ const Hexagon = ({
   isRegistered,
   onClick,
   className,
+  compact = false,
 }: {
   children: React.ReactNode;
   isOngoing: boolean;
@@ -94,15 +108,16 @@ const Hexagon = ({
   isRegistered: boolean;
   onClick: () => void;
   className?: string;
+  compact?: boolean;
 }) => {
-  // Hex dimensions
-  const width = 140;
-  const height = 160;
+  // Hex dimensions - smaller on compact/mobile
+  const width = compact ? 110 : 140;
+  const height = compact ? 126 : 160;
 
   // Generate hex points (pointy-top orientation)
   const cx = width / 2;
   const cy = height / 2;
-  const size = 65;
+  const size = compact ? 51 : 65;
   const points = Array.from({ length: 6 }, (_, i) => {
     const angle = (Math.PI / 3) * i - Math.PI / 2;
     const x = cx + size * Math.cos(angle);
@@ -228,7 +243,7 @@ const Hexagon = ({
 /**
  * A single hexagon node representing a game world
  */
-const HexNode = ({ game, onClick }: { game: GameNode; onClick: () => void }) => {
+const HexNode = ({ game, onClick, compact = false }: { game: GameNode; onClick: () => void; compact?: boolean }) => {
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
@@ -240,20 +255,26 @@ const HexNode = ({ game, onClick }: { game: GameNode; onClick: () => void }) => 
       isEnded={isEnded}
       isRegistered={game.isRegistered === true}
       onClick={onClick}
+      compact={compact}
     >
-      <div className="flex flex-col items-center justify-center text-center px-4 py-2">
+      <div className={cn("flex flex-col items-center justify-center text-center", compact ? "px-2 py-1" : "px-4 py-2")}>
         {/* Game name */}
         <div
-          className={cn("text-xs font-bold truncate w-full max-w-[100px]", isEnded ? "text-gray-300" : "text-white")}
+          className={cn(
+            "font-bold truncate w-full",
+            compact ? "text-[10px] max-w-[80px]" : "text-xs max-w-[100px]",
+            isEnded ? "text-gray-300" : "text-white",
+          )}
           title={game.name}
         >
-          {game.name.length > 14 ? `${game.name.slice(0, 12)}...` : game.name}
+          {game.name.length > (compact ? 10 : 14) ? `${game.name.slice(0, compact ? 8 : 12)}...` : game.name}
         </div>
 
         {/* Status badge */}
         <div
           className={cn(
-            "mt-1.5 text-[9px] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full",
+            "uppercase tracking-wider font-bold rounded-full",
+            compact ? "mt-1 text-[8px] px-2 py-0.5" : "mt-1.5 text-[9px] px-2.5 py-0.5",
             isOngoing && "bg-emerald-500/30 text-emerald-200 border border-emerald-400/50",
             isUpcoming && "bg-yellow-500/30 text-yellow-200 border border-yellow-400/50",
             isEnded && "bg-gray-500/30 text-gray-300 border border-gray-400/30",
@@ -265,8 +286,10 @@ const HexNode = ({ game, onClick }: { game: GameNode; onClick: () => void }) => 
 
         {/* Player count */}
         {game.registrationCount != null && (
-          <div className="mt-1.5 flex items-center gap-1 text-[10px] text-white/70">
-            <Users className="w-3 h-3" />
+          <div
+            className={cn("flex items-center gap-1 text-white/70", compact ? "mt-1 text-[9px]" : "mt-1.5 text-[10px]")}
+          >
+            <Users className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} />
             <span>{game.registrationCount}</span>
           </div>
         )}
@@ -439,6 +462,7 @@ const GameDetailPanel = ({
 export const HexGameMap = ({ chain, onSelectGame, onSpectate, onRegister, className }: HexGameMapProps) => {
   const [selectedGame, setSelectedGame] = useState<GameNode | null>(null);
   const [playerRegistration, setPlayerRegistration] = useState<Record<string, boolean | null>>({});
+  const isMobile = useIsMobile();
 
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
@@ -674,9 +698,9 @@ export const HexGameMap = ({ chain, onSelectGame, onSpectate, onRegister, classN
             <p className="text-xs text-white/30 mt-1">Games will appear when indexers are online</p>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-3 justify-center items-start">
+          <div className={cn("flex flex-wrap justify-center items-start", isMobile ? "gap-2" : "gap-3")}>
             {gameNodes.map((game) => (
-              <HexNode key={game.worldKey} game={game} onClick={() => handleSelectHex(game)} />
+              <HexNode key={game.worldKey} game={game} onClick={() => handleSelectHex(game)} compact={isMobile} />
             ))}
           </div>
         )}
