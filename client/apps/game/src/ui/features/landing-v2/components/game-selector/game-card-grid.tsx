@@ -345,6 +345,10 @@ interface UnifiedGameGridProps {
   hideHeader?: boolean;
   /** Hide the legend */
   hideLegend?: boolean;
+  /** Layout direction: horizontal (scroll right) or vertical (scroll down) */
+  layout?: "horizontal" | "vertical";
+  /** Sort games where user is registered first */
+  sortRegisteredFirst?: boolean;
 }
 
 /**
@@ -361,6 +365,8 @@ export const UnifiedGameGrid = ({
   statusFilter,
   hideHeader = false,
   hideLegend = false,
+  layout = "horizontal",
+  sortRegisteredFirst = false,
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
   const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
@@ -448,11 +454,20 @@ export const UnifiedGameGrid = ({
         return statuses.includes(game.gameStatus);
       });
 
-    // Sort: live first, then upcoming (by start time asc), then ended (by start time asc)
+    // Sort: optionally registered first, then by status, then by start time
     return nodes.toSorted((a, b) => {
+      // If sortRegisteredFirst is enabled, registered games come first
+      if (sortRegisteredFirst) {
+        const aRegistered = a.isRegistered ? 1 : 0;
+        const bRegistered = b.isRegistered ? 1 : 0;
+        if (aRegistered !== bRegistered) return bRegistered - aRegistered; // registered first
+      }
+
+      // Then sort by status: live first, then upcoming, then ended
       const order: Record<GameStatus, number> = { ongoing: 0, upcoming: 1, ended: 2, unknown: 3 };
       const statusDiff = order[a.gameStatus] - order[b.gameStatus];
       if (statusDiff !== 0) return statusDiff;
+
       // Within same status, sort by start time ascending
       const aStart = a.startMainAt ?? Infinity;
       const bStart = b.startMainAt ?? Infinity;
@@ -467,6 +482,7 @@ export const UnifiedGameGrid = ({
     isUpcoming,
     devModeFilter,
     statusFilter,
+    sortRegisteredFirst,
   ]);
 
   const handleRefresh = useCallback(async () => {
@@ -535,16 +551,21 @@ export const UnifiedGameGrid = ({
       )}
 
       {/* Game cards - scrollable */}
-      <div className="max-h-[500px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+      <div
+        className={cn(
+          "scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent",
+          layout === "vertical" ? "max-h-[calc(100vh-320px)] overflow-y-auto pr-1" : "overflow-x-auto",
+        )}
+      >
         {isLoading && games.length === 0 ? (
-          <div className="flex items-center justify-center h-[200px]">
+          <div className="flex items-center justify-center h-[120px]">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
               <span className="text-xs text-white/40">Checking games...</span>
             </div>
           </div>
         ) : factoryError ? (
-          <div className="flex flex-col items-center justify-center h-[200px] text-center">
+          <div className="flex flex-col items-center justify-center h-[120px] text-center">
             <p className="text-xs text-red-400">Failed to load games</p>
             <button
               onClick={() => void handleRefresh()}
@@ -557,8 +578,23 @@ export const UnifiedGameGrid = ({
           <div className="flex flex-col items-center justify-center h-[60px] text-center">
             <p className="text-[10px] text-white/40">No games available</p>
           </div>
+        ) : layout === "vertical" ? (
+          <div className="flex flex-col gap-3">
+            {games.map((game) => (
+              <GameCard
+                key={game.worldKey}
+                game={game}
+                onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
+                onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
+                onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                onRegistrationComplete={handleRegistrationComplete}
+                playerAddress={playerAddress}
+                showChainBadge={true}
+              />
+            ))}
+          </div>
         ) : (
-          <div className="flex gap-3 p-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          <div className="flex gap-3 p-1">
             {games.map((game) => (
               <div key={game.worldKey} className="flex-shrink-0 w-[320px]">
                 <GameCard

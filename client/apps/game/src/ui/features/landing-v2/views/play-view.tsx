@@ -14,11 +14,9 @@ import {
   Wrench,
   TrendingUp,
   Bug,
-  ChevronDown,
-  ChevronUp,
   Zap,
   Clock,
-  History,
+  Trophy,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -253,8 +251,10 @@ const NewsContent = () => (
 );
 
 /**
- * Play tab content with split layout:
- * - Hero left + Game panels (Live/Upcoming/Ended) stacked on right
+ * Play tab content with centered hero + 3 columns layout:
+ * - Hero centered at top
+ * - Three columns below: Live | Upcoming | Ended
+ * - Vertical scroll within each column
  */
 const PlayTabContent = ({
   onSelectGame,
@@ -269,29 +269,22 @@ const PlayTabContent = ({
   onRegistrationComplete: () => void;
   disabled?: boolean;
 }) => {
-  const [showEnded, setShowEnded] = useState(false);
-
   return (
-    <div
-      className={cn(
-        "grid grid-cols-1 xl:grid-cols-[minmax(280px,420px)_1fr] gap-8 items-start",
-        disabled && "opacity-50 pointer-events-none",
-      )}
-    >
-      {/* Left: Hero Title */}
-      <div className="flex flex-col justify-center min-h-[400px]">
+    <div className={cn("flex flex-col gap-6", disabled && "opacity-50 pointer-events-none")}>
+      {/* Centered Hero */}
+      <div className="flex justify-center py-4">
         <HeroTitle />
       </div>
 
-      {/* Right: All game panels stacked vertically - wide enough for 2 cards (2x320px + gap + padding) */}
-      <div className="flex flex-col gap-3 max-w-[720px] ml-auto">
-        {/* Live Games Panel */}
-        <div className="rounded-2xl border border-emerald-500/30 bg-black/60 p-4 backdrop-blur-xl">
-          <div className="flex items-center gap-2 mb-3">
+      {/* Three columns: Live | Upcoming | Ended */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* Live Games Column */}
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-3 px-1">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20">
               <Zap className="h-4 w-4 text-emerald-400" />
             </div>
-            <h2 className="font-serif text-base text-emerald-400">Live Games</h2>
+            <h2 className="font-serif text-lg text-emerald-400">Live</h2>
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
           </div>
           <UnifiedGameGrid
@@ -302,16 +295,18 @@ const PlayTabContent = ({
             statusFilter="ongoing"
             hideHeader
             hideLegend
+            layout="vertical"
+            sortRegisteredFirst
           />
         </div>
 
-        {/* Upcoming Games Panel */}
-        <div className="rounded-2xl border border-amber-500/30 bg-black/60 p-4 backdrop-blur-xl">
-          <div className="flex items-center gap-2 mb-3">
+        {/* Upcoming Games Column */}
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-3 px-1">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/20">
               <Clock className="h-4 w-4 text-amber-400" />
             </div>
-            <h2 className="font-serif text-base text-amber-400">Upcoming Games</h2>
+            <h2 className="font-serif text-lg text-amber-400">Upcoming</h2>
           </div>
           <UnifiedGameGrid
             onSelectGame={onSelectGame}
@@ -321,42 +316,31 @@ const PlayTabContent = ({
             statusFilter="upcoming"
             hideHeader
             hideLegend
+            layout="vertical"
+            sortRegisteredFirst
           />
         </div>
 
-        {/* Ended Games Panel - Collapsed by default */}
-        <div className="rounded-2xl border border-gray-500/30 bg-black/60 backdrop-blur-xl overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowEnded(!showEnded)}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-500/20">
-                <History className="h-4 w-4 text-gray-400" />
-              </div>
-              <h2 className="font-serif text-base text-gray-400">Ended Games</h2>
+        {/* Ended Games Column */}
+        <div className="flex flex-col md:col-span-2 xl:col-span-1">
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gold/20">
+              <Trophy className="h-4 w-4 text-gold" />
             </div>
-            {showEnded ? (
-              <ChevronUp className="h-5 w-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-gray-400" />
-            )}
-          </button>
-          {showEnded && (
-            <div className="px-4 pb-4">
-              <UnifiedGameGrid
-                onSelectGame={onSelectGame}
-                onSpectate={onSpectate}
-                onSeeScore={onSeeScore}
-                onRegistrationComplete={onRegistrationComplete}
-                devModeFilter={false}
-                statusFilter="ended"
-                hideHeader
-                hideLegend
-              />
-            </div>
-          )}
+            <h2 className="font-serif text-lg text-gold">Ended</h2>
+          </div>
+          <UnifiedGameGrid
+            onSelectGame={onSelectGame}
+            onSpectate={onSpectate}
+            onSeeScore={onSeeScore}
+            onRegistrationComplete={onRegistrationComplete}
+            devModeFilter={false}
+            statusFilter="ended"
+            hideHeader
+            hideLegend
+            layout="vertical"
+            sortRegisteredFirst
+          />
         </div>
       </div>
     </div>
