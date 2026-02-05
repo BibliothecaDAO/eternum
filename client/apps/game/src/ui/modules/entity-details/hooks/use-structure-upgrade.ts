@@ -73,16 +73,29 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     if (!structureInfo || !nextLevel || !structureEntityId) return [];
 
     return rawCosts.map((cost) => {
-      const balance = getBalance(structureEntityId, cost.resource, currentDefaultTick, dojo.setup.components);
-      const currentAmount = divideByPrecision(balance.balance);
-      const progress = cost.amount > 0 ? Math.min(100, (currentAmount * 100) / cost.amount) : 100;
+      try {
+        const balance = getBalance(structureEntityId, cost.resource, currentDefaultTick, dojo.setup.components);
+        // Guard against Infinity or NaN values that can cause BigInt conversion errors
+        const rawBalance = balance.balance;
+        const safeBalance = Number.isFinite(rawBalance) ? rawBalance : 0;
+        const currentAmount = divideByPrecision(safeBalance);
+        const progress = cost.amount > 0 ? Math.min(100, (currentAmount * 100) / cost.amount) : 100;
 
-      return {
-        resource: cost.resource,
-        amount: cost.amount,
-        current: currentAmount,
-        progress,
-      };
+        return {
+          resource: cost.resource,
+          amount: cost.amount,
+          current: currentAmount,
+          progress,
+        };
+      } catch {
+        // If balance calculation fails, return zero progress
+        return {
+          resource: cost.resource,
+          amount: cost.amount,
+          current: 0,
+          progress: 0,
+        };
+      }
     });
   }, [structureInfo, nextLevel, rawCosts, structureEntityId, currentDefaultTick, dojo.setup.components, liveResources]);
 

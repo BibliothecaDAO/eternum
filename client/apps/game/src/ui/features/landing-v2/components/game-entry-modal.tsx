@@ -26,12 +26,11 @@ import Button from "@/ui/design-system/atoms/button";
 import { Position } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 
-const DEBUG_MODAL = false; // Set to true to enable debug logging
-const DEBUG_WORLD = "test-doom-sand-98"; // Log extra details for this specific world
+const DEBUG_MODAL = false;
 
-const debugLog = (worldName: string | null, ...args: unknown[]) => {
-  if (DEBUG_MODAL || worldName === DEBUG_WORLD) {
-    console.log("[GameEntryModal]", ...args);
+const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
+  if (DEBUG_MODAL) {
+    console.log("[GameEntryModal]", ..._args);
   }
 };
 
