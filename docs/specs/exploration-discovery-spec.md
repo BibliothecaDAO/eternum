@@ -16,12 +16,11 @@ Eternum has two game modes that affect which structures can be discovered:
 
 | Mode | Description | Unique Discoveries |
 |------|-------------|-------------------|
-| **Season Mode** (Eternum) | The main competitive season | Hyperstructures, Holy Sites |
+| **Season Mode** (Eternum) | The main competitive season | Hyperstructures, Holy Sites, Bitcoin Mines |
 | **Blitz Mode** | Faster-paced gameplay | Relic Chests, Camps |
 
 Some structures are discoverable in both modes:
 - **Fragment Mines** - Always discoverable
-- **Bitcoin Mines** - Ethereal layer only (both modes)
 - **Agents** - Always discoverable
 
 ---
@@ -51,16 +50,14 @@ Some structures are discoverable in both modes:
       ↓ (continues regardless)
 2. Fragment Mine      → If found, STOP
       ↓ (not found)
-3. Bitcoin Mine*      → If found, STOP (*Ethereal layer only)
+3. Camp               → If found, STOP
       ↓ (not found)
-4. Camp               → If found, STOP
-      ↓ (not found)
-5. Agent              → If found, STOP
+4. Agent              → If found, STOP
       ↓ (not found)
    Nothing found
 ```
 
-**Note:** In Blitz mode, Relic Chest discovery uses a time-based system separate from the lottery, so it doesn't suppress other discoveries.
+**Note:** In Blitz mode, Relic Chest discovery uses a time-based system separate from the lottery, so it doesn't suppress other discoveries. Bitcoin Mines are not discoverable in Blitz mode.
 
 ---
 
@@ -116,14 +113,14 @@ The actual discovery probabilities in Season Mode would be:
 
 ### Bitcoin Mine Suppression
 
-For Bitcoin Mines specifically (in Season Mode on Ethereal layer):
+For Bitcoin Mines (Season Mode only, Ethereal layer only):
 
 ```
 Actual Bitcoin Mine Probability =
     P(Bitcoin) × (1 - P(Hyperstructure)) × (1 - P(Mine)) × (1 - P(HolySite))
 ```
 
-This means the **effective** probability of finding a Bitcoin Mine is always lower than 2% due to suppression by earlier structure checks.
+This means the **effective** probability of finding a Bitcoin Mine is always lower than 2% due to suppression by earlier structure checks. Bitcoin Mines cannot be discovered in Blitz Mode.
 
 ---
 
@@ -135,7 +132,7 @@ Structure discovery cannot happen on **reserved tiles**. If a tile is reserved (
 
 ### Ethereal Layer (Alt Dimension)
 
-Bitcoin Mines can **only** be discovered when exploring in the Ethereal layer. The discovery check specifically requires `tile.alt = true`.
+Bitcoin Mines can **only** be discovered when exploring in the Ethereal layer during Season Mode. The discovery check requires both `season_mode_on = true` and `tile.alt = true`.
 
 ### Agent Limit
 
@@ -170,7 +167,7 @@ Relic Chests use a different discovery mechanism:
 | Hyperstructure | Distance & count modified | Season mode only |
 | Fragment Mine | Configured | Always available |
 | Holy Site | Configured | Season mode only |
-| Bitcoin Mine | ~2% | Ethereal layer only |
+| Bitcoin Mine | ~2% | Season mode only, Ethereal layer only |
 | Agent | Configured | Subject to limit |
 
 ### Blitz Mode
@@ -179,7 +176,6 @@ Relic Chests use a different discovery mechanism:
 |-----------|-------------|-------------------|
 | Relic Chest | Time-based | Blitz mode only |
 | Fragment Mine | Configured | Always available |
-| Bitcoin Mine | ~2% | Ethereal layer only |
 | Camp | Configured | Blitz mode only |
 | Agent | Configured | Subject to limit |
 
