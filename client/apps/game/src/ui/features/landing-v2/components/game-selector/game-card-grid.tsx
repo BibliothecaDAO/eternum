@@ -1,12 +1,19 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
-import { useWorldsAvailability, getAvailabilityStatus, getWorldKey } from "@/hooks/use-world-availability";
+import {
+  useWorldsAvailability,
+  getAvailabilityStatus,
+  getWorldKey,
+  type WorldConfigMeta,
+} from "@/hooks/use-world-availability";
+import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
 import { resolveChain } from "@/runtime/world";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
+import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Zap, Trophy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import type { Chain } from "@contracts";
 import { env } from "../../../../../../env";
 
@@ -50,6 +57,54 @@ const fetchPlayerRegistrationStatus = async (
   return null;
 };
 
+/**
+ * Format fee amount from wei to human-readable LORDS
+ */
+const formatFeeAmount = (amount: bigint): string => {
+  const divisor = 10n ** 18n;
+  const whole = amount / divisor;
+  const remainder = amount % divisor;
+  if (remainder === 0n) return whole.toString();
+  const decimal = (remainder * 100n) / divisor;
+  if (decimal === 0n) return whole.toString();
+  return `${whole}.${decimal.toString().padStart(2, "0")}`;
+};
+
+/**
+ * Get stage label for registration progress
+ */
+const getStageLabel = (stage: RegistrationStage): string => {
+  switch (stage) {
+    case "obtaining-token":
+      return "Obtaining token...";
+    case "waiting-for-token":
+      return "Confirming...";
+    case "registering":
+      return "Registering...";
+    case "done":
+      return "Registered!";
+    case "error":
+      return "Failed";
+    default:
+      return "Register";
+  }
+};
+
+/**
+ * Game type badge - Ranked (MMR enabled) or Sandbox
+ */
+const GameTypeBadge = ({ mmrEnabled }: { mmrEnabled: boolean }) => {
+  if (mmrEnabled) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-orange border border-orange/40 bg-orange/15 px-1 py-0.5 rounded">
+        <Trophy className="w-2.5 h-2.5" />
+        Ranked
+      </span>
+    );
+  }
+  return <span className="text-[8px] text-gold/50 border border-gold/20 bg-gold/5 px-1 py-0.5 rounded">Sandbox</span>;
+};
+
 export type WorldSelection = WorldSelectionInput;
 
 type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
@@ -64,38 +119,66 @@ interface GameData {
   endAt: number | null;
   registrationCount: number | null;
   isRegistered: boolean | null;
+  config: WorldConfigMeta | null;
 }
 
 interface GameCardGridProps {
   chain: Chain;
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
-  onRegister: (selection: WorldSelection) => void;
+  onRegistrationComplete?: () => void;
   className?: string;
 }
 
 /**
- * Single game card component
+ * Single game card component with inline registration
  */
 const GameCard = ({
   game,
   onPlay,
   onSpectate,
-  onRegister,
+  onRegistrationComplete,
   playerAddress,
 }: {
   game: GameData;
   onPlay: () => void;
   onSpectate: () => void;
-  onRegister: () => void;
+  onRegistrationComplete?: () => void;
   playerAddress: string | null;
 }) => {
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
   const canPlay = isOngoing && game.isRegistered;
-  const canRegister = (isUpcoming || isOngoing) && !game.isRegistered;
   const canSpectate = isOngoing;
+
+  // Inline registration hook
+  const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
+    worldName: game.name,
+    chain: game.chain,
+    config: game.config,
+    isRegistered: game.isRegistered === true,
+    enabled: game.status === "ok" && !isEnded,
+  });
+
+  // Handle registration with toast notification
+  const handleRegister = useCallback(async () => {
+    try {
+      await register();
+    } catch (err) {
+      console.error("Registration failed:", err);
+    }
+  }, [register]);
+
+  // Show success toast when registration completes
+  useEffect(() => {
+    if (registrationStage === "done") {
+      toast.success("Registration successful!", {
+        description: `You are now registered for ${game.name}`,
+      });
+      onRegistrationComplete?.();
+    }
+  }, [registrationStage, game.name, onRegistrationComplete]);
 
   // Status colors
   const statusColors = {
@@ -112,6 +195,8 @@ const GameCard = ({
     unknown: "bg-gray-500/20 text-gray-500 border-gray-500/30",
   };
 
+  const showRegistered = game.isRegistered || registrationStage === "done";
+
   return (
     <div
       className={cn(
@@ -119,28 +204,31 @@ const GameCard = ({
         "transition-all duration-200 hover:scale-[1.01] hover:shadow-md",
         statusColors[game.gameStatus],
         isOngoing && "shadow-emerald-500/10",
-        game.isRegistered && "ring-1 ring-emerald-400/50",
+        showRegistered && "ring-1 ring-emerald-400/50",
       )}
     >
       {/* Registered indicator - top banner */}
-      {game.isRegistered && (
+      {showRegistered && (
         <div className="absolute -top-px left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent rounded-b-full" />
       )}
 
       <div className="p-3 space-y-2">
-        {/* Header: Name + Status */}
+        {/* Header: Name + Badges */}
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-semibold text-white text-sm truncate flex-1" title={game.name}>
             {game.name}
           </h3>
-          <span
-            className={cn(
-              "flex-shrink-0 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full border",
-              statusBadgeColors[game.gameStatus],
-            )}
-          >
-            {isOngoing ? "Live" : isUpcoming ? "Soon" : isEnded ? "Ended" : "..."}
-          </span>
+          <div className="flex items-center gap-1">
+            {game.config && <GameTypeBadge mmrEnabled={game.config.mmrEnabled} />}
+            <span
+              className={cn(
+                "flex-shrink-0 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full border",
+                statusBadgeColors[game.gameStatus],
+              )}
+            >
+              {isOngoing ? "Live" : isUpcoming ? "Soon" : isEnded ? "Ended" : "..."}
+            </span>
+          </div>
         </div>
 
         {/* Stats row with registration indicator */}
@@ -149,7 +237,7 @@ const GameCard = ({
             <Users className="w-3 h-3" />
             <span>{game.registrationCount ?? 0} players</span>
           </div>
-          {game.isRegistered && (
+          {showRegistered && (
             <div className="flex items-center gap-1 text-emerald-400">
               <CheckCircle2 className="w-3 h-3" />
               <span className="font-medium">Registered</span>
@@ -195,25 +283,54 @@ const GameCard = ({
             </button>
           )}
 
-          {canRegister && playerAddress && (
-            <button
-              onClick={onRegister}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
-                "bg-yellow-500 text-black hover:bg-yellow-400 transition-colors",
-              )}
-            >
-              <UserPlus className="w-3 h-3" />
-              Register
-            </button>
+          {/* Registration button with inline progress */}
+          {!showRegistered && !isEnded && playerAddress && (
+            <>
+              {isRegistering ? (
+                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {getStageLabel(registrationStage)}
+                </div>
+              ) : registrationStage === "error" ? (
+                <button
+                  onClick={handleRegister}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors"
+                >
+                  Retry
+                </button>
+              ) : canRegister ? (
+                <button
+                  onClick={handleRegister}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                    "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
+                  )}
+                >
+                  <UserPlus className="w-3 h-3" />
+                  Register
+                </button>
+              ) : null}
+            </>
           )}
 
-          {!playerAddress && (canRegister || canPlay) && (
+          {!playerAddress && !showRegistered && !isEnded && (
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
           )}
 
           {isEnded && !canSpectate && <div className="flex-1 text-center text-[10px] text-white/40 py-1">Ended</div>}
         </div>
+
+        {/* Fee info (shown when can register) */}
+        {canRegister && feeAmount > 0n && !isRegistering && (
+          <div className="text-[10px] text-gold/50 text-center">Fee: {formatFeeAmount(feeAmount)} LORDS</div>
+        )}
+
+        {/* Error message */}
+        {registrationStage === "error" && error && (
+          <div className="text-[10px] text-red-400 text-center truncate" title={error}>
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -222,7 +339,13 @@ const GameCard = ({
 /**
  * Card grid for displaying games on a chain
  */
-export const GameCardGrid = ({ chain, onSelectGame, onSpectate, onRegister, className }: GameCardGridProps) => {
+export const GameCardGrid = ({
+  chain,
+  onSelectGame,
+  onSpectate,
+  onRegistrationComplete,
+  className,
+}: GameCardGridProps) => {
   const [playerRegistration, setPlayerRegistration] = useState<Record<string, boolean | null>>({});
 
   const account = useAccountStore((state) => state.account);
@@ -311,6 +434,7 @@ export const GameCardGrid = ({ chain, onSelectGame, onSpectate, onRegister, clas
           endAt,
           registrationCount: availability?.meta?.registrationCount ?? null,
           isRegistered: playerRegistration[worldKey] ?? null,
+          config: availability?.meta ?? null,
         };
       })
       // Only show online games
@@ -329,6 +453,13 @@ export const GameCardGrid = ({ chain, onSelectGame, onSpectate, onRegister, clas
     setPlayerRegistration({});
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
   }, [refetchFactoryWorlds, refetchFactory]);
+
+  // Callback for when a registration completes - refresh data
+  const handleRegistrationComplete = useCallback(() => {
+    setPlayerRegistration({});
+    void refetchFactory();
+    onRegistrationComplete?.();
+  }, [refetchFactory, onRegistrationComplete]);
 
   const isLoading = factoryWorldsLoading || factoryCheckingAvailability;
   const isChainMatch = targetChain === activeFactoryChain;
@@ -422,7 +553,7 @@ export const GameCardGrid = ({ chain, onSelectGame, onSpectate, onRegister, clas
                 game={game}
                 onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
                 onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
-                onRegister={() => onRegister({ name: game.name, chain: game.chain })}
+                onRegistrationComplete={handleRegistrationComplete}
                 playerAddress={playerAddress}
               />
             ))}

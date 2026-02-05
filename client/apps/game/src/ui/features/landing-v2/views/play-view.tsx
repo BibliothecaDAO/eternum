@@ -87,38 +87,11 @@ export const PlayView = ({ className }: PlayViewProps) => {
     }
   }, []);
 
-  const handleRegister = useCallback(
-    async (selection: WorldSelection) => {
-      const hasAccount = Boolean(account) || isConnected;
-      console.log("[PlayView] handleRegister:", selection.name, "hasAccount:", hasAccount);
-
-      if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
-        return;
-      }
-
-      setIsEntering(true);
-
-      try {
-        const { chainChanged } = await applyWorldSelection(selection, env.VITE_PUBLIC_CHAIN as Chain);
-        console.log("[PlayView] World selected for registration, chainChanged:", chainChanged);
-
-        if (chainChanged) {
-          // Go to play route which will show registration flow
-          window.location.href = "/play";
-          return;
-        }
-
-        // Navigate to play route for registration (onboarding flow will handle it)
-        console.log("[PlayView] Navigating to registration flow...");
-        window.location.href = "/play";
-      } catch (error) {
-        console.error("Failed to register for game:", error);
-        setIsEntering(false);
-      }
-    },
-    [account, isConnected, setModal],
-  );
+  // Registration is handled inline by GameCardGrid - this callback is for any post-registration actions
+  const handleRegistrationComplete = useCallback(() => {
+    console.log("[PlayView] Registration completed");
+    // The toast is already shown by the GameCard component
+  }, []);
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
@@ -135,7 +108,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
             chain="mainnet"
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
-            onRegister={handleRegister}
+            onRegistrationComplete={handleRegistrationComplete}
           />
         </div>
 
@@ -145,7 +118,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
             chain="slot"
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
-            onRegister={handleRegister}
+            onRegistrationComplete={handleRegistrationComplete}
           />
         </div>
       </div>

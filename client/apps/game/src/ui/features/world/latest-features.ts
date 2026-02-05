@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-02-05",
+    title: "Inline Game Registration",
+    description:
+      "Register for games directly from the landing page without navigating away. See registration progress, fee info in LORDS, and get instant confirmation with success toasts. Ranked games now show a trophy badge to distinguish them from sandbox games.",
+    type: "feature",
+  },
+  {
+    date: "2026-02-05",
     title: "New Landing Experience",
     description:
       "The landing page has been completely refreshed! Browse and join games directly from the home screen, enjoy beautiful backgrounds that change as you navigate, and access your profile, markets, and leaderboard with the new sidebar. Mobile users get a handy bottom navigation bar.",

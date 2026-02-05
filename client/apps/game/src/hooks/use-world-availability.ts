@@ -6,7 +6,8 @@
 import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { useQuery, useQueries } from "@tanstack/react-query";
 
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+// Note: registration_end_at uses start_main_at because registration ends when the main game starts
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -25,10 +26,39 @@ const parseMaybeHexToNumber = (v: unknown): number | null => {
   return null;
 };
 
-interface WorldConfigMeta {
+const parseMaybeHexToBigInt = (v: unknown): bigint | null => {
+  if (v == null) return null;
+  if (typeof v === "bigint") return v;
+  if (typeof v === "number") return BigInt(v);
+  if (typeof v === "string") {
+    try {
+      if (v.startsWith("0x") || v.startsWith("0X")) return BigInt(v);
+      return BigInt(v);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const parseMaybeHexToAddress = (v: unknown): string | null => {
+  const bigIntVal = parseMaybeHexToBigInt(v);
+  if (bigIntVal == null || bigIntVal === 0n) return null;
+  return `0x${bigIntVal.toString(16)}`;
+};
+
+export interface WorldConfigMeta {
   startMainAt: number | null;
   endAt: number | null;
   registrationCount: number | null;
+  // Blitz registration config
+  entryTokenAddress: string | null;
+  feeTokenAddress: string | null;
+  feeAmount: bigint;
+  registrationStartAt: number | null;
+  registrationEndAt: number | null;
+  // MMR
+  mmrEnabled: boolean;
 }
 
 interface WorldRef {
@@ -57,6 +87,12 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string): Promise<WorldConfigMe
     startMainAt: null,
     endAt: null,
     registrationCount: null,
+    entryTokenAddress: null,
+    feeTokenAddress: null,
+    feeAmount: 0n,
+    registrationStartAt: null,
+    registrationEndAt: null,
+    mmrEnabled: false,
   };
 
   try {
@@ -68,6 +104,18 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string): Promise<WorldConfigMe
       if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
       if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
       if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
+      // Blitz registration config
+      if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
+      if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
+      if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
+      if (row.registration_start_at != null)
+        meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
+      if (row.registration_end_at != null)
+        meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
+      if (row.mmr_enabled != null) {
+        const mmrVal = parseMaybeHexToNumber(row.mmr_enabled);
+        meta.mmrEnabled = mmrVal != null && mmrVal !== 0;
+      }
     }
   } catch {
     // ignore fetch errors; caller handles defaults
