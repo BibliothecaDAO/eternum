@@ -98,6 +98,8 @@ const parseMaybeBool = (v: unknown): boolean | null => {
 
 /**
  * Fetch player registration status from Torii SQL endpoint.
+ * Uses `once_registered` field which stays true even after settlement
+ * (the `registered` field gets set to 0 after settlement)
  */
 const fetchPlayerRegistration = async (
   toriiBaseUrl: string,
@@ -106,7 +108,8 @@ const fetchPlayerRegistration = async (
 ): Promise<boolean | null> => {
   const isDebug = worldName === DEBUG_WORLD;
   try {
-    const query = `SELECT registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerAddress}" LIMIT 1;`;
+    // Use once_registered - it stays true after settlement, while registered gets set to 0
+    const query = `SELECT once_registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerAddress}" LIMIT 1;`;
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
     if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Fetching registration:`, { playerAddress, url });
     const response = await fetch(url);
@@ -117,9 +120,9 @@ const fetchPlayerRegistration = async (
     const data = (await response.json()) as Record<string, unknown>[];
     if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Registration data:`, data);
     const [row] = data;
-    if (row && row.registered != null) {
-      const result = parseMaybeBool(row.registered);
-      if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Parsed registration:`, result);
+    if (row && row.once_registered != null) {
+      const result = parseMaybeBool(row.once_registered);
+      if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] Parsed once_registered:`, result);
       return result;
     }
     if (isDebug) console.log(`[DEBUG ${DEBUG_WORLD}] No registration row found`);
