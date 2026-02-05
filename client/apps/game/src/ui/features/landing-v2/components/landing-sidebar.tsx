@@ -1,4 +1,4 @@
-import { ReactComponent as BlitzLogo } from "@/assets/icons/blitz-words-logo-g.svg";
+import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Home, Settings, Trophy, User } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -18,7 +18,6 @@ const sidebarItems: SidebarItem[] = [
 
 interface LandingSidebarProps {
   onSettingsClick?: () => void;
-  walletButton?: React.ReactNode;
   className?: string;
 }
 
@@ -26,7 +25,7 @@ interface LandingSidebarProps {
  * Icon-only left sidebar navigation.
  * Only visible on desktop (hidden on mobile, replaced by bottom nav).
  */
-export const LandingSidebar = ({ onSettingsClick, walletButton, className }: LandingSidebarProps) => {
+export const LandingSidebar = ({ onSettingsClick, className }: LandingSidebarProps) => {
   return (
     <aside
       className={cn(
@@ -39,7 +38,7 @@ export const LandingSidebar = ({ onSettingsClick, walletButton, className }: Lan
       {/* Logo at top */}
       <div className="mb-8">
         <NavLink to="/" className="block transition-transform duration-200 hover:scale-110" title="Realms: Blitz">
-          <BlitzLogo className="h-10 w-10 text-gold opacity-90 transition-opacity hover:opacity-100" />
+          <RealmsLogo className="h-10 w-10 text-gold opacity-90 transition-opacity hover:opacity-100" />
         </NavLink>
       </div>
 
@@ -85,9 +84,6 @@ export const LandingSidebar = ({ onSettingsClick, walletButton, className }: Lan
           return null;
         })}
       </nav>
-
-      {/* Wallet connector above settings */}
-      {walletButton && <div className="mb-2">{walletButton}</div>}
 
       {/* Settings at bottom */}
       <button

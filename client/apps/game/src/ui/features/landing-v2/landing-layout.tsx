@@ -66,11 +66,11 @@ const LandingLayoutContent = () => {
       {/* Dynamic background */}
       <DynamicBackground backgroundId={backgroundId} />
 
-      {/* Left sidebar (desktop only) - includes wallet connector */}
-      <LandingSidebar onSettingsClick={handleSettingsClick} walletButton={<Controller />} />
+      {/* Left sidebar (desktop only) */}
+      <LandingSidebar onSettingsClick={handleSettingsClick} />
 
-      {/* Top header - wallet shown on mobile only */}
-      <LandingHeader mobileWalletButton={<Controller />} />
+      {/* Top header with wallet */}
+      <LandingHeader walletButton={<Controller />} />
 
       {/* Main content area */}
       <main

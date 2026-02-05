@@ -14,7 +14,7 @@ interface HeroTitleProps {
 export const HeroTitle = ({
   title = "REALMS",
   subtitle = "BLITZ",
-  tagline = "Forge your destiny in a world of eternal conflict",
+  tagline = "Forge your destiny in a world of relentless battles",
   className,
 }: HeroTitleProps) => {
   return (
