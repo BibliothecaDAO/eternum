@@ -34,18 +34,35 @@ const fetchPlayerRegistrationStatus = async (
   toriiBaseUrl: string,
   playerLiteral: string | null,
 ): Promise<boolean | null> => {
-  if (!playerLiteral) return null;
+  if (!playerLiteral) {
+    console.log("[fetchPlayerRegistrationStatus] No playerLiteral provided");
+    return null;
+  }
   try {
     const query = `SELECT registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerLiteral}" LIMIT 1;`;
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
+    console.log("[fetchPlayerRegistrationStatus] Checking registration:", {
+      playerLiteral,
+      toriiBaseUrl,
+      query,
+      url,
+    });
     const response = await fetch(url);
-    if (!response.ok) return null;
-    const [row] = (await response.json()) as Record<string, unknown>[];
-    if (row && row.registered != null) {
-      return parseMaybeBool(row.registered);
+    if (!response.ok) {
+      console.log("[fetchPlayerRegistrationStatus] Response not ok:", response.status, response.statusText);
+      return null;
     }
-  } catch {
-    // ignore
+    const data = (await response.json()) as Record<string, unknown>[];
+    console.log("[fetchPlayerRegistrationStatus] Response data:", data);
+    const [row] = data;
+    if (row && row.registered != null) {
+      const result = parseMaybeBool(row.registered);
+      console.log("[fetchPlayerRegistrationStatus] Parsed result:", result);
+      return result;
+    }
+    console.log("[fetchPlayerRegistrationStatus] No registration found");
+  } catch (error) {
+    console.error("[fetchPlayerRegistrationStatus] Error:", error);
   }
   return null;
 };
@@ -269,9 +286,10 @@ const GameCard = ({
           />
         </div>
 
-        {/* Action buttons - compact */}
+        {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
         <div className="flex gap-1.5">
-          {canPlay && (
+          {/* Left slot: Play OR Register (share same space) */}
+          {canPlay ? (
             <button
               onClick={onPlay}
               className={cn(
@@ -282,23 +300,7 @@ const GameCard = ({
               <Play className="w-3 h-3" />
               Play
             </button>
-          )}
-
-          {canSpectate && (
-            <button
-              onClick={onSpectate}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
-                "bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10",
-              )}
-            >
-              <Eye className="w-3 h-3" />
-              Spectate
-            </button>
-          )}
-
-          {/* Registration button with inline progress */}
-          {!showRegistered && canRegisterPeriod && playerAddress && (
+          ) : !showRegistered && canRegisterPeriod && playerAddress ? (
             <>
               {isRegistering ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
@@ -325,10 +327,22 @@ const GameCard = ({
                 </button>
               ) : null}
             </>
-          )}
-
-          {!playerAddress && !showRegistered && canRegisterPeriod && (
+          ) : !playerAddress && !showRegistered && canRegisterPeriod ? (
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
+          ) : null}
+
+          {/* Right slot: Spectate (always in same position) */}
+          {canSpectate && (
+            <button
+              onClick={onSpectate}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
+                "bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10",
+              )}
+            >
+              <Eye className="w-3 h-3" />
+              Spectate
+            </button>
           )}
         </div>
 
@@ -369,6 +383,15 @@ export const UnifiedGameGrid = ({
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
+
+  // Debug log for player address conversion
+  useEffect(() => {
+    console.log("[UnifiedGameGrid] Player address info:", {
+      rawAccountAddress: account?.address,
+      playerAddress,
+      playerFeltLiteral,
+    });
+  }, [account?.address, playerAddress, playerFeltLiteral]);
 
   const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
