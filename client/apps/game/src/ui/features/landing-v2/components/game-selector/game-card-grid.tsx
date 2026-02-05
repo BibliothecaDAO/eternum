@@ -17,6 +17,8 @@ import type { Chain } from "@contracts";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
+const DEBUG_WORLD = "test-snow-true-64";
+
 /**
  * Format fee amount from wei to human-readable LORDS
  */
@@ -372,6 +374,19 @@ export const UnifiedGameGrid = ({
 
         // Use local registration state first, then fall back to server state
         const isRegistered = localRegistrations[worldKey] ?? availability?.meta?.isPlayerRegistered ?? null;
+
+        // Debug logging for specific world
+        if (world.name === DEBUG_WORLD) {
+          console.log(`[DEBUG ${DEBUG_WORLD}] Building game data:`, {
+            worldKey,
+            status,
+            gameStatus,
+            localRegistrations: localRegistrations[worldKey],
+            metaIsPlayerRegistered: availability?.meta?.isPlayerRegistered,
+            finalIsRegistered: isRegistered,
+            isLoading: availability?.isLoading,
+          });
+        }
 
         return {
           name: world.name,
