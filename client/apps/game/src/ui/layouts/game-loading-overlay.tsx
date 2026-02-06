@@ -1,62 +1,85 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const SAFETY_TIMEOUT_MS = 15_000;
-// Minimum time the overlay stays visible after structures are detected,
-// giving the hex scene time to render buildings from RECS data.
-const MIN_DISPLAY_MS = 3_000;
-
-const log = (...args: unknown[]) => console.log("[BLITZ-ENTRY]", ...args);
+// Time to wait after navigating to hex before dismissing (player path)
+const POST_NAVIGATE_DELAY_MS = 1_500;
+// Time to wait after tile data loads before dismissing (spectator path).
+// Longer because the bounds subscription still needs to stream Structure
+// entities and the WorldUpdateListener needs to process them into visuals.
+const POST_MAP_LOAD_DELAY_MS = 3_000;
 
 /**
- * Simple loading overlay that replaces BlitzOnboarding.
- * Shows while player structure data syncs into RECS after <World> mounts.
- * Auto-dismisses once player structures are detected (+ min delay) or after a safety timeout.
+ * Loading overlay shown while game data syncs after <World> mounts.
+ *
+ * For players:
+ *   Waits for structures in RECS, navigates to the player's realm, then dismisses.
+ *
+ * For spectators:
+ *   Waits for the world map's initial Torii fetch to complete, then dismisses.
+ *
+ * Falls back to a safety timeout if neither signal fires.
  */
 export const GameLoadingOverlay = () => {
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const isSpectating = useUIStore((state) => state.isSpectating);
+  const mapLoading = useUIStore((state) => state.loadingStates[LoadingStateKey.Map]);
   const playerStructures = usePlayerStructures();
   const hasDismissed = useRef(false);
-  const mountTime = useRef(0);
+  const hasSeenMapLoading = useRef(false);
+  const navigate = useNavigate();
 
-  // Capture mount time in an effect to satisfy React purity rules
-  useEffect(() => {
-    mountTime.current = Date.now();
-    log("MOUNTED at", new Date().toISOString());
-    return () => log("UNMOUNTED");
-  }, []);
-
-  // Log structure changes
-  useEffect(() => {
-    log(
-      "playerStructures changed:",
-      playerStructures.length,
-      "structures",
-      playerStructures.map((s) => s.entityId),
-    );
-  }, [playerStructures]);
-
-  // Auto-dismiss when player structures are loaded into RECS (with min delay)
-  useEffect(() => {
+  const dismiss = (delayMs: number) => {
     if (hasDismissed.current) return;
-    if (playerStructures.length > 0) {
-      hasDismissed.current = true;
-      const elapsed = Date.now() - mountTime.current;
-      const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
-      log("Structures detected! elapsed:", elapsed, "ms, waiting additional:", remaining, "ms before dismiss");
-      setTimeout(() => {
-        log("DISMISSING overlay now");
-        setShowBlankOverlay(false);
-      }, remaining);
-    }
-  }, [playerStructures, setShowBlankOverlay]);
+    hasDismissed.current = true;
+    setTimeout(() => setShowBlankOverlay(false), delayMs);
+  };
 
-  // Safety timeout: dismiss even if structures never load (e.g. spectator, error)
+  // --- Player path: navigate to first structure once it appears in RECS ---
+  useEffect(() => {
+    if (hasDismissed.current || isSpectating) return;
+    if (playerStructures.length === 0) return;
+
+    const first = playerStructures[0];
+    const normalized = new Position({ x: first.position.x, y: first.position.y }).getNormalized();
+
+    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
+    setStructureEntityId(first.entityId, {
+      spectator: false,
+      worldMapPosition: { col: normalized.x, row: normalized.y },
+    });
+
+    const url = `/play/hex?col=${normalized.x}&row=${normalized.y}`;
+    navigate(url);
+    window.dispatchEvent(new Event("urlChanged"));
+
+    dismiss(POST_NAVIGATE_DELAY_MS);
+  }, [playerStructures, isSpectating, setShowBlankOverlay, navigate]);
+
+  // --- Spectator path: dismiss once the world map finishes its initial fetch ---
+  useEffect(() => {
+    if (hasDismissed.current || !isSpectating) return;
+
+    if (mapLoading) {
+      hasSeenMapLoading.current = true;
+    }
+
+    // Map loading went true → false: initial tile fetch complete.
+    // Wait additional time for the bounds subscription to stream
+    // Structure entities and for the map to render them.
+    if (hasSeenMapLoading.current && !mapLoading) {
+      dismiss(POST_MAP_LOAD_DELAY_MS);
+    }
+  }, [mapLoading, isSpectating, setShowBlankOverlay]);
+
+  // Safety timeout
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!hasDismissed.current) {
-        log("SAFETY TIMEOUT reached -", SAFETY_TIMEOUT_MS, "ms elapsed, dismissing without structures");
         hasDismissed.current = true;
         setShowBlankOverlay(false);
       }
@@ -72,7 +95,9 @@ export const GameLoadingOverlay = () => {
           className="w-32 sm:w-24 lg:w-24 xl:w-28 animate-pulse"
           alt="Loading"
         />
-        <p className="font-cinzel text-xl text-gold tracking-wider animate-pulse">Entering game...</p>
+        <p className="font-cinzel text-xl text-gold tracking-wider animate-pulse">
+          {isSpectating ? "Loading world..." : "Entering game..."}
+        </p>
       </div>
     </div>
   );

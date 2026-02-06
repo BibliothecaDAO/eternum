@@ -6,7 +6,7 @@
  * 2. Settlement phase - If user is registered but hasn't settled
  * 3. Auto-transitions to game when ready
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Eye, Loader2, Check, AlertCircle, RefreshCw, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
@@ -20,9 +20,9 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
-import { sqlApi } from "@/services/api";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
+import { StructureType } from "@bibliothecadao/types";
 import type { Chain } from "@contracts";
 
 const DEBUG_MODAL = false;
@@ -685,6 +685,13 @@ export const GameEntryModal = ({
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
+  const hasEnteredGameRef = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      hasEnteredGameRef.current = false;
+    }
+  }, [isOpen]);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -1022,67 +1029,27 @@ export const GameEntryModal = ({
     }, 100);
   }, []);
 
-  // Enter game handler - sets up state and navigates to the game
-  const handleEnterGame = useCallback(async () => {
-    console.log(
-      "[BLITZ-ENTRY] handleEnterGame called - isSpectateMode:",
-      isSpectateMode,
-      "hasAccount:",
-      !!account?.address,
-    );
-    // Keep showBlankOverlay=true so the GameLoadingOverlay shows while
-    // player structure data syncs into RECS after <World> mounts.
-    // The GameLoadingOverlay will dismiss it once structures are loaded.
+  // Enter game handler - navigates to the game.
+  // Does NOT prefetch structures from SQL — the GameLoadingOverlay will wait for
+  // usePlayerStructureSync to populate RECS, then navigate to the player's realm.
+  const handleEnterGame = useCallback(() => {
+    // Ensure the loading overlay is visible (it may have been dismissed from a previous game)
+    useUIStore.getState().setShowBlankOverlay(true);
 
-    // Default coordinates (world center)
-    let col = 0;
-    let row = 0;
-    let structureId = 0;
-
-    // For players (not spectators), fetch structure coordinates from SQL
-    // (RECS is NOT populated with player structures at this point)
-    if (!isSpectateMode && account?.address) {
-      try {
-        console.log("[BLITZ-ENTRY] Fetching player structures from SQL for:", account.address);
-        const structures = await sqlApi.fetchStructuresByOwner(account.address);
-        console.log("[BLITZ-ENTRY] SQL returned", structures.length, "structures:", structures);
-        if (structures.length > 0) {
-          const first = structures[0];
-          col = first.coord_x;
-          row = first.coord_y;
-          structureId = first.entity_id;
-          console.log("[BLITZ-ENTRY] Using structure:", structureId, "at col:", col, "row:", row);
-        }
-      } catch (error) {
-        console.error("[BLITZ-ENTRY] Failed to fetch structures from SQL:", error);
-      }
-    }
-
-    // Set structureEntityId in UI store BEFORE navigation
-    // This ensures the game loads with the correct structure selected
+    // Set initial state — structureEntityId=0 means "not yet known".
+    // GameLoadingOverlay will update this once structures are synced into RECS.
     const setStructureEntityId = useUIStore.getState().setStructureEntityId;
-    setStructureEntityId(structureId, {
+    setStructureEntityId(0, {
       spectator: isSpectateMode,
-      worldMapPosition: { col, row },
+      worldMapPosition: { col: 0, row: 0 },
     });
-    console.log("[BLITZ-ENTRY] Set structureEntityId:", structureId, "worldMapPosition:", { col, row });
 
-    // Build URL - always use /hex for local view for players, /map for spectators
-    let url: string;
-    if (isSpectateMode) {
-      url = `/play/map?col=${col}&row=${row}&spectate=true`;
-    } else {
-      // Player entering - always use local/hex view by default
-      url = `/play/hex?col=${col}&row=${row}`;
-    }
-
-    console.log("[BLITZ-ENTRY] Navigating to:", url);
+    // Navigate with placeholder coords (0,0). The loading overlay will
+    // re-navigate to the player's realm once structures are available.
+    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
     navigate(url);
-
-    // Dispatch urlChanged event to notify Three.js GameRenderer about the route change
     window.dispatchEvent(new Event("urlChanged"));
-    console.log("[BLITZ-ENTRY] Navigation dispatched");
-  }, [navigate, isSpectateMode, account, worldName]);
+  }, [navigate, isSpectateMode]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {

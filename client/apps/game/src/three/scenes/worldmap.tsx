@@ -170,6 +170,7 @@ export default class WorldmapScene extends HexagonScene {
   private pendingChunkRefreshForce = false;
   private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
   private toriiLoadingCounter = 0;
+  private isSwitchedOff = false;
   private readonly chunkRowsAhead = 2;
   private readonly chunkRowsBehind = 2;
   private readonly chunkColsEachSide = 2;
@@ -1730,6 +1731,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   async setup() {
+    this.isSwitchedOff = false;
     this.controls.maxDistance = 40;
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
@@ -1819,8 +1821,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   onSwitchOff() {
+    this.isSwitchedOff = true;
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
+
+    // Clear map loading state so "Charting Territories" doesn't persist
+    // when switching away while fetches are still in-flight
+    this.toriiLoadingCounter = 0;
+    this.state.setLoading(LoadingStateKey.Map, false);
 
     this.disposeStoreSubscriptions();
     this.disposeWorldUpdateSubscriptions();
@@ -3038,6 +3046,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private beginToriiFetch() {
+    if (this.isSwitchedOff) return;
     if (this.toriiLoadingCounter === 0) {
       this.state.setLoading(LoadingStateKey.Map, true);
     }
