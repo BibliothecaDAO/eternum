@@ -35,6 +35,7 @@ import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { shouldRefreshVisibleStructures } from "./structure-update-policy";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -1842,6 +1843,11 @@ export class StructureManager {
       }
     }
 
+    const previousOwnership = {
+      isMine: structure.isMine,
+      isAlly: structure.isAlly,
+    };
+
     // Update cached guard armies data
     structure.guardArmies = update.guardArmies.map((guard) => ({
       slot: guard.slot,
@@ -1866,9 +1872,16 @@ export class StructureManager {
       this.updateStructureLabelData(structure, label);
     }
 
-    // Refresh visible structures to update point icons (e.g., myRealm vs enemyRealm)
-    // when ownership changes
-    this.updateVisibleStructures();
+    if (
+      shouldRefreshVisibleStructures(previousOwnership, {
+        isMine: structure.isMine,
+        isAlly: structure.isAlly,
+      })
+    ) {
+      // Refresh visible structures to update point icons (e.g., myRealm vs enemyRealm)
+      // only when ownership bucket changes.
+      this.updateVisibleStructures();
+    }
   }
 
   /**
