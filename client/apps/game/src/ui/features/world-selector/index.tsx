@@ -1,6 +1,6 @@
 import type { WorldSelectionInput } from "@/runtime/world";
 
-export type WorldSelection = WorldSelectionInput;
+type WorldSelection = WorldSelectionInput;
 
 /**
  * Redirects to the landing page for world selection.

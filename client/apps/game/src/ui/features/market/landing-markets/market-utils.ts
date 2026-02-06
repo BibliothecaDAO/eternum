@@ -1,6 +1,6 @@
 import { shortString, uint256, type Uint256 } from "starknet";
 
-export type MarketServerStatus = "registration" | "started" | "ended";
+type MarketServerStatus = "registration" | "started" | "ended";
 
 export const decodePaddedFeltAscii = (hex: string): string => {
   try {
@@ -92,12 +92,12 @@ const parseLordsToUint256 = (value: string): Uint256 | null => {
   return uint256.bnToUint256(base);
 };
 
-export const formatTimestamp = (value: number | null): string => {
+const formatTimestamp = (value: number | null): string => {
   if (!value) return "Not available";
   return new Date(value * 1000).toLocaleString();
 };
 
-export const formatSecondsToLocalInput = (value: number | null | undefined): string => {
+const formatSecondsToLocalInput = (value: number | null | undefined): string => {
   if (value == null || !Number.isFinite(value) || value <= 0) return "";
   const date = new Date(value * 1000);
   const pad = (n: number) => n.toString().padStart(2, "0");
@@ -109,11 +109,7 @@ export const formatSecondsToLocalInput = (value: number | null | undefined): str
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 };
 
-export const deriveServerStatus = (
-  startAt: number | null,
-  endAt: number | null,
-  nowSec: number,
-): MarketServerStatus => {
+const deriveServerStatus = (startAt: number | null, endAt: number | null, nowSec: number): MarketServerStatus => {
   if (startAt == null || nowSec < startAt) return "registration";
   if (endAt != null && endAt !== 0 && nowSec >= endAt) return "ended";
   return "started";

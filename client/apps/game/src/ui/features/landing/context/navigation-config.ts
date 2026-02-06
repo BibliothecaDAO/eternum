@@ -1,6 +1,6 @@
 import { Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
 
-export type SectionId = "home" | "leaderboard" | "markets" | "profile";
+type SectionId = "home" | "leaderboard" | "markets" | "profile";
 
 export interface SubMenuItem {
   id: string;

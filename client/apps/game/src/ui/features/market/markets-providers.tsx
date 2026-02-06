@@ -52,7 +52,7 @@ export const MarketsProviders = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const MarketsSection = ({ children, description }: { children: ReactNode; description?: string }) => (
+const MarketsSection = ({ children, description }: { children: ReactNode; description?: string }) => (
   <section
     aria-label="Prediction markets"
     className="relative h-[85vh] w-full max-w-[1400px] overflow-y-auto text-gold sm:p-4 md:h-[70vh] md:max-h-[80vh] md:p-6"
@@ -76,7 +76,7 @@ export const MarketsSection = ({ children, description }: { children: ReactNode;
   </section>
 );
 
-export const LandingMarkets = () => {
+const LandingMarkets = () => {
   const [marketFilters, setMarketFilters] = useState<MarketFiltersParams>({ ...MARKET_FILTERS_ALL });
   const [activeTab, setActiveTab] = useState<MarketTab>("markets");
 

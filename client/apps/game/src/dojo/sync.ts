@@ -66,7 +66,7 @@ const GLOBAL_NON_SPATIAL_MODELS: string[] = [
 ];
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
-export const PLAYER_STRUCTURE_MODELS: string[] = [
+const PLAYER_STRUCTURE_MODELS: string[] = [
   "s1_eternum-ProductionBoostBonus",
   "s1_eternum-Resource",
   "s1_eternum-ResourceArrival",

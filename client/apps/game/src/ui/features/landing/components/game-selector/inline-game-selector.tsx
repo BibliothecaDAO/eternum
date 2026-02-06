@@ -84,7 +84,7 @@ type SavedWorldDisplay = {
   worldKey: string;
 };
 
-export type WorldSelection = WorldSelectionInput;
+type WorldSelection = WorldSelectionInput;
 
 interface InlineGameSelectorProps {
   onSelectGame: (selection: WorldSelection) => void;
@@ -95,7 +95,7 @@ interface InlineGameSelectorProps {
  * Inline game selector that displays factory games and saved games
  * directly in the landing page (no modal).
  */
-export const InlineGameSelector = ({ onSelectGame, className }: InlineGameSelectorProps) => {
+const InlineGameSelector = ({ onSelectGame, className }: InlineGameSelectorProps) => {
   const [saved, setSaved] = useState<string[]>(() => listWorldNames());
   const [selected, setSelected] = useState<string | null>(getActiveWorldName());
   const [selectedFactory, setSelectedFactory] = useState<FactoryWorld | null>(null);

@@ -207,7 +207,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
  * Clean up the game renderer to prevent memory leaks.
  * This should be called before navigating away from the game.
  */
-export const cleanupGameRenderer = () => {
+const cleanupGameRenderer = () => {
   if (gameRendererCleanup) {
     console.log("[BOOTSTRAP] Cleaning up GameRenderer");
     gameRendererCleanup();

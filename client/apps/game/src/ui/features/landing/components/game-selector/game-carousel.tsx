@@ -16,7 +16,7 @@ interface GameCarouselProps {
  * Carousel component for cycling through available games/realms.
  * Shows empty state when no games are available.
  */
-export const GameCarousel = ({
+const GameCarousel = ({
   games,
   onEnterGame,
   onJoinSeason,

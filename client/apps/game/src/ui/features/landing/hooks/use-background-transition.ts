@@ -13,7 +13,7 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
  * Hook for managing background transitions.
  * Supports both route-based and game-based background changes.
  */
-export const useBackgroundTransition = (initialBackground?: string) => {
+const useBackgroundTransition = (initialBackground?: string) => {
   const location = useLocation();
 
   // Get default background for current route

@@ -9,7 +9,7 @@ interface OnboardingProps {
   backgroundImage: string;
 }
 
-export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
+const Onboarding = ({ backgroundImage }: OnboardingProps) => {
   const { isSettlingRealm, bottomContent, showBottomContent, handleExitSettleRealm } = useOnboardingState();
   const mode = useGameModeConfig();
 

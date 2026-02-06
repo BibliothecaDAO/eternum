@@ -9,7 +9,7 @@ interface UseGameSelectorOptions {
  * Hook for managing game selection state.
  * Handles the carousel state and background transitions.
  */
-export const useGameSelector = ({ onBackgroundChange }: UseGameSelectorOptions = {}) => {
+const useGameSelector = ({ onBackgroundChange }: UseGameSelectorOptions = {}) => {
   const [selectedGame, setSelectedGame] = useState<GameInfo | null>(null);
   const [isEntering, setIsEntering] = useState(false);
 

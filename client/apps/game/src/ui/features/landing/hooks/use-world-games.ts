@@ -40,7 +40,7 @@ interface UseWorldGamesResult {
  * Hook to get available games/worlds from the stored world profiles.
  * Returns them as GameInfo objects for the game selector.
  */
-export const useWorldGames = (): UseWorldGamesResult => {
+const useWorldGames = (): UseWorldGamesResult => {
   const [games, setGames] = useState<GameInfo[]>([]);
   const [activeGame, setActiveGame] = useState<GameInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);

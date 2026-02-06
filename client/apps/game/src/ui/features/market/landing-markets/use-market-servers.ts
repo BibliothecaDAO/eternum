@@ -74,7 +74,7 @@ export const fetchRegisteredPlayers = async (
 
 export type MarketPlayer = { address: string; name: string | null };
 
-export type MarketServer = {
+type MarketServer = {
   name: string;
   toriiBaseUrl: string;
   startAt: number | null;
@@ -86,7 +86,7 @@ export type MarketServer = {
   playerError: string | null;
 };
 
-export const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayerFallback?: boolean } = {}) => {
+const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayerFallback?: boolean } = {}) => {
   const [servers, setServers] = useState<MarketServer[]>([]);
   const serversRef = useRef<MarketServer[]>([]);
   const [loading, setLoading] = useState(false);

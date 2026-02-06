@@ -87,7 +87,7 @@ const ChainBadge = ({ chain }: { chain: Chain }) => {
 
 export type WorldSelection = WorldSelectionInput;
 
-export type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
+type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
 
 interface GameData {
   name: string;

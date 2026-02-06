@@ -45,7 +45,7 @@ export const useLandingContext = (): LandingContextValue => {
 /**
  * Hook to get just the background change function (for child components)
  */
-export const useBackgroundChange = () => {
+const useBackgroundChange = () => {
   const { setBackgroundId } = useLandingContext();
   return setBackgroundId;
 };
