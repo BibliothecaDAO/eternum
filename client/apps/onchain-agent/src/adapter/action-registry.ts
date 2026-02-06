@@ -18,6 +18,12 @@ function register(type: string, handler: ActionHandler) {
   registry.set(type, handler);
 }
 
+function registerAliases(types: string[], handler: ActionHandler) {
+  for (const type of types) {
+    register(type, handler);
+  }
+}
+
 /**
  * Wrap an async client transaction call into a normalised ActionResult.
  * Handles both `transaction_hash` and `transactionHash` return shapes.
@@ -214,6 +220,41 @@ register("explore", (client, signer, p) =>
   ),
 );
 
+register("swap_explorer_to_explorer", (client, signer, p) =>
+  wrapTx(() =>
+    client.troops.swapExplorerToExplorer(signer, {
+      fromExplorerId: num(p.fromExplorerId),
+      toExplorerId: num(p.toExplorerId),
+      toExplorerDirection: num(p.toExplorerDirection),
+      count: num(p.count),
+    }),
+  ),
+);
+
+register("swap_explorer_to_guard", (client, signer, p) =>
+  wrapTx(() =>
+    client.troops.swapExplorerToGuard(signer, {
+      fromExplorerId: num(p.fromExplorerId),
+      toStructureId: num(p.toStructureId),
+      toStructureDirection: num(p.toStructureDirection),
+      toGuardSlot: num(p.toGuardSlot),
+      count: num(p.count),
+    }),
+  ),
+);
+
+register("swap_guard_to_explorer", (client, signer, p) =>
+  wrapTx(() =>
+    client.troops.swapGuardToExplorer(signer, {
+      fromStructureId: num(p.fromStructureId),
+      fromGuardSlot: num(p.fromGuardSlot),
+      toExplorerId: num(p.toExplorerId),
+      toExplorerDirection: num(p.toExplorerDirection),
+      count: num(p.count),
+    }),
+  ),
+);
+
 // ---------------------------------------------------------------------------
 // Combat
 // ---------------------------------------------------------------------------
@@ -265,7 +306,7 @@ register("raid", (client, signer, p) =>
 // Trade
 // ---------------------------------------------------------------------------
 
-register("create_trade", (client, signer, p) =>
+const createOrderHandler: ActionHandler = (client, signer, p) =>
   wrapTx(() =>
     client.trade.createOrder(signer, {
       makerId: num(p.makerId),
@@ -277,26 +318,27 @@ register("create_trade", (client, signer, p) =>
       takerPaysMinResourceAmount: num(p.takerPaysMinResourceAmount),
       expiresAt: num(p.expiresAt),
     }),
-  ),
-);
+  );
 
-register("accept_trade", (client, signer, p) =>
+const acceptOrderHandler: ActionHandler = (client, signer, p) =>
   wrapTx(() =>
     client.trade.acceptOrder(signer, {
       takerId: num(p.takerId),
       tradeId: num(p.tradeId),
       takerBuysCount: num(p.takerBuysCount),
     }),
-  ),
-);
+  );
 
-register("cancel_trade", (client, signer, p) =>
+const cancelOrderHandler: ActionHandler = (client, signer, p) =>
   wrapTx(() =>
     client.trade.cancelOrder(signer, {
       tradeId: num(p.tradeId),
     }),
-  ),
-);
+  );
+
+registerAliases(["create_order", "create_trade"], createOrderHandler);
+registerAliases(["accept_order", "accept_trade"], acceptOrderHandler);
+registerAliases(["cancel_order", "cancel_trade"], cancelOrderHandler);
 
 // ---------------------------------------------------------------------------
 // Buildings
@@ -395,7 +437,7 @@ register("create_guild", (client, signer, p) =>
   wrapTx(() =>
     client.guild.create(signer, {
       isPublic: bool(p.isPublic),
-      guildName: num(p.guildName),
+      guildName: str(p.guildName ?? p.name ?? ""),
     }),
   ),
 );
@@ -410,6 +452,15 @@ register("join_guild", (client, signer, p) =>
 
 register("leave_guild", (client, signer, _p) =>
   wrapTx(() => client.guild.leave(signer)),
+);
+
+register("update_whitelist", (client, signer, p) =>
+  wrapTx(() =>
+    client.guild.updateWhitelist(signer, {
+      address: num(p.address),
+      whitelist: bool(p.whitelist),
+    }),
+  ),
 );
 
 // ---------------------------------------------------------------------------

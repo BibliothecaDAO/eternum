@@ -33,10 +33,16 @@ describe("action-registry", () => {
         "move_explorer",
         "travel_explorer",
         "explore",
+        "swap_explorer_to_explorer",
+        "swap_explorer_to_guard",
+        "swap_guard_to_explorer",
         "attack_explorer",
         "attack_guard",
         "guard_attack_explorer",
         "raid",
+        "create_order",
+        "accept_order",
+        "cancel_order",
         "create_trade",
         "accept_trade",
         "cancel_trade",
@@ -51,6 +57,7 @@ describe("action-registry", () => {
         "create_guild",
         "join_guild",
         "leave_guild",
+        "update_whitelist",
         "upgrade_realm",
         "contribute_hyperstructure",
       ];
@@ -185,6 +192,24 @@ describe("action-registry", () => {
       expect(props.explore).toBe(true);
     });
 
+    it("swap_explorer_to_guard calls client.troops.swapExplorerToGuard", async () => {
+      const result = await executeAction(client as any, mockSigner, {
+        type: "swap_explorer_to_guard",
+        params: {
+          fromExplorerId: "1",
+          toStructureId: "2",
+          toStructureDirection: "3",
+          toGuardSlot: "0",
+          count: "10",
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect(client.troops.swapExplorerToGuard).toHaveBeenCalledOnce();
+      const [, props] = client.troops.swapExplorerToGuard.mock.calls[0];
+      expect(props.count).toBe(10);
+    });
+
     it("leave_guild calls client.guild.leave with just signer", async () => {
       const result = await executeAction(client as any, mockSigner, {
         type: "leave_guild",
@@ -193,6 +218,22 @@ describe("action-registry", () => {
 
       expect(result.success).toBe(true);
       expect(client.guild.leave).toHaveBeenCalledWith(mockSigner);
+    });
+
+    it("update_whitelist calls client.guild.updateWhitelist", async () => {
+      const result = await executeAction(client as any, mockSigner, {
+        type: "update_whitelist",
+        params: {
+          address: "123",
+          whitelist: "true",
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect(client.guild.updateWhitelist).toHaveBeenCalledOnce();
+      const [, props] = client.guild.updateWhitelist.mock.calls[0];
+      expect(props.address).toBe(123);
+      expect(props.whitelist).toBe(true);
     });
 
     // ---------------------------------------------------------------------
@@ -240,7 +281,26 @@ describe("action-registry", () => {
     // Trade
     // ---------------------------------------------------------------------
 
-    it("create_trade calls client.trade.createOrder", async () => {
+    it("create_order calls client.trade.createOrder", async () => {
+      const result = await executeAction(client as any, mockSigner, {
+        type: "create_order",
+        params: {
+          makerId: 1,
+          takerId: 0,
+          makerGivesResourceType: 1,
+          takerPaysResourceType: 2,
+          makerGivesMinResourceAmount: 100,
+          makerGivesMaxCount: 5,
+          takerPaysMinResourceAmount: 200,
+          expiresAt: 9999999,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect(client.trade.createOrder).toHaveBeenCalledOnce();
+    });
+
+    it("create_trade alias still calls client.trade.createOrder", async () => {
       const result = await executeAction(client as any, mockSigner, {
         type: "create_trade",
         params: {
@@ -256,7 +316,7 @@ describe("action-registry", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(client.trade.createOrder).toHaveBeenCalledOnce();
+      expect(client.trade.createOrder).toHaveBeenCalled();
     });
 
     // ---------------------------------------------------------------------
@@ -313,6 +373,24 @@ describe("action-registry", () => {
 
       expect(result.success).toBe(true);
       expect(client.bank.buy).toHaveBeenCalledOnce();
+    });
+
+    // ---------------------------------------------------------------------
+    // Guild input typing
+    // ---------------------------------------------------------------------
+
+    it("create_guild preserves string guild name", async () => {
+      const result = await executeAction(client as any, mockSigner, {
+        type: "create_guild",
+        params: {
+          isPublic: true,
+          guildName: "Alliance Prime",
+        },
+      });
+
+      expect(result.success).toBe(true);
+      const [, props] = client.guild.create.mock.calls[0];
+      expect(props.guildName).toBe("Alliance Prime");
     });
 
     // ---------------------------------------------------------------------

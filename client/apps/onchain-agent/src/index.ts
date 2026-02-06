@@ -1,17 +1,31 @@
 import { EternumClient } from "@bibliothecadao/client";
 import { createGameAgent } from "@mariozechner/pi-onchain-agent";
 import { getModel } from "@mariozechner/pi-ai";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { Account } from "starknet";
 import { loadConfig } from "./config";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { createApp } from "./tui/app";
 
+async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
+  const raw = await readFile(manifestPath, "utf8");
+  const parsed = JSON.parse(raw);
+  if (!parsed || !Array.isArray(parsed.contracts)) {
+    throw new Error(`Invalid manifest at ${manifestPath}: missing contracts[]`);
+  }
+  return parsed;
+}
+
 async function main() {
   const config = loadConfig();
+  const manifestPath = path.resolve(config.manifestPath);
+  const manifest = await loadManifest(manifestPath);
 
   console.log("Initializing Eternum Agent...");
   console.log(`  RPC: ${config.rpcUrl}`);
   console.log(`  Torii: ${config.toriiUrl}`);
+  console.log(`  Manifest: ${manifestPath}`);
   console.log(`  Model: ${config.modelProvider}/${config.modelId}`);
 
   // 1. Create the Eternum client
@@ -19,7 +33,7 @@ async function main() {
     rpcUrl: config.rpcUrl,
     toriiUrl: config.toriiUrl,
     worldAddress: config.worldAddress,
-    manifest: {},
+    manifest,
   });
 
   // 2. Set up the signer

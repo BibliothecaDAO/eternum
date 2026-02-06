@@ -41,6 +41,7 @@ export interface SqlApiLike {
   fetchHyperstructures(): Promise<any[]>;
   fetchSwapEvents(userEntityIds: ID[]): Promise<any[]>;
   fetchPlayerLeaderboard(limit?: number, offset?: number): Promise<any[]>;
+  fetchPlayerLeaderboardByAddress?(address: string): Promise<any | null>;
   fetchStoryEvents(limit?: number, offset?: number): Promise<any[]>;
   fetchStoryEventsByEntity(entityId: ID, limit?: number, offset?: number): Promise<any[]>;
   fetchStoryEventsByOwner(owner: string, limit?: number, offset?: number): Promise<any[]>;
@@ -278,10 +279,11 @@ export class ViewClient {
     const cached = this.cache.get<PlayerView>(cacheKey);
     if (cached) return cached;
 
-    const [structures, allArmies, leaderboard] = await Promise.all([
+    const [structures, playerStructureRows, allArmies, leaderboardByAddress] = await Promise.all([
       this.sql.fetchStructuresByOwner(address),
+      this.sql.fetchPlayerStructures(address).catch(() => []),
       this.sql.fetchAllArmiesMapData(),
-      this.sql.fetchPlayerLeaderboard(1, 0).catch(() => []),
+      this.sql.fetchPlayerLeaderboardByAddress?.(address).catch(() => null) ?? Promise.resolve(null),
     ]);
 
     const playerStructures: PlayerStructureSummary[] = structures.map((s: any) => ({
@@ -305,14 +307,22 @@ export class ViewClient {
       carriedResourceCount: 0,
     }));
 
-    const leaderboardEntry = leaderboard[0];
+    let leaderboardEntry = leaderboardByAddress;
+    if (!leaderboardEntry) {
+      const leaderboard = await this.sql.fetchPlayerLeaderboard(100, 0).catch(() => []);
+      leaderboardEntry = leaderboard.find((row: any) =>
+        this.sameAddress(row?.playerAddress ?? row?.address, address),
+      );
+    }
+
+    const totalResources = this.aggregateResourcesFromStructures(structures, playerStructureRows);
 
     const result: PlayerView = {
       address,
       name: String(leaderboardEntry?.playerName ?? ""),
       structures: playerStructures,
       armies: playerArmies,
-      totalResources: [],
+      totalResources,
       points: Number(leaderboardEntry?.totalPoints ?? 0),
       rank: Number(leaderboardEntry?.rank ?? 0),
     };
@@ -475,6 +485,105 @@ export class ViewClient {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  private sameAddress(a: unknown, b: unknown): boolean {
+    const normalize = (value: unknown) => String(value ?? "").trim().toLowerCase();
+    return normalize(a) !== "" && normalize(a) === normalize(b);
+  }
+
+  private aggregateResourcesFromStructures(
+    ...structureGroups: Array<any[] | undefined>
+  ): { resourceId: number; name: string; totalBalance: number; totalProduction: number; structureCount: number }[] {
+    const aggregates = new Map<
+      number,
+      { resourceId: number; name: string; totalBalance: number; totalProduction: number; structures: Set<number> }
+    >();
+
+    for (const group of structureGroups) {
+      if (!Array.isArray(group)) continue;
+
+      for (const structure of group) {
+        const structureId = Number(structure?.entity_id ?? structure?.entityId ?? -1);
+        for (const resource of this.extractResourceEntries(structure?.resources)) {
+          const key = Number(resource.resourceId);
+          const current = aggregates.get(key) ?? {
+            resourceId: key,
+            name: resource.name,
+            totalBalance: 0,
+            totalProduction: 0,
+            structures: new Set<number>(),
+          };
+
+          current.totalBalance += resource.amount;
+          if (resource.production != null) {
+            current.totalProduction += resource.production;
+          }
+          if (structureId >= 0) {
+            current.structures.add(structureId);
+          }
+          if (!current.name && resource.name) {
+            current.name = resource.name;
+          }
+          aggregates.set(key, current);
+        }
+      }
+    }
+
+    return Array.from(aggregates.values())
+      .map((resource) => ({
+        resourceId: resource.resourceId,
+        name: resource.name || `Resource #${resource.resourceId}`,
+        totalBalance: resource.totalBalance,
+        totalProduction: resource.totalProduction,
+        structureCount: resource.structures.size,
+      }))
+      .sort((a, b) => a.resourceId - b.resourceId);
+  }
+
+  private extractResourceEntries(
+    raw: unknown,
+  ): Array<{ resourceId: number; name: string; amount: number; production: number | null }> {
+    if (!raw) return [];
+
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+        try {
+          return this.extractResourceEntries(JSON.parse(trimmed));
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    }
+
+    if (Array.isArray(raw)) {
+      return raw
+        .map((entry: any) => ({
+          resourceId: Number(entry?.resourceId ?? entry?.resource_id ?? entry?.id ?? -1),
+          name: String(entry?.name ?? entry?.resourceName ?? ""),
+          amount: Number(entry?.amount ?? entry?.balance ?? entry?.totalBalance ?? 0),
+          production:
+            entry?.production == null
+              ? null
+              : Number(entry.production?.rate ?? entry.production ?? 0),
+        }))
+        .filter((entry) => Number.isFinite(entry.resourceId) && entry.resourceId >= 0 && Number.isFinite(entry.amount));
+    }
+
+    if (typeof raw === "object") {
+      return Object.entries(raw as Record<string, unknown>)
+        .map(([key, value]) => ({
+          resourceId: Number(key),
+          name: "",
+          amount: Number(value ?? 0),
+          production: null,
+        }))
+        .filter((entry) => Number.isFinite(entry.resourceId) && Number.isFinite(entry.amount));
+    }
+
+    return [];
+  }
 
   private buildGuardState(guards: any[]): GuardState {
     if (!guards || guards.length === 0) {

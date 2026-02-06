@@ -1,7 +1,10 @@
+import { fileURLToPath } from "node:url";
+
 export interface AgentConfig {
   rpcUrl: string;
   toriiUrl: string;
   worldAddress: string;
+  manifestPath: string;
   privateKey: string;
   accountAddress: string;
   tickIntervalMs: number;
@@ -16,6 +19,8 @@ export function loadConfig(): AgentConfig {
     rpcUrl: env.RPC_URL ?? "http://localhost:5050",
     toriiUrl: env.TORII_URL ?? "http://localhost:8080",
     worldAddress: env.WORLD_ADDRESS ?? "0x0",
+    manifestPath:
+      env.MANIFEST_PATH ?? fileURLToPath(new URL("../../../../contracts/game/manifest_local.json", import.meta.url)),
     privateKey: env.PRIVATE_KEY ?? "0x0",
     accountAddress: env.ACCOUNT_ADDRESS ?? "0x0",
     tickIntervalMs: Number(env.TICK_INTERVAL_MS ?? 60000),

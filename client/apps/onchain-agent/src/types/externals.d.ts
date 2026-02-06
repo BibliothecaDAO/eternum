@@ -28,15 +28,34 @@ declare module "@bibliothecadao/client" {
   }
 
   export function computeStrength(count: number, tier: number): number;
-  export function computeOutputAmount(amountIn: number, reserveIn: number, reserveOut: number): number;
-  export function computeBuildingCost(category: number): any[];
+  export function computeOutputAmount(
+    amountIn: number,
+    reserveIn: number,
+    reserveOut: number,
+    feeNum: number,
+    feeDenom: number,
+  ): number;
+  export function computeBuildingCost(
+    baseCosts: { resourceId: number; name: string; amount: number }[],
+    existingCount: number,
+    costPercentIncrease: number,
+  ): { resourceId: number; name: string; amount: number }[];
   export function computeSlippage(amountIn: number, reserveIn: number, reserveOut: number): number;
   export function computeMarketPrice(reserveIn: number, reserveOut: number): number;
   export function computeStamina(params: any): any;
   export function computeBalance(params: any): any;
   export function computeDepletionTime(params: any): any;
-  export function computeStaminaModifier(stamina: number): number;
-  export function computeCooldownModifier(cooldown: number): number;
+  export function computeStaminaModifier(
+    stamina: number,
+    isAttacker: boolean,
+    attackReq: number,
+    defenseReq: number,
+  ): number;
+  export function computeCooldownModifier(
+    cooldownEnd: number,
+    currentTime: number,
+    isAttacker: boolean,
+  ): number;
 }
 
 declare module "@mariozechner/pi-onchain-agent" {

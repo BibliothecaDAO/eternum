@@ -346,6 +346,85 @@ describe("ViewClient.player", () => {
     expect(view.rank).toBe(3);
   });
 
+  it("uses address-specific leaderboard entry when top row is a different player", async () => {
+    sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue({
+        playerAddress: "0xPlayer",
+        playerName: "AddressMatched",
+        totalPoints: 777,
+        rank: 9,
+        realmCount: 1,
+      }),
+      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([
+        { playerAddress: "0xSomeoneElse", playerName: "Top", totalPoints: 9999, rank: 1, realmCount: 10 },
+      ]),
+    } as any);
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.player("0xPlayer");
+
+    expect(view.name).toBe("AddressMatched");
+    expect(view.points).toBe(777);
+    expect(view.rank).toBe(9);
+  });
+
+  it("aggregates totalResources from structure payload resources", async () => {
+    sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([
+        {
+          entity_id: 1,
+          category: "Realm",
+          name: "ResourceRealm",
+          coord_x: 5,
+          coord_y: 5,
+          level: 2,
+          resources: [
+            { resourceId: 1, name: "Wood", amount: 100 },
+            { resourceId: 2, name: "Stone", amount: 40 },
+          ],
+        },
+        {
+          entity_id: 2,
+          category: "Village",
+          name: "Outpost",
+          coord_x: 7,
+          coord_y: 8,
+          level: 1,
+          resources: [
+            { resourceId: 1, name: "Wood", amount: 20 },
+            { resourceId: 2, name: "Stone", amount: 10 },
+          ],
+        },
+      ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
+      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([]),
+    } as any);
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.player("0xPlayer");
+
+    expect(view.totalResources).toEqual([
+      {
+        resourceId: 1,
+        name: "Wood",
+        totalBalance: 120,
+        totalProduction: 0,
+        structureCount: 2,
+      },
+      {
+        resourceId: 2,
+        name: "Stone",
+        totalBalance: 50,
+        totalProduction: 0,
+        structureCount: 2,
+      },
+    ]);
+  });
+
   it("caches player results", async () => {
     await client.player("0xPlayer");
     await client.player("0xPlayer");

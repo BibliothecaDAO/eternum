@@ -31,18 +31,18 @@ async function main() {
   console.log("Realm:", realm.entityId);
   console.log("Resources:", realm.resources);
   console.log("Buildings:", realm.buildings);
-  console.log("Guards:", realm.guards);
+  console.log("Guard troops:", realm.guard.totalTroops);
 
-  const map = await client.view.mapArea({ x: 100, y: 200 }, 10);
+  const map = await client.view.mapArea({ x: 100, y: 200, radius: 10 });
   console.log("Structures nearby:", map.structures.length);
   console.log("Armies nearby:", map.armies.length);
 
-  const player = await client.view.player();
+  const player = await client.view.player(ACCOUNT_ADDRESS);
   console.log("My structures:", player.structures.length);
   console.log("My armies:", player.armies.length);
 
-  const market = await client.view.market(1);
-  console.log("Market price:", market.price);
+  const market = await client.view.market();
+  console.log("Recent swaps:", market.recentSwaps.length);
 
   // 4. Execute transactions
   await client.resources.send(account, {
@@ -56,6 +56,7 @@ async function main() {
     category: 1,
     tier: 1,
     amount: 10,
+    spawnDirection: 0,
   });
 
   // 5. Cache control — invalidate after mutations

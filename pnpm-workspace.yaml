@@ -8,6 +8,7 @@ packages:
   - client/apps/torii
   - client/apps/heavy-load
   - client/apps/eternum-mobile
+  - client/apps/onchain-agent
   - config
   - packages/*
   - contracts/season_pass/scripts/deployment

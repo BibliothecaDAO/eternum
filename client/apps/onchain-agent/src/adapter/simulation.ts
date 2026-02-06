@@ -43,7 +43,9 @@ export function simulateAction(action: GameAction): SimulationResult {
         const amount = Number(action.params.amount ?? 0);
         const reserveIn = Number(action.params.reserveIn ?? 1000);
         const reserveOut = Number(action.params.reserveOut ?? 1000);
-        const output = computeOutputAmount(amount, reserveIn, reserveOut);
+        const feeNum = Number(action.params.feeNum ?? 0);
+        const feeDenom = Number(action.params.feeDenom ?? 1000);
+        const output = computeOutputAmount(amount, reserveIn, reserveOut, feeNum, feeDenom);
         return {
           success: true,
           outcome: { estimatedOutput: output, inputAmount: amount },
@@ -53,7 +55,29 @@ export function simulateAction(action: GameAction): SimulationResult {
 
       case "create_building": {
         const category = Number(action.params.buildingCategory ?? 0);
-        const costs = computeBuildingCost(category);
+        const baseCosts = Array.isArray(action.params.baseCosts)
+          ? action.params.baseCosts
+              .map((cost: any) => ({
+                resourceId: Number(cost?.resourceId ?? 0),
+                name: String(cost?.name ?? ""),
+                amount: Number(cost?.amount ?? 0),
+              }))
+              .filter((cost) => Number.isFinite(cost.resourceId) && cost.amount >= 0)
+          : [];
+        const existingCount = Number(action.params.existingCount ?? 0);
+        const costPercentIncrease = Number(action.params.costPercentIncrease ?? 0);
+
+        if (baseCosts.length === 0) {
+          return {
+            success: true,
+            outcome: {
+              buildingCategory: category,
+              message: "No baseCosts provided; cannot estimate resource cost.",
+            },
+          };
+        }
+
+        const costs = computeBuildingCost(baseCosts, existingCount, costPercentIncrease);
         return {
           success: true,
           outcome: { buildingCategory: category },

@@ -76,6 +76,9 @@ export function createMockClient() {
       move: vi.fn().mockResolvedValue(fakeTxResult),
       travel: vi.fn().mockResolvedValue(fakeTxResult),
       explore: vi.fn().mockResolvedValue(fakeTxResult),
+      swapExplorerToExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+      swapExplorerToGuard: vi.fn().mockResolvedValue(fakeTxResult),
+      swapGuardToExplorer: vi.fn().mockResolvedValue(fakeTxResult),
     },
     combat: {
       attackExplorer: vi.fn().mockResolvedValue(fakeTxResult),
@@ -104,6 +107,7 @@ export function createMockClient() {
       create: vi.fn().mockResolvedValue(fakeTxResult),
       join: vi.fn().mockResolvedValue(fakeTxResult),
       leave: vi.fn().mockResolvedValue(fakeTxResult),
+      updateWhitelist: vi.fn().mockResolvedValue(fakeTxResult),
     },
     realm: {
       upgrade: vi.fn().mockResolvedValue(fakeTxResult),

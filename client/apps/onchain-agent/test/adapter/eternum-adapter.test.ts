@@ -4,9 +4,21 @@ import { createMockClient, mockSigner } from "../utils/mock-client";
 // Mock the compute functions from @bibliothecadao/client used by simulation.ts
 vi.mock("@bibliothecadao/client", () => ({
   computeStrength: (count: number, tier: number) => count * tier * 10,
-  computeOutputAmount: (amountIn: number, reserveIn: number, reserveOut: number) =>
-    Math.floor((amountIn * reserveOut) / (reserveIn + amountIn)),
-  computeBuildingCost: (category: number) => [{ resourceType: 1, amount: category * 100 }],
+  computeOutputAmount: (
+    amountIn: number,
+    reserveIn: number,
+    reserveOut: number,
+    feeNum: number,
+    feeDenom: number,
+  ) => {
+    const effective = feeNum > 0 ? (amountIn * (feeDenom - feeNum)) / feeDenom : amountIn;
+    return Math.floor((effective * reserveOut) / (reserveIn + effective));
+  },
+  computeBuildingCost: (
+    baseCosts: { resourceId: number; name: string; amount: number }[],
+    existingCount: number,
+    costPercentIncrease: number,
+  ) => baseCosts.map((c) => ({ ...c, amount: c.amount + existingCount + costPercentIncrease })),
 }));
 
 // Import after mock
@@ -73,6 +85,25 @@ describe("EternumGameAdapter", () => {
       expect(result.success).toBe(true);
       expect(result.outcome).toBeDefined();
       expect((result.outcome as any).strength).toBe(200); // 10 * 2 * 10
+    });
+
+    it("simulates create_building with explicit base costs", async () => {
+      const { adapter } = createAdapter();
+
+      const result = await adapter.simulateAction({
+        type: "create_building",
+        params: {
+          buildingCategory: 2,
+          existingCount: 3,
+          costPercentIncrease: 10,
+          baseCosts: [{ resourceId: 1, name: "Wood", amount: 100 }],
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect((result.cost as any)?.resources).toEqual([
+        { resourceId: 1, name: "Wood", amount: 113 },
+      ]);
     });
 
     it("returns success for unknown action types with info message", async () => {

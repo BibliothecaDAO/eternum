@@ -7,7 +7,7 @@ export class GuildTransactions {
     signer: Signer,
     props: {
       isPublic: boolean;
-      guildName: number;
+      guildName: string;
     },
   ) {
     return this.provider.create_guild({
