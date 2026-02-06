@@ -6,9 +6,12 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 const SAFETY_TIMEOUT_MS = 15_000;
-// Time to wait after navigating / map loaded before dismissing,
-// giving the scene time to render from RECS data.
-const POST_READY_DELAY_MS = 1_500;
+// Time to wait after navigating to hex before dismissing (player path)
+const POST_NAVIGATE_DELAY_MS = 1_500;
+// Time to wait after tile data loads before dismissing (spectator path).
+// Longer because the bounds subscription still needs to stream Structure
+// entities and the WorldUpdateListener needs to process them into visuals.
+const POST_MAP_LOAD_DELAY_MS = 3_000;
 
 /**
  * Loading overlay shown while game data syncs after <World> mounts.
@@ -30,7 +33,7 @@ export const GameLoadingOverlay = () => {
   const hasSeenMapLoading = useRef(false);
   const navigate = useNavigate();
 
-  const dismiss = (delayMs = POST_READY_DELAY_MS) => {
+  const dismiss = (delayMs: number) => {
     if (hasDismissed.current) return;
     hasDismissed.current = true;
     setTimeout(() => setShowBlankOverlay(false), delayMs);
@@ -54,7 +57,7 @@ export const GameLoadingOverlay = () => {
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
 
-    dismiss();
+    dismiss(POST_NAVIGATE_DELAY_MS);
   }, [playerStructures, isSpectating, setShowBlankOverlay, navigate]);
 
   // --- Spectator path: dismiss once the world map finishes its initial fetch ---
@@ -65,15 +68,22 @@ export const GameLoadingOverlay = () => {
       hasSeenMapLoading.current = true;
     }
 
-    // Map loading went true → false: initial fetch complete
+    // Map loading went true → false: initial tile fetch complete.
+    // Wait additional time for the bounds subscription to stream
+    // Structure entities and for the map to render them.
     if (hasSeenMapLoading.current && !mapLoading) {
-      dismiss();
+      dismiss(POST_MAP_LOAD_DELAY_MS);
     }
   }, [mapLoading, isSpectating, setShowBlankOverlay]);
 
   // Safety timeout
   useEffect(() => {
-    const timeout = setTimeout(() => dismiss(0), SAFETY_TIMEOUT_MS);
+    const timeout = setTimeout(() => {
+      if (!hasDismissed.current) {
+        hasDismissed.current = true;
+        setShowBlankOverlay(false);
+      }
+    }, SAFETY_TIMEOUT_MS);
     return () => clearTimeout(timeout);
   }, [setShowBlankOverlay]);
 
