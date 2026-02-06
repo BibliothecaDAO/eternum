@@ -3,9 +3,7 @@ import { lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 
 // Lazy load heavy components
-const LandingPlayer = lazy(() =>
-  import("@/ui/features/landing/sections/player").then((m) => ({ default: m.LandingPlayer })),
-);
+const LandingPlayer = lazy(() => import("../components/player-profile").then((m) => ({ default: m.LandingPlayer })));
 
 const LandingCosmetics = lazy(() =>
   import("@/ui/features/cosmetics/cosmetics-view").then((m) => ({ default: m.LandingCosmetics })),

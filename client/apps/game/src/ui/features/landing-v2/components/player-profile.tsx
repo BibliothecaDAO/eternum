@@ -24,8 +24,8 @@ import { toast } from "sonner";
 
 import { hash } from "starknet";
 
-import { LandingWorldSelector } from "../components/landing-world-selector";
-import { useLandingWorldSelection } from "../lib/use-landing-world-selection";
+import { LandingWorldSelector } from "./landing-world-selector";
+import { useLandingWorldSelection } from "../hooks/use-landing-world-selection";
 
 // MMR fetching utilities
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
