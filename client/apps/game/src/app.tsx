@@ -8,7 +8,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
-import { LandingLayoutV2, PlayView, ProfileView, MarketsView, LeaderboardView } from "./ui/features/landing-v2";
+import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView } from "./ui/features/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
@@ -45,7 +45,7 @@ function App() {
         <MusicRouterProvider>
           <Routes>
             {/* New unified landing layout */}
-            <Route path="/" element={<LandingLayoutV2 />}>
+            <Route path="/" element={<LandingLayout />}>
               {/* Play view with game selector - uses real world data */}
               <Route index element={<PlayView />} />
 

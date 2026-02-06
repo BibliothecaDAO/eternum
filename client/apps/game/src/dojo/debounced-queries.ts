@@ -51,6 +51,15 @@ class RequestQueue {
 
 const subscriptionQueue = new RequestQueue();
 
+/**
+ * Clear all pending queued requests.
+ * Called during game/world switching to prevent in-flight requests
+ * from the old world writing stale data into RECS.
+ */
+export const clearSubscriptionQueue = () => {
+  subscriptionQueue.clear();
+};
+
 export const debouncedGetOwnedArmiesFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],

@@ -13,12 +13,12 @@ import {
   addressToUint256,
   parseLordsToBaseUnits,
   stringToHexData,
-} from "@/ui/features/landing/sections/markets/market-utils";
+} from "@/ui/features/market/landing-markets/market-utils";
 import {
   buildToriiBaseUrl,
   fetchRegisteredPlayers,
   type MarketPlayer,
-} from "@/ui/features/landing/sections/markets/use-market-servers";
+} from "@/ui/features/market/landing-markets/use-market-servers";
 
 // Import player odds configuration
 import playerOddsConfig from "../config/player-odds.json";

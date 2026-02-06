@@ -27,7 +27,7 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
  * - Bottom tab bar on mobile
  * - Minimal top header with navigation
  */
-export const LandingLayoutV2 = () => {
+export const LandingLayout = () => {
   const location = useLocation();
 
   // Get default background for current route

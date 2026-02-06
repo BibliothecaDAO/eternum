@@ -1,4 +1,4 @@
-import { CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
+import { CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
 import { CosmeticTile } from "./cosmetic-tile";
 
 interface CosmeticGalleryProps {

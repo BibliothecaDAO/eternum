@@ -13,7 +13,7 @@ import { Call, uint256 } from "starknet";
 
 import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory } from "@/runtime/world";
 import { Chain, getGameManifest } from "@contracts";
-import { env } from "../../../../../../../env";
+import { env } from "../../../../../../env";
 import { decodePaddedFeltAscii } from "../market-utils";
 import { MaybeController } from "../maybe-controller";
 import { buildToriiBaseUrl } from "../use-market-servers";

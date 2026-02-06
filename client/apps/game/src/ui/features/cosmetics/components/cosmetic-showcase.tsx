@@ -1,6 +1,6 @@
 import Button from "@/ui/design-system/atoms/button";
-import { CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
-import { useCosmeticLoadoutStore } from "@/ui/features/landing/cosmetics/model";
+import { CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
+import { useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 import { CosmeticModelViewer } from "./cosmetic-model-viewer";
 

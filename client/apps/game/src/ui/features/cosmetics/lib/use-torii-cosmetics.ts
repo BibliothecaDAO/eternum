@@ -1,7 +1,7 @@
 import {
   fetchTokenBalancesWithMetadata,
   fetchTotalCosmeticsSupply,
-} from "@/ui/features/landing/chest-opening/services";
+} from "@/ui/features/cosmetics/chest-opening/services";
 import { getCosmeticsAddress } from "@/utils/addresses";
 import { useAccount } from "@starknet-react/core";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";

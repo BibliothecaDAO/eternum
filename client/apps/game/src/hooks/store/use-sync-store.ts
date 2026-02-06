@@ -10,6 +10,7 @@ export enum Subscription {
 interface SyncStore {
   subscriptions: Record<string, boolean>;
   setSubscription: (type: Subscription, subscribed: boolean) => void;
+  resetSubscriptions: () => void;
   initialSyncProgress: number;
   setInitialSyncProgress: (progress: number) => void;
 }
@@ -23,6 +24,7 @@ const createSyncStoreSlice = (set: any) => ({
         [type]: subscribed,
       },
     })),
+  resetSubscriptions: () => set({ subscriptions: {}, initialSyncProgress: 0 }),
   initialSyncProgress: 0,
   setInitialSyncProgress: (progress: number) =>
     set(() => ({
