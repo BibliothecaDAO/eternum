@@ -22,11 +22,12 @@
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
-    "starknet": "catalog:",
-    "eventemitter3": "^5.0.1"
+    "eventemitter3": "^5.0.1",
+    "starknet": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",
+    "@vitest/coverage-v8": "^2.1.9",
     "tsup": "^8.0.2",
     "typescript": "^5.4.4",
     "vitest": "^2.0.5"

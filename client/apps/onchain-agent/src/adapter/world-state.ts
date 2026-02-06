@@ -62,8 +62,18 @@ export async function buildWorldState(
     client.view.leaderboard({ limit: 10 }),
   ]);
 
+  const structures = Array.isArray((mapAreaView as any)?.structures) ? (mapAreaView as any).structures : [];
+  const armies = Array.isArray((mapAreaView as any)?.armies) ? (mapAreaView as any).armies : [];
+  const playerStructures = Array.isArray((playerView as any)?.structures) ? (playerView as any).structures : [];
+  const playerArmies = Array.isArray((playerView as any)?.armies) ? (playerView as any).armies : [];
+  const recentSwaps = Array.isArray((marketView as any)?.recentSwaps) ? (marketView as any).recentSwaps : [];
+  const openOrders = Array.isArray((marketView as any)?.openOrders) ? (marketView as any).openOrders : [];
+  const leaderboardEntries = Array.isArray((leaderboardView as any)?.entries)
+    ? (leaderboardView as any).entries
+    : [];
+
   // Build entities from map area structures
-  const structureEntities: EternumEntity[] = mapAreaView.structures.map((s: any) => ({
+  const structureEntities: EternumEntity[] = structures.map((s: any) => ({
     type: "structure" as const,
     entityId: s.entityId,
     owner: s.owner,
@@ -74,7 +84,7 @@ export async function buildWorldState(
   }));
 
   // Build entities from map area armies
-  const armyEntities: EternumEntity[] = mapAreaView.armies.map((a: any) => ({
+  const armyEntities: EternumEntity[] = armies.map((a: any) => ({
     type: "army" as const,
     entityId: a.entityId,
     owner: a.owner,
@@ -88,8 +98,8 @@ export async function buildWorldState(
 
   // Populate resources from the player's totalResources
   const resources = new Map<string, number>();
-  if (playerView.totalResources) {
-    for (const r of playerView.totalResources) {
+  if (Array.isArray((playerView as any)?.totalResources)) {
+    for (const r of (playerView as any).totalResources) {
       resources.set(r.name, r.totalBalance);
     }
   }
@@ -100,24 +110,24 @@ export async function buildWorldState(
     entities,
     resources,
     player: {
-      address: playerView.address,
-      name: playerView.name,
-      structures: playerView.structures.length,
-      armies: playerView.armies.length,
-      points: playerView.points,
-      rank: playerView.rank,
+      address: (playerView as any)?.address ?? accountAddress,
+      name: (playerView as any)?.name ?? "",
+      structures: playerStructures.length,
+      armies: playerArmies.length,
+      points: Number((playerView as any)?.points ?? 0),
+      rank: Number((playerView as any)?.rank ?? 0),
     },
     market: {
-      recentSwapCount: marketView.recentSwaps.length,
-      openOrderCount: marketView.openOrders.length,
+      recentSwapCount: recentSwaps.length,
+      openOrderCount: openOrders.length,
     },
     leaderboard: {
-      topPlayers: leaderboardView.entries.map((e: any) => ({
+      topPlayers: leaderboardEntries.map((e: any) => ({
         name: e.name,
         points: e.points,
         rank: e.rank,
       })),
-      totalPlayers: leaderboardView.totalPlayers,
+      totalPlayers: Number((leaderboardView as any)?.totalPlayers ?? 0),
     },
   };
 }

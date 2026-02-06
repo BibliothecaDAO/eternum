@@ -13,6 +13,14 @@ export interface AgentConfig {
   dataDir: string;
 }
 
+function parsePositiveIntervalMs(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return Math.floor(parsed);
+}
+
 export function loadConfig(): AgentConfig {
   const env = process.env;
   return {
@@ -23,7 +31,7 @@ export function loadConfig(): AgentConfig {
       env.MANIFEST_PATH ?? fileURLToPath(new URL("../../../../contracts/game/manifest_local.json", import.meta.url)),
     privateKey: env.PRIVATE_KEY ?? "0x0",
     accountAddress: env.ACCOUNT_ADDRESS ?? "0x0",
-    tickIntervalMs: Number(env.TICK_INTERVAL_MS ?? 60000),
+    tickIntervalMs: parsePositiveIntervalMs(env.TICK_INTERVAL_MS, 60000),
     modelProvider: env.MODEL_PROVIDER ?? "anthropic",
     modelId: env.MODEL_ID ?? "claude-sonnet-4-5-20250929",
     dataDir: new URL("../data", import.meta.url).pathname,

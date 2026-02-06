@@ -3,12 +3,13 @@ import { createGameAgent } from "@mariozechner/pi-onchain-agent";
 import { getModel } from "@mariozechner/pi-ai";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Account } from "starknet";
 import { loadConfig } from "./config";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { createApp } from "./tui/app";
 
-async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
+export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
   const raw = await readFile(manifestPath, "utf8");
   const parsed = JSON.parse(raw);
   if (!parsed || !Array.isArray(parsed.contracts)) {
@@ -17,7 +18,7 @@ async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[
   return parsed;
 }
 
-async function main() {
+export async function main() {
   const config = loadConfig();
   const manifestPath = path.resolve(config.manifestPath);
   const manifest = await loadManifest(manifestPath);
@@ -78,7 +79,22 @@ async function main() {
   process.on("SIGTERM", shutdown);
 }
 
-main().catch((err) => {
-  console.error("Fatal error:", err);
-  process.exit(1);
-});
+function isDirectExecution(metaUrl: string): boolean {
+  if (!process.argv[1]) {
+    return false;
+  }
+
+  try {
+    const currentModulePath = fileURLToPath(metaUrl);
+    return path.resolve(process.argv[1]) === path.resolve(currentModulePath);
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectExecution(import.meta.url)) {
+  main().catch((err) => {
+    console.error("Fatal error:", err);
+    process.exit(1);
+  });
+}

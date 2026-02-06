@@ -425,6 +425,135 @@ describe("ViewClient.player", () => {
     ]);
   });
 
+  it("aggregates resources from JSON string payloads and production objects", async () => {
+    sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([
+        {
+          entity_id: 10,
+          resources: JSON.stringify([
+            { resource_id: 4, resourceName: "Food", balance: 20, production: { rate: 3 } },
+          ]),
+        },
+      ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
+      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([]),
+    } as any);
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.player("0xPlayer");
+
+    expect(view.totalResources).toEqual([
+      {
+        resourceId: 4,
+        name: "Food",
+        totalBalance: 20,
+        totalProduction: 3,
+        structureCount: 1,
+      },
+    ]);
+  });
+
+  it("aggregates resources from object maps and falls back to generated names", async () => {
+    sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([
+        {
+          entity_id: 11,
+          resources: { "8": 42, "9": 7 },
+        },
+      ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
+      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([]),
+    } as any);
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.player("0xPlayer");
+
+    expect(view.totalResources).toEqual([
+      {
+        resourceId: 8,
+        name: "Resource #8",
+        totalBalance: 42,
+        totalProduction: 0,
+        structureCount: 1,
+      },
+      {
+        resourceId: 9,
+        name: "Resource #9",
+        totalBalance: 7,
+        totalProduction: 0,
+        structureCount: 1,
+      },
+    ]);
+  });
+
+  it("ignores non-parsable resource payloads", async () => {
+    sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([
+        { entity_id: 12, resources: "not-json" },
+        { entity_id: 13, resources: 12345 },
+      ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
+      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([]),
+    } as any);
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.player("0xPlayer");
+    expect(view.totalResources).toEqual([]);
+  });
+
+  it("ignores malformed JSON-like resource payloads", async () => {
+    sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([
+        { entity_id: 14, resources: "{not-json}" },
+      ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
+      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([]),
+    } as any);
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.player("0xPlayer");
+    expect(view.totalResources).toEqual([]);
+  });
+
+  it("backfills a missing resource name from later structure rows", async () => {
+    sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([
+        {
+          entity_id: 15,
+          resources: [{ resourceId: 20, amount: 5 }],
+        },
+        {
+          entity_id: 16,
+          resources: [{ resourceId: 20, name: "Iron", amount: 7 }],
+        },
+      ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
+      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([]),
+    } as any);
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.player("0xPlayer");
+    expect(view.totalResources).toEqual([
+      {
+        resourceId: 20,
+        name: "Iron",
+        totalBalance: 12,
+        totalProduction: 0,
+        structureCount: 2,
+      },
+    ]);
+  });
+
   it("caches player results", async () => {
     await client.player("0xPlayer");
     await client.player("0xPlayer");
@@ -478,6 +607,21 @@ describe("ViewClient.hyperstructure", () => {
     await client.hyperstructure(200);
 
     expect(sql.fetchHyperstructures).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns default hyperstructure values when entity is missing", async () => {
+    sql = createMockSql({
+      fetchHyperstructures: vi.fn().mockResolvedValue([]),
+      fetchGuardsByStructure: vi.fn().mockResolvedValue([]),
+    });
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.hyperstructure(999);
+
+    expect(view.position).toEqual({ x: 0, y: 0 });
+    expect(view.owner).toBeNull();
+    expect(view.progress).toBe(0);
+    expect(view.isComplete).toBe(false);
   });
 });
 

@@ -83,4 +83,9 @@ describe("computeMarketPrice", () => {
     const price = computeMarketPrice(5000, 10000);
     expect(price).toBe(0.5);
   });
+
+  it("should return Infinity for zero resource reserve", () => {
+    const price = computeMarketPrice(1000, 0);
+    expect(price).toBe(Infinity);
+  });
 });
