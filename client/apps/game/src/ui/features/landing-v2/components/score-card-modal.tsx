@@ -15,7 +15,7 @@ import {
 import {
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
-} from "@/ui/features/landing/lib/landing-leaderboard-service";
+} from "@/services/leaderboard/landing-leaderboard-service";
 import { displayAddress } from "@/ui/utils/utils";
 
 interface ScoreCardModalProps {

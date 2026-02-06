@@ -11,7 +11,7 @@ import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
 
-import { useScoreToBeat } from "@/ui/features/landing/lib/use-score-to-beat";
+import { useScoreToBeat } from "@/services/leaderboard/use-score-to-beat";
 
 const MAX_GAMES = 10;
 const DEFAULT_RUNS_TO_AGGREGATE = 3;
