@@ -128,17 +128,19 @@ export class HexagonMap {
   }
 
   private setupSystemListeners(): void {
-    this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
-    this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
+    this.systemManager.subscribeTileOpt({
+      onTileUpdate: (value) => this.biomesManager.handleTileUpdate(value),
+      onArmyTileUpdate: (update) => this.armyManager.handleSystemUpdate(update),
+      onStructureTileUpdate: (update) => this.structureManager.handleSystemUpdate(update),
+      onChestTileUpdate: (update) => this.chestManager.handleSystemUpdate(update),
+      onDeadChest: (entityId) => this.chestManager.deleteChest(entityId),
+    });
     this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
     this.systemManager.Army.onDeadArmy((entityId) => this.armyManager.deleteArmy(entityId));
-    this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
     this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
     this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
       this.structureManager.handleBuildingUpdate(update),
     );
-    this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
-    this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
   }
 

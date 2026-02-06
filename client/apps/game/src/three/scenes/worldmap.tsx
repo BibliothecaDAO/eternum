@@ -504,9 +504,9 @@ export default class WorldmapScene extends HexagonScene {
       this.hoverLabelManager.updateCameraView(view);
     });
 
-    // Store the unsubscribe function for Army updates
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
+    // Unified TileOpt subscription — single defineComponentSystem call for all tile-based updates
+    this.worldUpdateListener.subscribeTileOpt({
+      onArmyTileUpdate: async (update: ExplorerTroopsTileSystemUpdate) => {
         this.incrementToriiBoundsCounter("explorerTiles");
         this.cancelPendingArmyRemoval(update.entityId);
 
@@ -536,7 +536,7 @@ export default class WorldmapScene extends HexagonScene {
           this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
         }
 
-        await this.armyManager.onTileUpdate(update);
+        void this.armyManager.onTileUpdate(update);
 
         this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
 
@@ -552,8 +552,57 @@ export default class WorldmapScene extends HexagonScene {
         if (prevPosition) {
           this.recalculateArrowsForEntitiesRelatedTo(armyEntityId);
         }
-      }),
-    );
+      },
+      onTileUpdate: (value) => {
+        this.incrementToriiBoundsCounter("tiles");
+        this.updateExploredHex(value);
+      },
+      onStructureTileUpdate: async (value) => {
+        this.incrementToriiBoundsCounter("structureTiles");
+        const positions = this.updateStructureHexes(value);
+
+        const optimisticStructure = this.structureManager.structures.removeStructure(
+          Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+        );
+        if (optimisticStructure) {
+          this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
+          this.structureManager.structureHexCoords
+            .get(optimisticStructure.hexCoords.col)
+            ?.delete(optimisticStructure.hexCoords.row);
+          this.structureManager.updateChunk(this.currentChunk);
+        }
+
+        await this.structureManager.onUpdate(value);
+
+        const newCount = this.structureManager.getTotalStructures();
+        const countChanged = this.totalStructures !== newCount;
+
+        // Debug: Track structure count changes
+        if (import.meta.env.DEV && countChanged) {
+          console.log(
+            `[Structure.onTileUpdate] Count changed: ${this.totalStructures} -> ${newCount}, entityId: ${value.entityId}`,
+          );
+        }
+
+        if (positions && !countChanged) {
+          this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
+        }
+
+        if (countChanged) {
+          this.totalStructures = newCount;
+          this.clearCache();
+          this.requestChunkRefresh(true);
+        }
+      },
+      onChestTileUpdate: (update: ChestSystemUpdate) => {
+        this.updateChestHexes(update);
+        this.chestManager.onUpdate(update);
+      },
+      onDeadChest: (entityId) => {
+        // If the chest is opened, remove it from the map
+        this.deleteChest(entityId);
+      },
+    });
 
     // Listen for troop count and stamina changes
     this.addWorldUpdateSubscription(
@@ -578,7 +627,7 @@ export default class WorldmapScene extends HexagonScene {
 
         // Remove from attacker-defender tracking
         this.removeEntityFromTracking(entityId);
-        this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
+        this.requestChunkRefresh();
       }),
     );
 
@@ -634,69 +683,6 @@ export default class WorldmapScene extends HexagonScene {
       this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
         this.incrementToriiBoundsCounter("structureBuildings");
         this.structureManager.updateStructureLabelFromBuildingUpdate(update);
-      }),
-    );
-
-    // Store the unsubscribe function for Tile updates
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Tile.onTileUpdate((value) => {
-        this.incrementToriiBoundsCounter("tiles");
-        this.updateExploredHex(value);
-      }),
-    );
-
-    // Store the unsubscribe function for Structure updates
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
-        this.incrementToriiBoundsCounter("structureTiles");
-        const positions = this.updateStructureHexes(value);
-
-        const optimisticStructure = this.structureManager.structures.removeStructure(
-          Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-        );
-        if (optimisticStructure) {
-          this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
-          this.structureManager.structureHexCoords
-            .get(optimisticStructure.hexCoords.col)
-            ?.delete(optimisticStructure.hexCoords.row);
-          this.structureManager.updateChunk(this.currentChunk);
-        }
-
-        await this.structureManager.onUpdate(value);
-
-        const newCount = this.structureManager.getTotalStructures();
-        const countChanged = this.totalStructures !== newCount;
-
-        // Debug: Track structure count changes
-        if (import.meta.env.DEV && countChanged) {
-          console.log(
-            `[Structure.onTileUpdate] Count changed: ${this.totalStructures} -> ${newCount}, entityId: ${value.entityId}`,
-          );
-        }
-
-        if (positions && !countChanged) {
-          this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
-        }
-
-        if (countChanged) {
-          this.totalStructures = newCount;
-          this.clearCache();
-          this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
-        }
-      }),
-    );
-
-    // perform some updates for the chest manager
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
-        this.updateChestHexes(update);
-        this.chestManager.onUpdate(update);
-      }),
-    );
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Chest.onDeadChest((entityId) => {
-        // If the chest is opened, remove it from the map
-        this.deleteChest(entityId);
       }),
     );
 
@@ -2037,15 +2023,13 @@ export default class WorldmapScene extends HexagonScene {
       // Check if we already have this army with a valid owner
       const existingArmy = this.armiesPositions.has(entityId);
       if (existingArmy) {
-        // Try to find existing army data in armyHexes to preserve owner
-        for (const rowMap of this.armyHexes.values()) {
-          for (const armyData of rowMap.values()) {
-            if (armyData.id === entityId && armyData.owner !== 0n) {
-              actualOwnerAddress = armyData.owner;
-              break;
-            }
+        // Direct O(1) lookup via known position instead of scanning all hexes
+        const existingPos = this.armiesPositions.get(entityId);
+        if (existingPos) {
+          const existingData = this.armyHexes.get(existingPos.col)?.get(existingPos.row);
+          if (existingData?.id === entityId && existingData.owner !== 0n) {
+            actualOwnerAddress = existingData.owner;
           }
-          if (actualOwnerAddress !== 0n) break;
         }
 
         // If we still have 0n owner, the army was defeated/deleted - clean up the cache
@@ -2204,7 +2188,7 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
       this.removeCachedMatricesAroundChunk(chunkRow, chunkCol);
       this.currentChunk = "null"; // reset the current chunk to force a recomputation
-      this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
+      this.requestChunkRefresh();
       return;
     }
 

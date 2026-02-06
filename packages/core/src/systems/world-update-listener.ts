@@ -35,6 +35,7 @@ import { DataEnhancer } from "./data-enhancer";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
+  type ChestSystemUpdate,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
@@ -89,23 +90,13 @@ export class WorldUpdateListener {
     const mapStoreEntityId = this.mapDataStore.getEntityIdFromEntity(String(updateEntity));
 
     if (!mapStoreEntityId) {
-      this.logMissingEntityId("resolveEntityId", {
-        updateEntity,
-      });
+
     }
 
     return mapStoreEntityId;
   }
 
-  private logMissingEntityId(context: string, details: unknown) {
-    // const border = "❗".repeat(40);
-    // console.error(
-    //   `\n${border}\n🚨❗️ CRITICAL: MISSING ENTITY ID DETECTED (${context}) ❗️🚨\n${border}\n` +
-    //     "🚫 This condition should NEVER happen. Investigate immediately! 🚫",
-    // );
-    // console.error(`🛑 [WorldUpdateListener] Missing entityId context: ${context} 🛑`, details);
-    // console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
-  }
+
 
   private buildGuardArmies(troopGuards: any): GuardArmy[] {
     if (!troopGuards) {
@@ -166,107 +157,76 @@ export class WorldUpdateListener {
     });
   }
 
-  public get Army() {
-    return {
-      onTileUpdate: (callback: (value: ExplorerTroopsTileSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          async (update: any): Promise<ExplorerTroopsTileSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
-              const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
+  /**
+   * Single unified TileOpt subscription that dispatches to the appropriate callbacks
+   * based on occupier type. Replaces 6 separate defineComponentSystem calls with one.
+   */
+  public subscribeTileOpt(callbacks: {
+    onArmyTileUpdate?: (value: ExplorerTroopsTileSystemUpdate) => void;
+    onStructureTileUpdate?: (value: StructureTileSystemUpdate) => void;
+    onTileUpdate?: (value: TileSystemUpdate) => void;
+    onChestTileUpdate?: (value: ChestSystemUpdate) => void;
+    onDeadChest?: (value: ID) => void;
+  }): void {
+    defineComponentSystem(
+      this.setup.network.world,
+      this.setup.components.TileOpt,
+      async (update: any) => {
+        if (!isComponentUpdate(update, this.setup.components.TileOpt)) return;
 
-              const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
-              const previousExplorer = _prevState && getExplorerInfoFromTileOccupier(_prevState.occupier_type);
+        const [currentStateOpt, prevStateOpt] = update.value;
+        const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+        const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
 
-              if (!explorer) {
-                if (currentState) {
-                  // console.debug(`[WorldUpdateListener] Tile update without explorer`, {
-                  //   entity: update.entity,
-                  //   occupierType: currentState.occupier_type,
-                  //   occupierId: currentState.occupier_id,
-                  //   prevOccupierId: _prevState?.occupier_id,
-                  //   prevOccupierType: _prevState?.occupier_type,
-                  // });
-                }
+        // 1. Always fire tile update (biome/exploration)
+        if (callbacks.onTileUpdate) {
+          const newStateBiomeType = currentState ? BiomeIdToType[currentState.biome] : undefined;
+          const { col, row } = prevState || currentState || { col: 0, row: 0 };
+          callbacks.onTileUpdate({
+            hexCoords: { col, row },
+            removeExplored: !currentState,
+            biome: newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
+          });
+        }
 
-                // When an army leaves a tile, verify it's actually dead before marking as removed
-                if (previousExplorer && _prevState) {
-                  // Check if the army still exists in ExplorerTroops component
-                  // If it exists, it's just moving to a new tile and shouldn't be marked as removed
-                  try {
-                    const explorerTroops = getComponentValue(
-                      this.setup.components.ExplorerTroops,
-                      getEntityIdFromKeys([BigInt(_prevState.occupier_id)]),
-                    );
+        // 2. Dead chest detection (previous was chest, current is not)
+        if (callbacks.onDeadChest && prevState && prevState.occupier_type === TileOccupier.Chest) {
+          if (!currentState || currentState.occupier_type !== TileOccupier.Chest) {
+            const deadChestEntityId = prevState.occupier_id;
+            if (deadChestEntityId !== undefined && deadChestEntityId !== null) {
+              callbacks.onDeadChest(deadChestEntityId);
+            }
+          }
+        }
 
-                    // If ExplorerTroops still exists and has non-zero troops, the army is alive (just moving)
-                    if (explorerTroops && explorerTroops.troops.count > 0n) {
-                      // console.debug(
-                      //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile but still exists (count: ${explorerTroops.troops.count}) - likely moving`,
-                      // );
-                      // Don't send removal update - army is just moving
-                      return;
-                    }
+        if (!currentState) return;
 
-                    // console.debug(
-                    //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile and ExplorerTroops is gone or count=0 - marking as removed`,
-                    // );
-                  } catch (error) {
-                    // console.debug(
-                    //   `[WorldUpdateListener] Could not verify army ${_prevState.occupier_id} existence - assuming removed`,
-                    // );
-                  }
+        const occupierType = currentState.occupier_type;
 
-                  // Army is confirmed dead or doesn't exist - mark as removed
-                  const coordsSource = currentState ?? _prevState;
-                  const removedEntityId = _prevState?.occupier_id;
+        // 3. Chest tile update
+        if (callbacks.onChestTileUpdate && occupierType === TileOccupier.Chest) {
+          const chestEntityId = update?.entity;
+          if (chestEntityId !== undefined && chestEntityId !== null) {
+            callbacks.onChestTileUpdate({
+              occupierId: currentState.occupier_id,
+              hexCoords: { col: currentState.col, row: currentState.row },
+            });
+          }
+          return;
+        }
 
-                  if (removedEntityId === undefined || removedEntityId === null) {
-                    this.logMissingEntityId("Army.onTileUpdate.removed", {
-                      update,
-                      currentState,
-                      prevState: _prevState,
-                    });
-                    return;
-                  }
+        // 4. Explorer (army) tile update
+        const explorer = getExplorerInfoFromTileOccupier(occupierType);
+        const previousExplorer = prevState && getExplorerInfoFromTileOccupier(prevState.occupier_type);
 
-                  return {
-                    entityId: removedEntityId,
-                    hexCoords: { col: coordsSource.col, row: coordsSource.row },
-                    troopType: previousExplorer.troopType as TroopType,
-                    troopTier: previousExplorer.troopTier as TroopTier,
-                    isDaydreamsAgent: previousExplorer.isDaydreamsAgent,
-                    troopCount: 0,
-                    ownerName: "",
-                    guildName: "",
-                    ownerAddress: 0n,
-                    ownerStructureId: null,
-                    removed: true,
-                  };
-                }
+        if (callbacks.onArmyTileUpdate) {
+          if (explorer) {
+            const rawOccupierId = currentState.occupier_id;
+            if (rawOccupierId === undefined || rawOccupierId === null) {
 
-                return;
-              }
-
-              const rawOccupierId = currentState?.occupier_id;
-
-              if (rawOccupierId === undefined || rawOccupierId === null) {
-                this.logMissingEntityId("Army.onTileUpdate.current", {
-                  update,
-                  currentState,
-                  prevState: _prevState,
-                });
-                return;
-              }
-
+            } else {
               const { currentArmiesTick } = getBlockTimestamp();
-
-              // Use sequential update processing to prevent race conditions
               const result = await this.processSequentialUpdate(rawOccupierId, async () => {
-                // Try to get the structure owner ID from ExplorerTroops component
                 let structureOwnerId: ID | undefined;
                 try {
                   const explorerTroops = getComponentValue(
@@ -277,24 +237,18 @@ export class WorldUpdateListener {
                 } catch (error) {
                   console.warn(`[DEBUG] Could not get structure owner for army ${rawOccupierId}:`, error);
                 }
-
                 const normalizedStructureOwnerId =
                   structureOwnerId && structureOwnerId !== 0 ? structureOwnerId : undefined;
-
-                // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceArmyData(
                   rawOccupierId,
                   explorer,
                   currentArmiesTick,
                   normalizedStructureOwnerId,
                 );
-
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
-
                 return {
                   entityId: rawOccupierId,
                   hexCoords: { col: currentState.col, row: currentState.row },
-                  // need to set it to 0n if no owner address because else it won't be registered on the worldmap
                   ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
                   ownerName: enhancedData?.owner.ownerName || "",
                   guildName: enhancedData?.owner.guildName || "",
@@ -302,7 +256,6 @@ export class WorldUpdateListener {
                   troopTier: explorer.troopTier as TroopTier,
                   isDaydreamsAgent: explorer.isDaydreamsAgent,
                   ownerStructureId: normalizedStructureOwnerId ?? enhancedData.ownerStructureId ?? null,
-                  // Enhanced data from DataEnhancer
                   troopCount: enhancedData.troopCount,
                   currentStamina: enhancedData.currentStamina,
                   onChainStamina: enhancedData.onChainStamina,
@@ -310,14 +263,138 @@ export class WorldUpdateListener {
                   maxStamina,
                 };
               });
-
-              // Return undefined if update was cancelled due to being outdated
-              return result || undefined;
+              if (result) {
+                callbacks.onArmyTileUpdate(result);
+              }
             }
-          },
-          false,
-        );
+          } else if (previousExplorer && prevState) {
+            // Army left tile — check if it's dead
+            try {
+              const explorerTroops = getComponentValue(
+                this.setup.components.ExplorerTroops,
+                getEntityIdFromKeys([BigInt(prevState.occupier_id)]),
+              );
+              if (explorerTroops && explorerTroops.troops.count > 0n) {
+                // Army still alive, just moving — don't send removal
+                return;
+              }
+            } catch (_error) {
+              // Could not verify — assume removed
+            }
+            const coordsSource = currentState ?? prevState;
+            const removedEntityId = prevState.occupier_id;
+            if (removedEntityId !== undefined && removedEntityId !== null) {
+              callbacks.onArmyTileUpdate({
+                entityId: removedEntityId,
+                hexCoords: { col: coordsSource.col, row: coordsSource.row },
+                troopType: previousExplorer.troopType as TroopType,
+                troopTier: previousExplorer.troopTier as TroopTier,
+                isDaydreamsAgent: previousExplorer.isDaydreamsAgent,
+                troopCount: 0,
+                ownerName: "",
+                guildName: "",
+                ownerAddress: 0n,
+                ownerStructureId: null,
+                removed: true,
+              });
+            }
+          }
+        }
+
+        // 5. Structure tile update
+        const structureInfo = getStructureInfoFromTileOccupier(occupierType);
+        if (callbacks.onStructureTileUpdate && structureInfo) {
+          const rawOccupierId = currentState.occupier_id;
+          if (rawOccupierId === undefined || rawOccupierId === null) {
+
+            return;
+          }
+
+          const hyperstructure = getComponentValue(
+            this.setup.components.Hyperstructure,
+            getEntityIdFromKeys([BigInt(rawOccupierId)]),
+          );
+          const initialized = hyperstructure?.initialized || false;
+
+          let hyperstructureRealmCount: number | undefined;
+          if (structureInfo.type === StructureType.Hyperstructure) {
+            hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
+          }
+
+          const result = await this.processSequentialUpdate(rawOccupierId, async () => {
+            const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
+            const structureComponent = getComponentValue(
+              this.setup.components.Structure,
+              getEntityIdFromKeys([BigInt(rawOccupierId)]),
+            );
+            const troopGuards = structureComponent?.troop_guards ?? null;
+            const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
+            const battleCooldownEnd = troopGuards
+              ? this.getBattleCooldownEnd(troopGuards)
+              : enhancedData.battleData?.battleCooldownEnd;
+
+            if (troopGuards) {
+              this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
+            }
+
+            let ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
+            let ownerName = enhancedData.owner.ownerName;
+
+            if ((!ownerName || ownerName.length === 0) && ownerAddress && ownerAddress !== 0n) {
+              try {
+                const addressName = getComponentValue(
+                  this.setup.components.AddressName,
+                  getEntityIdFromKeys([ownerAddress]),
+                );
+                if (addressName?.name) {
+                  ownerName = shortString.decodeShortString(addressName.name.toString());
+                }
+              } catch (error) {
+                console.warn(`Failed to decode address name for owner ${ownerAddress}:`, error);
+              }
+            }
+            ownerName = ownerName || "";
+
+            this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
+
+            const structureName = structureComponent ? getStructureName(structureComponent, true).name : "";
+
+            const battleData = enhancedData.battleData
+              ? {
+                  ...enhancedData.battleData,
+                  battleCooldownEnd: battleCooldownEnd ?? enhancedData.battleData.battleCooldownEnd,
+                }
+              : undefined;
+
+            return {
+              entityId: rawOccupierId,
+              structureName,
+              hexCoords: { col: currentState.col, row: currentState.row },
+              structureType: structureInfo.type,
+              initialized,
+              stage: structureInfo.stage,
+              level: structureInfo.level,
+              owner: { address: ownerAddress, ownerName, guildName: enhancedData.owner.guildName },
+              hasWonder: structureInfo.hasWonder,
+              isAlly: false,
+              guardArmies,
+              activeProductions: enhancedData.activeProductions,
+              hyperstructureRealmCount,
+              battleData,
+            };
+          });
+
+          if (result) {
+            callbacks.onStructureTileUpdate(result);
+          }
+        }
       },
+      { runOnInit: false },
+    );
+  }
+
+  public get Army() {
+    return {
       onExplorerTroopsUpdate: (callback: (value: ExplorerTroopsSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.ExplorerTroops,
@@ -341,7 +418,7 @@ export class WorldUpdateListener {
               });
 
               if (!entityId) {
-                this.logMissingEntityId("onExplorerTroopsUpdate", { update });
+
                 return;
               }
 
@@ -382,7 +459,7 @@ export class WorldUpdateListener {
                 const deadArmyEntityId = prevState?.explorer_id;
 
                 if (deadArmyEntityId === undefined || deadArmyEntityId === null) {
-                  this.logMissingEntityId("Army.onDeadArmy", { update, prevState });
+
                   return;
                 }
 
@@ -399,127 +476,6 @@ export class WorldUpdateListener {
 
   public get Structure() {
     return {
-      onTileUpdate: (callback: (value: StructureTileSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          async (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
-              const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
-
-              const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
-
-              if (!structureInfo) return;
-
-              const hyperstructure = getComponentValue(
-                this.setup.components.Hyperstructure,
-                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-              );
-
-              const initialized = hyperstructure?.initialized || false;
-
-              const rawOccupierId = currentState?.occupier_id;
-
-              if (rawOccupierId === undefined || rawOccupierId === null) {
-                this.logMissingEntityId("Structure.onTileUpdate", {
-                  update,
-                  currentState,
-                  structureInfo,
-                });
-                return;
-              }
-
-              let hyperstructureRealmCount: number | undefined;
-
-              if (structureInfo.type === StructureType.Hyperstructure) {
-                hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
-              }
-
-              // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate(rawOccupierId, async () => {
-                // Use DataEnhancer to fetch all enhanced data
-                const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
-
-                const structureComponent = getComponentValue(
-                  this.setup.components.Structure,
-                  getEntityIdFromKeys([BigInt(rawOccupierId)]),
-                );
-                const troopGuards = structureComponent?.troop_guards ?? null;
-                const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
-                const battleCooldownEnd = troopGuards
-                  ? this.getBattleCooldownEnd(troopGuards)
-                  : enhancedData.battleData?.battleCooldownEnd;
-
-                if (troopGuards) {
-                  this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
-                }
-
-                let ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
-                let ownerName = enhancedData.owner.ownerName;
-
-                if ((!ownerName || ownerName.length === 0) && ownerAddress && ownerAddress !== 0n) {
-                  try {
-                    const addressName = getComponentValue(
-                      this.setup.components.AddressName,
-                      getEntityIdFromKeys([ownerAddress]),
-                    );
-
-                    if (addressName?.name) {
-                      ownerName = shortString.decodeShortString(addressName.name.toString());
-                    }
-                  } catch (error) {
-                    console.warn(`Failed to decode address name for owner ${ownerAddress}:`, error);
-                  }
-                }
-
-                ownerName = ownerName || "";
-
-                this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
-
-                const structureName = structureComponent ? getStructureName(structureComponent, true).name : "";
-
-                const battleData = enhancedData.battleData
-                  ? {
-                      ...enhancedData.battleData,
-                      battleCooldownEnd: battleCooldownEnd ?? enhancedData.battleData.battleCooldownEnd,
-                    }
-                  : undefined;
-
-                return {
-                  entityId: rawOccupierId,
-                  structureName,
-                  hexCoords: {
-                    col: currentState.col,
-                    row: currentState.row,
-                  },
-                  structureType: structureInfo.type,
-                  initialized,
-                  stage: structureInfo.stage,
-                  level: structureInfo.level,
-                  owner: {
-                    address: ownerAddress,
-                    ownerName,
-                    guildName: enhancedData.owner.guildName,
-                  },
-                  hasWonder: structureInfo.hasWonder,
-                  isAlly: false,
-                  // Enhanced data from DataEnhancer
-                  guardArmies,
-                  activeProductions: enhancedData.activeProductions,
-                  hyperstructureRealmCount,
-                  battleData,
-                };
-              });
-
-              // Return undefined if update was cancelled due to being outdated
-              return result || undefined;
-            }
-          },
-          false,
-        );
-      },
       onStructureUpdate: (callback: (value: StructureSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.Structure,
@@ -553,7 +509,7 @@ export class WorldUpdateListener {
               });
 
               if (!entityId) {
-                this.logMissingEntityId("onStructureUpdate", { update });
+
                 return;
               }
 
@@ -609,10 +565,6 @@ export class WorldUpdateListener {
               const entityId = currentState?.entity_id;
 
               if (entityId === undefined || entityId === null) {
-                this.logMissingEntityId("Structure.onStructureBuildingsUpdate", {
-                  update,
-                  currentState,
-                });
                 return;
               }
 
@@ -647,37 +599,6 @@ export class WorldUpdateListener {
                 activeProductions,
               };
             }
-          },
-          false,
-        );
-      },
-    };
-  }
-
-  public get Tile() {
-    return {
-      onTileUpdate: (callback: (value: TileSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          async (update: any) => {
-            const newStateOpt = update.value[0];
-            const prevStateOpt = update.value[1];
-            const newState = tileOptToTile(newStateOpt);
-            const prevState = tileOptToTile(prevStateOpt);
-
-            const newStateBiomeType = BiomeIdToType[newState?.biome];
-            const { col, row } = prevState || newState;
-            const result = {
-              hexCoords: { col, row },
-              removeExplored: !newState,
-              biome:
-                newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
-            };
-
-            // Log the update value
-            // console.log("[onTileUpdate] TileSystemUpdate:", result);
-            return result;
           },
           false,
         );
@@ -750,45 +671,6 @@ export class WorldUpdateListener {
     };
   }
 
-  public get Quest() {
-    return {
-      onTileUpdate: (callback: (value: any) => void) => {
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
-              const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
-
-              if (!currentState) return;
-
-              const quest = currentState.occupier_type === TileOccupier.Quest;
-
-              if (!quest) return;
-
-              const questEntityId = update?.entity;
-
-              if (questEntityId === undefined || questEntityId === null) {
-                this.logMissingEntityId("Quest.onTileUpdate", { update, currentState });
-                return;
-              }
-
-              const val = {
-                entityId: questEntityId,
-                occupierId: currentState?.occupier_id,
-                hexCoords: { col: currentState.col, row: currentState.row },
-              };
-              return val;
-            }
-          },
-          false,
-        );
-      },
-    };
-  }
-
   public get ExplorerReward() {
     return {
       onExplorerRewardEventUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
@@ -806,75 +688,6 @@ export class WorldUpdateListener {
               if (!currentState) return undefined;
 
               return this.parseExplorerRewardEvent(currentState);
-            }
-          },
-          false,
-        );
-      },
-    };
-  }
-
-  public get Chest() {
-    return {
-      onTileUpdate: (callback: (value: any) => void) => {
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
-              const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
-
-              if (!currentState) return;
-
-              const chest = currentState.occupier_type === TileOccupier.Chest;
-
-              if (!chest) return;
-
-              const chestEntityId = update?.entity;
-
-              if (chestEntityId === undefined || chestEntityId === null) {
-                this.logMissingEntityId("Chest.onTileUpdate", { update, currentState });
-                return;
-              }
-
-              const result = {
-                entityId: chestEntityId,
-                occupierId: currentState?.occupier_id,
-                hexCoords: { col: currentState.col, row: currentState.row },
-              };
-              return result;
-            }
-          },
-          false,
-        );
-      },
-      onDeadChest: (callback: (value: ID) => void) => {
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          async (update: any): Promise<ID | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
-              const [currentStateOpt, prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
-
-              // Check if the previous state was a chest and current state is not
-              if (
-                prevState &&
-                prevState.occupier_type === TileOccupier.Chest &&
-                (!currentState || currentState.occupier_type !== TileOccupier.Chest)
-              ) {
-                const deadChestEntityId = prevState?.occupier_id;
-
-                if (deadChestEntityId === undefined || deadChestEntityId === null) {
-                  this.logMissingEntityId("Chest.onDeadChest", { update, currentState, prevState });
-                  return;
-                }
-
-                return deadChestEntityId;
-              }
             }
           },
           false,
@@ -945,7 +758,6 @@ export class WorldUpdateListener {
                   : currentState.defender_id;
 
               if (entityId === undefined || entityId === null) {
-                this.logMissingEntityId("BattleEvent.onBattleUpdate", { update, currentState });
                 return;
               }
 
@@ -1061,38 +873,7 @@ export class WorldUpdateListener {
     return null;
   }
 
-  private normalizeSchemaValue(value: unknown): unknown {
-    if (value === null || value === undefined) {
-      return null;
-    }
 
-    if (Array.isArray(value)) {
-      return value.map((item) => this.normalizeSchemaValue(item));
-    }
-
-    if (typeof value === "object") {
-      const record = value as Record<string, unknown>;
-
-      if (record.__kind && record.value !== undefined) {
-        return {
-          __kind: record.__kind,
-          value: this.normalizeSchemaValue(record.value),
-        };
-      }
-
-      if (record.values && Array.isArray(record.values)) {
-        return record.values.map((item) => this.normalizeSchemaValue(item));
-      }
-
-      const normalizedEntries: Record<string, unknown> = {};
-      for (const [key, entryValue] of Object.entries(record)) {
-        normalizedEntries[key] = this.normalizeSchemaValue(entryValue);
-      }
-      return normalizedEntries;
-    }
-
-    return value;
-  }
 
   /**
    * Ensures async updates are processed in the correct order
