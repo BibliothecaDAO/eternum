@@ -1,6 +1,5 @@
-// Landing V2 - Witcher-inspired unified landing page
 // Main layout
-export { LandingLayoutV2 } from "./landing-layout";
+export { LandingLayout } from "./landing-layout";
 
 // Context
 export { LandingProvider, useBackgroundChange, useLandingContext } from "./context/landing-context";
