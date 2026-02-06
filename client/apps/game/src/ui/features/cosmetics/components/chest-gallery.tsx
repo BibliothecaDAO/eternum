@@ -1,6 +1,6 @@
-import { ChestCard } from "@/ui/features/landing/chest-opening/components";
-import { ChestEpoch } from "@/ui/features/landing/chest-opening/hooks/use-chest-opening-flow";
-import { MergedNftData } from "@/ui/features/landing/chest-opening/utils/types";
+import { ChestCard } from "@/ui/features/cosmetics/chest-opening/components";
+import { ChestEpoch } from "@/ui/features/cosmetics/chest-opening/hooks/use-chest-opening-flow";
+import { MergedNftData } from "@/ui/features/cosmetics/chest-opening/utils/types";
 import ArrowUpDown from "lucide-react/dist/esm/icons/arrow-up-down";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import Filter from "lucide-react/dist/esm/icons/filter";

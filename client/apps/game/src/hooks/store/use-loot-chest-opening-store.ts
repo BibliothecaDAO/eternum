@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ChestAsset } from "@/ui/features/landing/chest-opening/utils/cosmetics";
+import { ChestAsset } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 
 interface LootChestOpeningStore {
   // State

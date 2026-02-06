@@ -1,23 +1,23 @@
 import { useLootChestOpeningStore } from "@/hooks/store/use-loot-chest-opening-store";
 import { Tabs } from "@/ui/design-system/atoms/tab/tabs";
-import { ChestOpeningExperience } from "@/ui/features/landing/chest-opening";
-import { ChestEpoch } from "@/ui/features/landing/chest-opening/hooks/use-chest-opening-flow";
-import { useOwnedChests } from "@/ui/features/landing/chest-opening/hooks/use-owned-chests";
-import { LandingDojoProvider } from "@/ui/features/landing/providers/landing-dojo-provider";
+import { ChestOpeningExperience } from "@/ui/features/cosmetics/chest-opening";
+import { ChestEpoch } from "@/ui/features/cosmetics/chest-opening/hooks/use-chest-opening-flow";
+import { useOwnedChests } from "@/ui/features/cosmetics/chest-opening/hooks/use-owned-chests";
+import { LandingDojoProvider } from "@/ui/features/cosmetics/providers/landing-dojo-provider";
 import {
   COSMETIC_NAMES,
   DEFAULT_COSMETIC_MODEL_PATH,
   getLocalImageFromAttributesRaw,
   getModelPathFromAttributesRaw,
-} from "@/ui/features/landing/chest-opening/utils/cosmetics";
+} from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 import {
   ChestGallery,
   CollectionProgress,
   CosmeticGallery,
   CosmeticShowcase,
-} from "@/ui/features/landing/cosmetics/components";
-import { COSMETIC_ITEMS, type CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
-import { useToriiCosmetics, useTotalCosmeticsSupply } from "@/ui/features/landing/cosmetics/lib/use-torii-cosmetics";
+} from "@/ui/features/cosmetics/components";
+import { COSMETIC_ITEMS, type CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
+import { useToriiCosmetics, useTotalCosmeticsSupply } from "@/ui/features/cosmetics/lib/use-torii-cosmetics";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const resolveAssetImage = (uri?: string | null): string | null => {

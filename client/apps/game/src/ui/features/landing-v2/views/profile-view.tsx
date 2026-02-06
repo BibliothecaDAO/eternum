@@ -8,7 +8,7 @@ const LandingPlayer = lazy(() =>
 );
 
 const LandingCosmetics = lazy(() =>
-  import("@/ui/features/landing/sections/cosmetics").then((m) => ({ default: m.LandingCosmetics })),
+  import("@/ui/features/cosmetics/cosmetics-view").then((m) => ({ default: m.LandingCosmetics })),
 );
 
 const WalletSection = lazy(() => import("../components/wallet-section").then((m) => ({ default: m.WalletSection })));
