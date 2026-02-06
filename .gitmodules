@@ -1,3 +1,6 @@
 [submodule "contracts/ticket-master"]
 	path = contracts/ticket-master
 	url = https://github.com/Provable-Games/ticket-master.git
+[submodule "packages/pi-mono"]
+	path = packages/pi-mono
+	url = https://github.com/ponderingdemocritus/pi-mono
