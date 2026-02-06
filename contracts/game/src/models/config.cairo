@@ -50,6 +50,7 @@ pub struct WorldConfig {
     pub village_find_resources_config: VillageFoundResourcesConfig,
     pub village_controller_config: VillageControllerConfig,
     pub village_pass_config: VillageTokenConfig,
+    pub village_troop_config: VillageTroopConfig,
     pub quest_config: QuestConfig,
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,
@@ -76,6 +77,11 @@ pub struct VillageTokenConfig {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VillageControllerConfig {
     pub addresses: Span<ContractAddress>,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VillageTroopConfig {
+    pub troop_delay_ticks: u8,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -888,7 +894,7 @@ pub struct BankConfig {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
-    pub hyperstructure_immunity_ticks: u8,
+    pub village_immunity_ticks: u8,
 }
 
 #[generate_trait]

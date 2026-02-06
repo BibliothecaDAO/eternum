@@ -487,6 +487,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    VillageTroop: (() => {
+      return defineComponent(
+        world,
+        {
+          village_id: RecsType.Number,
+          claimed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "VillageTroop",
+            types: ["bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ResourceFactoryConfig: (() => {
       return defineComponent(
         world,
@@ -1634,7 +1651,7 @@ export function defineContractComponents(world: World) {
           },
           battle_config: {
             regular_immunity_ticks: RecsType.Number,
-            hyperstructure_immunity_ticks: RecsType.Number,
+            village_immunity_ticks: RecsType.Number,
           },
           realm_count_config: {
             count: RecsType.Number,
@@ -1664,6 +1681,9 @@ export function defineContractComponents(world: World) {
           village_pass_config: {
             token_address: RecsType.BigInt,
             mint_recipient_address: RecsType.BigInt,
+          },
+          village_troop_config: {
+            troop_delay_ticks: RecsType.Number,
           },
           quest_config: {
             quest_discovery_prob: RecsType.Number,
@@ -1804,7 +1824,7 @@ export function defineContractComponents(world: World) {
               "u32", // CapacityConfig storehouse_boost_capacity
               "u8", // TradeConfig max_count
               "u8", // BattleConfig regular_immunity_ticks
-              "u8", // BattleConfig hyperstructure_immunity_ticks
+              "u8", // BattleConfig village_immunity_ticks
               "u16", // RealmCountConfig realm_count
               "bool", // SeasonConfig dev_mode_on
               "u64", // SeasonConfig start_settling_at
@@ -1822,6 +1842,7 @@ export function defineContractComponents(world: World) {
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
+              "u8", // VillageTroopConfig troop_delay_ticks
               "u16", // QuestConfig quest_discovery_prob
               "u16", // QuestConfig quest_discovery_fail_prob
               "u64", // StructureCapacityConfig realm_structure_capacity
