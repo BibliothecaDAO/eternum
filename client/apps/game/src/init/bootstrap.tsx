@@ -225,10 +225,9 @@ export const resetBootstrap = () => {
   bootstrappedChain = null;
   cachedSetupResult = null;
 
-  // Reset structure selection and overlay so the next game loads fresh
+  // Reset structure selection so the next game loads fresh
   const uiStore = useUIStore.getState();
   uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
-  uiStore.setShowBlankOverlay(true);
 };
 
 export const bootstrapGame = async (): Promise<BootstrapResult> => {
