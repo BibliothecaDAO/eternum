@@ -1,5 +1,6 @@
 import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -34,7 +35,6 @@ import { BaseContainer } from "@/ui/shared/containers/base-container";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
 import {
   configManager,
-  getBlockTimestamp,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   Position,
@@ -528,15 +528,15 @@ const StructureListItem = memo(
     const liveStructure = useComponentValue(components.Structure, entityKey as any);
     const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
     const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, entityKey as any);
+    const { currentArmiesTick } = useBlockTimestamp();
 
     const activeRelicEffects = useMemo(() => {
-      const { currentArmiesTick } = getBlockTimestamp();
       const structureRelics = productionBoostBonus
         ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
         : [];
       const armyRelics = liveStructure ? getStructureArmyRelicEffects(liveStructure, currentArmiesTick) : [];
       return [...structureRelics, ...armyRelics];
-    }, [productionBoostBonus, liveStructure]);
+    }, [productionBoostBonus, liveStructure, currentArmiesTick]);
 
     const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
     const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);

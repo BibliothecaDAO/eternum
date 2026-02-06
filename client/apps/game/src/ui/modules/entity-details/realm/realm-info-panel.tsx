@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
@@ -11,7 +12,6 @@ import { StructureProductionPanel } from "@/ui/features/world/components/entitie
 import { inferRealmPreset } from "@/utils/automation-presets";
 import {
   Position,
-  getBlockTimestamp,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
@@ -174,15 +174,16 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   );
 
+  const { currentArmiesTick } = useBlockTimestamp();
+
   const relicEffects = useMemo(() => {
     if (!structure) return [];
-    const { currentArmiesTick } = getBlockTimestamp();
     const structureRelicEffects = productionBoostBonus
       ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
       : [];
     const armyRelicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
     return [...structureRelicEffects, ...armyRelicEffects];
-  }, [productionBoostBonus, structure]);
+  }, [productionBoostBonus, structure, currentArmiesTick]);
 
   const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
 
