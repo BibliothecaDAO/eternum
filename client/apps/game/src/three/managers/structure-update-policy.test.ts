@@ -9,18 +9,12 @@ describe("structure-update-policy", () => {
   });
 
   it("requests refresh only when bucket changes", () => {
-    expect(
-      shouldRefreshVisibleStructures(
-        { isMine: false, isAlly: false },
-        { isMine: false, isAlly: false },
-      ),
-    ).toBe(false);
+    expect(shouldRefreshVisibleStructures({ isMine: false, isAlly: false }, { isMine: false, isAlly: false })).toBe(
+      false,
+    );
 
-    expect(
-      shouldRefreshVisibleStructures(
-        { isMine: false, isAlly: false },
-        { isMine: true, isAlly: false },
-      ),
-    ).toBe(true);
+    expect(shouldRefreshVisibleStructures({ isMine: false, isAlly: false }, { isMine: true, isAlly: false })).toBe(
+      true,
+    );
   });
 });

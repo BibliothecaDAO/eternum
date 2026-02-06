@@ -15,23 +15,23 @@ packages:
   - scripts/lords-distribution
 
 catalog:
-  '@cartridge/connector': ^0.12.1
-  '@cartridge/controller': ^0.12.1
-  '@dojoengine/core': 1.7.0-preview.3
-  '@dojoengine/predeployed-connector': 1.7.0-preview.3
-  '@dojoengine/react': 1.7.0-preview.3
-  '@dojoengine/recs': ^2.0.13
-  '@dojoengine/sdk': 1.7.0-preview.3
-  '@dojoengine/state': 1.7.0-preview.3
-  '@dojoengine/torii-client': 1.7.0-preview.3
-  '@dojoengine/torii-wasm': 1.7.0-preview.3
-  '@dojoengine/utils': 1.7.0-preview.3
-  '@metamask/sdk': ^0.32.1
-  '@solana/web3.js': ^1.98.0
-  '@starknet-react/chains': 5.0.3
-  '@starknet-react/core': 5.0.3
-  '@types/react': ^18
-  '@types/react-dom': ^18
+  "@cartridge/connector": ^0.12.1
+  "@cartridge/controller": ^0.12.1
+  "@dojoengine/core": 1.7.0-preview.3
+  "@dojoengine/predeployed-connector": 1.7.0-preview.3
+  "@dojoengine/react": 1.7.0-preview.3
+  "@dojoengine/recs": ^2.0.13
+  "@dojoengine/sdk": 1.7.0-preview.3
+  "@dojoengine/state": 1.7.0-preview.3
+  "@dojoengine/torii-client": 1.7.0-preview.3
+  "@dojoengine/torii-wasm": 1.7.0-preview.3
+  "@dojoengine/utils": 1.7.0-preview.3
+  "@metamask/sdk": ^0.32.1
+  "@solana/web3.js": ^1.98.0
+  "@starknet-react/chains": 5.0.3
+  "@starknet-react/core": 5.0.3
+  "@types/react": ^18
+  "@types/react-dom": ^18
   bignumber.js: ^9.3.0
   open: ^10.1.0
   posthog-js: ^1.160.0

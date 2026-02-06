@@ -21,5 +21,8 @@ export function shouldRefreshVisibleStructures(
   previous: StructureOwnershipState,
   next: StructureOwnershipState,
 ): boolean {
-  return getStructureVisibilityBucket(previous.isMine, previous.isAlly) !== getStructureVisibilityBucket(next.isMine, next.isAlly);
+  return (
+    getStructureVisibilityBucket(previous.isMine, previous.isAlly) !==
+    getStructureVisibilityBucket(next.isMine, next.isAlly)
+  );
 }

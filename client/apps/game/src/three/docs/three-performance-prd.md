@@ -14,17 +14,17 @@
 
 ## Document Update Log
 
-| Update | Date (AEDT) | Author | Change |
-| ------ | ----------- | ------ | ------ |
-| U1 | 2026-02-06 09:19 | Codex | Created PRD skeleton, objectives, scope, and success metrics. |
-| U2 | 2026-02-06 09:22 | Codex | Added prioritized optimization findings with code evidence and mapped them to initiatives. |
-| U3 | 2026-02-06 09:25 | Codex | Added phased implementation plan, rollout strategy, acceptance criteria, and risk matrix. |
-| U4 | 2026-02-06 09:35 | Codex | Implemented Phase 1 changes: removed duplicate `needsUpdate()` calls in worldmap/chest paths and removed duplicate devtools memory monitor init. |
-| U5 | 2026-02-06 09:35 | Codex | Implemented Phase 2 changes: removed side-path `visibilityManager.beginFrame()` call from worldmap chunk update flow. |
-| U6 | 2026-02-06 09:35 | Codex | Implemented Phase 3 changes: replaced prefetch queue `toSorted()` rebuild with binary insertion and removed redundant tile-fetch trigger in grid build path. |
-| U7 | 2026-02-06 09:35 | Codex | Implemented Phase 4 changes: added ownership-bucket policy and gated expensive `updateVisibleStructures()` refresh to ownership-bucket transitions only. |
-| U8 | 2026-02-06 09:35 | Codex | Implemented Phase 5 changes: bounded interactive-hex cache to active rendered window, removed redundant interactive visibility updates, and centralized stale chunk unregistration on cache clear/switch-off. |
-| U9 | 2026-02-06 09:35 | Codex | Executed `pnpm --dir client/apps/game build` between phases (blocked by pre-existing workspace dependency/type errors unrelated to these changes); verified new helper tests pass with Vitest. |
+| Update | Date (AEDT)      | Author | Change                                                                                                                                                                                                        |
+| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U1     | 2026-02-06 09:19 | Codex  | Created PRD skeleton, objectives, scope, and success metrics.                                                                                                                                                 |
+| U2     | 2026-02-06 09:22 | Codex  | Added prioritized optimization findings with code evidence and mapped them to initiatives.                                                                                                                    |
+| U3     | 2026-02-06 09:25 | Codex  | Added phased implementation plan, rollout strategy, acceptance criteria, and risk matrix.                                                                                                                     |
+| U4     | 2026-02-06 09:35 | Codex  | Implemented Phase 1 changes: removed duplicate `needsUpdate()` calls in worldmap/chest paths and removed duplicate devtools memory monitor init.                                                              |
+| U5     | 2026-02-06 09:35 | Codex  | Implemented Phase 2 changes: removed side-path `visibilityManager.beginFrame()` call from worldmap chunk update flow.                                                                                         |
+| U6     | 2026-02-06 09:35 | Codex  | Implemented Phase 3 changes: replaced prefetch queue `toSorted()` rebuild with binary insertion and removed redundant tile-fetch trigger in grid build path.                                                  |
+| U7     | 2026-02-06 09:35 | Codex  | Implemented Phase 4 changes: added ownership-bucket policy and gated expensive `updateVisibleStructures()` refresh to ownership-bucket transitions only.                                                      |
+| U8     | 2026-02-06 09:35 | Codex  | Implemented Phase 5 changes: bounded interactive-hex cache to active rendered window, removed redundant interactive visibility updates, and centralized stale chunk unregistration on cache clear/switch-off. |
+| U9     | 2026-02-06 09:35 | Codex  | Executed `pnpm --dir client/apps/game build` between phases (blocked by pre-existing workspace dependency/type errors unrelated to these changes); verified new helper tests pass with Vitest.                |
 
 ## Problem Statement
 
@@ -55,14 +55,14 @@ measurable gains across desktop and mobile quality tiers.
 
 ## Success Metrics
 
-| Metric | Target | Method |
-| ------ | ------ | ------ |
-| Worldmap frame time p95 (Desktop High) | <= 16.7ms | In-engine perf capture + stats export |
-| Worldmap frame time p95 (Desktop Mid) | <= 22ms | In-engine perf capture + stats export |
-| Chunk switch time-to-stable-entities p95 | <= 250ms | Instrumented chunk switch traces |
-| Frame hitch count (>33ms) while panning for 60s | -40% vs baseline | Deterministic camera-pan scenario |
-| Registered chunk drift after 20 min traversal | 0 net growth beyond pinned budget | Visibility stats assertions |
-| Interactive hex cache growth after 20 min traversal | bounded by active world window policy | Memory/perf soak test |
+| Metric                                              | Target                                | Method                                |
+| --------------------------------------------------- | ------------------------------------- | ------------------------------------- |
+| Worldmap frame time p95 (Desktop High)              | <= 16.7ms                             | In-engine perf capture + stats export |
+| Worldmap frame time p95 (Desktop Mid)               | <= 22ms                               | In-engine perf capture + stats export |
+| Chunk switch time-to-stable-entities p95            | <= 250ms                              | Instrumented chunk switch traces      |
+| Frame hitch count (>33ms) while panning for 60s     | -40% vs baseline                      | Deterministic camera-pan scenario     |
+| Registered chunk drift after 20 min traversal       | 0 net growth beyond pinned budget     | Visibility stats assertions           |
+| Interactive hex cache growth after 20 min traversal | bounded by active world window policy | Memory/perf soak test                 |
 
 ## Scope
 
@@ -122,7 +122,8 @@ measurable gains across desktop and mobile quality tiers.
 
 ### P1: Shadow policy conflicts in worldmap
 
-- Worldmap shadow configuration forces shadows on and widens frustum even where base camera view policy disables far-view shadows.
+- Worldmap shadow configuration forces shadows on and widens frustum even where base camera view policy disables
+  far-view shadows.
 - Evidence:
   - `client/apps/game/src/three/scenes/worldmap.tsx:910`
   - `client/apps/game/src/three/scenes/worldmap.tsx:916`
@@ -130,7 +131,8 @@ measurable gains across desktop and mobile quality tiers.
 
 ### P1: Fetch/prefetch scheduling has avoidable churn
 
-- Chunk switch kicks tile fetch, and grid update path also triggers a fetch request. Queue operations rebuild arrays repeatedly.
+- Chunk switch kicks tile fetch, and grid update path also triggers a fetch request. Queue operations rebuild arrays
+  repeatedly.
 - Evidence:
   - `client/apps/game/src/three/scenes/worldmap.tsx:3444`
   - `client/apps/game/src/three/scenes/worldmap.tsx:2715`
@@ -157,23 +159,23 @@ measurable gains across desktop and mobile quality tiers.
 
 ### Functional Requirements
 
-| ID | Requirement | Priority |
-| -- | ----------- | -------- |
-| FR-1 | Renderer must preserve current gameplay behavior while reducing redundant update passes. | P0 |
-| FR-2 | Visibility manager frame lifecycle must be owned by render loop only. | P0 |
-| FR-3 | Chunk switch must keep deterministic ordering: fetch -> grid -> manager hydration. | P0 |
-| FR-4 | Event-triggered updates must use minimal invalidation scope where possible. | P1 |
-| FR-5 | Interactive hex cache must stay bounded by defined policy. | P1 |
-| FR-6 | Worldmap shadow behavior must align with camera view/quality policy. | P1 |
+| ID   | Requirement                                                                              | Priority |
+| ---- | ---------------------------------------------------------------------------------------- | -------- |
+| FR-1 | Renderer must preserve current gameplay behavior while reducing redundant update passes. | P0       |
+| FR-2 | Visibility manager frame lifecycle must be owned by render loop only.                    | P0       |
+| FR-3 | Chunk switch must keep deterministic ordering: fetch -> grid -> manager hydration.       | P0       |
+| FR-4 | Event-triggered updates must use minimal invalidation scope where possible.              | P1       |
+| FR-5 | Interactive hex cache must stay bounded by defined policy.                               | P1       |
+| FR-6 | Worldmap shadow behavior must align with camera view/quality policy.                     | P1       |
 
 ### Non-Functional Requirements
 
-| ID | Requirement | Priority |
-| -- | ----------- | -------- |
-| NFR-1 | Maintain visual parity for close/medium worldmap views. | P0 |
-| NFR-2 | Avoid long GC stalls from transient allocations in hot paths. | P0 |
-| NFR-3 | All improvements must ship with measurable before/after metrics. | P0 |
-| NFR-4 | Feature-flag each phase for safe incremental rollout. | P1 |
+| ID    | Requirement                                                      | Priority |
+| ----- | ---------------------------------------------------------------- | -------- |
+| NFR-1 | Maintain visual parity for close/medium worldmap views.          | P0       |
+| NFR-2 | Avoid long GC stalls from transient allocations in hot paths.    | P0       |
+| NFR-3 | All improvements must ship with measurable before/after metrics. | P0       |
+| NFR-4 | Feature-flag each phase for safe incremental rollout.            | P1       |
 
 ## Implementation Plan
 
@@ -250,24 +252,24 @@ measurable gains across desktop and mobile quality tiers.
 
 ## Implementation Status (Current)
 
-| Phase | Status | Notes |
-| ----- | ------ | ----- |
+| Phase   | Status      | Notes                                                                                                                                                       |
+| ------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Phase 1 | Implemented | Duplicate `setCount`/`needsUpdate` hot-path calls removed in targeted worldmap/chest paths; duplicate memory-monitor init removed from init bootstrap path. |
-| Phase 2 | Implemented | `beginFrame()` side call removed from worldmap chunk-update path to preserve centralized frame lifecycle ownership. |
-| Phase 3 | Implemented | Prefetch queue now uses binary insertion helper; redundant in-grid tile fetch trigger removed. |
-| Phase 4 | Implemented | Structure visibility refresh now runs only when ownership bucket changes (`mine`/`ally`/`enemy`). |
-| Phase 5 | Implemented | Interactive hex state rebuilt per active window to keep cache bounded; stale chunk registrations cleaned up on cache clear/switch-off. |
+| Phase 2 | Implemented | `beginFrame()` side call removed from worldmap chunk-update path to preserve centralized frame lifecycle ownership.                                         |
+| Phase 3 | Implemented | Prefetch queue now uses binary insertion helper; redundant in-grid tile fetch trigger removed.                                                              |
+| Phase 4 | Implemented | Structure visibility refresh now runs only when ownership bucket changes (`mine`/`ally`/`enemy`).                                                           |
+| Phase 5 | Implemented | Interactive hex state rebuilt per active window to keep cache bounded; stale chunk registrations cleaned up on cache clear/switch-off.                      |
 
 ### Build and Test Verification Log
 
-| Check | Result | Details |
-| ----- | ------ | ------- |
-| `pnpm --dir client/apps/game build` after Phase 1 | Failed (pre-existing) | Missing `@bibliothecadao/*` packages and broad TS baseline errors across unrelated files. |
-| `pnpm --dir client/apps/game build` after Phase 2 | Failed (pre-existing) | Same baseline dependency/type failures. |
-| `pnpm --dir client/apps/game build` after Phase 3 | Failed (pre-existing) | Same baseline dependency/type failures. |
-| `pnpm --dir client/apps/game build` after Phase 4 | Failed (pre-existing) | Same baseline dependency/type failures. |
-| `pnpm --dir client/apps/game build` after Phase 5 | Failed (pre-existing) | Same baseline dependency/type failures. |
-| `pnpm --dir client/apps/game exec vitest run src/three/scenes/worldmap-prefetch-queue.test.ts src/three/managers/structure-update-policy.test.ts` | Passed | 2 files / 5 tests passed. |
+| Check                                                                                                                                             | Result                | Details                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm --dir client/apps/game build` after Phase 1                                                                                                 | Failed (pre-existing) | Missing `@bibliothecadao/*` packages and broad TS baseline errors across unrelated files. |
+| `pnpm --dir client/apps/game build` after Phase 2                                                                                                 | Failed (pre-existing) | Same baseline dependency/type failures.                                                   |
+| `pnpm --dir client/apps/game build` after Phase 3                                                                                                 | Failed (pre-existing) | Same baseline dependency/type failures.                                                   |
+| `pnpm --dir client/apps/game build` after Phase 4                                                                                                 | Failed (pre-existing) | Same baseline dependency/type failures.                                                   |
+| `pnpm --dir client/apps/game build` after Phase 5                                                                                                 | Failed (pre-existing) | Same baseline dependency/type failures.                                                   |
+| `pnpm --dir client/apps/game exec vitest run src/three/scenes/worldmap-prefetch-queue.test.ts src/three/managers/structure-update-policy.test.ts` | Passed                | 2 files / 5 tests passed.                                                                 |
 
 ## Rollout Plan
 
@@ -278,12 +280,12 @@ measurable gains across desktop and mobile quality tiers.
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-| ---- | ------ | ---------- |
-| Invalidation changes break correctness of visibility | High | Add targeted regression tests around chunk switch and entity hydration. |
-| Shadow policy adjustments alter scene readability | Medium | Lock visual snapshots for close/medium/far camera tiers. |
-| Reduced refresh scope misses edge updates | High | Add debug counters and forced refresh fallback path. |
-| Performance optimizations regress mobile | Medium | Track desktop and mobile separately in baseline suite. |
+| Risk                                                 | Impact | Mitigation                                                              |
+| ---------------------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| Invalidation changes break correctness of visibility | High   | Add targeted regression tests around chunk switch and entity hydration. |
+| Shadow policy adjustments alter scene readability    | Medium | Lock visual snapshots for close/medium/far camera tiers.                |
+| Reduced refresh scope misses edge updates            | High   | Add debug counters and forced refresh fallback path.                    |
+| Performance optimizations regress mobile             | Medium | Track desktop and mobile separately in baseline suite.                  |
 
 ## Dependencies
 
