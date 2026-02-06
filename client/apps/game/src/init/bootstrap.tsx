@@ -20,7 +20,10 @@ import { dojoConfig } from "../../dojo-config";
 import { env, hasPublicNodeUrl } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
 import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
+import { usePlayerStore } from "../hooks/store/use-player-store";
+import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
+import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { ETERNUM_CONFIG } from "../utils/config";
@@ -258,6 +261,29 @@ export const resetBootstrap = () => {
   const uiStore = useUIStore.getState();
   uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
   uiStore.setSelectableArmies([]);
+
+  // Clear cached player data (names, structure-to-address maps, etc.)
+  usePlayerStore.getState().clearPlayerData();
+
+  // Clear old-world transactions from the notification UI
+  useTransactionStore.getState().clearAllTransactions();
+
+  // Stop settlement location polling and clear cached locations
+  const settlementState = useSettlementStore.getState();
+  if (settlementState.pollingIntervalId) {
+    clearInterval(settlementState.pollingIntervalId);
+  }
+  if (settlementState.pollingTimeoutId) {
+    clearTimeout(settlementState.pollingTimeoutId);
+  }
+  useSettlementStore.setState({
+    pollingIntervalId: null,
+    pollingTimeoutId: null,
+    availableLocations: [],
+    settledLocations: [],
+    selectedLocation: null,
+    selectedCoords: null,
+  });
 };
 
 export const bootstrapGame = async (): Promise<BootstrapResult> => {
