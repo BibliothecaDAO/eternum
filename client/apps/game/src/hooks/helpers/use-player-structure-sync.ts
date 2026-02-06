@@ -40,6 +40,7 @@ export const usePlayerStructureSync = () => {
   const accountAddress = useAccountStore().account?.address;
 
   // PLAYER STRUCTURES (fetch player-owned structures into RECS so usePlayerStructures works)
+  // Prefetch player-owned structures into RECS so usePlayerStructures works
   useEffect(() => {
     if (!accountAddress || !toriiClient || !contractComponents) return;
     let cancelled = false;

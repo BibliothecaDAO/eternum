@@ -1,0 +1,61 @@
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
+
+// Lazy load heavy components
+const LandingPlayer = lazy(() => import("../components/player-profile").then((m) => ({ default: m.LandingPlayer })));
+
+const LandingCosmetics = lazy(() =>
+  import("@/ui/features/cosmetics/cosmetics-view").then((m) => ({ default: m.LandingCosmetics })),
+);
+
+const WalletSection = lazy(() => import("../components/wallet-section").then((m) => ({ default: m.WalletSection })));
+
+interface ProfileViewProps {
+  className?: string;
+}
+
+type ProfileTab = "profile" | "cosmetics" | "wallet";
+
+const LoadingSpinner = () => (
+  <div className="flex h-full min-h-[400px] items-center justify-center">
+    <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+  </div>
+);
+
+/**
+ * Profile view with sub-tabs for Profile (Stats), Cosmetics, and Wallet.
+ * Tab navigation is handled by the header - this view just renders the content.
+ */
+export const ProfileView = ({ className }: ProfileViewProps) => {
+  const [searchParams] = useSearchParams();
+  const activeTab = (searchParams.get("tab") as ProfileTab) || "profile";
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "cosmetics":
+        return (
+          <Suspense fallback={<LoadingSpinner />}>
+            <div className="h-full">
+              <LandingCosmetics />
+            </div>
+          </Suspense>
+        );
+      case "wallet":
+        return (
+          <Suspense fallback={<LoadingSpinner />}>
+            <WalletSection />
+          </Suspense>
+        );
+      case "profile":
+      default:
+        return (
+          <Suspense fallback={<LoadingSpinner />}>
+            <LandingPlayer />
+          </Suspense>
+        );
+    }
+  };
+
+  return <div className={cn("flex w-full max-w-6xl flex-col", className)}>{renderContent()}</div>;
+};

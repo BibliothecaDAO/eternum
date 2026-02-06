@@ -1,6 +1,6 @@
 import { env } from "../../../../env";
 
-export const mintUrl =
+const mintUrl =
   env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://dev.empire.realms.world/";
 
 /**
