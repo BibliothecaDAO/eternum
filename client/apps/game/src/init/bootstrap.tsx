@@ -238,7 +238,14 @@ export const resetBootstrap = () => {
   for (const entity of entities) {
     world.deleteEntity(entity);
   }
-  console.log(`[BOOTSTRAP] Cleared ${entities.length} entities from RECS world`);
+  // Also clear the components array. defineContractComponents(world) always
+  // pushes NEW component objects into world.components. Without this, the
+  // array grows with duplicates (old + new) on every re-bootstrap. The
+  // setEntities() helper uses `.find()` on world.components by model name,
+  // so it would match the OLD (orphaned) component first — writing data
+  // that the new React hooks never see.
+  world.components.length = 0;
+  console.log(`[BOOTSTRAP] Cleared ${entities.length} entities and component registry from RECS world`);
 
   // Clear the MapDataStore SQL cache and destroy the singleton so the next
   // bootstrap creates a fresh instance with the new world's sqlApi reference.
