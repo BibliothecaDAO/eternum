@@ -246,8 +246,8 @@ const GameCard = ({
 
         {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
         <div className="flex gap-1.5">
-          {/* Left slot: Play OR Register (share same space) */}
-          {canPlay ? (
+          {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
+          {isEnded && !showRegistered ? null : canPlay ? (
             <button
               onClick={onPlay}
               className={cn(
@@ -258,7 +258,12 @@ const GameCard = ({
               <Play className="w-3 h-3" />
               Play
             </button>
-          ) : !showRegistered && canRegisterPeriod && playerAddress ? (
+          ) : game.isRegistered === null && playerAddress ? (
+            // Loading state while checking registration status
+            <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
+              <Loader2 className="w-3 h-3 animate-spin" />
+            </div>
+          ) : game.isRegistered === false && canRegisterPeriod && playerAddress ? (
             <>
               {isRegistering ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
@@ -401,6 +406,24 @@ export const UnifiedGameGrid = ({
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
 
+  // Check if there's a stored controller session that's still reconnecting
+  // starknet-react stores the last connected connector as "lastUsedConnector" in localStorage
+  const [hasStoredSession] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const storedConnector = window.localStorage.getItem("lastUsedConnector");
+    return storedConnector !== null;
+  });
+
+  // Safety timeout: don't wait forever if auto-connect fails silently
+  const [reconnectTimedOut, setReconnectTimedOut] = useState(false);
+  useEffect(() => {
+    if (!hasStoredSession || playerAddress) return;
+    const timeout = setTimeout(() => setReconnectTimedOut(true), 5000);
+    return () => clearTimeout(timeout);
+  }, [hasStoredSession, playerAddress]);
+
+  const isWaitingForReconnect = hasStoredSession && !playerAddress && !reconnectTimedOut;
+
   const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
   // Fetch from both chains
@@ -518,7 +541,9 @@ export const UnifiedGameGrid = ({
     [onRegistrationComplete, queryClient],
   );
 
-  const isLoading = factoryWorldsLoading || factoryCheckingAvailability;
+  // Wait for controller to reconnect if there's a stored session before showing games
+  // This prevents the flash of "logged out" state on page refresh
+  const isLoading = factoryWorldsLoading || factoryCheckingAvailability || isWaitingForReconnect;
 
   // Count by status
   const counts = useMemo(() => {
@@ -576,7 +601,15 @@ export const UnifiedGameGrid = ({
             "overflow-x-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent",
         )}
       >
-        {isLoading && games.length === 0 ? (
+        {isWaitingForReconnect ? (
+          // Always show loading when waiting for controller to reconnect, even if games are cached
+          <div className="flex items-center justify-center h-[120px]">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
+              <span className="text-xs text-white/40">Loading account...</span>
+            </div>
+          </div>
+        ) : isLoading && games.length === 0 ? (
           <div className="flex items-center justify-center h-[120px]">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-6 h-6 text-white/30 animate-spin" />

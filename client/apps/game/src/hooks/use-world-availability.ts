@@ -125,6 +125,8 @@ const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: stri
     if (row && row.once_registered != null) {
       return parseMaybeBool(row.once_registered);
     }
+    // Query succeeded but no row found — player is not registered
+    return false;
   } catch {
     // Silently fail - registration check is best-effort
   }

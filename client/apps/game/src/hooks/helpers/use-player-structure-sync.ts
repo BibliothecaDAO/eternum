@@ -41,12 +41,30 @@ export const usePlayerStructureSync = () => {
 
   // PLAYER STRUCTURES (fetch player-owned structures into RECS so usePlayerStructures works)
   useEffect(() => {
+    console.log(
+      "[BLITZ-ENTRY] usePlayerStructureSync prefetch - accountAddress:",
+      accountAddress,
+      "hasToriiClient:",
+      !!toriiClient,
+      "hasComponents:",
+      !!contractComponents,
+    );
     if (!accountAddress || !toriiClient || !contractComponents) return;
     let cancelled = false;
+    const startTime = performance.now();
     (async () => {
       try {
+        console.log("[BLITZ-ENTRY] usePlayerStructureSync fetching from SQL...");
         const structures = await sqlApi.fetchStructuresByOwner(accountAddress);
+        console.log(
+          "[BLITZ-ENTRY] usePlayerStructureSync SQL returned",
+          structures.length,
+          "structures in",
+          (performance.now() - startTime).toFixed(0),
+          "ms",
+        );
         if (cancelled || structures.length === 0) return;
+        console.log("[BLITZ-ENTRY] usePlayerStructureSync calling getStructuresDataFromTorii...");
         await getStructuresDataFromTorii(
           toriiClient,
           contractComponents as any,
@@ -54,6 +72,11 @@ export const usePlayerStructureSync = () => {
             entityId: s.entity_id,
             position: { col: s.coord_x, row: s.coord_y },
           })),
+        );
+        console.log(
+          "[BLITZ-ENTRY] usePlayerStructureSync getStructuresDataFromTorii resolved in",
+          (performance.now() - startTime).toFixed(0),
+          "ms (NOTE: debounced queries may still be pending!)",
         );
       } catch (error) {
         console.error("[usePlayerStructureSync] Failed to prefetch player structures", error);

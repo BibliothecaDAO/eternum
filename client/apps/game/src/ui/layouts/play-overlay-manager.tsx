@@ -4,15 +4,18 @@ import { useCallback, useEffect } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
-import { Onboarding } from "@/ui/layouts/onboarding";
+import { GameLoadingOverlay } from "@/ui/layouts/game-loading-overlay";
 
 interface PlayOverlayManagerProps {
   backgroundImage: string;
-  // When false, suppresses the Onboarding overlay (which requires Dojo context)
+  // When false, suppresses the loading overlay (which requires Dojo context)
   enableOnboarding?: boolean;
 }
 
-export const PlayOverlayManager = ({ backgroundImage, enableOnboarding = true }: PlayOverlayManagerProps) => {
+export const PlayOverlayManager = ({
+  enableOnboarding = true,
+  // backgroundImage is kept in the interface for caller compatibility but no longer used
+}: PlayOverlayManagerProps) => {
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -53,11 +56,17 @@ export const PlayOverlayManager = ({ backgroundImage, enableOnboarding = true }:
         {modalContent}
       </BlankOverlayContainer>
 
-      {enableOnboarding ? (
-        <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
-          <Onboarding backgroundImage={backgroundImage} />
-        </BlankOverlayContainer>
-      ) : null}
+      {(() => {
+        console.log(
+          "[BLITZ-ENTRY] PlayOverlayManager render - enableOnboarding:",
+          enableOnboarding,
+          "showBlankOverlay:",
+          showBlankOverlay,
+          "isLoadingScreenEnabled:",
+          isLoadingScreenEnabled,
+        );
+        return enableOnboarding && showBlankOverlay ? <GameLoadingOverlay /> : null;
+      })()}
 
       <LoadingOroborus loading={isLoadingScreenEnabled} />
     </>

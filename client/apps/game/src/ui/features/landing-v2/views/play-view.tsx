@@ -420,7 +420,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
         return;
       }
 
-      // Open game entry modal
+      // Open game entry modal - handles bootstrap, settlement, and game entry
       setSelectedWorld(selection);
       setIsSpectateMode(false);
       setIsForgeMode(false);

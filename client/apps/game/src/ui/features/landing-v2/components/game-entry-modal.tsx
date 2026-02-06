@@ -6,7 +6,7 @@
  * 2. Settlement phase - If user is registered but hasn't settled
  * 3. Auto-transitions to game when ready
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Eye, Loader2, Check, AlertCircle, RefreshCw, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
@@ -14,16 +14,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import type { SetupResult } from "@/init/bootstrap";
-import { bootstrapGame, resetBootstrap } from "@/init/bootstrap";
+import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { sqlApi } from "@/services/api";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
-import { Position } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 
 const DEBUG_MODAL = false;
@@ -660,14 +659,11 @@ export const GameEntryModal = ({
   const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
-  const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
   const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
 
-  // Navigation hook - uses same approach as /play/ page for consistent behavior
-  const goToStructure = useGoToStructure(setupResult);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
   const [tasks, setTasks] = useState<BootstrapTask[]>(BOOTSTRAP_TASKS);
 
@@ -689,9 +685,6 @@ export const GameEntryModal = ({
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
-
-  // Track if user entered the game (to avoid cleanup on successful navigation)
-  const didEnterGameRef = useRef(false);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -995,27 +988,6 @@ export const GameEntryModal = ({
     startBootstrap();
   }, [isOpen, worldName, chain, updateTask]);
 
-  // Track if modal was open (to detect close)
-  const wasOpenRef = useRef(false);
-
-  // Cleanup when modal closes without entering game
-  useEffect(() => {
-    if (isOpen) {
-      // Modal is opening
-      wasOpenRef.current = true;
-      didEnterGameRef.current = false;
-    } else if (wasOpenRef.current) {
-      // Modal is closing (was open, now closed)
-      wasOpenRef.current = false;
-
-      // Only cleanup if user did NOT enter the game
-      if (!didEnterGameRef.current) {
-        console.log("[GameEntryModal] Cleaning up resources - modal closed without entering game");
-        resetBootstrap();
-      }
-    }
-  }, [isOpen]); // Only depend on isOpen, not bootstrapStatus
-
   // Update task progress based on sync
   useEffect(() => {
     if (bootstrapStatus !== "loading") return;
@@ -1050,64 +1022,67 @@ export const GameEntryModal = ({
     }, 100);
   }, []);
 
-  // Enter game handler - uses same navigation approach as /play/ page for consistent behavior
+  // Enter game handler - sets up state and navigates to the game
   const handleEnterGame = useCallback(async () => {
-    // Mark that we're entering the game (prevents cleanup on close)
-    didEnterGameRef.current = true;
-
-    // Hide the onboarding overlay since we're entering through the new flow
-    setShowBlankOverlay(false);
+    console.log(
+      "[BLITZ-ENTRY] handleEnterGame called - isSpectateMode:",
+      isSpectateMode,
+      "hasAccount:",
+      !!account?.address,
+    );
+    // Keep showBlankOverlay=true so the GameLoadingOverlay shows while
+    // player structure data syncs into RECS after <World> mounts.
+    // The GameLoadingOverlay will dismiss it once structures are loaded.
 
     // Default coordinates (world center)
     let col = 0;
     let row = 0;
     let structureId = 0;
 
-    // For players (not spectators), try to find their owned structure
-    if (!isSpectateMode && setupResult && account?.address) {
+    // For players (not spectators), fetch structure coordinates from SQL
+    // (RECS is NOT populated with player structures at this point)
+    if (!isSpectateMode && account?.address) {
       try {
-        const { components } = setupResult;
-        const { HasValue, runQuery, getComponentValue } = await import("@dojoengine/recs");
-
-        // Find player's structures
-        const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]);
-
-        if (playerStructures.size > 0) {
-          // Get the first structure's coordinates from its base
-          const firstStructureEntity = playerStructures.values().next().value;
-          if (firstStructureEntity) {
-            const structure = getComponentValue(components.Structure, firstStructureEntity);
-            if (structure?.base) {
-              col = Number(structure.base.coord_x);
-              row = Number(structure.base.coord_y);
-              structureId = Number(structure.entity_id);
-              debugLog(worldName, "Centering on player structure at:", col, row, "structureId:", structureId);
-            }
-          }
+        console.log("[BLITZ-ENTRY] Fetching player structures from SQL for:", account.address);
+        const structures = await sqlApi.fetchStructuresByOwner(account.address);
+        console.log("[BLITZ-ENTRY] SQL returned", structures.length, "structures:", structures);
+        if (structures.length > 0) {
+          const first = structures[0];
+          col = first.coord_x;
+          row = first.coord_y;
+          structureId = first.entity_id;
+          console.log("[BLITZ-ENTRY] Using structure:", structureId, "at col:", col, "row:", row);
         }
       } catch (error) {
-        debugLog(worldName, "Failed to get player structure position, using default:", error);
+        console.error("[BLITZ-ENTRY] Failed to fetch structures from SQL:", error);
       }
     }
 
-    // Navigate to the game route first (required for the game to load)
-    navigate("/play");
+    // Set structureEntityId in UI store BEFORE navigation
+    // This ensures the game loads with the correct structure selected
+    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
+    setStructureEntityId(structureId, {
+      spectator: isSpectateMode,
+      worldMapPosition: { col, row },
+    });
+    console.log("[BLITZ-ENTRY] Set structureEntityId:", structureId, "worldMapPosition:", { col, row });
 
-    // Use goToStructure for proper state management (same as /play/ page "Play Blitz" button)
-    // This sets structureEntityId in UI store, updates selectedHex, and navigates with wouter
-    const position = new Position({ x: col, y: row });
-
+    // Build URL - always use /hex for local view for players, /map for spectators
+    let url: string;
     if (isSpectateMode) {
-      // Spectators go to map view
-      await goToStructure(structureId, position, true, { spectator: true });
-    } else if (structureId > 0) {
-      // Players with a structure go to hex/local view
-      await goToStructure(structureId, position, false);
+      url = `/play/map?col=${col}&row=${row}&spectate=true`;
     } else {
-      // Fallback: no structure found, go to map view
-      await goToStructure(0, position, true);
+      // Player entering - always use local/hex view by default
+      url = `/play/hex?col=${col}&row=${row}`;
     }
-  }, [navigate, goToStructure, isSpectateMode, setShowBlankOverlay, setupResult, account, worldName]);
+
+    console.log("[BLITZ-ENTRY] Navigating to:", url);
+    navigate(url);
+
+    // Dispatch urlChanged event to notify Three.js GameRenderer about the route change
+    window.dispatchEvent(new Event("urlChanged"));
+    console.log("[BLITZ-ENTRY] Navigation dispatched");
+  }, [navigate, isSpectateMode, account, worldName]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {

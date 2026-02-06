@@ -1,6 +1,6 @@
 import { captureSystemError } from "@/posthog";
 import { setup } from "@bibliothecadao/dojo";
-import { configManager, MapDataStore } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
@@ -17,7 +17,7 @@ import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env, hasPublicNodeUrl } from "../../env";
-import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
+import { initialSync } from "../dojo/sync";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
@@ -32,6 +32,7 @@ let bootstrapPromise: Promise<BootstrapResult> | null = null;
 let bootstrappedWorldName: string | null = null;
 let bootstrappedChain: string | null = null;
 let cachedSetupResult: BootstrapResult | null = null;
+let gameRendererCleanup: (() => void) | null = null;
 
 /**
  * Get the cached setup result if bootstrap has already completed.
@@ -189,7 +190,8 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG());
 
-  initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+  // Store the cleanup function so we can call it when navigating away
+  gameRendererCleanup = initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
 
   inject();
 
@@ -197,33 +199,35 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 };
 
 /**
+ * Clean up the game renderer to prevent memory leaks.
+ * This should be called before navigating away from the game.
+ */
+export const cleanupGameRenderer = () => {
+  if (gameRendererCleanup) {
+    console.log("[BOOTSTRAP] Cleaning up GameRenderer");
+    gameRendererCleanup();
+    gameRendererCleanup = null;
+  }
+};
+
+/**
  * Reset the bootstrap state to allow re-bootstrapping without a page reload.
  * Used when switching between worlds on the same chain.
- * Performs full cleanup of:
- * - Torii subscriptions
- * - MapDataStore auto-refresh timer
- * - GameRenderer (WebGL, DOM, event listeners)
  */
 export const resetBootstrap = () => {
-  console.log("[BOOTSTRAP] Resetting bootstrap state with full cleanup");
+  console.log("[BOOTSTRAP] Resetting bootstrap state");
 
-  // 1. Cancel Torii subscriptions to free WebSocket connections
-  cancelEntityStreamSubscription();
+  // CRITICAL: Clean up the GameRenderer first to prevent memory leaks
+  cleanupGameRenderer();
 
-  // 2. Stop MapDataStore auto-refresh timer and clear cached data
-  MapDataStore.resetInstance();
-
-  // 3. Destroy GameRenderer if it exists (WebGL context, scenes, event listeners)
-  if (typeof window !== "undefined" && (window as any).__cleanupGameRenderer) {
-    console.log("[BOOTSTRAP] Cleaning up GameRenderer");
-    (window as any).__cleanupGameRenderer();
-  }
-
-  // 4. Clear cache references
   bootstrapPromise = null;
   bootstrappedWorldName = null;
   bootstrappedChain = null;
   cachedSetupResult = null;
+
+  // Reset structure selection so the next game loads fresh
+  const uiStore = useUIStore.getState();
+  uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
 };
 
 export const bootstrapGame = async (): Promise<BootstrapResult> => {
