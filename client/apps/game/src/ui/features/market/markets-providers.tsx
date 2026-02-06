@@ -14,12 +14,12 @@ import {
   type MarketFiltersParams,
 } from "@pm/sdk";
 import { useAccount } from "@starknet-react/core";
-import { MarketFilters } from "./markets/market-filters";
-import { MARKET_TABS, TabButton, type MarketTab } from "./markets/market-tabs";
-import { MarketsLeaderboardView } from "./markets/markets-leaderboard-view";
-import { MarketsList } from "./markets/markets-list";
-import { PlayerMarketsView } from "./markets/player-markets-view";
-import { buildPlayerSummary, useMarketEventsSnapshot } from "./markets/use-market-stats";
+import { MarketFilters } from "./landing-markets/market-filters";
+import { MARKET_TABS, TabButton, type MarketTab } from "./landing-markets/market-tabs";
+import { MarketsLeaderboardView } from "./landing-markets/markets-leaderboard-view";
+import { MarketsList } from "./landing-markets/markets-list";
+import { PlayerMarketsView } from "./landing-markets/player-markets-view";
+import { buildPlayerSummary, useMarketEventsSnapshot } from "./landing-markets/use-market-stats";
 
 // QueryClient instance for PM - created outside component to avoid recreation
 const pmQueryClient = new QueryClient({

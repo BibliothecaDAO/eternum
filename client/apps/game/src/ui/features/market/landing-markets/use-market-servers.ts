@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 
-import { env } from "../../../../../../env";
+import { env } from "../../../../../env";
 import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./market-utils";
 
 const WORLD_CONFIG_QUERY =

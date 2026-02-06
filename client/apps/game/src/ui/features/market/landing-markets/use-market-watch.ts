@@ -7,7 +7,7 @@ import { Chain, getGameManifest } from "@contracts";
 import { toast } from "sonner";
 
 import { decodePaddedFeltAscii } from "./market-utils";
-import { env } from "../../../../../../env";
+import { env } from "../../../../../env";
 
 const FACTORY_WORLD_QUERY = "SELECT name FROM [wf-WorldDeployed] LIMIT 300;";
 const toriiBaseUrlFromName = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;

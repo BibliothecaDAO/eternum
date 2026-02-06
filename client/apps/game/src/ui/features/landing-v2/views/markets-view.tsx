@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { MarketClass } from "@/pm/class";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { MarketsProviders } from "@/ui/features/landing/sections/markets";
-import { MarketsList } from "@/ui/features/landing/sections/markets/markets-list";
+import { MarketsProviders } from "@/ui/features/market/markets-providers";
+import { MarketsList } from "@/ui/features/market/landing-markets/markets-list";
 import { MarketStatusFilter, MarketTypeFilter, type MarketFiltersParams } from "@pm/sdk";
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
