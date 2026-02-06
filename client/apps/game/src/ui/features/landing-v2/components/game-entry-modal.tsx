@@ -1033,9 +1033,19 @@ export const GameEntryModal = ({
   // Does NOT prefetch structures from SQL — the GameLoadingOverlay will wait for
   // usePlayerStructureSync to populate RECS, then navigate to the player's realm.
   const hasEnteredGame = useRef(false);
+
+  // Reset guard when modal reopens (component stays mounted, just returns null when !isOpen)
+  useEffect(() => {
+    if (isOpen) {
+      hasEnteredGame.current = false;
+    }
+  }, [isOpen]);
   const handleEnterGame = useCallback(() => {
     if (hasEnteredGame.current) return;
     hasEnteredGame.current = true;
+
+    // Ensure the loading overlay is visible (it may have been dismissed from a previous game)
+    useUIStore.getState().setShowBlankOverlay(true);
 
     // Set initial state — structureEntityId=0 means "not yet known".
     // GameLoadingOverlay will update this once structures are synced into RECS.
