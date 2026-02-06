@@ -425,10 +425,17 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingMixers.clear();
 
       // subscribe to building updates (create and destroy)
+      console.log(
+        "[HexceptionScene] setup() - subscribing to building updates for col:",
+        this.centerColRow[0],
+        "row:",
+        this.centerColRow[1],
+      );
       this.worldUpdateListener.Buildings.onBuildingUpdate(
         { col: this.centerColRow[0], row: this.centerColRow[1] },
         (update: BuildingSystemUpdate) => {
           const { innerCol, innerRow, buildingType } = update;
+          console.log("[HexceptionScene] onBuildingUpdate - col:", innerCol, "row:", innerRow, "type:", buildingType);
           if (buildingType === BuildingType.None && innerCol && innerRow) {
             this.removeBuilding(innerCol, innerRow);
           }
@@ -437,6 +444,7 @@ export default class HexceptionScene extends HexagonScene {
       );
 
       this.removeCastleFromScene();
+      console.log("[HexceptionScene] setup() - calling initial updateHexceptionGrid");
       this.updateHexceptionGrid(this.hexceptionRadius);
     }
 
@@ -1231,6 +1239,12 @@ export default class HexceptionScene extends HexagonScene {
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
+    console.log(
+      "[HexceptionScene] computeMainHexMatrices - existingBuildings:",
+      existingBuildings.length,
+      "structureType:",
+      structureType,
+    );
 
     if (structureType && structureType !== StructureType.Realm && structureType !== StructureType.Village) {
       existingBuildings.push({

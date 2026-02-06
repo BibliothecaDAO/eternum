@@ -7,6 +7,7 @@ export class TransitionManager {
   constructor(private renderer: THREE.WebGLRenderer) {}
 
   fadeOut(onComplete: () => void) {
+    console.log("[TransitionManager] fadeOut - enabling loading screen");
     const { setIsLoadingScreenEnabled } = useUIStore.getState();
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
@@ -15,6 +16,10 @@ export class TransitionManager {
   }
 
   fadeIn() {
+    console.log(
+      "[TransitionManager] fadeIn - disabling loading screen, showBlankOverlay:",
+      useUIStore.getState().showBlankOverlay,
+    );
     const { setIsLoadingScreenEnabled, setTooltip } = useUIStore.getState();
     setIsLoadingScreenEnabled(false);
     setTooltip(null);

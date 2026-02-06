@@ -1023,6 +1023,12 @@ export const GameEntryModal = ({
 
   // Enter game handler - sets up state and navigates to the game
   const handleEnterGame = useCallback(async () => {
+    console.log(
+      "[GameEntryModal] handleEnterGame called - showBlankOverlay:",
+      useUIStore.getState().showBlankOverlay,
+      "isSpectateMode:",
+      isSpectateMode,
+    );
     // Keep showBlankOverlay=true so the GameLoadingOverlay shows while
     // player structure data syncs into RECS after <World> mounts.
     // The GameLoadingOverlay will dismiss it once structures are loaded.
@@ -1076,11 +1082,13 @@ export const GameEntryModal = ({
       url = `/play/hex?col=${col}&row=${row}`;
     }
 
+    console.log("[GameEntryModal] Navigating to:", url, "showBlankOverlay:", useUIStore.getState().showBlankOverlay);
     // Navigate directly to the final URL
     navigate(url);
 
     // Dispatch urlChanged event to notify Three.js GameRenderer about the route change
     window.dispatchEvent(new Event("urlChanged"));
+    console.log("[GameEntryModal] Navigation dispatched, showBlankOverlay:", useUIStore.getState().showBlankOverlay);
   }, [navigate, isSpectateMode, setupResult, account, worldName]);
 
   // Settlement handler - calls actual Dojo system calls

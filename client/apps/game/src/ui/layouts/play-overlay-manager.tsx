@@ -56,7 +56,17 @@ export const PlayOverlayManager = ({
         {modalContent}
       </BlankOverlayContainer>
 
-      {enableOnboarding && showBlankOverlay ? <GameLoadingOverlay /> : null}
+      {(() => {
+        console.log(
+          "[PlayOverlayManager] render - enableOnboarding:",
+          enableOnboarding,
+          "showBlankOverlay:",
+          showBlankOverlay,
+          "isLoadingScreenEnabled:",
+          isLoadingScreenEnabled,
+        );
+        return enableOnboarding && showBlankOverlay ? <GameLoadingOverlay /> : null;
+      })()}
 
       <LoadingOroborus loading={isLoadingScreenEnabled} />
     </>

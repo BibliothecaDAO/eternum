@@ -7,6 +7,8 @@ const SAFETY_TIMEOUT_MS = 15_000;
 // giving the hex scene time to render buildings from RECS data.
 const MIN_DISPLAY_MS = 3_000;
 
+const log = (...args: unknown[]) => console.log("[GameLoadingOverlay]", ...args);
+
 /**
  * Simple loading overlay that replaces BlitzOnboarding.
  * Shows while player structure data syncs into RECS after <World> mounts.
@@ -21,7 +23,19 @@ export const GameLoadingOverlay = () => {
   // Capture mount time in an effect to satisfy React purity rules
   useEffect(() => {
     mountTime.current = Date.now();
+    log("MOUNTED at", new Date().toISOString());
+    return () => log("UNMOUNTED");
   }, []);
+
+  // Log structure changes
+  useEffect(() => {
+    log(
+      "playerStructures changed:",
+      playerStructures.length,
+      "structures",
+      playerStructures.map((s) => s.entityId),
+    );
+  }, [playerStructures]);
 
   // Auto-dismiss when player structures are loaded into RECS (with min delay)
   useEffect(() => {
@@ -30,7 +44,11 @@ export const GameLoadingOverlay = () => {
       hasDismissed.current = true;
       const elapsed = Date.now() - mountTime.current;
       const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
-      setTimeout(() => setShowBlankOverlay(false), remaining);
+      log("Structures detected! elapsed:", elapsed, "ms, waiting additional:", remaining, "ms before dismiss");
+      setTimeout(() => {
+        log("DISMISSING overlay now");
+        setShowBlankOverlay(false);
+      }, remaining);
     }
   }, [playerStructures, setShowBlankOverlay]);
 
@@ -38,6 +56,7 @@ export const GameLoadingOverlay = () => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!hasDismissed.current) {
+        log("SAFETY TIMEOUT reached -", SAFETY_TIMEOUT_MS, "ms elapsed, dismissing without structures");
         hasDismissed.current = true;
         setShowBlankOverlay(false);
       }
