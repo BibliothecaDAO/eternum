@@ -1,15 +1,20 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useAutomationStore } from "@/hooks/store/use-automation-store";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
-import { ProductionModal } from "@/ui/features/settlement";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
+import { useAutomationStore } from "@/hooks/store/use-automation-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
+import { ProductionModal } from "@/ui/features/settlement";
+import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
+import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
+import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
+import { inferRealmPreset } from "@/utils/automation-presets";
 import {
   Position,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
   getBlockTimestamp,
   getGuardsByStructure,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useQuery } from "@bibliothecadao/react";
 import {
@@ -22,14 +27,10 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Shield from "lucide-react/dist/esm/icons/shield";
 import Sword from "lucide-react/dist/esm/icons/sword";
-import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
-import { inferRealmPreset } from "@/utils/automation-presets";
-import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const ProductionStatusPill = ({ statusLabel }: { statusLabel: string }) => (
   <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
@@ -173,15 +174,17 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   );
 
-  const activeRelicIds = useMemo(() => {
+  const relicEffects = useMemo(() => {
     if (!structure) return [];
     const { currentArmiesTick } = getBlockTimestamp();
     const structureRelicEffects = productionBoostBonus
       ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
       : [];
     const armyRelicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
-    return [...structureRelicEffects, ...armyRelicEffects].map((effect) => Number(effect.id));
+    return [...structureRelicEffects, ...armyRelicEffects];
   }, [productionBoostBonus, structure]);
+
+  const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
 
   const canShowBalanceOnly = (isHyperstructure || isFragmentMine) && isOwned;
 
@@ -273,6 +276,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           />
         </div>
       </div>
+
+      {relicEffects.length > 0 && structureEntityId && (
+        <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
+      )}
 
       {(isRealm || isVillage) && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
