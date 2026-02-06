@@ -333,6 +333,22 @@ export default class HexceptionScene extends HexagonScene {
         },
       ),
     );
+
+    // Re-render the hex grid when the loading overlay dismisses.
+    // Buildings may not be in RECS when the scene first sets up;
+    // once showBlankOverlay becomes false, structures are synced.
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.showBlankOverlay,
+        (showBlankOverlay) => {
+          if (!showBlankOverlay) {
+            console.log("[BLITZ-ENTRY] HexceptionScene showBlankOverlay=false, re-rendering grid");
+            this.removeCastleFromScene();
+            this.updateHexceptionGrid(this.hexceptionRadius);
+          }
+        },
+      ),
+    );
   }
 
   private clearBuildingMode() {
