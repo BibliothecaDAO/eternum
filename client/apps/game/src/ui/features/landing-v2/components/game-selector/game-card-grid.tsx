@@ -263,7 +263,7 @@ const GameCard = ({
             <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
               <Loader2 className="w-3 h-3 animate-spin" />
             </div>
-          ) : game.isRegistered === false && !registrationStage && canRegisterPeriod && playerAddress ? (
+          ) : game.isRegistered === false && canRegisterPeriod && playerAddress ? (
             <>
               {isRegistering ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
