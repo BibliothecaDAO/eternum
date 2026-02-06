@@ -1822,6 +1822,11 @@ export default class WorldmapScene extends HexagonScene {
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
 
+    // Clear map loading state so "Charting Territories" doesn't persist
+    // when switching away while fetches are still in-flight
+    this.toriiLoadingCounter = 0;
+    this.state.setLoading(LoadingStateKey.Map, false);
+
     this.disposeStoreSubscriptions();
     this.disposeWorldUpdateSubscriptions();
 
