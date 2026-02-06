@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-06",
+    title: "Cleaner Ended Game Cards",
+    description:
+      "Ended games you didn't participate in now show only the Spectate button instead of an empty placeholder alongside it.",
+    type: "improvement",
+  },
+  {
     date: "2026-02-05",
     title: "New Landing Experience",
     description:

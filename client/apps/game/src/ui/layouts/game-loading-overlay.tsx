@@ -7,7 +7,7 @@ const SAFETY_TIMEOUT_MS = 15_000;
 // giving the hex scene time to render buildings from RECS data.
 const MIN_DISPLAY_MS = 3_000;
 
-const log = (...args: unknown[]) => console.log("[GameLoadingOverlay]", ...args);
+const log = (...args: unknown[]) => console.log("[BLITZ-ENTRY]", ...args);
 
 /**
  * Simple loading overlay that replaces BlitzOnboarding.

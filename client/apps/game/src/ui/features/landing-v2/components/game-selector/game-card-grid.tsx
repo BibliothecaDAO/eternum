@@ -246,8 +246,8 @@ const GameCard = ({
 
         {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
         <div className="flex gap-1.5">
-          {/* Left slot: Play OR Register (share same space) */}
-          {canPlay ? (
+          {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
+          {isEnded && !showRegistered ? null : canPlay ? (
             <button
               onClick={onPlay}
               className={cn(

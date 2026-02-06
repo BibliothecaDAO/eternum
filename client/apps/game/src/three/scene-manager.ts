@@ -24,10 +24,10 @@ export class SceneManager {
   }
 
   switchScene(sceneName: SceneName) {
-    console.log("[SceneManager] switchScene to:", sceneName, "from:", this.currentScene);
+    console.log("[BLITZ-ENTRY] SceneManager switchScene to:", sceneName, "from:", this.currentScene);
     const scene = this.scenes.get(sceneName);
     if (!scene) {
-      console.log("[SceneManager] Scene not found:", sceneName);
+      console.log("[BLITZ-ENTRY] SceneManager scene not found:", sceneName);
       return;
     }
 
@@ -38,16 +38,16 @@ export class SceneManager {
       this._updateCurrentScene(sceneName);
 
       try {
-        console.log("[SceneManager] Running scene.setup() for", sceneName);
+        console.log("[BLITZ-ENTRY] SceneManager running scene.setup() for", sceneName);
         if (scene.setup) {
           await scene.setup();
         }
-        console.log("[SceneManager] scene.setup() complete for", sceneName);
+        console.log("[BLITZ-ENTRY] SceneManager scene.setup() complete for", sceneName);
       } catch (error) {
         console.error(`[SceneManager] Failed to set up scene ${sceneName}`, error);
       } finally {
         this.moveCameraForScene();
-        console.log("[SceneManager] Calling fadeIn for", sceneName);
+        console.log("[BLITZ-ENTRY] SceneManager calling fadeIn for", sceneName);
         this.transitionManager.fadeIn();
       }
     });

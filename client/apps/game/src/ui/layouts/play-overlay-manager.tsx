@@ -58,7 +58,7 @@ export const PlayOverlayManager = ({
 
       {(() => {
         console.log(
-          "[PlayOverlayManager] render - enableOnboarding:",
+          "[BLITZ-ENTRY] PlayOverlayManager render - enableOnboarding:",
           enableOnboarding,
           "showBlankOverlay:",
           showBlankOverlay,

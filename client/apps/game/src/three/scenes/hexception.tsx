@@ -426,7 +426,7 @@ export default class HexceptionScene extends HexagonScene {
 
       // subscribe to building updates (create and destroy)
       console.log(
-        "[HexceptionScene] setup() - subscribing to building updates for col:",
+        "[BLITZ-ENTRY] HexceptionScene setup - subscribing to buildings for col:",
         this.centerColRow[0],
         "row:",
         this.centerColRow[1],
@@ -435,7 +435,14 @@ export default class HexceptionScene extends HexagonScene {
         { col: this.centerColRow[0], row: this.centerColRow[1] },
         (update: BuildingSystemUpdate) => {
           const { innerCol, innerRow, buildingType } = update;
-          console.log("[HexceptionScene] onBuildingUpdate - col:", innerCol, "row:", innerRow, "type:", buildingType);
+          console.log(
+            "[BLITZ-ENTRY] HexceptionScene onBuildingUpdate - col:",
+            innerCol,
+            "row:",
+            innerRow,
+            "type:",
+            buildingType,
+          );
           if (buildingType === BuildingType.None && innerCol && innerRow) {
             this.removeBuilding(innerCol, innerRow);
           }
@@ -444,7 +451,7 @@ export default class HexceptionScene extends HexagonScene {
       );
 
       this.removeCastleFromScene();
-      console.log("[HexceptionScene] setup() - calling initial updateHexceptionGrid");
+      console.log("[BLITZ-ENTRY] HexceptionScene setup - calling initial updateHexceptionGrid");
       this.updateHexceptionGrid(this.hexceptionRadius);
     }
 
@@ -1240,7 +1247,7 @@ export default class HexceptionScene extends HexagonScene {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
     console.log(
-      "[HexceptionScene] computeMainHexMatrices - existingBuildings:",
+      "[BLITZ-ENTRY] HexceptionScene computeMainHexMatrices - existingBuildings:",
       existingBuildings.length,
       "structureType:",
       structureType,
