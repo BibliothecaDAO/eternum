@@ -56,17 +56,7 @@ export const PlayOverlayManager = ({
         {modalContent}
       </BlankOverlayContainer>
 
-      {(() => {
-        console.log(
-          "[BLITZ-ENTRY] PlayOverlayManager render - enableOnboarding:",
-          enableOnboarding,
-          "showBlankOverlay:",
-          showBlankOverlay,
-          "isLoadingScreenEnabled:",
-          isLoadingScreenEnabled,
-        );
-        return enableOnboarding && showBlankOverlay ? <GameLoadingOverlay /> : null;
-      })()}
+      {enableOnboarding && showBlankOverlay ? <GameLoadingOverlay /> : null}
 
       <LoadingOroborus loading={isLoadingScreenEnabled} />
     </>
