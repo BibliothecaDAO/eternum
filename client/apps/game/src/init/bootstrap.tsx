@@ -1,6 +1,7 @@
 import { captureSystemError } from "@/posthog";
 import { setup } from "@bibliothecadao/dojo";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, MapDataStore } from "@bibliothecadao/eternum";
+import { world } from "@bibliothecadao/types";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
@@ -17,7 +18,8 @@ import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env, hasPublicNodeUrl } from "../../env";
-import { initialSync } from "../dojo/sync";
+import { clearSubscriptionQueue } from "../dojo/debounced-queries";
+import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
@@ -217,17 +219,45 @@ export const cleanupGameRenderer = () => {
 export const resetBootstrap = () => {
   console.log("[BOOTSTRAP] Resetting bootstrap state");
 
+  // Cancel the global entity stream subscription first so the old Torii
+  // client stops writing stale data into RECS while we clean up.
+  cancelEntityStreamSubscription();
+
   // CRITICAL: Clean up the GameRenderer first to prevent memory leaks
+  // (this also shuts down the ToriiStreamManager spatial subscription)
   cleanupGameRenderer();
+
+  // Clear ALL entities from the RECS world so the next game starts with
+  // a clean slate. The RECS world is a module-level singleton that persists
+  // across bootstraps — without this, stale entities from the previous game
+  // (structures, explorers, tiles, etc.) remain and contaminate the new game.
+  const entities = [...world.getEntities()];
+  for (const entity of entities) {
+    world.deleteEntity(entity);
+  }
+  console.log(`[BOOTSTRAP] Cleared ${entities.length} entities from RECS world`);
+
+  // Clear the MapDataStore SQL cache and destroy the singleton so the next
+  // bootstrap creates a fresh instance with the new world's sqlApi reference.
+  MapDataStore.clearIfExists();
+
+  // Drain any pending queued Torii fetch requests that would write
+  // old-world data into the now-cleared RECS world.
+  clearSubscriptionQueue();
+
+  // Reset sync subscription flags so that lazy-loaded data (Market,
+  // Hyperstructure, Guild, Quest) is re-fetched for the new world.
+  useSyncStore.getState().resetSubscriptions();
 
   bootstrapPromise = null;
   bootstrappedWorldName = null;
   bootstrappedChain = null;
   cachedSetupResult = null;
 
-  // Reset structure selection so the next game loads fresh
+  // Reset structure selection and game-specific UI state
   const uiStore = useUIStore.getState();
   uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
+  uiStore.setSelectableArmies([]);
 };
 
 export const bootstrapGame = async (): Promise<BootstrapResult> => {

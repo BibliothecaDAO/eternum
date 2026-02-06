@@ -21,6 +21,18 @@ export const EVENT_QUERY_LIMIT = 40_000;
 
 let entityStreamSubscription: { cancel: () => void } | null = null;
 
+/**
+ * Cancel the global entity stream subscription.
+ * Used during game switching to stop the old Torii client from writing
+ * stale data into RECS while the new world is being bootstrapped.
+ */
+export const cancelEntityStreamSubscription = () => {
+  if (entityStreamSubscription) {
+    entityStreamSubscription.cancel();
+    entityStreamSubscription = null;
+  }
+};
+
 const GLOBAL_NON_SPATIAL_MODELS: string[] = [
   // Events
   "s1_eternum-OpenRelicChestEvent",
