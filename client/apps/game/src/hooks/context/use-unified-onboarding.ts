@@ -154,15 +154,6 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     setShowBlankOverlay(false);
   }, [spectatorNavigate, setShowBlankOverlay]);
 
-  // Auto-spectate when bootstrap is ready and spectating from URL
-  useEffect(() => {
-    if (urlSpectateMode && isSpectating && bootstrap.status === "ready" && showBlankOverlay) {
-      console.log("[useUnifiedOnboarding] Auto-spectating: bootstrap ready, hiding overlay");
-      spectatorNavigate();
-      setShowBlankOverlay(false);
-    }
-  }, [urlSpectateMode, isSpectating, bootstrap.status, showBlankOverlay, spectatorNavigate, setShowBlankOverlay]);
-
   const completeAvatar = useCallback(() => {
     setHasCompletedAvatar(true);
   }, []);
