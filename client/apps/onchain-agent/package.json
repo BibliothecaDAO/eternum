@@ -4,20 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --experimental-wasm-modules --import tsx src/index.ts",
+    "dev": "node --env-file=.env --experimental-wasm-modules --import tsx src/index.ts",
     "build": "tsc --noEmit",
     "test": "vitest --run",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@bibliothecadao/client": "workspace:*",
+    "@bibliothecadao/game-agent": "workspace:*",
     "@cartridge/controller": "^0.13.4",
     "@cartridge/controller-wasm": "0.9.1",
-    "@bibliothecadao/game-agent": "workspace:*",
     "@mariozechner/pi-agent-core": "^0.52.7",
     "@mariozechner/pi-ai": "^0.52.7",
     "@mariozechner/pi-tui": "^0.52.7",
-    "starknet": "catalog:"
+    "starknet": "catalog:",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

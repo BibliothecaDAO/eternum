@@ -44,7 +44,7 @@ export function loadConfig(): AgentConfig {
     worldAddress: env.WORLD_ADDRESS ?? "0x0",
     manifestPath:
       env.MANIFEST_PATH ?? fileURLToPath(new URL("../../../../contracts/game/manifest_local.json", import.meta.url)),
-    chainId: env.CHAIN_ID ?? "SN_SEPOLIA",
+    chainId: env.CHAIN_ID ?? "0x534e5f5345504f4c4941",
     sessionBasePath: env.SESSION_BASE_PATH ?? ".cartridge",
     tickIntervalMs: parsePositiveIntervalMs(env.TICK_INTERVAL_MS, 60000),
     loopEnabled: parseBoolean(env.LOOP_ENABLED, true),
