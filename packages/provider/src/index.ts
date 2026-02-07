@@ -5,6 +5,7 @@
  * @param url - Optional RPC URL for the provider
  */
 import * as SystemProps from "@bibliothecadao/types";
+import type { Manifest } from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import type { Span } from "@opentelemetry/api";
 import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
@@ -38,8 +39,8 @@ type TransactionFailureMeta = {
  * @returns The contract address
  * @throws Error if contract not found
  */
-export const getContractByName = (manifest: any, name: string) => {
-  const contract = manifest.contracts.find((contract: any) => contract.tag === name);
+export const getContractByName = (manifest: Manifest, name: string) => {
+  const contract = manifest.contracts.find((item) => item.tag === name);
   if (!contract) {
     throw new Error(`Contract ${name} not found in manifest`);
   }
@@ -285,7 +286,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param url - Optional RPC URL
    */
   constructor(
-    katana: any,
+    katana: Manifest,
     url?: string,
     private VRF_PROVIDER_ADDRESS?: string,
   ) {

@@ -1,5 +1,5 @@
 export { EternumClient } from "./client";
-export type { EternumClientConfig, Signer } from "./config";
+export type { ClientLogger, EternumClientConfig, Signer } from "./config";
 export { ViewCache } from "./cache";
 export { ViewClient } from "./views";
 export type { SqlApiLike } from "./views";

@@ -18,7 +18,10 @@ async function main() {
     rpcUrl: RPC_URL,
     toriiUrl: TORII_URL,
     worldAddress: WORLD_ADDRESS,
-    manifest: {},
+    manifest: {
+      world: { address: WORLD_ADDRESS },
+      contracts: [],
+    },
   });
 
   // 2. Connect a wallet

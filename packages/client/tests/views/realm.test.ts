@@ -697,6 +697,32 @@ describe("ViewClient.bank", () => {
 
     expect(sql.fetchAllStructuresMapData).toHaveBeenCalledTimes(1);
   });
+
+  it("maps recent bank swap events", async () => {
+    sql = createMockSql({
+      fetchAllStructuresMapData: vi.fn().mockResolvedValue([
+        { entity_id: 300, coord_x: 30, coord_y: 40, category: "Bank" },
+      ]),
+      fetchSwapEvents: vi.fn().mockResolvedValue([
+        {
+          event: {
+            takerId: 7,
+            resourceGiven: { resourceId: 1, amount: 200 },
+            resourceTaken: { resourceId: 2, amount: 100 },
+            takerAddress: "0xTrader",
+            eventTime: new Date("2025-01-01T00:00:00Z"),
+          },
+        },
+      ]),
+    });
+    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+
+    const view = await client.bank(300);
+
+    expect(view.recentSwaps).toHaveLength(1);
+    expect(view.recentSwaps[0].trader).toBe("0xTrader");
+    expect(view.recentSwaps[0].resourceId).toBe(1);
+  });
 });
 
 describe("ViewClient.events", () => {
@@ -771,5 +797,153 @@ describe("ViewClient.events", () => {
     const view = await client.events({ limit: 10, offset: 0 });
 
     expect(view.hasMore).toBe(false);
+  });
+});
+
+describe("ViewClient error boundaries", () => {
+  it("returns a fallback realm and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchPlayerStructures: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.realm(42);
+
+    expect(view.entityId).toBe(42);
+    expect(view.name).toBe("Realm #42");
+    expect(view.owner).toBe("0xABC");
+    expect(logger.warn).toHaveBeenCalled();
+
+    await client.realm(42);
+    expect(sql.fetchPlayerStructures).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns a fallback market and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchSwapEvents: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.market();
+
+    expect(view.recentSwaps).toEqual([]);
+    expect(view.pools).toEqual([]);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it("returns a fallback explorer and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchAllArmiesMapData: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.explorer(99);
+
+    expect(view.entityId).toBe(99);
+    expect(view.owner).toBe("0xABC");
+    expect(view.position).toEqual({ x: 0, y: 0 });
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it("returns a fallback map area and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchAllTiles: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.mapArea({ x: 1, y: 2, radius: 3 });
+
+    expect(view.center).toEqual({ x: 1, y: 2 });
+    expect(view.tiles).toEqual([]);
+    expect(view.structures).toEqual([]);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it("returns a fallback player and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchStructuresByOwner: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.player("0xPlayer");
+
+    expect(view.address).toBe("0xPlayer");
+    expect(view.structures).toEqual([]);
+    expect(view.points).toBe(0);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it("returns a fallback hyperstructure and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchHyperstructures: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.hyperstructure(200);
+
+    expect(view.entityId).toBe(200);
+    expect(view.position).toEqual({ x: 0, y: 0 });
+    expect(view.isComplete).toBe(false);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it("returns a fallback leaderboard and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchPlayerLeaderboard: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.leaderboard({ limit: 10, offset: 0 });
+
+    expect(view.entries).toEqual([]);
+    expect(view.totalPlayers).toBe(0);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it("returns a fallback bank and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchAllStructuresMapData: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.bank(300);
+
+    expect(view.entityId).toBe(300);
+    expect(view.position).toEqual({ x: 0, y: 0 });
+    expect(view.recentSwaps).toEqual([]);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it("returns fallback events and logs when SQL throws", async () => {
+    const sql = createMockSql({
+      fetchStoryEvents: vi.fn().mockRejectedValue(new Error("boom")),
+      fetchStoryEventsCount: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    const cache = new ViewCache(5000);
+    const logger = { warn: vi.fn() };
+    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+
+    const view = await client.events({ limit: 5, offset: 0 });
+
+    expect(view.events).toEqual([]);
+    expect(view.totalCount).toBe(0);
+    expect(view.hasMore).toBe(false);
+    expect(logger.warn).toHaveBeenCalled();
   });
 });

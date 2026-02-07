@@ -26,6 +26,18 @@ import type {
   PlayerArmySummary,
 } from "./common.js";
 
+/**
+ * Complete realm snapshot used by UIs and autonomous agents.
+ *
+ * Includes strategic state (resources/buildings), military posture
+ * (guards/explorers), and local world context.
+ *
+ * @example
+ * ```ts
+ * const realm = await client.view.realm(42);
+ * console.log(realm.name, realm.guard.totalTroops);
+ * ```
+ */
 export interface RealmView {
   entityId: ID;
   realmId: ID;
@@ -45,6 +57,9 @@ export interface RealmView {
   nearbyEntities: NearbyEntity[];
 }
 
+/**
+ * Read-model for a single explorer/army, including movement/combat-relevant state.
+ */
 export interface ExplorerView {
   entityId: ID;
   explorerId: ID;
@@ -60,6 +75,9 @@ export interface ExplorerView {
   recentEvents: GameEvent[];
 }
 
+/**
+ * Snapshot of map entities in a square area around a given center coordinate.
+ */
 export interface MapAreaView {
   center: Position;
   radius: number;
@@ -69,6 +87,9 @@ export interface MapAreaView {
   battles: BattleReference[];
 }
 
+/**
+ * Market state with liquidity pools and most recent swap activity.
+ */
 export interface MarketView {
   pools: AmmPoolState[];
   recentSwaps: SwapEvent[];
@@ -76,6 +97,9 @@ export interface MarketView {
   playerLpPositions: LpPosition[];
 }
 
+/**
+ * Aggregated player profile used for wallet/account dashboards.
+ */
 export interface PlayerView {
   address: ContractAddress;
   name: string;
@@ -86,6 +110,9 @@ export interface PlayerView {
   rank: number;
 }
 
+/**
+ * Hyperstructure progress and associated defensive state.
+ */
 export interface HyperstructureView {
   entityId: ID;
   position: Position;
@@ -97,12 +124,18 @@ export interface HyperstructureView {
   isComplete: boolean;
 }
 
+/**
+ * Ranked player list for leaderboard views.
+ */
 export interface LeaderboardView {
   entries: LeaderboardEntry[];
   totalPlayers: number;
   lastUpdatedAt: number;
 }
 
+/**
+ * Bank-specific market state for a given bank entity.
+ */
 export interface BankView {
   entityId: ID;
   position: Position;
@@ -111,6 +144,9 @@ export interface BankView {
   playerLpPositions: LpPosition[];
 }
 
+/**
+ * Paginated game event feed with total count metadata.
+ */
 export interface EventsView {
   events: GameEvent[];
   totalCount: number;

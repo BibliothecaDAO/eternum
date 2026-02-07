@@ -219,4 +219,19 @@ describe("EternumClient", () => {
       expect(client.isConnected).toBe(false);
     });
   });
+
+  it("uses the configured logger for view query failures", async () => {
+    const logger = { warn: vi.fn() };
+    const client = await EternumClient.create({
+      ...mockConfig,
+      logger,
+    });
+
+    (client.sql.fetchPlayerStructures as any).mockRejectedValueOnce(new Error("boom"));
+
+    const fallbackRealm = await client.view.realm(42);
+
+    expect(fallbackRealm.entityId).toBe(42);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
 });

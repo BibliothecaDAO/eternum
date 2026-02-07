@@ -131,4 +131,39 @@ describe("ViewCache", () => {
     vi.advanceTimersByTime(2);
     expect(cache.get("key1")).toBeNull();
   });
+
+  it("should evict least recently used entry when max size is reached", () => {
+    const cache = new ViewCache(5000, 2);
+    cache.set("a", 1);
+    cache.set("b", 2);
+    cache.set("c", 3);
+
+    expect(cache.get("a")).toBeNull();
+    expect(cache.get("b")).toBe(2);
+    expect(cache.get("c")).toBe(3);
+  });
+
+  it("should refresh recency when a key is accessed", () => {
+    const cache = new ViewCache(5000, 2);
+    cache.set("a", 1);
+    cache.set("b", 2);
+
+    expect(cache.get("a")).toBe(1);
+
+    cache.set("c", 3);
+
+    expect(cache.get("a")).toBe(1);
+    expect(cache.get("b")).toBeNull();
+    expect(cache.get("c")).toBe(3);
+  });
+
+  it("should coerce invalid max size to 1", () => {
+    const cache = new ViewCache(5000, 0);
+    cache.set("a", 1);
+    cache.set("b", 2);
+
+    expect(cache.get("a")).toBeNull();
+    expect(cache.get("b")).toBe(2);
+    expect(cache.size).toBe(1);
+  });
 });

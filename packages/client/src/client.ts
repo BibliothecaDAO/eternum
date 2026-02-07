@@ -36,16 +36,14 @@ export class EternumClient {
 
   private account: Signer | null = null;
   private accountAddress: ContractAddress | null = null;
-  // Use `any` for runtime-only provider/sql to avoid requiring
-  // dependent packages to be pre-built for DTS generation.
-  private _provider: any;
+  private _provider: MinimalProvider;
   private _sql: SqlApiLike;
   private txClient: TransactionClient;
 
-  private constructor(config: EternumClientConfig, provider: any, sql: SqlApiLike) {
+  private constructor(config: EternumClientConfig, provider: MinimalProvider, sql: SqlApiLike) {
     this._provider = provider;
     this._sql = sql;
-    this.cache = new ViewCache(config.cacheTtlMs);
+    this.cache = new ViewCache(config.cacheTtlMs, config.cacheMaxSize);
     this.txClient = new TransactionClient(this._provider);
 
     // Wire transaction shortcuts
@@ -65,6 +63,7 @@ export class EternumClient {
       this.cache,
       () => this.accountAddress,
       () => Math.floor(Date.now() / 1000),
+      config.logger,
     );
   }
 
@@ -106,7 +105,7 @@ export class EternumClient {
     return this.account !== null;
   }
 
-  get provider(): any {
+  get provider(): MinimalProvider {
     return this._provider;
   }
 
@@ -118,8 +117,15 @@ export class EternumClient {
    * Subscribe to provider events.
    * Returns an unsubscribe function.
    */
-  on(event: string, callback: (...args: any[]) => void): () => void {
+  on(event: string, callback: (...args: unknown[]) => void): () => void {
     this._provider.on(event, callback);
     return () => this._provider.off(event, callback);
   }
+}
+
+type ProviderEventCallback = (...args: unknown[]) => void;
+export interface MinimalProvider {
+  on(event: string, callback: ProviderEventCallback): void;
+  off(event: string, callback: ProviderEventCallback): void;
+  [method: string]: unknown;
 }
