@@ -19,7 +19,11 @@ vi.mock("@sinclair/typebox", () => ({
   },
 }));
 
-const { createGameTools } = await import("../../../../../packages/pi-mono/packages/onchain-agent/src/tools");
+vi.mock("@mariozechner/pi-agent-core", () => ({ Agent: class {} }));
+vi.mock("@mariozechner/pi-ai", () => ({}));
+vi.mock("@mariozechner/pi-coding-agent", () => ({ createReadTool: () => ({}), createWriteTool: () => ({}) }));
+
+const { createGameTools } = await import("@bibliothecadao/game-agent");
 
 function getText(toolResult: any): string {
   const first = toolResult?.content?.[0];
