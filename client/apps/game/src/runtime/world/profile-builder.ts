@@ -10,7 +10,7 @@ import { env, hasPublicNodeUrl } from "../../../env";
 
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
-export const toriiBaseUrlFromName = (name: string) => `${cartridgeApiBase}/x/${name}/torii`;
+const toriiBaseUrlFromName = (name: string) => `${cartridgeApiBase}/x/${name}/torii`;
 
 /**
  * Build a WorldProfile by querying the factory and the target world's Torii.

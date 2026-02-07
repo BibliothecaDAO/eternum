@@ -96,6 +96,7 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
+import { insertPrefetchQueueItem, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -103,13 +104,6 @@ interface CachedMatrixEntry {
   landColors?: Float32Array | null;
   box?: Box3;
   sphere?: Sphere;
-}
-
-interface PrefetchQueueItem {
-  chunkKey: string;
-  fetchKey: string;
-  priority: number;
-  fetchTiles: boolean;
 }
 
 type ToriiBoundsCounterKey =
@@ -170,6 +164,7 @@ export default class WorldmapScene extends HexagonScene {
   private pendingChunkRefreshForce = false;
   private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
   private toriiLoadingCounter = 0;
+  private isSwitchedOff = false;
   private readonly chunkRowsAhead = 2;
   private readonly chunkRowsBehind = 2;
   private readonly chunkColsEachSide = 2;
@@ -1730,6 +1725,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   async setup() {
+    this.isSwitchedOff = false;
     this.controls.maxDistance = 40;
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
@@ -1819,8 +1815,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   onSwitchOff() {
+    this.isSwitchedOff = true;
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
+
+    // Clear map loading state so "Charting Territories" doesn't persist
+    // when switching away while fetches are still in-flight
+    this.toriiLoadingCounter = 0;
+    this.state.setLoading(LoadingStateKey.Map, false);
 
     this.disposeStoreSubscriptions();
     this.disposeWorldUpdateSubscriptions();
@@ -1853,6 +1855,8 @@ export default class WorldmapScene extends HexagonScene {
       this.wheelHandler = null;
     }
     this.resetWheelState();
+
+    this.unregisterTrackedVisibilityChunks();
 
     // Reset chunk state to ensure clean re-initialization when returning to world view
     this.currentChunk = "null";
@@ -2271,7 +2275,6 @@ export default class WorldmapScene extends HexagonScene {
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
-      hexMesh.needsUpdate();
 
       // Cache the updated matrices for the chunk
       this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol);
@@ -2534,14 +2537,12 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     this.queuedPrefetchAreaKeys.add(fetchKey);
-    this.prefetchQueue.push({
+    insertPrefetchQueueItem(this.prefetchQueue, {
       chunkKey,
       fetchKey,
       priority,
       fetchTiles: true,
     });
-
-    this.prefetchQueue = this.prefetchQueue.toSorted((a, b) => a.priority - b.priority);
     this.processPrefetchQueue();
   }
 
@@ -2573,7 +2574,19 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private unregisterTrackedVisibilityChunks(): void {
+    const trackedChunkKeys = new Set<string>(this.pinnedChunkKeys);
+    if (this.currentChunk !== "null") {
+      trackedChunkKeys.add(this.currentChunk);
+    }
+
+    trackedChunkKeys.forEach((chunkKey) => {
+      this.visibilityManager?.unregisterChunk(chunkKey);
+    });
+  }
+
   clearCache() {
+    this.unregisterTrackedVisibilityChunks();
     for (const chunkKey of this.cachedMatrices.keys()) {
       this.disposeCachedMatrices(chunkKey);
     }
@@ -2582,9 +2595,6 @@ export default class WorldmapScene extends HexagonScene {
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
     this.pinnedChunkKeys.clear();
-    if (this.currentChunk !== "null") {
-      this.visibilityManager?.unregisterChunk(this.currentChunk);
-    }
   }
 
   private scheduleHydratedChunkRefresh(chunkKey: string) {
@@ -2629,9 +2639,21 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
-    // Instead of clearing and recomputing all hexes, just update which ones are visible
+    const normalizedWidth = Math.max(0, Math.floor(width));
+    const normalizedHeight = Math.max(0, Math.floor(height));
     const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-    this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, width, height);
+    const interactiveStartRow = chunkCenterRow - Math.floor(normalizedHeight / 2);
+    const interactiveStartCol = chunkCenterCol - Math.floor(normalizedWidth / 2);
+
+    // Keep interaction state bounded to the active rendered window.
+    this.interactiveHexManager.clearHexes();
+    for (let row = interactiveStartRow; row < interactiveStartRow + normalizedHeight; row++) {
+      for (let col = interactiveStartCol; col < interactiveStartCol + normalizedWidth; col++) {
+        this.interactiveHexManager.addHex({ col, row });
+      }
+    }
+
+    this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, normalizedWidth, normalizedHeight);
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
@@ -2712,8 +2734,6 @@ export default class WorldmapScene extends HexagonScene {
       const horizDist = hexWidth;
       const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
 
-      this.computeTileEntities(this.currentChunk);
-
       const cleanupTask = () => {
         if (this.hexGridFrameHandle !== null) {
           cancelAnimationFrame(this.hexGridFrameHandle);
@@ -2779,11 +2799,10 @@ export default class WorldmapScene extends HexagonScene {
           });
           hexMesh.setCount(matrices.length);
           hexMesh.updateMeshVisibility(); // Show meshes that have instances
-          hexMesh.needsUpdate();
         }
 
         this.cacheMatricesForChunk(startRow, startCol);
-        this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, cols, rows);
+        this.computeInteractiveHexes(startRow, startCol, cols, rows);
 
         releaseAllMatrices();
 
@@ -2814,8 +2833,6 @@ export default class WorldmapScene extends HexagonScene {
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const shouldHideTile = isStructure;
         const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
-
-        this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
 
         if (shouldHideTile) {
           return;
@@ -3038,6 +3055,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private beginToriiFetch() {
+    if (this.isSwitchedOff) return;
     if (this.toriiLoadingCounter === 0) {
       this.state.setLoading(LoadingStateKey.Map, true);
     }
@@ -3370,9 +3388,6 @@ export default class WorldmapScene extends HexagonScene {
       }
     }
 
-    // Ensure visibility state is fresh before computing chunk visibility
-    this.visibilityManager?.beginFrame();
-
     const focusPoint = this.getCameraGroundIntersection().clone();
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(focusPoint.x, focusPoint.z);
@@ -3460,15 +3475,6 @@ export default class WorldmapScene extends HexagonScene {
     // Calculate the starting position for the new chunk - this is the main visual update
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
-    // Update which interactive hexes are visible in the new chunk
-    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-    this.interactiveHexManager.updateVisibleHexes(
-      chunkCenterRow,
-      chunkCenterCol,
-      this.renderChunkSize.width,
-      this.renderChunkSize.height,
-    );
-
     // Wait for core tile data before updating managers to avoid empty renders
     await tileFetchPromise;
     this.hydratedChunkRefreshes.delete(chunkKey);
@@ -3518,14 +3524,6 @@ export default class WorldmapScene extends HexagonScene {
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-
-    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-    this.interactiveHexManager.updateVisibleHexes(
-      chunkCenterRow,
-      chunkCenterCol,
-      this.renderChunkSize.width,
-      this.renderChunkSize.height,
-    );
 
     // Wait for tile data before updating managers
     await tileFetchPromise;

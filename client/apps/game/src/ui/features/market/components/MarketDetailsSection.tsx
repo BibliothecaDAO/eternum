@@ -12,15 +12,15 @@ import { ScrollArea } from "@pm/ui";
 import Button from "@/ui/design-system/atoms/button";
 import Panel from "@/ui/design-system/atoms/panel";
 
-import { MarketActivity } from "@/ui/features/landing/sections/markets/details/market-activity";
-import { MarketHistory } from "@/ui/features/landing/sections/markets/details/market-history";
-import { MarketPositions } from "@/ui/features/landing/sections/markets/details/market-positions";
-import { MarketResolution } from "@/ui/features/landing/sections/markets/details/market-resolution";
-import { MarketResolved } from "@/ui/features/landing/sections/markets/details/market-resolved";
-import { MarketTrade } from "@/ui/features/landing/sections/markets/details/market-trade";
-import { MarketOdds } from "@/ui/features/landing/sections/markets/market-odds";
-import { MarketStatusBadge } from "@/ui/features/landing/sections/markets/market-status-badge";
-import { MarketTvl } from "@/ui/features/landing/sections/markets/market-tvl";
+import { MarketActivity } from "@/ui/features/market/landing-markets/details/market-activity";
+import { MarketHistory } from "@/ui/features/market/landing-markets/details/market-history";
+import { MarketPositions } from "@/ui/features/market/landing-markets/details/market-positions";
+import { MarketResolution } from "@/ui/features/market/landing-markets/details/market-resolution";
+import { MarketResolved } from "@/ui/features/market/landing-markets/details/market-resolved";
+import { MarketTrade } from "@/ui/features/market/landing-markets/details/market-trade";
+import { MarketOdds } from "@/ui/features/market/landing-markets/market-odds";
+import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
+import { MarketTvl } from "@/ui/features/market/landing-markets/market-tvl";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 

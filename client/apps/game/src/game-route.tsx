@@ -73,7 +73,7 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, setupResult, account } = state;
+  const { phase, setupResult, account, bootstrap } = state;
 
   // Phases that don't need Dojo: world-select, account, loading
   if (phase === "world-select" || phase === "account" || phase === "loading") {

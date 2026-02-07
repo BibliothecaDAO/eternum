@@ -311,7 +311,6 @@ export class ChestManager {
     });
 
     this.chestModel.setCount(this.chestInstanceOrder.length);
-    this.chestModel.needsUpdate();
 
     this.entityIdLabels.forEach((label, entityId) => {
       if (!visibleChestIds.has(entityId)) {

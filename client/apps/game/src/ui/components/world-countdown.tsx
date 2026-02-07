@@ -121,16 +121,16 @@ WorldCountdownDetailed.displayName = "WorldCountdownDetailed";
 /**
  * Hook to get current time and whether a game is ongoing.
  * Useful for filtering/sorting games by status.
- * Updates every 10 seconds to avoid excessive re-renders for filtering.
+ * Updates every second for instant transitions when timers reach 0.
  */
 export const useGameTimeStatus = () => {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
-    // Update less frequently since this is just for filtering, not display
+    // Update every second for instant game status transitions
     const id = window.setInterval(() => {
       setNowSec(Math.floor(Date.now() / 1000));
-    }, 10000);
+    }, 1000);
 
     return () => window.clearInterval(id);
   }, []);

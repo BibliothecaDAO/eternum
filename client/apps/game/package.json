@@ -82,6 +82,7 @@
     "eslint-config-love": "^114.0.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",
+    "jsdom": "^28.0.0",
     "rollup-plugin-visualizer": "^6.0.3",
     "typescript-eslint": "^8.53.1",
     "unimported": "^1.31.1",
