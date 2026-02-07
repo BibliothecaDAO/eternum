@@ -102,6 +102,9 @@ declare module "@mariozechner/pi-onchain-agent" {
 
   export interface CreateGameAgentOptions<TState extends WorldState = WorldState> extends GameAgentConfig<TState> {
     streamFn?: any;
+    includeDataTools?: boolean;
+    extraTools?: any[];
+    runtimeConfigManager?: RuntimeConfigManager;
   }
 
   export interface GameAgentResult {
@@ -109,15 +112,73 @@ declare module "@mariozechner/pi-onchain-agent" {
     tools: any[];
     ticker: TickLoop;
     recorder: any;
+    enqueuePrompt(prompt: string): Promise<void>;
+    reloadPrompt(): void;
+    setDataDir(dataDir: string): void;
+    getDataDir(): string;
     dispose(): Promise<void>;
   }
 
   export interface TickLoop {
     start(): void;
     stop(): void;
+    setIntervalMs(intervalMs: number): void;
+    readonly intervalMs: number;
     readonly isRunning: boolean;
     readonly tickCount: number;
   }
+
+  export interface RuntimeConfigChange {
+    path: string;
+    value: unknown;
+  }
+
+  export interface RuntimeConfigUpdateResult {
+    path: string;
+    applied: boolean;
+    message: string;
+  }
+
+  export interface RuntimeConfigApplyResult {
+    ok: boolean;
+    results: RuntimeConfigUpdateResult[];
+    currentConfig: Record<string, unknown>;
+  }
+
+  export interface RuntimeConfigManager {
+    getConfig(): Record<string, unknown>;
+    applyChanges(changes: RuntimeConfigChange[], reason?: string): Promise<RuntimeConfigApplyResult>;
+  }
+
+  export type HeartbeatJobMode = "observe" | "act";
+
+  export interface HeartbeatJob {
+    id: string;
+    enabled: boolean;
+    schedule: string;
+    prompt: string;
+    mode: HeartbeatJobMode;
+    timeoutSec?: number;
+  }
+
+  export interface HeartbeatLoop {
+    start(): void;
+    stop(): void;
+    setPollIntervalMs(intervalMs: number): void;
+    readonly pollIntervalMs: number;
+    readonly isRunning: boolean;
+    readonly cycleCount: number;
+  }
+
+  export function parseHeartbeatConfig(markdown: string): { version: number; jobs: HeartbeatJob[] };
+  export function cronMatchesDate(schedule: string, date: Date): boolean;
+  export function createHeartbeatLoop(options: {
+    getHeartbeatPath: () => string;
+    onRun: (job: HeartbeatJob, context: { now: Date; scheduledFor: Date; minuteKey: string }) => Promise<void>;
+    pollIntervalMs?: number;
+    onError?: (error: Error) => void;
+    now?: () => Date;
+  }): HeartbeatLoop;
 
   export function createGameAgent<TState extends WorldState = WorldState>(
     options: CreateGameAgentOptions<TState>,

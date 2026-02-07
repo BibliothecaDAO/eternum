@@ -8,6 +8,7 @@ export interface AgentConfig {
   privateKey: string;
   accountAddress: string;
   tickIntervalMs: number;
+  loopEnabled: boolean;
   modelProvider: string;
   modelId: string;
   dataDir: string;
@@ -21,6 +22,20 @@ function parsePositiveIntervalMs(value: string | undefined, fallback: number): n
   return Math.floor(parsed);
 }
 
+function parseBoolean(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on") {
+    return true;
+  }
+  if (normalized === "0" || normalized === "false" || normalized === "no" || normalized === "off") {
+    return false;
+  }
+  return fallback;
+}
+
 export function loadConfig(): AgentConfig {
   const env = process.env;
   return {
@@ -32,6 +47,7 @@ export function loadConfig(): AgentConfig {
     privateKey: env.PRIVATE_KEY ?? "0x0",
     accountAddress: env.ACCOUNT_ADDRESS ?? "0x0",
     tickIntervalMs: parsePositiveIntervalMs(env.TICK_INTERVAL_MS, 60000),
+    loopEnabled: parseBoolean(env.LOOP_ENABLED, true),
     modelProvider: env.MODEL_PROVIDER ?? "anthropic",
     modelId: env.MODEL_ID ?? "claude-sonnet-4-5-20250929",
     dataDir: new URL("../data", import.meta.url).pathname,

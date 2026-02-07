@@ -9,6 +9,7 @@ const ENV_KEYS = [
   "PRIVATE_KEY",
   "ACCOUNT_ADDRESS",
   "TICK_INTERVAL_MS",
+  "LOOP_ENABLED",
   "MODEL_PROVIDER",
   "MODEL_ID",
 ] as const;
@@ -34,6 +35,7 @@ describe("loadConfig", () => {
     process.env.PRIVATE_KEY = "0xabc";
     process.env.ACCOUNT_ADDRESS = "0xdef";
     process.env.TICK_INTERVAL_MS = "15000";
+    process.env.LOOP_ENABLED = "false";
     process.env.MODEL_PROVIDER = "openai";
     process.env.MODEL_ID = "gpt-test";
 
@@ -46,6 +48,7 @@ describe("loadConfig", () => {
     expect(cfg.privateKey).toBe("0xabc");
     expect(cfg.accountAddress).toBe("0xdef");
     expect(cfg.tickIntervalMs).toBe(15000);
+    expect(cfg.loopEnabled).toBe(false);
     expect(cfg.modelProvider).toBe("openai");
     expect(cfg.modelId).toBe("gpt-test");
     expect(cfg.dataDir).toContain("/onchain-agent/data");
@@ -68,5 +71,16 @@ describe("loadConfig", () => {
     process.env.TICK_INTERVAL_MS = "-10";
     const negativeCfg = loadConfig();
     expect(negativeCfg.tickIntervalMs).toBe(60000);
+  });
+
+  it("parses LOOP_ENABLED with a safe default", () => {
+    delete process.env.LOOP_ENABLED;
+    expect(loadConfig().loopEnabled).toBe(true);
+
+    process.env.LOOP_ENABLED = "off";
+    expect(loadConfig().loopEnabled).toBe(false);
+
+    process.env.LOOP_ENABLED = "nonsense";
+    expect(loadConfig().loopEnabled).toBe(true);
   });
 });

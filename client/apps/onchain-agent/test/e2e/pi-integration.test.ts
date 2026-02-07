@@ -14,6 +14,7 @@ vi.mock("@sinclair/typebox", () => ({
     Optional: (value: unknown) => value,
     String: () => ({}),
     Record: () => ({}),
+    Array: (value: unknown) => value,
     Unknown: () => ({}),
   },
 }));
