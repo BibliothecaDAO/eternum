@@ -61,6 +61,24 @@ function bool(v: unknown): boolean {
   return Boolean(v);
 }
 
+function bigNumberish(v: unknown): string | bigint {
+  if (typeof v === "bigint") return v;
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) {
+      throw new Error(`Invalid numeric value '${v}'`);
+    }
+    return BigInt(Math.trunc(v));
+  }
+  if (typeof v === "string") {
+    const trimmed = v.trim();
+    if (!trimmed) {
+      throw new Error("Address cannot be empty");
+    }
+    return trimmed;
+  }
+  throw new Error(`Unsupported BigNumberish value type '${typeof v}'`);
+}
+
 function numArray(v: unknown): number[] {
   if (Array.isArray(v)) return v.map(num);
   return [];
@@ -457,7 +475,7 @@ register("leave_guild", (client, signer, _p) =>
 register("update_whitelist", (client, signer, p) =>
   wrapTx(() =>
     client.guild.updateWhitelist(signer, {
-      address: num(p.address),
+      address: bigNumberish(p.address),
       whitelist: bool(p.whitelist),
     }),
   ),

@@ -6,8 +6,8 @@ const ENV_KEYS = [
   "TORII_URL",
   "WORLD_ADDRESS",
   "MANIFEST_PATH",
-  "PRIVATE_KEY",
-  "ACCOUNT_ADDRESS",
+  "CHAIN_ID",
+  "SESSION_BASE_PATH",
   "TICK_INTERVAL_MS",
   "LOOP_ENABLED",
   "MODEL_PROVIDER",
@@ -32,8 +32,8 @@ describe("loadConfig", () => {
     process.env.TORII_URL = "http://torii.example";
     process.env.WORLD_ADDRESS = "0x123";
     process.env.MANIFEST_PATH = "/tmp/manifest.json";
-    process.env.PRIVATE_KEY = "0xabc";
-    process.env.ACCOUNT_ADDRESS = "0xdef";
+    process.env.CHAIN_ID = "SN_MAIN";
+    process.env.SESSION_BASE_PATH = ".session-cache";
     process.env.TICK_INTERVAL_MS = "15000";
     process.env.LOOP_ENABLED = "false";
     process.env.MODEL_PROVIDER = "openai";
@@ -45,8 +45,8 @@ describe("loadConfig", () => {
     expect(cfg.toriiUrl).toBe("http://torii.example");
     expect(cfg.worldAddress).toBe("0x123");
     expect(cfg.manifestPath).toBe("/tmp/manifest.json");
-    expect(cfg.privateKey).toBe("0xabc");
-    expect(cfg.accountAddress).toBe("0xdef");
+    expect(cfg.chainId).toBe("SN_MAIN");
+    expect(cfg.sessionBasePath).toBe(".session-cache");
     expect(cfg.tickIntervalMs).toBe(15000);
     expect(cfg.loopEnabled).toBe(false);
     expect(cfg.modelProvider).toBe("openai");

@@ -1,4 +1,5 @@
 import type { Signer } from "../config";
+import type { BigNumberish } from "starknet";
 
 export class GuildTransactions {
   constructor(private provider: any) {}
@@ -38,7 +39,7 @@ export class GuildTransactions {
   async updateWhitelist(
     signer: Signer,
     props: {
-      address: number;
+      address: BigNumberish;
       whitelist: boolean;
     },
   ) {
@@ -52,7 +53,7 @@ export class GuildTransactions {
   async removeMember(
     signer: Signer,
     props: {
-      playerAddressToRemove: number;
+      playerAddressToRemove: BigNumberish;
     },
   ) {
     return this.provider.remove_guild_member({
@@ -64,7 +65,7 @@ export class GuildTransactions {
   async disband(
     signer: Signer,
     props: {
-      calls: { address: number }[];
+      calls: { address: BigNumberish }[];
     },
   ) {
     return this.provider.disband_guild({

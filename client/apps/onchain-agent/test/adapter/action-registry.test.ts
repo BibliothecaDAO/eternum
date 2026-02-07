@@ -232,7 +232,7 @@ describe("action-registry", () => {
       expect(result.success).toBe(true);
       expect(client.guild.updateWhitelist).toHaveBeenCalledOnce();
       const [, props] = client.guild.updateWhitelist.mock.calls[0];
-      expect(props.address).toBe(123);
+      expect(props.address).toBe("123");
       expect(props.whitelist).toBe(true);
     });
 

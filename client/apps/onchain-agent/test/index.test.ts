@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -35,6 +35,12 @@ const mocks = vi.hoisted(() => {
     setThinkingLevel: vi.fn(),
   };
 
+  const sessionInstances: Array<{
+    connect: ReturnType<typeof vi.fn>;
+    disconnect: ReturnType<typeof vi.fn>;
+    config: unknown;
+  }> = [];
+
   return {
     client,
     ticker,
@@ -55,8 +61,8 @@ const mocks = vi.hoisted(() => {
       toriiUrl: "http://torii.local",
       worldAddress: "0xworld",
       manifestPath: "./manifest.json",
-      privateKey: "0xpk",
-      accountAddress: "0xacc",
+      chainId: "SN_SEPOLIA",
+      sessionBasePath: ".cartridge",
       tickIntervalMs: 1000,
       loopEnabled: true,
       modelProvider: "anthropic",
@@ -64,9 +70,9 @@ const mocks = vi.hoisted(() => {
       dataDir: "/tmp/agent-data",
     }),
     adapterCtor: vi.fn(),
-    accountCtor: vi.fn(),
     agent,
     heartbeatLoop,
+    sessionInstances,
   };
 });
 
@@ -101,11 +107,17 @@ vi.mock("../src/adapter/eternum-adapter", () => ({
   },
 }));
 
-vi.mock("starknet", () => ({
-  Account: class {
-    constructor(opts: unknown) {
-      mocks.accountCtor(opts);
-      return { address: "0xacc" };
+vi.mock("../src/session", () => ({
+  ControllerSession: class {
+    connect = vi.fn().mockResolvedValue({ address: "0xsession" });
+    disconnect = vi.fn().mockResolvedValue(undefined);
+
+    constructor(config: unknown) {
+      mocks.sessionInstances.push({
+        connect: this.connect,
+        disconnect: this.disconnect,
+        config,
+      });
     }
   },
 }));
@@ -114,7 +126,11 @@ describe("index bootstrap", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    mocks.sessionInstances.length = 0;
     mocks.createClient.mockResolvedValue(mocks.client);
+    mocks.createHeartbeatLoop.mockReturnValue(mocks.heartbeatLoop);
+    mocks.createApp.mockReturnValue({ dispose: vi.fn() });
+    mocks.getModel.mockReturnValue({ id: "test-model" });
     mocks.createGameAgent.mockReturnValue({
       agent: mocks.agent,
       ticker: mocks.ticker,
@@ -123,6 +139,10 @@ describe("index bootstrap", () => {
       getDataDir: vi.fn().mockReturnValue("/tmp/agent-data"),
       dispose: vi.fn().mockResolvedValue(undefined),
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("does not auto-run main logic on module import", async () => {
@@ -142,8 +162,8 @@ describe("index bootstrap", () => {
 
   it("loadManifest rejects invalid manifest shape", async () => {
     const dir = mkdtempSync(join(tmpdir(), "onchain-manifest-"));
-      const manifestPath = join(dir, "manifest.json");
-      writeFileSync(manifestPath, JSON.stringify({ world: {} }));
+    const manifestPath = join(dir, "manifest.json");
+    writeFileSync(manifestPath, JSON.stringify({ world: {} }));
 
     try {
       const mod = await import("../src/index");
@@ -153,7 +173,7 @@ describe("index bootstrap", () => {
     }
   });
 
-  it("main wires startup and graceful shutdown", async () => {
+  it("main wires startup and graceful shutdown without revoking the persisted session", async () => {
     const dir = mkdtempSync(join(tmpdir(), "onchain-main-"));
     const manifestPath = join(dir, "manifest.json");
     writeFileSync(manifestPath, JSON.stringify({ contracts: [] }));
@@ -175,8 +195,8 @@ describe("index bootstrap", () => {
       toriiUrl: "http://torii.local",
       worldAddress: "0xworld",
       manifestPath,
-      privateKey: "0xpk",
-      accountAddress: "0xacc",
+      chainId: "SN_SEPOLIA",
+      sessionBasePath: ".cartridge",
       tickIntervalMs: 1000,
       loopEnabled: true,
       modelProvider: "anthropic",
@@ -198,6 +218,8 @@ describe("index bootstrap", () => {
       const mod = await import("../src/index");
       await (mod as any).main();
 
+      expect(mocks.sessionInstances).toHaveLength(1);
+      expect(mocks.sessionInstances[0]?.connect).toHaveBeenCalledOnce();
       expect(mocks.createClient).toHaveBeenCalledWith({
         rpcUrl: "http://rpc.local",
         toriiUrl: "http://torii.local",
@@ -207,6 +229,7 @@ describe("index bootstrap", () => {
       expect(mocks.client.connect).toHaveBeenCalledOnce();
       expect(mocks.ticker.start).toHaveBeenCalledOnce();
       expect(mocks.heartbeatLoop.start).toHaveBeenCalledOnce();
+
       const heartbeatConfig = mocks.createHeartbeatLoop.mock.calls[0]?.[0];
       expect(typeof heartbeatConfig?.onRun).toBe("function");
       const enqueuePrompt = mocks.createGameAgent.mock.results[0]?.value?.enqueuePrompt;
@@ -218,6 +241,7 @@ describe("index bootstrap", () => {
         prompt: "Check market conditions",
       });
       expect(enqueuePrompt).toHaveBeenCalled();
+
       expect(handlers.SIGINT).toBeTypeOf("function");
       expect(handlers.SIGTERM).toBeTypeOf("function");
 
@@ -228,6 +252,7 @@ describe("index bootstrap", () => {
       expect(disposeAgent).toHaveBeenCalledOnce();
       expect(disposeTui).toHaveBeenCalledOnce();
       expect(mocks.client.disconnect).toHaveBeenCalledOnce();
+      expect(mocks.sessionInstances[0]?.disconnect).not.toHaveBeenCalled();
       expect(exitSpy).toHaveBeenCalledWith(0);
     } finally {
       logSpy.mockRestore();
@@ -247,8 +272,8 @@ describe("index bootstrap", () => {
       toriiUrl: "http://torii.local",
       worldAddress: "0xworld",
       manifestPath,
-      privateKey: "0xpk",
-      accountAddress: "0xacc",
+      chainId: "SN_SEPOLIA",
+      sessionBasePath: ".cartridge",
       tickIntervalMs: 1000,
       loopEnabled: true,
       modelProvider: "anthropic",
@@ -293,6 +318,7 @@ describe("index bootstrap", () => {
       await gameAgentCall.runtimeConfigManager.applyChanges([{ path: "world.rpcUrl", value: "http://rpc.next" }], "swap");
       expect(mocks.createClient).toHaveBeenCalledTimes(2);
       expect(mocks.createClient.mock.calls[1][0].rpcUrl).toBe("http://rpc.next");
+      expect(mocks.sessionInstances).toHaveLength(2);
       expect(exitSpy).not.toHaveBeenCalled();
     } finally {
       logSpy.mockRestore();
@@ -312,8 +338,8 @@ describe("index bootstrap", () => {
       toriiUrl: "http://torii.local",
       worldAddress: "0xworld",
       manifestPath,
-      privateKey: "0xpk",
-      accountAddress: "0xacc",
+      chainId: "SN_SEPOLIA",
+      sessionBasePath: ".cartridge",
       tickIntervalMs: 1000,
       loopEnabled: false,
       modelProvider: "anthropic",

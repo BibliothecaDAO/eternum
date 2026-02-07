@@ -98,9 +98,11 @@ export function createGameAgent<TState extends WorldState = WorldState>(
 	let promptQueue = Promise.resolve();
 
 	const enqueuePrompt = (prompt: string): Promise<void> => {
-		promptQueue = promptQueue.then(async () => {
+		const run = async () => {
 			await agent.prompt(prompt);
-		});
+		};
+		// Keep the queue alive after failures so later prompts can still run.
+		promptQueue = promptQueue.then(run, run);
 		return promptQueue;
 	};
 

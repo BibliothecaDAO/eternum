@@ -143,6 +143,7 @@ async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServic
     rpcUrl: config.rpcUrl,
     chainId: config.chainId,
     basePath: config.sessionBasePath,
+    manifest,
   });
 
   console.log("Connecting to Cartridge Controller...");
@@ -379,7 +380,6 @@ export async function main() {
     ticker.stop();
     await disposeAgent();
     disposeTui();
-    await services.session.disconnect();
     services.client.disconnect();
     process.exit(0);
   };
