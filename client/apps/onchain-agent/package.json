@@ -4,13 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run src/index.ts",
+    "dev": "node --experimental-wasm-modules --import tsx src/index.ts",
     "build": "tsc --noEmit",
     "test": "vitest --run",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@bibliothecadao/client": "workspace:*",
+    "@cartridge/controller": "^0.13.4",
+    "@cartridge/controller-wasm": "0.9.1",
     "@mariozechner/pi-agent-core": "file:../../../packages/pi-mono/packages/agent",
     "@mariozechner/pi-ai": "file:../../../packages/pi-mono/packages/ai",
     "@mariozechner/pi-onchain-agent": "file:../../../packages/pi-mono/packages/onchain-agent",

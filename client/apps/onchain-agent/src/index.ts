@@ -12,10 +12,11 @@ import { getModel } from "@mariozechner/pi-ai";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Account } from "starknet";
+import type { AccountInterface } from "starknet";
 import { type AgentConfig, loadConfig } from "./config";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
+import { ControllerSession } from "./session";
 import { createApp } from "./tui/app";
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
@@ -29,7 +30,8 @@ export async function loadManifest(manifestPath: string): Promise<{ contracts: u
 
 interface RuntimeServices {
   client: EternumClient;
-  account: Account;
+  account: AccountInterface;
+  session: ControllerSession;
   adapter: EternumGameAdapter;
 }
 
@@ -42,10 +44,10 @@ const CONFIG_PATH_ALIASES: Record<string, keyof AgentConfig> = {
   "world.worldaddress": "worldAddress",
   "manifestpath": "manifestPath",
   "world.manifestpath": "manifestPath",
-  "privatekey": "privateKey",
-  "account.privatekey": "privateKey",
-  "accountaddress": "accountAddress",
-  "account.address": "accountAddress",
+  "chainid": "chainId",
+  "session.chainid": "chainId",
+  "sessionbasepath": "sessionBasePath",
+  "session.basepath": "sessionBasePath",
   "tickintervalms": "tickIntervalMs",
   "loop.tickintervalms": "tickIntervalMs",
   "loopenabled": "loopEnabled",
@@ -63,8 +65,8 @@ const BACKEND_KEYS = new Set<keyof AgentConfig>([
   "toriiUrl",
   "worldAddress",
   "manifestPath",
-  "privateKey",
-  "accountAddress",
+  "chainId",
+  "sessionBasePath",
 ]);
 
 function resolveConfigPath(pathValue: string): keyof AgentConfig | null {
@@ -109,8 +111,8 @@ function parseConfigValue(key: keyof AgentConfig, value: unknown): AgentConfig[k
     case "toriiUrl":
     case "worldAddress":
     case "manifestPath":
-    case "privateKey":
-    case "accountAddress":
+    case "chainId":
+    case "sessionBasePath":
     case "modelProvider":
     case "modelId":
     case "dataDir":
@@ -136,20 +138,26 @@ function updateResultForKey(
 
 async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServices> {
   const manifest = await loadManifest(path.resolve(config.manifestPath));
+
+  const session = new ControllerSession({
+    rpcUrl: config.rpcUrl,
+    chainId: config.chainId,
+    basePath: config.sessionBasePath,
+  });
+
+  console.log("Connecting to Cartridge Controller...");
+  const account = await session.connect();
+  console.log(`Session ready! Account: ${account.address}`);
+
   const client = await EternumClient.create({
     rpcUrl: config.rpcUrl,
     toriiUrl: config.toriiUrl,
     worldAddress: config.worldAddress,
     manifest,
   });
-  const account = new Account({
-    provider: { nodeUrl: config.rpcUrl },
-    address: config.accountAddress,
-    signer: config.privateKey,
-  });
-  client.connect(account);
-  const adapter = new EternumGameAdapter(client, account, config.accountAddress);
-  return { client, account, adapter };
+  client.connect(account as any);
+  const adapter = new EternumGameAdapter(client, account as any, account.address);
+  return { client, account, session, adapter };
 }
 
 export async function main() {
@@ -371,6 +379,7 @@ export async function main() {
     ticker.stop();
     await disposeAgent();
     disposeTui();
+    await services.session.disconnect();
     services.client.disconnect();
     process.exit(0);
   };

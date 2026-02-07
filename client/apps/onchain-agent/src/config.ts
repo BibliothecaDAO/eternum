@@ -5,8 +5,8 @@ export interface AgentConfig {
   toriiUrl: string;
   worldAddress: string;
   manifestPath: string;
-  privateKey: string;
-  accountAddress: string;
+  chainId: string;
+  sessionBasePath: string;
   tickIntervalMs: number;
   loopEnabled: boolean;
   modelProvider: string;
@@ -44,8 +44,8 @@ export function loadConfig(): AgentConfig {
     worldAddress: env.WORLD_ADDRESS ?? "0x0",
     manifestPath:
       env.MANIFEST_PATH ?? fileURLToPath(new URL("../../../../contracts/game/manifest_local.json", import.meta.url)),
-    privateKey: env.PRIVATE_KEY ?? "0x0",
-    accountAddress: env.ACCOUNT_ADDRESS ?? "0x0",
+    chainId: env.CHAIN_ID ?? "SN_SEPOLIA",
+    sessionBasePath: env.SESSION_BASE_PATH ?? ".cartridge",
     tickIntervalMs: parsePositiveIntervalMs(env.TICK_INTERVAL_MS, 60000),
     loopEnabled: parseBoolean(env.LOOP_ENABLED, true),
     modelProvider: env.MODEL_PROVIDER ?? "anthropic",
