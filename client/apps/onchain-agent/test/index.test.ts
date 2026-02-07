@@ -76,7 +76,7 @@ vi.mock("@bibliothecadao/client", () => ({
   },
 }));
 
-vi.mock("@mariozechner/pi-onchain-agent", () => ({
+vi.mock("@bibliothecadao/game-agent", () => ({
   createGameAgent: mocks.createGameAgent,
   createHeartbeatLoop: mocks.createHeartbeatLoop,
 }));

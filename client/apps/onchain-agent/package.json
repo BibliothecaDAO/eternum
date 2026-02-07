@@ -13,10 +13,10 @@
     "@bibliothecadao/client": "workspace:*",
     "@cartridge/controller": "^0.13.4",
     "@cartridge/controller-wasm": "0.9.1",
-    "@mariozechner/pi-agent-core": "file:../../../packages/pi-mono/packages/agent",
-    "@mariozechner/pi-ai": "file:../../../packages/pi-mono/packages/ai",
-    "@mariozechner/pi-onchain-agent": "file:../../../packages/pi-mono/packages/onchain-agent",
-    "@mariozechner/pi-tui": "file:../../../packages/pi-mono/packages/tui",
+    "@bibliothecadao/game-agent": "workspace:*",
+    "@mariozechner/pi-agent-core": "^0.52.7",
+    "@mariozechner/pi-ai": "^0.52.7",
+    "@mariozechner/pi-tui": "^0.52.7",
     "starknet": "catalog:"
   },
   "devDependencies": {

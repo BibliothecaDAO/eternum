@@ -1,4 +1,4 @@
-import type { SimulationResult, GameAction } from "@mariozechner/pi-onchain-agent";
+import type { SimulationResult, GameAction } from "@bibliothecadao/game-agent";
 import {
   computeStrength,
   computeOutputAmount,

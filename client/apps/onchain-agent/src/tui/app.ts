@@ -6,7 +6,7 @@ import {
   Text,
   Markdown,
 } from "@mariozechner/pi-tui";
-import type { TickLoop } from "@mariozechner/pi-onchain-agent";
+import type { TickLoop } from "@bibliothecadao/game-agent";
 
 export interface AppState {
   agent: Agent;

@@ -1,4 +1,4 @@
-import type { WorldState } from "@mariozechner/pi-onchain-agent";
+import type { WorldState } from "@bibliothecadao/game-agent";
 import type { EternumClient } from "@bibliothecadao/client";
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GameAdapter } from "@mariozechner/pi-onchain-agent";
+import type { GameAdapter } from "@bibliothecadao/game-agent";
 import { MutableGameAdapter } from "../../src/adapter/mutable-adapter";
 
 function createAdapter(tick: number): GameAdapter {

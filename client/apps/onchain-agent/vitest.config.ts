@@ -4,9 +4,9 @@ import path from "node:path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@mariozechner/pi-onchain-agent": path.resolve(
+      "@bibliothecadao/game-agent": path.resolve(
         __dirname,
-        "../../../packages/pi-mono/packages/onchain-agent/src/index.ts",
+        "../../../packages/game-agent/src/index.ts",
       ),
       "@mariozechner/pi-agent-core": path.resolve(
         __dirname,

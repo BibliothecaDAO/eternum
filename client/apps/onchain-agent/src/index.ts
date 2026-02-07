@@ -7,7 +7,7 @@ import {
   type RuntimeConfigChange,
   type RuntimeConfigManager,
   type RuntimeConfigUpdateResult,
-} from "@mariozechner/pi-onchain-agent";
+} from "@bibliothecadao/game-agent";
 import { getModel } from "@mariozechner/pi-ai";
 import { readFile } from "node:fs/promises";
 import path from "node:path";

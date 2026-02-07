@@ -396,7 +396,7 @@ importers:
         version: 2.12.1(react@18.3.1)
       zustand:
         specifier: ^4.5.2
-        version: 4.5.7(@types/react@18.3.27)(immer@11.1.3)(react@18.3.1)
+        version: 4.5.7(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)
     devDependencies:
       '@eslint/js':
         specifier: ^9.17.0
@@ -559,7 +559,7 @@ importers:
         version: 0.365.0(react@18.3.1)
       metagame-sdk:
         specifier: 0.0.19
-        version: 0.0.19(@dojoengine/sdk@1.7.0-preview.3(@tanstack/react-query@5.90.19(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5))(typescript@5.9.3)(zustand@5.0.10(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)))
+        version: 0.0.19(@dojoengine/sdk@1.7.0-preview.3(@tanstack/react-query@5.90.19(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5))(typescript@5.9.3)(zustand@5.0.10(@types/react@18.3.27)(immer@11.1.3)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)))
       platform:
         specifier: ^1.3.6
         version: 1.3.6
@@ -601,7 +601,7 @@ importers:
         version: 2.12.1(react@18.3.1)
       zustand:
         specifier: ^5.0.5
-        version: 5.0.10(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+        version: 5.0.10(@types/react@18.3.27)(immer@11.1.3)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.2
@@ -941,6 +941,9 @@ importers:
       '@bibliothecadao/client':
         specifier: workspace:*
         version: link:../../../packages/client
+      '@bibliothecadao/game-agent':
+        specifier: workspace:*
+        version: link:../../../packages/game-agent
       '@cartridge/controller':
         specifier: ^0.13.4
         version: 0.13.4(@types/react@18.3.27)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.3)(ioredis@5.9.2)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.5)
@@ -948,17 +951,14 @@ importers:
         specifier: 0.9.1
         version: 0.9.1
       '@mariozechner/pi-agent-core':
-        specifier: file:../../../packages/pi-mono/packages/agent
-        version: file:packages/pi-mono/packages/agent(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+        specifier: ^0.52.7
+        version: 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
       '@mariozechner/pi-ai':
-        specifier: file:../../../packages/pi-mono/packages/ai
-        version: file:packages/pi-mono/packages/ai(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      '@mariozechner/pi-onchain-agent':
-        specifier: file:../../../packages/pi-mono/packages/onchain-agent
-        version: file:packages/pi-mono/packages/onchain-agent(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+        specifier: ^0.52.7
+        version: 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
       '@mariozechner/pi-tui':
-        specifier: file:../../../packages/pi-mono/packages/tui
-        version: file:packages/pi-mono/packages/tui
+        specifier: ^0.52.7
+        version: 0.52.7
       starknet:
         specifier: 'catalog:'
         version: 8.9.2
@@ -1184,6 +1184,37 @@ importers:
       vitest:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@20.19.30)(@vitest/ui@2.1.9)(jsdom@28.0.0(@noble/hashes@1.8.0))(terser@5.46.0)
+
+  packages/game-agent:
+    dependencies:
+      '@mariozechner/pi-agent-core':
+        specifier: ^0.52.7
+        version: 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+      '@mariozechner/pi-ai':
+        specifier: ^0.52.7
+        version: 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+      '@mariozechner/pi-coding-agent':
+        specifier: ^0.52.7
+        version: 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+      '@sinclair/typebox':
+        specifier: ^0.34.41
+        version: 0.34.48
+      yaml:
+        specifier: ^2.3.0
+        version: 2.8.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.7
+      tsup:
+        specifier: ^8.0.2
+        version: 8.5.1(@swc/core@1.15.10(@swc/helpers@0.5.18))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.7)(jiti@2.6.1)(jsdom@28.0.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/pi-mono:
     dependencies:
@@ -4238,12 +4269,8 @@ packages:
     resolution: {integrity: sha512-N+4JpOHdBOi5qIlSGz+flfE4xl/iJTsmFyJ653CL7UZMrKUBJZARBi7OYLZ2y84buVkFJajL7T5AbzXIjclaOw==}
     engines: {node: '>=20.0.0'}
 
-  '@mariozechner/pi-agent-core@0.51.6':
-    resolution: {integrity: sha512-57ybnrRdFssXsEoT0Ot71s+shzAaQJtGfGX2yTSwNicAbgei8L1mYuqWMUgQ1oSNv1fv59GMBo8nphIxw+GDxQ==}
-    engines: {node: '>=20.0.0'}
-
-  '@mariozechner/pi-agent-core@file:packages/pi-mono/packages/agent':
-    resolution: {directory: packages/pi-mono/packages/agent, type: directory}
+  '@mariozechner/pi-agent-core@0.52.7':
+    resolution: {integrity: sha512-zthFSKW7aha7R9jKktDWt+pD5qeK0cT1TI6Ge/lqUDsPbjXj/vkyh1/BLJa8KtfKQzJaC0IXtWhUO2LQzyKwsw==}
     engines: {node: '>=20.0.0'}
 
   '@mariozechner/pi-ai@0.30.2':
@@ -4251,18 +4278,8 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@mariozechner/pi-ai@0.51.6':
-    resolution: {integrity: sha512-vzB7M2NPpjQmAZEtSN+v5rgYVhDUBoshtmXUGuHwx4SLIaHl1Z9eSeJg+HwclQPjesNuxhdBiHAHg8CEZ+3Dfg==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-
-  '@mariozechner/pi-ai@0.52.5':
-    resolution: {integrity: sha512-5XGlWQnvkbCPqWtoj0TTSdtU2PQxGGMIri+dlpGppB9OWePS0JNK6DM0md+wZz8nl0yjxqI/8UFkyGkRNJNTYA==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-
-  '@mariozechner/pi-ai@file:packages/pi-mono/packages/ai':
-    resolution: {directory: packages/pi-mono/packages/ai, type: directory}
+  '@mariozechner/pi-ai@0.52.7':
+    resolution: {integrity: sha512-kr3isYX1wVxHaKok1Sa6Jbx9TgVp+Vp24LrVxUtQRXGMq6IjB5/RLLF61XT8pgGLBPhs/8esQbO/Av3l2MJibA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -4271,25 +4288,17 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@mariozechner/pi-coding-agent@0.51.6':
-    resolution: {integrity: sha512-Rg3/C6a/30E1AoWHShoFUXMlvkvhK9xUEJTdApmIS51kCI4UuPcqw4fe9kq5I8KeMuAlcjo+jweMYrNVVvkNRw==}
+  '@mariozechner/pi-coding-agent@0.52.7':
+    resolution: {integrity: sha512-C2O7zzpkC0SMAFlB/n92lT8N2gM7VAy/vlMZYXrreqZGrgeV6DjOuvYn9364K7+xREo/N7bJsjqMohrvxoKBcw==}
     engines: {node: '>=20.0.0'}
     hasBin: true
-
-  '@mariozechner/pi-onchain-agent@file:packages/pi-mono/packages/onchain-agent':
-    resolution: {directory: packages/pi-mono/packages/onchain-agent, type: directory}
-    engines: {node: '>=20.0.0'}
 
   '@mariozechner/pi-tui@0.30.2':
     resolution: {integrity: sha512-UuqEgNWi6cG9hBImVytqP703J8z65B0pvlBKsnRoVljZ1U8TTyfdpd375oc8NONHtYKKmsSR4OLyG+zA56EEHw==}
     engines: {node: '>=20.0.0'}
 
-  '@mariozechner/pi-tui@0.51.6':
-    resolution: {integrity: sha512-mG/RH5qArwLXcbnR3BOb8MRDGj4MvUD+c/AYySmC6XTkF+LVDw6Vc14cUcusblIUaE1GNmp+dxsRORmnh+0whg==}
-    engines: {node: '>=20.0.0'}
-
-  '@mariozechner/pi-tui@file:packages/pi-mono/packages/tui':
-    resolution: {directory: packages/pi-mono/packages/tui, type: directory}
+  '@mariozechner/pi-tui@0.52.7':
+    resolution: {integrity: sha512-wS9zw4lvUaVU8jAGdk4C2KN/AwEsESrguUGNpZs7g9PD8iDBE9gnXtMvtny4PDbjOk0mZ5D0CEUgMzl/ZhqH8w==}
     engines: {node: '>=20.0.0'}
 
   '@mdx-js/mdx@3.1.1':
@@ -10642,6 +10651,10 @@ packages:
 
   hosted-git-info@2.8.9:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
+
+  hosted-git-info@9.0.2:
+    resolution: {integrity: sha512-M422h7o/BR3rmCQ8UHi7cyyMqKltdP9Uo+J2fXK+RSAY+wTcKOIRyhTuKv4qn+DJf3g+PL890AzId5KZpX+CBg==}
+    engines: {node: ^20.17.0 || >=22.9.0}
 
   hpke-js@1.6.5:
     resolution: {integrity: sha512-amUFmHr6Z16370Wn57lYOkl+gb3wDBUc0nyPlx9ODMTaJ09kAVY0MrOU7JCzJJjL0bN8nKPU5vfXLBRjCmREOw==}
@@ -19248,21 +19261,9 @@ snapshots:
       - ws
       - zod
 
-  '@mariozechner/pi-agent-core@0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
+  '@mariozechner/pi-agent-core@0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
     dependencies:
-      '@mariozechner/pi-ai': 0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - aws-crt
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@mariozechner/pi-agent-core@file:packages/pi-mono/packages/agent(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
-    dependencies:
-      '@mariozechner/pi-ai': 0.52.5(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+      '@mariozechner/pi-ai': 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - aws-crt
@@ -19292,55 +19293,7 @@ snapshots:
       - ws
       - zod
 
-  '@mariozechner/pi-ai@0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
-    dependencies:
-      '@anthropic-ai/sdk': 0.71.2(zod@4.3.5)
-      '@aws-sdk/client-bedrock-runtime': 3.984.0
-      '@google/genai': 1.34.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@mistralai/mistralai': 1.10.0
-      '@sinclair/typebox': 0.34.48
-      ajv: 8.17.1
-      ajv-formats: 3.0.1(ajv@8.17.1)
-      chalk: 5.6.2
-      openai: 6.10.0(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      partial-json: 0.1.7
-      proxy-agent: 6.5.0
-      undici: 7.20.0
-      zod-to-json-schema: 3.25.1(zod@4.3.5)
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - aws-crt
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@mariozechner/pi-ai@0.52.5(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
-    dependencies:
-      '@anthropic-ai/sdk': 0.73.0(zod@4.3.5)
-      '@aws-sdk/client-bedrock-runtime': 3.984.0
-      '@google/genai': 1.40.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@mistralai/mistralai': 1.10.0
-      '@sinclair/typebox': 0.34.48
-      ajv: 8.17.1
-      ajv-formats: 3.0.1(ajv@8.17.1)
-      chalk: 5.6.2
-      openai: 6.10.0(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      partial-json: 0.1.7
-      proxy-agent: 6.5.0
-      undici: 7.20.0
-      zod-to-json-schema: 3.25.1(zod@4.3.5)
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - aws-crt
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@mariozechner/pi-ai@file:packages/pi-mono/packages/ai(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
+  '@mariozechner/pi-ai@0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
     dependencies:
       '@anthropic-ai/sdk': 0.73.0(zod@4.3.5)
       '@aws-sdk/client-bedrock-runtime': 3.984.0
@@ -19384,41 +19337,26 @@ snapshots:
       - ws
       - zod
 
-  '@mariozechner/pi-coding-agent@0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
+  '@mariozechner/pi-coding-agent@0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
     dependencies:
       '@mariozechner/jiti': 2.6.5
-      '@mariozechner/pi-agent-core': 0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      '@mariozechner/pi-ai': 0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      '@mariozechner/pi-tui': 0.51.6
+      '@mariozechner/pi-agent-core': 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+      '@mariozechner/pi-ai': 0.52.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
+      '@mariozechner/pi-tui': 0.52.7
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
       cli-highlight: 2.1.11
       diff: 8.0.3
       file-type: 21.3.0
       glob: 13.0.1
+      hosted-git-info: 9.0.2
       ignore: 7.0.5
       marked: 15.0.12
-      minimatch: 10.1.1
+      minimatch: 10.1.2
       proper-lockfile: 4.1.2
       yaml: 2.8.2
     optionalDependencies:
       '@mariozechner/clipboard': 0.3.2
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - aws-crt
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@mariozechner/pi-onchain-agent@file:packages/pi-mono/packages/onchain-agent(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)':
-    dependencies:
-      '@mariozechner/pi-agent-core': 0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      '@mariozechner/pi-ai': 0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      '@mariozechner/pi-coding-agent': 0.51.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.5)
-      '@sinclair/typebox': 0.34.48
-      yaml: 2.8.2
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - aws-crt
@@ -19436,15 +19374,7 @@ snapshots:
       mime-types: 3.0.2
       string-width: 8.1.1
 
-  '@mariozechner/pi-tui@0.51.6':
-    dependencies:
-      '@types/mime-types': 2.1.4
-      chalk: 5.6.2
-      get-east-asian-width: 1.4.0
-      marked: 15.0.12
-      mime-types: 3.0.2
-
-  '@mariozechner/pi-tui@file:packages/pi-mono/packages/tui':
+  '@mariozechner/pi-tui@0.52.7':
     dependencies:
       '@types/mime-types': 2.1.4
       chalk: 5.6.2
@@ -28567,6 +28497,10 @@ snapshots:
 
   hosted-git-info@2.8.9: {}
 
+  hosted-git-info@9.0.2:
+    dependencies:
+      lru-cache: 11.2.5
+
   hpke-js@1.6.5:
     dependencies:
       '@hpke/chacha20poly1305': 1.7.1
@@ -29766,11 +29700,11 @@ snapshots:
 
   meshoptimizer@0.18.1: {}
 
-  metagame-sdk@0.0.19(@dojoengine/sdk@1.7.0-preview.3(@tanstack/react-query@5.90.19(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5))(typescript@5.9.3)(zustand@5.0.10(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))):
+  metagame-sdk@0.0.19(@dojoengine/sdk@1.7.0-preview.3(@tanstack/react-query@5.90.19(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5))(typescript@5.9.3)(zustand@5.0.10(@types/react@18.3.27)(immer@11.1.3)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))):
     dependencies:
       '@dojoengine/sdk': 1.7.0-preview.3(@tanstack/react-query@5.90.19(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5)
       typescript: 5.9.3
-      zustand: 5.0.10(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+      zustand: 5.0.10(@types/react@18.3.27)(immer@11.1.3)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
 
   metro-babel-transformer@0.83.3:
     dependencies:
@@ -34722,13 +34656,6 @@ snapshots:
       '@types/react': 18.3.27
       immer: 11.1.3
       react: 18.3.1
-
-  zustand@5.0.10(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
-    optionalDependencies:
-      '@types/react': 18.3.27
-      immer: 10.2.0
-      react: 18.3.1
-      use-sync-external-store: 1.6.0(react@18.3.1)
 
   zustand@5.0.10(@types/react@18.3.27)(immer@11.1.3)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
     optionalDependencies:

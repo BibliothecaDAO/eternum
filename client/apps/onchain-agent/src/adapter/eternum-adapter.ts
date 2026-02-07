@@ -1,4 +1,4 @@
-import type { GameAdapter, GameAction, ActionResult, SimulationResult } from "@mariozechner/pi-onchain-agent";
+import type { GameAdapter, GameAction, ActionResult, SimulationResult } from "@bibliothecadao/game-agent";
 import type { EternumClient } from "@bibliothecadao/client";
 import type { Account } from "starknet";
 import type { EternumWorldState } from "./world-state";

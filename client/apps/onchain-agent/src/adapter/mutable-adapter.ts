@@ -1,4 +1,4 @@
-import type { ActionResult, GameAction, GameAdapter, SimulationResult, WorldState } from "@mariozechner/pi-onchain-agent";
+import type { ActionResult, GameAction, GameAdapter, SimulationResult, WorldState } from "@bibliothecadao/game-agent";
 
 export class MutableGameAdapter<TState extends WorldState = WorldState> implements GameAdapter<TState> {
   constructor(private current: GameAdapter<TState>) {}

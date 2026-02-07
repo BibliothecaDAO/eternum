@@ -58,7 +58,7 @@ declare module "@bibliothecadao/client" {
   ): number;
 }
 
-declare module "@mariozechner/pi-onchain-agent" {
+declare module "@bibliothecadao/game-agent" {
   export interface WorldState<TEntity = unknown> {
     tick: number;
     timestamp: number;
