@@ -46,8 +46,17 @@ describe("buildWorldState", () => {
     expect(army).toBeDefined();
     expect(army!.type).toBe("army");
     expect(army!.strength).toBe(50);
-    expect(army!.stamina).toBe(80);
+    // Stamina is overridden by explorer detail view (75) over player summary (80)
+    expect(army!.stamina).toBe(75);
     expect(army!.isInBattle).toBe(false);
+    // Explorer enrichment fields
+    expect(army!.explorerId).toBe(100);
+    expect(army!.troops).toEqual({
+      totalTroops: 15,
+      slots: [{ troopType: "Crossbowman", count: 15, tier: 1 }],
+      strength: 200,
+    });
+    expect(army!.carriedResources).toEqual([{ resourceId: 1, name: "Wood", amount: 50 }]);
   });
 
   it("populates player info from view", async () => {
@@ -96,5 +105,75 @@ describe("buildWorldState", () => {
     expect(client.view.mapArea).toHaveBeenCalledWith({ x: 10, y: 20, radius: 50 });
     expect(client.view.market).toHaveBeenCalled();
     expect(client.view.leaderboard).toHaveBeenCalledWith({ limit: 10 });
+  });
+
+  it("enriches structures with realm detail (guards, buildings, resources)", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm).toBeDefined();
+    expect(client.view.realm).toHaveBeenCalledWith(1);
+    expect(realm!.guardSlots).toEqual([
+      { troopType: "Knight", count: 20, tier: 1 },
+      { troopType: "Paladin", count: 10, tier: 2 },
+    ]);
+    expect(realm!.guardStrength).toBe(500);
+    expect(realm!.buildings).toEqual([
+      { category: "Farm", position: { x: 1, y: 2 } },
+      { category: "Barracks", position: { x: 3, y: 4 } },
+    ]);
+    expect(realm!.resourceBalances).toEqual([
+      { resourceId: 1, name: "Wood", balance: 250 },
+      { resourceId: 2, name: "Stone", balance: 150 },
+    ]);
+  });
+
+  it("calls explorer() for each player army", async () => {
+    const client = createMockClient() as any;
+    await buildWorldState(client, "0xdeadbeef");
+
+    expect(client.view.explorer).toHaveBeenCalledWith(100);
+  });
+
+  it("includes recent events from events view", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(client.view.events).toHaveBeenCalledWith({ owner: "0xdeadbeef", limit: 10 });
+    expect(state.recentEvents).toEqual([
+      { eventId: 1, eventType: "battle_start", timestamp: 1700000000, data: { attackerId: 100 } },
+    ]);
+  });
+
+  it("identifies bank entities from nearby structures", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.banks).toEqual([
+      { entityId: 2, position: { x: 50, y: 60 } },
+    ]);
+  });
+
+  it("handles realm() failure gracefully without crashing", async () => {
+    const client = createMockClient() as any;
+    client.view.realm.mockRejectedValue(new Error("SQL timeout"));
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // Structure still exists, just without enrichment
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm).toBeDefined();
+    expect(realm!.guardSlots).toBeUndefined();
+  });
+
+  it("handles explorer() failure gracefully without crashing", async () => {
+    const client = createMockClient() as any;
+    client.view.explorer.mockRejectedValue(new Error("SQL timeout"));
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // Army still exists, just without enrichment
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army).toBeDefined();
+    expect(army!.troops).toBeUndefined();
   });
 });

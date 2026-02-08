@@ -1,0 +1,678 @@
+[
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "uuid"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "set_metadata"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "register_namespace"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "register_event"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "register_model"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "register_contract"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "register_external_contract"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "register_library"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "init_contract"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "upgrade_event"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "upgrade_model"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "upgrade_contract"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "upgrade_external_contract"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "emit_event"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "emit_events"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "set_entity"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "set_entities"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "delete_entity"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "delete_entities"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "grant_owner"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "revoke_owner"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "grant_writer"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "revoke_writer"
+  },
+  {
+    "contractAddress": "0x03152bcdad8d5f2b81eaec095fc900b12171d24b73d2aaca45f1b2d4d53bb36b",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0527c590d41e49389528ad18ce01bc7ed9b568f739deec83a2cb2077ca56e4c5",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x020e6bb045edc37370e64d78f5e44c03b6aa324e78c57290227f9e6ca99e1df7",
+    "entrypoint": "create_banks"
+  },
+  {
+    "contractAddress": "0x020e6bb045edc37370e64d78f5e44c03b6aa324e78c57290227f9e6ca99e1df7",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x032e5e3356312463c659082a59a4e416c0a8b62abfe5df3f3f7058a417a74ff7",
+    "entrypoint": "obtain_entry_token"
+  },
+  {
+    "contractAddress": "0x032e5e3356312463c659082a59a4e416c0a8b62abfe5df3f3f7058a417a74ff7",
+    "entrypoint": "register"
+  },
+  {
+    "contractAddress": "0x032e5e3356312463c659082a59a4e416c0a8b62abfe5df3f3f7058a417a74ff7",
+    "entrypoint": "make_hyperstructures"
+  },
+  {
+    "contractAddress": "0x032e5e3356312463c659082a59a4e416c0a8b62abfe5df3f3f7058a417a74ff7",
+    "entrypoint": "assign_realm_positions"
+  },
+  {
+    "contractAddress": "0x032e5e3356312463c659082a59a4e416c0a8b62abfe5df3f3f7058a417a74ff7",
+    "entrypoint": "settle_realms"
+  },
+  {
+    "contractAddress": "0x032e5e3356312463c659082a59a4e416c0a8b62abfe5df3f3f7058a417a74ff7",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_agent_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_village_token_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_world_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_mercenaries_name_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_season_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_vrf_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_starting_resources_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_map_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_capacity_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_resource_weight_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_tick_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_resource_factory_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_donkey_speed_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_battle_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_hyperstructure_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_bank_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_troop_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_building_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_building_category_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_resource_bridge_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_resource_bridge_fee_split_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_resource_bridge_whitelist_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_structure_max_level_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_structure_level_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_settlement_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_blitz_registration_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_trade_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_quest_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_game_mode_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_factory_address"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_mmr_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_village_found_resources_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_victory_points_grant_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "set_victory_points_win_config"
+  },
+  {
+    "contractAddress": "0x046a3bf3f15d7a185851ab5dabaf1e6ae19b49777fa11f6de26a7c8fcc8514e4",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x078078e8bade76823c627a28d6927eedc11b9a11616de35f639cc9d8899d6c17",
+    "entrypoint": "mint"
+  },
+  {
+    "contractAddress": "0x078078e8bade76823c627a28d6927eedc11b9a11616de35f639cc9d8899d6c17",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x052bac74c97fe3caab2b9e979b9d2ef275e7b7ac94be7f13ef2622940c2fdd82",
+    "entrypoint": "create_guild"
+  },
+  {
+    "contractAddress": "0x052bac74c97fe3caab2b9e979b9d2ef275e7b7ac94be7f13ef2622940c2fdd82",
+    "entrypoint": "join_guild"
+  },
+  {
+    "contractAddress": "0x052bac74c97fe3caab2b9e979b9d2ef275e7b7ac94be7f13ef2622940c2fdd82",
+    "entrypoint": "leave_guild"
+  },
+  {
+    "contractAddress": "0x052bac74c97fe3caab2b9e979b9d2ef275e7b7ac94be7f13ef2622940c2fdd82",
+    "entrypoint": "update_whitelist"
+  },
+  {
+    "contractAddress": "0x052bac74c97fe3caab2b9e979b9d2ef275e7b7ac94be7f13ef2622940c2fdd82",
+    "entrypoint": "remove_member"
+  },
+  {
+    "contractAddress": "0x052bac74c97fe3caab2b9e979b9d2ef275e7b7ac94be7f13ef2622940c2fdd82",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0765d5316735e49badcce35ac752b987f84283e3e3e7845c4bb1a9b404e48928",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0451d0fdf0678fdfb31e1b9b42d05dfe0e046cc12f99cf981791d649efea3a9c",
+    "entrypoint": "initialize"
+  },
+  {
+    "contractAddress": "0x0451d0fdf0678fdfb31e1b9b42d05dfe0e046cc12f99cf981791d649efea3a9c",
+    "entrypoint": "contribute"
+  },
+  {
+    "contractAddress": "0x0451d0fdf0678fdfb31e1b9b42d05dfe0e046cc12f99cf981791d649efea3a9c",
+    "entrypoint": "allocate_shares"
+  },
+  {
+    "contractAddress": "0x0451d0fdf0678fdfb31e1b9b42d05dfe0e046cc12f99cf981791d649efea3a9c",
+    "entrypoint": "update_construction_access"
+  },
+  {
+    "contractAddress": "0x0451d0fdf0678fdfb31e1b9b42d05dfe0e046cc12f99cf981791d649efea3a9c",
+    "entrypoint": "claim_share_points"
+  },
+  {
+    "contractAddress": "0x0451d0fdf0678fdfb31e1b9b42d05dfe0e046cc12f99cf981791d649efea3a9c",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x06674cbb71bdc42d139432ed1d63d596508f89eba8b4f8cd466035002a1cde10",
+    "entrypoint": "add"
+  },
+  {
+    "contractAddress": "0x06674cbb71bdc42d139432ed1d63d596508f89eba8b4f8cd466035002a1cde10",
+    "entrypoint": "remove"
+  },
+  {
+    "contractAddress": "0x06674cbb71bdc42d139432ed1d63d596508f89eba8b4f8cd466035002a1cde10",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x02930e02e67a703de2e1138f3ddd13c14bc67d1ed0866acb073dec6b792378a7",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0761723d6fc9ffb354830fa153b72e4bab32b419911df5c327c488b853448555",
+    "entrypoint": "commit_game_mmr_meta"
+  },
+  {
+    "contractAddress": "0x0761723d6fc9ffb354830fa153b72e4bab32b419911df5c327c488b853448555",
+    "entrypoint": "claim_game_mmr"
+  },
+  {
+    "contractAddress": "0x0761723d6fc9ffb354830fa153b72e4bab32b419911df5c327c488b853448555",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x07b8d1e5dcbccec131b91b6cda8939a88e4bd21990ed8ab3c0e10e5730d59b2e",
+    "entrypoint": "set_address_name"
+  },
+  {
+    "contractAddress": "0x07b8d1e5dcbccec131b91b6cda8939a88e4bd21990ed8ab3c0e10e5730d59b2e",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x075583422d6dc4f54788750e82e85ef4147ef6e7aeee81d88b503b65dd0b5699",
+    "entrypoint": "transfer_structure_ownership"
+  },
+  {
+    "contractAddress": "0x075583422d6dc4f54788750e82e85ef4147ef6e7aeee81d88b503b65dd0b5699",
+    "entrypoint": "transfer_agent_ownership"
+  },
+  {
+    "contractAddress": "0x075583422d6dc4f54788750e82e85ef4147ef6e7aeee81d88b503b65dd0b5699",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0162091a20b5c2e4a8d4ef746818a18c8ec634ba2f0465723ee7b533d3ba2cac",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x026acbb8bfa0a4883e71fe03bb1f1441502250c83fc29ae10310b7b218862e3e",
+    "entrypoint": "blitz_get_or_compute_series_chest_reward_state"
+  },
+  {
+    "contractAddress": "0x026acbb8bfa0a4883e71fe03bb1f1441502250c83fc29ae10310b7b218862e3e",
+    "entrypoint": "blitz_prize_claim_no_game"
+  },
+  {
+    "contractAddress": "0x026acbb8bfa0a4883e71fe03bb1f1441502250c83fc29ae10310b7b218862e3e",
+    "entrypoint": "blitz_prize_claim"
+  },
+  {
+    "contractAddress": "0x026acbb8bfa0a4883e71fe03bb1f1441502250c83fc29ae10310b7b218862e3e",
+    "entrypoint": "blitz_prize_player_rank"
+  },
+  {
+    "contractAddress": "0x026acbb8bfa0a4883e71fe03bb1f1441502250c83fc29ae10310b7b218862e3e",
+    "entrypoint": "blitz_get_ranked"
+  },
+  {
+    "contractAddress": "0x026acbb8bfa0a4883e71fe03bb1f1441502250c83fc29ae10310b7b218862e3e",
+    "entrypoint": "blitz_get_winner"
+  },
+  {
+    "contractAddress": "0x026acbb8bfa0a4883e71fe03bb1f1441502250c83fc29ae10310b7b218862e3e",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "create_building"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "destroy_building"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "pause_building_production"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "resume_building_production"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "burn_resource_for_labor_production"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "burn_labor_for_resource_production"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "burn_resource_for_resource_production"
+  },
+  {
+    "contractAddress": "0x038bb3e345494abfabca97866eaefb3aab86a7702943d6e0c032d964d4438a28",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x049cb86baad642fb4c57b55c37c42e66d029a4f196e2d7673d140edb760629f7",
+    "entrypoint": "create_internal"
+  },
+  {
+    "contractAddress": "0x049cb86baad642fb4c57b55c37c42e66d029a4f196e2d7673d140edb760629f7",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x014736108bdb1ac55e4fd54b5445e30fc798b93a1cb8ad8e2a08302bb22b6ecf",
+    "entrypoint": "create"
+  },
+  {
+    "contractAddress": "0x014736108bdb1ac55e4fd54b5445e30fc798b93a1cb8ad8e2a08302bb22b6ecf",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0619ae50735105a579176f508d84419ee9b32442c45ddc44040bc1c0cd64e2cb",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x04b47e9469808789af4374cbff4786ff25b7352d0614358c449d4faebf76458a",
+    "entrypoint": "open_chest"
+  },
+  {
+    "contractAddress": "0x04b47e9469808789af4374cbff4786ff25b7352d0614358c449d4faebf76458a",
+    "entrypoint": "apply_relic"
+  },
+  {
+    "contractAddress": "0x04b47e9469808789af4374cbff4786ff25b7352d0614358c449d4faebf76458a",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0262efbbed10d5816bce4cbd4ce3e58f7e362539683a9b907c2043e787c1e732",
+    "entrypoint": "deposit"
+  },
+  {
+    "contractAddress": "0x0262efbbed10d5816bce4cbd4ce3e58f7e362539683a9b907c2043e787c1e732",
+    "entrypoint": "withdraw"
+  },
+  {
+    "contractAddress": "0x0262efbbed10d5816bce4cbd4ce3e58f7e362539683a9b907c2043e787c1e732",
+    "entrypoint": "lp_withdraw"
+  },
+  {
+    "contractAddress": "0x0262efbbed10d5816bce4cbd4ce3e58f7e362539683a9b907c2043e787c1e732",
+    "entrypoint": "velords_claim"
+  },
+  {
+    "contractAddress": "0x0262efbbed10d5816bce4cbd4ce3e58f7e362539683a9b907c2043e787c1e732",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "approve"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "send"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "pickup"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "arrivals_offload"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "troop_troop_adjacent_transfer"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "troop_structure_adjacent_transfer"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "structure_troop_adjacent_transfer"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "troop_burn"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "structure_burn"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "structure_regularize_weight"
+  },
+  {
+    "contractAddress": "0x0726d8a9f22edc171d0a43a503e0d2060a35f73189903fd5b42c3a53022fee01",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0515f650dabaa46720cd5ba6c5e53aeb564d8aa1ab268d8e799248dc65888cc4",
+    "entrypoint": "season_close"
+  },
+  {
+    "contractAddress": "0x0515f650dabaa46720cd5ba6c5e53aeb564d8aa1ab268d8e799248dc65888cc4",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x01112fea2d7bb390ffdd8ca3cfbf524716e1fd0312f446a839fd37605d773542",
+    "entrypoint": "level_up"
+  },
+  {
+    "contractAddress": "0x01112fea2d7bb390ffdd8ca3cfbf524716e1fd0312f446a839fd37605d773542",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x02524967ac516c0f65975a81b780001a2313d838fbb50d6ecd1bbf07f55e63ef",
+    "entrypoint": "buy"
+  },
+  {
+    "contractAddress": "0x02524967ac516c0f65975a81b780001a2313d838fbb50d6ecd1bbf07f55e63ef",
+    "entrypoint": "sell"
+  },
+  {
+    "contractAddress": "0x02524967ac516c0f65975a81b780001a2313d838fbb50d6ecd1bbf07f55e63ef",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x0425d6b15f2fea27efd88fec99619f8efe1eb407ff50b645f2036216c0b60b74",
+    "entrypoint": "create_order"
+  },
+  {
+    "contractAddress": "0x0425d6b15f2fea27efd88fec99619f8efe1eb407ff50b645f2036216c0b60b74",
+    "entrypoint": "accept_order"
+  },
+  {
+    "contractAddress": "0x0425d6b15f2fea27efd88fec99619f8efe1eb407ff50b645f2036216c0b60b74",
+    "entrypoint": "cancel_order"
+  },
+  {
+    "contractAddress": "0x0425d6b15f2fea27efd88fec99619f8efe1eb407ff50b645f2036216c0b60b74",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x03b8ba5b0c940437be1eac389adea42276a984b208c62b2ea1384df17742303a",
+    "entrypoint": "attack_explorer_vs_explorer"
+  },
+  {
+    "contractAddress": "0x03b8ba5b0c940437be1eac389adea42276a984b208c62b2ea1384df17742303a",
+    "entrypoint": "attack_explorer_vs_guard"
+  },
+  {
+    "contractAddress": "0x03b8ba5b0c940437be1eac389adea42276a984b208c62b2ea1384df17742303a",
+    "entrypoint": "attack_guard_vs_explorer"
+  },
+  {
+    "contractAddress": "0x03b8ba5b0c940437be1eac389adea42276a984b208c62b2ea1384df17742303a",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "guard_add"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "guard_delete"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "explorer_create"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "explorer_add"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "explorer_delete"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "explorer_explorer_swap"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "explorer_guard_swap"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "guard_explorer_swap"
+  },
+  {
+    "contractAddress": "0x01615056dcbc2e1e04206e90e5ba0f20348001fccc74e05e5db0623af98cfb79",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x004fdee11b875ee703fdac252233697341300d3fa0c1f5ae7b41020ba59cfef9",
+    "entrypoint": "explorer_move"
+  },
+  {
+    "contractAddress": "0x004fdee11b875ee703fdac252233697341300d3fa0c1f5ae7b41020ba59cfef9",
+    "entrypoint": "explorer_extract_reward"
+  },
+  {
+    "contractAddress": "0x004fdee11b875ee703fdac252233697341300d3fa0c1f5ae7b41020ba59cfef9",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x048c6cac2a572ac1832c0c7b548cd4a6ad74236296f5b73c05e207c786b7ecd6",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x021d2f8f35f7d2bf98d9e7691211b1da19a831e33774c09ee1d76faba55f2a48",
+    "entrypoint": "raid_explorer_vs_guard"
+  },
+  {
+    "contractAddress": "0x021d2f8f35f7d2bf98d9e7691211b1da19a831e33774c09ee1d76faba55f2a48",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x025fd62e8b4034b5df7235729b6932a87f3125b8dca54b107c040de1a958b163",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x00323dbc3d6af5e90084927f13a95c9dd13f87c4de03501520235c19f08075ec",
+    "entrypoint": "create"
+  },
+  {
+    "contractAddress": "0x00323dbc3d6af5e90084927f13a95c9dd13f87c4de03501520235c19f08075ec",
+    "entrypoint": "upgrade"
+  },
+  {
+    "contractAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f",
+    "entrypoint": "request_random"
+  }
+]

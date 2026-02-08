@@ -58,9 +58,10 @@ export function createApp(state: AppState) {
   // Override to capture user text input
   terminal.start(
     (data: string) => {
-      // Ctrl+C
+      // Ctrl+C — raw mode swallows the signal, so emit it manually
       if (data === "\x03") {
-        return; // Let the process SIGINT handler deal with it
+        process.emit("SIGINT", "SIGINT");
+        return;
       }
 
       // Enter key

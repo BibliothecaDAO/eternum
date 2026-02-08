@@ -52,11 +52,50 @@ export function createMockClient() {
         totalPlayers: 50,
         lastUpdatedAt: 1700000000,
       }),
-      realm: vi.fn().mockResolvedValue({ entityId: 1, name: "Realm #1" }),
-      explorer: vi.fn().mockResolvedValue({ entityId: 100 }),
-      hyperstructure: vi.fn().mockResolvedValue({ entityId: 200 }),
-      bank: vi.fn().mockResolvedValue({ entityId: 300 }),
-      events: vi.fn().mockResolvedValue({ events: [], totalCount: 0, hasMore: false }),
+      realm: vi.fn().mockResolvedValue({
+        entityId: 1,
+        name: "Realm #1",
+        guard: {
+          totalTroops: 30,
+          slots: [{ troopType: "Knight", count: 20, tier: 1 }, { troopType: "Paladin", count: 10, tier: 2 }],
+          strength: 500,
+        },
+        buildings: [
+          { category: "Farm", position: { x: 1, y: 2 } },
+          { category: "Barracks", position: { x: 3, y: 4 } },
+        ],
+        resources: [
+          { resourceId: 1, name: "Wood", balance: 250 },
+          { resourceId: 2, name: "Stone", balance: 150 },
+        ],
+      }),
+      explorer: vi.fn().mockResolvedValue({
+        entityId: 100,
+        explorerId: 100,
+        troops: {
+          totalTroops: 15,
+          slots: [{ troopType: "Crossbowman", count: 15, tier: 1 }],
+          strength: 200,
+        },
+        carriedResources: [{ resourceId: 1, name: "Wood", amount: 50 }],
+        stamina: 75,
+        isInBattle: false,
+      }),
+      hyperstructure: vi.fn().mockResolvedValue({
+        entityId: 200,
+        position: { x: 100, y: 200 },
+        owner: "0xother",
+        progress: 45,
+        isComplete: false,
+      }),
+      bank: vi.fn().mockResolvedValue({ entityId: 300, position: { x: 50, y: 60 } }),
+      events: vi.fn().mockResolvedValue({
+        events: [
+          { eventId: 1, eventType: "battle_start", timestamp: 1700000000, data: { attackerId: 100 } },
+        ],
+        totalCount: 1,
+        hasMore: false,
+      }),
     },
     cache: {
       invalidateByPrefix: vi.fn(),

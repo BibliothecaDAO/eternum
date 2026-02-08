@@ -43,9 +43,6 @@ describe("action-registry", () => {
         "create_order",
         "accept_order",
         "cancel_order",
-        "create_trade",
-        "accept_trade",
-        "cancel_trade",
         "create_building",
         "destroy_building",
         "pause_production",
@@ -300,9 +297,9 @@ describe("action-registry", () => {
       expect(client.trade.createOrder).toHaveBeenCalledOnce();
     });
 
-    it("create_trade alias still calls client.trade.createOrder", async () => {
+    it("create_order calls client.trade.createOrder", async () => {
       const result = await executeAction(client as any, mockSigner, {
-        type: "create_trade",
+        type: "create_order",
         params: {
           makerId: 1,
           takerId: 0,

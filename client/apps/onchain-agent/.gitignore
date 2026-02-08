@@ -1,2 +1,4 @@
 session.json
 .env
+*.log
+.claude

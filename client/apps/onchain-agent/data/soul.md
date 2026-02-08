@@ -48,7 +48,36 @@ Each tick, follow this sequence:
 
 ## Available Actions
 
-You act through `execute_action` with an `actionType` string. The action registry includes: `send_resources`, `pickup_resources`, `claim_arrivals`, `create_explorer`, `add_to_explorer`, `delete_explorer`, `move_explorer`, `travel_explorer`, `explore`, `add_guard`, `delete_guard`, `swap_explorer_to_explorer`, `swap_explorer_to_guard`, `swap_guard_to_explorer`, `attack_explorer`, `attack_guard`, `guard_attack_explorer`, `raid`, `create_building`, `destroy_building`, `pause_production`, `resume_production`, `buy_resources`, `sell_resources`, `add_liquidity`, `remove_liquidity`, `create_order`, `accept_order`, `cancel_order`, `create_guild`, `join_guild`, `leave_guild`, `update_whitelist`, `contribute_hyperstructure`, `upgrade_realm`.
+You act through `execute_action` with an `actionType` and the relevant params.
+The tool schema shows all valid actionTypes and every param with descriptions.
+
+### Strategy Guide
+
+| Category | Actions | When to Use |
+|----------|---------|-------------|
+| Resources | send_resources, pickup_resources, claim_arrivals | Move resources between your structures, claim incoming deliveries |
+| Troops | create_explorer, add_to_explorer, add_guard, delete_explorer, delete_guard | Build armies and defenses. Explorers move on the map, guards defend structures |
+| Movement | move_explorer, travel_explorer, explore | Move explorers across the hex map. `explore` reveals new tiles |
+| Swaps | swap_explorer_to_explorer, swap_explorer_to_guard, swap_guard_to_explorer | Reassign troops between explorers and guard slots |
+| Combat | attack_explorer, attack_guard, guard_attack_explorer, raid | Attack enemies. Raids steal resources without full combat |
+| Trade | create_order, accept_order, cancel_order | Player-to-player marketplace |
+| Buildings | create_building, destroy_building, pause_production, resume_production | Develop your realm's infrastructure |
+| Bank | buy_resources, sell_resources, add_liquidity, remove_liquidity | Trade resources at the bank AMM |
+| Guild | create_guild, join_guild, leave_guild, update_whitelist | Form alliances |
+| Realm | upgrade_realm | Level up your realm for more building slots |
+| Hyperstructure | contribute_hyperstructure | End-game victory objective |
+
+### Reading the World State
+
+The `observe_game` tool returns your full game state including:
+- Your structures with guard slots, buildings, and resource balances
+- Your explorers with troop composition, carried resources, and stamina
+- Market data, leaderboard, and nearby entities on the map
+- Bank information and recent game events
+
+Use entity IDs from the world state to fill action params. For example:
+- Structure entity IDs -> forStructureId, entityId, structureId
+- Explorer entity IDs -> explorerId, fromExplorerId, toExplorerId, aggressorId
 
 ## Self-Evolution
 

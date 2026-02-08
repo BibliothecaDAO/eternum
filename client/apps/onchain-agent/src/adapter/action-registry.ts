@@ -18,11 +18,6 @@ function register(type: string, handler: ActionHandler) {
   registry.set(type, handler);
 }
 
-function registerAliases(types: string[], handler: ActionHandler) {
-  for (const type of types) {
-    register(type, handler);
-  }
-}
 
 /**
  * Wrap an async client transaction call into a normalised ActionResult.
@@ -31,15 +26,23 @@ function registerAliases(types: string[], handler: ActionHandler) {
 async function wrapTx(fn: () => Promise<any>): Promise<ActionResult> {
   try {
     const result = await fn();
+    const txHash = result?.transaction_hash ?? result?.transactionHash;
+    process.stderr.write(`[tx] success: ${txHash ?? "no hash"}\n`);
     return {
       success: true,
-      txHash: result?.transaction_hash ?? result?.transactionHash ?? undefined,
+      txHash: txHash ?? undefined,
       data: result,
     };
   } catch (err: any) {
+    const msg = err?.message ?? String(err);
+    const detail = err?.data ?? err?.revert_error ?? err?.cause?.message ?? "";
+    process.stderr.write(`[tx] FAILED: ${msg}${detail ? `\n[tx] DETAIL: ${JSON.stringify(detail)}` : ""}\n`);
+    if (err?.stack) {
+      process.stderr.write(`[tx] STACK: ${err.stack.split("\n").slice(0, 3).join("\n")}\n`);
+    }
     return {
       success: false,
-      error: err?.message ?? String(err),
+      error: detail ? `${msg}: ${typeof detail === "string" ? detail : JSON.stringify(detail)}` : msg,
     };
   }
 }
@@ -87,16 +90,16 @@ function numArray(v: unknown): number[] {
 function resourceList(v: unknown): { resourceType: number; amount: number }[] {
   if (!Array.isArray(v)) return [];
   return v.map((r: any) => ({
-    resourceType: num(r.resourceType ?? r.resource_type ?? r.resourceId ?? 0),
-    amount: num(r.amount ?? 0),
+    resourceType: num(r.resourceType),
+    amount: num(r.amount),
   }));
 }
 
 function stealResourceList(v: unknown): { resourceId: number; amount: number }[] {
   if (!Array.isArray(v)) return [];
   return v.map((r: any) => ({
-    resourceId: num(r.resourceId ?? r.resource_id ?? r.resourceType ?? 0),
-    amount: num(r.amount ?? 0),
+    resourceId: num(r.resourceId),
+    amount: num(r.amount),
   }));
 }
 
@@ -109,24 +112,14 @@ function buildingCoord(v: unknown): { alt?: boolean; x: number; y: number } {
   };
 }
 
-/** Extract troop fields from either flat params or a nested `troops` array. */
+/** Extract troop fields from flat params. */
 function troopFields(p: Record<string, unknown>): { category: number; tier: number; amount: number } {
-  if (p.category != null) {
-    return { category: num(p.category), tier: num(p.tier), amount: num(p.amount) };
-  }
-  const troops = p.troops ?? p.units;
-  if (Array.isArray(troops) && troops.length > 0) {
-    const t = troops[0] as Record<string, unknown>;
-    return { category: num(t.category), tier: num(t.tier), amount: num(t.amount) };
-  }
-  return { category: 0, tier: 0, amount: 0 };
+  return { category: num(p.category), tier: num(p.tier), amount: num(p.amount) };
 }
 
-/** Resolve a structure entity ID from various naming conventions the LLM may use. */
+/** Resolve structure entity ID from params. */
 function structureId(p: Record<string, unknown>): number {
-  return num(
-    p.forStructureId ?? p.structureEntityId ?? p.structure_entity_id ?? p.entityId ?? p.entity_id ?? 0,
-  );
+  return num(p.forStructureId);
 }
 
 function liquidityCalls(
@@ -134,9 +127,9 @@ function liquidityCalls(
 ): { resourceType: number; resourceAmount: number; lordsAmount: number }[] {
   if (!Array.isArray(v)) return [];
   return v.map((c: any) => ({
-    resourceType: num(c.resourceType ?? c.resource_type ?? 0),
-    resourceAmount: num(c.resourceAmount ?? c.resource_amount ?? 0),
-    lordsAmount: num(c.lordsAmount ?? c.lords_amount ?? 0),
+    resourceType: num(c.resourceType),
+    resourceAmount: num(c.resourceAmount),
+    lordsAmount: num(c.lordsAmount),
   }));
 }
 
@@ -187,26 +180,25 @@ register("create_explorer", (client, signer, p) => {
       category: troop.category,
       tier: troop.tier,
       amount: troop.amount,
-      spawnDirection: num(p.spawnDirection ?? p.spawn_direction ?? p.direction ?? 0),
+      spawnDirection: num(p.spawnDirection),
     }),
   );
 });
 
-register("add_to_explorer", (client, signer, p) => {
-  const troop = troopFields(p);
-  return wrapTx(() =>
+register("add_to_explorer", (client, signer, p) =>
+  wrapTx(() =>
     client.troops.addToExplorer(signer, {
-      toExplorerId: num(p.toExplorerId ?? p.to_explorer_id ?? p.explorerId ?? p.explorer_id ?? 0),
-      amount: troop.amount || num(p.amount ?? 0),
-      homeDirection: num(p.homeDirection ?? p.home_direction ?? p.direction ?? 0),
+      toExplorerId: num(p.toExplorerId),
+      amount: num(p.amount),
+      homeDirection: num(p.homeDirection),
     }),
-  );
-});
+  ),
+);
 
 register("delete_explorer", (client, signer, p) =>
   wrapTx(() =>
     client.troops.deleteExplorer(signer, {
-      explorerId: num(p.explorerId ?? p.explorer_id ?? 0),
+      explorerId: num(p.explorerId),
     }),
   ),
 );
@@ -216,7 +208,7 @@ register("add_guard", (client, signer, p) => {
   return wrapTx(() =>
     client.troops.addGuard(signer, {
       forStructureId: structureId(p),
-      slot: num(p.slot ?? 0),
+      slot: num(p.slot),
       category: troop.category,
       tier: troop.tier,
       amount: troop.amount,
@@ -228,7 +220,7 @@ register("delete_guard", (client, signer, p) =>
   wrapTx(() =>
     client.troops.deleteGuard(signer, {
       forStructureId: structureId(p),
-      slot: num(p.slot ?? 0),
+      slot: num(p.slot),
     }),
   ),
 );
@@ -236,7 +228,7 @@ register("delete_guard", (client, signer, p) =>
 register("move_explorer", (client, signer, p) =>
   wrapTx(() =>
     client.troops.move(signer, {
-      explorerId: num(p.explorerId ?? p.explorer_id ?? p.armyEntityId ?? p.army_entity_id ?? 0),
+      explorerId: num(p.explorerId),
       directions: numArray(p.directions),
       explore: bool(p.explore),
     }),
@@ -246,7 +238,7 @@ register("move_explorer", (client, signer, p) =>
 register("travel_explorer", (client, signer, p) =>
   wrapTx(() =>
     client.troops.travel(signer, {
-      explorerId: num(p.explorerId ?? p.explorer_id ?? p.armyEntityId ?? p.army_entity_id ?? 0),
+      explorerId: num(p.explorerId),
       directions: numArray(p.directions),
     }),
   ),
@@ -255,7 +247,7 @@ register("travel_explorer", (client, signer, p) =>
 register("explore", (client, signer, p) =>
   wrapTx(() =>
     client.troops.explore(signer, {
-      explorerId: num(p.explorerId ?? p.explorer_id ?? p.armyEntityId ?? p.army_entity_id ?? 0),
+      explorerId: num(p.explorerId),
       directions: numArray(p.directions),
     }),
   ),
@@ -377,9 +369,9 @@ const cancelOrderHandler: ActionHandler = (client, signer, p) =>
     }),
   );
 
-registerAliases(["create_order", "create_trade"], createOrderHandler);
-registerAliases(["accept_order", "accept_trade"], acceptOrderHandler);
-registerAliases(["cancel_order", "cancel_trade"], cancelOrderHandler);
+register("create_order", createOrderHandler);
+register("accept_order", acceptOrderHandler);
+register("cancel_order", cancelOrderHandler);
 
 // ---------------------------------------------------------------------------
 // Buildings
@@ -478,7 +470,7 @@ register("create_guild", (client, signer, p) =>
   wrapTx(() =>
     client.guild.create(signer, {
       isPublic: bool(p.isPublic),
-      guildName: str(p.guildName ?? p.name ?? ""),
+      guildName: str(p.guildName),
     }),
   ),
 );
@@ -557,9 +549,13 @@ export async function executeAction(
   signer: Account,
   action: GameAction,
 ): Promise<ActionResult> {
+  process.stderr.write(`[action] ${action.type} params=${JSON.stringify(action.params)}\n`);
   const handler = registry.get(action.type);
   if (!handler) {
+    process.stderr.write(`[action] UNKNOWN action type: ${action.type}\n`);
     return { success: false, error: `Unknown action type: ${action.type}` };
   }
-  return handler(client, signer, action.params);
+  const result = await handler(client, signer, action.params);
+  process.stderr.write(`[action] ${action.type} → success=${result.success}${result.txHash ? ` tx=${result.txHash}` : ""}${result.error ? ` error=${result.error}` : ""}\n`);
+  return result;
 }

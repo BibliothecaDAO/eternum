@@ -94,7 +94,7 @@ describe("action-registry additional handlers", () => {
         explorerId: "2",
         structureId: "9",
         structureDirection: "1",
-        stealResources: [{ resourceType: "8", amount: "9" }],
+        stealResources: [{ resourceId: "8", amount: "9" }],
       },
     });
     expect(client.combat.raid).toHaveBeenCalledOnce();
@@ -102,7 +102,7 @@ describe("action-registry additional handlers", () => {
     expect(raidProps.stealResources).toEqual([{ resourceId: 8, amount: 9 }]);
   });
 
-  it("routes trade aliases and handlers", async () => {
+  it("routes trade handlers", async () => {
     await executeAction(client as any, mockSigner, {
       type: "accept_order",
       params: { takerId: "1", tradeId: "2", takerBuysCount: "3" },
@@ -110,22 +110,10 @@ describe("action-registry additional handlers", () => {
     expect(client.trade.acceptOrder).toHaveBeenCalledOnce();
 
     await executeAction(client as any, mockSigner, {
-      type: "accept_trade",
-      params: { takerId: "5", tradeId: "6", takerBuysCount: "7" },
-    });
-    expect(client.trade.acceptOrder).toHaveBeenCalledTimes(2);
-
-    await executeAction(client as any, mockSigner, {
       type: "cancel_order",
       params: { tradeId: "10" },
     });
     expect(client.trade.cancelOrder).toHaveBeenCalledOnce();
-
-    await executeAction(client as any, mockSigner, {
-      type: "cancel_trade",
-      params: { tradeId: "11" },
-    });
-    expect(client.trade.cancelOrder).toHaveBeenCalledTimes(2);
   });
 
   it("routes remaining building, bank, guild and hyperstructure handlers", async () => {

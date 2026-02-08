@@ -13,6 +13,8 @@ vi.mock("@sinclair/typebox", () => ({
     Object: (value: unknown) => value,
     Optional: (value: unknown) => value,
     String: () => ({}),
+    Number: () => ({}),
+    Boolean: () => ({}),
     Record: () => ({}),
     Array: (value: unknown) => value,
     Unknown: () => ({}),
@@ -20,7 +22,9 @@ vi.mock("@sinclair/typebox", () => ({
 }));
 
 vi.mock("@mariozechner/pi-agent-core", () => ({ Agent: class {} }));
-vi.mock("@mariozechner/pi-ai", () => ({}));
+vi.mock("@mariozechner/pi-ai", () => ({
+  StringEnum: (values: readonly string[], opts?: unknown) => ({ type: "string", enum: values, ...((opts as any) ?? {}) }),
+}));
 vi.mock("@mariozechner/pi-coding-agent", () => ({ createReadTool: () => ({}), createWriteTool: () => ({}) }));
 
 const { createGameTools } = await import("@bibliothecadao/game-agent");
@@ -55,11 +59,9 @@ describe("pi package integration", () => {
       getText(
         await executeTool!.execute("execute-1", {
           actionType: "move_explorer",
-          params: {
-            explorerId: "42",
-            directions: ["1", "2"],
-            explore: "true",
-          },
+          explorerId: "42",
+          directions: ["1", "2"],
+          explore: "true",
         }),
       ),
     );
@@ -73,7 +75,6 @@ describe("pi package integration", () => {
       getText(
         await simulateTool!.execute("simulate-1", {
           actionType: "leave_guild",
-          params: {},
         }),
       ),
     );
