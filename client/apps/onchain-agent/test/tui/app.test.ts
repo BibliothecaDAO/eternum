@@ -201,8 +201,8 @@ describe("createApp", () => {
     expect(chat.children.some((c: any) => c.text === "[Agent] Starting...")).toBe(true);
     expect(chat.children.some((c: any) => c.markdown === "Hello")).toBe(true);
     expect(chat.children.some((c: any) => c.text?.includes("-> observe_game"))).toBe(true);
-    expect(chat.children.some((c: any) => c.text === "  v observe_game done")).toBe(true);
-    expect(chat.children.some((c: any) => c.text === "  x execute_action done")).toBe(true);
+    expect(chat.children.some((c: any) => c.text === "  \u2714 observe_game done")).toBe(true);
+    expect(chat.children.some((c: any) => c.text === "  \u2718 execute_action done")).toBe(true);
     expect(chat.children.some((c: any) => c.text === "[Agent] Done.\n")).toBe(true);
 
     app.dispose();

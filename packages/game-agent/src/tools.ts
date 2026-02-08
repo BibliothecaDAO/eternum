@@ -26,7 +26,7 @@ export function createObserveGameTool(adapter: GameAdapter<any>): AgentTool<type
 				resources: state.resources ? Object.fromEntries(state.resources) : undefined,
 			};
 			return {
-				content: [{ type: "text", text: JSON.stringify(serializable, null, 2) }],
+				content: [{ type: "text", text: JSON.stringify(serializable) }],
 				details: { tick: state.tick },
 			};
 		},

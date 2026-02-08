@@ -46,8 +46,13 @@ export function createApp(state: AppState) {
   tui.addChild(inputLabel);
 
   // -- Subscribe to agent events --
+  const MAX_CHAT_CHILDREN = 200;
   const unsubscribe = state.agent.subscribe((event: AgentEvent) => {
     handleAgentEvent(event, chat, tui);
+    // Trim old chat entries to prevent unbounded growth
+    while (chat.children.length > MAX_CHAT_CHILDREN) {
+      chat.children.shift();
+    }
     header.text = formatHeader(state.ticker.tickCount, state.agent.state.isStreaming);
     tui.requestRender();
   });
@@ -144,13 +149,40 @@ function handleAgentEvent(event: AgentEvent, chat: Container, tui: TUI) {
       break;
     }
     case "agent_end": {
+      // Check if any messages carry an error
+      const errorMsgs = (event.messages ?? []).filter((m: any) => m.errorMessage);
+      if (errorMsgs.length > 0) {
+        for (const em of errorMsgs) {
+          const errText = new Text();
+          errText.text = `[Agent ERROR] ${(em as any).errorMessage}`;
+          chat.addChild(errText);
+          process.stderr.write(`[agent] ERROR: ${(em as any).errorMessage}\n`);
+        }
+      }
       const text = new Text();
       text.text = "[Agent] Done.\n";
       chat.addChild(text);
       break;
     }
+    case "turn_end": {
+      const msg = (event as any).message;
+      if (msg?.errorMessage) {
+        const errText = new Text();
+        errText.text = `[Agent ERROR] ${msg.errorMessage}`;
+        chat.addChild(errText);
+        process.stderr.write(`[agent] ERROR: ${msg.errorMessage}\n`);
+      }
+      break;
+    }
     case "message_end": {
       if (event.message.role === "assistant") {
+        // Show error messages that have errorMessage field
+        if ((event.message as any).errorMessage) {
+          const errText = new Text();
+          errText.text = `[Agent ERROR] ${(event.message as any).errorMessage}`;
+          chat.addChild(errText);
+          process.stderr.write(`[agent] ERROR: ${(event.message as any).errorMessage}\n`);
+        }
         const content = event.message.content;
         if (Array.isArray(content)) {
           for (const block of content) {
@@ -171,7 +203,7 @@ function handleAgentEvent(event: AgentEvent, chat: Container, tui: TUI) {
       break;
     }
     case "tool_execution_end": {
-      const icon = event.isError ? "x" : "v";
+      const icon = event.isError ? "\u2718" : "\u2714";
       const text = new Text();
       text.text = `  ${icon} ${event.toolName} done`;
       chat.addChild(text);

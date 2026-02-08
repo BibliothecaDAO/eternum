@@ -78,6 +78,50 @@ export function createGameAgent<TState extends WorldState = WorldState>(
 		);
 	};
 
+	// Context windowing: estimate tokens and trim old messages to stay under budget.
+	// Rough estimate: 1 token ≈ 4 chars for English text / JSON.
+	const MAX_CONTEXT_TOKENS = 150_000;
+	const CHARS_PER_TOKEN = 4;
+	const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * CHARS_PER_TOKEN;
+
+	function estimateMessageChars(msg: AgentMessage): number {
+		if (msg.role !== "user" && msg.role !== "assistant" && msg.role !== "toolResult") return 0;
+		if (!msg.content) return 0;
+		if (typeof msg.content === "string") return msg.content.length;
+		if (Array.isArray(msg.content)) {
+			let total = 0;
+			for (const block of msg.content) {
+				if (block.type === "text") total += block.text.length;
+				else if (block.type === "toolCall") total += JSON.stringify(block.arguments ?? {}).length + (block.name?.length ?? 0);
+			}
+			return total;
+		}
+		return 0;
+	}
+
+	const transformContext = async (messages: AgentMessage[]): Promise<AgentMessage[]> => {
+		// Always keep the most recent messages. Walk backwards until we hit the budget.
+		let totalChars = 0;
+		let cutoff = messages.length;
+		for (let i = messages.length - 1; i >= 0; i--) {
+			totalChars += estimateMessageChars(messages[i]);
+			if (totalChars > MAX_CONTEXT_CHARS) {
+				cutoff = i + 1;
+				break;
+			}
+		}
+		if (cutoff > 0 && cutoff < messages.length) {
+			const trimmed = messages.slice(cutoff);
+			// Ensure we start with a user/toolResult message (not assistant)
+			while (trimmed.length > 0 && trimmed[0].role === "assistant") {
+				trimmed.shift();
+			}
+			process.stderr.write(`[context] trimmed ${messages.length - trimmed.length} old messages (${messages.length} → ${trimmed.length})\n`);
+			return trimmed;
+		}
+		return messages;
+	};
+
 	// Create agent
 	const agentOptions: ConstructorParameters<typeof Agent>[0] = {
 		initialState: {
@@ -88,6 +132,7 @@ export function createGameAgent<TState extends WorldState = WorldState>(
 			messages: [],
 		},
 		convertToLlm,
+		transformContext,
 	};
 
 	if (streamFn) {
