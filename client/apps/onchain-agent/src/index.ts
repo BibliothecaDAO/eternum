@@ -44,6 +44,8 @@ const CONFIG_PATH_ALIASES: Record<string, keyof AgentConfig> = {
   "world.worldaddress": "worldAddress",
   "manifestpath": "manifestPath",
   "world.manifestpath": "manifestPath",
+  "gamename": "gameName",
+  "game.name": "gameName",
   "chainid": "chainId",
   "session.chainid": "chainId",
   "sessionbasepath": "sessionBasePath",
@@ -65,6 +67,7 @@ const BACKEND_KEYS = new Set<keyof AgentConfig>([
   "toriiUrl",
   "worldAddress",
   "manifestPath",
+  "gameName",
   "chainId",
   "sessionBasePath",
 ]);
@@ -111,6 +114,7 @@ function parseConfigValue(key: keyof AgentConfig, value: unknown): AgentConfig[k
     case "toriiUrl":
     case "worldAddress":
     case "manifestPath":
+    case "gameName":
     case "chainId":
     case "sessionBasePath":
     case "modelProvider":
@@ -142,6 +146,7 @@ async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServic
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
     chainId: config.chainId,
+    gameName: config.gameName,
     basePath: config.sessionBasePath,
     manifest,
   });

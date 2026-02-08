@@ -67,6 +67,7 @@ const mocks = vi.hoisted(() => {
       loopEnabled: true,
       modelProvider: "anthropic",
       modelId: "claude-test",
+      gameName: "eternum",
       dataDir: "/tmp/agent-data",
     }),
     adapterCtor: vi.fn(),
@@ -201,6 +202,7 @@ describe("index bootstrap", () => {
       loopEnabled: true,
       modelProvider: "anthropic",
       modelId: "claude-test",
+      gameName: "eternum",
       dataDir: "/tmp/agent-data",
     });
 
@@ -220,6 +222,7 @@ describe("index bootstrap", () => {
 
       expect(mocks.sessionInstances).toHaveLength(1);
       expect(mocks.sessionInstances[0]?.connect).toHaveBeenCalledOnce();
+      expect((mocks.sessionInstances[0]?.config as any)?.gameName).toBe("eternum");
       expect(mocks.createClient).toHaveBeenCalledWith({
         rpcUrl: "http://rpc.local",
         toriiUrl: "http://torii.local",
@@ -278,6 +281,7 @@ describe("index bootstrap", () => {
       loopEnabled: true,
       modelProvider: "anthropic",
       modelId: "claude-test",
+      gameName: "eternum",
       dataDir: "/tmp/agent-data",
     });
 
@@ -319,6 +323,11 @@ describe("index bootstrap", () => {
       expect(mocks.createClient).toHaveBeenCalledTimes(2);
       expect(mocks.createClient.mock.calls[1][0].rpcUrl).toBe("http://rpc.next");
       expect(mocks.sessionInstances).toHaveLength(2);
+
+      await gameAgentCall.runtimeConfigManager.applyChanges([{ path: "game.name", value: "othergame" }], "game-swap");
+      expect(mocks.createClient).toHaveBeenCalledTimes(3);
+      expect(mocks.sessionInstances).toHaveLength(3);
+      expect((mocks.sessionInstances[2]?.config as any)?.gameName).toBe("othergame");
       expect(exitSpy).not.toHaveBeenCalled();
     } finally {
       logSpy.mockRestore();
@@ -344,6 +353,7 @@ describe("index bootstrap", () => {
       loopEnabled: false,
       modelProvider: "anthropic",
       modelId: "claude-test",
+      gameName: "eternum",
       dataDir: "/tmp/agent-data",
     });
     mocks.createClient.mockResolvedValueOnce(mocks.client).mockRejectedValueOnce(new Error("first swap failed"));

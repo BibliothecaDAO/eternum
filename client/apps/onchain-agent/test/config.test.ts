@@ -12,6 +12,7 @@ const ENV_KEYS = [
   "LOOP_ENABLED",
   "MODEL_PROVIDER",
   "MODEL_ID",
+  "GAME_NAME",
 ] as const;
 
 const originalEnv = { ...process.env };
@@ -38,6 +39,7 @@ describe("loadConfig", () => {
     process.env.LOOP_ENABLED = "false";
     process.env.MODEL_PROVIDER = "openai";
     process.env.MODEL_ID = "gpt-test";
+    process.env.GAME_NAME = "othergame";
 
     const cfg = loadConfig();
 
@@ -51,6 +53,7 @@ describe("loadConfig", () => {
     expect(cfg.loopEnabled).toBe(false);
     expect(cfg.modelProvider).toBe("openai");
     expect(cfg.modelId).toBe("gpt-test");
+    expect(cfg.gameName).toBe("othergame");
     expect(cfg.dataDir).toContain("/onchain-agent/data");
   });
 
@@ -82,5 +85,10 @@ describe("loadConfig", () => {
 
     process.env.LOOP_ENABLED = "nonsense";
     expect(loadConfig().loopEnabled).toBe(true);
+  });
+
+  it("defaults GAME_NAME to eternum", () => {
+    delete process.env.GAME_NAME;
+    expect(loadConfig().gameName).toBe("eternum");
   });
 });

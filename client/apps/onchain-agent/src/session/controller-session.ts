@@ -10,14 +10,19 @@ interface SessionManifest {
 export interface ControllerSessionConfig {
   rpcUrl: string;
   chainId: string;
+  gameName?: string;
   basePath?: string;
   manifest: SessionManifest;
 }
 
+export interface BuildSessionPolicyOptions {
+  gameName?: string;
+}
+
 const POLICY_METHODS_BY_SUFFIX: Record<string, Array<{ name: string; entrypoint: string; description: string }>> = {
   resource_systems: [
-    { name: "send_resources", entrypoint: "send_resources", description: "Send resources between structures" },
-    { name: "pickup_resources", entrypoint: "pickup_resources", description: "Pick up resources from a structure" },
+    { name: "send", entrypoint: "send", description: "Send resources between structures" },
+    { name: "pickup", entrypoint: "pickup", description: "Pick up resources from a structure" },
     { name: "arrivals_offload", entrypoint: "arrivals_offload", description: "Claim incoming arrivals" },
   ],
   troop_management_systems: [
@@ -36,8 +41,7 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, Array<{ name: string; entrypoint:
   ],
   troop_movement_systems: [
     { name: "explorer_move", entrypoint: "explorer_move", description: "Move explorer troops" },
-    { name: "explorer_travel", entrypoint: "explorer_travel", description: "Travel explorer through explored tiles" },
-    { name: "explorer_explore", entrypoint: "explorer_explore", description: "Explore adjacent tiles" },
+    { name: "explorer_extract_reward", entrypoint: "explorer_extract_reward", description: "Extract explore reward" },
   ],
   troop_battle_systems: [
     {
@@ -67,16 +71,20 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, Array<{ name: string; entrypoint:
   production_systems: [
     { name: "create_building", entrypoint: "create_building", description: "Create building" },
     { name: "destroy_building", entrypoint: "destroy_building", description: "Destroy building" },
-    { name: "pause_production", entrypoint: "pause_production", description: "Pause production" },
-    { name: "resume_production", entrypoint: "resume_production", description: "Resume production" },
+    { name: "pause_building_production", entrypoint: "pause_building_production", description: "Pause production" },
+    {
+      name: "resume_building_production",
+      entrypoint: "resume_building_production",
+      description: "Resume production",
+    },
   ],
   bank_systems: [
-    { name: "buy_resources", entrypoint: "buy_resources", description: "Buy resources from bank" },
-    { name: "sell_resources", entrypoint: "sell_resources", description: "Sell resources to bank" },
+    { name: "buy", entrypoint: "buy", description: "Buy resources from bank" },
+    { name: "sell", entrypoint: "sell", description: "Sell resources to bank" },
   ],
   liquidity_systems: [
-    { name: "add_liquidity", entrypoint: "add_liquidity", description: "Add liquidity to pool" },
-    { name: "remove_liquidity", entrypoint: "remove_liquidity", description: "Remove liquidity from pool" },
+    { name: "add", entrypoint: "add", description: "Add liquidity to pool" },
+    { name: "remove", entrypoint: "remove", description: "Remove liquidity from pool" },
   ],
   guild_systems: [
     { name: "create_guild", entrypoint: "create_guild", description: "Create guild" },
@@ -84,11 +92,11 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, Array<{ name: string; entrypoint:
     { name: "leave_guild", entrypoint: "leave_guild", description: "Leave guild" },
     { name: "update_whitelist", entrypoint: "update_whitelist", description: "Update guild whitelist" },
   ],
-  realm_systems: [{ name: "upgrade_realm", entrypoint: "upgrade_realm", description: "Upgrade realm level" }],
+  realm_systems: [{ name: "level_up", entrypoint: "level_up", description: "Upgrade realm level" }],
   hyperstructure_systems: [
     {
-      name: "contribute_to_construction",
-      entrypoint: "contribute_to_construction",
+      name: "contribute",
+      entrypoint: "contribute",
       description: "Contribute resources to hyperstructure",
     },
   ],
@@ -104,15 +112,36 @@ function normalizeAddress(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
-export function buildSessionPoliciesFromManifest(manifest: SessionManifest): SessionPolicies {
+function normalizeGameName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase().replace(/^s\d+_/, "");
+  return normalized || null;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function tagMatchesGame(tag: string, gameName: string | null): boolean {
+  if (!gameName) return true;
+  const pattern = new RegExp(`(?:^|_)${escapeRegExp(gameName)}-`);
+  return pattern.test(tag);
+}
+
+export function buildSessionPoliciesFromManifest(
+  manifest: SessionManifest,
+  options: BuildSessionPolicyOptions = {},
+): SessionPolicies {
   const contracts: Record<string, { methods: Array<{ name: string; entrypoint: string; description: string }> }> = {};
   const entries = Array.isArray(manifest.contracts) ? manifest.contracts : [];
+  const gameName = normalizeGameName(options.gameName);
 
   for (const contract of entries) {
     const item = contract as Record<string, unknown>;
     const tag = normalizeTag(item.tag);
     const address = normalizeAddress(item.address);
     if (!tag || !address) continue;
+    if (!tagMatchesGame(tag, gameName)) continue;
 
     for (const [suffix, methods] of Object.entries(POLICY_METHODS_BY_SUFFIX)) {
       if (!(tag === suffix || tag.endsWith(`-${suffix}`) || tag.includes(suffix))) {
@@ -135,8 +164,9 @@ export function buildSessionPoliciesFromManifest(manifest: SessionManifest): Ses
   }
 
   if (Object.keys(contracts).length === 0) {
+    const gameSuffix = gameName ? ` for game '${gameName}'` : "";
     throw new Error(
-      "Could not derive Controller session policies from manifest: no recognized Eternum system contracts found",
+      `Could not derive Controller session policies from manifest${gameSuffix}: no recognized system contracts found`,
     );
   }
 
@@ -147,7 +177,7 @@ export class ControllerSession {
   private provider: SessionProvider;
 
   constructor(config: ControllerSessionConfig) {
-    const policies = buildSessionPoliciesFromManifest(config.manifest);
+    const policies = buildSessionPoliciesFromManifest(config.manifest, { gameName: config.gameName });
     this.provider = new SessionProvider({
       rpc: config.rpcUrl,
       chainId: config.chainId,

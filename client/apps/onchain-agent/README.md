@@ -18,6 +18,7 @@ cp .env.example .env
 - `WORLD_ADDRESS`
 - `MANIFEST_PATH`
 - `CHAIN_ID` (e.g. `SN_SEPOLIA`)
+- `GAME_NAME` (default: `eternum`)
 - `LOOP_ENABLED` (`true` or `false`)
 - `MODEL_PROVIDER` and `MODEL_ID`
 - matching API key (for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`)
@@ -55,6 +56,7 @@ The session persists to `SESSION_BASE_PATH` (default: `.cartridge/`). Restarting
 |---------|---------|-------------|
 | `CHAIN_ID` | `SN_SEPOLIA` | StarkNet chain ID (`SN_SEPOLIA`, `SN_MAIN`, or Dojo slot/katana encoded IDs) |
 | `SESSION_BASE_PATH` | `.cartridge` | Directory for session storage (gitignored) |
+| `GAME_NAME` | `eternum` | Game namespace used to select policy contracts from manifest tags (for example `s1_eternum-*`) |
 
 ### Runtime requirements
 
@@ -100,6 +102,7 @@ Supported paths (including aliases like `world.rpcUrl`, `model.id`, `loop.enable
 - `toriiUrl`
 - `worldAddress`
 - `manifestPath`
+- `gameName`
 - `chainId`
 - `sessionBasePath`
 - `tickIntervalMs`
