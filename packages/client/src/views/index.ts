@@ -92,7 +92,7 @@ export class ViewClient {
       // Fetch armies to find explorers for this realm
       const allArmies = await this.sql.fetchAllArmiesMapData();
       const ownedArmies = allArmies.filter(
-        (a: any) => a.owner !== undefined && a.owner === owner,
+        (a: any) => (a.owner_address ?? a.owner) !== undefined && (a.owner_address ?? a.owner) === owner,
       );
 
       const guardState = this.buildGuardState(guards);
@@ -251,7 +251,7 @@ export class ViewClient {
         .filter((a: any) => inRadius(Number(a.coord_x ?? a.x ?? 0), Number(a.coord_y ?? a.y ?? 0)))
         .map((a: any) => ({
           entityId: Number(a.entity_id ?? a.entityId ?? 0),
-          owner: String(a.owner ?? "0x0"),
+          owner: String(a.owner_address ?? a.owner ?? "0x0"),
           position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
           troops: [],
           strength: 0,
@@ -362,7 +362,9 @@ export class ViewClient {
         guardStrength: 0,
       }));
 
-      const ownedArmies = allArmies.filter((a: any) => String(a.owner) === address);
+      const ownedArmies = allArmies.filter(
+        (a: any) => String(a.owner_address ?? a.owner) === address,
+      );
       const playerArmies: PlayerArmySummary[] = ownedArmies.map((a: any) => ({
         entityId: Number(a.entity_id ?? a.entityId ?? 0),
         explorerId: Number(a.explorer_id ?? a.entity_id ?? 0),

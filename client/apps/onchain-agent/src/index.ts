@@ -185,6 +185,11 @@ async function resolveWorldConfig(config: AgentConfig): Promise<{
 async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServices> {
   const { manifest, worldAddress, toriiUrl, rpcUrl } = await resolveWorldConfig(config);
 
+  // Write resolved values back so get_agent_config reflects actual state
+  config.rpcUrl = rpcUrl;
+  config.toriiUrl = toriiUrl;
+  config.worldAddress = worldAddress;
+
   const session = new ControllerSession({
     rpcUrl,
     chainId: config.chainId,
