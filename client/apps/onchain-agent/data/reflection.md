@@ -1,5 +1,104 @@
 # Reflection Log
 
+## Tick 1770592109 - Fourth Active Tick - LEARNING TICK
+
+**Starting Position:**
+- Rank: 1st with 360 points (+40 from last tick - massive gain!)
+- Structures: 3 well-defended realms
+- Explorers: 5 armies (NEW! Army 3636 created)
+- Economy: Excellent
+- Explored tiles: 256
+
+**Actions Attempted (All Failed - Learning Experience):**
+1. ❌ Create explorer from Structure 450 → "reached limit of troops for your structure"
+2. ❌ Create explorer from Structure 455 → "explorer spawn location is occupied"
+3. ❌ Add guard to Structure 450 → "reached limit of guards per structure"
+4. ❌ Build new building at Structure 450 → "space is occupied"
+5. ❌ Swap explorer troops to guard → "explorer is not adjacent to structure"
+
+**Critical Learnings - Game Constraints:**
+
+### Troop Limits
+- Each structure has a **maximum number of armies/explorers** it can spawn
+- Cannot create unlimited explorers from one structure
+- This is a hard constraint preventing spam
+
+### Guard Limits
+- Structures have exactly **2 guard slots maximum**
+- Cannot add more guards beyond this limit
+- Guards already at capacity (both slots filled)
+
+### Building Limits
+- Level 1 structures have **limited building spaces**
+- Structure 450 has 13 buildings and is at capacity
+- Need to **upgrade realm** to get more building slots
+- Realm upgrade requires significant resources (more than currently available)
+
+### Stamina Mechanics (CRITICAL INSIGHT)
+- **ALL 5 explorers stuck at 20 stamina**
+- Exploration requires 30 stamina
+- Explorers do NOT automatically regenerate stamina per tick
+- Stamina recovery likely requires:
+  - Explorers to return to structures?
+  - Manual stamina recovery action?
+  - Time-based recovery with specific conditions?
+- **Game config shows:** gainPerTick: 20, but NOT applying automatically
+
+### Adjacency Rules
+- Being at the same hex coordinate ≠ adjacent in hex terms
+- Must be truly adjacent (neighboring hex) for troop swaps
+- Important for tactical positioning
+
+**Results:**
+- ✓ Gained +40 points this tick (through automated exploration)
+- ✓ New explorer 3636 was created automatically
+- ✓ Multiple exploration actions occurred (5 new tiles explored)
+- ✓ All structures remain well-guarded
+- ✓ Economy continues growing strong
+
+**Strategic Insights:**
+1. **Automation is Working:** Despite my failed manual actions, automated systems gained +40 points
+2. **Hit Growth Limits:** Reached several hard game constraints at current development level
+3. **Need Realm Upgrades:** To expand further, need to upgrade realms for more:
+   - Building slots
+   - Possibly more army capacity
+4. **Stamina is Key Bottleneck:** All 5 explorers at 20 stamina prevents manual exploration
+5. **Dominant Position Maintained:** 360 points vs 150 (#2) = 2.4x lead
+
+**Next Priorities:**
+1. **Investigate stamina recovery** - critical to understand this mechanic
+2. **Gather resources for realm upgrade:**
+   - Level 2 requires: 360M Labor, 2.4B Wheat, 600k Essence, 180M Wood
+   - Currently have: 86.8M Labor, 1.308B Wheat, 3.25k Essence, 541.5k Wood
+   - Need: More of everything (especially Essence!)
+3. **Let automated exploration continue** - it's working excellently
+4. **Monitor enemy movements** - enemy army 517 still passive
+
+**Enemy Status:**
+- Enemy army 517 (7,968k Crossbowman) remains at (1829488891, 1829488895) - 4+ ticks stationary
+- No threats to our positions
+- Other players far behind in points
+
+**Resource Status (Structure 450):**
+- Wheat: 1.308B (growing)
+- Labor: 86.820M (needs more for upgrade)
+- Knight: 13.325M (good reserves despite 3 explorer creations)
+- Essence: 3.25k (needs MUCH more for upgrade - 600k required!)
+- Coal: 1.665M
+- Wood: 541.5k (needs 180M for upgrade)
+- Copper: 388.2k
+
+**Key Takeaway:**
+This was a **learning tick** rather than an action tick. I discovered multiple hard game limits and constraints. The automated systems are performing excellently (+40 points), so the best strategy may be to:
+1. Let automation continue working
+2. Focus on resource accumulation for realm upgrades
+3. Research stamina recovery mechanics
+4. Plan for next phase of expansion after upgrades
+
+**Consecutive Successful Manual Actions:** 3 (last tick)
+**This Tick Manual Actions:** 0 successful (all failed due to game constraints)
+**Automated Actions This Tick:** Highly successful (+40 points, 5 tiles)
+
 ## Tick 1770591957 - Third Active Tick
 
 **Starting Position:**
