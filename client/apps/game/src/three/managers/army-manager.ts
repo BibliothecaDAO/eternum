@@ -49,6 +49,8 @@ import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
+import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
+import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -64,6 +66,12 @@ interface PendingExplorerTroopsUpdate {
   attackedTowardDegrees?: number;
   battleCooldownEnd?: number;
   battleTimerLeft?: number;
+}
+
+interface MovingArmySourceState {
+  bucketKey: string;
+  col: number;
+  row: number;
 }
 
 interface AddArmyParams {
@@ -103,7 +111,7 @@ export class ArmyManager {
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
-  private pendingRenderOptions: { force?: boolean } | null = null;
+  private pendingRenderOptions: { force?: boolean; transitionToken?: number } | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
   private lastKnownVisibleHexes: Map<ID, { col: number; row: number }> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
@@ -132,6 +140,7 @@ export class ArmyManager {
   private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private latestTransitionToken = 0;
   private memoryMonitor?: MemoryMonitor;
   private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
@@ -143,7 +152,7 @@ export class ArmyManager {
   private chunkStride: number;
   private needsSpatialReindex = false;
   // Track source buckets for moving armies to keep them visible during animation
-  private movingArmySourceBuckets: Map<ID, string> = new Map();
+  private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
 
   // Path visualization
   private pathRenderer: PathRenderer;
@@ -581,8 +590,16 @@ export class ArmyManager {
     return false;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
+    const transitionToken = options?.transitionToken;
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (transitionToken !== undefined) {
+      this.latestTransitionToken = transitionToken;
+    }
+
     await this.armyModel.loadPromise;
 
     if (!force && this.currentChunkKey === chunkKey) {
@@ -604,6 +621,10 @@ export class ArmyManager {
       return;
     }
 
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+
     const previousChunkKey = this.currentChunkKey;
     const chunkChanged = previousChunkKey !== chunkKey;
 
@@ -613,7 +634,7 @@ export class ArmyManager {
     }
 
     // Create and track the chunk switch promise
-    const renderOptions = { force: force || chunkChanged };
+    const renderOptions = { force: force || chunkChanged, transitionToken };
     this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, renderOptions);
 
     try {
@@ -623,7 +644,10 @@ export class ArmyManager {
     }
   }
 
-  private renderVisibleArmies(chunkKey: string, options?: { force?: boolean }): Promise<void> {
+  private renderVisibleArmies(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number },
+  ): Promise<void> {
     if (!chunkKey) {
       return Promise.resolve();
     }
@@ -955,7 +979,17 @@ export class ArmyManager {
     });
   }
 
-  private async executeRenderForChunk(chunkKey: string, options?: { force?: boolean }): Promise<void> {
+  private async executeRenderForChunk(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number },
+  ): Promise<void> {
+    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+      return;
+    }
+
     // Ensure centralized visibility state is refreshed when invoked outside the render loop
     this.visibilityManager?.beginFrame();
 
@@ -968,6 +1002,13 @@ export class ArmyManager {
     // Preload all required models once
     if (requiredModelTypes.size > 0) {
       await this.armyModel.preloadModels(requiredModelTypes);
+    }
+
+    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+      return;
     }
 
     // Recompute after async work to capture any armies added during preload
@@ -1069,24 +1110,14 @@ export class ArmyManager {
       }
     }
 
-    // Check if destination position is in bounds
-    const destInBounds = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
-
-    // For moving armies, also check if source position is in bounds
-    // This ensures armies remain visible throughout their movement across chunk boundaries
-    let sourceInBounds = false;
-    const sourceBucketKey = this.movingArmySourceBuckets.get(army.entityId);
-    if (sourceBucketKey && !destInBounds) {
-      // Parse source bucket key to get approximate source position
-      const [bucketX, bucketY] = sourceBucketKey.split(",").map(Number);
-      // Use bucket center as approximate source position
-      const sourceX = (bucketX + 0.5) * this.chunkStride;
-      const sourceY = (bucketY + 0.5) * this.chunkStride;
-      sourceInBounds =
-        sourceX >= bounds.minCol && sourceX <= bounds.maxCol && sourceY >= bounds.minRow && sourceY <= bounds.maxRow;
-    }
-
-    if (!destInBounds && !sourceInBounds) {
+    const sourceState = this.movingArmySourceBuckets.get(army.entityId);
+    if (
+      !shouldArmyRemainVisibleInBounds(
+        { col: x, row: y },
+        bounds,
+        sourceState ? { col: sourceState.col, row: sourceState.row } : undefined,
+      )
+    ) {
       return false;
     }
 
@@ -1154,17 +1185,17 @@ export class ArmyManager {
    * Remove army from its tracked source bucket after movement completes.
    */
   private cleanupMovementSourceBucket(entityId: ID) {
-    const sourceBucketKey = this.movingArmySourceBuckets.get(entityId);
-    if (!sourceBucketKey) {
+    const sourceState = this.movingArmySourceBuckets.get(entityId);
+    if (!sourceState) {
       return;
     }
     this.movingArmySourceBuckets.delete(entityId);
 
-    const bucket = this.chunkToArmies.get(sourceBucketKey);
+    const bucket = this.chunkToArmies.get(sourceState.bucketKey);
     if (bucket) {
       bucket.delete(entityId);
       if (bucket.size === 0) {
-        this.chunkToArmies.delete(sourceBucketKey);
+        this.chunkToArmies.delete(sourceState.bucketKey);
       }
     }
   }
@@ -1174,6 +1205,7 @@ export class ArmyManager {
       this.rebuildSpatialIndex();
     }
     const visibleArmies: ArmyData[] = [];
+    const seenArmyIds = new Set<ID>();
     const bounds = this.getChunkBounds(startRow, startCol);
 
     const minCol = bounds.minCol;
@@ -1192,10 +1224,14 @@ export class ArmyManager {
         const armyIds = this.chunkToArmies.get(key);
         if (armyIds) {
           for (const id of armyIds) {
+            if (seenArmyIds.has(id)) {
+              continue;
+            }
             const army = this.armies.get(id);
             // Double check visibility using the precise check
             if (army && this.isArmyVisible(army, bounds)) {
               visibleArmies.push(army);
+              seenArmyIds.add(id);
             }
           }
         }
@@ -1211,11 +1247,11 @@ export class ArmyManager {
       this.updateSpatialIndex(army.entityId, undefined, army.hexCoords);
     });
     // Re-add source buckets for armies that are currently moving
-    this.movingArmySourceBuckets.forEach((sourceBucketKey, entityId) => {
-      let bucket = this.chunkToArmies.get(sourceBucketKey);
+    this.movingArmySourceBuckets.forEach((sourceState, entityId) => {
+      let bucket = this.chunkToArmies.get(sourceState.bucketKey);
       if (!bucket) {
         bucket = new Set();
-        this.chunkToArmies.set(sourceBucketKey, bucket);
+        this.chunkToArmies.set(sourceState.bucketKey, bucket);
       }
       bucket.add(entityId);
     });
@@ -1495,7 +1531,11 @@ export class ArmyManager {
 
     // Only track source if buckets are different
     if (sourceBucketKey !== destBucketKey) {
-      this.movingArmySourceBuckets.set(entityId, sourceBucketKey);
+      this.movingArmySourceBuckets.set(entityId, {
+        bucketKey: sourceBucketKey,
+        col: sourceNorm.x,
+        row: sourceNorm.y,
+      });
     }
 
     // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)

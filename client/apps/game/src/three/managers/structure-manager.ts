@@ -36,6 +36,7 @@ import { applyLabelTransitions, transitionManager } from "../utils/labels/label-
 import { FXManager } from "./fx-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { shouldRefreshVisibleStructures } from "./structure-update-policy";
+import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -114,6 +115,7 @@ export class StructureManager {
   private mode: GameModeConfig;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private latestTransitionToken = 0;
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
   private structuresWithActiveBattleTimer: Set<ID> = new Set(); // Track structures with active battle timers for O(1) lookup
   private unsubscribeAccountStore?: () => void;
@@ -886,8 +888,16 @@ export class StructureManager {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
+    const transitionToken = options?.transitionToken;
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (transitionToken !== undefined) {
+      this.latestTransitionToken = transitionToken;
+    }
+
     if (!force && this.currentChunk === chunkKey) {
       return;
     }
@@ -909,6 +919,10 @@ export class StructureManager {
       return;
     }
 
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+
     const previousChunk = this.currentChunk;
     const isSwitch = previousChunk !== chunkKey;
     if (isSwitch) {
@@ -920,6 +934,12 @@ export class StructureManager {
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = Promise.resolve().then(() => {
+      if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+        return;
+      }
+      if (transitionToken !== undefined && this.currentChunk !== chunkKey) {
+        return;
+      }
       this.updateVisibleStructures();
       this.showLabels();
     });
