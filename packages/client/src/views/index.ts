@@ -251,15 +251,22 @@ export class ViewClient {
 
       const armies: MapArmy[] = allArmies
         .filter((a: any) => inRadius(Number(a.coord_x ?? a.x ?? 0), Number(a.coord_y ?? a.y ?? 0)))
-        .map((a: any) => ({
-          entityId: Number(a.entity_id ?? a.entityId ?? 0),
-          owner: String(a.owner_address ?? a.owner ?? "0x0"),
-          position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
-          troops: [],
-          strength: 0,
-          stamina: Number(a.stamina ?? 0),
-          isInBattle: Boolean(a.is_in_battle ?? false),
-        }));
+        .map((a: any) => {
+          const troopCount = a.count ? Number(BigInt(a.count)) : 0;
+          const tierNum = a.tier ? Number(BigInt(a.tier)) : 0;
+          const troops: GuardSlot[] =
+            a.category && troopCount > 0 ? [{ troopType: String(a.category), count: troopCount, tier: tierNum }] : [];
+          const strength = troopCount > 0 ? troopCount * tierNum : 0;
+          return {
+            entityId: Number(a.entity_id ?? a.entityId ?? 0),
+            owner: String(a.owner_address ?? a.owner ?? "0x0"),
+            position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
+            troops,
+            strength,
+            stamina: Number(a.stamina ?? 0),
+            isInBattle: Boolean(a.is_in_battle ?? false),
+          };
+        });
 
       const tiles: TileState[] = allTiles
         .filter((t: any) => inRadius(Number(t.col ?? t.x ?? 0), Number(t.row ?? t.y ?? 0)))

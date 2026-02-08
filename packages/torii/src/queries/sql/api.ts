@@ -51,6 +51,7 @@ import {
   hexToBigInt,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
+import { CONFIG_QUERIES } from "./config";
 import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
 import { LEADERBOARD_QUERIES } from "./leaderboard";
 import {
@@ -618,6 +619,52 @@ export class SqlApi {
   }
 
   /**
+   * Fetch tiles within a coordinate-bounded area.
+   */
+  async fetchTilesInArea(center: { x: number; y: number }, radius: number): Promise<Tile[]> {
+    const query = TILES_QUERIES.TILES_IN_AREA
+      .replace("{minX}", String(center.x - radius))
+      .replace("{maxX}", String(center.x + radius))
+      .replace("{minY}", String(center.y - radius))
+      .replace("{maxY}", String(center.y + radius));
+    const url = buildApiUrl(this.baseUrl, query);
+    const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles in area");
+    return rows.map((row) => tileDataToTile(row.data));
+  }
+
+  /**
+   * Fetch structures within a coordinate-bounded area.
+   */
+  async fetchStructuresInArea(
+    center: { x: number; y: number },
+    radius: number,
+  ): Promise<Record<string, unknown>[]> {
+    const query = STRUCTURE_QUERIES.STRUCTURES_IN_AREA
+      .replace("{minX}", String(center.x - radius))
+      .replace("{maxX}", String(center.x + radius))
+      .replace("{minY}", String(center.y - radius))
+      .replace("{maxY}", String(center.y + radius));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<Record<string, unknown>>(url, "Failed to fetch structures in area");
+  }
+
+  /**
+   * Fetch armies within a coordinate-bounded area.
+   */
+  async fetchArmiesInArea(
+    center: { x: number; y: number },
+    radius: number,
+  ): Promise<Record<string, unknown>[]> {
+    const query = STRUCTURE_QUERIES.ARMIES_IN_AREA
+      .replace("{minX}", String(center.x - radius))
+      .replace("{maxX}", String(center.x + radius))
+      .replace("{minY}", String(center.y - radius))
+      .replace("{maxY}", String(center.y + radius));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<Record<string, unknown>>(url, "Failed to fetch armies in area");
+  }
+
+  /**
    * Fetch the world contract address from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */
@@ -792,6 +839,55 @@ export class SqlApi {
     const rankedEntries = addLeaderboardRanks(sortedEntries);
 
     return rankedEntries.slice(safeOffset, safeOffset + safeLimit);
+  }
+
+  /**
+   * Fetch game configuration from WorldConfig table.
+   * Returns a single row with all game constants (stamina, combat, building, tick config).
+   */
+  async fetchWorldConfig(): Promise<Record<string, unknown> | null> {
+    const url = buildApiUrl(this.baseUrl, CONFIG_QUERIES.WORLD_CONFIG);
+    const results = await fetchWithErrorHandling<Record<string, unknown>>(url, "Failed to fetch world config");
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch structure level configuration (realm upgrade requirements).
+   */
+  async fetchStructureLevelConfig(): Promise<{ level: number; required_resource_count: number; required_resources_id: number }[]> {
+    const url = buildApiUrl(this.baseUrl, CONFIG_QUERIES.STRUCTURE_LEVEL_CONFIG);
+    return await fetchWithErrorHandling<{ level: number; required_resource_count: number; required_resources_id: number }>(
+      url,
+      "Failed to fetch structure level config",
+    );
+  }
+
+  /**
+   * Fetch resource lists by their entity IDs (used for building/upgrade costs).
+   */
+  async fetchResourceListByIds(ids: number[]): Promise<{ entity_id: number; index: number; resource_type: number; amount: string }[]> {
+    const query = CONFIG_QUERIES.RESOURCE_LIST_BY_IDS.replace("{ids}", ids.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<{ entity_id: number; index: number; resource_type: number; amount: string }>(
+      url,
+      "Failed to fetch resource lists",
+    );
+  }
+
+  /**
+   * Fetch building category configuration (costs, population, capacity).
+   */
+  async fetchBuildingCategoryConfig(): Promise<Record<string, unknown>[]> {
+    const url = buildApiUrl(this.baseUrl, CONFIG_QUERIES.BUILDING_CATEGORY_CONFIG);
+    return await fetchWithErrorHandling<Record<string, unknown>>(url, "Failed to fetch building category config");
+  }
+
+  /**
+   * Fetch resource factory configuration (production rates per resource type).
+   */
+  async fetchResourceFactoryConfig(): Promise<Record<string, unknown>[]> {
+    const url = buildApiUrl(this.baseUrl, CONFIG_QUERIES.RESOURCE_FACTORY_CONFIG);
+    return await fetchWithErrorHandling<Record<string, unknown>>(url, "Failed to fetch resource factory config");
   }
 
   /**

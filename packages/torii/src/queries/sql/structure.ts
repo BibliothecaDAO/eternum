@@ -325,4 +325,42 @@ export const STRUCTURE_QUERIES = {
     FROM \`s1_eternum-Building\`
     WHERE outer_entity_id = {entityId};
   `,
+
+  STRUCTURES_IN_AREA: `
+    SELECT
+        s.entity_id,
+        s.\`base.coord_x\` as coord_x,
+        s.\`base.coord_y\` as coord_y,
+        s.category as structure_type,
+        s.\`base.level\` as level,
+        s.owner as owner_address,
+        sos.name as owner_name
+    FROM [s1_eternum-Structure] s
+    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+    WHERE s.\`base.coord_x\` BETWEEN {minX} AND {maxX}
+      AND s.\`base.coord_y\` BETWEEN {minY} AND {maxY}
+    ORDER BY s.entity_id;
+  `,
+
+  ARMIES_IN_AREA: `
+    SELECT
+        et.explorer_id as entity_id,
+        et.\`coord.x\` as coord_x,
+        et.\`coord.y\` as coord_y,
+        et.owner as owner_structure_id,
+        et.\`troops.category\` as category,
+        et.\`troops.tier\` as tier,
+        et.\`troops.count\` as count,
+        et.\`troops.stamina.amount\` as stamina_amount,
+        et.\`troops.stamina.updated_tick\` as stamina_updated_tick,
+        et.\`troops.battle_cooldown_end\` as battle_cooldown_end,
+        s.owner as owner_address,
+        sos.name as owner_name
+    FROM [s1_eternum-ExplorerTroops] et
+    LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = et.owner
+    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+    WHERE et.\`coord.x\` BETWEEN {minX} AND {maxX}
+      AND et.\`coord.y\` BETWEEN {minY} AND {maxY}
+    ORDER BY et.explorer_id;
+  `,
 } as const;
