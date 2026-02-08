@@ -382,6 +382,26 @@ export class SqlApi {
   }
 
   /**
+   * Fetch raw resource balances for a structure entity from the SQL database.
+   * Returns the wide-column row from s1_eternum-Resource (one column per resource).
+   */
+  async fetchResourceBalances(entityId: ID): Promise<Record<string, unknown> | null> {
+    const query = STRUCTURE_QUERIES.RESOURCE_BALANCES_BY_ENTITY.replace("{entityId}", entityId.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<Record<string, unknown>>(url, "Failed to fetch resource balances");
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch buildings for a structure entity from the SQL database.
+   */
+  async fetchBuildingsByStructure(entityId: ID): Promise<Record<string, unknown>[]> {
+    const query = STRUCTURE_QUERIES.BUILDINGS_BY_STRUCTURE.replace("{entityId}", entityId.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<Record<string, unknown>>(url, "Failed to fetch buildings");
+  }
+
+  /**
    * Fetch season ended info from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */

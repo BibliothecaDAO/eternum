@@ -49,6 +49,8 @@ export interface SqlApiLike {
   fetchStoryEventsCount(): Promise<number>;
   fetchStructuresByOwner(owner: string): Promise<any[]>;
   fetchExplorerAddressOwner(entityId: ID): Promise<string | null>;
+  fetchResourceBalances?(entityId: ID): Promise<Record<string, unknown> | null>;
+  fetchBuildingsByStructure?(entityId: ID): Promise<Record<string, unknown>[]>;
 }
 
 /**

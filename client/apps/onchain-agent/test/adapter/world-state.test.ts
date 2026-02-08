@@ -119,13 +119,18 @@ describe("buildWorldState", () => {
       { troopType: "Paladin", count: 10, tier: 2 },
     ]);
     expect(realm!.guardStrength).toBe(500);
+    // Buildings come from sql.fetchBuildingsByStructure, not realm view
+    expect(client.sql.fetchBuildingsByStructure).toHaveBeenCalledWith(1);
     expect(realm!.buildings).toEqual([
-      { category: "Farm", position: { x: 1, y: 2 } },
-      { category: "Barracks", position: { x: 3, y: 4 } },
+      { category: "Farm", paused: false, position: { x: 10, y: 10 } },
+      { category: "Wood", paused: false, position: { x: 11, y: 10 } },
+      { category: "Knight Barracks", paused: true, position: { x: 12, y: 10 } },
     ]);
+    // Resource balances come from sql.fetchResourceBalances, not realm view
+    expect(client.sql.fetchResourceBalances).toHaveBeenCalledWith(1);
     expect(realm!.resourceBalances).toEqual([
-      { resourceId: 1, name: "Wood", balance: 250 },
-      { resourceId: 2, name: "Stone", balance: 150 },
+      { resourceId: 1, name: "Stone", balance: 2400 },
+      { resourceId: 3, name: "Wood", balance: 4000 },
     ]);
   });
 

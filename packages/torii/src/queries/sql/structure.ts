@@ -313,4 +313,16 @@ export const STRUCTURE_QUERIES = {
   
   ORDER BY et.explorer_id;
   `,
+
+  RESOURCE_BALANCES_BY_ENTITY: `
+    SELECT *
+    FROM \`s1_eternum-Resource\`
+    WHERE entity_id = {entityId};
+  `,
+
+  BUILDINGS_BY_STRUCTURE: `
+    SELECT entity_id, category, paused, inner_col, inner_row
+    FROM \`s1_eternum-Building\`
+    WHERE outer_entity_id = {entityId};
+  `,
 } as const;

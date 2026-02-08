@@ -342,6 +342,48 @@ const EXECUTE_ACTION_DESCRIPTION = `Execute a game action on chain. Returns succ
 ### Realm & Hyperstructure
 - upgrade_realm: realmEntityId
 - contribute_hyperstructure: hyperstructureEntityId, contributorEntityId, contributions[]
+
+## Enum Values (0-indexed)
+
+### TroopType (category)
+- 0 = Knight
+- 1 = Paladin
+- 2 = Crossbowman
+
+### TroopTier (tier)
+- 0 = T1 (basic, cheapest)
+- 1 = T2
+- 2 = T3 (strongest, most expensive)
+
+### Direction (for movement, spawning, combat)
+- 0 = East
+- 1 = NorthEast
+- 2 = NorthWest
+- 3 = West
+- 4 = SouthWest
+- 5 = SouthEast
+
+### Guard Slot
+- 0 = Alpha
+- 1 = Bravo
+- 2 = Charlie
+- 3 = Delta
+
+### BuildingCategory (buildingCategory for create_building)
+- 0 = None, 1 = WorkersHut, 2 = Storehouse
+- 3 = Stone, 4 = Coal, 5 = Wood, 6 = Copper, 7 = Ironwood, 8 = Obsidian
+- 9 = Gold, 10 = Silver, 11 = Mithral, 12 = AlchemicalSilver, 13 = ColdIron
+- 14 = DeepCrystal, 15 = Ruby, 16 = Diamonds, 17 = Hartwood, 18 = Ignium
+- 19 = TwilightQuartz, 20 = TrueIce, 21 = Adamantine, 22 = Sapphire
+- 23 = EtherealSilica, 24 = Dragonhide, 25 = Labor, 26 = EarthenShard
+- 27 = Donkey, 28-30 = KnightT1-T3, 31-33 = CrossbowmanT1-T3
+- 34-36 = PaladinT1-T3, 37 = Wheat, 38 = Fish, 39 = Essence
+
+## Important Notes
+- When exploring (explore=true), you can only move ONE direction at a time.
+- When traveling (explore=false), you can chain multiple directions.
+- Troop amounts use RESOURCE_PRECISION (multiply by 10^9). Example: 100 troops = 100000000000 (100 * 10^9).
+- Check your resource balances before creating troops — the required troop resource must be available.
 `;
 
 /**

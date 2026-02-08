@@ -97,6 +97,19 @@ export function createMockClient() {
         hasMore: false,
       }),
     },
+    sql: {
+      fetchResourceBalances: vi.fn().mockResolvedValue({
+        WOOD_BALANCE: "0x00000000000000000000000000000fa0",
+        STONE_BALANCE: "0x00000000000000000000000000000960",
+        COAL_BALANCE: "0x00000000000000000000000000000000",
+        entity_id: 1,
+      }),
+      fetchBuildingsByStructure: vi.fn().mockResolvedValue([
+        { entity_id: 10, category: 37, paused: 0, inner_col: 10, inner_row: 10 },
+        { entity_id: 11, category: 5, paused: 0, inner_col: 11, inner_row: 10 },
+        { entity_id: 12, category: 28, paused: 1, inner_col: 12, inner_row: 10 },
+      ]),
+    },
     cache: {
       invalidateByPrefix: vi.fn(),
       clear: vi.fn(),
