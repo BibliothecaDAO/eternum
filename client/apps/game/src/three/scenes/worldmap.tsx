@@ -96,6 +96,7 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
+import { resolveChunkSwitchActions, shouldRunManagerUpdate } from "./worldmap-chunk-transition";
 import { insertPrefetchQueueItem, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
 
 interface CachedMatrixEntry {
@@ -313,6 +314,7 @@ export default class WorldmapScene extends HexagonScene {
 
   // Global chunk switching coordination
   private globalChunkSwitchPromise: Promise<void> | null = null;
+  private chunkTransitionToken = 0;
 
   // Label groups
   private armyLabelsGroup: Group;
@@ -325,7 +327,7 @@ export default class WorldmapScene extends HexagonScene {
 
   // Render-area fetch bookkeeping (keys represent render-sized regions, not chunk stride)
   private fetchedChunks: Set<string> = new Set();
-  private pendingChunks: Map<string, Promise<void>> = new Map();
+  private pendingChunks: Map<string, Promise<boolean>> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<ID, { scheduledAt: number; chunkKey: string; reason: "tile" | "zero" }> =
@@ -2629,7 +2631,10 @@ export default class WorldmapScene extends HexagonScene {
         continue;
       }
       try {
-        await this.updateManagersForChunk(chunkKey, { force: true });
+        await this.updateManagersForChunk(chunkKey, {
+          force: true,
+          transitionToken: this.chunkTransitionToken,
+        });
         this.hydratedChunkRefreshes.delete(chunkKey);
         this.retryDeferredChunkRemovals();
       } catch (error) {
@@ -2935,10 +2940,10 @@ export default class WorldmapScene extends HexagonScene {
       }
     });
 
-    // Drop cached tile data for render areas that are no longer covered
+    // Drop cached tile data for render areas that are no longer covered.
+    // Keep in-flight pending promises for dedupe stability while they resolve.
     removedPinnedAreas.forEach((areaKey) => {
       this.fetchedChunks.delete(areaKey);
-      this.pendingChunks.delete(areaKey);
     });
 
     this.pinnedChunkKeys = nextPinned;
@@ -3073,10 +3078,10 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private async computeTileEntities(chunkKey: string): Promise<void> {
+  private async computeTileEntities(chunkKey: string): Promise<boolean> {
     const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
     if (this.fetchedChunks.has(fetchKey)) {
-      return;
+      return true;
     }
 
     const existingPromise = this.pendingChunks.get(fetchKey);
@@ -3109,7 +3114,7 @@ export default class WorldmapScene extends HexagonScene {
     maxCol: number,
     minRow: number,
     maxRow: number,
-  ): Promise<void> {
+  ): Promise<boolean> {
     this.beginToriiFetch();
     try {
       await getMapFromToriiExact(
@@ -3128,9 +3133,11 @@ export default class WorldmapScene extends HexagonScene {
           this.scheduleHydratedChunkRefresh(this.currentChunk);
         }
       }
+      return true;
     } catch (error) {
       console.error("Error fetching tile entities:", error);
       // Don't add to fetchedChunks on error so it can be retried
+      return false;
     } finally {
       // Always remove from pending chunks
       this.pendingChunks.delete(fetchKey);
@@ -3406,8 +3413,16 @@ export default class WorldmapScene extends HexagonScene {
 
     if (chunkChanged) {
       // Create and track the global chunk switch promise
+      const transitionToken = ++this.chunkTransitionToken;
       this.isChunkTransitioning = true;
-      this.globalChunkSwitchPromise = this.performChunkSwitch(chunkKey, startCol, startRow, force, focusPoint.clone());
+      this.globalChunkSwitchPromise = this.performChunkSwitch(
+        chunkKey,
+        startCol,
+        startRow,
+        force,
+        transitionToken,
+        focusPoint.clone(),
+      );
 
       try {
         await this.globalChunkSwitchPromise;
@@ -3420,7 +3435,8 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (force) {
-      this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow);
+      const transitionToken = ++this.chunkTransitionToken;
+      this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken);
       try {
         await this.globalChunkSwitchPromise;
         this.retryDeferredChunkRemovals();
@@ -3438,6 +3454,7 @@ export default class WorldmapScene extends HexagonScene {
     startCol: number,
     startRow: number,
     force: boolean,
+    transitionToken: number,
     switchPosition?: Vector3,
   ) {
     // Track memory usage during chunk switch
@@ -3451,14 +3468,9 @@ export default class WorldmapScene extends HexagonScene {
     const oldChunk = this.currentChunk;
     this.currentChunk = chunkKey;
     this.updateCurrentChunkBounds(startRow, startCol);
-    if (oldChunk && oldChunk !== chunkKey) {
-      this.visibilityManager?.unregisterChunk(oldChunk);
-    }
 
     // Kick off tile data fetch
-    const tileFetchPromise = this.computeTileEntities(chunkKey).catch((error) => {
-      console.error("[WorldmapScene] Tile fetch failed:", error);
-    });
+    const tileFetchPromise = this.computeTileEntities(chunkKey);
 
     if (force) {
       this.removeCachedMatricesForChunk(startRow, startCol);
@@ -3476,19 +3488,40 @@ export default class WorldmapScene extends HexagonScene {
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Wait for core tile data before updating managers to avoid empty renders
-    await tileFetchPromise;
+    const tileFetchSucceeded = await tileFetchPromise;
     this.hydratedChunkRefreshes.delete(chunkKey);
 
-    // If user navigated away during fetch, skip updating this chunk
-    if (this.currentChunk !== chunkKey) {
+    const chunkSwitchActions = resolveChunkSwitchActions({
+      fetchSucceeded: tileFetchSucceeded,
+      currentChunk: this.currentChunk,
+      targetChunk: chunkKey,
+      previousChunk: oldChunk,
+    });
+
+    if (chunkSwitchActions.shouldRollback) {
+      this.currentChunk = oldChunk ?? "null";
+      if (oldChunk && oldChunk !== "null") {
+        const [oldStartRow, oldStartCol] = oldChunk.split(",").map(Number);
+        if (Number.isFinite(oldStartRow) && Number.isFinite(oldStartCol)) {
+          this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
+        }
+      }
       return;
+    }
+
+    if (!chunkSwitchActions.shouldCommitManagers) {
+      return;
+    }
+
+    if (chunkSwitchActions.shouldUnregisterPreviousChunk && oldChunk) {
+      this.visibilityManager?.unregisterChunk(oldChunk);
     }
 
     // Ensure visibility state is fresh before manager renders
     this.visibilityManager?.forceUpdate();
 
     // Update all managers concurrently once shared prerequisites are ready
-    await this.updateManagersForChunk(chunkKey, { force });
+    await this.updateManagersForChunk(chunkKey, { force, transitionToken });
 
     // Track memory usage after chunk switch
     if (memoryMonitor) {
@@ -3506,7 +3539,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number) {
+  private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number, transitionToken: number) {
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
@@ -3514,9 +3547,7 @@ export default class WorldmapScene extends HexagonScene {
     this.updateCurrentChunkBounds(startRow, startCol);
 
     // Start tile data fetch
-    const tileFetchPromise = this.computeTileEntities(chunkKey).catch((error) => {
-      console.error("[WorldmapScene] Tile refresh failed:", error);
-    });
+    const tileFetchPromise = this.computeTileEntities(chunkKey);
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
@@ -3526,10 +3557,13 @@ export default class WorldmapScene extends HexagonScene {
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Wait for tile data before updating managers
-    await tileFetchPromise;
+    const tileFetchSucceeded = await tileFetchPromise;
     this.hydratedChunkRefreshes.delete(chunkKey);
+    if (!tileFetchSucceeded) {
+      return;
+    }
 
-    await this.updateManagersForChunk(chunkKey, { force: true });
+    await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
 
     if (memoryMonitor) {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
@@ -3541,7 +3575,18 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private async updateManagersForChunk(chunkKey: string, options?: { force?: boolean }) {
+  private async updateManagersForChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+    if (
+      !shouldRunManagerUpdate({
+        transitionToken: options?.transitionToken,
+        expectedTransitionToken: this.chunkTransitionToken,
+        currentChunk: this.currentChunk,
+        targetChunk: chunkKey,
+      })
+    ) {
+      return;
+    }
+
     const updateTasks = [
       { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
       { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
