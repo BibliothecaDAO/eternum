@@ -97,14 +97,17 @@ describe("buildWorldState", () => {
     expect(state.resources!.get("Stone")).toBe(300);
   });
 
-  it("calls all view methods in parallel", async () => {
+  it("calls all view methods and bounded SQL in parallel", async () => {
     const client = createMockClient() as any;
     await buildWorldState(client, "0xdeadbeef");
 
     expect(client.view.player).toHaveBeenCalledWith("0xdeadbeef");
-    expect(client.view.mapArea).toHaveBeenCalledWith({ x: 10, y: 20, radius: 50 });
     expect(client.view.market).toHaveBeenCalled();
     expect(client.view.leaderboard).toHaveBeenCalledWith({ limit: 10 });
+    // Bounded SQL queries instead of view.mapArea
+    expect(client.sql.fetchTilesInArea).toHaveBeenCalledWith({ x: 10, y: 20 }, 50);
+    expect(client.sql.fetchStructuresInArea).toHaveBeenCalledWith({ x: 10, y: 20 }, 50);
+    expect(client.sql.fetchArmiesInArea).toHaveBeenCalledWith({ x: 10, y: 20 }, 50);
   });
 
   it("enriches structures with realm detail (guards, buildings, resources)", async () => {
@@ -180,5 +183,103 @@ describe("buildWorldState", () => {
     const army = state.entities.find((e) => e.entityId === 100);
     expect(army).toBeDefined();
     expect(army!.troops).toBeUndefined();
+  });
+
+  // --- Phase 1: Tile Visibility ---
+
+  it("includes tile data from bounded SQL queries", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.tiles).toBeDefined();
+    expect(state.tiles!.exploredCount).toBe(4); // 4 tiles from fetchTilesInArea mock
+    expect(client.sql.fetchTilesInArea).toHaveBeenCalled();
+  });
+
+  it("computes frontier tiles correctly", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // Frontier tiles = explored tiles with at least one neighbor NOT in the explored set
+    // (10,20) neighbors: (11,20)✓ (9,20)✓ (10,21)✗ (10,19)✗ → frontier
+    // (11,20) neighbors: (12,20)✗ (10,20)✓ (11,21)✓ (11,19)✗ → frontier
+    // (9,20) neighbors: (10,20)✓ (8,20)✗ (9,21)✗ (9,19)✗ → frontier
+    // (11,21) neighbors: (12,21)✗ (10,21)✗ (11,22)✗ (11,20)✓ → frontier
+    // All 4 tiles are frontier tiles since they all border unexplored territory
+    expect(state.tiles).toBeDefined();
+    expect(state.tiles!.frontierTiles.length).toBe(4);
+    // Check that frontier tiles have position and biome name (not number)
+    for (const ft of state.tiles!.frontierTiles) {
+      expect(ft.x).toBeDefined();
+      expect(ft.y).toBeDefined();
+      expect(typeof ft.biome).toBe("string");
+    }
+  });
+
+  // --- Phase 1: Game Config ---
+
+  it("includes gameConfig from live SQL", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.gameConfig).toBeDefined();
+    expect(state.gameConfig!.stamina).toBeDefined();
+    expect(state.gameConfig!.realm).toBeDefined();
+    expect(state.gameConfig!.buildings).toBeDefined();
+    expect(state.gameConfig!.combat).toBeDefined();
+    expect(state.gameConfig!.tick).toBeDefined();
+  });
+
+  it("gameConfig has correct stamina values from WorldConfig", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const stamina = state.gameConfig!.stamina;
+    expect(stamina.exploreCost).toBe(30);
+    expect(stamina.travelCost).toBe(20);
+    expect(stamina.gainPerTick).toBe(20);
+    expect(stamina.bonusValue).toBe(10);
+    expect(stamina.attackReq).toBe(50);
+    expect(stamina.defenseReq).toBe(40);
+    expect(stamina.maxStamina.knight).toBe(120);
+    expect(stamina.maxStamina.paladin).toBe(120);
+    expect(stamina.maxStamina.crossbowman).toBe(120);
+    expect(stamina.exploreWheatCost).toBe(30000000);
+    expect(stamina.travelWheatCost).toBe(30000000);
+  });
+
+  it("gameConfig has realm upgrade info with resolved resource costs", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.gameConfig!.realm.maxLevel).toBe(3);
+    expect(state.gameConfig!.realm.upgradeCosts).toBeDefined();
+    expect(state.gameConfig!.realm.upgradeCosts.length).toBe(3);
+    // Level 1 has required_resources_id=3, mock ResourceList has 3 entries for entity_id=3
+    const level1 = state.gameConfig!.realm.upgradeCosts[0];
+    expect(level1.level).toBe(1);
+    expect(level1.resources).toBeDefined();
+    expect(level1.resources!.length).toBe(3);
+    expect(level1.resources![0].resourceType).toBe(23);
+  });
+
+  it("gameConfig has building and combat config", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.gameConfig!.buildings.basePopulation).toBe(6);
+    expect(state.gameConfig!.buildings.costIncreasePercent).toBe(1000);
+    expect(state.gameConfig!.combat.biomeBonusNum).toBe(3000);
+    expect(state.gameConfig!.tick.armiesTickSeconds).toBe(60);
+  });
+
+  it("handles fetchWorldConfig failure gracefully", async () => {
+    const client = createMockClient() as any;
+    client.sql.fetchWorldConfig.mockRejectedValue(new Error("SQL timeout"));
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // World state still works, gameConfig is undefined
+    expect(state.entities).toBeDefined();
+    expect(state.gameConfig).toBeUndefined();
   });
 });

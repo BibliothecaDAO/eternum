@@ -1,41 +1,33 @@
-# Heartbeat - Recurring Monitoring Tasks
+# Heartbeat - Recurring Tasks
 
-## Every Tick (Critical - CURRENT STATE)
+## Every Tick
+- [ ] Observe game state
+- [ ] Check all structures have guards (minimum 1 per structure)
+- [ ] Check for enemy armies within 3 tiles of structures
+- [ ] Monitor explorer stamina levels
+- [ ] Review resource balances for critical shortages
 
-- [x] Check all structure guard slots
-- [x] Monitor enemy army 517 position
-- [x] Check resource balances on all structures
-- [x] Check stamina levels on all explorers
-- [x] Verify leaderboard position
+## Every 5 Ticks
+- [ ] Review resource balance trends (compare to 5 ticks ago)
+- [ ] Evaluate explorer positioning and deployment
+- [ ] Check for unclaimed arrivals
+- [ ] Review production building status
 
-## State Change Alerts (Watch For These)
+## Every 10 Ticks
+- [ ] Review leaderboard position and point trends
+- [ ] Assess map exploration progress
+- [ ] Evaluate military strength vs. neighbors
+- [ ] Review task priority ordering
+- [ ] Consider realm upgrades if resources allow
 
-- 🔔 **Resource appears on any structure** → Immediate building action
-- 🔔 **Stamina increases above 0** → Begin exploration planning
-- 🔔 **StructureType changes from "unknown"** → Structures initialized
-- 🔔 **New explorer appears** → Someone created units
-- 🔔 **Arrivals appear** → Claim immediately
+## Every 20 Ticks
+- [ ] Deep strategy review
+- [ ] Evaluate guild/alliance opportunities
+- [ ] Consider hyperstructure contributions
+- [ ] Review and update task files if needed
 
-## Every 5 Ticks (Regular)
-
-- [ ] Review enemy army movements (positions changing?)
-- [ ] Check if other players' resources/stamina different from mine
-- [ ] Look for new neutral structures or entities
-- [ ] Review market activity (swaps, orders)
-- [ ] Check if guild membership changed
-
-## Every 10 Ticks (Strategic)
-
-- [ ] Evaluate if any experimental actions worth trying
-- [ ] Review leaderboard point changes
-- [ ] Assess if stamina regeneration rate detected
-- [ ] Check for any game events or announcements
-- [ ] Update threat assessment if enemy positions changed
-
-## Every 20 Ticks (Long-term)
-
-- [ ] Strategic review: are we still in initialization or stuck?
-- [ ] Consider if current approach needs fundamental change
-- [ ] Evaluate if other players progressing while we're stuck
-- [ ] Review all documentation for missed opportunities
-- [ ] Assess risk of falling behind in points
+## Continuous Monitoring
+- Enemy army movements (especially large forces)
+- Resource production rates
+- Neighbor activity and expansion patterns
+- Battle outcomes in the region

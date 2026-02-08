@@ -12,4 +12,13 @@ export const TILES_QUERIES = {
     FROM \`s1_eternum-TileOpt\`
     WHERE (col, row) IN ({coords});
   `,
+
+  TILES_IN_AREA: `
+    SELECT DISTINCT
+        data
+    FROM \`s1_eternum-TileOpt\`
+    WHERE col BETWEEN {minX} AND {maxX}
+      AND row BETWEEN {minY} AND {maxY}
+    ORDER BY col, row;
+  `,
 } as const;

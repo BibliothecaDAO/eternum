@@ -28,7 +28,14 @@ export function createMockClient() {
       mapArea: vi.fn().mockResolvedValue({
         center: { x: 0, y: 0 },
         radius: 100,
-        tiles: [],
+        tiles: [
+          { position: { x: 10, y: 20 }, biome: "grassland", explored: true, occupiedBy: null },
+          { position: { x: 11, y: 20 }, biome: "forest", explored: true, occupiedBy: null },
+          { position: { x: 12, y: 20 }, biome: "unknown", explored: false, occupiedBy: null },
+          { position: { x: 10, y: 21 }, biome: "unknown", explored: false, occupiedBy: null },
+          { position: { x: 9, y: 20 }, biome: "ocean", explored: true, occupiedBy: null },
+          { position: { x: 11, y: 21 }, biome: "desert", explored: true, occupiedBy: 42 },
+        ],
         structures: [
           { entityId: 1, structureType: "realm", position: { x: 10, y: 20 }, owner: "0xdeadbeef", name: "Realm #1", level: 2 },
           { entityId: 2, structureType: "bank", position: { x: 50, y: 60 }, owner: "0xother", name: "Bank #1", level: 1 },
@@ -108,6 +115,59 @@ export function createMockClient() {
         { entity_id: 10, category: 37, paused: 0, inner_col: 10, inner_row: 10 },
         { entity_id: 11, category: 5, paused: 0, inner_col: 11, inner_row: 10 },
         { entity_id: 12, category: 28, paused: 1, inner_col: 12, inner_row: 10 },
+      ]),
+      // Bounded area queries (raw SQL format)
+      fetchTilesInArea: vi.fn().mockResolvedValue([
+        // col, row, biome (as numbers) — all are explored (TileOpt only stores explored tiles)
+        { col: 10, row: 20, biome: 10, occupier_id: 0 },  // grassland
+        { col: 11, row: 20, biome: 11, occupier_id: 0 },  // temperate_deciduous_forest
+        { col: 9, row: 20, biome: 1, occupier_id: 0 },    // ocean
+        { col: 11, row: 21, biome: 13, occupier_id: 42 },  // subtropical_desert
+      ]),
+      fetchStructuresInArea: vi.fn().mockResolvedValue([
+        { entity_id: 1, coord_x: 10, coord_y: 20, structure_type: "realm", level: 2, owner_address: "0xdeadbeef", owner_name: "TestPlayer" },
+        { entity_id: 2, coord_x: 50, coord_y: 60, structure_type: "bank", level: 1, owner_address: "0xother", owner_name: "Bank #1" },
+      ]),
+      fetchArmiesInArea: vi.fn().mockResolvedValue([
+        { entity_id: 100, coord_x: 15, coord_y: 25, owner_address: "0xdeadbeef", category: "Knight", tier: 1, count: "0x32", stamina_amount: "0x50", owner_name: "TestPlayer" },
+      ]),
+      fetchWorldConfig: vi.fn().mockResolvedValue({
+        "troop_stamina_config.stamina_explore_stamina_cost": 30,
+        "troop_stamina_config.stamina_travel_stamina_cost": 20,
+        "troop_stamina_config.stamina_gain_per_tick": 20,
+        "troop_stamina_config.stamina_bonus_value": 10,
+        "troop_stamina_config.stamina_knight_max": 120,
+        "troop_stamina_config.stamina_paladin_max": 120,
+        "troop_stamina_config.stamina_crossbowman_max": 120,
+        "troop_stamina_config.stamina_attack_req": 50,
+        "troop_stamina_config.stamina_defense_req": 40,
+        "troop_stamina_config.stamina_explore_wheat_cost": 30000000,
+        "troop_stamina_config.stamina_explore_fish_cost": 0,
+        "troop_stamina_config.stamina_travel_wheat_cost": 30000000,
+        "troop_stamina_config.stamina_travel_fish_cost": 0,
+        "troop_damage_config.damage_biome_bonus_num": 3000,
+        "structure_max_level_config.realm_max": 3,
+        "building_config.base_cost_percent_increase": 1000,
+        "building_config.base_population": 6,
+        "tick_config.armies_tick_in_seconds": "0x000000000000003c",
+      }),
+      fetchStructureLevelConfig: vi.fn().mockResolvedValue([
+        { level: 1, required_resource_count: 3, required_resources_id: 3 },
+        { level: 2, required_resource_count: 4, required_resources_id: 4 },
+        { level: 3, required_resource_count: 6, required_resources_id: 5 },
+      ]),
+      fetchResourceListByIds: vi.fn().mockResolvedValue([
+        { entity_id: 3, index: 0, resource_type: 23, amount: "0x000000000000000000000029e8d60800" },
+        { entity_id: 3, index: 1, resource_type: 35, amount: "0x0000000000000000000001176592e000" },
+        { entity_id: 3, index: 2, resource_type: 38, amount: "0x00000000000000000000002e90edd000" },
+      ]),
+      fetchBuildingCategoryConfig: vi.fn().mockResolvedValue([
+        { category: 1, population_cost: 0, capacity_grant: 6, simple_erection_cost_id: 9, simple_erection_cost_count: 1, complex_erection_cost_id: 8, complex_erection_cost_count: 2 },
+        { category: 37, population_cost: 1, capacity_grant: 0, simple_erection_cost_id: 79, simple_erection_cost_count: 1, complex_erection_cost_id: 78, complex_erection_cost_count: 1 },
+      ]),
+      fetchResourceFactoryConfig: vi.fn().mockResolvedValue([
+        { resource_type: 1, realm_output_per_second: "0x000000003b9aca00", village_output_per_second: "0x000000001dcd6500", simple_input_list_count: 0, complex_input_list_count: 0 },
+        { resource_type: 3, realm_output_per_second: "0x000000003b9aca00", village_output_per_second: "0x000000001dcd6500", simple_input_list_count: 2, complex_input_list_count: 3 },
       ]),
     },
     cache: {
