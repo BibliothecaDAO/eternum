@@ -96,6 +96,7 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
+import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import { resolveChunkSwitchActions, shouldRunManagerUpdate } from "./worldmap-chunk-transition";
 import { insertPrefetchQueueItem, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
 
@@ -117,6 +118,8 @@ type ToriiBoundsCounterKey =
 
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
+const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
 const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-TileOpt", colField: "col", rowField: "row" },
@@ -1352,9 +1355,20 @@ export default class WorldmapScene extends HexagonScene {
 
       let cleaned = false;
       let unsubscribe: (() => void) | undefined;
-      const cleanup = () => {
+      const effectStartedAtMs = performance.now();
+      let delayedCleanupTimeout: ReturnType<typeof setTimeout> | undefined;
+      let maxLifetimeTimeout: ReturnType<typeof setTimeout> | undefined;
+      const runCleanupNow = () => {
         if (cleaned) return;
         cleaned = true;
+        if (delayedCleanupTimeout) {
+          clearTimeout(delayedCleanupTimeout);
+          delayedCleanupTimeout = undefined;
+        }
+        if (maxLifetimeTimeout) {
+          clearTimeout(maxLifetimeTimeout);
+          maxLifetimeTimeout = undefined;
+        }
         end();
         this.travelEffects.delete(key);
         unsubscribe?.();
@@ -1365,6 +1379,25 @@ export default class WorldmapScene extends HexagonScene {
           this.travelEffectsByEntity.delete(selectedEntityId);
         }
       };
+      const cleanup = () => {
+        if (cleaned) return;
+        const delayMs = getMinEffectCleanupDelayMs(
+          effectStartedAtMs,
+          performance.now(),
+          MIN_TRAVEL_EFFECT_VISIBLE_MS,
+        );
+        if (delayMs === 0) {
+          runCleanupNow();
+          return;
+        }
+        if (delayedCleanupTimeout) {
+          return;
+        }
+        delayedCleanupTimeout = setTimeout(() => {
+          delayedCleanupTimeout = undefined;
+          runCleanupNow();
+        }, delayMs);
+      };
 
       // Store the cleanup function with the hex coordinates as key
       this.travelEffects.set(key, cleanup);
@@ -1374,6 +1407,7 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup });
+      maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
 
       // Mark army as having pending movement transaction
       this.pendingArmyMovements.add(selectedEntityId);
