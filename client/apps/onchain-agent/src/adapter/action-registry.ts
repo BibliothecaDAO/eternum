@@ -109,6 +109,26 @@ function buildingCoord(v: unknown): { alt?: boolean; x: number; y: number } {
   };
 }
 
+/** Extract troop fields from either flat params or a nested `troops` array. */
+function troopFields(p: Record<string, unknown>): { category: number; tier: number; amount: number } {
+  if (p.category != null) {
+    return { category: num(p.category), tier: num(p.tier), amount: num(p.amount) };
+  }
+  const troops = p.troops ?? p.units;
+  if (Array.isArray(troops) && troops.length > 0) {
+    const t = troops[0] as Record<string, unknown>;
+    return { category: num(t.category), tier: num(t.tier), amount: num(t.amount) };
+  }
+  return { category: 0, tier: 0, amount: 0 };
+}
+
+/** Resolve a structure entity ID from various naming conventions the LLM may use. */
+function structureId(p: Record<string, unknown>): number {
+  return num(
+    p.forStructureId ?? p.structureEntityId ?? p.structure_entity_id ?? p.entityId ?? p.entity_id ?? 0,
+  );
+}
+
 function liquidityCalls(
   v: unknown,
 ): { resourceType: number; resourceAmount: number; lordsAmount: number }[] {
@@ -159,53 +179,56 @@ register("claim_arrivals", (client, signer, p) =>
 // Troops
 // ---------------------------------------------------------------------------
 
-register("create_explorer", (client, signer, p) =>
-  wrapTx(() =>
+register("create_explorer", (client, signer, p) => {
+  const troop = troopFields(p);
+  return wrapTx(() =>
     client.troops.createExplorer(signer, {
-      forStructureId: num(p.forStructureId),
-      category: num(p.category),
-      tier: num(p.tier),
-      amount: num(p.amount),
-      spawnDirection: num(p.spawnDirection),
+      forStructureId: structureId(p),
+      category: troop.category,
+      tier: troop.tier,
+      amount: troop.amount,
+      spawnDirection: num(p.spawnDirection ?? p.spawn_direction ?? p.direction ?? 0),
     }),
-  ),
-);
+  );
+});
 
-register("add_to_explorer", (client, signer, p) =>
-  wrapTx(() =>
+register("add_to_explorer", (client, signer, p) => {
+  const troop = troopFields(p);
+  return wrapTx(() =>
     client.troops.addToExplorer(signer, {
-      toExplorerId: num(p.toExplorerId),
-      amount: num(p.amount),
-      homeDirection: num(p.homeDirection),
+      toExplorerId: num(p.toExplorerId ?? p.to_explorer_id ?? p.explorerId ?? p.explorer_id ?? 0),
+      amount: troop.amount || num(p.amount ?? 0),
+      homeDirection: num(p.homeDirection ?? p.home_direction ?? p.direction ?? 0),
     }),
-  ),
-);
+  );
+});
 
 register("delete_explorer", (client, signer, p) =>
   wrapTx(() =>
     client.troops.deleteExplorer(signer, {
-      explorerId: num(p.explorerId),
+      explorerId: num(p.explorerId ?? p.explorer_id ?? 0),
     }),
   ),
 );
 
-register("add_guard", (client, signer, p) =>
-  wrapTx(() =>
+register("add_guard", (client, signer, p) => {
+  const troop = troopFields(p);
+  return wrapTx(() =>
     client.troops.addGuard(signer, {
-      forStructureId: num(p.forStructureId),
-      slot: num(p.slot),
-      category: num(p.category),
-      tier: num(p.tier),
-      amount: num(p.amount),
+      forStructureId: structureId(p),
+      slot: num(p.slot ?? 0),
+      category: troop.category,
+      tier: troop.tier,
+      amount: troop.amount,
     }),
-  ),
-);
+  );
+});
 
 register("delete_guard", (client, signer, p) =>
   wrapTx(() =>
     client.troops.deleteGuard(signer, {
-      forStructureId: num(p.forStructureId),
-      slot: num(p.slot),
+      forStructureId: structureId(p),
+      slot: num(p.slot ?? 0),
     }),
   ),
 );
@@ -213,7 +236,7 @@ register("delete_guard", (client, signer, p) =>
 register("move_explorer", (client, signer, p) =>
   wrapTx(() =>
     client.troops.move(signer, {
-      explorerId: num(p.explorerId),
+      explorerId: num(p.explorerId ?? p.explorer_id ?? p.armyEntityId ?? p.army_entity_id ?? 0),
       directions: numArray(p.directions),
       explore: bool(p.explore),
     }),
@@ -223,7 +246,7 @@ register("move_explorer", (client, signer, p) =>
 register("travel_explorer", (client, signer, p) =>
   wrapTx(() =>
     client.troops.travel(signer, {
-      explorerId: num(p.explorerId),
+      explorerId: num(p.explorerId ?? p.explorer_id ?? p.armyEntityId ?? p.army_entity_id ?? 0),
       directions: numArray(p.directions),
     }),
   ),
@@ -232,7 +255,7 @@ register("travel_explorer", (client, signer, p) =>
 register("explore", (client, signer, p) =>
   wrapTx(() =>
     client.troops.explore(signer, {
-      explorerId: num(p.explorerId),
+      explorerId: num(p.explorerId ?? p.explorer_id ?? p.armyEntityId ?? p.army_entity_id ?? 0),
       directions: numArray(p.directions),
     }),
   ),

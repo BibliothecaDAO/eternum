@@ -1,11 +1,13 @@
-import { fileURLToPath } from "node:url";
+import type { Chain } from "./manifest-resolver";
 
 export interface AgentConfig {
+  chain: Chain;
+  gameName: string;
+  slotName: string;
   rpcUrl: string;
   toriiUrl: string;
   worldAddress: string;
   manifestPath: string;
-  gameName: string;
   chainId: string;
   sessionBasePath: string;
   tickIntervalMs: number;
@@ -40,13 +42,14 @@ function parseBoolean(value: string | undefined, fallback: boolean): boolean {
 export function loadConfig(): AgentConfig {
   const env = process.env;
   return {
-    rpcUrl: env.RPC_URL ?? "http://localhost:5050",
-    toriiUrl: env.TORII_URL ?? "http://localhost:8080",
-    worldAddress: env.WORLD_ADDRESS ?? "0x0",
-    manifestPath:
-      env.MANIFEST_PATH ?? fileURLToPath(new URL("../../../../contracts/game/manifest_local.json", import.meta.url)),
+    chain: (env.CHAIN as Chain) ?? "slot",
     gameName: env.GAME_NAME ?? "eternum",
-    chainId: env.CHAIN_ID ?? "0x534e5f5345504f4c4941",
+    slotName: env.SLOT_NAME ?? "",
+    rpcUrl: env.RPC_URL ?? "",
+    toriiUrl: env.TORII_URL ?? "",
+    worldAddress: env.WORLD_ADDRESS ?? "",
+    manifestPath: env.MANIFEST_PATH ?? "",
+    chainId: env.CHAIN_ID ?? "0x4b4154414e41",
     sessionBasePath: env.SESSION_BASE_PATH ?? ".cartridge",
     tickIntervalMs: parsePositiveIntervalMs(env.TICK_INTERVAL_MS, 60000),
     loopEnabled: parseBoolean(env.LOOP_ENABLED, true),

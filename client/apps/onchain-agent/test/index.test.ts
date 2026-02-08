@@ -68,6 +68,8 @@ const mocks = vi.hoisted(() => {
       modelProvider: "anthropic",
       modelId: "claude-test",
       gameName: "eternum",
+      slotName: "",
+      chain: "slot",
       dataDir: "/tmp/agent-data",
     }),
     adapterCtor: vi.fn(),

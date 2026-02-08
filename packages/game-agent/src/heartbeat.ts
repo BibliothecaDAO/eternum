@@ -31,7 +31,14 @@ function extractYamlPayload(markdown: string): string {
 	if (yamlBlock?.[1]) {
 		return yamlBlock[1];
 	}
-	return markdown;
+	// If no YAML code block found, try to parse only if the content looks like
+	// plain YAML (starts with "version:" or "jobs:"). Otherwise return empty
+	// string so the caller gets an empty config instead of a parse error.
+	const trimmed = markdown.trimStart();
+	if (trimmed.startsWith("version:") || trimmed.startsWith("jobs:") || trimmed.startsWith("---")) {
+		return markdown;
+	}
+	return "";
 }
 
 function normalizeJob(raw: unknown): HeartbeatJob | null {

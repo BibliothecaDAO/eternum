@@ -14,6 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AccountInterface } from "starknet";
 import { type AgentConfig, loadConfig } from "./config";
+import { resolveManifest } from "./manifest-resolver";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
@@ -46,6 +47,9 @@ const CONFIG_PATH_ALIASES: Record<string, keyof AgentConfig> = {
   "world.manifestpath": "manifestPath",
   "gamename": "gameName",
   "game.name": "gameName",
+  "slotname": "slotName",
+  "slot.name": "slotName",
+  "chain": "chain",
   "chainid": "chainId",
   "session.chainid": "chainId",
   "sessionbasepath": "sessionBasePath",
@@ -63,11 +67,13 @@ const CONFIG_PATH_ALIASES: Record<string, keyof AgentConfig> = {
 };
 
 const BACKEND_KEYS = new Set<keyof AgentConfig>([
+  "chain",
   "rpcUrl",
   "toriiUrl",
   "worldAddress",
   "manifestPath",
   "gameName",
+  "slotName",
   "chainId",
   "sessionBasePath",
 ]);
@@ -110,11 +116,13 @@ function parseConfigValue(key: keyof AgentConfig, value: unknown): AgentConfig[k
       return parsePositiveInt(value, key);
     case "loopEnabled":
       return parseBoolean(value, key);
+    case "chain":
     case "rpcUrl":
     case "toriiUrl":
     case "worldAddress":
     case "manifestPath":
     case "gameName":
+    case "slotName":
     case "chainId":
     case "sessionBasePath":
     case "modelProvider":
@@ -140,11 +148,45 @@ function updateResultForKey(
   }
 }
 
+/**
+ * Resolve the manifest, world address, torii URL, and RPC URL.
+ * If manual overrides are set in config, use those; otherwise auto-resolve from chain + gameName.
+ */
+async function resolveWorldConfig(config: AgentConfig): Promise<{
+  manifest: { contracts: unknown[]; [key: string]: unknown };
+  worldAddress: string;
+  toriiUrl: string;
+  rpcUrl: string;
+}> {
+  const hasManualConfig = config.manifestPath && config.worldAddress && config.toriiUrl && config.rpcUrl;
+
+  if (hasManualConfig) {
+    const manifest = await loadManifest(path.resolve(config.manifestPath));
+    return {
+      manifest,
+      worldAddress: config.worldAddress,
+      toriiUrl: config.toriiUrl,
+      rpcUrl: config.rpcUrl,
+    };
+  }
+
+  // Auto-resolve from chain + slotName
+  const slotName = config.slotName || config.gameName;
+  const resolved = await resolveManifest(config.chain, slotName);
+
+  return {
+    manifest: resolved.manifest,
+    worldAddress: config.worldAddress || resolved.worldAddress,
+    toriiUrl: config.toriiUrl || resolved.toriiUrl,
+    rpcUrl: config.rpcUrl || resolved.rpcUrl,
+  };
+}
+
 async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServices> {
-  const manifest = await loadManifest(path.resolve(config.manifestPath));
+  const { manifest, worldAddress, toriiUrl, rpcUrl } = await resolveWorldConfig(config);
 
   const session = new ControllerSession({
-    rpcUrl: config.rpcUrl,
+    rpcUrl,
     chainId: config.chainId,
     gameName: config.gameName,
     basePath: config.sessionBasePath,
@@ -156,9 +198,9 @@ async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServic
   console.log(`Session ready! Account: ${account.address}`);
 
   const client = await EternumClient.create({
-    rpcUrl: config.rpcUrl,
-    toriiUrl: config.toriiUrl,
-    worldAddress: config.worldAddress,
+    rpcUrl,
+    toriiUrl,
+    worldAddress,
     manifest,
   });
   client.connect(account as any);
@@ -168,12 +210,11 @@ async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServic
 
 export async function main() {
   let runtimeConfig: AgentConfig = loadConfig();
-  const manifestPath = path.resolve(runtimeConfig.manifestPath);
 
   console.log("Initializing Eternum Agent...");
-  console.log(`  RPC: ${runtimeConfig.rpcUrl}`);
-  console.log(`  Torii: ${runtimeConfig.toriiUrl}`);
-  console.log(`  Manifest: ${manifestPath}`);
+  console.log(`  Chain: ${runtimeConfig.chain}`);
+  console.log(`  Game: ${runtimeConfig.gameName}`);
+  if (runtimeConfig.slotName) console.log(`  Slot: ${runtimeConfig.slotName}`);
   console.log(`  Model: ${runtimeConfig.modelProvider}/${runtimeConfig.modelId}`);
 
   let services = await createRuntimeServices(runtimeConfig);

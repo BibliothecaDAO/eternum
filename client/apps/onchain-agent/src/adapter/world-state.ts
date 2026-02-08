@@ -47,6 +47,9 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
  * Build a snapshot of the Eternum world state by querying all relevant
  * view methods on the client in parallel.
  *
+ * Uses `client.view.player()` for the player's own structures/armies (queried by owner),
+ * then queries `mapArea` centered on the player's first structure to see nearby entities.
+ *
  * @param client - An initialized EternumClient instance
  * @param accountAddress - The player's on-chain address
  * @returns A fully populated EternumWorldState
@@ -55,15 +58,13 @@ export async function buildWorldState(
   client: EternumClient,
   accountAddress: string,
 ): Promise<EternumWorldState> {
-  const [playerView, mapAreaView, marketView, leaderboardView] = await Promise.all([
+  // First fetch player data to know our structure positions
+  const [playerView, marketView, leaderboardView] = await Promise.all([
     client.view.player(accountAddress),
-    client.view.mapArea({ x: 0, y: 0, radius: 100 }),
     client.view.market(),
     client.view.leaderboard({ limit: 10 }),
   ]);
 
-  const structures = Array.isArray((mapAreaView as any)?.structures) ? (mapAreaView as any).structures : [];
-  const armies = Array.isArray((mapAreaView as any)?.armies) ? (mapAreaView as any).armies : [];
   const playerStructures = Array.isArray((playerView as any)?.structures) ? (playerView as any).structures : [];
   const playerArmies = Array.isArray((playerView as any)?.armies) ? (playerView as any).armies : [];
   const recentSwaps = Array.isArray((marketView as any)?.recentSwaps) ? (marketView as any).recentSwaps : [];
@@ -72,29 +73,86 @@ export async function buildWorldState(
     ? (leaderboardView as any).entries
     : [];
 
-  // Build entities from map area structures
-  const structureEntities: EternumEntity[] = structures.map((s: any) => ({
+  // Build entities from the player's own structures and armies
+  const structureEntities: EternumEntity[] = playerStructures.map((s: any) => ({
     type: "structure" as const,
-    entityId: s.entityId,
-    owner: s.owner,
-    position: { x: s.position.x, y: s.position.y },
+    entityId: Number(s.entityId ?? s.entity_id ?? 0),
+    owner: String(s.owner ?? accountAddress),
+    position: {
+      x: Number(s.position?.x ?? s.coord_x ?? s.x ?? 0),
+      y: Number(s.position?.y ?? s.coord_y ?? s.y ?? 0),
+    },
     name: s.name || undefined,
-    structureType: s.structureType,
-    level: s.level,
+    structureType: String(s.structureType ?? s.category ?? s.structure_type ?? "unknown"),
+    level: Number(s.level ?? 1),
   }));
 
-  // Build entities from map area armies
-  const armyEntities: EternumEntity[] = armies.map((a: any) => ({
+  const armyEntities: EternumEntity[] = playerArmies.map((a: any) => ({
     type: "army" as const,
-    entityId: a.entityId,
-    owner: a.owner,
-    position: { x: a.position.x, y: a.position.y },
-    strength: a.strength,
-    stamina: a.stamina,
-    isInBattle: a.isInBattle,
+    entityId: Number(a.entityId ?? a.entity_id ?? 0),
+    owner: String(a.owner ?? accountAddress),
+    position: {
+      x: Number(a.position?.x ?? a.coord_x ?? a.x ?? 0),
+      y: Number(a.position?.y ?? a.coord_y ?? a.y ?? 0),
+    },
+    strength: Number(a.strength ?? a.guardStrength ?? 0),
+    stamina: Number(a.stamina ?? 0),
+    isInBattle: Boolean(a.isInBattle ?? a.is_in_battle ?? false),
   }));
 
-  const entities: EternumEntity[] = [...structureEntities, ...armyEntities];
+  // If we have structures, also query the map area around the first one to see neighbors
+  let nearbyEntities: EternumEntity[] = [];
+  if (structureEntities.length > 0) {
+    const center = structureEntities[0].position;
+    try {
+      const mapAreaView = await client.view.mapArea({ x: center.x, y: center.y, radius: 50 });
+      const mapStructures = Array.isArray((mapAreaView as any)?.structures) ? (mapAreaView as any).structures : [];
+      const mapArmies = Array.isArray((mapAreaView as any)?.armies) ? (mapAreaView as any).armies : [];
+
+      // Add non-owned structures from the map (avoid duplicates of our own)
+      const ownedEntityIds = new Set(structureEntities.map((e) => e.entityId));
+      for (const s of mapStructures) {
+        const eid = Number(s.entityId ?? s.entity_id ?? 0);
+        if (!ownedEntityIds.has(eid)) {
+          nearbyEntities.push({
+            type: "structure",
+            entityId: eid,
+            owner: String(s.owner ?? "0x0"),
+            position: {
+              x: Number(s.position?.x ?? s.coord_x ?? s.x ?? 0),
+              y: Number(s.position?.y ?? s.coord_y ?? s.y ?? 0),
+            },
+            name: s.name || undefined,
+            structureType: String(s.structureType ?? s.category ?? "unknown"),
+            level: Number(s.level ?? 1),
+          });
+        }
+      }
+
+      const ownedArmyIds = new Set(armyEntities.map((e) => e.entityId));
+      for (const a of mapArmies) {
+        const eid = Number(a.entityId ?? a.entity_id ?? 0);
+        if (!ownedArmyIds.has(eid)) {
+          nearbyEntities.push({
+            type: "army",
+            entityId: eid,
+            owner: String(a.owner ?? "0x0"),
+            position: {
+              x: Number(a.position?.x ?? a.coord_x ?? a.x ?? 0),
+              y: Number(a.position?.y ?? a.coord_y ?? a.y ?? 0),
+            },
+            strength: Number(a.strength ?? 0),
+            stamina: Number(a.stamina ?? 0),
+            isInBattle: Boolean(a.isInBattle ?? a.is_in_battle ?? false),
+          });
+        }
+      }
+    } catch {
+      // Map area query failed; we still have our own entities
+    }
+  }
+
+  const entities: EternumEntity[] = [...structureEntities, ...armyEntities, ...nearbyEntities];
 
   // Populate resources from the player's totalResources
   const resources = new Map<string, number>();

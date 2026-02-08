@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "../src/config";
 
 const ENV_KEYS = [
+  "CHAIN",
   "RPC_URL",
   "TORII_URL",
   "WORLD_ADDRESS",
@@ -13,6 +14,7 @@ const ENV_KEYS = [
   "MODEL_PROVIDER",
   "MODEL_ID",
   "GAME_NAME",
+  "SLOT_NAME",
 ] as const;
 
 const originalEnv = { ...process.env };
@@ -29,6 +31,7 @@ afterEach(() => {
 
 describe("loadConfig", () => {
   it("reads explicit environment overrides", () => {
+    process.env.CHAIN = "mainnet";
     process.env.RPC_URL = "http://rpc.example";
     process.env.TORII_URL = "http://torii.example";
     process.env.WORLD_ADDRESS = "0x123";
@@ -43,6 +46,7 @@ describe("loadConfig", () => {
 
     const cfg = loadConfig();
 
+    expect(cfg.chain).toBe("mainnet");
     expect(cfg.rpcUrl).toBe("http://rpc.example");
     expect(cfg.toriiUrl).toBe("http://torii.example");
     expect(cfg.worldAddress).toBe("0x123");
@@ -90,5 +94,19 @@ describe("loadConfig", () => {
   it("defaults GAME_NAME to eternum", () => {
     delete process.env.GAME_NAME;
     expect(loadConfig().gameName).toBe("eternum");
+  });
+
+  it("defaults CHAIN to slot and connection fields to empty strings for auto-resolution", () => {
+    delete process.env.CHAIN;
+    delete process.env.RPC_URL;
+    delete process.env.TORII_URL;
+    delete process.env.WORLD_ADDRESS;
+    delete process.env.MANIFEST_PATH;
+    const cfg = loadConfig();
+    expect(cfg.chain).toBe("slot");
+    expect(cfg.rpcUrl).toBe("");
+    expect(cfg.toriiUrl).toBe("");
+    expect(cfg.worldAddress).toBe("");
+    expect(cfg.manifestPath).toBe("");
   });
 });
