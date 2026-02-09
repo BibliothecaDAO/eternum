@@ -369,7 +369,8 @@ export const initialSync = async (
 
     if (!selectedStructure) {
       selectedStructure = await sqlApi.fetchFirstStructure();
-      selectAsSpectator = hasSpectatorIntent;
+      // No owned structures available: always fall back to spectator mode.
+      selectAsSpectator = true;
     }
 
     if (selectedStructure) {
