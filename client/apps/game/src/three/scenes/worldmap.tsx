@@ -97,6 +97,7 @@ import {
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
+import { shouldRefreshSelectedArmyActionPaths } from "./worldmap-action-refresh";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import { resolveChunkSwitchActions, shouldRunManagerUpdate } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
@@ -187,6 +188,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
+  private lastActionPathRefreshTick: number = getBlockTimestamp().currentArmiesTick;
   private structureManager: StructureManager;
   private memoryMonitor?: MemoryMonitor;
   private chestManager: ChestManager;
@@ -1637,6 +1639,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.state.updateEntityActionActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
+    this.lastActionPathRefreshTick = currentArmiesTick;
 
     // Show selection pulse for the selected army
     const selectedArmyData = this.armyManager
@@ -1666,6 +1669,47 @@ export default class WorldmapScene extends HexagonScene {
       selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
 
     this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes);
+  }
+
+  private refreshSelectedArmyActionPathsIfNeeded() {
+    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const { selectedEntityId } = this.state.entityActions;
+
+    const selectedEntityIsArmy = Boolean(selectedEntityId && this.armiesPositions.has(selectedEntityId));
+    const hasPendingMovement = selectedEntityId ? this.pendingArmyMovements.has(selectedEntityId) : false;
+    const shouldRefresh = shouldRefreshSelectedArmyActionPaths({
+      selectedEntityId: selectedEntityId ?? null,
+      selectedEntityIsArmy,
+      previousArmiesTick: this.lastActionPathRefreshTick,
+      currentArmiesTick,
+      isChunkTransitioning: this.isChunkTransitioning,
+      hasPendingMovement,
+    });
+
+    this.lastActionPathRefreshTick = currentArmiesTick;
+
+    if (!shouldRefresh || !selectedEntityId) {
+      return;
+    }
+
+    const playerAddress = useAccountStore.getState().account?.address;
+    if (!playerAddress || !this.armyManager.hasArmy(selectedEntityId)) {
+      return;
+    }
+
+    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
+    const actionPaths = armyActionManager.findActionPaths(
+      this.structureHexes,
+      this.armyHexes,
+      this.exploredTiles,
+      this.chestHexes,
+      currentDefaultTick,
+      currentArmiesTick,
+      ContractAddress(playerAddress),
+    );
+
+    this.state.updateEntityActionActionPaths(actionPaths.getPaths());
+    this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
   private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -3800,6 +3844,7 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);
+    this.refreshSelectedArmyActionPathsIfNeeded();
     this.updateCameraTargetHexThrottled?.();
   }
 

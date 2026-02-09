@@ -51,6 +51,7 @@ import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
+import { resolveAuthoritativeArmyStamina } from "./army-stamina-source";
 import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -1366,6 +1367,19 @@ export class ArmyManager {
       finalOwningStructureId !== null && finalOwningStructureId !== undefined
         ? finalOwningStructureId
         : (params.owningStructureId ?? null);
+
+    const { currentArmiesTick } = getBlockTimestamp();
+    const liveTroops = this.components?.ExplorerTroops
+      ? getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(params.entityId)]))?.troops
+      : undefined;
+    const authoritativeStamina = resolveAuthoritativeArmyStamina({
+      currentArmiesTick,
+      fallbackCurrentStamina: finalCurrentStamina,
+      fallbackOnChainStamina: finalOnChainStamina,
+      liveTroops,
+    });
+    finalCurrentStamina = authoritativeStamina.currentStamina;
+    finalOnChainStamina = authoritativeStamina.onChainStamina;
 
     if (structureIdForOwner !== null && this.components?.Structure) {
       try {
