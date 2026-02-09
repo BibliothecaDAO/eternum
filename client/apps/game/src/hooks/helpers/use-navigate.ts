@@ -4,6 +4,7 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { ensureStructureSynced } from "@/dojo/queries";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { readSpectateFromWindow, withSpectateParam } from "@/utils/spectate-url";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
@@ -75,11 +76,10 @@ const toWorldMapPosition = (position: PositionLike): { col: number; row: number 
 };
 
 const toPlayPath = (url: string): string => {
-  if (url.startsWith("/play/")) {
-    return url;
-  }
+  const playPath = url.startsWith("/play/") ? url : `/play${url.startsWith("/") ? url : `/${url}`}`;
+  const isSpectating = useUIStore.getState().isSpectating || readSpectateFromWindow();
 
-  return `/play${url.startsWith("/") ? url : `/${url}`}`;
+  return withSpectateParam(playPath, isSpectating);
 };
 
 const useNavigateToHexView = () => {
@@ -233,8 +233,10 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
       console.error("[useGoToStructure] Unexpected error while syncing structure", error);
     }
 
+    const currentSpectatorState = useUIStore.getState().isSpectating;
+
     setStructureEntityId(structureEntityId, {
-      spectator: options?.spectator ?? false,
+      spectator: options?.spectator ?? currentSpectatorState,
       worldMapPosition,
     });
 

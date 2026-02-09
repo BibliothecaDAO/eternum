@@ -480,6 +480,10 @@ export default class HexceptionScene extends HexagonScene {
       innerRow: BUILDINGS_CENTER[1],
     });
 
+    if (useUIStore.getState().isSpectating) {
+      this.state.setLeftNavigationView(LeftView.EntityView);
+    }
+
     this.isInitialized = true;
     this.lastRealmKey = realmKey;
   }
@@ -1307,7 +1311,9 @@ export default class HexceptionScene extends HexagonScene {
     if (this.playerStructures.length > 0) {
       const structure = this.playerStructures[this.structureIndex];
       // Set the structure entity ID in the UI store
-      this.state.setStructureEntityId(structure.entityId);
+      this.state.setStructureEntityId(structure.entityId, {
+        spectator: useUIStore.getState().isSpectating,
+      });
     }
   }
 
@@ -1328,7 +1334,9 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     navigateToStructure(structure.position.x, structure.position.y, "hex");
-    this.state.setStructureEntityId(structure.entityId);
+    this.state.setStructureEntityId(structure.entityId, {
+      spectator: useUIStore.getState().isSpectating,
+    });
   }
 
   public updatePlayerStructures(structures: Structure[]) {

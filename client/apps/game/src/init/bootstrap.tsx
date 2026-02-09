@@ -26,6 +26,7 @@ import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
+import { readSpectateFromWindow } from "../utils/spectate-url";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { initializeGameRenderer } from "./game-renderer";
 
@@ -62,7 +63,7 @@ const deriveWorldFromPath = (): string | null => {
 
 const shouldBypassNoAccountModal = (): boolean => {
   const isSpectatingInStore = useUIStore.getState().isSpectating;
-  return isSpectatingInStore;
+  return isSpectatingInStore || readSpectateFromWindow();
 };
 
 const handleNoAccount = (modalContent: ReactNode) => {

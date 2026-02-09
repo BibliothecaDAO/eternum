@@ -1210,7 +1210,7 @@ export default class WorldmapScene extends HexagonScene {
         ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
         : undefined;
 
-    const shouldSpectate = this.state.isSpectating || !isMine;
+    const shouldSpectate = useUIStore.getState().isSpectating || !isMine;
 
     this.state.setStructureEntityId(structure.id, {
       spectator: shouldSpectate,
@@ -1558,7 +1558,7 @@ export default class WorldmapScene extends HexagonScene {
           : undefined;
       this.state.setStructureEntityId(selectedEntityId, {
         worldMapPosition,
-        spectator: this.state.isSpectating,
+        spectator: useUIStore.getState().isSpectating,
       });
     }
 
@@ -1804,7 +1804,8 @@ export default class WorldmapScene extends HexagonScene {
       debug: false, // Disable logging for performance
     });
 
-    useUIStore.getState().setLeftNavigationView(LeftView.None);
+    const uiStore = useUIStore.getState();
+    uiStore.setLeftNavigationView(uiStore.isSpectating ? LeftView.PredictionMarket : LeftView.None);
 
     if (!this.hasInitialized) {
       if (!this.initialSetupPromise) {
@@ -4085,7 +4086,7 @@ export default class WorldmapScene extends HexagonScene {
     const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
     this.state.setStructureEntityId(structure.entityId, {
       worldMapPosition,
-      spectator: this.state.isSpectating,
+      spectator: useUIStore.getState().isSpectating,
     });
 
     const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
@@ -4104,7 +4105,7 @@ export default class WorldmapScene extends HexagonScene {
       const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
       this.state.setStructureEntityId(structure.entityId, {
         worldMapPosition,
-        spectator: this.state.isSpectating,
+        spectator: useUIStore.getState().isSpectating,
       });
       const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
       // Use 0 duration for instant camera teleportation

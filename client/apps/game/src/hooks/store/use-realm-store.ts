@@ -1,5 +1,6 @@
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
+import { readSpectateFromWindow, writeSpectateToCurrentUrl } from "@/utils/spectate-url";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
 import { ID, RelicRecipientType, Structure, StructureType } from "@bibliothecadao/types";
 
@@ -32,6 +33,10 @@ const normalizeStructureId = (value: ID | unknown): ID | null => {
 const resolvePreferredControlledStructureId = (playerStructures: Structure[]): ID => {
   const firstRealm = playerStructures.find((structure) => structure.category === StructureType.Realm);
   return firstRealm?.entityId ?? playerStructures[0]?.entityId ?? UNDEFINED_STRUCTURE_ENTITY_ID;
+};
+
+const syncSpectateUrl = (isSpectating: boolean): void => {
+  writeSpectateToCurrentUrl(isSpectating);
 };
 
 const removeRelicFromCollection = <T extends { entityId: unknown; relics?: Array<{ resourceId: unknown }> }>(
@@ -91,7 +96,7 @@ export interface RealmStore {
 export const createRealmStoreSlice = (set: any) => ({
   structureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
-  isSpectating: false,
+  isSpectating: readSpectateFromWindow(),
   worldMapReturnPosition: null,
   setStructureEntityId: (
     structureEntityId: ID,
@@ -105,7 +110,7 @@ export const createRealmStoreSlice = (set: any) => ({
       }
 
       const ownsStructure = state.playerStructures.some((structure) => idsMatch(structure.entityId, normalizedId));
-      const shouldSpectate = options?.spectator ?? !ownsStructure;
+      const shouldSpectate = options?.spectator ?? (state.isSpectating || !ownsStructure);
       const currentStructureIsOwned = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );
@@ -131,6 +136,8 @@ export const createRealmStoreSlice = (set: any) => ({
         updates.lastControlledStructureEntityId = normalizedId;
       }
 
+      syncSpectateUrl(shouldSpectate);
+
       return updates;
     }),
   setLastControlledStructureEntityId: (structureEntityId: ID) =>
@@ -140,6 +147,8 @@ export const createRealmStoreSlice = (set: any) => ({
         console.warn("[RealmStore] Ignoring invalid structure id", structureEntityId);
         return state;
       }
+
+      syncSpectateUrl(false);
 
       return {
         lastControlledStructureEntityId: normalizedId,
@@ -153,6 +162,8 @@ export const createRealmStoreSlice = (set: any) => ({
         state.lastControlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
           ? state.lastControlledStructureEntityId
           : UNDEFINED_STRUCTURE_ENTITY_ID;
+
+      syncSpectateUrl(false);
 
       return {
         structureEntityId: fallback,
@@ -168,6 +179,7 @@ export const createRealmStoreSlice = (set: any) => ({
       const currentStructureIsOwned = playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );
+      const hasSpectatorIntentFromUrl = readSpectateFromWindow();
 
       const updates: Partial<RealmStore> = {
         playerStructures,
@@ -175,6 +187,7 @@ export const createRealmStoreSlice = (set: any) => ({
 
       const shouldRecoverFromStartupSpectator =
         state.isSpectating &&
+        !hasSpectatorIntentFromUrl &&
         state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID &&
         !currentStructureIsOwned &&
         playerStructures.length > 0;
@@ -184,6 +197,7 @@ export const createRealmStoreSlice = (set: any) => ({
         updates.lastControlledStructureEntityId = nextControlled;
         updates.structureEntityId = nextControlled;
         updates.isSpectating = false;
+        syncSpectateUrl(false);
         return updates;
       }
 

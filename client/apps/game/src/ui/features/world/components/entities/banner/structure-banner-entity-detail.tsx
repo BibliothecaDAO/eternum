@@ -61,6 +61,7 @@ const StructureBannerEntityDetailContent = memo(
     } = useStructureEntityDetail({ structureEntityId });
     const mode = useGameModeConfig();
     const openPopup = useUIStore((state) => state.openPopup);
+    const isSpectating = useUIStore((state) => state.isSpectating);
     const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
@@ -102,7 +103,9 @@ const StructureBannerEntityDetailContent = memo(
     const structureCategory = rawCategory === undefined ? undefined : (rawCategory as StructureType);
     const isFragmentMine = Number(rawCategory) === StructureType.FragmentMine;
     const isCamp = Number(rawCategory) === StructureType.Village;
-    const showBalanceInline = isFragmentMine || isCamp;
+    const shouldShowInventory = !isSpectating;
+    const showBalanceInline = shouldShowInventory && (isFragmentMine || isCamp);
+    const showInventoryTab = shouldShowInventory && !showBalanceInline;
     const showProductionTab = structureCategory !== StructureType.Hyperstructure && !isFragmentMine;
     const canOpenTransferPopup =
       isMine &&
@@ -222,7 +225,7 @@ const StructureBannerEntityDetailContent = memo(
               </Tabs.Panel>
             )}
 
-            {!showBalanceInline && (
+            {showInventoryTab && (
               <Tabs.Panel className="flex flex-col gap-2">
                 {resources ? (
                   <CompactEntityInventory
@@ -251,7 +254,7 @@ const StructureBannerEntityDetailContent = memo(
                 <Factory className="h-4 w-4 text-gold" />
               </Tabs.Tab>
             )}
-            {!showBalanceInline && (
+            {showInventoryTab && (
               <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
                 <Coins className="h-4 w-4 text-gold" />
               </Tabs.Tab>

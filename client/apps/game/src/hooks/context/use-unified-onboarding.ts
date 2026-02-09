@@ -7,6 +7,7 @@ import { useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { readSpectateFromWindow } from "@/utils/spectate-url";
 import type { SetupResult } from "@/init/bootstrap";
 import { getActiveWorld, setActiveWorldName } from "@/runtime/world";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -81,6 +82,14 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   });
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [hasCompletedAvatar, setHasCompletedAvatar] = useState(false);
+
+  useEffect(() => {
+    if (isSpectating || !readSpectateFromWindow()) {
+      return;
+    }
+
+    setStructureEntityId(0, { spectator: true });
+  }, [isSpectating, setStructureEntityId]);
 
   // Spectator navigation
   const spectatorNavigate = useSpectatorModeClick(bootstrap.setupResult);

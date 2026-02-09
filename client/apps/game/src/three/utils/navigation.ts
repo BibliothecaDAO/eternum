@@ -1,13 +1,14 @@
 import { Position } from "@bibliothecadao/eternum";
 
 import { Structure } from "@bibliothecadao/types";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { readSpectateFromWindow, withSpectateParam } from "@/utils/spectate-url";
 
 const toPlayPath = (url: string): string => {
-  if (url.startsWith("/play/")) {
-    return url;
-  }
+  const playPath = url.startsWith("/play/") ? url : `/play${url.startsWith("/") ? url : `/${url}`}`;
+  const isSpectating = useUIStore.getState().isSpectating || readSpectateFromWindow();
 
-  return `/play${url.startsWith("/") ? url : `/${url}`}`;
+  return withSpectateParam(playPath, isSpectating);
 };
 
 /**
@@ -132,7 +133,8 @@ export function toggleMapHexView() {
   }
 
   // Construct new URL with same coordinates
-  const newUrl = `${newPath}?col=${col}&row=${row}`;
+  const isSpectating = useUIStore.getState().isSpectating || readSpectateFromWindow();
+  const newUrl = withSpectateParam(`${newPath}?col=${col}&row=${row}`, isSpectating);
 
   // Update browser URL
   window.history.pushState({}, "", newUrl);

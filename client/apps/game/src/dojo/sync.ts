@@ -1,5 +1,6 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { readSpectateFromWindow } from "@/utils/spectate-url";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { StructureType } from "@bibliothecadao/types";
 
@@ -342,11 +343,12 @@ export const initialSync = async (
     const accountAddress = useAccountStore.getState().account?.address;
     const hasConnectedAccount =
       typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
+    const hasSpectatorIntent = state.isSpectating || readSpectateFromWindow();
 
     let selectedStructure: { entity_id: number; coord_x: number; coord_y: number } | null = null;
-    let selectAsSpectator = state.isSpectating;
+    let selectAsSpectator = hasSpectatorIntent;
 
-    if (hasConnectedAccount) {
+    if (hasConnectedAccount && !hasSpectatorIntent) {
       try {
         const ownedStructures = await sqlApi.fetchPlayerStructures(accountAddress);
         const preferredOwnedStructure =
@@ -367,7 +369,7 @@ export const initialSync = async (
 
     if (!selectedStructure) {
       selectedStructure = await sqlApi.fetchFirstStructure();
-      selectAsSpectator = state.isSpectating;
+      selectAsSpectator = hasSpectatorIntent;
     }
 
     if (selectedStructure) {

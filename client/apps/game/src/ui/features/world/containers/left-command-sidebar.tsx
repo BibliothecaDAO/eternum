@@ -121,6 +121,7 @@ type LeftPanelHeaderProps = {
   structureEntityId: ID;
   structures: Structure[];
   structureInfo: ReturnType<typeof getEntityInfo> | null;
+  isMapView: boolean;
   onSelectStructure: (entityId: ID) => void;
   components: ClientComponents;
   structureGroups: StructureGroupsMap;
@@ -207,6 +208,7 @@ const LeftPanelHeader = memo(
     structureEntityId,
     structures,
     structureInfo,
+    isMapView,
     onSelectStructure,
     components,
     structureGroups,
@@ -217,6 +219,7 @@ const LeftPanelHeader = memo(
   }: LeftPanelHeaderProps) => {
     const [activeTab, setActiveTab] = useState(0);
     const mode = useGameModeConfig();
+    const isSpectating = useUIStore((state) => state.isSpectating);
 
     const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
@@ -331,6 +334,13 @@ const LeftPanelHeader = memo(
       () => structuresWithMetadata.find((structure) => structure.entityId === structureEntityId),
       [structuresWithMetadata, structureEntityId],
     );
+    const liveStructureName = useMemo(() => {
+      if (!liveStructure) {
+        return null;
+      }
+
+      return mode.structure.getName(liveStructure).name;
+    }, [liveStructure, mode]);
     const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
     const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
     const normalizedLevelRaw =
@@ -364,10 +374,18 @@ const LeftPanelHeader = memo(
       (selectedStructureMetadata.category === StructureType.Realm ||
         selectedStructureMetadata.category === StructureType.Village),
     );
-    const headerTitle =
-      selectedStructureMetadata?.displayName ??
-      structureInfo?.name?.name ??
-      (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
+    const shouldHideStructureName = isMapView && isSpectating;
+    const headerTitle = shouldHideStructureName
+      ? "Spectator Mode"
+      : selectedStructureMetadata?.displayName ??
+        liveStructureName ??
+        structureInfo?.name?.name ??
+        (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
+    const headerTitleClass = shouldHideStructureName
+      ? "text-gold"
+      : selectedGroupConfig
+        ? selectedGroupConfig.textClass
+        : "text-gold";
     const ActiveStructureIcon = useMemo<LucideIcon | null>(() => {
       if (!selectedStructureMetadata) {
         return null;
@@ -384,22 +402,22 @@ const LeftPanelHeader = memo(
       <div className="border-b border-gold/20 bg-black/60 px-4 py-4 space-y-4">
         <div className="border-b border-gold/20 pb-3">
           <div className="flex items-center gap-2 text-sm text-gold min-w-0">
-            {ActiveStructureIcon && (
+            {!shouldHideStructureName && ActiveStructureIcon && (
               <span className={selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"}>
                 <ActiveStructureIcon className="h-5 w-5" />
               </span>
             )}
-            {selectedGroupColor && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />}
+            {!shouldHideStructureName && selectedGroupColor && (
+              <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />
+            )}
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <p
-                className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${
-                  selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
-                }`}
+                className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${headerTitleClass}`}
                 title={headerTitle}
               >
                 {headerTitle}
               </p>
-              {showDetailedStats && populationCapacityLabel && (
+              {!shouldHideStructureName && showDetailedStats && populationCapacityLabel && (
                 <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
                   <span className="text-gold/40">•</span>
                   <span>{levelLabel}</span>
@@ -408,7 +426,7 @@ const LeftPanelHeader = memo(
                 </div>
               )}
             </div>
-            {selectedStructureMetadata && (
+            {!shouldHideStructureName && selectedStructureMetadata && (
               <button
                 type="button"
                 onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
@@ -421,78 +439,80 @@ const LeftPanelHeader = memo(
           </div>
         </div>
 
-        <div className="space-y-3">
-          <Tabs
-            selectedIndex={activeTab}
-            onChange={setActiveTab}
-            variant="selection"
-            size="small"
-            className="text-xs text-gold"
-          >
-            <Tabs.List>
-              {structureTabs.map((tab, index) => {
-                const Icon = tab.icon;
-                const count = tabCounts[index] ?? 0;
-                const isActiveTab = activeTab === index;
-                const isDisabledTab = count === 0 && tab.key !== "realms";
-                return (
-                  <Tabs.Tab
-                    key={tab.key}
-                    aria-label={tab.label}
-                    title={tab.label}
-                    disabled={isDisabledTab}
-                    className={clsx(
-                      "!mx-0 border",
-                      isActiveTab
-                        ? "border-gold/60 bg-black/40 text-[#f4c24d]"
-                        : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
-                      isDisabledTab && "opacity-60 hover:border-gold/25 hover:text-gold/60",
-                    )}
-                  >
-                    <span className="flex items-center gap-1">
-                      <span
-                        className={clsx(
-                          "text-[12px] font-semibold transition-none",
-                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                          isDisabledTab && "text-gold/40",
-                        )}
-                      >
-                        {count}
+        {!isSpectating && (
+          <div className="space-y-3">
+            <Tabs
+              selectedIndex={activeTab}
+              onChange={setActiveTab}
+              variant="selection"
+              size="small"
+              className="text-xs text-gold"
+            >
+              <Tabs.List>
+                {structureTabs.map((tab, index) => {
+                  const Icon = tab.icon;
+                  const count = tabCounts[index] ?? 0;
+                  const isActiveTab = activeTab === index;
+                  const isDisabledTab = count === 0 && tab.key !== "realms";
+                  return (
+                    <Tabs.Tab
+                      key={tab.key}
+                      aria-label={tab.label}
+                      title={tab.label}
+                      disabled={isDisabledTab}
+                      className={clsx(
+                        "!mx-0 border",
+                        isActiveTab
+                          ? "border-gold/60 bg-black/40 text-[#f4c24d]"
+                          : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
+                        isDisabledTab && "opacity-60 hover:border-gold/25 hover:text-gold/60",
+                      )}
+                    >
+                      <span className="flex items-center gap-1">
+                        <span
+                          className={clsx(
+                            "text-[12px] font-semibold transition-none",
+                            isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
+                            isDisabledTab && "text-gold/40",
+                          )}
+                        >
+                          {count}
+                        </span>
+                        <Icon
+                          className={clsx(
+                            "h-4 w-4",
+                            isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
+                            isDisabledTab && "text-gold/40",
+                          )}
+                        />
                       </span>
-                      <Icon
-                        className={clsx(
-                          "h-4 w-4",
-                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                          isDisabledTab && "text-gold/40",
-                        )}
-                      />
-                    </span>
-                    <span className="sr-only">{tab.label}</span>
-                  </Tabs.Tab>
-                );
-              })}
-            </Tabs.List>
-          </Tabs>
+                      <span className="sr-only">{tab.label}</span>
+                    </Tabs.Tab>
+                  );
+                })}
+              </Tabs.List>
+            </Tabs>
 
-          {orderedStructures.length > 0 ? (
-            <div className="max-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
-              {orderedStructures.map((structure) => (
-                <StructureListItem
-                  key={structure.entityId}
-                  structure={structure}
-                  isSelected={structure.entityId === structureEntityId}
-                  onSelectStructure={onSelectStructure}
-                  onToggleFavorite={onToggleFavorite}
-                  components={components}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
-              No structures available for this category.
-            </div>
-          )}
-        </div>
+            {orderedStructures.length > 0 ? (
+              <div className="max-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
+                {orderedStructures.map((structure) => (
+                  <StructureListItem
+                    key={structure.entityId}
+                    structure={structure}
+                    isSelected={structure.entityId === structureEntityId}
+                    onSelectStructure={onSelectStructure}
+                    onToggleFavorite={onToggleFavorite}
+                    components={components}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
+                No structures available for this category.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   },
@@ -1255,6 +1275,7 @@ export const LeftCommandSidebar = memo(() => {
                 structureEntityId={structureEntityId}
                 structures={structures}
                 structureInfo={structureInfo}
+                isMapView={isMapView}
                 onSelectStructure={handleSelectStructure}
                 components={components}
                 structureGroups={structureGroups}
