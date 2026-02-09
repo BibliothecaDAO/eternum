@@ -1312,7 +1312,7 @@ export default class HexceptionScene extends HexagonScene {
       const structure = this.playerStructures[this.structureIndex];
       // Set the structure entity ID in the UI store
       this.state.setStructureEntityId(structure.entityId, {
-        spectator: useUIStore.getState().isSpectating,
+        spectator: false,
       });
     }
   }
@@ -1335,7 +1335,7 @@ export default class HexceptionScene extends HexagonScene {
 
     navigateToStructure(structure.position.x, structure.position.y, "hex");
     this.state.setStructureEntityId(structure.entityId, {
-      spectator: useUIStore.getState().isSpectating,
+      spectator: false,
     });
   }
 

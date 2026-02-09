@@ -110,7 +110,7 @@ export const createRealmStoreSlice = (set: any) => ({
       }
 
       const ownsStructure = state.playerStructures.some((structure) => idsMatch(structure.entityId, normalizedId));
-      const shouldSpectate = options?.spectator ?? (state.isSpectating || !ownsStructure);
+      const shouldSpectate = options?.spectator ?? !ownsStructure;
       const currentStructureIsOwned = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );

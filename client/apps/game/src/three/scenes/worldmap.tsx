@@ -1210,7 +1210,7 @@ export default class WorldmapScene extends HexagonScene {
         ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
         : undefined;
 
-    const shouldSpectate = useUIStore.getState().isSpectating || !isMine;
+    const shouldSpectate = !isMine;
 
     this.state.setStructureEntityId(structure.id, {
       spectator: shouldSpectate,
@@ -1558,7 +1558,6 @@ export default class WorldmapScene extends HexagonScene {
           : undefined;
       this.state.setStructureEntityId(selectedEntityId, {
         worldMapPosition,
-        spectator: useUIStore.getState().isSpectating,
       });
     }
 
@@ -4086,7 +4085,7 @@ export default class WorldmapScene extends HexagonScene {
     const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
     this.state.setStructureEntityId(structure.entityId, {
       worldMapPosition,
-      spectator: useUIStore.getState().isSpectating,
+      spectator: false,
     });
 
     const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
@@ -4105,7 +4104,7 @@ export default class WorldmapScene extends HexagonScene {
       const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
       this.state.setStructureEntityId(structure.entityId, {
         worldMapPosition,
-        spectator: useUIStore.getState().isSpectating,
+        spectator: false,
       });
       const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
       // Use 0 duration for instant camera teleportation

@@ -233,10 +233,8 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
       console.error("[useGoToStructure] Unexpected error while syncing structure", error);
     }
 
-    const currentSpectatorState = useUIStore.getState().isSpectating;
-
     setStructureEntityId(structureEntityId, {
-      spectator: options?.spectator ?? currentSpectatorState,
+      ...(options?.spectator !== undefined ? { spectator: options.spectator } : {}),
       worldMapPosition,
     });
 
