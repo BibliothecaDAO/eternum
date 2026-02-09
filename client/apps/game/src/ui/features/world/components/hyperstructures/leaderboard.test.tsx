@@ -15,7 +15,9 @@ const leaderboardManagerMock = {
 };
 
 vi.mock("@/ui/design-system/atoms/button", () => ({
-  default: ({ children, onClick }: { children: string; onClick: () => void }) => <button onClick={onClick}>{children}</button>,
+  default: ({ children, onClick }: { children: string; onClick: () => void }) => (
+    <button onClick={onClick}>{children}</button>
+  ),
 }));
 
 vi.mock("@/ui/design-system/atoms/sort-button", () => ({
@@ -39,26 +41,38 @@ vi.mock("@/hooks/use-player-avatar", () => ({
   normalizeAvatarAddress: (address: string) => address.toLowerCase(),
 }));
 
-vi.mock("@bibliothecadao/eternum", () => ({
-  getAddressName: () => "Alice",
-  toHexString: (value: string) => value,
-  LeaderboardManager: {
-    instance: vi.fn(() => leaderboardManagerMock),
-  },
-}), { virtual: true });
-
-vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
-    account: { account: { address: "0xowner" } },
-    setup: { components: { Structure: {} } },
+vi.mock(
+  "@bibliothecadao/eternum",
+  () => ({
+    getAddressName: () => "Alice",
+    toHexString: (value: string) => value,
+    LeaderboardManager: {
+      instance: vi.fn(() => leaderboardManagerMock),
+    },
   }),
-  useHyperstructureUpdates: () => ({ id: "hyperstructure" }),
-}), { virtual: true });
+  { virtual: true },
+);
 
-vi.mock("@bibliothecadao/types", () => ({
-  ContractAddress: (value: string) => value,
-  ID: Number,
-}), { virtual: true });
+vi.mock(
+  "@bibliothecadao/react",
+  () => ({
+    useDojo: () => ({
+      account: { account: { address: "0xowner" } },
+      setup: { components: { Structure: {} } },
+    }),
+    useHyperstructureUpdates: () => ({ id: "hyperstructure" }),
+  }),
+  { virtual: true },
+);
+
+vi.mock(
+  "@bibliothecadao/types",
+  () => ({
+    ContractAddress: (value: string) => value,
+    ID: Number,
+  }),
+  { virtual: true },
+);
 
 vi.mock("@dojoengine/recs", () => ({
   getComponentValue: () => ({ owner: "0xowner" }),

@@ -109,7 +109,9 @@ describe("MMRLeaderboard", () => {
     });
 
     const fetchMock = vi.mocked(fetch);
-    const worldButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "demo-world");
+    const worldButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "demo-world",
+    );
     expect(worldButton).toBeDefined();
 
     await act(async () => {
