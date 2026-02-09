@@ -318,12 +318,13 @@ export const MMRLeaderboard = () => {
 
   // Keep rankings fresh without requiring manual refresh.
   useEffect(() => {
-    if (!state.selectedWorld) {
+    const selectedWorld = state.selectedWorld;
+    if (!selectedWorld) {
       return;
     }
 
     const intervalId = window.setInterval(() => {
-      void fetchWorldMMRs(state.selectedWorld);
+      void fetchWorldMMRs(selectedWorld);
     }, AUTO_REFRESH_INTERVAL_MS);
 
     return () => {

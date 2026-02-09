@@ -50,7 +50,6 @@ vi.mock(
       instance: vi.fn(() => leaderboardManagerMock),
     },
   }),
-  { virtual: true },
 );
 
 vi.mock(
@@ -62,7 +61,6 @@ vi.mock(
     }),
     useHyperstructureUpdates: () => ({ id: "hyperstructure" }),
   }),
-  { virtual: true },
 );
 
 vi.mock(
@@ -71,7 +69,6 @@ vi.mock(
     ContractAddress: (value: string) => value,
     ID: Number,
   }),
-  { virtual: true },
 );
 
 vi.mock("@dojoengine/recs", () => ({
