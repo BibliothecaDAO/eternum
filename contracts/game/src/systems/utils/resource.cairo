@@ -172,7 +172,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         to_troop_id: ID,
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
+        troop_resources_only: bool,
     ) {
+        if troop_resources_only {
+            Self::ensure_only_troop_resource(resources);
+        }
         Self::_instant_transfer_storable(
             ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
         );
@@ -699,6 +703,15 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             let (resource_type, _) = resources.at(i);
             if TroopResourceImpl::is_troop(*resource_type) {
                 panic!("troop resource can't be transferred");
+            }
+        }
+    }
+
+    fn ensure_only_troop_resource(mut resources: Span<(u8, u128)>) {
+        for i in 0..resources.len() {
+            let (resource_type, _) = resources.at(i);
+            if !TroopResourceImpl::is_troop(*resource_type) {
+                panic!("only troop resources can be raided during village raid immunity");
             }
         }
     }

@@ -30,7 +30,7 @@ pub mod resource_systems {
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
-    use crate::models::config::{SeasonConfigImpl, SpeedImpl};
+    use crate::models::config::{BattleConfigImpl, SeasonConfigImpl, SpeedImpl, TickImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::TravelTrait;
     use crate::models::resource::arrivals::ResourceArrivalImpl;
@@ -38,7 +38,8 @@ pub mod resource_systems {
         ResourceAllowance, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureOwnerStoreImpl,
     };
     use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;
@@ -423,6 +424,18 @@ pub mod resource_systems {
             // ensure from_structure is owned by caller
             let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
             from_structure_owner.assert_caller_owner();
+
+            // block resource claims for cloaked villages (48h spawn immunity)
+            let from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            if from_structure_base.category == StructureCategory::Village.into() {
+                let battle_config = BattleConfigImpl::get(ref world);
+                let tick = TickImpl::get_tick_interval(ref world);
+                let season_config = SeasonConfigImpl::get(world);
+                assert!(
+                    from_structure_base.is_not_cloaked(battle_config, tick, season_config),
+                    "village cannot claim deposits during spawn immunity",
+                );
+            }
 
             // move balance from resource arrivals to structure balance
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);

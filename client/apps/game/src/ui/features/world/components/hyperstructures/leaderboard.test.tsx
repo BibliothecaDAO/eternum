@@ -41,35 +41,26 @@ vi.mock("@/hooks/use-player-avatar", () => ({
   normalizeAvatarAddress: (address: string) => address.toLowerCase(),
 }));
 
-vi.mock(
-  "@bibliothecadao/eternum",
-  () => ({
-    getAddressName: () => "Alice",
-    toHexString: (value: string) => value,
-    LeaderboardManager: {
-      instance: vi.fn(() => leaderboardManagerMock),
-    },
-  }),
-);
+vi.mock("@bibliothecadao/eternum", () => ({
+  getAddressName: () => "Alice",
+  toHexString: (value: string) => value,
+  LeaderboardManager: {
+    instance: vi.fn(() => leaderboardManagerMock),
+  },
+}));
 
-vi.mock(
-  "@bibliothecadao/react",
-  () => ({
-    useDojo: () => ({
-      account: { account: { address: "0xowner" } },
-      setup: { components: { Structure: {} } },
-    }),
-    useHyperstructureUpdates: () => ({ id: "hyperstructure" }),
+vi.mock("@bibliothecadao/react", () => ({
+  useDojo: () => ({
+    account: { account: { address: "0xowner" } },
+    setup: { components: { Structure: {} } },
   }),
-);
+  useHyperstructureUpdates: () => ({ id: "hyperstructure" }),
+}));
 
-vi.mock(
-  "@bibliothecadao/types",
-  () => ({
-    ContractAddress: (value: string) => value,
-    ID: Number,
-  }),
-);
+vi.mock("@bibliothecadao/types", () => ({
+  ContractAddress: (value: string) => value,
+  ID: Number,
+}));
 
 vi.mock("@dojoengine/recs", () => ({
   getComponentValue: () => ({ owner: "0xowner" }),

@@ -499,9 +499,10 @@ export interface Config {
     army: number;
   };
   battle: {
-    graceTickCount: number;
-    graceTickCountHyp: number;
+    regularImmunityTicks: number;
+    villageImmunityTicks: number;
     delaySeconds: number;
+    villageRaidImmunityTicks: number;
   };
   troop: {
     damage: {
@@ -533,13 +534,21 @@ export interface Config {
       staminaTravelStaminaCost: number;
     };
     limit: {
-      explorerMaxPartyCount: number;
-      explorerAndGuardMaxTroopCount: number;
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
       agentTroopLowerBound: number;
       agentTroopUpperBound: number;
+      settlementDeploymentCap: number;
+      cityDeploymentCap: number;
+      kingdomDeploymentCap: number;
+      empireDeploymentCap: number;
+      t1TierStrength: number;
+      t2TierStrength: number;
+      t3TierStrength: number;
+      t1TierModifier: number;
+      t2TierModifier: number;
+      t3TierModifier: number;
     };
   };
   settlement: {
