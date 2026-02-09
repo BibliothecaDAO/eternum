@@ -3,10 +3,10 @@ import { configManager } from "@bibliothecadao/eternum";
 import { TroopTier } from "@bibliothecadao/types";
 
 const STRUCTURE_LEVELS = [
-  { level: 0, name: "Settlement" },
-  { level: 1, name: "City" },
-  { level: 2, name: "Kingdom" },
-  { level: 3, name: "Empire" },
+  { level: 1, name: "Settlement" },
+  { level: 2, name: "City" },
+  { level: 3, name: "Kingdom" },
+  { level: 4, name: "Empire" },
 ] as const;
 
 const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3] as const;
@@ -53,7 +53,7 @@ export const Combat = () => {
                   <td className="p-2 border border-gray-600">{name}</td>
                   {TIERS.map((tier) => (
                     <td key={tier} className="text-right p-2 border border-gray-600">
-                      {configManager.getMaxArmySize(level, tier).toLocaleString()}
+                      {configManager.getMaxArmySize(level - 1, tier).toLocaleString()}
                     </td>
                   ))}
                 </tr>
