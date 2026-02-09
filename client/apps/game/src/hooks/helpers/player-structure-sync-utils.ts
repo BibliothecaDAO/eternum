@@ -1,10 +1,10 @@
-export type OwnedStructureLocation = {
+type OwnedStructureLocation = {
   entity_id: unknown;
   coord_x: unknown;
   coord_y: unknown;
 };
 
-export type StructureSyncTarget = {
+type StructureSyncTarget = {
   entityId: number;
   position: { col: number; row: number };
 };

@@ -1,11 +1,11 @@
 import { getWorldPositionForHex } from "./utils";
 
-export interface ChunkRenderSize {
+interface ChunkRenderSize {
   width: number;
   height: number;
 }
 
-export interface ChunkBounds {
+interface ChunkBounds {
   minCol: number;
   maxCol: number;
   minRow: number;

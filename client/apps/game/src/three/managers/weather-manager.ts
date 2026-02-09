@@ -20,7 +20,7 @@ export enum WeatherType {
  * PEAK: Full weather intensity
  * DEPARTING: Weather fading, clearing
  */
-export enum WeatherPhase {
+enum WeatherPhase {
   CLEAR = "clear",
   APPROACHING = "approaching",
   ARRIVING = "arriving",
@@ -31,7 +31,7 @@ export enum WeatherPhase {
 /**
  * Weather state snapshot for external consumers
  */
-export interface WeatherState {
+interface WeatherState {
   /** Current weather type */
   type: WeatherType;
   /** Current phase in the weather transition */

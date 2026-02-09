@@ -5,7 +5,7 @@ export interface PrefetchQueueItem {
   fetchTiles: boolean;
 }
 
-export interface ShouldProcessPrefetchQueueItemInput {
+interface ShouldProcessPrefetchQueueItemInput {
   item: PrefetchQueueItem;
   isSwitchedOff: boolean;
   desiredFetchKeys: Set<string>;

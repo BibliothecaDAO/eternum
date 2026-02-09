@@ -1,6 +1,6 @@
 import { WORLD_CHUNK_CONFIG } from "../constants/world-chunk-config";
 
-export interface WorldmapChunkPolicy {
+interface WorldmapChunkPolicy {
   chunkSize: number;
   renderSize: { width: number; height: number };
   switchPadding: number;

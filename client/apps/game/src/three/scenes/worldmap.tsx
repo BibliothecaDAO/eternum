@@ -542,15 +542,10 @@ export default class WorldmapScene extends HexagonScene {
           return;
         }
 
-        this.resolveSupersededPendingArmyRemoval(
-          update.entityId,
-          update.ownerAddress,
-          update.ownerStructureId,
-          {
-            col: normalizedPos.x,
-            row: normalizedPos.y,
-          },
-        );
+        this.resolveSupersededPendingArmyRemoval(update.entityId, update.ownerAddress, update.ownerStructureId, {
+          col: normalizedPos.x,
+          row: normalizedPos.y,
+        });
 
         this.updateArmyHexes(update);
 
@@ -1414,11 +1409,7 @@ export default class WorldmapScene extends HexagonScene {
       };
       const cleanup = () => {
         if (cleaned) return;
-        const delayMs = getMinEffectCleanupDelayMs(
-          effectStartedAtMs,
-          performance.now(),
-          MIN_TRAVEL_EFFECT_VISIBLE_MS,
-        );
+        const delayMs = getMinEffectCleanupDelayMs(effectStartedAtMs, performance.now(), MIN_TRAVEL_EFFECT_VISIBLE_MS);
         if (delayMs === 0) {
           runCleanupNow();
           return;
@@ -3673,9 +3664,18 @@ export default class WorldmapScene extends HexagonScene {
       this.updatePinnedChunks(previousPinnedChunks);
       if (oldChunk && oldChunk !== "null") {
         const [oldStartRow, oldStartCol] = oldChunk.split(",").map(Number);
-        if (chunkSwitchActions.shouldRestorePreviousState && Number.isFinite(oldStartRow) && Number.isFinite(oldStartCol)) {
+        if (
+          chunkSwitchActions.shouldRestorePreviousState &&
+          Number.isFinite(oldStartRow) &&
+          Number.isFinite(oldStartCol)
+        ) {
           this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
-          await this.updateHexagonGrid(oldStartRow, oldStartCol, this.renderChunkSize.height, this.renderChunkSize.width);
+          await this.updateHexagonGrid(
+            oldStartRow,
+            oldStartCol,
+            this.renderChunkSize.height,
+            this.renderChunkSize.width,
+          );
           await this.updateToriiBoundsSubscription(oldChunk, transitionToken);
         }
       }

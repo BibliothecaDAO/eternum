@@ -1,4 +1,4 @@
-export interface ResolveRenderableBaseModelInput<TModel> {
+interface ResolveRenderableBaseModelInput<TModel> {
   hasActiveCosmetic: boolean;
   desiredModel: TModel | null;
   previousRenderableModel: TModel | null;
@@ -11,10 +11,9 @@ export interface ResolveRenderableBaseModelInput<TModel> {
  * Keeps the previous renderable model visible while the desired model is still loading
  * to avoid transient "ghost" frames during model swaps (e.g. land <-> boat).
  */
-export function resolveRenderableBaseModel<TModel>(
-  input: ResolveRenderableBaseModelInput<TModel>,
-): TModel | null {
-  const { hasActiveCosmetic, desiredModel, previousRenderableModel, isDesiredModelLoaded, isPreviousModelLoaded } = input;
+export function resolveRenderableBaseModel<TModel>(input: ResolveRenderableBaseModelInput<TModel>): TModel | null {
+  const { hasActiveCosmetic, desiredModel, previousRenderableModel, isDesiredModelLoaded, isPreviousModelLoaded } =
+    input;
 
   if (hasActiveCosmetic) {
     return null;

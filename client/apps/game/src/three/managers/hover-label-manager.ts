@@ -7,7 +7,7 @@ type HoverLabelController = {
   hideAll?: () => void;
 };
 
-export type HoverLabelControllers = {
+type HoverLabelControllers = {
   army?: HoverLabelController;
   structure?: HoverLabelController;
   quest?: HoverLabelController;

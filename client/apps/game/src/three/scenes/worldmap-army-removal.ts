@@ -1,9 +1,9 @@
-export interface ArmyHexPosition {
+interface ArmyHexPosition {
   col: number;
   row: number;
 }
 
-export interface PendingArmyRemovalCandidate<TArmyId> {
+interface PendingArmyRemovalCandidate<TArmyId> {
   entityId: TArmyId;
   scheduledAt: number;
   chunkKey: string;
@@ -13,7 +13,7 @@ export interface PendingArmyRemovalCandidate<TArmyId> {
   position?: ArmyHexPosition;
 }
 
-export interface FindSupersededArmyRemovalInput<TArmyId> {
+interface FindSupersededArmyRemovalInput<TArmyId> {
   incomingEntityId: TArmyId;
   incomingOwnerAddress?: bigint;
   incomingOwnerStructureId?: unknown;
@@ -39,7 +39,9 @@ function isExactPosition(a: ArmyHexPosition, b: ArmyHexPosition): boolean {
  * Find an older pending tile-removal entry that should be superseded by a newly
  * arrived army update (e.g. boat despawn immediately followed by land spawn).
  */
-export function findSupersededArmyRemoval<TArmyId>(input: FindSupersededArmyRemovalInput<TArmyId>): TArmyId | undefined {
+export function findSupersededArmyRemoval<TArmyId>(
+  input: FindSupersededArmyRemovalInput<TArmyId>,
+): TArmyId | undefined {
   const { incomingEntityId, incomingOwnerAddress, incomingOwnerStructureId, incomingPosition, pending } = input;
 
   if (incomingOwnerAddress === undefined || incomingOwnerAddress === 0n) {
@@ -69,7 +71,8 @@ export function findSupersededArmyRemoval<TArmyId>(input: FindSupersededArmyRemo
 
   if (hasUsableStructureId(incomingOwnerStructureId)) {
     const structureMatches = candidatePool.filter(
-      (candidate) => hasUsableStructureId(candidate.ownerStructureId) && candidate.ownerStructureId === incomingOwnerStructureId,
+      (candidate) =>
+        hasUsableStructureId(candidate.ownerStructureId) && candidate.ownerStructureId === incomingOwnerStructureId,
     );
     if (structureMatches.length === 1) {
       return structureMatches[0].entityId;
