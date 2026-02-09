@@ -9,6 +9,7 @@ export interface ChunkSwitchActions {
   shouldRollback: boolean;
   shouldCommitManagers: boolean;
   shouldUnregisterPreviousChunk: boolean;
+  shouldRestorePreviousState: boolean;
 }
 
 export interface ManagerUpdateDecisionInput {
@@ -30,6 +31,7 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
       shouldRollback: false,
       shouldCommitManagers: false,
       shouldUnregisterPreviousChunk: false,
+      shouldRestorePreviousState: false,
     };
   }
 
@@ -38,6 +40,7 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
       shouldRollback: true,
       shouldCommitManagers: false,
       shouldUnregisterPreviousChunk: false,
+      shouldRestorePreviousState: true,
     };
   }
 
@@ -49,6 +52,7 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
     shouldRollback: false,
     shouldCommitManagers: true,
     shouldUnregisterPreviousChunk,
+    shouldRestorePreviousState: false,
   };
 }
 

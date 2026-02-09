@@ -8,6 +8,7 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
+import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 import { useAccountStore } from "../store/use-account-store";
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
@@ -16,6 +17,7 @@ const PLAYER_STRUCTURE_MODELS: string[] = [
   "s1_eternum-Resource",
   "s1_eternum-ResourceArrival",
 ];
+const PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS = 2500;
 
 export const usePlayerStructureSync = () => {
   const {
@@ -29,6 +31,7 @@ export const usePlayerStructureSync = () => {
 
   const subscriptionRef = useRef<{ cancel: () => void } | null>(null);
   const syncedStructureIds = useRef<Set<number>>(new Set());
+  const inFlightStructureIds = useRef<Set<number>>(new Set());
 
   const structureEntityIds = useMemo(() => playerStructures.map((s) => s.entityId), [playerStructures]);
 
@@ -38,57 +41,94 @@ export const usePlayerStructureSync = () => {
   );
 
   const accountAddress = useAccountStore().account?.address;
+  const toriiComponents = contractComponents as Parameters<typeof getStructuresDataFromTorii>[1];
 
-  // PLAYER STRUCTURES (fetch player-owned structures into RECS so usePlayerStructures works)
-  // Prefetch player-owned structures into RECS so usePlayerStructures works
+  useEffect(() => {
+    syncedStructureIds.current.clear();
+    inFlightStructureIds.current.clear();
+  }, [accountAddress]);
+
+  // Keep owned structures backfilled into RECS so ownership UI updates even if stream updates are missed.
   useEffect(() => {
     if (!accountAddress || !toriiClient || !contractComponents) return;
     let cancelled = false;
-    (async () => {
+
+    const backfillOwnedStructures = async () => {
+      let claimedStructureIds: number[] = [];
       try {
-        const structures = await sqlApi.fetchStructuresByOwner(accountAddress);
-        if (cancelled || structures.length === 0) return;
-        await getStructuresDataFromTorii(
-          toriiClient,
-          contractComponents as any,
-          structures.map((s: any) => ({
-            entityId: s.entity_id,
-            position: { col: s.coord_x, row: s.coord_y },
-          })),
-        );
+        const ownedStructures = await sqlApi.fetchStructuresByOwner(accountAddress);
+        if (cancelled || ownedStructures.length === 0) return;
+
+        const structuresToSync = selectUnsyncedOwnedStructureTargets({
+          ownedStructures,
+          currentPlayerStructureIds: new Set(structureEntityIds),
+          inFlightStructureIds: inFlightStructureIds.current,
+        });
+
+        if (structuresToSync.length === 0) return;
+
+        structuresToSync.forEach(({ entityId }) => inFlightStructureIds.current.add(entityId));
+        claimedStructureIds = structuresToSync.map(({ entityId }) => entityId);
+
+        await getStructuresDataFromTorii(toriiClient, toriiComponents, structuresToSync);
+
+        if (!cancelled) {
+          structuresToSync.forEach(({ entityId }) => syncedStructureIds.current.add(entityId));
+        }
       } catch (error) {
-        console.error("[usePlayerStructureSync] Failed to prefetch player structures", error);
+        console.error("[usePlayerStructureSync] Failed to backfill owned structures", error);
+      } finally {
+        claimedStructureIds.forEach((entityId) => inFlightStructureIds.current.delete(entityId));
       }
-    })();
+    };
+
+    void backfillOwnedStructures();
+    const intervalId = setInterval(() => {
+      void backfillOwnedStructures();
+    }, PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS);
+
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
     };
-  }, [accountAddress, toriiClient, contractComponents]);
+  }, [accountAddress, toriiClient, contractComponents, toriiComponents, structureEntityIds]);
 
   // Sync newly-seen structures into RECS (e.g. first settlement).
   useEffect(() => {
     if (!toriiClient || !contractComponents || playerStructures.length === 0) return;
+    let cancelled = false;
 
     const structuresToSync = playerStructures
-      .filter((structure) => !syncedStructureIds.current.has(structure.entityId))
-      .map((structure) => {
-        syncedStructureIds.current.add(structure.entityId);
-        return {
-          entityId: structure.entityId,
-          position: { col: structure.position.x, row: structure.position.y },
-        };
-      });
+      .filter(
+        (structure) =>
+          !syncedStructureIds.current.has(structure.entityId) && !inFlightStructureIds.current.has(structure.entityId),
+      )
+      .map((structure) => ({
+        entityId: structure.entityId,
+        position: { col: structure.position.x, row: structure.position.y },
+      }));
 
     if (structuresToSync.length === 0) return;
 
+    structuresToSync.forEach(({ entityId }) => inFlightStructureIds.current.add(entityId));
+
     void (async () => {
       try {
-        await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
+        await getStructuresDataFromTorii(toriiClient, toriiComponents, structuresToSync);
+        if (!cancelled) {
+          structuresToSync.forEach(({ entityId }) => syncedStructureIds.current.add(entityId));
+        }
       } catch (error) {
         console.error("[usePlayerStructureSync] Failed to sync newly seen structures", error);
+      } finally {
+        structuresToSync.forEach(({ entityId }) => inFlightStructureIds.current.delete(entityId));
       }
     })();
-  }, [playerStructures, toriiClient, contractComponents]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [playerStructures, toriiClient, contractComponents, toriiComponents]);
 
   useEffect(() => {
     const subscribe = async () => {
