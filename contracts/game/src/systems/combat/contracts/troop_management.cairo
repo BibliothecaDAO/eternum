@@ -696,6 +696,10 @@ pub mod troop_management_systems {
                 world.write_model(@from_explorer);
             }
 
+            // refresh to_structure_base in case explorer_from_structure_delete
+            // modified and stored the same entity (when from_explorer.owner == to_structure_id)
+            to_structure_base = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+
             /////////// Update Structure Guard ///////////
             /////////////////////////////////////////////
 
