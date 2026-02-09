@@ -9,7 +9,7 @@ const parseWithBase = (url: string): URL => {
   return new URL(url, "http://localhost");
 };
 
-export const readSpectateFromSearch = (search: string): boolean => {
+const readSpectateFromSearch = (search: string): boolean => {
   const params = new URLSearchParams(search);
   return params.get(SPECTATE_PARAM) === SPECTATE_VALUE;
 };
