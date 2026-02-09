@@ -89,8 +89,7 @@ pub mod structure_systems {
             structure_weight.store(ref world, structure_id);
 
             // update structure level and troop max guard count
-            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
-            let (explorer_limit, guard_limit) = TroopLimitImpl::max_slot_size(next_level, blitz_mode_on);
+            let (explorer_limit, guard_limit) = TroopLimitImpl::max_slot_size(next_level);
             structure_base.level = next_level;
             structure_base.troop_max_guard_count = guard_limit;
             structure_base.troop_max_explorer_count = explorer_limit.into();

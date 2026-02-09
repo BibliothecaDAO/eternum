@@ -76,23 +76,13 @@ pub impl TroopLimitImpl of TroopLimitTrait {
     }
 
     // Returns (explorer_slot_limit, guard_slot_limit)
-    fn max_slot_size(level: u8, blitz_mode_on: bool) -> (u8, u8) {
-        if blitz_mode_on {
-            match level {
-                0 => (1, 1),
-                1 => (2, 2),
-                2 => (3, 3),
-                3 => (4, 4),
-                _ => { panic!("unknown structure level"); },
-            }
-        } else {
-            match level {
-                0 => (1, 1),
-                1 => (3, 2),
-                2 => (5, 3),
-                3 => (8, 4),
-                _ => { panic!("unknown structure level"); },
-            }
+    fn max_slot_size(level: u8) -> (u8, u8) {
+        match level {
+            0 => (1, 1),
+            1 => (3, 2),
+            2 => (5, 3),
+            3 => (8, 4),
+            _ => { panic!("unknown structure level"); },
         }
     }
 }
