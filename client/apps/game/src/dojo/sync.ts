@@ -335,7 +335,8 @@ export const initialSync = async (
 
   // Initial structure selection:
   // 1) connected players: first owned realm (fallback: first owned structure)
-  // 2) spectators / no owned structures: first global structure
+  // 2) fallback: first global structure
+  // Preserve existing spectate mode from store instead of forcing spectator on refresh.
   const currentStructureEntityId = state.structureEntityId;
   if (!currentStructureEntityId || currentStructureEntityId === 0) {
     const accountAddress = useAccountStore.getState().account?.address;
@@ -343,7 +344,7 @@ export const initialSync = async (
       typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
 
     let selectedStructure: { entity_id: number; coord_x: number; coord_y: number } | null = null;
-    let selectAsSpectator = true;
+    let selectAsSpectator = state.isSpectating;
 
     if (hasConnectedAccount) {
       try {
@@ -366,7 +367,7 @@ export const initialSync = async (
 
     if (!selectedStructure) {
       selectedStructure = await sqlApi.fetchFirstStructure();
-      selectAsSpectator = true;
+      selectAsSpectator = state.isSpectating;
     }
 
     if (selectedStructure) {

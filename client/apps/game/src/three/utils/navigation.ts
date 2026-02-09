@@ -2,6 +2,14 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { Structure } from "@bibliothecadao/types";
 
+const toPlayPath = (url: string): string => {
+  if (url.startsWith("/play/")) {
+    return url;
+  }
+
+  return `/play${url.startsWith("/") ? url : `/${url}`}`;
+};
+
 /**
  * Navigate to a structure by updating the URL and dispatching a URL change event
  * This can be used from any scene (Hexception, WorldMap, etc.) to navigate to a structure
@@ -15,16 +23,16 @@ export function navigateToStructure(col: number, row: number, scene?: "hex" | "m
   // Determine which URL method to use based on scene parameter or current URL
   let navigationUrl: string;
   if (scene === "hex") {
-    navigationUrl = url.toHexLocationUrl();
+    navigationUrl = toPlayPath(url.toHexLocationUrl());
   } else if (scene === "map") {
-    navigationUrl = url.toMapLocationUrl();
+    navigationUrl = toPlayPath(url.toMapLocationUrl());
   } else {
     // If no scene specified, stay in the current scene
     const currentPath = window.location.pathname;
     if (currentPath.includes("/hex")) {
-      navigationUrl = url.toHexLocationUrl();
+      navigationUrl = toPlayPath(url.toHexLocationUrl());
     } else {
-      navigationUrl = url.toMapLocationUrl();
+      navigationUrl = toPlayPath(url.toMapLocationUrl());
     }
   }
 
@@ -48,16 +56,16 @@ function navigateToPosition(col: number, row: number, scene?: "hex" | "map") {
   // Determine which URL method to use based on scene parameter or current URL
   let navigationUrl: string;
   if (scene === "hex") {
-    navigationUrl = url.toHexLocationUrl();
+    navigationUrl = toPlayPath(url.toHexLocationUrl());
   } else if (scene === "map") {
-    navigationUrl = url.toMapLocationUrl();
+    navigationUrl = toPlayPath(url.toMapLocationUrl());
   } else {
     // If no scene specified, stay in the current scene
     const currentPath = window.location.pathname;
     if (currentPath.includes("/hex")) {
-      navigationUrl = url.toHexLocationUrl();
+      navigationUrl = toPlayPath(url.toHexLocationUrl());
     } else {
-      navigationUrl = url.toMapLocationUrl();
+      navigationUrl = toPlayPath(url.toMapLocationUrl());
     }
   }
 
@@ -97,7 +105,7 @@ export function selectNextStructure(
 
 /**
  * Toggle between map and hex views while preserving the current location
- * Changes /map?col=X&row=Y to /hex?col=X&row=Y and vice versa
+ * Changes /play/map?col=X&row=Y to /play/hex?col=X&row=Y and vice versa
  */
 export function toggleMapHexView() {
   const currentUrl = new URL(window.location.href);
@@ -115,11 +123,11 @@ export function toggleMapHexView() {
   // Determine new path based on current path
   let newPath: string;
   if (currentPath.includes("/hex")) {
-    newPath = "/map";
+    newPath = "/play/map";
   } else if (currentPath.includes("/map")) {
-    newPath = "/hex";
+    newPath = "/play/hex";
   } else {
-    console.warn("Current path is neither /hex nor /map, cannot toggle");
+    console.warn("Current path is neither /play/hex nor /play/map, cannot toggle");
     return;
   }
 

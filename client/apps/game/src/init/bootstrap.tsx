@@ -60,14 +60,9 @@ const deriveWorldFromPath = (): string | null => {
   }
 };
 
-const isSpectateModeFromUrl = (): boolean => {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("spectate") === "true";
-};
-
 const shouldBypassNoAccountModal = (): boolean => {
   const isSpectatingInStore = useUIStore.getState().isSpectating;
-  return isSpectateModeFromUrl() || isSpectatingInStore;
+  return isSpectatingInStore;
 };
 
 const handleNoAccount = (modalContent: ReactNode) => {

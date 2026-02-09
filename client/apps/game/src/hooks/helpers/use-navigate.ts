@@ -74,6 +74,14 @@ const toWorldMapPosition = (position: PositionLike): { col: number; row: number 
   return undefined;
 };
 
+const toPlayPath = (url: string): string => {
+  if (url.startsWith("/play/")) {
+    return url;
+  }
+
+  return `/play${url.startsWith("/") ? url : `/${url}`}`;
+};
+
 const useNavigateToHexView = () => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
@@ -81,7 +89,7 @@ const useNavigateToHexView = () => {
   const { handleUrlChange } = useQuery();
 
   return (position: Position) => {
-    const url = position.toHexLocationUrl();
+    const url = toPlayPath(position.toHexLocationUrl());
 
     setIsLoadingScreenEnabled(true);
     showBlankOverlay(false);
@@ -102,7 +110,7 @@ export const useNavigateToMapView = () => {
     }
     showBlankOverlay(false);
     setPreviewBuilding(null);
-    handleUrlChange(position.toMapLocationUrl());
+    handleUrlChange(toPlayPath(position.toMapLocationUrl()));
   };
 };
 

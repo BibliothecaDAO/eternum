@@ -72,27 +72,15 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   // UI state
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const isSpectating = useUIStore((state) => state.isSpectating);
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
 
-  // Check URL for spectate mode
-  const urlSpectateMode =
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("spectate") === "true";
-
-  // Local state - initialize isSpectating from URL param
-  const [isSpectating, setIsSpectating] = useState(urlSpectateMode);
   const [selectedWorldName, setSelectedWorldName] = useState<string | null>(() => {
     const active = getActiveWorld();
     return active?.name ?? null;
   });
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [hasCompletedAvatar, setHasCompletedAvatar] = useState(false);
-
-  // If URL has spectate param and we have a world, auto-trigger spectate mode
-  useEffect(() => {
-    if (urlSpectateMode && selectedWorldName && !isSpectating) {
-      console.log("[useUnifiedOnboarding] Auto-enabling spectate mode from URL param");
-      setIsSpectating(true);
-    }
-  }, [urlSpectateMode, selectedWorldName, isSpectating]);
 
   // Spectator navigation
   const spectatorNavigate = useSpectatorModeClick(bootstrap.setupResult);
@@ -149,10 +137,10 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
 
   const spectate = useCallback(() => {
     console.log("[useUnifiedOnboarding] spectate() called");
-    setIsSpectating(true);
+    setStructureEntityId(0, { spectator: true });
     spectatorNavigate();
     setShowBlankOverlay(false);
-  }, [spectatorNavigate, setShowBlankOverlay]);
+  }, [setStructureEntityId, spectatorNavigate, setShowBlankOverlay]);
 
   const completeAvatar = useCallback(() => {
     setHasCompletedAvatar(true);

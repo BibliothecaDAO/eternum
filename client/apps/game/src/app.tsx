@@ -4,7 +4,7 @@
 import { MusicRouterProvider } from "@/audio";
 import { cleanupTracing } from "@/tracing/cleanup";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
@@ -17,6 +17,11 @@ import { getRandomBackgroundImage } from "./ui/utils/utils";
 const LazyGameRoute = lazy(() => import("./game-route").then((module) => ({ default: module.GameRoute })));
 
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
+
+const LegacyPlayRedirect = ({ scene }: { scene: "hex" | "map" }) => {
+  const location = useLocation();
+  return <Navigate to={`/play/${scene}${location.search}`} replace />;
+};
 
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
@@ -68,6 +73,10 @@ function App() {
                 </Suspense>
               }
             />
+
+            {/* Backward-compatible game routes */}
+            <Route path="/hex" element={<LegacyPlayRedirect scene="hex" />} />
+            <Route path="/map" element={<LegacyPlayRedirect scene="map" />} />
 
             {/* Standalone factory route */}
             <Route
