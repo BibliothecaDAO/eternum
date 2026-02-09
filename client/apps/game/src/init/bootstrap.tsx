@@ -60,14 +60,19 @@ const deriveWorldFromPath = (): string | null => {
   }
 };
 
-const isSpectateMode = (): boolean => {
+const isSpectateModeFromUrl = (): boolean => {
   if (typeof window === "undefined") return false;
   return new URLSearchParams(window.location.search).get("spectate") === "true";
 };
 
+const shouldBypassNoAccountModal = (): boolean => {
+  const isSpectatingInStore = useUIStore.getState().isSpectating;
+  return isSpectateModeFromUrl() || isSpectatingInStore;
+};
+
 const handleNoAccount = (modalContent: ReactNode) => {
   // Don't show account required modal in spectate mode
-  if (isSpectateMode()) {
+  if (shouldBypassNoAccountModal()) {
     console.log("[bootstrap] Skipping account modal - spectate mode");
     return;
   }
