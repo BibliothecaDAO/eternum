@@ -327,12 +327,6 @@ export class WorldUpdateListener {
               const [currentState, _prevState] = update.value;
 
               if (!currentState) return;
-
-              // maybe don't use mapdatastore here since these are all available from the tile listener
-              const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
-              const normalizedOwnerStructureId =
-                currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
-
               const entityId = this.resolveEntityId(currentState.explorer_id as ID | undefined, update.entity, () => {
                 const componentState = getComponentValue(this.setup.components.ExplorerTroops, update.entity) as
                   | { explorer_id?: ID }
@@ -345,19 +339,28 @@ export class WorldUpdateListener {
                 return;
               }
 
-              return {
-                entityId,
-                troopCount: divideByPrecision(Number(currentState.troops.count)),
-                onChainStamina: {
-                  amount: BigInt(currentState.troops.stamina.amount),
-                  updatedTick: Number(currentState.troops.stamina.updated_tick),
-                },
-                ownerStructureId: normalizedOwnerStructureId,
-                hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
-                ownerAddress: owner?.address || 0n,
-                ownerName: owner?.ownerName || "",
-                battleCooldownEnd: currentState.troops.battle_cooldown_end,
-              };
+              const result = await this.processSequentialUpdate(entityId, async () => {
+                // maybe don't use mapdatastore here since these are all available from the tile listener
+                const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
+                const normalizedOwnerStructureId =
+                  currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
+
+                return {
+                  entityId,
+                  troopCount: divideByPrecision(Number(currentState.troops.count)),
+                  onChainStamina: {
+                    amount: BigInt(currentState.troops.stamina.amount),
+                    updatedTick: Number(currentState.troops.stamina.updated_tick),
+                  },
+                  ownerStructureId: normalizedOwnerStructureId,
+                  hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
+                  ownerAddress: owner?.address || 0n,
+                  ownerName: owner?.ownerName || "",
+                  battleCooldownEnd: currentState.troops.battle_cooldown_end,
+                };
+              });
+
+              return result || undefined;
             }
           },
           false,
@@ -532,19 +535,6 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              // Extract guard armies data from the structure (guard object may be undefined on fresh structures)
-              const troopGuards = currentState.troop_guards ?? null;
-              const guardArmies = this.buildGuardArmies(troopGuards);
-
-              // Use DataEnhancer to fetch player name
-              const ownerValue = currentState.owner ?? 0n;
-              const ownerString =
-                typeof ownerValue === "bigint" || typeof ownerValue === "number" || typeof ownerValue === "string"
-                  ? ownerValue.toString()
-                  : (ownerValue ?? "0");
-
-              const playerName = await this.dataEnhancer.getPlayerName(ownerString);
-
               const entityId = this.resolveEntityId(currentState.entity_id as ID | undefined, update.entity, () => {
                 const componentState = getComponentValue(this.setup.components.Structure, update.entity) as
                   | { entity_id?: ID }
@@ -557,38 +547,63 @@ export class WorldUpdateListener {
                 return;
               }
 
-              this.dataEnhancer.updateStructureOwner(entityId, ownerValue, playerName);
+              const result = await this.processSequentialUpdate(entityId, async () => {
+                // Extract guard armies data from the structure (guard object may be undefined on fresh structures)
+                const troopGuards = currentState.troop_guards ?? null;
+                const guardArmies = this.buildGuardArmies(troopGuards);
 
-              const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
-              let col = baseCoords.coord_x ?? 0;
-              let row = baseCoords.coord_y ?? 0;
+                // Use DataEnhancer to fetch player name
+                const ownerValue = currentState.owner ?? 0n;
+                const ownerString =
+                  typeof ownerValue === "bigint" || typeof ownerValue === "number" || typeof ownerValue === "string"
+                    ? ownerValue.toString()
+                    : (ownerValue ?? "0");
 
-              // Fall back to mapDataStore if coords are 0,0 (partial update, e.g. ownership change)
-              if (col === 0 && row === 0) {
-                const existing = this.mapDataStore.getStructureById(entityId);
-                if (existing) {
-                  col = existing.coordX;
-                  row = existing.coordY;
+                const playerName = await this.dataEnhancer.getPlayerName(ownerString);
+
+                const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
+                let col = baseCoords.coord_x ?? 0;
+                let row = baseCoords.coord_y ?? 0;
+
+                // Fall back to mapDataStore if coords are 0,0 (partial update, e.g. ownership change)
+                if (col === 0 && row === 0) {
+                  const existing = this.mapDataStore.getStructureById(entityId);
+                  if (existing) {
+                    col = existing.coordX;
+                    row = existing.coordY;
+                  }
                 }
+
+                const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
+
+                return {
+                  ownerValue,
+                  playerName,
+                  guardArmies,
+                  col,
+                  row,
+                  battleCooldownEnd,
+                };
+              });
+
+              if (!result) {
+                return;
               }
 
-              const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
+              this.dataEnhancer.updateStructureOwner(entityId, result.ownerValue, result.playerName);
+              this.mapDataStore.updateStructureGuards(entityId, result.guardArmies, result.battleCooldownEnd);
 
-              this.mapDataStore.updateStructureGuards(entityId, guardArmies, battleCooldownEnd);
-
-              const structureSystemUpdate: StructureSystemUpdate = {
+              return {
                 entityId,
-                guardArmies,
+                guardArmies: result.guardArmies,
                 owner: {
                   address: currentState.owner,
-                  ownerName: playerName,
+                  ownerName: result.playerName,
                   guildName: "",
                 },
-                hexCoords: { col, row },
-                battleCooldownEnd,
+                hexCoords: { col: result.col, row: result.row },
+                battleCooldownEnd: result.battleCooldownEnd,
               };
-
-              return structureSystemUpdate;
             }
           },
           false,
