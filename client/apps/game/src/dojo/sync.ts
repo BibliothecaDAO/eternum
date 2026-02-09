@@ -1,5 +1,7 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
+import { StructureType } from "@bibliothecadao/types";
 
 import { sqlApi } from "@/services/api";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
@@ -331,26 +333,56 @@ export const initialSync = async (
     }),
   );
 
-  // SPECTATOR REALM - only set default if no structure is already selected
-  // (e.g., when entering from landing page, structureEntityId is already set)
+  // Initial structure selection:
+  // 1) connected players: first owned realm (fallback: first owned structure)
+  // 2) spectators / no owned structures: first global structure
   const currentStructureEntityId = state.structureEntityId;
   if (!currentStructureEntityId || currentStructureEntityId === 0) {
-    const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
+    const accountAddress = useAccountStore.getState().account?.address;
+    const hasConnectedAccount =
+      typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
 
-    if (firstNonOwnedStructure) {
+    let selectedStructure: { entity_id: number; coord_x: number; coord_y: number } | null = null;
+    let selectAsSpectator = true;
+
+    if (hasConnectedAccount) {
+      try {
+        const ownedStructures = await sqlApi.fetchPlayerStructures(accountAddress);
+        const preferredOwnedStructure =
+          ownedStructures.find((structure) => Number(structure.category) === StructureType.Realm) ?? ownedStructures[0];
+
+        if (preferredOwnedStructure) {
+          selectedStructure = {
+            entity_id: preferredOwnedStructure.entity_id,
+            coord_x: preferredOwnedStructure.coord_x,
+            coord_y: preferredOwnedStructure.coord_y,
+          };
+          selectAsSpectator = false;
+        }
+      } catch (error) {
+        console.error("[sync] Failed to fetch player-owned structures for initial selection", error);
+      }
+    }
+
+    if (!selectedStructure) {
+      selectedStructure = await sqlApi.fetchFirstStructure();
+      selectAsSpectator = true;
+    }
+
+    if (selectedStructure) {
       const start = performance.now();
-      state.setStructureEntityId(firstNonOwnedStructure.entity_id, {
-        spectator: true,
-        worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+      state.setStructureEntityId(selectedStructure.entity_id, {
+        spectator: selectAsSpectator,
+        worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
       });
       await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
         {
-          entityId: firstNonOwnedStructure.entity_id,
-          position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+          entityId: selectedStructure.entity_id,
+          position: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
         },
       ]);
       const end = performance.now();
-      console.log("[sync] first structure query", end - start);
+      console.log("[sync] initial structure query", end - start);
       updateProgress(25);
     }
   } else {
