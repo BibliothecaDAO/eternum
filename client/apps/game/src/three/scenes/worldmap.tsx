@@ -99,6 +99,7 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import { resolveChunkSwitchActions, shouldRunManagerUpdate } from "./worldmap-chunk-transition";
 import { insertPrefetchQueueItem, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
+import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -907,7 +908,10 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.mainDirectionalLight) {
       return;
     }
-    this.mainDirectionalLight.castShadow = true;
+    this.mainDirectionalLight.castShadow = shouldCastWorldmapDirectionalShadow(
+      this.getShadowsEnabledByQuality(),
+      this.getCurrentCameraView() === CameraView.Far,
+    );
     this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
     this.mainDirectionalLight.shadow.camera.left = -60;
     this.mainDirectionalLight.shadow.camera.right = 60;
