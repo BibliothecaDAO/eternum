@@ -21,7 +21,7 @@ use crate::models::resource::resource::{
 };
 use crate::models::stamina::{StaminaImpl, StaminaTrait};
 use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots};
-use crate::models::troop::{ExplorerTroops, GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
+use crate::models::troop::{ExplorerTroops, GuardTroops, TroopBoosts, TroopLimitTrait, TroopTier, TroopType, Troops};
 use crate::models::weight::Weight;
 use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
@@ -242,7 +242,7 @@ pub fn tspawn_realm_with_resources(
 ) -> ID {
     let realm_entity_id = tspawn_simple_realm(ref world, realm_id, owner, coord);
 
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
     let wheat_amount: u128 = 10000000000000000;
     let fish_amount: u128 = 5000000000000000;
     tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span());
@@ -309,7 +309,7 @@ pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
 
 pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
     let troop_boosts = TroopBoosts {
         incr_damage_dealt_percent_num: 0,
         incr_damage_dealt_end_tick: 0,
@@ -424,7 +424,7 @@ pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: C
     let mut uuid = world.dispatcher.uuid();
     let explorer_id = uuid;
 
-    let troop_amount = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
     let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
     let current_tick = starknet::get_block_timestamp();
 
