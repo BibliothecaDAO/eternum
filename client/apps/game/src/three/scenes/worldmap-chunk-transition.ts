@@ -41,9 +41,7 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
     };
   }
 
-  const shouldUnregisterPreviousChunk = Boolean(
-    input.previousChunk && input.previousChunk !== input.targetChunk,
-  );
+  const shouldUnregisterPreviousChunk = Boolean(input.previousChunk && input.previousChunk !== input.targetChunk);
 
   return {
     shouldRollback: false,
@@ -68,7 +66,10 @@ export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boole
  * Accept only current or newer transition tokens.
  * Undefined token is treated as non-transitioned work and accepted.
  */
-export function shouldAcceptTransitionToken(transitionToken: number | undefined, latestTransitionToken: number): boolean {
+export function shouldAcceptTransitionToken(
+  transitionToken: number | undefined,
+  latestTransitionToken: number,
+): boolean {
   if (transitionToken === undefined) {
     return true;
   }

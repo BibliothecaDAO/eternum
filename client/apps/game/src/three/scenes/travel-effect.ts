@@ -1,8 +1,4 @@
-export function getMinEffectCleanupDelayMs(
-  effectStartedAtMs: number,
-  nowMs: number,
-  minimumVisibleMs: number,
-): number {
+export function getMinEffectCleanupDelayMs(effectStartedAtMs: number, nowMs: number, minimumVisibleMs: number): number {
   if (minimumVisibleMs <= 0) {
     return 0;
   }

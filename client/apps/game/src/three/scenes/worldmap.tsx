@@ -1381,11 +1381,7 @@ export default class WorldmapScene extends HexagonScene {
       };
       const cleanup = () => {
         if (cleaned) return;
-        const delayMs = getMinEffectCleanupDelayMs(
-          effectStartedAtMs,
-          performance.now(),
-          MIN_TRAVEL_EFFECT_VISIBLE_MS,
-        );
+        const delayMs = getMinEffectCleanupDelayMs(effectStartedAtMs, performance.now(), MIN_TRAVEL_EFFECT_VISIBLE_MS);
         if (delayMs === 0) {
           runCleanupNow();
           return;

@@ -2,7 +2,8 @@
 
 ## Overview
 
-**Feature:** Stabilize worldmap chunk transitions, visibility updates, and entity hydration to eliminate transient unit/structure disappearance and ghosting.
+**Feature:** Stabilize worldmap chunk transitions, visibility updates, and entity hydration to eliminate transient
+unit/structure disappearance and ghosting.
 
 **Status:** Draft v0.1
 
@@ -14,8 +15,8 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change |
-| ------ | ---------------- | ------ | ------ |
+| Update | Date (UTC)       | Author | Change                                                                      |
+| ------ | ---------------- | ------ | --------------------------------------------------------------------------- |
 | U1     | 2026-02-08 00:00 | Codex  | Initial PRD with scope, requirements, rollout plan, and acceptance metrics. |
 
 ## Problem Statement
@@ -25,11 +26,14 @@ Players observe intermittent rendering instability during chunk movement:
 - Units occasionally disappear for a short interval and then reappear.
 - Visual continuity degrades around chunk boundaries, especially while camera movement and async data hydration overlap.
 
-This is a reliability issue, not only a performance issue. The system currently allows partial render updates to occur when data is stale/incomplete and has race windows between chunk identity, pinned/fetched area state, and manager refreshes.
+This is a reliability issue, not only a performance issue. The system currently allows partial render updates to occur
+when data is stale/incomplete and has race windows between chunk identity, pinned/fetched area state, and manager
+refreshes.
 
 ## Product Goal
 
-Create deterministic, race-safe chunk transition behavior such that entities in the current render window remain visually stable across camera motion, chunk switches, and delayed Torii hydration.
+Create deterministic, race-safe chunk transition behavior such that entities in the current render window remain
+visually stable across camera motion, chunk switches, and delayed Torii hydration.
 
 ## Non-Goals
 
@@ -57,8 +61,9 @@ Create deterministic, race-safe chunk transition behavior such that entities in 
    - `client/apps/game/src/three/scenes/worldmap.tsx:3459`
    - `client/apps/game/src/three/scenes/worldmap.tsx:3478`
    - `client/apps/game/src/three/scenes/worldmap.tsx:3131`
-   
-   `performChunkSwitch` catches fetch errors and still progresses to manager update, which can briefly render empty/incomplete subsets.
+
+   `performChunkSwitch` catches fetch errors and still progresses to manager update, which can briefly render
+   empty/incomplete subsets.
 
 2. **`currentChunk` is advanced before target chunk hydration is complete**
    - `client/apps/game/src/three/scenes/worldmap.tsx:3452`
@@ -69,7 +74,8 @@ Create deterministic, race-safe chunk transition behavior such that entities in 
 3. **Pinned-area cleanup can invalidate pending dedupe state without canceling in-flight work**
    - `client/apps/game/src/three/scenes/worldmap.tsx:2941`
 
-   `pendingChunks` entries are dropped when areas unpin, allowing duplicate fetches and racey refresh sequencing during rapid camera movement.
+   `pendingChunks` entries are dropped when areas unpin, allowing duplicate fetches and racey refresh sequencing during
+   rapid camera movement.
 
 4. **Spatial index overlap can double-process moving entities (partially addressed)**
    - `client/apps/game/src/three/managers/army-manager.ts:1173`
@@ -97,34 +103,34 @@ Create deterministic, race-safe chunk transition behavior such that entities in 
 
 ### Functional Requirements
 
-| ID   | Requirement | Priority |
-| ---- | ----------- | -------- |
-| FR-1 | A failed chunk-area fetch must not trigger destructive visibility/manager state transitions for the active chunk. | P0 |
-| FR-2 | Chunk switch must follow deterministic lifecycle states (`prepare -> hydrate -> commit -> cleanup`) with explicit guards. | P0 |
-| FR-3 | Manager update calls for chunk `K` must be ignored if `K` is no longer current at apply time. | P0 |
-| FR-4 | Pending-fetch dedupe must remain valid while work is in flight, even if pinned state changes. | P0 |
-| FR-5 | Moving armies crossing boundaries must remain visible if source or destination is in bounds. | P0 |
-| FR-6 | Selection/interaction must not break during transition windows. | P1 |
-| FR-7 | Deferred removals (chunk-transition suppression) must flush deterministically after chunk settle. | P1 |
+| ID   | Requirement                                                                                                               | Priority |
+| ---- | ------------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-1 | A failed chunk-area fetch must not trigger destructive visibility/manager state transitions for the active chunk.         | P0       |
+| FR-2 | Chunk switch must follow deterministic lifecycle states (`prepare -> hydrate -> commit -> cleanup`) with explicit guards. | P0       |
+| FR-3 | Manager update calls for chunk `K` must be ignored if `K` is no longer current at apply time.                             | P0       |
+| FR-4 | Pending-fetch dedupe must remain valid while work is in flight, even if pinned state changes.                             | P0       |
+| FR-5 | Moving armies crossing boundaries must remain visible if source or destination is in bounds.                              | P0       |
+| FR-6 | Selection/interaction must not break during transition windows.                                                           | P1       |
+| FR-7 | Deferred removals (chunk-transition suppression) must flush deterministically after chunk settle.                         | P1       |
 
 ### Non-Functional Requirements
 
-| ID    | Requirement | Priority |
-| ----- | ----------- | -------- |
-| NFR-1 | No measurable increase in chunk-switch p95 latency. | P0 |
-| NFR-2 | No net growth in registered chunks/pinned areas over long traversal (20 min soak). | P0 |
-| NFR-3 | Add debug-grade telemetry for chunk lifecycle and dropped/stale updates. | P0 |
-| NFR-4 | Maintain current FPS envelope (no >5% regression in p95 frame time). | P1 |
+| ID    | Requirement                                                                        | Priority |
+| ----- | ---------------------------------------------------------------------------------- | -------- |
+| NFR-1 | No measurable increase in chunk-switch p95 latency.                                | P0       |
+| NFR-2 | No net growth in registered chunks/pinned areas over long traversal (20 min soak). | P0       |
+| NFR-3 | Add debug-grade telemetry for chunk lifecycle and dropped/stale updates.           | P0       |
+| NFR-4 | Maintain current FPS envelope (no >5% regression in p95 frame time).               | P1       |
 
 ## Success Metrics
 
-| Metric | Target | Measurement |
-| ------ | ------ | ----------- |
-| Unit disappearance incidents during scripted boundary traversal | 0 | Automated scenario + event counters |
-| Chunk-switch consistency errors (`stale apply`, `out-of-order transition`) | 0 in happy path, explicit counted in stress path | Structured debug logs |
-| Chunk switch p95 (`start -> managers-settled`) | <= current baseline + 5% | Perf trace |
-| Duplicate fetches for same area during rapid pan test | <= 1 active fetch per area | Fetch registry telemetry |
-| Deferred-removal spillover after transition | 0 pending after settle | Internal queue gauges |
+| Metric                                                                     | Target                                           | Measurement                         |
+| -------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------- |
+| Unit disappearance incidents during scripted boundary traversal            | 0                                                | Automated scenario + event counters |
+| Chunk-switch consistency errors (`stale apply`, `out-of-order transition`) | 0 in happy path, explicit counted in stress path | Structured debug logs               |
+| Chunk switch p95 (`start -> managers-settled`)                             | <= current baseline + 5%                         | Perf trace                          |
+| Duplicate fetches for same area during rapid pan test                      | <= 1 active fetch per area                       | Fetch registry telemetry            |
+| Deferred-removal spillover after transition                                | 0 pending after settle                           | Internal queue gauges               |
 
 ## Proposed Design
 
@@ -242,12 +248,12 @@ For army/structure/chest manager update entrypoints:
 
 ## Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-| ---- | ------ | ---------- |
-| Added state complexity in chunk switch logic | Medium | Keep explicit state enum + transition token assertions in dev mode |
-| Latency increase due to stricter gating | Medium | Parallelize safe stages; only gate destructive commit |
-| Manager API churn | Low-Medium | Backward-compatible optional params for first pass |
-| Hidden stale path remains | Medium | Add explicit stale counters and test hooks |
+| Risk                                         | Impact     | Mitigation                                                         |
+| -------------------------------------------- | ---------- | ------------------------------------------------------------------ |
+| Added state complexity in chunk switch logic | Medium     | Keep explicit state enum + transition token assertions in dev mode |
+| Latency increase due to stricter gating      | Medium     | Parallelize safe stages; only gate destructive commit              |
+| Manager API churn                            | Low-Medium | Backward-compatible optional params for first pass                 |
+| Hidden stale path remains                    | Medium     | Add explicit stale counters and test hooks                         |
 
 ## Open Questions
 
