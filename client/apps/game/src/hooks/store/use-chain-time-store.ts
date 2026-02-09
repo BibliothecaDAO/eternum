@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ProviderHeartbeat = {
+type ProviderHeartbeat = {
   timestamp: number;
   // Add more fields if the real ProviderHeartbeat has them
 };

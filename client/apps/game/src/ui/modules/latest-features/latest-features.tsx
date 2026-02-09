@@ -3,7 +3,10 @@ import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { latestFeatures } from "@/ui/features/world";
 import { latestFeatures as featuresData, type FeatureType } from "@/ui/features/world/latest-features";
-import { Sparkles, Zap, Scale, Wrench } from "lucide-react";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Zap from "lucide-react/dist/esm/icons/zap";
+import Scale from "lucide-react/dist/esm/icons/scale";
+import Wrench from "lucide-react/dist/esm/icons/wrench";
 import { useEffect } from "react";
 
 const typeConfig: Record<FeatureType, { icon: typeof Sparkles; label: string; color: string; bg: string }> = {

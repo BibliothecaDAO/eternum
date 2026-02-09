@@ -1,18 +1,7 @@
 // World Feature - Map navigation, exploration, world structures
 // This feature handles all world-level interactions and navigation
 
-// World Map Actions - Internal exports removed
-
-// Battles - Exports used externally
-export { CombatSimulationPanel } from "./components/battles/combat-simulation-panel";
-
-// Entities - Exports used externally
-export { ArmyEntityDetail } from "./components/entities/army-entity-detail";
-export { QuestEntityDetail } from "./components/entities/quest-entity-detail";
-export { StructureEntityDetail } from "./components/entities/structure-entity-detail";
-
 // Navigation System - Exports used externally
-export { CapacityInfo } from "./containers/capacity-info";
 export { SecondaryMenuItems } from "./containers/secondary-menu-items";
 
 // Hyperstructures - Exports used externally

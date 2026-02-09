@@ -275,11 +275,11 @@ class TraceContextManager {
 // Export singleton instance
 export const traceContextManager = TraceContextManager.getInstance();
 
-// Export convenience functions
-export const getTraceContext = traceContextManager.getContext.bind(traceContextManager);
-export const setUserId = traceContextManager.setUserId.bind(traceContextManager);
-export const setRealmId = traceContextManager.setRealmId.bind(traceContextManager);
-export const setGamePhase = traceContextManager.setGamePhase.bind(traceContextManager);
-export const recordUserAction = traceContextManager.recordUserAction.bind(traceContextManager);
-export const getCorrelationHeaders = traceContextManager.getCorrelationHeaders.bind(traceContextManager);
-export const enrichError = traceContextManager.enrichError.bind(traceContextManager);
+// Convenience functions (used internally)
+const getTraceContext = traceContextManager.getContext.bind(traceContextManager);
+const setUserId = traceContextManager.setUserId.bind(traceContextManager);
+const setRealmId = traceContextManager.setRealmId.bind(traceContextManager);
+const setGamePhase = traceContextManager.setGamePhase.bind(traceContextManager);
+const recordUserAction = traceContextManager.recordUserAction.bind(traceContextManager);
+const getCorrelationHeaders = traceContextManager.getCorrelationHeaders.bind(traceContextManager);
+const enrichError = traceContextManager.enrichError.bind(traceContextManager);

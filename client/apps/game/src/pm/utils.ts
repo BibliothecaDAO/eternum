@@ -21,7 +21,7 @@ export const formatUnits = (value: string | number | bigint, decimals: number, p
   return scaled.toFixed(precision);
 };
 
-export const formatCurrency = (value: string, _decimals: number) => {
+const formatCurrency = (value: string, _decimals: number) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return "0";
   return num.toLocaleString(undefined, { maximumFractionDigits: 4 });
@@ -34,7 +34,7 @@ export const replaceAndFormat = (template?: string) => {
   const regex = /\{(.*?)\}/g;
   const toReplace = Array.from((template || "").matchAll(regex));
 
-  for (let variable of toReplace) {
+  for (const variable of toReplace) {
     if (variable[1].startsWith("DateTime:")) {
       const timestamp = variable[1].split(":")[1];
       const date = new Date(Number(timestamp) * 1_000);

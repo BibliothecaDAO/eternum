@@ -4,9 +4,6 @@
 // Defense Components - Used externally
 export { CompactDefenseDisplay } from "./components/compact-defense-display";
 
-// Battle System
-export { CombatModal } from "./battle/combat-modal";
-
 // Chest System
 export { ChestModal } from "./chest/chest-modal";
 
@@ -20,6 +17,5 @@ export { Military } from "./military";
 export { formatBiomeBonus, formatTypeAndBonuses, getStaminaDisplay } from "./battle/combat-utils";
 
 // Army Components
-export { ArmyChip, NavigateToPositionIcon } from "./components/army-chip";
 export { CooldownTimer, type DefenseTroop } from "./components/structure-defence";
 export { TroopChip } from "./components/troop-chip";

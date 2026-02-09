@@ -13,15 +13,67 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
+import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
+import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
 let entityStreamSubscription: { cancel: () => void } | null = null;
 
-function isToriiDeleteNotification(entity: ToriiEntity): boolean {
-  return Object.keys(entity.models).length === 0;
-}
+/**
+ * Cancel the global entity stream subscription.
+ * Used during game switching to stop the old Torii client from writing
+ * stale data into RECS while the new world is being bootstrapped.
+ */
+export const cancelEntityStreamSubscription = () => {
+  if (entityStreamSubscription) {
+    entityStreamSubscription.cancel();
+    entityStreamSubscription = null;
+  }
+};
+
+const GLOBAL_NON_SPATIAL_MODELS: string[] = [
+  // Events
+  "s1_eternum-OpenRelicChestEvent",
+  // Guilds
+  "s1_eternum-Guild",
+  "s1_eternum-GuildMember",
+  "s1_eternum-GuildWhitelist",
+  // Market
+  "s1_eternum-Market",
+  "s1_eternum-Liquidity",
+  "s1_eternum-Trade",
+  // Config + global metadata
+  "s1_eternum-WorldConfig",
+  "s1_eternum-HyperstrtConstructConfig",
+  "s1_eternum-HyperstructureGlobals",
+  "s1_eternum-WeightConfig",
+  "s1_eternum-ResourceFactoryConfig",
+  "s1_eternum-BuildingCategoryConfig",
+  "s1_eternum-StructureLevelConfig",
+  "s1_eternum-SeasonEnded",
+  "s1_eternum-QuestLevels",
+  "s1_eternum-AddressName",
+  "s1_eternum-PlayerRegisteredPoints",
+  "s1_eternum-BlitzRealmPlayerRegister",
+  "s1_eternum-BlitzRealmSettleFinish",
+  "s1_eternum-PlayersRankTrial",
+  "s1_eternum-PlayersRankFinal",
+  "s1_eternum-ResourceList",
+  "s1_eternum-PlayerRank",
+  "s1_eternum-RankPrize",
+];
+
+// Models synced per-player via a scoped subscription (see usePlayerStructureSync)
+const PLAYER_STRUCTURE_MODELS: string[] = [
+  "s1_eternum-ProductionBoostBonus",
+  "s1_eternum-Resource",
+  "s1_eternum-ResourceArrival",
+];
+
+const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_NON_SPATIAL_MODELS.map((model) => ({ model }));
+const GLOBAL_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_STREAM_MODELS);
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 
@@ -76,12 +128,12 @@ const createMainThreadQueueProcessor = (
     if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
 
     itemsToProcess.forEach(({ entityId, data }) => {
-      const isEntityDelete = isToriiDeleteNotification(data);
+      const isEntityDelete = isDeletionPayload(data);
       if (isEntityDelete) {
         batchRecord[entityId] = data;
       }
       if (batchRecord[entityId]) {
-        const entityHasBeenDeleted = isToriiDeleteNotification(batchRecord[entityId]);
+        const entityHasBeenDeleted = isDeletionPayload(batchRecord[entityId]);
         if (entityHasBeenDeleted) return;
         batchRecord[entityId] = mergeDeep(batchRecord[entityId], data);
       } else {
@@ -93,10 +145,8 @@ const createMainThreadQueueProcessor = (
     if (entityIds.length > 0) {
       try {
         if (logging) console.log("Applying batch update", batchRecord);
-        const deletions = entityIds.filter((id) => isToriiDeleteNotification(batchRecord[id]));
-        const upserts = entityIds
-          .filter((id) => !isToriiDeleteNotification(batchRecord[id]))
-          .map((id) => batchRecord[id]);
+        const deletions = entityIds.filter((id) => isDeletionPayload(batchRecord[id]));
+        const upserts = entityIds.filter((id) => !isDeletionPayload(batchRecord[id])).map((id) => batchRecord[id]);
 
         applyBatch({ upserts, deletions });
       } catch (error) {
@@ -201,41 +251,18 @@ export const syncEntitiesDebounced = async (
     }
   };
 
-  // Debug: Track update frequency
-  let entityUpdateCount = 0;
-  let eventUpdateCount = 0;
-  let lastLogTime = Date.now();
-  const LOG_INTERVAL = 5000; // Log every 5 seconds
-
   const entitySub = await client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Entity updated", data);
-    entityUpdateCount++;
     queueUpdate(data, "entity");
   });
 
   const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Event message updated", data.hashed_keys);
-    eventUpdateCount++;
     queueUpdate(data, "event");
   });
 
-  // Periodic logging of update rates
-  const debugInterval = setInterval(() => {
-    const now = Date.now();
-    const elapsed = (now - lastLogTime) / 1000;
-    const entityRate = entityUpdateCount / elapsed;
-    const eventRate = eventUpdateCount / elapsed;
-    console.log(
-      `[SYNC DEBUG] Entity updates: ${entityUpdateCount} (${entityRate.toFixed(1)}/sec), Event updates: ${eventUpdateCount} (${eventRate.toFixed(1)}/sec)`,
-    );
-    entityUpdateCount = 0;
-    eventUpdateCount = 0;
-    lastLogTime = now;
-  }, LOG_INTERVAL);
-
   return {
     cancel: () => {
-      clearInterval(debugInterval);
       entitySub.cancel();
       eventSub.cancel();
       queueProcessor.dispose();
@@ -266,7 +293,12 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
-  entityStreamSubscription = await syncEntitiesDebounced(setup.network.toriiClient, setup, null, logging);
+  entityStreamSubscription = await syncEntitiesDebounced(
+    setup.network.toriiClient,
+    setup,
+    GLOBAL_STREAM_CLAUSE,
+    logging,
+  );
 
   const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
 
@@ -299,23 +331,29 @@ export const initialSync = async (
     }),
   );
 
-  // // SPECTATOR REALM
-  const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
+  // SPECTATOR REALM - only set default if no structure is already selected
+  // (e.g., when entering from landing page, structureEntityId is already set)
+  const currentStructureEntityId = state.structureEntityId;
+  if (!currentStructureEntityId || currentStructureEntityId === 0) {
+    const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
-  if (firstNonOwnedStructure) {
-    const start = performance.now();
-    state.setStructureEntityId(firstNonOwnedStructure.entity_id, {
-      spectator: true,
-      worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
-    });
-    await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
-      {
-        entityId: firstNonOwnedStructure.entity_id,
-        position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
-      },
-    ]);
-    const end = performance.now();
-    console.log("[sync] first structure query", end - start);
+    if (firstNonOwnedStructure) {
+      const start = performance.now();
+      state.setStructureEntityId(firstNonOwnedStructure.entity_id, {
+        spectator: true,
+        worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+      });
+      await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
+        {
+          entityId: firstNonOwnedStructure.entity_id,
+          position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+        },
+      ]);
+      const end = performance.now();
+      console.log("[sync] first structure query", end - start);
+      updateProgress(25);
+    }
+  } else {
     updateProgress(25);
   }
 
@@ -334,7 +372,7 @@ export const initialSync = async (
   updateProgress(100);
 };
 
-export const resubscribeEntityStream = async (
+const resubscribeEntityStream = async (
   setup: SetupResult,
   state: AppStore,
   setInitialSyncProgress: (progress: number) => void,

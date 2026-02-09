@@ -138,7 +138,7 @@ export const RaidResult = ({
       ];
 
       // Shuffle and take the requested number of items
-      const shuffled = [...itemPool].sort(() => 0.5 - Math.random());
+      const shuffled = itemPool.toSorted(() => 0.5 - Math.random());
       return shuffled.slice(0, count);
     },
     [successRate],

@@ -453,13 +453,18 @@ export function defineContractComponents(world: World) {
             current: RecsType.Number,
             max: RecsType.Number,
           },
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
-            customTypes: ["Population"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Population", "Coord"],
           },
         },
       );
@@ -648,13 +653,18 @@ export function defineContractComponents(world: World) {
           incr_resource_rate_end_tick: RecsType.Number,
           incr_labor_rate_end_tick: RecsType.Number,
           incr_troop_rate_end_tick: RecsType.Number,
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "ProductionBoostBonus",
-            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32"],
-            customTypes: [],
+            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Coord"],
           },
         },
       );
@@ -1193,6 +1203,7 @@ export function defineContractComponents(world: World) {
               "u16",
               "u32",
               "u32",
+              "bool",
               "u32",
               "u32",
             ],
@@ -1716,6 +1727,17 @@ export function defineContractComponents(world: World) {
             points_for_win: RecsType.BigInt,
           },
           factory_address: RecsType.BigInt,
+          mmr_config: {
+            enabled: RecsType.Boolean,
+            mmr_token_address: RecsType.BigInt,
+            distribution_mean: RecsType.Number,
+            spread_factor: RecsType.Number,
+            max_delta: RecsType.Number,
+            k_factor: RecsType.Number,
+            lobby_split_weight_scaled: RecsType.Number,
+            mean_regression_scaled: RecsType.Number,
+            min_players: RecsType.Number,
+          },
         },
         {
           metadata: {
@@ -1875,6 +1897,15 @@ export function defineContractComponents(world: World) {
               "u32", // VictoryPointsGrantConfig relic_open_points
               "u128", // VictoryPointsWinConfig points_for_win
               "ContractAddress", // factory address
+              "bool", // MMRConfig enabled
+              "ContractAddress", // MMRConfig mmr_token_address
+              "u16", // MMRConfig distribution_mean
+              "u16", // MMRConfig spread_factor
+              "u8", // MMRConfig max_delta
+              "u8", // MMRConfig k_factor
+              "u16", // MMRConfig lobby_split_weight_scaled
+              "u16", // MMRConfig mean_regression_scaled
+              "u8", // MMRConfig min_players
             ],
             customTypes: [],
           },
@@ -1965,6 +1996,24 @@ export function defineContractComponents(world: World) {
             name: "BlitzRealmSettleFinish",
             types: ["ContractAddress", "Span<Coord>", "Span<u32>", "bool"],
             customTypes: ["Coord"],
+          },
+        },
+      );
+    })(),
+    // MMR System Models
+    MMRGameMeta: (() => {
+      return defineComponent(
+        world,
+        {
+          world_id: RecsType.Number,
+          game_median: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "MMRGameMeta",
+            types: ["u32", "u128"],
+            customTypes: [],
           },
         },
       );
@@ -2135,6 +2184,11 @@ const eventsComponents = (world: World) => {
             attacker_owner: RecsType.Number,
             defender_owner: RecsType.Number,
             winner_id: RecsType.Number,
+            coord: {
+              alt: RecsType.Boolean,
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
             max_reward: RecsType.StringArray,
             timestamp: RecsType.Number,
           },
@@ -2142,7 +2196,7 @@ const eventsComponents = (world: World) => {
             metadata: {
               namespace: "s1_eternum",
               name: "BattleEvent",
-              types: ["u32", "u32", "u32", "u32", "u32", "Span<(u8, u128)>", "u64"],
+              types: ["u32", "u32", "u32", "u32", "u32", "bool", "u32", "u32", "Span<(u8, u128)>", "u64"],
               customTypes: [],
             },
           },
@@ -2272,13 +2326,18 @@ const eventsComponents = (world: World) => {
             explorer_owner_address: RecsType.String,
             reward_resource_id: RecsType.Number,
             reward_resource_amount: RecsType.BigInt,
+            coord: {
+              alt: RecsType.Boolean,
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "s1_eternum",
               name: "ExplorerRewardEvent",
-              types: ["u32", "u32", "ContractAddress", "u8", "u128", "u64"],
+              types: ["u32", "u32", "ContractAddress", "u8", "u128", "bool", "u32", "u32", "u64"],
               customTypes: [],
             },
           },

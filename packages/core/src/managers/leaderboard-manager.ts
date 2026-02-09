@@ -349,11 +349,11 @@ export class LeaderboardManager {
   }
 
   private getGuildsByRank(): [ContractAddress, number][] {
-    return Array.from(this.pointsPerGuild).sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
+    return Array.from(this.pointsPerGuild).toSorted(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }
 
   private getPlayersByRank(): [ContractAddress, number][] {
-    return Array.from(this.pointsPerPlayer).sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
+    return Array.from(this.pointsPerPlayer).toSorted(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }
 
   public getPlayerShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {

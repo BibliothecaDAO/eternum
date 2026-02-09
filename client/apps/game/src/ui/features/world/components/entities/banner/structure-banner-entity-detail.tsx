@@ -1,4 +1,8 @@
-import { ArrowLeftRight, Coins, Factory, Loader, Shield } from "lucide-react";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import Loader from "lucide-react/dist/esm/icons/loader";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { memo, useCallback, useMemo } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -19,7 +23,7 @@ import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 import { StructureProductionPanel } from "../structure-production-panel";
 
-export interface StructureBannerEntityDetailProps {
+interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
   className?: string;
   compact?: boolean;
@@ -152,12 +156,7 @@ const StructureBannerEntityDetailContent = memo(
         </div>
 
         {relicEffects.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <span className={cn(labelTextClass, "uppercase tracking-[0.25em] text-gold/70")}>Active Relic Effects</span>
-            <div className="max-h-[200px] overflow-auto pr-1">
-              <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
-            </div>
-          </div>
+          <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
         )}
 
         <Tabs variant="inventory" className="flex flex-1 flex-col gap-3">

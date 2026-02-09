@@ -10,7 +10,7 @@ export const getSeasonPassAddress = () => {
   return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).seasonPass;
 };
 
-export const getRealmsAddress = () => {
+const getRealmsAddress = () => {
   return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).realms;
 };
 

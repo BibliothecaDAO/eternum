@@ -16,7 +16,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { ArmyManager, divideByPrecision, getBalance, getTroopName, getTroopResourceId } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { GUARD_SLOT_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { Plus, Shield } from "lucide-react";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import { useEffect, useState } from "react";
 
 interface ArmyCreationDrawerProps {

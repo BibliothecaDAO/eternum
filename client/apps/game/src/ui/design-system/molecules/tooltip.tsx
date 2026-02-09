@@ -60,9 +60,9 @@ export const Tooltip = ({ className }: TooltipProps) => {
     }
 
     const others = PLACEMENTS.filter((value) => value !== preferredPlacement);
-    others.sort((a, b) => available[b] - available[a]);
+    const sortedOthers = others.toSorted((a, b) => available[b] - available[a]);
 
-    return [preferredPlacement, ...others];
+    return [preferredPlacement, ...sortedOthers];
   }, [anchorElement, preferredPlacement]);
 
   useEffect(() => {

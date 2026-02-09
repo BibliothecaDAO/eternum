@@ -66,7 +66,7 @@ export const HOVER_STYLES: Record<string, LabelStyle> = {
 /**
  * Base configuration shared by all label types
  */
-export const BASE_LABEL_CONFIG: LabelConfig = {
+const BASE_LABEL_CONFIG: LabelConfig = {
   baseClasses: [
     "rounded-md",
     "p-0.5",
@@ -92,7 +92,7 @@ export const BASE_LABEL_CONFIG: LabelConfig = {
 /**
  * Camera view specific configurations
  */
-export const CAMERA_VIEW_CONFIGS: Record<number, Partial<LabelConfig>> = {
+const CAMERA_VIEW_CONFIGS: Record<number, Partial<LabelConfig>> = {
   1: {
     // CameraView.Close
     transitions: {
@@ -135,7 +135,7 @@ export const LABEL_TYPE_CONFIGS = {
 /**
  * Transition class sets for label visibility
  */
-export const TRANSITION_CLASSES = {
+const TRANSITION_CLASSES = {
   EXPANDED: ["max-w-[1000px]", "ml-2", "opacity-100"],
   COLLAPSED: ["max-w-0", "ml-0", "opacity-0"],
 };
@@ -167,7 +167,7 @@ export function getOwnershipStyle(isMine: boolean, isDaydreams?: boolean): { def
  * @param isDaydreams - Is this an AI agent?
  * @param ownerAddress - Owner's wallet address for enemy color assignment
  */
-export function getPlayerOwnershipStyle(
+function getPlayerOwnershipStyle(
   isMine: boolean,
   isAlly: boolean,
   isDaydreams: boolean,
@@ -215,7 +215,7 @@ export function getPlayerOwnershipStyle(
 /**
  * Get camera view configuration safely
  */
-export function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig> {
+function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig> {
   const effectiveView = resolveCameraView(cameraView);
   return CAMERA_VIEW_CONFIGS[effectiveView as number] || {};
 }
@@ -223,7 +223,7 @@ export function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig
 /**
  * Merge multiple label configurations with proper deep merging
  */
-export function mergeConfigs(...configs: Partial<LabelConfig>[]): LabelConfig {
+function mergeConfigs(...configs: Partial<LabelConfig>[]): LabelConfig {
   const result: LabelConfig = {
     baseClasses: [],
     transitions: {},

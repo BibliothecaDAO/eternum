@@ -52,7 +52,7 @@ export const setSelectedChain = (chain: Chain) => {
   writeStorageValue(CHAIN_KEY, chain);
 };
 
-export const clearSelectedChain = () => {
+const clearSelectedChain = () => {
   writeStorageValue(CHAIN_KEY, null);
 };
 
@@ -63,11 +63,11 @@ export const listWorldNames = (): string[] => {
   return Object.keys(profiles);
 };
 
-export const getWorldProfiles = (): WorldProfilesMap => {
+const getWorldProfiles = (): WorldProfilesMap => {
   return safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
 };
 
-export const saveWorldProfiles = (profiles: WorldProfilesMap) => {
+const saveWorldProfiles = (profiles: WorldProfilesMap) => {
   localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
 };
 
@@ -87,7 +87,7 @@ export const deleteWorldProfile = (name: string) => {
   if (active === name) clearActiveWorld();
 };
 
-export const getWorldProfile = (name: string): WorldProfile | null => {
+const getWorldProfile = (name: string): WorldProfile | null => {
   const profiles = getWorldProfiles();
   return profiles[name] ?? null;
 };

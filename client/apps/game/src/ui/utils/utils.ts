@@ -10,7 +10,7 @@ import {
 import { ContractAddress, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
-export { getEntityIdFromKeys, divideByPrecision };
+export { getEntityIdFromKeys };
 
 // Pads a hex address (with 0x prefix) to 66 characters (64 hex digits + 0x)
 // Example: '0xabc' => '0x' + '0'.repeat(61) + 'abc'
@@ -61,7 +61,7 @@ export function displayAddress(string: string) {
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
 
-export function divideByPrecisionFormatted(value: number): string {
+function divideByPrecisionFormatted(value: number): string {
   return divideByPrecision(value).toLocaleString("en-US");
 }
 
@@ -168,9 +168,9 @@ export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortK
   };
 
   if (activeSort.sort !== "none") {
-    return items.sort((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
+    return items.toSorted((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
   } else {
-    return items.sort((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
+    return items.toSorted((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
   }
 }
 

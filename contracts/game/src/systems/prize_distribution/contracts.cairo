@@ -546,6 +546,11 @@ pub mod prize_distribution_systems {
                 // compute reward chest allocations for this game
                 self.blitz_get_or_compute_series_chest_reward_state();
 
+                //////////////////////////////////////////
+                ///  MMR updates are claim-based
+                ///  (client/keepers call commit + per-player claims)
+                //////////////////////////////////////////
+
                 // emit event
                 world
                     .emit_event(

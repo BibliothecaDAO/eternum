@@ -1,33 +1,60 @@
+//! Snforge Test Helpers for dojo_snf_test based tests
+//!
+//! This module provides reusable test utilities for snforge tests that use dojo_snf_test.
+//! It complements the existing helpers.cairo which is designed for dojo_cairo_test (sozo test).
+//!
+//! Key differences from helpers.cairo:
+//! - Uses snforge cheatcodes (start_cheat_caller_address, etc.) instead of starknet::testing
+//! - Uses dojo_snf_test::spawn_test_world instead of dojo_cairo_test
+//! - Provides higher-level test fixtures for common battle test scenarios
+//!
+//! Note: TrophyProgression events are now supported - the event is declared via build-external-contracts.
+
 use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{ModelStorage, ModelStorageTest};
-use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait, world};
-use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+use snforge_std::{
+    start_cheat_block_timestamp_global, start_cheat_caller_address, start_cheat_chain_id_global,
+    stop_cheat_caller_address,
+};
 use starknet::ContractAddress;
 use starknet::syscalls::deploy_syscall;
 use crate::alias::ID;
-use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
     CapacityConfig, CombatConfigImpl, MapConfig, QuestConfig, ResourceFactoryConfig, StructureCapacityConfig,
     TickConfig, TickImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
     WorldConfigUtilImpl,
 };
-use crate::models::map::{Tile, TileOccupier};
+use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::map2::TileOpt;
-use crate::models::position::Coord;
-use crate::models::quest::{Level, QuestTile};
+use crate::models::position::{Coord, CoordTrait, Direction};
+use crate::models::quest::QuestTile;
 use crate::models::resource::resource::{
-    ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    WeightStoreImpl,
+    ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
-use crate::models::stamina::{StaminaImpl, StaminaTrait};
+use crate::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots};
 use crate::models::troop::{ExplorerTroops, GuardTroops, TroopBoosts, TroopLimitTrait, TroopTier, TroopType, Troops};
 use crate::models::weight::Weight;
-use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
-use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
+use crate::systems::combat::contracts::troop_battle::{
+    ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
+};
+use crate::systems::combat::contracts::troop_management::{
+    ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
+};
+use crate::systems::combat::contracts::troop_movement::{
+    ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
+};
+// use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::utils::realm::iRealmImpl;
 use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
 
+
+// ============================================================================
+// Mock Village Pass Deployment
+// ============================================================================
 
 fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAddress) -> ContractAddress {
     let mock_calldata: Array<felt252> = array![
@@ -42,6 +69,10 @@ fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAd
     mock_village_pass_address
 }
 
+
+// ============================================================================
+// Mock Config Functions
+// ============================================================================
 
 pub fn MOCK_VILLAGE_TOKEN_CONFIG(ref world: WorldStorage, admin: starknet::ContractAddress) -> VillageTokenConfig {
     VillageTokenConfig { mint_recipient_address: admin, token_address: deploy_mock_village_pass(ref world, admin) }
@@ -65,7 +96,6 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         village_win_probability: 0,
     }
 }
-
 
 pub fn MOCK_TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
     TroopDamageConfig {
@@ -97,7 +127,7 @@ pub fn MOCK_TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
         stamina_explore_stamina_cost: 30, // 30 stamina per hex
         stamina_travel_wheat_cost: 2,
         stamina_travel_fish_cost: 1,
-        stamina_travel_stamina_cost: 20 // 20 stamina per hex 
+        stamina_travel_stamina_cost: 20 // 20 stamina per hex
     }
 }
 
@@ -148,6 +178,15 @@ pub fn MOCK_TICK_CONFIG() -> TickConfig {
     TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1 }
 }
 
+pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
+    QuestConfig { quest_discovery_prob: 5000, quest_discovery_fail_prob: 5000 }
+}
+
+
+// ============================================================================
+// Config Store Functions (tstore_*)
+// ============================================================================
+
 pub fn tstore_village_token_config(ref world: WorldStorage, config: VillageTokenConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("village_pass_config"), config);
 }
@@ -170,7 +209,6 @@ pub fn tstore_weight_config(ref world: WorldStorage, weight_configs: Span<Weight
     }
 }
 
-
 pub fn tstore_tick_config(ref world: WorldStorage, tick_config: TickConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("tick_config"), tick_config);
 }
@@ -186,6 +224,52 @@ pub fn tstore_troop_stamina_config(ref world: WorldStorage, troop_stamina_config
 pub fn tstore_troop_damage_config(ref world: WorldStorage, troop_damage_config: TroopDamageConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("troop_damage_config"), troop_damage_config);
 }
+
+pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
+    WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), config);
+}
+
+pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
+    let simple_input_list: Array<(u8, u128)> = array![(ResourceTypes::LABOR, 1)];
+    let simple_input_list_id = world.dispatcher.uuid();
+    for i in 0..simple_input_list.len() {
+        let (resource_type, resource_amount) = *simple_input_list.at(i);
+        world
+            .write_model_test(
+                @ResourceList { entity_id: simple_input_list_id, index: i, resource_type, amount: resource_amount },
+            );
+    }
+
+    let complex_input_list: Array<(u8, u128)> = array![(ResourceTypes::WOOD, 1)];
+    let complex_input_list_id = world.dispatcher.uuid();
+    for i in 0..complex_input_list.len() {
+        let (resource_type, resource_amount) = *complex_input_list.at(i);
+        world
+            .write_model_test(
+                @ResourceList { entity_id: complex_input_list_id, index: i, resource_type, amount: resource_amount },
+            );
+    }
+    // save production config
+    let mut resource_factory_config: ResourceFactoryConfig = Default::default();
+    resource_factory_config.resource_type = resource_type;
+    resource_factory_config.realm_output_per_second = 2;
+    resource_factory_config.village_output_per_second = 1;
+
+    resource_factory_config.labor_output_per_resource = 1;
+
+    resource_factory_config.output_per_simple_input = 1;
+    resource_factory_config.simple_input_list_id = simple_input_list_id;
+    resource_factory_config.simple_input_list_count = simple_input_list.len().try_into().unwrap();
+    resource_factory_config.output_per_complex_input = 1;
+    resource_factory_config.complex_input_list_id = complex_input_list_id;
+    resource_factory_config.complex_input_list_count = complex_input_list.len().try_into().unwrap();
+    world.write_model_test(@resource_factory_config);
+}
+
+
+// ============================================================================
+// Resource Grant Helper
+// ============================================================================
 
 pub fn tgrant_resources(ref world: WorldStorage, to: ID, resources: Span<(u8, u128)>) {
     let mut to_weight: Weight = WeightStoreImpl::retrieve(ref world, to);
@@ -203,27 +287,71 @@ pub fn tgrant_resources(ref world: WorldStorage, to: ID, resources: Span<(u8, u1
 }
 
 
-pub fn tspawn_world(namespace_def: NamespaceDef, contract_defs: Span<ContractDef>) -> WorldStorage {
-    let mut world = spawn_test_world(world::TEST_CLASS_HASH, [namespace_def].span());
-    world.sync_perms_and_inits(contract_defs);
-    world.dispatcher.uuid();
-    add_test_quest_game(ref world);
-    world
+// ============================================================================
+// Init Config Helpers
+// ============================================================================
+
+pub fn init_config(ref world: WorldStorage) {
+    tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+    tstore_structure_capacity_config(ref world, MOCK_STRUCTURE_CAPACITY_CONFIG());
+    tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+    tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+    tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+    tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+    tstore_weight_config(
+        ref world,
+        array![
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+        ]
+            .span(),
+    );
+    tstore_map_config(ref world, MOCK_MAP_CONFIG());
+    tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
+    tstore_village_token_config(
+        ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
+    );
 }
 
-fn add_test_quest_game(ref world: WorldStorage) {
-    let level1 = Level { target_score: 100, settings_id: 0, time_limit: 600 };
-    let level2 = Level { target_score: 200, settings_id: 0, time_limit: 1200 };
-    let level3 = Level { target_score: 300, settings_id: 0, time_limit: 1500 };
-    let levels = array![level1, level2, level3].span();
-
-    let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
-    let quest_systems = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-
-    let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-
-    quest_systems.add_game(game_mock_addr, levels, false);
+/// Initialize only troop-related configs (for guard/explorer tests)
+pub fn init_troop_config(ref world: WorldStorage) {
+    tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+    tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+    tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
 }
+
+/// Initialize resource/capacity configs
+pub fn init_resource_config(ref world: WorldStorage) {
+    tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+    tstore_structure_capacity_config(ref world, MOCK_STRUCTURE_CAPACITY_CONFIG());
+    tstore_weight_config(
+        ref world,
+        array![
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+        ]
+            .span(),
+    );
+}
+
+/// Initialize minimal config for guard tests (most common test type)
+/// Skips: map_config, quest_config, village_token_config
+pub fn init_guard_test_config(ref world: WorldStorage) {
+    init_troop_config(ref world);
+    init_resource_config(ref world);
+    tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+}
+
+/// Initialize config for explorer tests (slightly more than guard tests)
+pub fn init_explorer_test_config(ref world: WorldStorage) {
+    init_guard_test_config(ref world);
+    tstore_map_config(ref world, MOCK_MAP_CONFIG());
+}
+
+
+// ============================================================================
+// Entity Spawn Helpers
+// ============================================================================
 
 pub fn tspawn_simple_realm(
     ref world: WorldStorage, realm_id: ID, owner: starknet::ContractAddress, coord: Coord,
@@ -270,43 +398,6 @@ pub fn tspawn_realm(
     realm_entity_id
 }
 
-pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
-    let simple_input_list: Array<(u8, u128)> = array![(ResourceTypes::LABOR, 1)];
-    let simple_input_list_id = world.dispatcher.uuid();
-    for i in 0..simple_input_list.len() {
-        let (resource_type, resource_amount) = *simple_input_list.at(i);
-        world
-            .write_model_test(
-                @ResourceList { entity_id: simple_input_list_id, index: i, resource_type, amount: resource_amount },
-            );
-    }
-
-    let complex_input_list: Array<(u8, u128)> = array![(ResourceTypes::WOOD, 1)];
-    let complex_input_list_id = world.dispatcher.uuid();
-    for i in 0..complex_input_list.len() {
-        let (resource_type, resource_amount) = *complex_input_list.at(i);
-        world
-            .write_model_test(
-                @ResourceList { entity_id: complex_input_list_id, index: i, resource_type, amount: resource_amount },
-            );
-    }
-    // save production config
-    let mut resource_factory_config: ResourceFactoryConfig = Default::default();
-    resource_factory_config.resource_type = resource_type;
-    resource_factory_config.realm_output_per_second = 2;
-    resource_factory_config.village_output_per_second = 1;
-
-    resource_factory_config.labor_output_per_resource = 1;
-
-    resource_factory_config.output_per_simple_input = 1;
-    resource_factory_config.simple_input_list_id = simple_input_list_id;
-    resource_factory_config.simple_input_list_count = simple_input_list.len().try_into().unwrap();
-    resource_factory_config.output_per_complex_input = 1;
-    resource_factory_config.complex_input_list_id = complex_input_list_id;
-    resource_factory_config.complex_input_list_count = complex_input_list.len().try_into().unwrap();
-    world.write_model_test(@resource_factory_config);
-}
-
 pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
     let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
@@ -336,89 +427,21 @@ pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     explorer_id
 }
 
-pub fn init_config(ref world: WorldStorage) {
-    tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
-    tstore_structure_capacity_config(ref world, MOCK_STRUCTURE_CAPACITY_CONFIG());
-    tstore_tick_config(ref world, MOCK_TICK_CONFIG());
-    tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
-    tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
-    tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
-    tstore_weight_config(
-        ref world,
-        array![
-            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
-        ]
-            .span(),
-    );
-    tstore_map_config(ref world, MOCK_MAP_CONFIG());
-    tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
-    tstore_village_token_config(
-        ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
-    );
-}
-
-// Modular init helpers for optimized test setup
-// These allow tests to only initialize the configs they actually need
-
-/// Initialize only troop-related configs (for guard/explorer tests)
-pub fn init_troop_config(ref world: WorldStorage) {
-    tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
-    tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
-    tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
-}
-
-/// Initialize resource/capacity configs
-pub fn init_resource_config(ref world: WorldStorage) {
-    tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
-    tstore_structure_capacity_config(ref world, MOCK_STRUCTURE_CAPACITY_CONFIG());
-    tstore_weight_config(
-        ref world,
-        array![
-            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
-        ]
-            .span(),
-    );
-}
-
-/// Initialize minimal config for guard tests (most common test type)
-/// Skips: map_config, quest_config, village_token_config
-pub fn init_guard_test_config(ref world: WorldStorage) {
-    init_troop_config(ref world);
-    init_resource_config(ref world);
-    tstore_tick_config(ref world, MOCK_TICK_CONFIG());
-}
-
-/// Initialize config for explorer tests (slightly more than guard tests)
-pub fn init_explorer_test_config(ref world: WorldStorage) {
-    init_guard_test_config(ref world);
-    tstore_map_config(ref world, MOCK_MAP_CONFIG());
-}
-
-pub fn tspawn_quest_tile(
-    ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
-) -> @QuestTile {
-    let id = world.dispatcher.uuid();
-    let resource_type = ResourceTypes::WHEAT;
-    let amount = MOCK_MAP_CONFIG().reward_resource_amount.into()
-        * QUEST_REWARD_BASE_MULTIPLIER.into()
-        * RESOURCE_PRECISION
-        * (level + 1).into();
-    let quest_details = @QuestTile {
-        id, coord, game_address, level, resource_type, amount, capacity, participant_count: 0,
-    };
-    world.write_model_test(quest_details);
-    quest_details
-}
-
-pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
-    QuestConfig { quest_discovery_prob: 5000, quest_discovery_fail_prob: 5000 }
-}
-
-pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
-    WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), config);
-}
+// pub fn tspawn_quest_tile(
+//     ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
+// ) -> @QuestTile {
+//     let id = world.dispatcher.uuid();
+//     let resource_type = ResourceTypes::WHEAT;
+//     let amount = MOCK_MAP_CONFIG().reward_resource_amount.into()
+//         * QUEST_REWARD_BASE_MULTIPLIER.into()
+//         * RESOURCE_PRECISION
+//         * (level + 1).into();
+//     let quest_details = @QuestTile {
+//         id, coord, game_address, level, resource_type, amount, capacity, participant_count: 0,
+//     };
+//     world.write_model_test(quest_details);
+//     quest_details
+// }
 
 pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: Coord) -> ID {
     let mut uuid = world.dispatcher.uuid();
@@ -549,4 +572,645 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
     world.write_model_test(@updated_tile_opt);
 
     village_id
+}
+
+
+// ============================================================================
+// Namespace and Contract Definitions
+// ============================================================================
+
+/// Minimal namespace for basic model tests (no contracts)
+pub fn namespace_def_minimal() -> NamespaceDef {
+    NamespaceDef {
+        namespace: DEFAULT_NS_STR(),
+        resources: [
+            TestResource::Model("WorldConfig"), TestResource::Model("Structure"), TestResource::Model("ExplorerTroops"),
+        ]
+            .span(),
+    }
+}
+
+/// Full namespace with all models and contracts needed for combat tests
+pub fn namespace_def_combat() -> NamespaceDef {
+    NamespaceDef {
+        namespace: DEFAULT_NS_STR(),
+        resources: [
+            // Core config models
+            TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"), // Structure models
+            TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
+            TestResource::Model("StructureVillageSlots"), TestResource::Model("StructureBuildings"),
+            TestResource::Model("Building"), // Troop models
+            TestResource::Model("ExplorerTroops"), // Map models
+            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
+            TestResource::Model("Wonder"), // Resource models
+            TestResource::Model("Resource"),
+            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
+            // Contracts
+            TestResource::Contract("troop_management_systems"), TestResource::Contract("troop_movement_systems"),
+            TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
+            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
+            // Libraries
+            TestResource::Library(("structure_creation_library", "0_1_9")),
+            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
+            TestResource::Library(
+                ("combat_library", "0_1_9"),
+            ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
+            TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
+            TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
+        ]
+            .span(),
+    }
+}
+
+/// Contract definitions with namespace write permissions
+pub fn contract_defs_combat() -> Span<ContractDef> {
+    [
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_battle_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"village_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"resource_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+    ]
+        .span()
+}
+
+
+// ============================================================================
+// Test Context Structs
+// ============================================================================
+
+/// Holds addresses for combat system dispatchers
+#[derive(Copy, Drop)]
+pub struct CombatSystemAddresses {
+    pub troop_management: ContractAddress,
+    pub troop_movement: ContractAddress,
+    pub troop_battle: ContractAddress,
+}
+
+/// Context for a single realm in tests
+#[derive(Copy, Drop)]
+pub struct RealmTestContext {
+    pub entity_id: ID,
+    pub owner: ContractAddress,
+    pub coord: Coord,
+}
+
+/// Context for an explorer in tests
+#[derive(Copy, Drop)]
+pub struct ExplorerTestContext {
+    pub explorer_id: ID,
+    pub owner: ContractAddress,
+    pub realm_id: ID,
+}
+
+/// Full battle test context with two realms ready for combat
+#[derive(Drop)]
+pub struct BattleTestContext {
+    pub world: WorldStorage,
+    pub systems: CombatSystemAddresses,
+    pub first_realm: RealmTestContext,
+    pub second_realm: RealmTestContext,
+    pub current_tick: u64,
+}
+
+
+// ============================================================================
+// World Setup Functions
+// ============================================================================
+
+/// Spawns a minimal world for basic model tests
+pub fn spawn_world_minimal() -> WorldStorage {
+    spawn_test_world([namespace_def_minimal()].span())
+}
+
+/// Spawns a full combat world with all systems and configs
+pub fn spawn_combat_world() -> WorldStorage {
+    let mut world = spawn_test_world([namespace_def_combat()].span());
+    world.sync_perms_and_inits(contract_defs_combat());
+    world.dispatcher.uuid();
+    world
+}
+
+/// Sets up all combat-related configs with 0 food costs for travel
+/// This is a workaround for cross-boundary state issues in snforge tests
+pub fn setup_combat_configs(ref world: WorldStorage) {
+    tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+    tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+    tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+
+    // Use custom stamina config with 0 food costs for travel
+    let mut troop_stamina_config = MOCK_TROOP_STAMINA_CONFIG();
+    troop_stamina_config.stamina_travel_wheat_cost = 0;
+    troop_stamina_config.stamina_travel_fish_cost = 0;
+    tstore_troop_stamina_config(ref world, troop_stamina_config);
+
+    tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+    tstore_weight_config(
+        ref world,
+        array![
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::PALADIN_T3), MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+        ]
+            .span(),
+    );
+    tstore_map_config(ref world, MOCK_MAP_CONFIG());
+}
+
+/// Gets combat system addresses from world
+pub fn get_combat_systems(ref world: WorldStorage) -> CombatSystemAddresses {
+    let (troop_management, _) = world.dns(@"troop_management_systems").unwrap();
+    let (troop_movement, _) = world.dns(@"troop_movement_systems").unwrap();
+    let (troop_battle, _) = world.dns(@"troop_battle_systems").unwrap();
+
+    CombatSystemAddresses { troop_management, troop_movement, troop_battle }
+}
+
+/// Full setup: spawns world, sets up configs, gets system addresses, sets chain_id
+pub fn setup_battle_world() -> (WorldStorage, CombatSystemAddresses) {
+    // Set chain_id for VRF bypass in tests
+    start_cheat_chain_id_global('SN_TEST');
+
+    let mut world = spawn_combat_world();
+    setup_combat_configs(ref world);
+    let systems = get_combat_systems(ref world);
+
+    (world, systems)
+}
+
+
+// ============================================================================
+// Realm and Structure Helpers
+// ============================================================================
+
+/// Creates a test realm with proper resource capacity initialized
+/// This is a simplified version that bypasses village NFT minting
+pub fn spawn_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
+    let structure_id = world.dispatcher.uuid();
+
+    let default_troops = Troops {
+        category: TroopType::Knight,
+        tier: TroopTier::T1,
+        count: 0,
+        stamina: Stamina { amount: 0, updated_tick: 0 },
+        battle_cooldown_end: 0,
+        boosts: Default::default(),
+    };
+
+    let structure = Structure {
+        entity_id: structure_id,
+        owner: owner,
+        base: StructureBase {
+            troop_guard_count: 0,
+            troop_explorer_count: 0,
+            troop_max_guard_count: 1,
+            troop_max_explorer_count: 1,
+            created_at: starknet::get_block_timestamp().try_into().unwrap(),
+            category: StructureCategory::Realm.into(),
+            coord_x: coord.x,
+            coord_y: coord.y,
+            level: 1,
+        },
+        troop_guards: GuardTroops {
+            delta: default_troops,
+            charlie: default_troops,
+            bravo: default_troops,
+            alpha: default_troops,
+            delta_destroyed_tick: 0,
+            charlie_destroyed_tick: 0,
+            bravo_destroyed_tick: 0,
+            alpha_destroyed_tick: 0,
+        },
+        troop_explorers: array![].span(),
+        resources_packed: 0,
+        metadata: StructureMetadata {
+            realm_id: realm_id.try_into().unwrap(), order: 1, has_wonder: false, villages_count: 0, village_realm: 0,
+        },
+        category: StructureCategory::Realm.into(),
+    };
+    world.write_model_test(@structure);
+
+    // Initialize resource capacity
+    ResourceImpl::initialize(ref world, structure_id);
+    let structure_capacity: u128 = 1000000000000000 * RESOURCE_PRECISION;
+    let structure_weight: Weight = Weight { capacity: structure_capacity, weight: 0 };
+    ResourceImpl::write_weight(ref world, structure_id, structure_weight);
+
+    structure_id
+}
+
+/// Creates a test realm for guard tests with proper guard limits
+/// Unlike spawn_test_realm, this has troop_max_guard_count: 4 to allow guard testing
+pub fn spawn_guard_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractAddress, coord: Coord) -> u32 {
+    let structure_id = world.dispatcher.uuid();
+
+    let default_troops = Troops {
+        category: TroopType::Knight,
+        tier: TroopTier::T1,
+        count: 0,
+        stamina: Stamina { amount: 0, updated_tick: 0 },
+        battle_cooldown_end: 0,
+        boosts: Default::default(),
+    };
+
+    let structure = Structure {
+        entity_id: structure_id,
+        owner: owner,
+        base: StructureBase {
+            troop_guard_count: 0,
+            troop_explorer_count: 0,
+            troop_max_guard_count: 4, // Higher limit for guard tests
+            troop_max_explorer_count: 20,
+            created_at: starknet::get_block_timestamp().try_into().unwrap(),
+            category: StructureCategory::Realm.into(),
+            coord_x: coord.x,
+            coord_y: coord.y,
+            level: 1,
+        },
+        troop_guards: GuardTroops {
+            delta: default_troops,
+            charlie: default_troops,
+            bravo: default_troops,
+            alpha: default_troops,
+            delta_destroyed_tick: 0,
+            charlie_destroyed_tick: 0,
+            bravo_destroyed_tick: 0,
+            alpha_destroyed_tick: 0,
+        },
+        troop_explorers: array![].span(),
+        resources_packed: 0,
+        metadata: StructureMetadata {
+            realm_id: realm_id.try_into().unwrap(), order: 1, has_wonder: false, villages_count: 0, village_realm: 0,
+        },
+        category: StructureCategory::Realm.into(),
+    };
+    world.write_model_test(@structure);
+
+    // Initialize resource capacity
+    ResourceImpl::initialize(ref world, structure_id);
+    let structure_capacity: u128 = 1000000000000000 * RESOURCE_PRECISION;
+    let structure_weight: Weight = Weight { capacity: structure_capacity, weight: 0 };
+    ResourceImpl::write_weight(ref world, structure_id, structure_weight);
+
+    structure_id
+}
+
+/// Creates two standard test realms at positions (80,80) and (84,80)
+pub fn create_two_realms(ref world: WorldStorage) -> (RealmTestContext, RealmTestContext) {
+    let first_owner = starknet::contract_address_const::<'first_realm_owner'>();
+    let first_coord = Coord { alt: false, x: 80, y: 80 };
+    let first_id = spawn_test_realm(ref world, 1, first_owner, first_coord);
+
+    let second_owner = starknet::contract_address_const::<'second_realm_owner'>();
+    let second_coord = Coord { alt: false, x: 84, y: 80 };
+    let second_id = spawn_test_realm(ref world, 2, second_owner, second_coord);
+
+    let first_realm = RealmTestContext { entity_id: first_id, owner: first_owner, coord: first_coord };
+    let second_realm = RealmTestContext { entity_id: second_id, owner: second_owner, coord: second_coord };
+
+    (first_realm, second_realm)
+}
+
+
+// ============================================================================
+// Tile Helpers
+// ============================================================================
+
+/// Pre-explores a tile (marks as discovered with a biome)
+/// Required when using explore=false for movement
+pub fn pre_explore_tile(ref world: WorldStorage, coord: Coord) {
+    let tile = Tile {
+        alt: coord.alt,
+        col: coord.x,
+        row: coord.y,
+        biome: 1, // Any non-zero biome means tile is discovered
+        occupier_id: 0,
+        occupier_type: 0,
+        occupier_is_structure: false,
+        reward_extracted: false,
+    };
+    let tile_opt: TileOpt = tile.into();
+    world.write_model_test(@tile_opt);
+}
+
+/// Pre-explores multiple tiles along a path
+pub fn pre_explore_path(ref world: WorldStorage, start: Coord, directions: Span<Direction>) {
+    let mut current = start;
+    for direction in directions {
+        current = current.neighbor(*direction);
+        pre_explore_tile(ref world, current);
+    }
+}
+
+
+// ============================================================================
+// Explorer Helpers
+// ============================================================================
+
+/// Creates an explorer for a realm with proper caller mocking
+pub fn create_explorer(
+    ref world: WorldStorage,
+    systems: CombatSystemAddresses,
+    realm: RealmTestContext,
+    troop_type: TroopType,
+    troop_tier: TroopTier,
+    troop_amount: u128,
+    spawn_direction: Direction,
+) -> ExplorerTestContext {
+    let dispatcher = ITroopManagementSystemsDispatcher { contract_address: systems.troop_management };
+
+    start_cheat_caller_address(systems.troop_management, realm.owner);
+    let explorer_id = dispatcher
+        .explorer_create(realm.entity_id, troop_type, troop_tier, troop_amount, spawn_direction);
+    stop_cheat_caller_address(systems.troop_management);
+
+    ExplorerTestContext { explorer_id, owner: realm.owner, realm_id: realm.entity_id }
+}
+
+/// Moves an explorer with proper caller mocking
+/// Note: Use explore=false to avoid TrophyProgression events
+pub fn move_explorer(
+    ref world: WorldStorage,
+    systems: CombatSystemAddresses,
+    explorer: ExplorerTestContext,
+    directions: Span<Direction>,
+    explore: bool,
+) {
+    let dispatcher = ITroopMovementSystemsDispatcher { contract_address: systems.troop_movement };
+
+    start_cheat_caller_address(systems.troop_movement, explorer.owner);
+    dispatcher.explorer_move(explorer.explorer_id, directions, explore);
+    stop_cheat_caller_address(systems.troop_movement);
+}
+
+/// Attacks another explorer with proper caller mocking
+pub fn attack_explorer_vs_explorer(
+    ref world: WorldStorage,
+    systems: CombatSystemAddresses,
+    attacker: ExplorerTestContext,
+    defender_id: ID,
+    direction: Direction,
+) {
+    let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
+
+    start_cheat_caller_address(systems.troop_battle, attacker.owner);
+    dispatcher.attack_explorer_vs_explorer(attacker.explorer_id, defender_id, direction, array![].span());
+    stop_cheat_caller_address(systems.troop_battle);
+}
+
+
+// ============================================================================
+// High-Level Test Setup Functions
+// ============================================================================
+
+/// Sets up a complete battle scenario with two realms and explorers
+/// Returns a BattleTestContext ready for combat testing
+pub fn setup_explorer_battle(
+    first_troop_type: TroopType,
+    first_troop_tier: TroopTier,
+    second_troop_type: TroopType,
+    second_troop_tier: TroopTier,
+) -> (WorldStorage, CombatSystemAddresses, ExplorerTestContext, ExplorerTestContext) {
+    let (mut world, systems) = setup_battle_world();
+
+    // Create realms
+    let (first_realm, second_realm) = create_two_realms(ref world);
+
+    // Grant resources based on troop types
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+
+    let first_resource = match first_troop_tier {
+        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
+        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
+        TroopTier::T3 => ResourceTypes::PALADIN_T3,
+    };
+    let second_resource = match second_troop_tier {
+        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
+        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
+        TroopTier::T3 => ResourceTypes::PALADIN_T3,
+    };
+
+    tgrant_resources(ref world, first_realm.entity_id, array![(first_resource, troop_amount)].span());
+    tgrant_resources(ref world, second_realm.entity_id, array![(second_resource, troop_amount)].span());
+
+    // Set timestamp
+    let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+    start_cheat_block_timestamp_global(current_tick);
+
+    // Create explorers
+    let first_explorer = create_explorer(
+        ref world, systems, first_realm, first_troop_type, first_troop_tier, troop_amount, Direction::East,
+    );
+    let second_explorer = create_explorer(
+        ref world, systems, second_realm, second_troop_type, second_troop_tier, troop_amount, Direction::West,
+    );
+
+    // Pre-explore tile for movement
+    let target_coord = Coord { alt: false, x: 82, y: 80 };
+    pre_explore_tile(ref world, target_coord);
+
+    // Move second explorer towards first
+    move_explorer(ref world, systems, second_explorer, array![Direction::West].span(), false);
+
+    // Advance time for stamina
+    let attack_tick = current_tick * 5;
+    start_cheat_block_timestamp_global(attack_tick);
+
+    (world, systems, first_explorer, second_explorer)
+}
+
+
+// ============================================================================
+// Assertion Helpers
+// ============================================================================
+
+/// Reads explorer troops from world
+pub fn get_explorer(ref world: WorldStorage, explorer_id: ID) -> ExplorerTroops {
+    world.read_model(explorer_id)
+}
+
+/// Gets the tile at a coordinate
+pub fn get_tile(ref world: WorldStorage, coord: Coord) -> Tile {
+    let tile_opt: TileOpt = world.read_model((coord.x, coord.y));
+    tile_opt.into()
+}
+
+
+// ============================================================================
+// Guard Helpers
+// ============================================================================
+
+/// Adds troops to a guard slot
+pub fn add_guard(
+    ref world: WorldStorage,
+    systems: CombatSystemAddresses,
+    realm: RealmTestContext,
+    slot: GuardSlot,
+    troop_type: TroopType,
+    troop_tier: TroopTier,
+    troop_amount: u128,
+) {
+    let dispatcher = ITroopManagementSystemsDispatcher { contract_address: systems.troop_management };
+
+    start_cheat_caller_address(systems.troop_management, realm.owner);
+    dispatcher.guard_add(realm.entity_id, slot, troop_type, troop_tier, troop_amount);
+    stop_cheat_caller_address(systems.troop_management);
+}
+
+/// Attacks a structure's guard with an explorer
+pub fn attack_explorer_vs_guard(
+    ref world: WorldStorage,
+    systems: CombatSystemAddresses,
+    explorer: ExplorerTestContext,
+    structure_id: ID,
+    direction: Direction,
+) {
+    let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
+
+    start_cheat_caller_address(systems.troop_battle, explorer.owner);
+    dispatcher.attack_explorer_vs_guard(explorer.explorer_id, structure_id, direction);
+    stop_cheat_caller_address(systems.troop_battle);
+}
+
+/// Attacks an explorer with a structure's guard
+pub fn attack_guard_vs_explorer(
+    ref world: WorldStorage,
+    systems: CombatSystemAddresses,
+    realm: RealmTestContext,
+    slot: GuardSlot,
+    explorer_id: ID,
+    direction: Direction,
+) {
+    let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
+
+    start_cheat_caller_address(systems.troop_battle, realm.owner);
+    dispatcher.attack_guard_vs_explorer(realm.entity_id, slot, explorer_id, direction);
+    stop_cheat_caller_address(systems.troop_battle);
+}
+
+/// Sets up a guard battle scenario: a realm with guards and an adjacent explorer
+pub fn setup_guard_battle(
+    guard_troop_type: TroopType,
+    guard_troop_tier: TroopTier,
+    explorer_troop_type: TroopType,
+    explorer_troop_tier: TroopTier,
+) -> (WorldStorage, CombatSystemAddresses, RealmTestContext, ExplorerTestContext) {
+    let (mut world, systems) = setup_battle_world();
+
+    // Create two realms
+    let (first_realm, second_realm) = create_two_realms(ref world);
+
+    // Grant resources based on troop types
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+
+    let guard_resource = match guard_troop_tier {
+        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
+        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
+        TroopTier::T3 => ResourceTypes::PALADIN_T3,
+    };
+    let explorer_resource = match explorer_troop_tier {
+        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
+        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
+        TroopTier::T3 => ResourceTypes::PALADIN_T3,
+    };
+
+    tgrant_resources(ref world, first_realm.entity_id, array![(guard_resource, troop_amount)].span());
+    tgrant_resources(ref world, second_realm.entity_id, array![(explorer_resource, troop_amount)].span());
+
+    // Set timestamp
+    let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+    start_cheat_block_timestamp_global(current_tick);
+
+    // Add guard to first realm
+    add_guard(ref world, systems, first_realm, GuardSlot::Delta, guard_troop_type, guard_troop_tier, troop_amount);
+
+    // Create explorer from second realm
+    let explorer = create_explorer(
+        ref world, systems, second_realm, explorer_troop_type, explorer_troop_tier, troop_amount, Direction::West,
+    );
+
+    // Pre-explore tiles for movement path
+    let tile1 = Coord { alt: false, x: 82, y: 80 };
+    let tile2 = Coord { alt: false, x: 81, y: 80 };
+    pre_explore_tile(ref world, tile1);
+    pre_explore_tile(ref world, tile2);
+
+    // Move explorer adjacent to first realm
+    move_explorer(ref world, systems, explorer, array![Direction::West, Direction::West].span(), false);
+
+    // Advance time for stamina
+    let attack_tick = current_tick * 5;
+    start_cheat_block_timestamp_global(attack_tick);
+
+    (world, systems, first_realm, explorer)
+}
+
+
+// ============================================================================
+// Troop Management Test Setup Helpers
+// ============================================================================
+
+/// Namespace for troop management tests (includes quest/production models)
+pub fn namespace_def_troop_management() -> NamespaceDef {
+    NamespaceDef {
+        namespace: DEFAULT_NS_STR(),
+        resources: [
+            // Core config models
+            TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"), // Structure models
+            TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
+            TestResource::Model("StructureVillageSlots"), TestResource::Model("StructureBuildings"),
+            TestResource::Model("Building"), // Troop models
+            TestResource::Model("ExplorerTroops"), // Map models
+            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
+            TestResource::Model("Wonder"), // Resource models
+            TestResource::Model("Resource"),
+            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
+            // Events
+            TestResource::Event("TrophyProgression"), TestResource::Event("StoryEvent"),
+            TestResource::Event("ExplorerMoveEvent"), // Contracts
+            TestResource::Contract("troop_management_systems"),
+            TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
+            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
+            // Libraries
+            TestResource::Library(("structure_creation_library", "0_1_9")),
+            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
+            TestResource::Library(("combat_library", "0_1_9")),
+        ]
+            .span(),
+    }
+}
+
+pub fn contract_defs_troop_management() -> Span<ContractDef> {
+    [
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"village_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"resource_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+    ]
+        .span()
+}
+
+/// Full setup for troop management tests
+pub fn setup_troop_management_world() -> WorldStorage {
+    let mut world = spawn_test_world([namespace_def_troop_management()].span());
+    world.sync_perms_and_inits(contract_defs_troop_management());
+    // Initialize UUID counter (first uuid() call starts the counter at 1)
+    world.dispatcher.uuid();
+    // Use setup_combat_configs instead of init_config to avoid deploying village pass mock
+    // which requires class declaration that doesn't work well with snforge tests
+    setup_combat_configs(ref world);
+    world
 }

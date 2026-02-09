@@ -14,9 +14,9 @@
 		"dev": "tsup --watch"
 	},
 	"peerDependencies": {
+		"@bibliothecadao/dojo": "workspace:*",
 		"@bibliothecadao/eternum": "workspace:*",
 		"@bibliothecadao/types": "workspace:*",
-		"@bibliothecadao/dojo": "workspace:*",
 		"@dojoengine/react": "catalog:",
 		"@starknet-react/core": "catalog:",
 		"react": "catalog:",
@@ -24,10 +24,14 @@
 		"wouter": "^2.12.1"
 	},
 	"devDependencies": {
+		"@bibliothecadao/dojo": "workspace:*",
+		"@bibliothecadao/types": "workspace:*",
+		"@starknet-react/core": "catalog:",
 		"@types/react": "^18",
 		"tsup": "^8",
 		"typescript": "^5",
+		"vite-plugin-top-level-await": "^1.4.1",
 		"vite-plugin-wasm": "^3.3.0",
-		"vite-plugin-top-level-await": "^1.4.1"
+		"wouter": "^2.12.1"
 	}
 }

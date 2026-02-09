@@ -1,6 +1,7 @@
 import Button from "@/ui/design-system/atoms/button";
 import clsx from "clsx";
-import { Shield, Users } from "lucide-react";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Users from "lucide-react/dist/esm/icons/users";
 
 interface ActionFooterProps {
   armyType: boolean;

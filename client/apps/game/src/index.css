@@ -111,6 +111,23 @@ body {
   }
 }
 
+/* Fade in and slide up animation for staggered reveals */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out forwards;
+  opacity: 0;
+}
+
 .bordered-text {
   -webkit-text-stroke: 1.5px black; /* For WebKit browsers */
   text-stroke: 1.5px black; /* Standard property */
@@ -156,7 +173,8 @@ h6 {
 .h3,
 .h4,
 .h5,
-.h6 {
+.h6,
+.font-cinzel {
   font-family: "Cinzel", serif;
 }
 @keyframes dotAnimation {

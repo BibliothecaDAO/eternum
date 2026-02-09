@@ -132,6 +132,22 @@ pub trait IFactoryConfig<T> {
 }
 
 #[starknet::interface]
+pub trait IMMRConfig<T> {
+    fn set_mmr_config(
+        ref self: T,
+        enabled: bool,
+        mmr_token_address: starknet::ContractAddress,
+        distribution_mean: u16,
+        spread_factor: u16,
+        max_delta: u8,
+        k_factor: u8,
+        lobby_split_weight_scaled: u16,
+        mean_regression_scaled: u16,
+        min_players: u8,
+    );
+}
+
+#[starknet::interface]
 pub trait IVillageFoundResourcesConfig<T> {
     fn set_village_found_resources_config(ref self: T, village_found_resources: Span<(u8, u128, u128)>);
 }
@@ -241,6 +257,7 @@ pub mod config_systems {
         VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
         WorldConfigUtilImpl,
     };
+    use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;
     use crate::models::position::{CENTER_COL, CoordImpl};
     use crate::models::resource::production::building::BuildingCategory;
@@ -916,6 +933,42 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(ref world, selector!("factory_address"), address);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IMMRConfigImpl of super::IMMRConfig<ContractState> {
+        fn set_mmr_config(
+            ref self: ContractState,
+            enabled: bool,
+            mmr_token_address: starknet::ContractAddress,
+            distribution_mean: u16,
+            spread_factor: u16,
+            max_delta: u8,
+            k_factor: u8,
+            lobby_split_weight_scaled: u16,
+            mean_regression_scaled: u16,
+            min_players: u8,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            // Validate config to prevent division by zero and overflow issues
+            assert!(spread_factor > 0, "spread_factor must be > 0");
+            assert!(max_delta > 0, "max_delta must be > 0");
+
+            let mmr_config = MMRConfig {
+                enabled,
+                mmr_token_address,
+                distribution_mean,
+                spread_factor,
+                max_delta,
+                k_factor,
+                lobby_split_weight_scaled,
+                mean_regression_scaled,
+                min_players,
+            };
+            WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
         }
     }
 

@@ -1,11 +1,4 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { TransitionManager } from "@/three/managers/transition-manager";
-import { SceneManager } from "@/three/scene-manager";
-import { CameraView } from "@/three/scenes/hexagon-scene";
-import HexceptionScene from "@/three/scenes/hexception";
-import HUDScene from "@/three/scenes/hud-scene";
-import WorldmapScene from "@/three/scenes/worldmap";
-import { GUIManager } from "@/three/utils/";
 import {
   CAMERA_CONFIG,
   CAMERA_FAR_PLANE,
@@ -13,7 +6,14 @@ import {
   POST_PROCESSING_CONFIG,
   type PostProcessingConfig,
 } from "@/three/constants";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { TransitionManager } from "@/three/managers/transition-manager";
+import { SceneManager } from "@/three/scene-manager";
+import { CameraView } from "@/three/scenes/hexagon-scene";
+import HexceptionScene from "@/three/scenes/hexception";
+import HUDScene from "@/three/scenes/hud-scene";
+import WorldmapScene from "@/three/scenes/worldmap";
+import { GUIManager } from "@/three/utils/";
+import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   BloomEffect,
@@ -35,11 +35,13 @@ import {
   HalfFloatType,
   LinearToneMapping,
   NoToneMapping,
+  PCFShadowMap,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
   Raycaster,
   ReinhardToneMapping,
+  UnsignedByteType,
   Vector2,
   WebGLRenderer,
   WebGLRenderTarget,
@@ -58,8 +60,25 @@ import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
 let cachedHDRTarget: WebGLRenderTarget | null = null;
 let cachedHDRPromise: Promise<WebGLRenderTarget> | null = null;
+
+// Stats recording types
+interface StatsRecordingSample {
+  timestamp: number;
+  elapsedMs: number;
+  fps: number;
+  frameTime: number;
+  drawCalls: number;
+  triangles: number;
+  geometries: number;
+  textures: number;
+  programs: number;
+  scene: string;
+  heapUsedMB?: number;
+  heapTotalMB?: number;
+}
 
 const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
   [GraphicsSettings.HIGH]: 0.55,
@@ -105,6 +124,16 @@ export default class GameRenderer {
   private memoryStatsElement?: HTMLDivElement;
   private statsDomElement?: HTMLElement;
 
+  // Stats Recording
+  private isRecordingStats = false;
+  private statsRecordingSamples: StatsRecordingSample[] = [];
+  private statsRecordingStartTime = 0;
+  private statsRecordingIndicator?: HTMLDivElement;
+  private lastFps = 0;
+  private frameCount = 0;
+  private fpsAccumulator = 0;
+  private lastFpsUpdateTime = 0;
+
   // Camera settings
   private cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
   private cameraAngle = CAMERA_CONFIG.defaultAngle;
@@ -125,6 +154,7 @@ export default class GameRenderer {
   private environmentTarget?: WebGLRenderTarget;
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
+  private readonly isMobileDevice = IS_MOBILE;
   private readonly handleWindowResize = () => this.onWindowResize();
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -300,14 +330,17 @@ export default class GameRenderer {
 
     this.renderer.setPixelRatio(this.getTargetPixelRatio());
     this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.shadowMap.type = this.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.8;
     this.renderer.autoClear = false;
+    // Disable auto-reset of renderer.info so we can capture full frame stats
+    this.renderer.info.autoReset = false;
     //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const frameBufferType = this.isMobileDevice ? UnsignedByteType : HalfFloatType;
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: HalfFloatType,
+      frameBufferType,
     });
   }
 
@@ -318,6 +351,9 @@ export default class GameRenderer {
 
     // Initialize memory monitoring
     this.initMemoryMonitoring();
+
+    // Setup stats recording keyboard shortcuts
+    this.setupStatsRecordingKeyboardShortcuts();
   }
 
   public initMemoryMonitoring() {
@@ -389,6 +425,11 @@ export default class GameRenderer {
         const materialStats = MaterialPool.getInstance().getStats();
         const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
 
+        // Get renderer draw call stats
+        const drawCalls = this.renderer.info.render.calls;
+        const triangles = this.renderer.info.render.triangles;
+        const drawCallColor = drawCalls > 100 ? "#ff4444" : drawCalls > 50 ? "#ffaa00" : "#00ff00";
+
         // Update display
         this.memoryStatsElement.innerHTML = `
           <strong>Memory Monitor</strong><br>
@@ -398,6 +439,7 @@ export default class GameRenderer {
           Spikes: ${summary.spikeCount} (max: ${summary.largestSpikeMB}MB)<br>
           Resources: G:${stats.geometries} M:${stats.materials} T:${stats.textures}<br>
           Materials: ${materialStats.uniqueMaterials} shared (${sharingRatio.toFixed(1)}:1)<br>
+          <span style="color: ${drawCallColor};">Draw Calls: ${drawCalls} | Triangles: ${(triangles / 1000).toFixed(1)}k</span><br>
           ${stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${stats.spikeIncrease.toFixed(1)}MB</span>` : ""}
         `;
 
@@ -420,11 +462,255 @@ export default class GameRenderer {
     updateMemoryStats();
   }
 
+  // Stats Recording Methods
+  public startStatsRecording() {
+    if (this.isRecordingStats) {
+      console.log("Stats recording already in progress");
+      return;
+    }
+
+    this.isRecordingStats = true;
+    this.statsRecordingSamples = [];
+    this.statsRecordingStartTime = performance.now();
+    this.lastFpsUpdateTime = this.statsRecordingStartTime;
+    this.frameCount = 0;
+    this.fpsAccumulator = 0;
+
+    // Create recording indicator
+    this.statsRecordingIndicator = document.createElement("div");
+    this.statsRecordingIndicator.style.cssText = `
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      z-index: 10001;
+      animation: pulse 1s infinite;
+    `;
+    this.statsRecordingIndicator.innerHTML = "🔴 Recording Stats...";
+
+    // Add pulse animation
+    const style = document.createElement("style");
+    style.id = "stats-recording-pulse";
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(this.statsRecordingIndicator);
+
+    console.log("📊 Stats recording started. Press Ctrl+Shift+S to stop and export.");
+  }
+
+  public stopStatsRecording(): StatsRecordingSample[] {
+    if (!this.isRecordingStats) {
+      console.log("No stats recording in progress");
+      return [];
+    }
+
+    this.isRecordingStats = false;
+
+    // Remove indicator
+    if (this.statsRecordingIndicator) {
+      this.statsRecordingIndicator.remove();
+      this.statsRecordingIndicator = undefined;
+    }
+    const pulseStyle = document.getElementById("stats-recording-pulse");
+    if (pulseStyle) pulseStyle.remove();
+
+    const samples = [...this.statsRecordingSamples];
+    const duration = (performance.now() - this.statsRecordingStartTime) / 1000;
+
+    console.log(`📊 Stats recording stopped. ${samples.length} samples over ${duration.toFixed(1)}s`);
+
+    return samples;
+  }
+
+  private captureStatsSample() {
+    if (!this.isRecordingStats) return;
+
+    const now = performance.now();
+    const elapsedMs = now - this.statsRecordingStartTime;
+
+    // Calculate FPS from frame time
+    this.frameCount++;
+    const timeSinceLastFpsUpdate = now - this.lastFpsUpdateTime;
+
+    if (timeSinceLastFpsUpdate >= 100) {
+      // Update FPS every 100ms
+      this.lastFps = (this.frameCount * 1000) / timeSinceLastFpsUpdate;
+      this.frameCount = 0;
+      this.lastFpsUpdateTime = now;
+    }
+
+    const info = this.renderer.info;
+    const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
+
+    const sample: StatsRecordingSample = {
+      timestamp: Date.now(),
+      elapsedMs,
+      fps: Math.round(this.lastFps * 10) / 10,
+      frameTime: this.lastFps > 0 ? Math.round((1000 / this.lastFps) * 100) / 100 : 0,
+      drawCalls: info.render.calls,
+      triangles: info.render.triangles,
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+      programs: info.programs?.length || 0,
+      scene: currentScene,
+    };
+
+    // Add memory info if available
+    if (this.memoryMonitor) {
+      const memStats = this.memoryMonitor.getCurrentStats(currentScene);
+      sample.heapUsedMB = memStats.heapUsedMB;
+      sample.heapTotalMB = memStats.heapTotalMB;
+    }
+
+    this.statsRecordingSamples.push(sample);
+
+    // Update indicator with sample count
+    if (this.statsRecordingIndicator) {
+      const duration = (elapsedMs / 1000).toFixed(1);
+      this.statsRecordingIndicator.innerHTML = `🔴 Recording: ${this.statsRecordingSamples.length} samples (${duration}s)`;
+    }
+  }
+
+  public exportStatsRecording() {
+    const samples = this.stopStatsRecording();
+
+    if (samples.length === 0) {
+      console.log("No samples to export");
+      return;
+    }
+
+    // Calculate summary statistics
+    const fps = samples.map((s) => s.fps).filter((f) => f > 0);
+    const drawCalls = samples.map((s) => s.drawCalls);
+    const triangles = samples.map((s) => s.triangles);
+    const heapUsed = samples.map((s) => s.heapUsedMB).filter((h): h is number => h !== undefined);
+    const geometries = samples.map((s) => s.geometries);
+    const textures = samples.map((s) => s.textures);
+    const programs = samples.map((s) => s.programs);
+
+    const recordingDurationSec = samples[samples.length - 1].elapsedMs / 1000;
+
+    // Calculate memory growth rate (MB/s) using linear regression for accuracy
+    let memoryGrowthMBPerSecond = 0;
+    if (heapUsed.length >= 2 && recordingDurationSec > 0) {
+      const firstHeap = heapUsed[0];
+      const lastHeap = heapUsed[heapUsed.length - 1];
+      memoryGrowthMBPerSecond = Math.round(((lastHeap - firstHeap) / recordingDurationSec) * 100) / 100;
+    }
+
+    // Calculate resource changes
+    const resourceChanges = {
+      geometries: geometries[geometries.length - 1] - geometries[0],
+      textures: textures[textures.length - 1] - textures[0],
+      programs: programs[programs.length - 1] - programs[0],
+    };
+
+    const summary = {
+      recordingDuration: recordingDurationSec,
+      sampleCount: samples.length,
+      fps: {
+        min: Math.min(...fps),
+        max: Math.max(...fps),
+        avg: Math.round((fps.reduce((a, b) => a + b, 0) / fps.length) * 10) / 10,
+      },
+      drawCalls: {
+        min: Math.min(...drawCalls),
+        max: Math.max(...drawCalls),
+        avg: Math.round(drawCalls.reduce((a, b) => a + b, 0) / drawCalls.length),
+      },
+      triangles: {
+        min: Math.min(...triangles),
+        max: Math.max(...triangles),
+        avg: Math.round(triangles.reduce((a, b) => a + b, 0) / triangles.length),
+      },
+      memory: {
+        heapUsedMB: {
+          start: heapUsed.length > 0 ? heapUsed[0] : 0,
+          end: heapUsed.length > 0 ? heapUsed[heapUsed.length - 1] : 0,
+          min: heapUsed.length > 0 ? Math.min(...heapUsed) : 0,
+          max: heapUsed.length > 0 ? Math.max(...heapUsed) : 0,
+        },
+        growthMBPerSecond: memoryGrowthMBPerSecond,
+        resourceChanges,
+      },
+    };
+
+    const exportData = {
+      summary,
+      samples,
+      exportedAt: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+    };
+
+    // Copy to clipboard
+    const jsonString = JSON.stringify(exportData, null, 2);
+    navigator.clipboard
+      .writeText(jsonString)
+      .then(() => {
+        console.log("📋 Stats copied to clipboard!");
+        console.log("Summary:", summary);
+      })
+      .catch(() => {
+        // Fallback: download as file
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `stats-recording-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        console.log("📁 Stats downloaded as file");
+      });
+  }
+
+  private setupStatsRecordingKeyboardShortcuts() {
+    if (!GRAPHICS_DEV_ENABLED) return;
+
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl+Shift+R to start recording
+      if (e.ctrlKey && e.shiftKey && e.key === "R") {
+        e.preventDefault();
+        this.startStatsRecording();
+      }
+      // Ctrl+Shift+S to stop and export
+      if (e.ctrlKey && e.shiftKey && e.key === "S") {
+        e.preventDefault();
+        this.exportStatsRecording();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+
+    // Store for cleanup
+    (this as any)._statsRecordingKeyHandler = handler;
+
+    console.log("📊 Stats recording shortcuts enabled: Ctrl+Shift+R (start) | Ctrl+Shift+S (stop & export)");
+  }
+
   initScene() {
     this.setupListeners();
 
     document.body.style.background = "black";
     this.renderer.domElement.id = "main-canvas";
+
+    // CRITICAL: Remove any existing canvas before adding a new one
+    // This prevents memory leaks from multiple canvases when navigating home and back
+    const existingCanvas = document.getElementById("main-canvas");
+    if (existingCanvas) {
+      console.warn("[GameRenderer] Found existing canvas, removing it to prevent memory leak");
+      existingCanvas.remove();
+    }
+
     document.body.appendChild(this.renderer.domElement);
 
     // Set up periodic cleanup of the transition database
@@ -547,7 +833,7 @@ export default class GameRenderer {
   }
 
   private setupPostProcessingEffects() {
-    const effectsConfig = POST_PROCESSING_CONFIG[this.graphicsSetting];
+    const effectsConfig = this.getPostProcessingConfig();
     if (!effectsConfig) {
       return; // Skip post-processing for low graphics settings
     }
@@ -585,6 +871,19 @@ export default class GameRenderer {
     folder.close();
 
     return effect;
+  }
+
+  private getPostProcessingConfig(): PostProcessingConfig | null {
+    const effectsConfig = POST_PROCESSING_CONFIG[this.graphicsSetting];
+    if (!effectsConfig) {
+      return null;
+    }
+
+    if (this.isMobileDevice && this.graphicsSetting !== GraphicsSettings.HIGH) {
+      return null;
+    }
+
+    return effectsConfig;
   }
 
   private setupPostProcessingGUI(config: PostProcessingConfig): void {
@@ -734,18 +1033,30 @@ export default class GameRenderer {
 
   private getTargetPixelRatio() {
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
+    const mobileCap = this.getMobilePixelRatioCap();
 
     switch (this.graphicsSetting) {
       case GraphicsSettings.HIGH:
-        return Math.min(devicePixelRatio, 2);
+        return Math.min(devicePixelRatio, 2, mobileCap);
       case GraphicsSettings.MID:
-        return Math.min(devicePixelRatio, 1.5);
+        return Math.min(devicePixelRatio, 1.5, mobileCap);
       default:
-        return 1;
+        return Math.min(1, mobileCap);
     }
   }
 
   private getTargetFPS(): number | null {
+    if (this.isMobileDevice) {
+      switch (this.graphicsSetting) {
+        case GraphicsSettings.HIGH:
+          return 45;
+        case GraphicsSettings.MID:
+          return 30;
+        default:
+          return 30;
+      }
+    }
+
     switch (this.graphicsSetting) {
       case GraphicsSettings.LOW:
         return 30;
@@ -754,6 +1065,26 @@ export default class GameRenderer {
       default:
         return null;
     }
+  }
+
+  private getMobilePixelRatioCap(): number {
+    if (!this.isMobileDevice) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    switch (this.graphicsSetting) {
+      case GraphicsSettings.HIGH:
+        return 1.5;
+      case GraphicsSettings.MID:
+        return 1.25;
+      default:
+        return 1;
+    }
+  }
+
+  private resolvePixelRatio(pixelRatio: number): number {
+    const mobileCap = this.getMobilePixelRatioCap();
+    return Math.min(pixelRatio, mobileCap);
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
@@ -853,16 +1184,28 @@ export default class GameRenderer {
   }
 
   private getLabelRenderIntervalMs(view?: CameraView): number {
-    switch (view) {
-      case CameraView.Close:
-        return 0;
-      case CameraView.Medium:
-        return 33;
-      case CameraView.Far:
-        return 100;
-      default:
-        return 33;
+    const baseInterval = (() => {
+      switch (view) {
+        case CameraView.Close:
+          return 0;
+        case CameraView.Medium:
+          return 33;
+        case CameraView.Far:
+          return 100;
+        default:
+          return 33;
+      }
+    })();
+
+    if (!this.isMobileDevice) {
+      return baseInterval;
     }
+
+    if (baseInterval === 0) {
+      return 33;
+    }
+
+    return Math.round(baseInterval * 1.5);
   }
 
   private shouldRenderLabels(now: number): boolean {
@@ -930,9 +1273,13 @@ export default class GameRenderer {
     this.lastTime = currentTime;
 
     if (this.stats) this.stats.update();
+
     if (this.controls) {
       this.controls.update();
     }
+    // Reset renderer stats at start of frame (since autoReset is disabled)
+    this.renderer.info.reset();
+
     // Clear the renderer at the start of each frame
     this.renderer.clear();
 
@@ -963,6 +1310,9 @@ export default class GameRenderer {
     if (shouldRenderLabels) {
       this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     }
+
+    // Capture stats sample AFTER rendering (to get accurate draw call/triangle counts)
+    this.captureStatsSample();
 
     requestAnimationFrame(() => {
       this.animate();
@@ -1056,6 +1406,17 @@ export default class GameRenderer {
         this.labelRendererElement.replaceChildren();
       }
 
+      // Clean up stats recording
+      if (this.statsRecordingIndicator) {
+        this.statsRecordingIndicator.remove();
+      }
+      const pulseStyle = document.getElementById("stats-recording-pulse");
+      if (pulseStyle) pulseStyle.remove();
+      const keyHandler = (this as any)._statsRecordingKeyHandler;
+      if (keyHandler) {
+        window.removeEventListener("keydown", keyHandler);
+      }
+
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {
       console.error("Error during GameRenderer cleanup:", error);
@@ -1074,7 +1435,7 @@ export default class GameRenderer {
     this.lastAppliedQuality = { ...features };
 
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
-    const resolvedPixelRatio = Math.min(devicePixelRatio, features.pixelRatio);
+    const resolvedPixelRatio = this.resolvePixelRatio(Math.min(devicePixelRatio, features.pixelRatio));
     this.renderer.setPixelRatio(resolvedPixelRatio);
     this.renderer.shadowMap.enabled = features.shadows;
 

@@ -3113,11 +3113,7 @@
       "init_calldata": [],
       "tag": "pm-DojoOracle",
       "selector": "0x325f2f5ccff99a5f8cedf57a22277d5233555f1ef2cdd9f9721243acdae0683",
-      "systems": [
-        "assert_valid_create_market",
-        "resolve",
-        "upgrade"
-      ]
+      "systems": ["assert_valid_create_market", "resolve", "upgrade"]
     },
     {
       "address": "0x6b77382d2b08c6106e8a04048991fdde1aec7feb762128c1e241b75fbc3578f",
@@ -3435,13 +3431,7 @@
       "init_calldata": [],
       "tag": "pm-DojoOracleStorageMock",
       "selector": "0x5cf8ba9d71face6bfd758b769b32d547de3daa140cd6ccb134f45e07159124c",
-      "systems": [
-        "next_season",
-        "set_season_winner",
-        "get_season_winner",
-        "set_value",
-        "upgrade"
-      ]
+      "systems": ["next_season", "set_season_winner", "get_season_winner", "set_value", "upgrade"]
     },
     {
       "address": "0x6d4c915dc309788dc1716322c9ead23705c6b83319d1ddc59eace5c69634ed1",
@@ -3696,10 +3686,7 @@
       "init_calldata": [],
       "tag": "pm-EkuboOracleExtensionMock",
       "selector": "0x576aafd560a32b51f1ce25379f77bcc5456f52b464e3ef5dbb844cb21c8b2ae",
-      "systems": [
-        "set_price_x128_over_period",
-        "upgrade"
-      ]
+      "systems": ["set_price_x128_over_period", "upgrade"]
     },
     {
       "address": "0x5e578b7bb560cdae64708ba2f354fcb610a844526097d7168809d49a018ebfd",
@@ -4324,17 +4311,10 @@
           ]
         }
       ],
-      "init_calldata": [
-        "0x0"
-      ],
+      "init_calldata": ["0x0"],
       "tag": "pm-EkuboPriceOverPeriodOracle",
       "selector": "0x43b3665be6a2048ec9d9df7910edca89d5404bdb4dc8bb14acad5cb3ee4d99e",
-      "systems": [
-        "dojo_init",
-        "assert_valid_create_market",
-        "resolve",
-        "upgrade"
-      ]
+      "systems": ["dojo_init", "assert_valid_create_market", "resolve", "upgrade"]
     },
     {
       "address": "0x1d2b6e5a030a8af64587c80ebdcb7a8a6be71902d4f4c32617674c7221f70aa",
@@ -5609,13 +5589,7 @@
           ]
         }
       ],
-      "init_calldata": [
-        "0x0",
-        "30",
-        "5000",
-        "1000",
-        "5000"
-      ],
+      "init_calldata": ["0x0", "30", "5000", "1000", "5000"],
       "tag": "pm-Markets",
       "selector": "0x9ae1ef464c23ac946ee13741cb5a53e81961ad7603dab2284fa7bbca00d16e",
       "systems": [
@@ -6074,14 +6048,7 @@
       "init_calldata": [],
       "tag": "pm-MockLORDS",
       "selector": "0x6a872380d85f8646e6b2f0dbb150f7a4b73ceed010beca4d0b986038b1a7b26",
-      "systems": [
-        "dojo_init",
-        "mint",
-        "upgrade",
-        "transfer",
-        "transfer_from",
-        "approve"
-      ]
+      "systems": ["dojo_init", "mint", "upgrade", "transfer", "transfer_from", "approve"]
     },
     {
       "address": "0x4822079e710e591befb703dbbb81e8f1da8e0cc86cc78c8871a264615e7d75f",
@@ -6531,14 +6498,7 @@
       "init_calldata": [],
       "tag": "pm-MockTBTC",
       "selector": "0x6a231ece6c093f67cd500b31483a16254b44a927b374e072d763548f7df6288",
-      "systems": [
-        "dojo_init",
-        "mint",
-        "upgrade",
-        "transfer",
-        "transfer_from",
-        "approve"
-      ]
+      "systems": ["dojo_init", "mint", "upgrade", "transfer", "transfer_from", "approve"]
     },
     {
       "address": "0x1b7b0afa2dec6389c4db694810f53deb49b5749502bf639b50271b339dad1d4",
@@ -6977,14 +6937,7 @@
       "init_calldata": [],
       "tag": "pm-MockUSDC",
       "selector": "0x157424c1b341f7237b2d5e7b0fa5a08520da6f3d19b5b949a3869ee4e3d8382",
-      "systems": [
-        "dojo_init",
-        "mint",
-        "upgrade",
-        "transfer",
-        "transfer_from",
-        "approve"
-      ]
+      "systems": ["dojo_init", "mint", "upgrade", "transfer", "transfer_from", "approve"]
     },
     {
       "address": "0x773dac55fc2366cd770075b7aae8e4074da2aef299ea4d6e8539b1153f1776",
@@ -7423,14 +7376,7 @@
       "init_calldata": [],
       "tag": "pm-MockWBTC",
       "selector": "0x443ffed90de1e59d323b654445e00a8efe34e88bdeb684a7a770f2e9817da70",
-      "systems": [
-        "dojo_init",
-        "mint",
-        "upgrade",
-        "transfer",
-        "transfer_from",
-        "approve"
-      ]
+      "systems": ["dojo_init", "mint", "upgrade", "transfer", "transfer_from", "approve"]
     },
     {
       "address": "0x693278fb06d7041f884c50cb9d0e2d4620ed16f282cf8c76fddb712ef1060d2",
@@ -8085,11 +8031,7 @@
       "init_calldata": [],
       "tag": "pm-StarknetOracle",
       "selector": "0x4c69343cb6e7be683eb5f48e9dd1131be6ef6169aa678ce31951b9e8bf96966",
-      "systems": [
-        "assert_valid_create_market",
-        "resolve",
-        "upgrade"
-      ]
+      "systems": ["assert_valid_create_market", "resolve", "upgrade"]
     },
     {
       "address": "0x29d220775540033dc56462fcc7d24527d2121eefde783ec84166fb0bc34f57b",

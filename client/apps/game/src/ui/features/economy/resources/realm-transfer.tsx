@@ -25,7 +25,11 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { ChevronDown, Flame, Search, ShieldCheck, X } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Flame from "lucide-react/dist/esm/icons/flame";
+import Search from "lucide-react/dist/esm/icons/search";
+import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
+import X from "lucide-react/dist/esm/icons/x";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
 
@@ -134,8 +138,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       .replace(/[^a-z0-9]/g, "");
   }, [searchTerm]);
   const structuresForTransfer = useMemo(() => {
-    return [...playerStructuresFiltered]
-      .sort((a, b) => {
+    return playerStructuresFiltered
+      .toSorted((a, b) => {
         if (!sortByDistance) {
           return a.name.localeCompare(b.name);
         }

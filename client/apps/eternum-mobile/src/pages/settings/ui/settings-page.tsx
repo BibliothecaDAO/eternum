@@ -7,7 +7,9 @@ import { ModeToggle } from "@/shared/ui/mode-toggle";
 import { Separator } from "@/shared/ui/separator";
 import { useDisconnect } from "@starknet-react/core";
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut, Moon, User } from "lucide-react";
+import LogOut from "lucide-react/dist/esm/icons/log-out";
+import Moon from "lucide-react/dist/esm/icons/moon";
+import User from "lucide-react/dist/esm/icons/user";
 import { useEffect, useState } from "react";
 
 export function SettingsPage() {

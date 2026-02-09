@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -12,7 +12,9 @@ import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+import CirclePlus from "lucide-react/dist/esm/icons/circle-plus";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
@@ -63,10 +65,12 @@ export const ArmyChip = ({
   army,
   className,
   showButtons,
+  currentArmiesTick: currentArmiesTickProp,
 }: {
   army: ArmyInfo;
   className?: string;
   showButtons?: boolean;
+  currentArmiesTick?: number;
 }) => {
   const {
     setup: { components },
@@ -87,7 +91,8 @@ export const ArmyChip = ({
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
 
-  const { currentArmiesTick } = useBlockTimestamp();
+  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
 
   const relicEffects = useMemo(() => {
     return getArmyRelicEffects(army.troops, currentArmiesTick).map((relic) => relic.id);
@@ -134,7 +139,7 @@ export const ArmyChip = ({
         <>
           <Button className="my-2" size="xs" variant="red" onClick={() => setEditMode(!editMode)}>
             <div className="flex flex-row">
-              <LucideArrowRight className="w-4 h-4 rotate-180 mr-1" />
+              <ArrowRight className="w-4 h-4 rotate-180 mr-1" />
               <span> Add Troops</span>
             </div>
           </Button>

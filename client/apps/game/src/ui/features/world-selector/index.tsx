@@ -1,13 +1,14 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { WorldSelectorModal, type WorldSelection } from "./world-selector-modal";
+import type { WorldSelectionInput } from "@/runtime/world";
 
+type WorldSelection = WorldSelectionInput;
+
+/**
+ * Redirects to the landing page for world selection.
+ * The landing page now handles all world selection and registration.
+ */
 export const openWorldSelectorModal = (): Promise<WorldSelection> => {
-  return new Promise((resolve, reject) => {
-    const { setModal } = useUIStore.getState();
-    const handleConfirm = (selection: WorldSelection) => resolve(selection);
-    const handleCancel = () => reject(new Error("World selection cancelled"));
-    setModal(<WorldSelectorModal onConfirm={handleConfirm} onCancel={handleCancel} />, true);
-  });
+  // Redirect to landing page instead of opening a modal
+  window.location.href = "/";
+  // Return a never-resolving promise since we're navigating away
+  return new Promise(() => {});
 };
-
-export type { WorldSelection } from "./world-selector-modal";

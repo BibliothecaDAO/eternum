@@ -5,6 +5,7 @@ use dojo::world::WorldStorage;
 use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
+use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 use crate::utils::random::VRFImpl;
@@ -56,6 +57,7 @@ pub struct WorldConfig {
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub victory_points_win_config: VictoryPointsWinConfig,
     pub factory_address: ContractAddress,
+    pub mmr_config: MMRConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]

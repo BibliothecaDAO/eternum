@@ -13,7 +13,7 @@ import {
 /**
  * Time of day periods for particle behavior
  */
-export enum TimeOfDay {
+enum TimeOfDay {
   DAWN = 0, // 5-7 AM - transitioning
   DAY = 1, // 7 AM - 5 PM - dust motes
   DUSK = 2, // 5-8 PM - fireflies emerge

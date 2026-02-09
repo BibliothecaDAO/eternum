@@ -27,7 +27,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useMemo, useState } from "react";
 import { RelicActivationDrawer } from "../../relic-activation/ui/relic-activation-drawer";
 
@@ -167,8 +167,8 @@ export const ArmyEntityDetail = ({
     });
 
     return {
-      regularResources: regular.sort((a, b) => b.amount - a.amount),
-      relics: relicList.sort((a, b) => b.amount - a.amount),
+      regularResources: regular.toSorted((a, b) => b.amount - a.amount),
+      relics: relicList.toSorted((a, b) => b.amount - a.amount),
     };
   }, [explorerResources]);
 

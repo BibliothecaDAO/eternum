@@ -4,11 +4,10 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getCrateName, getTileAt, DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
+import { DEFAULT_COORD_ALT, getCrateName, getTileAt } from "@bibliothecadao/eternum";
 import { useComponentSystem, useDojo } from "@bibliothecadao/react";
 import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue, isComponentUpdate } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

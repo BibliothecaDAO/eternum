@@ -3,7 +3,7 @@ import {
   ActionPaths,
   ActionType,
   ExplorerRewardSystemUpdate,
-  getFeltCenterOffset,
+  FELT_CENTER,
   Position,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
@@ -11,11 +11,10 @@ import { DojoResult } from "@bibliothecadao/react";
 import { ActorType, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
-import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManager } from "../../entity-managers";
+import { ArmyManager, BiomesManager, ChestManager, StructureManager } from "../../entity-managers";
 import { FXManager } from "../../managers/fx-manager";
 import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
-import { RelicEffectsManager } from "../../managers/relic-effects-manager";
 import { ResourceFXManager } from "../../managers/resource-fx-manager";
 import { SelectionManager } from "../../managers/selection-manager";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
@@ -43,10 +42,8 @@ export class HexagonMap {
   private highlightRenderer!: HighlightRenderer;
   private armyManager!: ArmyManager;
   private structureManager!: StructureManager;
-  private questManager!: QuestManager;
   private chestManager!: ChestManager;
   private selectionManager!: SelectionManager;
-  private relicEffectsManager!: RelicEffectsManager;
 
   // === HEX STATE ===
   private allHexes: Set<string> = new Set();
@@ -115,12 +112,8 @@ export class HexagonMap {
       // Refresh biome tiles when structures are updated
       this.biomesManager.refreshTileVisibility();
     });
-    this.questManager = new QuestManager(this.scene);
     this.chestManager = new ChestManager(this.scene);
-    this.relicEffectsManager = new RelicEffectsManager(this.fxManager);
-
     this.armyManager.setDependencies(this.dojo, this.fxManager, this.biomesManager.getExploredTiles());
-    this.relicEffectsManager.setUnitTileRenderer(this.armyManager.getUnitTileRenderer());
     this.structureManager.setDependencies(this.dojo, this.biomesManager.getExploredTiles());
 
     // Set up the callback for biomes manager to check for structures
@@ -131,7 +124,6 @@ export class HexagonMap {
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyManager);
     this.selectionManager.registerObjectRenderer("structure", this.structureManager);
-    this.selectionManager.registerObjectRenderer("quest", this.questManager);
     this.selectionManager.registerObjectRenderer("chest", this.chestManager);
   }
 
@@ -139,27 +131,14 @@ export class HexagonMap {
     this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
     this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
     this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
-    this.systemManager.Army.onDeadArmy((entityId) =>
-      this.armyManager.deleteArmy(entityId, (id) => this.relicEffectsManager.clearEntityRelicEffects(id)),
-    );
+    this.systemManager.Army.onDeadArmy((entityId) => this.armyManager.deleteArmy(entityId));
     this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
     this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
     this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
       this.structureManager.handleBuildingUpdate(update),
     );
-    this.systemManager.Structure.onContribution((value) => this.structureManager.handleContributionUpdate(value));
-    this.systemManager.Quest.onTileUpdate((update) => this.questManager.handleSystemUpdate(update));
     this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
     this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
-    this.systemManager.RelicEffect.onExplorerTroopsUpdate(async (update) =>
-      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.armyManager.getArmyPosition(id)),
-    );
-    this.systemManager.RelicEffect.onStructureGuardUpdate((update) =>
-      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
-    );
-    this.systemManager.RelicEffect.onStructureProductionUpdate((update) =>
-      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
-    );
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
   }
 
@@ -209,7 +188,6 @@ export class HexagonMap {
     await this.biomesManager.ensureMaterialsReady();
     await this.structureManager.ensureMaterialsReady();
     await this.armyManager.ensureMaterialsReady();
-    await this.questManager.ensureMaterialsReady();
     await this.chestManager.ensureMaterialsReady();
   }
 
@@ -415,7 +393,6 @@ export class HexagonMap {
     this.biomesManager.setVisibleBounds(bounds);
     this.armyManager.setVisibleBounds(bounds);
     this.structureManager.setVisibleBounds(bounds);
-    this.questManager.setVisibleBounds(bounds);
     this.chestManager.setVisibleBounds(bounds);
     console.log(`[RENDER-TIMING] Update bounds: ${(performance.now() - boundsUpdateStartTime).toFixed(2)}ms`);
   }
@@ -555,9 +532,6 @@ export class HexagonMap {
         console.log(`Help action at (${col}, ${row})`);
         this.handleHelpAction(actionPath, selectedObject.id);
         break;
-      case ActionType.Quest:
-        console.log(`Quest action at (${col}, ${row})`);
-        break;
       case ActionType.Chest:
         console.log(`Chest action at (${col}, ${row})`);
         this.chestManager.handleChestAction(selectedObject.id, actionPath, this.store);
@@ -575,7 +549,6 @@ export class HexagonMap {
     const normalized = position.getNormalized();
     const armyInfo = this.armyManager.getArmyHexes().get(normalized.x)?.get(normalized.y);
     const structureInfo = this.structureManager.getStructureHexes().get(normalized.x)?.get(normalized.y);
-    const questInfo = this.questManager.getQuestHexes().get(normalized.x)?.get(normalized.y);
     const chestInfo = this.chestManager.getChestHexes().get(normalized.x)?.get(normalized.y);
 
     return {
@@ -587,9 +560,6 @@ export class HexagonMap {
             (obj): obj is NonNullable<typeof obj> => obj !== undefined,
           )
         : [],
-      quests: questInfo
-        ? [this.questManager.getObject(questInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
-        : [],
       chests: chestInfo
         ? [this.chestManager.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
         : [],
@@ -597,14 +567,12 @@ export class HexagonMap {
   }
 
   private selectHexEntity(entityInfo: any, col: number, row: number): void {
-    const { armies, structures, quests, chests } = entityInfo;
+    const { armies, structures, chests } = entityInfo;
 
     if (armies.length > 0) {
       this.handleArmyHexClick(armies[0], col, row);
     } else if (structures.length > 0) {
       this.handleStructureHexClick(structures[0], col, row);
-    } else if (quests.length > 0) {
-      this.handleQuestHexClick(quests[0], col, row);
     } else if (chests.length > 0) {
       this.handleChestHexClick();
     } else {
@@ -619,7 +587,6 @@ export class HexagonMap {
       row,
       this.store,
       this.structureManager.getStructureHexes(),
-      this.questManager.getQuestHexes(),
       this.chestManager.getChestHexes(),
     );
 
@@ -641,14 +608,6 @@ export class HexagonMap {
     if (result.shouldSelect && result.actionPaths) {
       this.selectionManager.selectObject(structure.id, "structure", col, row);
       this.selectionManager.setActionPaths(result.actionPaths);
-    }
-  }
-
-  private handleQuestHexClick(quest: any, col: number, row: number): void {
-    const result = this.questManager.handleHexClick(quest.id, col, row, this.store);
-
-    if (result.shouldSelect) {
-      this.selectionManager.selectObject(quest.id, "quest", col, row);
     }
   }
 
@@ -776,9 +735,6 @@ export class HexagonMap {
   }
 
   public dispose(): void {
-    // Clean up relic effects
-    this.relicEffectsManager.dispose();
-
     // Clean up resource FX manager
     this.resourceFXManager.destroy();
 
@@ -803,7 +759,6 @@ export class HexagonMap {
     this.highlightRenderer.dispose();
     this.armyManager.dispose();
     this.structureManager.dispose();
-    this.questManager.dispose();
     this.chestManager.dispose();
     this.selectionManager.dispose();
 
@@ -843,9 +798,9 @@ export class HexagonMap {
   }
 
   private async computeTileEntities(chunkKey: string) {
-    const FELT_CENTER = getFeltCenterOffset();
-    const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
-    const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
+    const feltCenter = FELT_CENTER();
+    const startCol = parseInt(chunkKey.split(",")[1]) + feltCenter;
+    const startRow = parseInt(chunkKey.split(",")[0]) + feltCenter;
 
     const range = this.chunkLoadRadiusX * HexagonMap.CHUNK_SIZE;
 
@@ -950,11 +905,6 @@ export class HexagonMap {
 
       this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row);
     }, 500);
-  }
-
-  private getStructurePosition(structureId: number): { col: number; row: number } | undefined {
-    const structure = this.structureManager.getObject(structureId);
-    return structure ? { col: structure.col, row: structure.row } : undefined;
   }
 
   /**

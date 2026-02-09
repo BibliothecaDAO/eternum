@@ -20,7 +20,7 @@ export interface BoundsDescriptor {
   additionalClauses?: Clause[];
 }
 
-export interface ToriiStreamManagerConfig {
+interface ToriiStreamManagerConfig {
   client: ToriiClient;
   setup: SetupResult;
   logging?: boolean;
@@ -81,7 +81,6 @@ export class ToriiStreamManager {
   private readonly setup: SetupResult;
   private readonly logging: boolean;
   private currentSubscription: { cancel: () => void } | null = null;
-  private globalSubscription: { cancel: () => void } | null = null;
   private pendingSwitch: Promise<void> | null = null;
   private clauseBuilder: (descriptor: BoundsDescriptor) => Clause | null;
   private currentSignature: string | null = null;
@@ -130,28 +129,10 @@ export class ToriiStreamManager {
     this.currentSubscription = subscription;
   }
 
-  async setGlobalModels(models: GlobalModelStreamConfig[]): Promise<void> {
-    if (!models.length) {
-      this.cancelGlobalSubscription();
-      return;
-    }
-
-    const clause = buildModelKeysClause(models);
-    this.cancelGlobalSubscription();
-    this.globalSubscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging);
-  }
-
   cancelCurrentSubscription() {
     if (this.currentSubscription) {
       this.currentSubscription.cancel();
       this.currentSubscription = null;
-    }
-  }
-
-  private cancelGlobalSubscription() {
-    if (this.globalSubscription) {
-      this.globalSubscription.cancel();
-      this.globalSubscription = null;
     }
   }
 
@@ -163,11 +144,10 @@ export class ToriiStreamManager {
 
   shutdown() {
     this.cancelCurrentSubscription();
-    this.cancelGlobalSubscription();
   }
 }
 
-const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
+export const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
   const grouped = models.reduce<
     Map<
       string,

@@ -19,7 +19,7 @@ export const usePlayerStructures = (playerAddress?: ContractAddress) => {
     return entities
       .map((id) => getStructure(id, ContractAddress(account.address), components))
       .filter((value) => Boolean(value))
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         // First sort by category
         const categoryDiff = (a?.structure?.base?.category ?? 0) - (b?.structure?.base?.category ?? 0);
         if (categoryDiff !== 0) return categoryDiff;

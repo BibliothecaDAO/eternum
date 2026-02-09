@@ -1,6 +1,9 @@
 import { ROUTES } from "@/shared/consts/routes";
 import { Link, useMatches } from "@tanstack/react-router";
-import { Home, Map, MessageCircle, Settings } from "lucide-react";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import Home from "lucide-react/dist/esm/icons/home";
+import Map from "lucide-react/dist/esm/icons/map";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 
 export const Footer = () => {
   const matches = useMatches();
@@ -34,6 +37,18 @@ export const Footer = () => {
         </Link>
 
         <Link
+          to={ROUTES.REALM}
+          className={`flex flex-col items-center justify-center min-w-0 flex-1 py-2 rounded-xl transition-all duration-200 ${
+            currentPath === ROUTES.REALM
+              ? "text-primary bg-primary/10"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <Castle size={22} className="mb-1" />
+          <span className="text-xs font-medium">Realm</span>
+        </Link>
+
+        <Link
           to={ROUTES.CHAT}
           className={`flex flex-col items-center justify-center min-w-0 flex-1 py-2 rounded-xl transition-all duration-200 ${
             currentPath === ROUTES.CHAT
@@ -43,18 +58,6 @@ export const Footer = () => {
         >
           <MessageCircle size={22} className="mb-1" />
           <span className="text-xs font-medium">Chat</span>
-        </Link>
-
-        <Link
-          to={ROUTES.SETTINGS}
-          className={`flex flex-col items-center justify-center min-w-0 flex-1 py-2 rounded-xl transition-all duration-200 ${
-            currentPath === ROUTES.SETTINGS
-              ? "text-primary bg-primary/10"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          }`}
-        >
-          <Settings size={22} className="mb-1" />
-          <span className="text-xs font-medium">Settings</span>
         </Link>
       </div>
     </nav>

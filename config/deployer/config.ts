@@ -1433,6 +1433,74 @@ export const setFactoryAddress = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Blitz factory address set `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
+export const setMMRConfig = async (config: Config) => {
+  // Read MMR config from configuration
+  // Note: initial_mmr and min_mmr are handled by the token contract, not the game contract
+  const mmrConfig = (config.config as any)?.mmr as
+    | {
+        enabled: boolean;
+        mmr_token_address: string;
+        distribution_mean?: number;
+        spread_factor?: number;
+        max_delta?: number;
+        k_factor?: number;
+        lobby_split_weight_scaled?: number;
+        mean_regression_scaled?: number;
+        min_players?: number;
+      }
+    | undefined;
+  if (!mmrConfig) {
+    console.log(chalk.gray("    ↪ No mmr config found; skipping MMR configuration"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  🎯 MMR Configuration
+  ═════════════════════`),
+  );
+
+  // Use defaults from the spec if not provided
+  const enabled = mmrConfig.enabled ?? false;
+  const mmr_token_address = mmrConfig.mmr_token_address ?? "0x0";
+  const distribution_mean = mmrConfig.distribution_mean ?? 1500;
+  const spread_factor = mmrConfig.spread_factor ?? 450;
+  const max_delta = mmrConfig.max_delta ?? 45;
+  const k_factor = mmrConfig.k_factor ?? 50;
+  const lobby_split_weight_scaled = mmrConfig.lobby_split_weight_scaled ?? 2500;
+  const mean_regression_scaled = mmrConfig.mean_regression_scaled ?? 150;
+  const min_players = mmrConfig.min_players ?? 6;
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("MMR Parameters")}
+    │  ${chalk.gray("Enabled:")} ${chalk.white(enabled)}
+    │  ${chalk.gray("Token Address:")} ${chalk.white(shortHexAddress(mmr_token_address))}
+    │  ${chalk.gray("Distribution Mean:")} ${chalk.white(distribution_mean)}
+    │  ${chalk.gray("Spread Factor:")} ${chalk.white(spread_factor)}
+    │  ${chalk.gray("Max Delta:")} ${chalk.white(max_delta)}
+    │  ${chalk.gray("K Factor:")} ${chalk.white(k_factor)}
+    │  ${chalk.gray("Lobby Split Weight:")} ${chalk.white(lobby_split_weight_scaled / 10000)}
+    │  ${chalk.gray("Mean Regression:")} ${chalk.white(mean_regression_scaled / 10000)}
+    │  ${chalk.gray("Min Players:")} ${chalk.white(min_players)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_mmr_config({
+    signer: config.account,
+    enabled,
+    mmr_token_address,
+    distribution_mean,
+    spread_factor,
+    max_delta,
+    k_factor,
+    lobby_split_weight_scaled,
+    mean_regression_scaled,
+    min_players,
+  });
+  console.log(chalk.green(`\n    ✔ MMR configured `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
 export const setVictoryPointsConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`

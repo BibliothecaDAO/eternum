@@ -4,7 +4,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { ArmyManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { GUARD_SLOT_NAMES, ID, Troops } from "@bibliothecadao/types";
-import { MinusIcon } from "lucide-react";
+import MinusIcon from "lucide-react/dist/esm/icons/minus";
 import { useCallback, useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { ArmyCreate } from "./army-management-card";
@@ -63,7 +63,7 @@ export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   );
 };
 
-export const StructureDefence = ({
+const StructureDefence = ({
   maxDefenses,
   troops,
   cooldownSlots,

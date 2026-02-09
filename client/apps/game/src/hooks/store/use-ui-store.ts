@@ -168,8 +168,6 @@ interface UIStore {
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
   // camera follow
-  followArmyMoves: boolean;
-  setFollowArmyMoves: (follow: boolean) => void;
   followArmyCombats: boolean;
   setFollowArmyCombats: (follow: boolean) => void;
   isFollowingArmy: boolean;
@@ -311,10 +309,6 @@ export const useUIStore = create(
       localStorage.setItem("useSimpleCost", String(useSimpleCost));
     },
     // camera follow
-    followArmyMoves: false,
-    setFollowArmyMoves: (follow: boolean) => {
-      set({ followArmyMoves: follow });
-    },
     followArmyCombats: false,
     setFollowArmyCombats: (follow: boolean) => {
       set({ followArmyCombats: follow });

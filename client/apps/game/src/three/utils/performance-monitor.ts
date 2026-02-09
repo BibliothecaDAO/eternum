@@ -343,12 +343,12 @@ class PerformanceMonitorImpl {
 export const PerformanceMonitor = PerformanceMonitorImpl.getInstance();
 
 // Export helper for wrapping methods
-export function instrumentMethod<T extends (...args: any[]) => any>(name: string, fn: T): T {
+function instrumentMethod<T extends (...args: any[]) => any>(name: string, fn: T): T {
   return PerformanceMonitor.wrap(name, fn);
 }
 
 // Export decorator for class methods
-export function instrument(name?: string) {
+function instrument(name?: string) {
   return function (_target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
     const metricName = name || propertyKey;

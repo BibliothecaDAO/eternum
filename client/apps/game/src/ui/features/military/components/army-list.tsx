@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 
@@ -7,12 +8,14 @@ import { Guard } from "@bibliothecadao/torii";
 import { ClientComponents, StructureType, Troops } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, Sword } from "lucide-react";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Sword from "lucide-react/dist/esm/icons/sword";
 import { useMemo } from "react";
 import { ArmyChip } from "./army-chip";
 import { CompactDefenseDisplay } from "./compact-defense-display";
 
 export const ArmyList = ({ structure }: { structure: ComponentValue<ClientComponents["Structure"]["schema"]> }) => {
+  const { currentArmiesTick } = useBlockTimestamp();
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureId = Number(structure?.entity_id ?? 0);
 
@@ -172,7 +175,13 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
             </span>
           </div>
           {explorers.map((army) => (
-            <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
+            <ArmyChip
+              key={army.entityId}
+              className="w-full"
+              army={army}
+              showButtons
+              currentArmiesTick={currentArmiesTick}
+            />
           ))}
         </div>
       </div>

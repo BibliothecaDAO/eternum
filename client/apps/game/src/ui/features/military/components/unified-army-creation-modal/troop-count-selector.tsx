@@ -1,6 +1,6 @@
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { AlertTriangle } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 
 interface TroopCountSelectorProps {
   troopCount: number;

@@ -12,7 +12,7 @@ import {
   getArmy,
   getBlockTimestamp,
   getEntityIdFromKeys,
-  getFeltCenterOffset,
+  FELT_CENTER,
   getGuardsByStructure,
   getRemainingCapacityInKg,
   StaminaManager,
@@ -33,7 +33,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { Loader2 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { useEffect, useMemo, useState } from "react";
 import { AttackTarget, TargetType } from "../model/types";
 
@@ -412,11 +412,11 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     console.log("selectedHex:", selectedHex);
     console.log("targetHex:", targetHex);
 
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
-      col: selectedHex.col + FELT_CENTER,
-      row: selectedHex.row + FELT_CENTER,
+      col: selectedHex.col + feltCenter,
+      row: selectedHex.row + feltCenter,
     };
     const normalizedTargetHex = {
       col: targetHex.x,
@@ -458,11 +458,11 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       return;
     }
 
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
-      col: selectedHex.col + FELT_CENTER,
-      row: selectedHex.row + FELT_CENTER,
+      col: selectedHex.col + feltCenter,
+      row: selectedHex.row + feltCenter,
     };
     const normalizedTargetHex = {
       col: targetHex.x,
@@ -498,11 +498,11 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       return;
     }
 
-    const FELT_CENTER = getFeltCenterOffset();
+    const feltCenter = FELT_CENTER();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
-      col: selectedHex.col + FELT_CENTER,
-      row: selectedHex.row + FELT_CENTER,
+      col: selectedHex.col + feltCenter,
+      row: selectedHex.row + feltCenter,
     };
     const normalizedTargetHex = {
       col: targetHex.x,

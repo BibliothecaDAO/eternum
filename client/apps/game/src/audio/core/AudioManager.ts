@@ -541,6 +541,6 @@ export class AudioManager {
     this.musicSources.clear();
     this.musicGainNodes.clear();
     this.sourceGainNodes.clear();
-    AudioManager.instance = null as any;
+    AudioManager.instance = null as unknown as AudioManager;
   }
 }

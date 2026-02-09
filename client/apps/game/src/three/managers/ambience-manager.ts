@@ -4,7 +4,7 @@ import { WeatherType } from "./weather-manager";
 /**
  * Time of day periods for ambient sounds
  */
-export enum TimeOfDay {
+enum TimeOfDay {
   NIGHT = "night", // 0-12.5, 87.5-100
   DAWN = "dawn", // 12.5-25
   DAY = "day", // 25-62.5

@@ -1,6 +1,6 @@
 import { RELICS, RelicInfo, ResourcesIds } from "@bibliothecadao/types";
 
-export interface RelicBonusSummary {
+interface RelicBonusSummary {
   damageMultiplier: number;
   damageBonusPercent: number;
   damageRelic?: RelicInfo;

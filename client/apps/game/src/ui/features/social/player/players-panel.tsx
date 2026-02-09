@@ -3,11 +3,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import type { LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
+import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
 import {
   MIN_REFRESH_INTERVAL_MS,
   useLandingLeaderboardStore,
-} from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+} from "@/services/leaderboard/use-landing-leaderboard-store";
 import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
@@ -15,7 +15,9 @@ import { getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum"
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import Search from "lucide-react/dist/esm/icons/search";
 import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 // TODO: big limit for now, we need to paginate this
@@ -89,11 +91,12 @@ export const PlayersPanel = ({
 
   useEffect(() => {
     void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT });
-  }, [fetchLeaderboardEntries]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch on initial mount - store handles caching/staleness
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order
-    const sortedPlayers = [...players].sort((a, b) => (b.points || 0) - (a.points || 0));
+    const sortedPlayers = players.toSorted((a, b) => (b.points || 0) - (a.points || 0));
 
     const playersWithStructures = sortedPlayers
       // filter out players with no address
