@@ -9,6 +9,20 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-09",
+    title: "In-Game Leaderboard Live Updates",
+    description:
+      "Hyperstructure leaderboard points now refresh automatically while you play, so rankings stay current without reloading or switching tabs.",
+    type: "fix",
+  },
+  {
+    date: "2026-02-09",
+    title: "Auto-Refreshing MMR Leaderboard",
+    description:
+      "The Ranked leaderboard now refreshes automatically in the background, so standings update without needing to click Refresh.",
+    type: "fix",
+  },
+  {
     date: "2026-02-05",
     title: "New Landing Experience",
     description:

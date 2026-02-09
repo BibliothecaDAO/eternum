@@ -11,8 +11,10 @@ import { getAddressName, LeaderboardManager, toHexString } from "@bibliothecadao
 import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
+
+const LEADERBOARD_AUTO_REFRESH_INTERVAL_MS = 30_000;
 
 export const Leaderboard = ({
   hyperstructureEntityId,
@@ -26,13 +28,14 @@ export const Leaderboard = ({
     account: { account },
     setup: { components },
   } = dojo;
+  const [, setRefreshTick] = useState(0);
 
-  const playerPointsLeaderboard = useMemo(() => {
+  const playerPointsLeaderboard = (() => {
     const leaderboardManager = LeaderboardManager.instance(dojo.setup.components, getRealmCountPerHyperstructure());
     const cachedPlayersByRank = leaderboardManager.playersByRank;
 
     // Calculate real-time points for each player including unregistered shareholder points
-    const playersWithRealTimePoints = cachedPlayersByRank.map(([address, cachedPoints]) => {
+    const playersWithRealTimePoints = cachedPlayersByRank.map(([address]) => {
       // Get only registered points to avoid double-counting
       const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(address);
       const unregisteredShareholderPoints =
@@ -43,8 +46,8 @@ export const Leaderboard = ({
     });
 
     // Sort by real-time total points
-    return playersWithRealTimePoints.toSorted(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
-  }, [dojo.setup.components]);
+    return playersWithRealTimePoints.toSorted(([, pointsA], [, pointsB]) => pointsB - pointsA);
+  })();
 
   const playerAddresses = useMemo(
     () => playerPointsLeaderboard.map(([address]) => toHexString(address)),
@@ -78,11 +81,21 @@ export const Leaderboard = ({
     sort: "none",
   });
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setRefreshTick((previous) => previous + 1);
+    }, LEADERBOARD_AUTO_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   const isOwner = useMemo(() => {
     const owner = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]))?.owner;
     if (!owner) return false;
     return ContractAddress(owner) === ContractAddress(account.address);
-  }, [hyperstructureEntityId]);
+  }, [hyperstructureEntityId, components.Structure, account.address]);
 
   return hyperstructure ? (
     <>
