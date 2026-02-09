@@ -41,19 +41,29 @@ export const usePlayerStructureSync = () => {
   );
 
   const accountAddress = useAccountStore().account?.address;
-  const toriiComponents = contractComponents as Parameters<typeof getStructuresDataFromTorii>[1];
+  const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
+  const structureEntityIdsRef = useRef<ReadonlySet<number>>(new Set());
+  const isBackfillRunning = useRef(false);
+
+  useEffect(() => {
+    structureEntityIdsRef.current = new Set(structureEntityIds);
+  }, [structureEntityIds]);
 
   useEffect(() => {
     syncedStructureIds.current.clear();
     inFlightStructureIds.current.clear();
+    isBackfillRunning.current = false;
   }, [accountAddress]);
 
   // Keep owned structures backfilled into RECS so ownership UI updates even if stream updates are missed.
   useEffect(() => {
-    if (!accountAddress || !toriiClient || !contractComponents) return;
+    if (!accountAddress || !toriiClient || !toriiComponents) return;
     let cancelled = false;
 
     const backfillOwnedStructures = async () => {
+      if (isBackfillRunning.current) return;
+      isBackfillRunning.current = true;
+
       let claimedStructureIds: number[] = [];
       try {
         const ownedStructures = await sqlApi.fetchStructuresByOwner(accountAddress);
@@ -61,7 +71,7 @@ export const usePlayerStructureSync = () => {
 
         const structuresToSync = selectUnsyncedOwnedStructureTargets({
           ownedStructures,
-          currentPlayerStructureIds: new Set(structureEntityIds),
+          currentPlayerStructureIds: structureEntityIdsRef.current,
           inFlightStructureIds: inFlightStructureIds.current,
         });
 
@@ -79,6 +89,7 @@ export const usePlayerStructureSync = () => {
         console.error("[usePlayerStructureSync] Failed to backfill owned structures", error);
       } finally {
         claimedStructureIds.forEach((entityId) => inFlightStructureIds.current.delete(entityId));
+        isBackfillRunning.current = false;
       }
     };
 
@@ -91,11 +102,11 @@ export const usePlayerStructureSync = () => {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [accountAddress, toriiClient, contractComponents, toriiComponents, structureEntityIds]);
+  }, [accountAddress, toriiClient, toriiComponents]);
 
   // Sync newly-seen structures into RECS (e.g. first settlement).
   useEffect(() => {
-    if (!toriiClient || !contractComponents || playerStructures.length === 0) return;
+    if (!toriiClient || !toriiComponents || playerStructures.length === 0) return;
     let cancelled = false;
 
     const structuresToSync = playerStructures
@@ -128,7 +139,7 @@ export const usePlayerStructureSync = () => {
     return () => {
       cancelled = true;
     };
-  }, [playerStructures, toriiClient, contractComponents, toriiComponents]);
+  }, [playerStructures, toriiClient, toriiComponents]);
 
   useEffect(() => {
     const subscribe = async () => {
