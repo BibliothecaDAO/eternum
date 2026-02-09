@@ -1,11 +1,11 @@
 import { getWorldPositionForHex } from "./utils";
 
-export interface ChunkRenderSize {
+interface ChunkRenderSize {
   width: number;
   height: number;
 }
 
-export interface ChunkBounds {
+interface ChunkBounds {
   minCol: number;
   maxCol: number;
   minRow: number;
@@ -48,7 +48,7 @@ export function getRenderBounds(
 /**
  * Compute world-space Box3/Sphere bounds for the render area.
  */
-export function getWorldBoundsForRenderArea(
+function getWorldBoundsForRenderArea(
   startRow: number,
   startCol: number,
   renderSize: ChunkRenderSize,

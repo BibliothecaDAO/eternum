@@ -1,4 +1,5 @@
-import { Loader2, Swords } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Swords from "lucide-react/dist/esm/icons/swords";
 
 interface CombatLoadingProps {
   message?: string;

@@ -1,6 +1,6 @@
 import type { Entity } from "@dojoengine/torii-wasm";
 
-export type SyncWorkerBatch = {
+type SyncWorkerBatch = {
   batchId: number;
   upserts: Entity[];
   deletions: string[];
@@ -15,7 +15,7 @@ type WorkerErrorMessage = { type: "error"; message: string; entityId?: string };
 
 type WorkerMessage = WorkerReadyMessage | WorkerBatchReadyMessage | WorkerLogMessage | WorkerErrorMessage;
 
-export interface ToriiSyncWorkerOptions {
+interface ToriiSyncWorkerOptions {
   batchSize?: number;
   batchIntervalMs?: number;
   warningThreshold?: number;

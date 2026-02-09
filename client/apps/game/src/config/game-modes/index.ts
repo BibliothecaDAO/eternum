@@ -237,7 +237,7 @@ const GAME_MODE_BY_ID: Record<GameModeId, GameModeConfig> = {
   standard: standardConfig,
 };
 
-export const resolveGameModeConfig = (): GameModeConfig => {
+const resolveGameModeConfig = (): GameModeConfig => {
   for (const mode of GAME_MODE_ORDER) {
     if (mode.matches()) {
       return mode;
@@ -250,4 +250,4 @@ export const getGameModeConfig = (): GameModeConfig => resolveGameModeConfig();
 
 export const getGameModeId = (): GameModeId => getGameModeConfig().id;
 
-export const getGameModeConfigById = (id: GameModeId): GameModeConfig => GAME_MODE_BY_ID[id];
+const getGameModeConfigById = (id: GameModeId): GameModeConfig => GAME_MODE_BY_ID[id];

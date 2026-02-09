@@ -58,15 +58,27 @@ export interface LabelStyle {
 }
 
 /**
+ * Stored event handlers for cleanup
+ */
+interface LabelEventHandlers {
+  mouseenter: (e: Event) => void;
+  mouseleave: (e: Event) => void;
+  click: (e: Event) => void;
+  contextmenu: (e: Event) => void;
+}
+
+/**
  * Label instance with Three.js object and metadata
  */
-export interface LabelInstance {
+interface LabelInstance {
   css2dObject: CSS2DObject;
   element: HTMLElement;
   config: LabelConfig;
   data: LabelData;
   isVisible: boolean;
   transitionTimeoutId?: number;
+  /** Stored event handlers for proper cleanup */
+  _eventHandlers?: LabelEventHandlers;
 }
 
 /**
@@ -88,19 +100,19 @@ export interface LabelTypeDefinition<T extends LabelData = LabelData> {
 /**
  * Event types for label interactions
  */
-export type LabelEventType = "mouseenter" | "mouseleave" | "click" | "rightclick" | "update";
+type LabelEventType = "mouseenter" | "mouseleave" | "click" | "rightclick" | "update";
 
 /**
  * Label event handler
  */
-export interface LabelEventHandler {
+interface LabelEventHandler {
   (event: { type: LabelEventType; labelInstance: LabelInstance; originalEvent?: Event }): void;
 }
 
 /**
  * Options for creating a label
  */
-export interface CreateLabelOptions {
+interface CreateLabelOptions {
   /** Override the default configuration */
   config?: Partial<LabelConfig>;
   /** Initial camera view state */
@@ -112,7 +124,7 @@ export interface CreateLabelOptions {
 /**
  * Options for updating labels
  */
-export interface UpdateLabelOptions {
+interface UpdateLabelOptions {
   /** Whether to animate the update */
   animate?: boolean;
   /** Custom transition duration for this update */
@@ -122,7 +134,7 @@ export interface UpdateLabelOptions {
 /**
  * Label manager configuration
  */
-export interface LabelManagerConfig {
+interface LabelManagerConfig {
   /** Three.js group to add labels to */
   labelsGroup: THREE.Group;
   /** Initial camera view */
@@ -138,7 +150,7 @@ export interface LabelManagerConfig {
 /**
  * Camera view transition info
  */
-export interface CameraViewTransition {
+interface CameraViewTransition {
   from: CameraView;
   to: CameraView;
   timestamp: number;

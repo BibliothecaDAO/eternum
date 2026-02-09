@@ -6,7 +6,9 @@ import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
-import { Loader2, Clock3 } from "lucide-react";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
+import Check from "lucide-react/dist/esm/icons/check";
 import { memo, useMemo } from "react";
 
 export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {
@@ -23,7 +25,7 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
     () =>
       arrivals
         .filter((arrival) => arrival.resources.some(Boolean))
-        .sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
+        .toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
     [arrivals],
   );
 
@@ -50,43 +52,58 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
     return null;
   }
 
-  const incomingLabel =
-    arrivalSummaries.length === 1 ? "1 incoming transfer" : `${arrivalSummaries.length} incoming transfers`;
+  const readyCount = arrivalSummaries.filter((s) => s.isReady).length;
+  const pendingCount = arrivalSummaries.length - readyCount;
 
   return (
-    <div className="border border-gold/5 rounded-md bg-gold/5 p-3 flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline gap-2 text-gold">
-        <h6 className="text-base">{structureName}</h6>
-        <span className="text-xs text-gold/70">· {incomingLabel}</span>
+    <div className="rounded-md border border-gold/10 bg-gold/[0.03] overflow-hidden">
+      {/* Structure header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gold/10 bg-gold/[0.04]">
+        <h6 className="text-sm text-gold font-semibold tracking-wide">{structureName}</h6>
+        <div className="flex items-center gap-2">
+          {readyCount > 0 && (
+            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-emerald-400/80">
+              <Check size={10} />
+              {readyCount} ready
+            </span>
+          )}
+          {pendingCount > 0 && (
+            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/50">
+              <Clock3 size={10} />
+              {pendingCount} pending
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      {/* Arrival rows */}
+      <div className="flex flex-col gap-px bg-gold/5">
         {arrivalSummaries.map((summary) => (
-          <div
-            key={summary.id}
-            className="flex items-center gap-3 border border-gold/10 rounded-md px-2 py-2 bg-gold/10 text-gold w-full"
-          >
-            <div className="flex items-center gap-1 text-xs uppercase tracking-wide whitespace-nowrap min-w-[110px]">
+          <div key={summary.id} className="flex items-center gap-3 px-3 py-2 bg-brown/40">
+            {/* Status badge */}
+            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide whitespace-nowrap min-w-[100px]">
               {summary.isReady ? (
                 <>
-                  <Loader2 size={14} className="animate-spin text-emerald-300" />
-                  <span className="text-emerald-300">Auto-claiming…</span>
+                  <Loader2 size={12} className="animate-spin text-emerald-400" />
+                  <span className="text-emerald-400">Claiming</span>
                 </>
               ) : (
                 <>
-                  <Clock3 size={14} className="text-amber-300" />
-                  <span className="text-amber-300">{formatTime(summary.secondsUntilArrival)}</span>
+                  <Clock3 size={12} className="text-gold/60" />
+                  <span className="text-gold/70 tabular-nums">{formatTime(summary.secondsUntilArrival)}</span>
                 </>
               )}
             </div>
-            <div className="flex flex-wrap gap-2 flex-1">
+
+            {/* Resources */}
+            <div className="flex flex-wrap gap-1.5 flex-1">
               {summary.resources.map((resource) => (
                 <ResourceCost
                   key={`${summary.id}-${resource.resourceId}`}
                   type="vertical"
                   size="xs"
                   withTooltip
-                  className="!text-gold bg-gold/15 rounded-md px-1 py-1"
+                  className="!text-gold/90 bg-gold/[0.08] border-gold/10 rounded px-1 py-0.5"
                   resourceId={resource.resourceId}
                   amount={resource.amount}
                 />

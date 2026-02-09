@@ -54,7 +54,7 @@ const sideDirections = (side: number): Direction[] => {
 /**
  * Convert normalized coordinates to contract coordinates
  */
-export const normalizedToContractCoords = (x: number | string, y: number | string): { x: number; y: number } => {
+const normalizedToContractCoords = (x: number | string, y: number | string): { x: number; y: number } => {
   // Convert string values to numbers, defaulting to 0 if empty or just a negative sign
   const normalizedX = typeof x === "string" && (x === "" || x === "-") ? 0 : Number(x);
   const normalizedY = typeof y === "string" && (y === "" || y === "-") ? 0 : Number(y);

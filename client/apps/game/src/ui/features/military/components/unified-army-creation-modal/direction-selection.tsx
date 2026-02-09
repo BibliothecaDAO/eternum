@@ -1,6 +1,6 @@
 import { Direction } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 
 interface DirectionSelectionProps {
   availableDirections: Direction[];

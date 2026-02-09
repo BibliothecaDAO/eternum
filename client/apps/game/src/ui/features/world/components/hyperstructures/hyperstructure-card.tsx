@@ -6,7 +6,7 @@ interface RelationBadge {
   tone?: "ally" | "enemy" | "bandits" | "neutral";
 }
 
-export interface HyperstructureCardProps {
+interface HyperstructureCardProps {
   title: ReactNode;
   relationBadge?: RelationBadge;
   titlePrefix?: ReactNode;

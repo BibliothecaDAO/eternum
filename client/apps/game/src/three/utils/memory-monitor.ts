@@ -10,7 +10,7 @@
 
 import { WebGLRenderer } from "three";
 
-export interface MemoryStats {
+interface MemoryStats {
   // Browser Memory
   usedJSHeapSize: number;
   totalJSHeapSize: number;

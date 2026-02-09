@@ -36,6 +36,7 @@ import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { resolveRenderableBaseModel } from "./army-model-render-policy";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
@@ -666,10 +667,17 @@ export class ArmyModel {
     const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
     const hasActiveCosmetic = desiredCosmeticId !== undefined && this.cosmeticModels.has(desiredCosmeticId);
 
-    const activeBaseModel = hasActiveCosmetic ? null : desiredModelType;
+    const previousRenderableModel = this.activeBaseModelByEntity.get(entityId) ?? null;
+    const activeBaseModel = resolveRenderableBaseModel({
+      hasActiveCosmetic,
+      desiredModel: desiredModelType,
+      previousRenderableModel,
+      isDesiredModelLoaded: desiredModelType !== null && this.models.has(desiredModelType),
+      isPreviousModelLoaded: previousRenderableModel !== null && this.models.has(previousRenderableModel),
+    });
     const activeCosmetic = hasActiveCosmetic ? desiredCosmeticId! : null;
 
-    const prevActiveBaseModel = this.activeBaseModelByEntity.get(entityId) ?? null;
+    const prevActiveBaseModel = previousRenderableModel;
     const prevActiveCosmetic = this.activeCosmeticByEntity.get(entityId) ?? null;
 
     if (prevActiveBaseModel !== activeBaseModel) {
@@ -1848,9 +1856,9 @@ export class ArmyModel {
     });
 
     // Sort by cached distance (avoids repeated raycast calls in comparator)
-    results.sort((a, b) => a.distance - b.distance);
+    const sortedResults = results.toSorted((a, b) => a.distance - b.distance);
 
-    return results;
+    return sortedResults;
   }
 
   /**

@@ -7,7 +7,12 @@ import { fetchMarketOrderEvents } from "@/hooks/services";
 import { formatRelativeTime } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
+import Clock from "lucide-react/dist/esm/icons/clock";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Pencil from "lucide-react/dist/esm/icons/pencil";
+import ShoppingCart from "lucide-react/dist/esm/icons/shopping-cart";
+import Tag from "lucide-react/dist/esm/icons/tag";
+import X from "lucide-react/dist/esm/icons/x";
 import { Suspense, useState } from "react";
 import { formatUnits } from "viem";
 

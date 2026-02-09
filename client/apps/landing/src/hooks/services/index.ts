@@ -175,7 +175,7 @@ export async function fetchCollectionTraits(
   const result = Object.fromEntries(
     Object.entries(traitsMap).map(([key, set]) => [
       key,
-      Array.from(set).sort((a, b) => {
+      Array.from(set).toSorted((a, b) => {
         const na = Number(a);
         const nb = Number(b);
         if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
@@ -635,7 +635,7 @@ export async function fetchPlayerLeaderboard(
     });
   }
 
-  const combinedEntries = [...entriesFromRows, ...additionalEntries].sort(
+  const combinedEntries = [...entriesFromRows, ...additionalEntries].toSorted(
     (a, b) => b.registeredPoints - a.registeredPoints,
   );
 

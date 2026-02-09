@@ -21,7 +21,10 @@ import { useDojo, useHyperstructures } from "@bibliothecadao/react";
 import { ContractAddress, HyperstructureInfo, MERCENARIES } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, Search, Star } from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+import Search from "lucide-react/dist/esm/icons/search";
+import Star from "lucide-react/dist/esm/icons/star";
 import { useCallback, useMemo, useState } from "react";
 import { HyperstructureCard } from "./hyperstructure-card";
 import { HyperstructureList } from "./hyperstructure-list";
@@ -76,7 +79,7 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
         name: mode.structure.getName(hyperstructure.structure).name,
         isFavorite: favorites.includes(Number(hyperstructure.entity_id)),
       }))
-      .sort((a, b) => Number(a.entity_id) - Number(b.entity_id));
+      .toSorted((a, b) => Number(a.entity_id) - Number(b.entity_id));
   }, [hyperstructures, favorites, mode]);
 
   const myGuild = useComponentValue(components.GuildMember, getEntityIdFromKeys([ContractAddress(account.address)]));

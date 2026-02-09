@@ -43,7 +43,7 @@ const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
 /**
  * Extended label data interfaces
  */
-export interface ArmyLabelData extends LabelData {
+interface ArmyLabelData extends LabelData {
   category: TroopType;
   tier: TroopTier;
   isMine: boolean;
@@ -62,7 +62,7 @@ export interface ArmyLabelData extends LabelData {
   battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
-export interface StructureLabelData extends LabelData {
+interface StructureLabelData extends LabelData {
   structureType: StructureType;
   stage: number;
   initialized: boolean;
@@ -83,7 +83,7 @@ export interface StructureLabelData extends LabelData {
 }
 
 // For backward compatibility with existing StructureInfo type
-export interface StructureInfoCompat {
+interface StructureInfoCompat {
   entityId: number;
   structureName: string;
   hexCoords: { col: number; row: number }; // Different from Position
@@ -102,13 +102,8 @@ export interface StructureInfoCompat {
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
 }
 
-export interface ChestLabelData extends LabelData {
+interface ChestLabelData extends LabelData {
   // Chests have minimal data
-}
-
-export interface QuestLabelData extends LabelData {
-  questType: number; // QuestType enum value
-  occupierId: number;
 }
 
 /**
@@ -214,7 +209,7 @@ const attachDirectionIndicators = (
 /**
  * Army label type definition
  */
-export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
+const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
   type: "army",
   defaultConfig: LABEL_TYPE_CONFIGS.ARMY,
 
@@ -472,7 +467,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 /**
  * Structure label type definition
  */
-export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
+const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
   type: "structure",
   defaultConfig: LABEL_TYPE_CONFIGS.STRUCTURE,
 
@@ -930,7 +925,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 /**
  * Chest label type definition
  */
-export const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
+const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
   type: "chest",
   defaultConfig: LABEL_TYPE_CONFIGS.CHEST,
 
@@ -969,53 +964,9 @@ export const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
 };
 
 /**
- * Quest label type definition
- */
-export const QuestLabelType: LabelTypeDefinition<QuestLabelData> = {
-  type: "quest",
-  defaultConfig: {
-    ...LABEL_TYPE_CONFIGS.CHEST, // Similar to chest positioning
-    positionOffset: { x: 0, y: 1.5, z: 0 },
-  },
-
-  createElement: (data: QuestLabelData, inputView: CameraView): HTMLElement => {
-    const cameraView = resolveCameraView(inputView);
-    // Create base label with quest styling
-    const labelDiv = createLabelBase(false, cameraView); // Quests don't have ownership
-
-    // Override text color for quests (gold)
-    labelDiv.style.setProperty("color", "#fbbf24", "important");
-    labelDiv.style.setProperty("background-color", "rgba(251, 191, 36, 0.3)", "important");
-    labelDiv.style.setProperty("border-color", "rgba(245, 158, 11, 0.5)", "important");
-
-    // Add quest icon
-    const img = document.createElement("img");
-    img.src = "/images/labels/quest.png";
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-    img.setAttribute("data-component", "quest-icon");
-    labelDiv.appendChild(img);
-
-    // Create content container
-    const contentContainer = createContentContainer(cameraView);
-
-    // Add quest label
-    const line1 = document.createElement("span");
-    line1.textContent = "Quest";
-    line1.style.color = "inherit";
-    contentContainer.appendChild(line1);
-
-    labelDiv.appendChild(contentContainer.wrapper);
-    return labelDiv;
-  },
-
-  // Quests don't need updates
-  updateElement: undefined,
-};
-
-/**
  * Factory function to create label type definitions with custom configurations
  */
-export function createCustomLabelType<T extends LabelData = LabelData>(
+function createCustomLabelType<T extends LabelData = LabelData>(
   type: string,
   config: Partial<LabelTypeDefinition<T>>,
 ): LabelTypeDefinition<T> {
@@ -1066,8 +1017,4 @@ export const updateStructureLabel = (
 
 export const createChestLabel = (chest: ChestLabelData, cameraView: CameraView): HTMLElement => {
   return ChestLabelType.createElement(chest, cameraView);
-};
-
-export const createQuestLabel = (quest: QuestLabelData, cameraView: CameraView): HTMLElement => {
-  return QuestLabelType.createElement(quest, cameraView);
 };

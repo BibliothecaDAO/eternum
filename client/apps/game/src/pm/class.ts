@@ -20,7 +20,7 @@ export type MarketOutcome = {
   gain: number;
 };
 
-export type MarketClassInterface = Market &
+type MarketClassInterface = Market &
   MarketCreated & { vaultDenominator?: VaultDenominator } & {
     vaultNumerators?: VaultNumerator[];
   } & { odds?: string[] } & { conditionResolution?: ConditionResolution };

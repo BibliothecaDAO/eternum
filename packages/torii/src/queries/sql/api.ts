@@ -505,7 +505,7 @@ export class SqlApi {
           distance: distance,
         };
       })
-      .sort((a, b) => a.distance - b.distance);
+      .toSorted((a, b) => a.distance - b.distance);
   }
 
   /**

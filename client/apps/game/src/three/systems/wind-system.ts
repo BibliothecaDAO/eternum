@@ -16,7 +16,7 @@ import { Vector2 } from "three";
  * - Storm weather increases base speed and gust frequency
  */
 
-export interface WindState {
+interface WindState {
   /** Normalized wind direction (x, z plane) */
   direction: Vector2;
   /** Wind speed 0-1, where 0 = calm, 1 = storm-force */
@@ -56,6 +56,7 @@ export class WindSystem {
   private directionAngle: number = 0;
   private targetDirectionAngle: number = 0;
   private directionChangeTimer: number = 0;
+  private guiDisplayIntervalId?: ReturnType<typeof setInterval>;
 
   private params: WindParams = {
     baseSpeed: 0.15,
@@ -267,7 +268,7 @@ export class WindSystem {
     windFolder.add(displayValues, "effectiveSpeed").name("Effective Speed").listen();
 
     // Update display values periodically
-    setInterval(() => {
+    this.guiDisplayIntervalId = setInterval(() => {
       displayValues.direction = Math.round((this.directionAngle * 180) / Math.PI);
       displayValues.speed = Math.round(this.currentSpeed * 100) / 100;
       displayValues.gustMultiplier = Math.round(this.gustMultiplier * 100) / 100;
@@ -287,6 +288,9 @@ export class WindSystem {
   }
 
   dispose(): void {
-    // Nothing to dispose - no event listeners or resources
+    if (this.guiDisplayIntervalId) {
+      clearInterval(this.guiDisplayIntervalId);
+      this.guiDisplayIntervalId = undefined;
+    }
   }
 }

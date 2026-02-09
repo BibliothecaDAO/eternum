@@ -61,7 +61,7 @@ export const getArmyRelicEffects = (troops: Troops, currentTick: number): RelicE
 };
 
 export const getStructureRelicEffects = (
-  productionBoostBonus: ClientComponents["ProductionBoostBonus"]["schema"],
+  productionBoostBonus: ComponentValue<ClientComponents["ProductionBoostBonus"]["schema"]>,
   currentTick: number,
 ): RelicEffectWithEndTick[] => {
   const relicEffects: RelicEffectWithEndTick[] = [];

@@ -11,14 +11,15 @@ import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
   useLandingLeaderboardStore,
-} from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+} from "@/services/leaderboard/use-landing-leaderboard-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { EyeIcon, Swords } from "lucide-react";
+import EyeIcon from "lucide-react/dist/esm/icons/eye";
+import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo } from "react";
 
 const slideDown = {

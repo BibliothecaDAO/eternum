@@ -4,12 +4,12 @@ fal.config({
   credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY,
 });
 
-export interface AvatarGenerationResult {
+interface AvatarGenerationResult {
   imageUrls: string[];
   jobId: string;
 }
 
-export interface AvatarGenerationOptions {
+interface AvatarGenerationOptions {
   prompt: string;
   style?: string;
 }

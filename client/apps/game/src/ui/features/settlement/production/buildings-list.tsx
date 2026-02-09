@@ -1,7 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
   configManager,
@@ -28,6 +28,7 @@ export const BuildingsList = ({
   producedResources: ResourcesIds[];
   productionBuildings: Building[];
 }) => {
+  const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   // Guard against invalid realm data to prevent crashes
   if (!realm || !realm.position || !realm.entityId) {
     return (
@@ -64,8 +65,8 @@ export const BuildingsList = ({
 
   const activeRelicEffects = useMemo(() => {
     if (!productionBoostBonus) return [];
-    return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentDefaultTick);
-  }, [productionBoostBonus]);
+    return getStructureRelicEffects(productionBoostBonus, currentDefaultTick);
+  }, [productionBoostBonus, currentDefaultTick]);
 
   const productions = useMemo(() => {
     const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
@@ -82,7 +83,7 @@ export const BuildingsList = ({
           (building) => building.produced.resource === resourceId,
         );
 
-        const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
+        const balance = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
         if (!resource) return null;
         const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
 
@@ -95,7 +96,7 @@ export const BuildingsList = ({
         };
       })
       .filter((production) => production !== null);
-  }, [producedResources, productionBuildings, resourceManager, resource]);
+  }, [producedResources, productionBuildings, resourceManager, resource, currentDefaultTick]);
 
   const selectedProduction =
     selectedResource !== null ? productions.find((p) => p.resource === selectedResource) : null;
@@ -209,6 +210,9 @@ export const BuildingsList = ({
                     activeRelicEffects={activeRelicEffects}
                     canOpenProduction={production.buildings.length > 0}
                     onManageProduction={(resource) => onSelectProduction(resource)}
+                    currentDefaultTick={currentDefaultTick}
+                    currentArmiesTick={currentArmiesTick}
+                    armiesTickTimeRemaining={armiesTickTimeRemaining}
                   />
                 </div>
               </div>

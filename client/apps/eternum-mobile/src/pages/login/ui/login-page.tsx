@@ -4,7 +4,7 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Dialog, DialogContent } from "@/shared/ui/dialog";
 import { getIsBlitz } from "@bibliothecadao/eternum";
-import { AlertCircle } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
 import { useEffect, useState } from "react";
 import { BlitzOnboarding } from "./blitz-onboarding";
 import { TermsOfService } from "./terms-of-service";
@@ -42,8 +42,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center p-4">
-      <img src="/images/eternum-logo-words.svg" alt="Eternum Logo" className="w-3/4 my-12" />
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle>Welcome to Eternum</CardTitle>
@@ -103,7 +102,7 @@ export function LoginPage() {
       )}
 
       <Dialog open={showToS} onOpenChange={setShowToS}>
-        <DialogContent className="max-w-[95vw] h-[90vh] p-0">
+        <DialogContent className="max-w-[90vw] max-h-[80vh] p-0 rounded-xl">
           <TermsOfService onAccept={handleAcceptToS} />
         </DialogContent>
       </Dialog>

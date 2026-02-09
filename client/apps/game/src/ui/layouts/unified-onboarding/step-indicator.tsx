@@ -1,5 +1,11 @@
 import { motion } from "framer-motion";
-import { Check, Globe, Loader2, User, Gamepad2, Play, Sparkles } from "lucide-react";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import User from "lucide-react/dist/esm/icons/user";
+import Gamepad2 from "lucide-react/dist/esm/icons/gamepad-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 import type { OnboardingPhase } from "@/hooks/context/use-unified-onboarding";
 
@@ -53,7 +59,7 @@ const getStepStatus = (
 
 export const StepIndicator = ({ currentPhase, isBootstrapRunning }: StepIndicatorProps) => {
   return (
-    <div className="flex items-center justify-center gap-1 py-3 px-2 flex-wrap">
+    <div className="flex items-center justify-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-2 flex-wrap">
       {STEPS.map((step, index) => {
         const status = getStepStatus(step, currentPhase, isBootstrapRunning);
         const Icon = step.icon;
@@ -61,7 +67,7 @@ export const StepIndicator = ({ currentPhase, isBootstrapRunning }: StepIndicato
         return (
           <div key={step.id} className="flex items-center">
             <motion.div
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all duration-300 ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-medium transition-all duration-300 ${
                 status === "complete"
                   ? "bg-brilliance/20 text-brilliance border border-brilliance/30"
                   : status === "current"
@@ -88,7 +94,7 @@ export const StepIndicator = ({ currentPhase, isBootstrapRunning }: StepIndicato
 
             {index < STEPS.length - 1 && (
               <div
-                className={`w-4 h-0.5 mx-0.5 transition-colors duration-300 ${
+                className={`w-2 sm:w-4 h-0.5 mx-0.5 transition-colors duration-300 ${
                   getStepStatus(STEPS[index + 1], currentPhase, isBootstrapRunning) !== "pending"
                     ? "bg-gold/30"
                     : "bg-white/10"

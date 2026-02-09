@@ -32,4 +32,4 @@ export const SECTIONS: Section[] = [
   { id: HintSection.WorldStructures, name: "World Structures", order: 10 },
   { id: HintSection.Points, name: "Points", order: 11 },
   { id: HintSection.Tribes, name: "Tribes", order: 12 },
-].sort((a, b) => a.order - b.order);
+].toSorted((a, b) => a.order - b.order);

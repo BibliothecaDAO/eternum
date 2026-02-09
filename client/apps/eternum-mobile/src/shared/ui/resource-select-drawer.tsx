@@ -6,7 +6,7 @@ import { Input } from "@/shared/ui/input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { ID, resources } from "@bibliothecadao/types";
-import { Search } from "lucide-react";
+import Search from "lucide-react/dist/esm/icons/search";
 import { ReactNode, useState } from "react";
 
 interface ResourceSelectDrawerProps {

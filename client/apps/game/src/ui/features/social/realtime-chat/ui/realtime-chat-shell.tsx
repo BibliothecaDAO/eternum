@@ -16,7 +16,7 @@ import { UserDropdown } from "./shared/user-dropdown";
 import { WorldChatPanel } from "./world-chat/world-chat-panel";
 import { RealtimeChatToggleButton } from "./shared/realtime-chat-toggle-button";
 
-export interface RealtimeChatShellProps {
+interface RealtimeChatShellProps {
   initializer?: InitializeRealtimeClientParams | null;
   zoneIds?: string[];
   defaultZoneId?: string;

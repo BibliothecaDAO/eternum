@@ -1,6 +1,6 @@
 export type FeatureType = "feature" | "improvement" | "balance" | "fix";
 
-export interface LatestFeature {
+interface LatestFeature {
   date: string;
   title: string;
   description: string;
@@ -8,6 +8,20 @@ export interface LatestFeature {
 }
 
 export const latestFeatures: LatestFeature[] = [
+  {
+    date: "2026-02-05",
+    title: "New Landing Experience",
+    description:
+      "The landing page has been completely redesigned! Browse Live, Upcoming, and Ended games in organized columns. Register for games directly from the home screen. Faster game loading with instant entry - you'll land right at your realm. Mobile users get a new hamburger menu and contextual bottom tabs that change based on your current section.",
+    type: "feature",
+  },
+  {
+    date: "2026-01-19",
+    title: "Mobile Game Registration",
+    description:
+      "The game registration flow is now fully responsive. Mobile and tablet users can now select worlds, connect accounts, and create avatars with an optimized touch-friendly interface.",
+    type: "improvement",
+  },
   {
     date: "2026-01-17",
     title: "Chat Room Subscriptions",

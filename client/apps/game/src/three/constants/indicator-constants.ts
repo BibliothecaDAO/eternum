@@ -21,7 +21,7 @@ export const INDICATOR_SEGMENTS_HEIGHT = 6;
  * Y-offset (height above ground) for indicator dots per model type
  * Values are calibrated to position dots above each unit's bounding box
  */
-export const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
+const INDICATOR_Y_OFFSETS: Record<ModelType, number> = {
   // Knights - Standard humanoid height with armor
   [ModelType.Knight1]: 3,
   [ModelType.Knight2]: 3,

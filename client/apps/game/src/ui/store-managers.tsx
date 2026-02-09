@@ -1,11 +1,13 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { POLLING_INTERVALS } from "@/config/polling";
+import { useActiveStructureSync } from "@/hooks/helpers/use-active-structure-sync";
+import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   formatArmies,
@@ -187,9 +189,9 @@ const ResourceArrivalsStoreManager = () => {
       isAutoClaimingRef.current = true;
 
       try {
-        readyArrivals.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
+        const sortedReadyArrivals = readyArrivals.toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
 
-        for (const arrival of readyArrivals) {
+        for (const arrival of sortedReadyArrivals) {
           const arrivalKey = getArrivalKey(arrival);
 
           if (autoClaimedArrivals.current.has(arrivalKey)) {
@@ -439,6 +441,11 @@ const AutoRegisterPointsStoreManager = () => {
 const PlayerStructuresStoreManager = () => {
   const playerStructures = usePlayerStructures();
   const setPlayerStructures = useUIStore((state) => state.setPlayerStructures);
+
+  // Sync structure-scoped models (Resource, StructureBuildings, ProductionBoostBonus)
+  // scoped to only the player's own structures
+  usePlayerStructureSync();
+  useActiveStructureSync();
 
   useEffect(() => {
     setPlayerStructures(playerStructures);

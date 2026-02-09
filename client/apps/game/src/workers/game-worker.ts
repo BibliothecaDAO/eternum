@@ -20,7 +20,7 @@ const structureHexes = new Map<number, Map<number, HexEntityInfo>>();
 const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
 
 // Message Types
-export type WorkerMessage =
+type WorkerMessage =
   | { type: "UPDATE_EXPLORED"; col: number; row: number; biome: BiomeType | null }
   | { type: "UPDATE_STRUCTURE"; col: number; row: number; info: HexEntityInfo | null }
   | { type: "UPDATE_ARMY"; col: number; row: number; info: HexEntityInfo | null }

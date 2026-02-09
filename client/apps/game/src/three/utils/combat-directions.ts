@@ -1,7 +1,7 @@
 import { HexPosition, ID } from "@bibliothecadao/types";
 import { HEX_SIZE } from "../constants";
 
-export interface CombatAngles {
+interface CombatAngles {
   attackedFromDegrees?: number | null;
   attackTowardDegrees?: number | null;
 }

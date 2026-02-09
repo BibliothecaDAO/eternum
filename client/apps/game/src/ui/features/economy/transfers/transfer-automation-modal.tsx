@@ -36,7 +36,10 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
   const remove = useTransferAutomationStore((s) => s.remove);
   const update = useTransferAutomationStore((s) => s.update);
 
-  const list = useMemo(() => Object.values(entries).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [entries]);
+  const list = useMemo(
+    () => Object.values(entries).toSorted((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+    [entries],
+  );
 
   const {
     setup: { components, systemCalls },

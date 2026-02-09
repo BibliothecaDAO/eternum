@@ -18,7 +18,12 @@ import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount, useCall } from "@starknet-react/core";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { AlertCircle, Eye, Hammer, ShieldCheck, Swords, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Eye from "lucide-react/dist/esm/icons/eye";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
+import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
+import Swords from "lucide-react/dist/esm/icons/swords";
+import Users from "lucide-react/dist/esm/icons/users";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Abi, CallData, uint256 } from "starknet";
 import { env } from "../../../../env";
@@ -553,7 +558,7 @@ export const BlitzOnboarding = () => {
     components,
     systemCalls: {
       blitz_realm_register,
-      blitz_realm_create,
+      blitz_realm_assign_and_settle_realms,
       blitz_realm_make_hyperstructures,
       blitz_realm_obtain_entry_token,
     },
@@ -844,7 +849,7 @@ export const BlitzOnboarding = () => {
 
   const handleSettle = async () => {
     if (!account?.address) return;
-    await blitz_realm_create({ signer: account });
+    await blitz_realm_assign_and_settle_realms({ signer: account, settlement_count: 1 });
     navigate({ to: ROUTES.HOME });
   };
 

@@ -6,7 +6,7 @@ import { FrustumManager } from "../utils/frustum-manager";
 /**
  * Configuration for a single point label
  */
-export interface PointLabelConfig {
+interface PointLabelConfig {
   entityId: ID;
   position: THREE.Vector3;
   size?: number; // Relative size multiplier (default: 1.0)

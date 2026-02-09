@@ -237,6 +237,20 @@ const BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS = await getSeasonAddresses(process.env
 const BLITZ_COLLECTIBLE_ELITENFT_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
   "Collectibles: Realms: Elite Invite"
 ];
+
+// ----- MMR (Matchmaking Rating) ----- //
+// Soul-bound ERC20 token tracking player skill ratings
+// Note: initial_mmr and min_mmr are handled by the token contract, not the game contract
+const MMR_ENABLED = true;
+const MMR_TOKEN_ADDRESS = (await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.mmrToken) || "0x0";
+const MMR_DISTRIBUTION_MEAN = 1500; // Target center of distribution for mean regression
+const MMR_SPREAD_FACTOR = 450; // Controls expected percentile spread in logistic function
+const MMR_MAX_DELTA = 45; // Cap on rating change per game
+const MMR_K_FACTOR = 50; // Base scaling factor for raw delta
+const MMR_LOBBY_SPLIT_WEIGHT_SCALED = 2500; // 0.25 scaled by 10000 (split lobby adjustment weight)
+const MMR_MEAN_REGRESSION_SCALED = 150; // 0.015 scaled by 10000 (pull toward distribution mean)
+const MMR_MIN_PLAYERS = 6; // Minimum players for a game to be rated
+
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -458,6 +472,17 @@ export const EternumGlobalConfig: Config = {
   },
   factory: {
     address: "0",
+  },
+  mmr: {
+    enabled: MMR_ENABLED,
+    mmr_token_address: MMR_TOKEN_ADDRESS,
+    distribution_mean: MMR_DISTRIBUTION_MEAN,
+    spread_factor: MMR_SPREAD_FACTOR,
+    max_delta: MMR_MAX_DELTA,
+    k_factor: MMR_K_FACTOR,
+    lobby_split_weight_scaled: MMR_LOBBY_SPLIT_WEIGHT_SCALED,
+    mean_regression_scaled: MMR_MEAN_REGRESSION_SCALED,
+    min_players: MMR_MIN_PLAYERS,
   },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,

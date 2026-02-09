@@ -50,7 +50,7 @@ const MarketTradingHistoryContent = memo(() => {
           : true;
         return userFilter && resourceFilter;
       })
-      .sort((a, b) => b.event.eventTime.getTime() - a.event.eventTime.getTime());
+      .toSorted((a, b) => b.event.eventTime.getTime() - a.event.eventTime.getTime());
   }, [tradeEvents, showOnlyYourSwaps, selectedResourceId]);
 
   // Calculate pagination based on filtered events

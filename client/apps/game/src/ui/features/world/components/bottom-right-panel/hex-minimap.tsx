@@ -172,7 +172,12 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
     }
   }
 
-  byCol.forEach((entries) => entries.sort((a, b) => a.centeredRow - b.centeredRow));
+  byCol.forEach((entries, col) =>
+    byCol.set(
+      col,
+      entries.toSorted((a, b) => a.centeredRow - b.centeredRow),
+    ),
+  );
 
   return {
     byCol,

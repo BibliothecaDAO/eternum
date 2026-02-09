@@ -12,7 +12,7 @@ type PathRequest = {
   reject: (error: Error) => void;
 };
 
-export class GameWorkerManager {
+class GameWorkerManager {
   private worker: Worker;
   private requestMap = new Map<number, PathRequest>();
   private nextRequestId = 1;

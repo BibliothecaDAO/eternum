@@ -4,6 +4,13 @@ import { env } from "../../../env";
 import { HEX_SIZE } from "../constants";
 import { getWorldPositionForHex } from "../utils";
 
+// Module-level temp vectors to avoid allocations in hot paths
+// These are reused across all thunderbolt generation calls
+const tempDirection = new THREE.Vector3();
+const tempJitter = new THREE.Vector3();
+const tempSubDirection = new THREE.Vector3();
+const tempCameraTarget = new THREE.Vector3();
+
 interface ThunderBoltConfig {
   radius: number;
   count: number;
@@ -59,6 +66,17 @@ export class ThunderBoltManager {
     debug: env.VITE_PUBLIC_GRAPHICS_DEV === true,
   };
 
+  // Pooled geometries for impact glow (created once, reused for all thunderbolts)
+  private readonly glowCoreGeometry: THREE.CircleGeometry;
+  private readonly glowMidGeometry: THREE.CircleGeometry;
+  private readonly glowOuterGeometry: THREE.CircleGeometry;
+
+  // Pooled materials for impact glow (created once, cloned for each thunderbolt)
+  // Using prototype materials that define the base properties
+  private readonly glowCoreMaterialPrototype: THREE.MeshBasicMaterial;
+  private readonly glowMidMaterialPrototype: THREE.MeshBasicMaterial;
+  private readonly glowOuterMaterialPrototype: THREE.MeshBasicMaterial;
+
   constructor(
     private scene: THREE.Scene,
     private controls: any,
@@ -66,8 +84,41 @@ export class ThunderBoltManager {
     this.thunderBolts.name = "ThunderBolts";
     this.scene.add(this.thunderBolts);
 
+    // Pre-create pooled geometries for impact glow (unit size, scaled via mesh transform)
+    // These are shared across all thunderbolts to avoid geometry allocation per-bolt
+    this.glowCoreGeometry = new THREE.CircleGeometry(1, 16);
+    this.glowMidGeometry = new THREE.CircleGeometry(1, 16);
+    this.glowOuterGeometry = new THREE.CircleGeometry(1, 16);
+
+    // Pre-create pooled material prototypes for impact glow
+    // These define base properties; opacity is animated per-instance
+    this.glowCoreMaterialPrototype = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    this.glowMidMaterialPrototype = new THREE.MeshBasicMaterial({
+      color: 0xaaccff,
+      transparent: true,
+      opacity: 0.5,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    this.glowOuterMaterialPrototype = new THREE.MeshBasicMaterial({
+      color: 0x6688bb,
+      transparent: true,
+      opacity: 0.25,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+
     if (this.config.debug) {
-      console.log("ThunderBoltManager initialized");
+      console.log("ThunderBoltManager initialized with pooled geometries and materials");
     }
   }
 
@@ -124,28 +175,27 @@ export class ThunderBoltManager {
       const branchLength = height * (0.2 + Math.random() * 0.25);
       const segmentCount = 4 + Math.floor(Math.random() * 3);
 
-      // Direction tends outward and slightly downward
-      const direction = new THREE.Vector3(
-        (Math.random() - 0.5) * 1.5,
-        0.3 + Math.random() * 0.5,
-        (Math.random() - 0.5) * 1.5,
-      ).normalize();
+      // Direction tends outward and slightly downward - use temp vector
+      tempDirection
+        .set((Math.random() - 0.5) * 1.5, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 1.5)
+        .normalize();
 
       const branch: THREE.Vector3[] = [anchor.clone()];
       const step = branchLength / segmentCount;
 
       for (let j = 1; j <= segmentCount; j++) {
-        const jitter = step * (0.3 + (j / segmentCount) * 0.4); // More jitter toward end
-        const stepPoint = anchor
-          .clone()
-          .add(direction.clone().multiplyScalar(step * j))
-          .add(
-            new THREE.Vector3(
-              (Math.random() - 0.5) * jitter,
-              (Math.random() - 0.5) * jitter * 0.5,
-              (Math.random() - 0.5) * jitter,
-            ),
-          );
+        const jitterAmount = step * (0.3 + (j / segmentCount) * 0.4); // More jitter toward end
+        // Use temp vectors for intermediate calculations
+        tempJitter.set(
+          (Math.random() - 0.5) * jitterAmount,
+          (Math.random() - 0.5) * jitterAmount * 0.5,
+          (Math.random() - 0.5) * jitterAmount,
+        );
+        // Create new Vector3 for the step point (must persist in branch array)
+        const stepPoint = anchor.clone();
+        stepPoint.x += tempDirection.x * step * j + tempJitter.x;
+        stepPoint.y += tempDirection.y * step * j + tempJitter.y;
+        stepPoint.z += tempDirection.z * step * j + tempJitter.z;
         branch.push(stepPoint);
       }
 
@@ -158,26 +208,30 @@ export class ThunderBoltManager {
         const subLength = branchLength * 0.4;
         const subSegments = 2 + Math.floor(Math.random() * 2);
 
-        const subDirection = new THREE.Vector3(
-          direction.x + (Math.random() - 0.5) * 0.8,
-          direction.y * 0.5,
-          direction.z + (Math.random() - 0.5) * 0.8,
-        ).normalize();
+        // Use temp vector for sub-direction
+        tempSubDirection
+          .set(
+            tempDirection.x + (Math.random() - 0.5) * 0.8,
+            tempDirection.y * 0.5,
+            tempDirection.z + (Math.random() - 0.5) * 0.8,
+          )
+          .normalize();
 
         const subBranch: THREE.Vector3[] = [subAnchor.clone()];
         const subStep = subLength / subSegments;
 
         for (let k = 1; k <= subSegments; k++) {
-          const subPoint = subAnchor
-            .clone()
-            .add(subDirection.clone().multiplyScalar(subStep * k))
-            .add(
-              new THREE.Vector3(
-                (Math.random() - 0.5) * subStep * 0.5,
-                (Math.random() - 0.5) * subStep * 0.3,
-                (Math.random() - 0.5) * subStep * 0.5,
-              ),
-            );
+          // Use temp vector for jitter calculation
+          tempJitter.set(
+            (Math.random() - 0.5) * subStep * 0.5,
+            (Math.random() - 0.5) * subStep * 0.3,
+            (Math.random() - 0.5) * subStep * 0.5,
+          );
+          // Create new Vector3 for the sub point (must persist in subBranch array)
+          const subPoint = subAnchor.clone();
+          subPoint.x += tempSubDirection.x * subStep * k + tempJitter.x;
+          subPoint.y += tempSubDirection.y * subStep * k + tempJitter.y;
+          subPoint.z += tempSubDirection.z * subStep * k + tempJitter.z;
           subBranch.push(subPoint);
         }
 
@@ -241,49 +295,29 @@ export class ThunderBoltManager {
   private createImpactGlow(radius: number): THREE.Group {
     const glowGroup = new THREE.Group();
 
-    // Inner bright core
-    const coreGeometry = new THREE.CircleGeometry(radius * 0.3, 16);
-    const coreMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.9,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    const core = new THREE.Mesh(coreGeometry, coreMaterial);
+    // Inner bright core - use pooled geometry and clone prototype material
+    // Cloning a material is faster than creating from scratch (reuses shader program)
+    const coreMaterial = this.glowCoreMaterialPrototype.clone();
+    const core = new THREE.Mesh(this.glowCoreGeometry, coreMaterial);
     core.rotation.x = -Math.PI / 2;
     core.position.y = 0.03;
+    core.scale.setScalar(radius * 0.3);
     glowGroup.add(core);
 
-    // Middle glow
-    const midGeometry = new THREE.CircleGeometry(radius * 0.7, 16);
-    const midMaterial = new THREE.MeshBasicMaterial({
-      color: 0xaaccff,
-      transparent: true,
-      opacity: 0.5,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    const mid = new THREE.Mesh(midGeometry, midMaterial);
+    // Middle glow - use pooled geometry and clone prototype material
+    const midMaterial = this.glowMidMaterialPrototype.clone();
+    const mid = new THREE.Mesh(this.glowMidGeometry, midMaterial);
     mid.rotation.x = -Math.PI / 2;
     mid.position.y = 0.02;
+    mid.scale.setScalar(radius * 0.7);
     glowGroup.add(mid);
 
-    // Outer soft glow
-    const outerGeometry = new THREE.CircleGeometry(radius * 1.5, 16);
-    const outerMaterial = new THREE.MeshBasicMaterial({
-      color: 0x6688bb,
-      transparent: true,
-      opacity: 0.25,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    const outer = new THREE.Mesh(outerGeometry, outerMaterial);
+    // Outer soft glow - use pooled geometry and clone prototype material
+    const outerMaterial = this.glowOuterMaterialPrototype.clone();
+    const outer = new THREE.Mesh(this.glowOuterGeometry, outerMaterial);
     outer.rotation.x = -Math.PI / 2;
     outer.position.y = 0.01;
+    outer.scale.setScalar(radius * 1.5);
     glowGroup.add(outer);
 
     return glowGroup;
@@ -313,7 +347,7 @@ export class ThunderBoltManager {
     if (bolt.glow) {
       bolt.glow.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
+          // Only dispose materials, NOT geometries (they're pooled and shared)
           (child.material as THREE.Material).dispose();
         }
       });
@@ -325,15 +359,14 @@ export class ThunderBoltManager {
   }
 
   private getCenterHexFromCamera(): HexPosition {
-    const cameraTarget = new THREE.Vector3();
-
+    // Use module-level temp vector to avoid allocation
     // Get camera target from controls
     if (this.controls && this.controls.target) {
-      cameraTarget.copy(this.controls.target);
+      tempCameraTarget.copy(this.controls.target);
     } else {
       // Fallback: use controls object position
-      cameraTarget.copy(this.controls.object.position);
-      cameraTarget.y = 0;
+      tempCameraTarget.copy(this.controls.object.position);
+      tempCameraTarget.y = 0;
     }
 
     // Convert world position to hex coordinates
@@ -343,9 +376,9 @@ export class ThunderBoltManager {
     const vertDist = hexHeight * 0.75;
     const horizDist = hexWidth;
 
-    const row = Math.round(cameraTarget.z / vertDist);
+    const row = Math.round(tempCameraTarget.z / vertDist);
     const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-    const col = Math.round((cameraTarget.x + rowOffset) / horizDist);
+    const col = Math.round((tempCameraTarget.x + rowOffset) / horizDist);
 
     return { col, row };
   }
@@ -421,7 +454,7 @@ export class ThunderBoltManager {
       currentLayer = nextLayer;
     }
 
-    const shuffled = positions.sort(() => Math.random() - 0.5);
+    const shuffled = positions.toSorted(() => Math.random() - 0.5);
     return shuffled.slice(0, Math.min(count, shuffled.length));
   }
 
@@ -544,6 +577,31 @@ export class ThunderBoltManager {
       console.log("Clearing all thunder bolts...");
     }
     this.cleanup();
+  }
+
+  /**
+   * Fully dispose the manager including pooled geometries and materials.
+   * Call this when the scene is being destroyed.
+   */
+  public destroy(): void {
+    this.cleanup();
+
+    // Dispose pooled geometries
+    this.glowCoreGeometry.dispose();
+    this.glowMidGeometry.dispose();
+    this.glowOuterGeometry.dispose();
+
+    // Dispose pooled material prototypes
+    this.glowCoreMaterialPrototype.dispose();
+    this.glowMidMaterialPrototype.dispose();
+    this.glowOuterMaterialPrototype.dispose();
+
+    // Remove from scene
+    this.scene.remove(this.thunderBolts);
+
+    if (this.config.debug) {
+      console.log("ThunderBoltManager destroyed (pooled geometries and materials disposed)");
+    }
   }
 
   // GUI setup helper

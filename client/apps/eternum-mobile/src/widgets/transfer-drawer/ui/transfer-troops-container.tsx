@@ -22,7 +22,7 @@ import {
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeftRight } from "lucide-react";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { TransferDirection } from "../model/types";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 

@@ -7,7 +7,10 @@ import { MergedNftData } from "@/types";
 import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
-import { ArrowRightLeft, Check, ImageOff, Plus } from "lucide-react";
+import ArrowRightLeft from "lucide-react/dist/esm/icons/arrow-right-left";
+import Check from "lucide-react/dist/esm/icons/check";
+import ImageOff from "lucide-react/dist/esm/icons/image-off";
+import Plus from "lucide-react/dist/esm/icons/plus";
 import { useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
@@ -188,7 +191,7 @@ export const TokenCard = ({
             <div className="flex flex-wrap gap-2 mt-2">
               {attributes
                 ?.filter((attribute) => attribute.trait_type === "Resource")
-                .sort((a, b) => {
+                .toSorted((a, b) => {
                   const aWithoutSpace = a.value.toString().replace(/\s/g, "");
                   const bWithoutSpace = b.value.toString().replace(/\s/g, "");
                   const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];

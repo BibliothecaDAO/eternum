@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Users } from "lucide-react";
+import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
+import Check from "lucide-react/dist/esm/icons/check";
+import Globe from "lucide-react/dist/esm/icons/globe";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Play from "lucide-react/dist/esm/icons/play";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Users from "lucide-react/dist/esm/icons/users";
 
 import { useFactoryWorlds, type FactoryWorld } from "@/hooks/use-factory-worlds";
 import { useWorldsAvailability, getAvailabilityStatus, getWorldKey } from "@/hooks/use-world-availability";
@@ -13,6 +19,11 @@ import { env } from "../../../../env";
 const normalizeFactoryChain = (chain: Chain): Chain => {
   if (chain === "slottest" || chain === "local") return "slot";
   return chain;
+};
+
+const areListsEqual = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
 };
 
 interface WorldSelectPanelProps {
@@ -82,7 +93,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
     if (offlineGames.length > 0) {
       offlineGames.forEach((n) => deleteWorldProfile(n));
       const updatedList = listWorldNames();
-      setSaved(updatedList);
+      setSaved((prev) => (areListsEqual(prev, updatedList) ? prev : updatedList));
     }
   }, [savedChecksDone, saved, savedAvailability, savedWorldRefs]);
 
@@ -139,9 +150,9 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-center mb-4">
-        <h2 className="text-xl font-bold text-gold">Select a World</h2>
-        <p className="text-sm text-gold/60 mt-1">Choose a game world to enter</p>
+      <div className="text-center mb-3 sm:mb-4">
+        <h2 className="text-lg sm:text-xl font-bold text-gold">Select a World</h2>
+        <p className="text-xs sm:text-sm text-gold/60 mt-1">Choose a game world to enter</p>
         <div className="mt-3 flex items-center justify-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-gold/60">Chain</span>
           <div className="flex items-center gap-1 rounded-full border border-gold/20 bg-brown/80 p-1">
@@ -198,7 +209,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
             return (
               <div
                 key={fg.worldKey}
-                className={`group relative rounded-lg border-2 p-3 transition-all duration-200 ${
+                className={`group relative rounded-lg border-2 p-2.5 sm:p-3 transition-all duration-200 ${
                   isChainMatch ? "cursor-pointer" : "cursor-default opacity-60"
                 } ${
                   isSelected
@@ -264,7 +275,7 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
       </div>
 
       {/* Refresh button */}
-      <div className="mt-4 flex justify-center">
+      <div className="mt-3 sm:mt-4 flex justify-center">
         <button
           onClick={() => void handleRefresh()}
           disabled={factoryLoading}
@@ -277,8 +288,8 @@ export const WorldSelectPanel = ({ onSelect }: WorldSelectPanelProps) => {
 
       {/* Enter button */}
       {selectedWorld && (
-        <div className="mt-4">
-          <Button className="w-full !h-12" variant="gold" onClick={() => handleEnterWorld(selectedWorld)}>
+        <div className="mt-3 sm:mt-4">
+          <Button className="w-full !h-11 sm:!h-12" variant="gold" onClick={() => handleEnterWorld(selectedWorld)}>
             Enter {selectedWorld.name}
           </Button>
         </div>

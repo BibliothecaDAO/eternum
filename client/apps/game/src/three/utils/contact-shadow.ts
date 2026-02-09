@@ -1,6 +1,6 @@
 import { CanvasTexture, LinearFilter, MeshBasicMaterial, PlaneGeometry } from "three";
 
-export interface ContactShadowResources {
+interface ContactShadowResources {
   geometry: PlaneGeometry;
   material: MeshBasicMaterial;
 }

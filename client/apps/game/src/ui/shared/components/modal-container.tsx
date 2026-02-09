@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { useCallback, useEffect, useRef } from "react";
 
 interface ModalContainerProps {

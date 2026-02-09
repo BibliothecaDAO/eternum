@@ -16,7 +16,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 
-import { X } from "lucide-react";
+import X from "lucide-react/dist/esm/icons/x";
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { TargetType } from "./types";
@@ -123,7 +123,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return structure
       ? getGuardsByStructure(structure)
           .filter((guard) => guard.troops.count > 0n)
-          .sort((a, b) => a.slot - b.slot)
+          .toSorted((a, b) => a.slot - b.slot)
       : [];
   }, [attackerType, attacker.id, Structure]);
 

@@ -18,7 +18,7 @@ import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 /**
  * Visibility state for a single frame
  */
-export interface FrameVisibilityState {
+interface FrameVisibilityState {
   /** Frame ID when this state was computed */
   frameId: number;
   /** Timestamp of computation */
@@ -30,7 +30,7 @@ export interface FrameVisibilityState {
 /**
  * Configuration for the visibility manager
  */
-export interface VisibilityManagerConfig {
+interface VisibilityManagerConfig {
   /** Enable debug logging */
   debug?: boolean;
   /** Maximum distance for animation visibility (world units) */
@@ -42,7 +42,7 @@ export interface VisibilityManagerConfig {
 /**
  * Chunk bounds registration data
  */
-export interface ChunkBoundsData {
+interface ChunkBoundsData {
   box: Box3;
   sphere: Sphere;
 }
@@ -580,7 +580,7 @@ export function getVisibilityManager(config?: VisibilityManagerConfig): Centrali
 /**
  * Reset the singleton instance (useful for testing or hot reload).
  */
-export function resetVisibilityManager(): void {
+function resetVisibilityManager(): void {
   if (visibilityManagerInstance) {
     visibilityManagerInstance.dispose();
     visibilityManagerInstance = null;

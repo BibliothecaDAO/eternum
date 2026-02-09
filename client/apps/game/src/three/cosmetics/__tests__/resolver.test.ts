@@ -73,7 +73,7 @@ describe("cosmetics resolver", () => {
       defaultModelType: ModelType.Crossbowman1,
     });
 
-    const attachmentIds = result.attachments.map((attachment) => attachment.id).sort();
+    const attachmentIds = result.attachments.map((attachment) => attachment.id).toSorted();
     expect(attachmentIds).toEqual(["bow-common", "crossbow-banner"]);
     expect(result.attachments.every((item) => !!item.slot)).toBe(true);
   });

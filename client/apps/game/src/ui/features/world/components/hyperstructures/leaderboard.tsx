@@ -43,7 +43,7 @@ export const Leaderboard = ({
     });
 
     // Sort by real-time total points
-    return playersWithRealTimePoints.sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
+    return playersWithRealTimePoints.toSorted(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }, [dojo.setup.components]);
 
   const playerAddresses = useMemo(

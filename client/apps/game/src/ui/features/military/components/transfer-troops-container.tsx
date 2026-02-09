@@ -27,7 +27,8 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeftRight } from "lucide-react";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { TransferDirection } from "./help-container";
@@ -216,10 +217,10 @@ export const TransferTroopsContainer = ({
   const selectedGuardSlotSet = useMemo(() => new Set(selectedStructureGuardSlots), [selectedStructureGuardSlots]);
   const targetGuardSlotSet = useMemo(() => new Set(targetStructureGuardSlots), [targetStructureGuardSlots]);
 
-  const orderedGuardSlots = useMemo(() => [...availableGuards].sort((a, b) => b - a), [availableGuards]);
+  const orderedGuardSlots = useMemo(() => availableGuards.toSorted((a, b) => b - a), [availableGuards]);
   const visualGuardSlots = useMemo(
     () =>
-      [...availableGuards].sort(
+      availableGuards.toSorted(
         (a, b) =>
           DISPLAYED_SLOT_NUMBER_MAP[a as keyof typeof DISPLAYED_SLOT_NUMBER_MAP] -
           DISPLAYED_SLOT_NUMBER_MAP[b as keyof typeof DISPLAYED_SLOT_NUMBER_MAP],
@@ -232,8 +233,8 @@ export const TransferTroopsContainer = ({
   // starts from highest slot to lowest slot
   const advanceLabel =
     orderedGuardSlots.length > 0
-      ? [...availableGuards]
-          .sort((a, b) => a - b)
+      ? availableGuards
+          .toSorted((a, b) => a - b)
           .map((slotId) => `Slot ${DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`)
           .join(" → ")
       : null;

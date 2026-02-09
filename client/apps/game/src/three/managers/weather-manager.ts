@@ -20,7 +20,7 @@ export enum WeatherType {
  * PEAK: Full weather intensity
  * DEPARTING: Weather fading, clearing
  */
-export enum WeatherPhase {
+enum WeatherPhase {
   CLEAR = "clear",
   APPROACHING = "approaching",
   ARRIVING = "arriving",
@@ -31,7 +31,7 @@ export enum WeatherPhase {
 /**
  * Weather state snapshot for external consumers
  */
-export interface WeatherState {
+interface WeatherState {
   /** Current weather type */
   type: WeatherType;
   /** Current phase in the weather transition */
@@ -118,6 +118,7 @@ export class WeatherManager {
   // Timing
   private autoChangeTimer: number = 0;
   private peakTimer: number = 0;
+  private guiStatusIntervalId?: ReturnType<typeof setInterval>;
 
   // Configuration
   private weatherConfigs: Record<WeatherType, WeatherConfig> = {
@@ -538,7 +539,7 @@ export class WeatherManager {
     weatherFolder.add(status, "phaseProgress").name("Phase Progress").listen();
 
     // Update display
-    setInterval(() => {
+    this.guiStatusIntervalId = setInterval(() => {
       status.type = this.currentType;
       status.phase = this.currentPhase;
       status.intensity = Math.round(this.intensity * 100) / 100;
@@ -587,5 +588,9 @@ export class WeatherManager {
   dispose(): void {
     this.listeners.clear();
     this.windSystem.dispose();
+    if (this.guiStatusIntervalId) {
+      clearInterval(this.guiStatusIntervalId);
+      this.guiStatusIntervalId = undefined;
+    }
   }
 }

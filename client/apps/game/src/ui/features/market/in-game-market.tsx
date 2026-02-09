@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { RefreshCw } from "lucide-react";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 
 import { getActiveWorldName } from "@/runtime/world";
 import { configManager } from "@bibliothecadao/eternum";

@@ -728,7 +728,7 @@ export async function maintainOrchestrator(p: Params) {
     }
   }
   log(`Top-up added: ${added}, total planned: ${state.length}`);
-  state.sort((a, b) => a.slotTimestamp - b.slotTimestamp);
+  state = state.toSorted((a, b) => a.slotTimestamp - b.slotTimestamp);
   writeDeployment(chain, state);
 
   // Phase 1: Deploy all that need deploying
