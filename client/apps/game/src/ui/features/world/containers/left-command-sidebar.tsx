@@ -377,10 +377,10 @@ const LeftPanelHeader = memo(
     const shouldHideStructureName = isMapView && isSpectating;
     const headerTitle = shouldHideStructureName
       ? "Spectator Mode"
-      : selectedStructureMetadata?.displayName ??
+      : (selectedStructureMetadata?.displayName ??
         liveStructureName ??
         structureInfo?.name?.name ??
-        (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
+        (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures"));
     const headerTitleClass = shouldHideStructureName
       ? "text-gold"
       : selectedGroupConfig

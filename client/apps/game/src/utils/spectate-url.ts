@@ -39,7 +39,10 @@ export const writeSpectateToCurrentUrl = (isSpectating: boolean): void => {
     return;
   }
 
-  const next = withSpectateParam(`${window.location.pathname}${window.location.search}${window.location.hash}`, isSpectating);
+  const next = withSpectateParam(
+    `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    isSpectating,
+  );
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
   if (next !== current) {
