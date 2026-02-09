@@ -1,0 +1,194 @@
+name: release-onchain-agent
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version tag (for example: v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  quality-gates:
+    name: quality-gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run onchain-agent tests
+        run: pnpm --dir client/apps/onchain-agent test
+
+      - name: Run onchain-agent typecheck
+        run: pnpm --dir client/apps/onchain-agent build
+
+      - name: Run game-agent tests
+        run: pnpm --dir packages/game-agent test
+
+      - name: Run client tests
+        run: pnpm --dir packages/client test
+
+  package-and-smoke:
+    name: package-and-smoke-${{ matrix.target }}
+    needs: quality-gates
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: darwin-arm64
+            runner: macos-14
+          - target: darwin-x64
+            runner: macos-13
+          - target: linux-x64
+            runner: ubuntu-latest
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve release version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME}"
+          fi
+          if [ -z "${version}" ]; then
+            echo "Could not resolve release version" >&2
+            exit 1
+          fi
+          echo "RELEASE_VERSION=${version}" >> "$GITHUB_ENV"
+
+      - name: Package target artifact
+        run: |
+          pnpm --dir client/apps/onchain-agent package:release -- \
+            --targets ${{ matrix.target }} \
+            --version "${RELEASE_VERSION}" \
+            --outDir release-dist
+
+      - name: Smoke test artifact (eternum-agent --version / eternum-agent doctor)
+        shell: bash
+        run: |
+          archive="release-dist/eternum-agent-v${RELEASE_VERSION#v}-${{ matrix.target }}.tar.gz"
+          if [ ! -f "${archive}" ]; then
+            echo "Expected archive not found: ${archive}" >&2
+            exit 1
+          fi
+
+          mkdir -p smoke
+          tar -xzf "${archive}" -C smoke
+
+          cd smoke/eternum-agent
+          ./eternum-agent --version
+
+          set +e
+          doctor_output=$(./eternum-agent doctor 2>&1)
+          doctor_rc=$?
+          set -e
+          echo "${doctor_output}"
+          if [ "${doctor_rc}" -ne 0 ] && [ "${doctor_rc}" -ne 1 ]; then
+            echo "eternum-agent doctor exited with unexpected status ${doctor_rc}" >&2
+            exit 1
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onchain-agent-${{ matrix.target }}
+          path: release-dist/*.tar.gz
+          if-no-files-found: error
+
+  publish-release:
+    name: publish-release
+    needs: package-and-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-dist
+          merge-multiple: true
+
+      - name: Resolve release version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME}"
+          fi
+          if [ -z "${version}" ]; then
+            echo "Could not resolve release version" >&2
+            exit 1
+          fi
+          echo "RELEASE_VERSION=${version}" >> "$GITHUB_ENV"
+
+      - name: Generate checksums.txt
+        shell: bash
+        run: |
+          cd release-dist
+          shasum -a 256 *.tar.gz > checksums.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: onchain-agent ${{ env.RELEASE_VERSION }}
+          files: |
+            release-dist/*.tar.gz
+            release-dist/checksums.txt
+            scripts/install-onchain-agent.sh

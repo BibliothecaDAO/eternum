@@ -1,9 +1,5 @@
 import type { SimulationResult, GameAction } from "@bibliothecadao/game-agent";
-import {
-  computeStrength,
-  computeOutputAmount,
-  computeBuildingCost,
-} from "@bibliothecadao/client";
+import { computeStrength, computeOutputAmount, computeBuildingCost } from "@bibliothecadao/client";
 
 /**
  * Simulate a game action using pure compute functions.

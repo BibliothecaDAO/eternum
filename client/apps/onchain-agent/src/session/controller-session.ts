@@ -114,7 +114,10 @@ function normalizeAddress(value: unknown): string | null {
 
 function normalizeGameName(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const normalized = value.trim().toLowerCase().replace(/^s\d+_/, "");
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/^s\d+_/, "");
   return normalized || null;
 }
 

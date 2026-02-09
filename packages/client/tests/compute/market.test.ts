@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  computeOutputAmount,
-  computeSlippage,
-  computeMarketPrice,
-} from "../../src/compute/market.js";
+import { computeOutputAmount, computeSlippage, computeMarketPrice } from "../../src/compute/market.js";
 
 describe("computeOutputAmount", () => {
   it("should compute basic swap with zero fee", () => {

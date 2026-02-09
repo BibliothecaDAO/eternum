@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  computeStrength,
-  computeStaminaModifier,
-  computeCooldownModifier,
-} from "../../src/compute/combat.js";
+import { computeStrength, computeStaminaModifier, computeCooldownModifier } from "../../src/compute/combat.js";
 
 describe("computeStrength", () => {
   it("should return zero for zero troops", () => {

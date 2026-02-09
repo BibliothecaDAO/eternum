@@ -1,9 +1,8 @@
 ---
 name: defending-a-rush
 description: >
-  Emergency defense against early aggression. Use when scouting reveals
-  enemy military units moving toward your base in the early game.
-  Covers unit production priority, positioning, and counterattack timing.
+  Emergency defense against early aggression. Use when scouting reveals enemy military units moving toward your base in
+  the early game. Covers unit production priority, positioning, and counterattack timing.
 ---
 
 # Defending a Rush
@@ -44,6 +43,7 @@ description: >
 ## Soul Alignment
 
 When this skill is active, temporarily override soul traits:
+
 - Set Aggression to 3/10 (defensive mode)
 - Set Paranoia to 8/10 (expect follow-up attacks)
 - Set Patience to 8/10 (don't overcommit to counterattack)

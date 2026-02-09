@@ -109,9 +109,7 @@ function buildingCoord(v: unknown): { alt?: boolean; x: number; y: number } {
   };
 }
 
-function liquidityCalls(
-  v: unknown,
-): { resourceType: number; resourceAmount: number; lordsAmount: number }[] {
+function liquidityCalls(v: unknown): { resourceType: number; resourceAmount: number; lordsAmount: number }[] {
   if (!Array.isArray(v)) return [];
   return v.map((c: any) => ({
     resourceType: num(c.resourceType ?? c.resource_type ?? 0),
@@ -468,9 +466,7 @@ register("join_guild", (client, signer, p) =>
   ),
 );
 
-register("leave_guild", (client, signer, _p) =>
-  wrapTx(() => client.guild.leave(signer)),
-);
+register("leave_guild", (client, signer, _p) => wrapTx(() => client.guild.leave(signer)));
 
 register("update_whitelist", (client, signer, p) =>
   wrapTx(() =>
@@ -529,11 +525,7 @@ export function getAvailableActions(): string[] {
  * Execute a GameAction by dispatching to the matching registered handler.
  * Returns a failed ActionResult if the action type is unknown.
  */
-export async function executeAction(
-  client: EternumClient,
-  signer: Account,
-  action: GameAction,
-): Promise<ActionResult> {
+export async function executeAction(client: EternumClient, signer: Account, action: GameAction): Promise<ActionResult> {
   const handler = registry.get(action.type);
   if (!handler) {
     return { success: false, error: `Unknown action type: ${action.type}` };

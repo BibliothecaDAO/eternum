@@ -14,11 +14,7 @@ export function computeOutputAmount(
   return (effectiveInput * outputReserve) / (inputReserve + effectiveInput);
 }
 
-export function computeSlippage(
-  inputAmount: number,
-  inputReserve: number,
-  outputReserve: number,
-): number {
+export function computeSlippage(inputAmount: number, inputReserve: number, outputReserve: number): number {
   if (inputAmount === 0) {
     return 0;
   }

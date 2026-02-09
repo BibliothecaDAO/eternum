@@ -91,9 +91,7 @@ export class ViewClient {
 
       // Fetch armies to find explorers for this realm
       const allArmies = await this.sql.fetchAllArmiesMapData();
-      const ownedArmies = allArmies.filter(
-        (a: any) => a.owner !== undefined && a.owner === owner,
-      );
+      const ownedArmies = allArmies.filter((a: any) => a.owner !== undefined && a.owner === owner);
 
       const guardState = this.buildGuardState(guards);
 
@@ -171,8 +169,7 @@ export class ViewClient {
       const allArmies = await this.sql.fetchAllArmiesMapData();
       const army = allArmies.find((a: any) => (a.entity_id ?? a.entityId) === entityId);
 
-      const ownerAddress =
-        (await this.sql.fetchExplorerAddressOwner(entityId)) ?? this.getAccount() ?? "0x0";
+      const ownerAddress = (await this.sql.fetchExplorerAddressOwner(entityId)) ?? this.getAccount() ?? "0x0";
 
       const result: ExplorerView = {
         entityId,
@@ -420,9 +417,7 @@ export class ViewClient {
 
     try {
       const hyperstructures = await this.sql.fetchHyperstructures();
-      const hs = hyperstructures.find(
-        (h: any) => Number(h.entity_id ?? h.entityId) === entityId,
-      );
+      const hs = hyperstructures.find((h: any) => Number(h.entity_id ?? h.entityId) === entityId);
 
       const guards = await this.sql.fetchGuardsByStructure(entityId);
       const guardState = this.buildGuardState(guards);
@@ -510,9 +505,7 @@ export class ViewClient {
     try {
       // Bank data comes from structure + swap events
       const allStructures = await this.sql.fetchAllStructuresMapData();
-      const bankStruct = allStructures.find(
-        (s: any) => Number(s.entity_id ?? s.entityId) === bankEntityId,
-      );
+      const bankStruct = allStructures.find((s: any) => Number(s.entity_id ?? s.entityId) === bankEntityId);
 
       const swapEvents = await this.sql.fetchSwapEvents([]);
       const recentSwaps: SwapEvent[] = swapEvents.slice(0, 20).map((e: any) => ({
@@ -555,9 +548,13 @@ export class ViewClient {
   // Events
   // ---------------------------------------------------------------------------
 
-  async events(
-    opts?: { entityId?: ID; owner?: string; since?: number; limit?: number; offset?: number },
-  ): Promise<EventsView> {
+  async events(opts?: {
+    entityId?: ID;
+    owner?: string;
+    since?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<EventsView> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
     const cacheKey = `events:${opts?.entityId ?? ""}:${opts?.owner ?? ""}:${opts?.since ?? ""}:${limit}:${offset}`;
@@ -615,7 +612,10 @@ export class ViewClient {
   }
 
   private sameAddress(a: unknown, b: unknown): boolean {
-    const normalize = (value: unknown) => String(value ?? "").trim().toLowerCase();
+    const normalize = (value: unknown) =>
+      String(value ?? "")
+        .trim()
+        .toLowerCase();
     return normalize(a) !== "" && normalize(a) === normalize(b);
   }
 
@@ -691,10 +691,7 @@ export class ViewClient {
           resourceId: Number(entry?.resourceId ?? entry?.resource_id ?? entry?.id ?? -1),
           name: String(entry?.name ?? entry?.resourceName ?? ""),
           amount: Number(entry?.amount ?? entry?.balance ?? entry?.totalBalance ?? 0),
-          production:
-            entry?.production == null
-              ? null
-              : Number(entry.production?.rate ?? entry.production ?? 0),
+          production: entry?.production == null ? null : Number(entry.production?.rate ?? entry.production ?? 0),
         }))
         .filter((entry) => Number.isFinite(entry.resourceId) && entry.resourceId >= 0 && Number.isFinite(entry.amount));
     }
@@ -727,10 +724,7 @@ export class ViewClient {
       }));
 
     const totalTroops = slots.reduce((sum, s) => sum + s.count, 0);
-    const strength = slots.reduce(
-      (sum, s) => sum + computeStrength(s.count, s.tier),
-      0,
-    );
+    const strength = slots.reduce((sum, s) => sum + computeStrength(s.count, s.tier), 0);
 
     return { totalTroops, slots, strength };
   }

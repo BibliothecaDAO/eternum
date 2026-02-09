@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@bibliothecadao/client", () => ({
   computeStrength: vi.fn((count: number, tier: number) => count * tier * 10),
   computeOutputAmount: vi.fn(() => 123),
-  computeBuildingCost: vi.fn((baseCosts: any[]) =>
-    baseCosts.map((c) => ({ ...c, amount: c.amount + 1 })),
-  ),
+  computeBuildingCost: vi.fn((baseCosts: any[]) => baseCosts.map((c) => ({ ...c, amount: c.amount + 1 }))),
 }));
 
 const { simulateAction } = await import("../../src/adapter/simulation");

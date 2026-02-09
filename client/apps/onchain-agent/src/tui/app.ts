@@ -1,11 +1,5 @@
 import type { Agent, AgentEvent } from "@mariozechner/pi-agent-core";
-import {
-  TUI,
-  ProcessTerminal,
-  Container,
-  Text,
-  Markdown,
-} from "@mariozechner/pi-tui";
+import { TUI, ProcessTerminal, Container, Text, Markdown } from "@mariozechner/pi-tui";
 import type { TickLoop } from "@bibliothecadao/game-agent";
 
 export interface AppState {
@@ -32,7 +26,8 @@ export function createApp(state: AppState) {
   // -- Chat container (event log) --
   const chat = new Container();
   const welcomeMsg = new Text();
-  welcomeMsg.text = "Eternum Agent started. Waiting for first tick...\nType a message and press Enter to steer the agent.\nPress Ctrl+C to exit.\n";
+  welcomeMsg.text =
+    "Eternum Agent started. Waiting for first tick...\nType a message and press Enter to steer the agent.\nPress Ctrl+C to exit.\n";
   chat.addChild(welcomeMsg);
 
   // -- Input area --

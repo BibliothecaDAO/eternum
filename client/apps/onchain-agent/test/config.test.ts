@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import path from "node:path";
 import { loadConfig } from "../src/config";
 
 const ENV_KEYS = [
@@ -13,6 +14,8 @@ const ENV_KEYS = [
   "MODEL_PROVIDER",
   "MODEL_ID",
   "GAME_NAME",
+  "DATA_DIR",
+  "ETERNUM_AGENT_HOME",
 ] as const;
 
 const originalEnv = { ...process.env };
@@ -40,6 +43,8 @@ describe("loadConfig", () => {
     process.env.MODEL_PROVIDER = "openai";
     process.env.MODEL_ID = "gpt-test";
     process.env.GAME_NAME = "othergame";
+    process.env.DATA_DIR = "/tmp/agent-data";
+    process.env.ETERNUM_AGENT_HOME = "/tmp/agent-home";
 
     const cfg = loadConfig();
 
@@ -48,13 +53,13 @@ describe("loadConfig", () => {
     expect(cfg.worldAddress).toBe("0x123");
     expect(cfg.manifestPath).toBe("/tmp/manifest.json");
     expect(cfg.chainId).toBe("SN_MAIN");
-    expect(cfg.sessionBasePath).toBe(".session-cache");
+    expect(cfg.sessionBasePath).toBe(path.resolve(".session-cache"));
     expect(cfg.tickIntervalMs).toBe(15000);
     expect(cfg.loopEnabled).toBe(false);
     expect(cfg.modelProvider).toBe("openai");
     expect(cfg.modelId).toBe("gpt-test");
     expect(cfg.gameName).toBe("othergame");
-    expect(cfg.dataDir).toContain("/onchain-agent/data");
+    expect(cfg.dataDir).toBe("/tmp/agent-data");
   });
 
   it("falls back to a sane default interval when TICK_INTERVAL_MS is invalid", () => {
@@ -90,5 +95,17 @@ describe("loadConfig", () => {
   it("defaults GAME_NAME to eternum", () => {
     delete process.env.GAME_NAME;
     expect(loadConfig().gameName).toBe("eternum");
+  });
+
+  it("uses ETERNUM_AGENT_HOME defaults when explicit paths are absent", () => {
+    process.env.ETERNUM_AGENT_HOME = "/tmp/eternum-home";
+    delete process.env.MANIFEST_PATH;
+    delete process.env.DATA_DIR;
+    delete process.env.SESSION_BASE_PATH;
+
+    const cfg = loadConfig();
+    expect(cfg.manifestPath).toBe("/tmp/eternum-home/manifest.json");
+    expect(cfg.dataDir).toBe("/tmp/eternum-home/data");
+    expect(cfg.sessionBasePath).toBe("/tmp/eternum-home/.cartridge");
   });
 });

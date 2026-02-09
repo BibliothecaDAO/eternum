@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  getAvailableActions,
-  getActionHandler,
-  executeAction,
-} from "../../src/adapter/action-registry";
+import { getAvailableActions, getActionHandler, executeAction } from "../../src/adapter/action-registry";
 import { createMockClient, mockSigner } from "../utils/mock-client";
 
 describe("action-registry", () => {

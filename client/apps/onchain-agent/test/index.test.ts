@@ -319,7 +319,10 @@ describe("index bootstrap", () => {
       const setDataDir = mocks.createGameAgent.mock.results[0]?.value?.setDataDir;
       expect(setDataDir).toHaveBeenCalledWith("/tmp/new-agent-data");
 
-      await gameAgentCall.runtimeConfigManager.applyChanges([{ path: "world.rpcUrl", value: "http://rpc.next" }], "swap");
+      await gameAgentCall.runtimeConfigManager.applyChanges(
+        [{ path: "world.rpcUrl", value: "http://rpc.next" }],
+        "swap",
+      );
       expect(mocks.createClient).toHaveBeenCalledTimes(2);
       expect(mocks.createClient.mock.calls[1][0].rpcUrl).toBe("http://rpc.next");
       expect(mocks.sessionInstances).toHaveLength(2);
@@ -358,7 +361,9 @@ describe("index bootstrap", () => {
     });
     mocks.createClient.mockResolvedValueOnce(mocks.client).mockRejectedValueOnce(new Error("first swap failed"));
 
-    const onSpy = vi.spyOn(process, "on").mockImplementation(((event: string, cb: () => Promise<void>) => process) as any);
+    const onSpy = vi
+      .spyOn(process, "on")
+      .mockImplementation(((event: string, cb: () => Promise<void>) => process) as any);
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => undefined as never) as any);
 
@@ -376,7 +381,9 @@ describe("index bootstrap", () => {
       expect(first.results.some((r: any) => String(r.message).includes("Unknown config path"))).toBe(true);
       expect(first.results.some((r: any) => String(r.message).includes("Invalid positive number"))).toBe(true);
 
-      const second = await gameAgentCall.runtimeConfigManager.applyChanges([{ path: "rpcUrl", value: "http://rpc.fail" }]);
+      const second = await gameAgentCall.runtimeConfigManager.applyChanges([
+        { path: "rpcUrl", value: "http://rpc.fail" },
+      ]);
       expect(second.ok).toBe(false);
       expect(second.results.some((r: any) => String(r.message).includes("Failed to apply"))).toBe(true);
     } finally {

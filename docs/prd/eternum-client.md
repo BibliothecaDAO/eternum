@@ -4,11 +4,15 @@
 
 ### 1.1 Problem
 
-Eternum's SDK is split across 5+ packages (`provider`, `types`, `torii`, `core`, `dojo`, `react`) that are tightly coupled to React and RECS. To interact with Eternum programmatically — for bots, agents, analytics dashboards, CLI tools, or custom UIs — developers must manually wire all packages together, understand their initialization order, and pull in heavy browser/UI dependencies.
+Eternum's SDK is split across 5+ packages (`provider`, `types`, `torii`, `core`, `dojo`, `react`) that are tightly
+coupled to React and RECS. To interact with Eternum programmatically — for bots, agents, analytics dashboards, CLI
+tools, or custom UIs — developers must manually wire all packages together, understand their initialization order, and
+pull in heavy browser/UI dependencies.
 
 ### 1.2 Solution
 
-`@bibliothecadao/client` — a single, headless TypeScript package that exposes Eternum as a stateless client. No RECS, no React, no sync engine. Just views (read) and transactions (write).
+`@bibliothecadao/client` — a single, headless TypeScript package that exposes Eternum as a stateless client. No RECS, no
+React, no sync engine. Just views (read) and transactions (write).
 
 ```typescript
 const client = await EternumClient.create({
@@ -29,14 +33,14 @@ await client.trade.createOrder(account, { ... });
 
 ### 1.3 Target Users
 
-| User | Use Case |
-|------|----------|
-| AI agents | Autonomous gameplay: observe via views, decide, execute txs |
-| Bot developers | Automated trading, resource management, combat |
-| Analytics tools | Read-only dashboards, leaderboard trackers |
-| Mobile/custom UIs | Use views as data layer, render with any framework |
-| CLI tools | Script game actions from terminal |
-| Integration tests | Headless test harness for contract development |
+| User              | Use Case                                                    |
+| ----------------- | ----------------------------------------------------------- |
+| AI agents         | Autonomous gameplay: observe via views, decide, execute txs |
+| Bot developers    | Automated trading, resource management, combat              |
+| Analytics tools   | Read-only dashboards, leaderboard trackers                  |
+| Mobile/custom UIs | Use views as data layer, render with any framework          |
+| CLI tools         | Script game actions from terminal                           |
+| Integration tests | Headless test harness for contract development              |
 
 ### 1.4 Non-Goals
 
@@ -65,13 +69,15 @@ await client.trade.createOrder(account, { ... });
 ```
 
 **NOT** depended on:
+
 - `@bibliothecadao/dojo` (RECS wiring, setup orchestration — skipped entirely)
 - `@bibliothecadao/react` (React hooks — consumer layer)
 - `@dojoengine/recs`, `@dojoengine/sdk`, `@dojoengine/state` (reactive UI primitives)
 
 ### 2.2 Core Design: Stateless Views
 
-The client is **stateless**. There is no in-memory world. Each `view.*()` call queries Torii, computes derived values, and returns a fully-hydrated object. A simple TTL cache prevents redundant network calls within the same tick.
+The client is **stateless**. There is no in-memory world. Each `view.*()` call queries Torii, computes derived values,
+and returns a fully-hydrated object. A simple TTL cache prevents redundant network calls within the same tick.
 
 ```
 Agent tick loop:
@@ -163,12 +169,12 @@ packages/client/
 ```typescript
 // --- Creation ---
 interface EternumClientConfig {
-  rpcUrl: string;                    // Starknet RPC endpoint
-  toriiUrl: string;                  // Torii SQL API base URL
-  worldAddress: string;              // Eternum world contract address
-  manifest: any;                     // Dojo manifest (contract addresses)
-  cacheUrl?: string;                 // Optional cache server for heavy queries
-  cacheTtlMs?: number;              // View cache TTL (default: 5000ms)
+  rpcUrl: string; // Starknet RPC endpoint
+  toriiUrl: string; // Torii SQL API base URL
+  worldAddress: string; // Eternum world contract address
+  manifest: any; // Dojo manifest (contract addresses)
+  cacheUrl?: string; // Optional cache server for heavy queries
+  cacheTtlMs?: number; // View cache TTL (default: 5000ms)
 }
 
 class EternumClient {
@@ -224,7 +230,13 @@ class ViewClient {
   hyperstructure(entityId: ID): Promise<HyperstructureView>;
   leaderboard(opts?: { limit?: number; offset?: number }): Promise<LeaderboardView>;
   bank(bankEntityId: ID): Promise<BankView>;
-  events(opts?: { entityId?: ID; owner?: string; since?: number; limit?: number; offset?: number }): Promise<EventsView>;
+  events(opts?: {
+    entityId?: ID;
+    owner?: string;
+    since?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<EventsView>;
 }
 ```
 
@@ -234,9 +246,11 @@ class ViewClient {
 
 ### 4.1 RealmView
 
-**Purpose:** Everything an agent needs to manage a realm — resources, production, buildings, defense, armies, trade, arrivals.
+**Purpose:** Everything an agent needs to manage a realm — resources, production, buildings, defense, armies, trade,
+arrivals.
 
 **Data sources:**
+
 - `getStructureFromToriiClient(entityId)` → structure + resources + production boosts
 - `fetchGuardsByStructure(entityId)` → guard slot data
 - `fetchAllArmiesMapData()` filtered by owner structure → explorers
@@ -246,16 +260,16 @@ class ViewClient {
 interface RealmView {
   // --- Identity ---
   entityId: ID;
-  realmId: number;                   // Realm number (1-8000)
-  name: string;                      // Player-set name or default
+  realmId: number; // Realm number (1-8000)
+  name: string; // Player-set name or default
   owner: ContractAddress;
   ownerName: string;
-  order: number;                     // Realm order (0-16, e.g. "Giants")
-  orderName: string;                 // "Giants", "Titans", etc.
-  position: Position;                // { x, y }
-  level: number;                     // 0=Settlement, 1=City, 2=Kingdom, 3=Empire
-  levelName: string;                 // "Settlement", "City", etc.
-  category: StructureType;           // Always StructureType.Realm
+  order: number; // Realm order (0-16, e.g. "Giants")
+  orderName: string; // "Giants", "Titans", etc.
+  position: Position; // { x, y }
+  level: number; // 0=Settlement, 1=City, 2=Kingdom, 3=Empire
+  levelName: string; // "Settlement", "City", etc.
+  category: StructureType; // Always StructureType.Realm
   hasWonder: boolean;
   villageCount: number;
 
@@ -264,25 +278,25 @@ interface RealmView {
 
   // --- Storage ---
   storage: {
-    capacityKg: number;              // Total storage (storehouses * capacity)
-    usedKg: number;                  // Current usage
-    freeKg: number;                  // capacityKg - usedKg
+    capacityKg: number; // Total storage (storehouses * capacity)
+    usedKg: number; // Current usage
+    freeKg: number; // capacityKg - usedKg
     storehouseCount: number;
   };
 
   // --- Active Productions ---
-  productions: ProductionState[];    // Only resources being produced
+  productions: ProductionState[]; // Only resources being produced
 
   // --- Buildings ---
   buildings: BuildingState[];
-  buildableSlots: number;            // Remaining hex slots (level-based: 6/18/36/60)
+  buildableSlots: number; // Remaining hex slots (level-based: 6/18/36/60)
   totalBuildings: number;
 
   // --- Population ---
   population: {
     current: number;
-    capacity: number;                // Base + workers huts
-    free: number;                    // capacity - current
+    capacity: number; // Base + workers huts
+    free: number; // capacity - current
   };
 
   // --- Defense (4 guard slots) ---
@@ -303,7 +317,7 @@ interface RealmView {
   // --- Battle Status ---
   battle: {
     isImmune: boolean;
-    immunityEndsAt: number | null;   // Unix timestamp (null if not immune)
+    immunityEndsAt: number | null; // Unix timestamp (null if not immune)
     immunityRemainingSeconds: number; // Computed, 0 if not immune
     lastAttack: BattleReference | null;
     lastDefense: BattleReference | null;
@@ -311,8 +325,8 @@ interface RealmView {
 
   // --- Relevant Config for Agent Decisions ---
   config: {
-    upgradeCost: ResourceCost[] | null;    // null if at max level
-    nextLevel: number | null;              // null if at max
+    upgradeCost: ResourceCost[] | null; // null if at max level
+    nextLevel: number | null; // null if at max
     maxLevel: number;
     maxGuardSlots: number;
     maxExplorerSlots: number;
@@ -322,7 +336,7 @@ interface RealmView {
       distance: number;
       travelTimeMinutes: number;
     } | null;
-    buildingCosts: Record<BuildingType, ResourceCost[]>;  // All building costs at current scale
+    buildingCosts: Record<BuildingType, ResourceCost[]>; // All building costs at current scale
     wonderBonus: { active: boolean; bonusPercent: number }; // Nearby wonder buff
   };
 }
@@ -333,31 +347,31 @@ interface RealmView {
 ```typescript
 interface ResourceState {
   resourceId: ResourcesIds;
-  name: string;                      // "Wood", "Stone", etc.
-  tier: string;                      // "common", "uncommon", "rare", etc.
-  balance: number;                   // Human-readable (divided by PRECISION)
-  rawBalance: bigint;                // Raw on-chain value
+  name: string; // "Wood", "Stone", etc.
+  tier: string; // "common", "uncommon", "rare", etc.
+  balance: number; // Human-readable (divided by PRECISION)
+  rawBalance: bigint; // Raw on-chain value
 
   production: {
-    rate: number;                    // Per second (human-readable)
-    ratePerTick: number;             // Per game tick
+    rate: number; // Per second (human-readable)
+    ratePerTick: number; // Per game tick
     buildingCount: number;
     isActive: boolean;
     isPaused: boolean;
-    outputRemaining: number;         // Remaining producible amount
-    timeRemainingSeconds: number;    // Until production exhausted (Infinity for food)
-    depletesAt: number | null;       // Unix timestamp, null for food/inactive
-    inputs: ResourceCost[];          // What this production consumes
-  } | null;                          // null if not producing
+    outputRemaining: number; // Remaining producible amount
+    timeRemainingSeconds: number; // Until production exhausted (Infinity for food)
+    depletesAt: number | null; // Unix timestamp, null for food/inactive
+    inputs: ResourceCost[]; // What this production consumes
+  } | null; // null if not producing
 
-  atMaxCapacity: boolean;            // Storage full for this resource
-  weightKg: number;                  // Weight per unit in kg
+  atMaxCapacity: boolean; // Storage full for this resource
+  weightKg: number; // Weight per unit in kg
 }
 
 interface ProductionState {
   resourceId: ResourcesIds;
   name: string;
-  rate: number;                      // Per second (human-readable)
+  rate: number; // Per second (human-readable)
   buildingCount: number;
   isActive: boolean;
   outputRemaining: number;
@@ -367,7 +381,7 @@ interface ProductionState {
 
 interface BuildingState {
   type: BuildingType;
-  name: string;                      // "Farm", "Barracks", etc.
+  name: string; // "Farm", "Barracks", etc.
   coord: { x: number; y: number };
   paused: boolean;
   produces: ResourcesIds | null;
@@ -375,28 +389,28 @@ interface BuildingState {
 }
 
 interface GuardState {
-  slot: number;                      // 0-3
-  slotName: string;                  // "Alpha", "Bravo", "Charlie", "Delta"
+  slot: number; // 0-3
+  slotName: string; // "Alpha", "Bravo", "Charlie", "Delta"
   isEmpty: boolean;
 
   troops: {
-    category: string;                // "Knight", "Paladin", "Crossbowman"
-    tier: string;                    // "T1", "T2", "T3"
-    count: number;                   // Human-readable
+    category: string; // "Knight", "Paladin", "Crossbowman"
+    tier: string; // "T1", "T2", "T3"
+    count: number; // Human-readable
   } | null;
 
   stamina: {
-    current: number;                 // Computed with regen + boosts
+    current: number; // Computed with regen + boosts
     max: number;
   } | null;
 
   isOnCooldown: boolean;
-  cooldownEndsAt: number | null;     // Unix timestamp
+  cooldownEndsAt: number | null; // Unix timestamp
   destroyedTick: number;
   resurrectionCooldownEndsAt: number | null;
 
   // Combat effectiveness
-  strength: number;                  // Relative combat power (computed)
+  strength: number; // Relative combat power (computed)
 }
 
 interface ExplorerSummary {
@@ -404,7 +418,7 @@ interface ExplorerSummary {
   position: Position;
   troops: { category: string; tier: string; count: number };
   stamina: { current: number; max: number };
-  isHome: boolean;                   // Adjacent to this realm
+  isHome: boolean; // Adjacent to this realm
   isOnCooldown: boolean;
   carryingKg: number;
   capacityKg: number;
@@ -414,8 +428,8 @@ interface ExplorerSummary {
 interface ArrivalState {
   fromEntityId: ID;
   resources: ResourceCost[];
-  arrivesAt: number;                 // Unix timestamp
-  arrivesInSeconds: number;          // Computed: arrivesAt - now (0 if arrived)
+  arrivesAt: number; // Unix timestamp
+  arrivesInSeconds: number; // Computed: arrivesAt - now (0 if arrived)
   hasArrived: boolean;
 }
 
@@ -423,20 +437,20 @@ interface TradeOrderState {
   tradeId: ID;
   selling: { resourceId: ResourcesIds; name: string; amountPerUnit: number; maxUnits: number };
   asking: { resourceId: ResourcesIds; name: string; amountPerUnit: number };
-  totalSellingAmount: number;        // amountPerUnit * maxUnits
-  totalAskingAmount: number;         // amountPerUnit * maxUnits
-  ratio: number;                     // asking / selling
+  totalSellingAmount: number; // amountPerUnit * maxUnits
+  totalAskingAmount: number; // amountPerUnit * maxUnits
+  ratio: number; // asking / selling
   expiresAt: number;
-  expiresInSeconds: number;          // Computed
+  expiresInSeconds: number; // Computed
   isExpired: boolean;
-  takerId: ID;                       // 0 = open to anyone
-  isOpenOrder: boolean;              // takerId === 0
+  takerId: ID; // 0 = open to anyone
+  isOpenOrder: boolean; // takerId === 0
 }
 
 interface RelicState {
   resourceId: ResourcesIds;
   name: string;
-  effectDescription: string;         // "+20% resource production rate"
+  effectDescription: string; // "+20% resource production rate"
   expiresAtTick: number | null;
   usagesLeft: number | null;
   isActive: boolean;
@@ -446,7 +460,7 @@ interface BattleReference {
   entityId: ID;
   position: Position | null;
   timestamp: number;
-  timeSinceSeconds: number;          // Computed: now - timestamp
+  timeSinceSeconds: number; // Computed: now - timestamp
 }
 
 interface ResourceCost {
@@ -461,6 +475,7 @@ interface ResourceCost {
 **Purpose:** Full state of a mobile army — troops, stamina, cargo, nearby entities, combat previews.
 
 **Data sources:**
+
 - `getExplorerFromToriiClient(entityId)` → troops + resources
 - `fetchChestsNearPosition()` → nearby chests
 - Tile queries for biome, nearby entities
@@ -483,9 +498,9 @@ interface ExplorerView {
   };
 
   stamina: {
-    current: number;                 // Computed with regen + boosts
+    current: number; // Computed with regen + boosts
     max: number;
-    regenPerTick: number;            // Base + boost
+    regenPerTick: number; // Base + boost
     ticksUntilFull: number;
     secondsUntilFull: number;
   };
@@ -507,15 +522,15 @@ interface ExplorerView {
   combat: {
     battleCooldownEndsAt: number | null;
     isOnCooldown: boolean;
-    canAttack: boolean;              // stamina >= threshold && !onCooldown
-    strength: number;                // Relative power rating (computed)
+    canAttack: boolean; // stamina >= threshold && !onCooldown
+    strength: number; // Relative power rating (computed)
   };
 
   movement: {
-    isHome: boolean;                 // Adjacent to home structure
+    isHome: boolean; // Adjacent to home structure
     currentBiome: string;
-    staminaCostToMove: number;       // For current biome + troop type
-    canMove: boolean;                // stamina >= cost
+    staminaCostToMove: number; // For current biome + troop type
+    canMove: boolean; // stamina >= cost
     foodCostPerMove: { wheat: number; fish: number };
     foodCostPerExplore: { wheat: number; fish: number };
   };
@@ -536,18 +551,18 @@ interface ExplorerView {
   }[];
 
   config: {
-    minTroopsForBattle: number;      // 100,000
+    minTroopsForBattle: number; // 100,000
     exploreStaminaCost: number;
-    travelStaminaCost: number;       // For current biome
+    travelStaminaCost: number; // For current biome
     exploreReward: { resourceId: ResourcesIds; amount: number };
-    biomeCombatBonus: number;        // For current biome
+    biomeCombatBonus: number; // For current biome
   };
 }
 
 interface NearbyEntity {
   entityId: ID;
   position: Position;
-  distance: number;                  // Hex distance
+  distance: number; // Hex distance
   owner: ContractAddress;
   ownerName: string;
   isMine: boolean;
@@ -560,11 +575,11 @@ interface NearbyEntity {
   stamina?: { current: number; max: number };
 
   combatPreview: {
-    estimatedDamageDealt: number;    // Troops I would kill
-    estimatedDamageTaken: number;    // Troops I would lose
+    estimatedDamageDealt: number; // Troops I would kill
+    estimatedDamageTaken: number; // Troops I would lose
     winLikelihood: "certain" | "likely" | "even" | "unlikely" | "impossible";
     staminaCost: number;
-  } | null;                          // null if friendly
+  } | null; // null if friendly
 }
 ```
 
@@ -573,6 +588,7 @@ interface NearbyEntity {
 **Purpose:** Hex region snapshot — tiles, structures, armies, chests.
 
 **Data sources:**
+
 - `fetchTilesByCoords()` for tile biomes and occupancy
 - `fetchAllStructuresMapData()` filtered to bounding box
 - `fetchAllArmiesMapData()` filtered to bounding box
@@ -602,7 +618,7 @@ interface MapAreaView {
 
 interface TileState {
   position: Position;
-  biome: string;                     // BiomeType name
+  biome: string; // BiomeType name
   isExplored: boolean;
   occupierType: "none" | "structure" | "army" | "chest";
   occupierId: ID | null;
@@ -612,7 +628,7 @@ interface MapStructure {
   entityId: ID;
   position: Position;
   type: StructureType;
-  typeName: string;                  // "Realm", "Bank", etc.
+  typeName: string; // "Realm", "Bank", etc.
   level: number;
   owner: ContractAddress;
   ownerName: string;
@@ -653,6 +669,7 @@ interface MapArmy {
 **Purpose:** Full market state — AMM pools with computed prices/slippage, P2P orders, recent swaps.
 
 **Data sources:**
+
 - Torii client queries for Market model (per-resource pool reserves)
 - `fetchSwapEvents()` for recent trades
 - `MarketManager` for AMM computations
@@ -689,7 +706,7 @@ interface AmmPoolState {
   };
 
   liquidity: {
-    totalLiquidity: number;          // sqrt(lords * resource)
+    totalLiquidity: number; // sqrt(lords * resource)
     totalShares: number;
   };
 
@@ -714,7 +731,7 @@ interface MarketOrder {
   expiresInSeconds: number;
   isExpired: boolean;
 
-  ammComparison: number | null;      // % better(+) or worse(-) than AMM spot price
+  ammComparison: number | null; // % better(+) or worse(-) than AMM spot price
 }
 
 interface SwapEvent {
@@ -734,6 +751,7 @@ interface SwapEvent {
 **Purpose:** A player's entire portfolio — structures, armies, guild, aggregated resources, points.
 
 **Data sources:**
+
 - `fetchGlobalStructureExplorerAndGuildDetails()` filtered to player
 - `fetchPlayerStructures(owner)` for structure details
 - `fetchPlayerLeaderboard()` + shareholder points pipeline
@@ -800,14 +818,15 @@ interface PlayerArmySummary {
 interface AggregatedResource {
   resourceId: ResourcesIds;
   name: string;
-  totalBalance: number;              // Sum across all structures
-  totalProductionRate: number;       // Net per second across all structures
+  totalBalance: number; // Sum across all structures
+  totalProductionRate: number; // Net per second across all structures
 }
 ```
 
 ### 4.6 HyperstructureView
 
 **Data sources:**
+
 - `getStructureFromToriiClient(entityId)` + Hyperstructure model
 - `fetchHyperstructuresWithRealmCount()` for nearby realms
 - `getHyperstructureTotalContributableAmounts()` for randomized requirements
@@ -816,7 +835,7 @@ interface AggregatedResource {
 ```typescript
 interface HyperstructureView {
   entityId: ID;
-  name: string;                      // Generated fantasy name
+  name: string; // Generated fantasy name
   position: Position;
   owner: ContractAddress;
   ownerName: string;
@@ -828,7 +847,7 @@ interface HyperstructureView {
   };
 
   progress: {
-    percentage: number;              // 0-100
+    percentage: number; // 0-100
     currentTotal: number;
     neededTotal: number;
   };
@@ -845,8 +864,8 @@ interface HyperstructureView {
   shareholders: {
     address: ContractAddress;
     name: string;
-    percentage: number;              // Basis points (0-10000)
-    percentageDisplay: number;       // 0-100
+    percentage: number; // Basis points (0-10000)
+    percentageDisplay: number; // 0-100
   }[];
 
   pointsMultiplier: number;
@@ -912,14 +931,14 @@ interface BankView {
   position: Position;
   owner: ContractAddress;
 
-  pools: AmmPoolState[];             // Same as MarketView
+  pools: AmmPoolState[]; // Same as MarketView
 
   fees: {
     ownerSwapFeePercent: number;
     lpFeePercent: number;
   };
 
-  myPositions: LpPosition[] | null;  // null if no account connected
+  myPositions: LpPosition[] | null; // null if no account connected
 }
 
 interface LpPosition {
@@ -941,13 +960,13 @@ interface EventsView {
 }
 
 interface GameEvent {
-  type: string;                      // Story type discriminator
+  type: string; // Story type discriminator
   entityId: ID | null;
   owner: ContractAddress | null;
   timestamp: number;
   txHash: string;
-  summary: string;                   // Human-readable: "Player X attacked Structure Y"
-  data: Record<string, unknown>;     // Raw story-specific fields
+  summary: string; // Human-readable: "Player X attacked Structure Y"
+  data: Record<string, unknown>; // Raw story-specific fields
 }
 ```
 
@@ -956,58 +975,81 @@ interface GameEvent {
 ## 5. Transaction Specifications
 
 All transaction methods follow the pattern:
+
 ```typescript
 method(signer: Account | AccountInterface, props: MethodProps): Promise<void>
 ```
 
-The `signer` is always the first arg. Methods delegate directly to `EternumProvider` methods, inheriting batching, event emission, and telemetry.
+The `signer` is always the first arg. Methods delegate directly to `EternumProvider` methods, inheriting batching, event
+emission, and telemetry.
 
 ### 5.1 Resource Transactions
 
 ```typescript
 interface ResourceTransactions {
-  send(signer, props: {
-    fromStructureId: ID;
-    toStructureId: ID;
-    resources: ResourceCost[];
-  }): Promise<void>;
+  send(
+    signer,
+    props: {
+      fromStructureId: ID;
+      toStructureId: ID;
+      resources: ResourceCost[];
+    },
+  ): Promise<void>;
 
-  pickup(signer, props: {
-    recipientStructureId: ID;
-    ownerStructureId: ID;
-    resources: ResourceCost[];
-  }): Promise<void>;
+  pickup(
+    signer,
+    props: {
+      recipientStructureId: ID;
+      ownerStructureId: ID;
+      resources: ResourceCost[];
+    },
+  ): Promise<void>;
 
-  claimArrivals(signer, props: {
-    structureId: ID;
-    day: number;
-    slot: number;
-    resourceCount: number;
-  }): Promise<void>;
+  claimArrivals(
+    signer,
+    props: {
+      structureId: ID;
+      day: number;
+      slot: number;
+      resourceCount: number;
+    },
+  ): Promise<void>;
 
-  approve(signer, props: {
-    structureId: ID;
-    recipientStructureId: ID;
-    resources: ResourceCost[];
-  }): Promise<void>;
+  approve(
+    signer,
+    props: {
+      structureId: ID;
+      recipientStructureId: ID;
+      resources: ResourceCost[];
+    },
+  ): Promise<void>;
 
-  transferBetweenExplorers(signer, props: {
-    fromExplorerId: ID;
-    toExplorerId: ID;
-    resources: ResourceCost[];
-  }): Promise<void>;
+  transferBetweenExplorers(
+    signer,
+    props: {
+      fromExplorerId: ID;
+      toExplorerId: ID;
+      resources: ResourceCost[];
+    },
+  ): Promise<void>;
 
-  transferExplorerToStructure(signer, props: {
-    fromExplorerId: ID;
-    toStructureId: ID;
-    resources: ResourceCost[];
-  }): Promise<void>;
+  transferExplorerToStructure(
+    signer,
+    props: {
+      fromExplorerId: ID;
+      toStructureId: ID;
+      resources: ResourceCost[];
+    },
+  ): Promise<void>;
 
-  transferStructureToExplorer(signer, props: {
-    fromStructureId: ID;
-    toExplorerId: ID;
-    resources: ResourceCost[];
-  }): Promise<void>;
+  transferStructureToExplorer(
+    signer,
+    props: {
+      fromStructureId: ID;
+      toExplorerId: ID;
+      resources: ResourceCost[];
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1015,73 +1057,103 @@ interface ResourceTransactions {
 
 ```typescript
 interface TroopTransactions {
-  createExplorer(signer, props: {
-    structureId: ID;
-    category: TroopType;
-    tier: TroopTier;
-    count: number;
-    direction: Direction;
-  }): Promise<void>;
+  createExplorer(
+    signer,
+    props: {
+      structureId: ID;
+      category: TroopType;
+      tier: TroopTier;
+      count: number;
+      direction: Direction;
+    },
+  ): Promise<void>;
 
-  addToExplorer(signer, props: {
-    explorerId: ID;
-    count: number;
-    homeDirection: Direction;
-  }): Promise<void>;
+  addToExplorer(
+    signer,
+    props: {
+      explorerId: ID;
+      count: number;
+      homeDirection: Direction;
+    },
+  ): Promise<void>;
 
   deleteExplorer(signer, props: { explorerId: ID }): Promise<void>;
 
-  addGuard(signer, props: {
-    structureId: ID;
-    slot: number;
-    category: TroopType;
-    tier: TroopTier;
-    count: number;
-  }): Promise<void>;
+  addGuard(
+    signer,
+    props: {
+      structureId: ID;
+      slot: number;
+      category: TroopType;
+      tier: TroopTier;
+      count: number;
+    },
+  ): Promise<void>;
 
-  deleteGuard(signer, props: {
-    structureId: ID;
-    slot: number;
-  }): Promise<void>;
+  deleteGuard(
+    signer,
+    props: {
+      structureId: ID;
+      slot: number;
+    },
+  ): Promise<void>;
 
-  move(signer, props: {
-    explorerId: ID;
-    directions: Direction[];
-    explore: boolean;
-  }): Promise<void>;
+  move(
+    signer,
+    props: {
+      explorerId: ID;
+      directions: Direction[];
+      explore: boolean;
+    },
+  ): Promise<void>;
 
-  travel(signer, props: {
-    explorerId: ID;
-    directions: Direction[];
-  }): Promise<void>;
+  travel(
+    signer,
+    props: {
+      explorerId: ID;
+      directions: Direction[];
+    },
+  ): Promise<void>;
 
-  explore(signer, props: {
-    explorerId: ID;
-    directions: Direction[];
-  }): Promise<void>;
+  explore(
+    signer,
+    props: {
+      explorerId: ID;
+      directions: Direction[];
+    },
+  ): Promise<void>;
 
-  swapExplorerToExplorer(signer, props: {
-    fromExplorerId: ID;
-    toExplorerId: ID;
-    direction: Direction;
-    count: number;
-  }): Promise<void>;
+  swapExplorerToExplorer(
+    signer,
+    props: {
+      fromExplorerId: ID;
+      toExplorerId: ID;
+      direction: Direction;
+      count: number;
+    },
+  ): Promise<void>;
 
-  swapExplorerToGuard(signer, props: {
-    fromExplorerId: ID;
-    toStructureId: ID;
-    direction: Direction;
-    guardSlot: number;
-    count: number;
-  }): Promise<void>;
+  swapExplorerToGuard(
+    signer,
+    props: {
+      fromExplorerId: ID;
+      toStructureId: ID;
+      direction: Direction;
+      guardSlot: number;
+      count: number;
+    },
+  ): Promise<void>;
 
-  swapGuardToExplorer(signer, props: {
-    fromStructureId: ID;
-    guardSlot: number;
-    toExplorerId: ID;
-    direction: Direction;
-    count: number;
-  }): Promise<void>;
+  swapGuardToExplorer(
+    signer,
+    props: {
+      fromStructureId: ID;
+      guardSlot: number;
+      toExplorerId: ID;
+      direction: Direction;
+      count: number;
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1089,32 +1161,44 @@ interface TroopTransactions {
 
 ```typescript
 interface CombatTransactions {
-  attackExplorer(signer, props: {
-    aggressorId: ID;
-    defenderId: ID;
-    direction: Direction;
-    stealResources: ResourceCost[];
-  }): Promise<void>;
+  attackExplorer(
+    signer,
+    props: {
+      aggressorId: ID;
+      defenderId: ID;
+      direction: Direction;
+      stealResources: ResourceCost[];
+    },
+  ): Promise<void>;
 
-  attackGuard(signer, props: {
-    explorerId: ID;
-    structureId: ID;
-    direction: Direction;
-  }): Promise<void>;
+  attackGuard(
+    signer,
+    props: {
+      explorerId: ID;
+      structureId: ID;
+      direction: Direction;
+    },
+  ): Promise<void>;
 
-  guardAttackExplorer(signer, props: {
-    structureId: ID;
-    guardSlot: number;
-    explorerId: ID;
-    direction: Direction;
-  }): Promise<void>;
+  guardAttackExplorer(
+    signer,
+    props: {
+      structureId: ID;
+      guardSlot: number;
+      explorerId: ID;
+      direction: Direction;
+    },
+  ): Promise<void>;
 
-  raid(signer, props: {
-    explorerId: ID;
-    structureId: ID;
-    direction: Direction;
-    stealResources: ResourceCost[];
-  }): Promise<void>;
+  raid(
+    signer,
+    props: {
+      explorerId: ID;
+      structureId: ID;
+      direction: Direction;
+      stealResources: ResourceCost[];
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1122,26 +1206,35 @@ interface CombatTransactions {
 
 ```typescript
 interface TradeTransactions {
-  createOrder(signer, props: {
-    makerId: ID;
-    takerId?: ID;                    // 0 or omit for open order
-    sellingResourceType: ResourcesIds;
-    sellingAmountPerUnit: number;
-    sellingMaxUnits: number;
-    askingResourceType: ResourcesIds;
-    askingAmountPerUnit: number;
-    expiresAt: number;
-  }): Promise<void>;
+  createOrder(
+    signer,
+    props: {
+      makerId: ID;
+      takerId?: ID; // 0 or omit for open order
+      sellingResourceType: ResourcesIds;
+      sellingAmountPerUnit: number;
+      sellingMaxUnits: number;
+      askingResourceType: ResourcesIds;
+      askingAmountPerUnit: number;
+      expiresAt: number;
+    },
+  ): Promise<void>;
 
-  acceptOrder(signer, props: {
-    takerId: ID;
-    tradeId: ID;
-    count: number;
-  }): Promise<void>;
+  acceptOrder(
+    signer,
+    props: {
+      takerId: ID;
+      tradeId: ID;
+      count: number;
+    },
+  ): Promise<void>;
 
-  cancelOrder(signer, props: {
-    tradeId: ID;
-  }): Promise<void>;
+  cancelOrder(
+    signer,
+    props: {
+      tradeId: ID;
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1149,27 +1242,39 @@ interface TradeTransactions {
 
 ```typescript
 interface BuildingTransactions {
-  create(signer, props: {
-    structureId: ID;
-    directions: Direction[];
-    category: BuildingType;
-    useSimpleCost: boolean;
-  }): Promise<void>;
+  create(
+    signer,
+    props: {
+      structureId: ID;
+      directions: Direction[];
+      category: BuildingType;
+      useSimpleCost: boolean;
+    },
+  ): Promise<void>;
 
-  destroy(signer, props: {
-    structureId: ID;
-    buildingCoord: { x: number; y: number };
-  }): Promise<void>;
+  destroy(
+    signer,
+    props: {
+      structureId: ID;
+      buildingCoord: { x: number; y: number };
+    },
+  ): Promise<void>;
 
-  pauseProduction(signer, props: {
-    structureId: ID;
-    buildingCoord: { x: number; y: number };
-  }): Promise<void>;
+  pauseProduction(
+    signer,
+    props: {
+      structureId: ID;
+      buildingCoord: { x: number; y: number };
+    },
+  ): Promise<void>;
 
-  resumeProduction(signer, props: {
-    structureId: ID;
-    buildingCoord: { x: number; y: number };
-  }): Promise<void>;
+  resumeProduction(
+    signer,
+    props: {
+      structureId: ID;
+      buildingCoord: { x: number; y: number };
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1177,32 +1282,44 @@ interface BuildingTransactions {
 
 ```typescript
 interface BankTransactions {
-  buy(signer, props: {
-    bankEntityId: ID;
-    entityId: ID;
-    resourceType: ResourcesIds;
-    amount: number;
-  }): Promise<void>;
+  buy(
+    signer,
+    props: {
+      bankEntityId: ID;
+      entityId: ID;
+      resourceType: ResourcesIds;
+      amount: number;
+    },
+  ): Promise<void>;
 
-  sell(signer, props: {
-    bankEntityId: ID;
-    entityId: ID;
-    resourceType: ResourcesIds;
-    amount: number;
-  }): Promise<void>;
+  sell(
+    signer,
+    props: {
+      bankEntityId: ID;
+      entityId: ID;
+      resourceType: ResourcesIds;
+      amount: number;
+    },
+  ): Promise<void>;
 
-  addLiquidity(signer, props: {
-    bankEntityId: ID;
-    entityId: ID;
-    calls: any[];                    // Liquidity add calls
-  }): Promise<void>;
+  addLiquidity(
+    signer,
+    props: {
+      bankEntityId: ID;
+      entityId: ID;
+      calls: any[]; // Liquidity add calls
+    },
+  ): Promise<void>;
 
-  removeLiquidity(signer, props: {
-    bankEntityId: ID;
-    entityId: ID;
-    resourceType: ResourcesIds;
-    shares: number;
-  }): Promise<void>;
+  removeLiquidity(
+    signer,
+    props: {
+      bankEntityId: ID;
+      entityId: ID;
+      resourceType: ResourcesIds;
+      shares: number;
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1212,21 +1329,30 @@ interface BankTransactions {
 interface HyperstructureTransactions {
   initialize(signer, props: { hyperstructureId: ID }): Promise<void>;
 
-  contribute(signer, props: {
-    hyperstructureId: ID;
-    fromStructureId: ID;
-    contributions: ResourceCost[];
-  }): Promise<void>;
+  contribute(
+    signer,
+    props: {
+      hyperstructureId: ID;
+      fromStructureId: ID;
+      contributions: ResourceCost[];
+    },
+  ): Promise<void>;
 
-  allocateShares(signer, props: {
-    hyperstructureId: ID;
-    shareholders: { address: ContractAddress; percentage: number }[];
-  }): Promise<void>;
+  allocateShares(
+    signer,
+    props: {
+      hyperstructureId: ID;
+      shareholders: { address: ContractAddress; percentage: number }[];
+    },
+  ): Promise<void>;
 
-  setAccess(signer, props: {
-    hyperstructureId: ID;
-    access: "Public" | "Private" | "GuildOnly";
-  }): Promise<void>;
+  setAccess(
+    signer,
+    props: {
+      hyperstructureId: ID;
+      access: "Public" | "Private" | "GuildOnly";
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1234,18 +1360,24 @@ interface HyperstructureTransactions {
 
 ```typescript
 interface GuildTransactions {
-  create(signer, props: {
-    isPublic: boolean;
-    name: string;
-  }): Promise<void>;
+  create(
+    signer,
+    props: {
+      isPublic: boolean;
+      name: string;
+    },
+  ): Promise<void>;
 
   join(signer, props: { guildId: ContractAddress }): Promise<void>;
   leave(signer): Promise<void>;
 
-  updateWhitelist(signer, props: {
-    address: ContractAddress;
-    whitelisted: boolean;
-  }): Promise<void>;
+  updateWhitelist(
+    signer,
+    props: {
+      address: ContractAddress;
+      whitelisted: boolean;
+    },
+  ): Promise<void>;
 
   removeMember(signer, props: { address: ContractAddress }): Promise<void>;
   disband(signer): Promise<void>;
@@ -1258,24 +1390,33 @@ interface GuildTransactions {
 interface RealmTransactions {
   upgrade(signer, props: { realmEntityId: ID }): Promise<void>;
 
-  createVillage(signer, props: {
-    villagePassTokenId: number;
-    connectedRealmId: ID;
-    direction: Direction;
-    villagePassAddress: ContractAddress;
-  }): Promise<void>;
+  createVillage(
+    signer,
+    props: {
+      villagePassTokenId: number;
+      connectedRealmId: ID;
+      direction: Direction;
+      villagePassAddress: ContractAddress;
+    },
+  ): Promise<void>;
 
-  setName(signer, props: {
-    entityId: ID;
-    name: string;
-  }): Promise<void>;
+  setName(
+    signer,
+    props: {
+      entityId: ID;
+      name: string;
+    },
+  ): Promise<void>;
 
   setPlayerName(signer, props: { name: string }): Promise<void>;
 
-  transferOwnership(signer, props: {
-    structureId: ID;
-    newOwner: ContractAddress;
-  }): Promise<void>;
+  transferOwnership(
+    signer,
+    props: {
+      structureId: ID;
+      newOwner: ContractAddress;
+    },
+  ): Promise<void>;
 }
 ```
 
@@ -1312,15 +1453,12 @@ function computeDepletionTime(params: {
   tickIntervalSeconds: number;
   isFood: boolean;
 }): {
-  timeRemainingSeconds: number;      // Infinity for food
-  depletesAt: number | null;         // Unix timestamp
+  timeRemainingSeconds: number; // Infinity for food
+  depletesAt: number | null; // Unix timestamp
 };
 
 // Net production rate (production - consumption)
-function computeNetProductionRate(params: {
-  productionRate: number;
-  consumptionRate: number;
-}): number;
+function computeNetProductionRate(params: { productionRate: number; consumptionRate: number }): number;
 ```
 
 ### 6.2 Combat Computations
@@ -1344,12 +1482,7 @@ function simulateBattle(params: {
 };
 
 // Raid simulation
-function simulateRaid(params: {
-  raider: CombatUnit;
-  defenders: CombatUnit[];
-  biome: string;
-  config: CombatConfig;
-}): {
+function simulateRaid(params: { raider: CombatUnit; defenders: CombatUnit[]; biome: string; config: CombatConfig }): {
   raiderDamageTaken: number;
   defenderDamageTaken: number;
   successChance: number;
@@ -1378,11 +1511,12 @@ function computeSlippage(params: {
   inputReserve: number;
   outputReserve: number;
   isBuy: boolean;
-}): number;                          // Percentage
+}): number; // Percentage
 
 // Generate quotes at multiple amounts
-function computeQuotes(pool: { lordsReserve: number; resourceReserve: number; feeNum: number; feeDenom: number },
-  amounts: number[]
+function computeQuotes(
+  pool: { lordsReserve: number; resourceReserve: number; feeNum: number; feeDenom: number },
+  amounts: number[],
 ): { amount: number; cost: number; slippage: number }[];
 ```
 
@@ -1410,7 +1544,7 @@ function computeStamina(params: {
 function computeBuildingCost(params: {
   baseCosts: ResourceCost[];
   existingBuildingCount: number;
-  costPercentIncrease: number;       // From config
+  costPercentIncrease: number; // From config
 }): ResourceCost[];
 ```
 
@@ -1426,7 +1560,7 @@ class ViewCache {
   set<T>(key: string, data: T): void;
   invalidate(key: string): void;
   invalidateAll(): void;
-  invalidatePattern(pattern: string): void;  // e.g. "realm:*"
+  invalidatePattern(pattern: string): void; // e.g. "realm:*"
 
   // Stats
   get size(): number;
@@ -1434,34 +1568,30 @@ class ViewCache {
 }
 ```
 
-**Cache key conventions:**
-| View | Key Pattern |
-|------|-------------|
-| realm | `realm:{entityId}` |
-| explorer | `explorer:{entityId}` |
-| mapArea | `mapArea:{x}:{y}:{radius}` |
-| market | `market` or `market:{resourceId}` |
-| player | `player:{address}` |
-| hyperstructure | `hyperstructure:{entityId}` |
-| leaderboard | `leaderboard:{limit}:{offset}` |
-| bank | `bank:{entityId}` |
-| events | `events:{hash(opts)}` |
+**Cache key conventions:** | View | Key Pattern | |------|-------------| | realm | `realm:{entityId}` | | explorer |
+`explorer:{entityId}` | | mapArea | `mapArea:{x}:{y}:{radius}` | | market | `market` or `market:{resourceId}` | | player
+| `player:{address}` | | hyperstructure | `hyperstructure:{entityId}` | | leaderboard | `leaderboard:{limit}:{offset}` |
+| bank | `bank:{entityId}` | | events | `events:{hash(opts)}` |
 
-**Cache invalidation after transactions:**
-When a transaction completes, the client automatically invalidates relevant cache entries. E.g., after `trade.createOrder()`, invalidate `market*` and `realm:{makerId}`.
+**Cache invalidation after transactions:** When a transaction completes, the client automatically invalidates relevant
+cache entries. E.g., after `trade.createOrder()`, invalidate `market*` and `realm:{makerId}`.
 
 ---
 
 ## 8. Implementation Plan (TDD)
 
 ### Phase 1: Foundation
-**Files:** `package.json`, `tsconfig.json`, `tsup.config.ts`, `vitest.config.ts`, `src/index.ts`, `src/config.ts`, `src/cache.ts`
+
+**Files:** `package.json`, `tsconfig.json`, `tsup.config.ts`, `vitest.config.ts`, `src/index.ts`, `src/config.ts`,
+`src/cache.ts`
 
 **Tests first:**
+
 - `tests/cache.test.ts` — TTL expiry, get/set, invalidation, pattern matching
 - `tests/client.test.ts` — `EternumClient.create()` initialization, `connect()`/`disconnect()`
 
 **Implementation:**
+
 1. Create package with workspace dependencies
 2. Implement `ViewCache` (pure, no deps)
 3. Implement `EternumClient` shell — wires up `EternumProvider`, `SqlApi`, `ConfigManager`
@@ -1469,9 +1599,11 @@ When a transaction completes, the client automatically invalidates relevant cach
 5. Verify `pnpm --dir packages/client build` produces valid output
 
 ### Phase 2: Compute Module
+
 **Files:** `src/compute/*.ts`
 
 **Tests first:**
+
 - `tests/compute/resources.test.ts` — balance with production, depletion time, net rate
 - `tests/compute/combat.test.ts` — battle simulation, raid simulation, strength rating
 - `tests/compute/market.test.ts` — output amount, slippage, quotes
@@ -1479,49 +1611,62 @@ When a transaction completes, the client automatically invalidates relevant cach
 - `tests/compute/buildings.test.ts` — cost scaling with quadratic formula
 
 **Implementation:**
+
 1. Extract pure functions from existing managers/utils
 2. Remove all RECS/component dependencies — accept plain data params
 3. Validate against existing test cases (e.g., `stamina-manager.test.ts`)
 
 ### Phase 3: View Types
+
 **Files:** `src/types/*.ts`
 
 **No tests** (type-only, compile-time checked).
 
 **Implementation:**
+
 1. Define all view interfaces documented in Section 4
 2. Define all sub-types (ResourceState, GuardState, etc.)
 3. Ensure they compile with `--strict`
 
 ### Phase 4: Transaction Layer
+
 **Files:** `src/transactions/*.ts`
 
 **Tests first:**
-- `tests/transactions/grouping.test.ts` — verify each domain method delegates to correct provider method with correct args
+
+- `tests/transactions/grouping.test.ts` — verify each domain method delegates to correct provider method with correct
+  args
 
 **Implementation:**
+
 1. Create transaction group classes (ResourceTransactions, TroopTransactions, etc.)
 2. Each method maps clean props → provider method props (adding signer)
 3. No new logic — thin wrappers
 4. Wire into `EternumClient`
 
 ### Phase 5: View Builders (Core)
+
 **Files:** `src/views/realm.ts`, `src/views/explorer.ts`, `src/views/map-area.ts`
 
 **Tests first:**
+
 - `tests/views/realm.test.ts` — mock SqlApi + ToriiClient, verify RealmView shape, computed fields
 - `tests/views/explorer.test.ts` — mock data, verify stamina computation, combat previews, nearby entities
 - `tests/views/map-area.test.ts` — mock tile + structure + army data, verify filtering and summaries
 
 **Implementation:**
+
 1. RealmView builder — fetches structure, resources, guards, explorers, arrivals; runs compute functions; assembles view
 2. ExplorerView builder — fetches explorer, nearby tiles/entities; runs stamina + combat compute
 3. MapAreaView builder — fetches tiles in bounding box, filters structures/armies by distance
 
 ### Phase 6: View Builders (Secondary)
-**Files:** `src/views/market.ts`, `src/views/player.ts`, `src/views/hyperstructure.ts`, `src/views/leaderboard.ts`, `src/views/bank.ts`, `src/views/events.ts`
+
+**Files:** `src/views/market.ts`, `src/views/player.ts`, `src/views/hyperstructure.ts`, `src/views/leaderboard.ts`,
+`src/views/bank.ts`, `src/views/events.ts`
 
 **Tests first:**
+
 - `tests/views/market.test.ts` — mock pool data, verify quotes, slippage, AMM comparison
 - `tests/views/player.test.ts` — mock aggregated data, verify portfolio
 - `tests/views/hyperstructure.test.ts` — mock requirements, verify progress computation
@@ -1529,6 +1674,7 @@ When a transaction completes, the client automatically invalidates relevant cach
 - `tests/views/bank.test.ts` — mock pool + LP position data
 
 **Implementation:**
+
 1. MarketView — fetches pools + orders + swaps; runs AMM computations
 2. PlayerView — fetches aggregated player data; computes totals
 3. HyperstructureView — fetches structure + requirements; computes progress
@@ -1537,13 +1683,16 @@ When a transaction completes, the client automatically invalidates relevant cach
 6. EventsView — wraps story event queries with summary generation
 
 ### Phase 7: Integration & Cache Wiring
+
 **Files:** `src/views/index.ts` (ViewClient), cache invalidation in transactions
 
 **Tests:**
+
 - Integration test: create client → call views → verify cache behavior
 - Transaction cache invalidation tests
 
 **Implementation:**
+
 1. Wire ViewClient with cache layer
 2. Add cache invalidation hooks to transaction completion events
 3. End-to-end smoke test against live Torii (optional, behind env flag)
@@ -1553,13 +1702,16 @@ When a transaction completes, the client automatically invalidates relevant cach
 ## 9. Testing Strategy
 
 ### Unit Tests (vitest)
+
 - **Compute functions:** Pure input/output, no mocks needed. Use known game values.
 - **View builders:** Mock `SqlApi` and `ToriiClient` responses. Verify view shape and computed fields.
 - **Cache:** Test TTL expiry, invalidation patterns, hit rate tracking.
 - **Transaction grouping:** Verify prop mapping to provider methods.
 
 ### Test Data
+
 Create fixtures from real Torii responses:
+
 ```
 tests/fixtures/
 ├── structure-response.json      # Real getStructureFromToriiClient response
@@ -1571,6 +1723,7 @@ tests/fixtures/
 ```
 
 ### Coverage Targets
+
 - Compute module: 100% branch coverage (deterministic math)
 - View builders: 90%+ (all code paths with mocked data)
 - Transaction layer: 80%+ (delegation verification)
@@ -1581,6 +1734,7 @@ tests/fixtures/
 ## 10. Package Configuration
 
 ### package.json
+
 ```json
 {
   "name": "@bibliothecadao/client",
@@ -1627,27 +1781,50 @@ export type { EternumClientConfig } from "./config";
 
 // Views
 export type {
-  RealmView, ExplorerView, MapAreaView, MarketView,
-  PlayerView, HyperstructureView, LeaderboardView,
-  BankView, EventsView
+  RealmView,
+  ExplorerView,
+  MapAreaView,
+  MarketView,
+  PlayerView,
+  HyperstructureView,
+  LeaderboardView,
+  BankView,
+  EventsView,
 } from "./types/views";
 
 // Common sub-types
 export type {
-  ResourceState, ProductionState, BuildingState,
-  GuardState, ExplorerSummary, ArrivalState,
-  TradeOrderState, RelicState, BattleReference,
-  ResourceCost, NearbyEntity, AmmPoolState,
-  TileState, MapStructure, MapArmy, SwapEvent,
-  MarketOrder, GameEvent
+  ResourceState,
+  ProductionState,
+  BuildingState,
+  GuardState,
+  ExplorerSummary,
+  ArrivalState,
+  TradeOrderState,
+  RelicState,
+  BattleReference,
+  ResourceCost,
+  NearbyEntity,
+  AmmPoolState,
+  TileState,
+  MapStructure,
+  MapArmy,
+  SwapEvent,
+  MarketOrder,
+  GameEvent,
 } from "./types/common";
 
 // Computation functions (for advanced users)
 export {
-  computeBalance, computeDepletionTime,
-  simulateBattle, simulateRaid, computeStrength,
-  computeOutputAmount, computeSlippage,
-  computeStamina, computeBuildingCost
+  computeBalance,
+  computeDepletionTime,
+  simulateBattle,
+  simulateRaid,
+  computeStrength,
+  computeOutputAmount,
+  computeSlippage,
+  computeStamina,
+  computeBuildingCost,
 } from "./compute";
 
 // Cache (for manual control)
@@ -1683,8 +1860,8 @@ setInterval(async () => {
   const market = await client.view.market();
 
   // Sell excess wood if price is good
-  const wood = realm.resources.find(r => r.resourceId === ResourcesIds.Wood);
-  const woodPool = market.pools.find(p => p.resourceId === ResourcesIds.Wood);
+  const wood = realm.resources.find((r) => r.resourceId === ResourcesIds.Wood);
+  const woodPool = market.pools.find((p) => p.resourceId === ResourcesIds.Wood);
 
   if (wood && wood.balance > 5000 && woodPool && woodPool.price.lordsPerResource > 2.0) {
     await client.bank.sell(account, {
@@ -1735,9 +1912,7 @@ const client = await EternumClient.create({
 // No connect() needed for read-only
 
 const leaderboard = await client.view.leaderboard({ limit: 100 });
-const hyperstructures = await Promise.all(
-  leaderboard.hyperstructures.ids.map(id => client.view.hyperstructure(id))
-);
+const hyperstructures = await Promise.all(leaderboard.hyperstructures.ids.map((id) => client.view.hyperstructure(id)));
 
 console.log("Season ends in:", leaderboard.season.timeRemainingSeconds, "seconds");
 console.log("Leader:", leaderboard.players[0].name, leaderboard.players[0].totalPoints, "pts");
@@ -1751,11 +1926,10 @@ async function scoutArea(client: EternumClient, center: Position, radius: number
   const area = await client.view.mapArea({ x: center.x, y: center.y, radius });
 
   const threats = area.armies
-    .filter(a => !a.isMine && !a.isBandit && a.troops.count > 50000)
+    .filter((a) => !a.isMine && !a.isBandit && a.troops.count > 50000)
     .sort((a, b) => a.distance - b.distance);
 
-  const opportunities = area.armies
-    .filter(a => a.isBandit && a.troops.count < 20000);
+  const opportunities = area.armies.filter((a) => a.isBandit && a.troops.count < 20000);
 
   return { threats, opportunities, summary: area.summary };
 }
@@ -1766,24 +1940,31 @@ async function scoutArea(client: EternumClient, center: Position, radius: number
 ## 12. Migration Path
 
 ### For Existing Game Client
-The game client (`client/apps/game`) continues using `@bibliothecadao/react` hooks and RECS. No changes needed. The headless client is **additive**.
+
+The game client (`client/apps/game`) continues using `@bibliothecadao/react` hooks and RECS. No changes needed. The
+headless client is **additive**.
 
 ### For Bot Developers
+
 Previously required assembling 5+ packages manually. Now:
+
 ```
 Before: provider + types + torii + core + dojo + recs + manual wiring
 After:  client
 ```
 
 ### Future: React Package Simplification
+
 Eventually, `@bibliothecadao/react` hooks could be refactored to use `@bibliothecadao/client` internally:
+
 ```typescript
 // Future: hooks become thin wrappers
 function useRealmView(entityId: ID) {
   const client = useEternumClient();
-  return useQuery(['realm', entityId], () => client.view.realm(entityId));
+  return useQuery(["realm", entityId], () => client.view.realm(entityId));
 }
 ```
+
 This is a future consideration, not part of this PRD.
 
 ---

@@ -61,7 +61,12 @@ describe("ViewClient.realm", () => {
   beforeEach(() => {
     sql = createMockSql();
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns a RealmView with correct structure", async () => {
@@ -128,7 +133,12 @@ describe("ViewClient.realm", () => {
     sql = createMockSql({
       fetchGuardsByStructure: vi.fn().mockResolvedValue([]),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.realm(42);
 
@@ -141,7 +151,12 @@ describe("ViewClient.realm", () => {
     sql = createMockSql({
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.realm(42);
 
@@ -150,11 +165,14 @@ describe("ViewClient.realm", () => {
 
   it("uses fallback realm name when structure has no name", async () => {
     sql = createMockSql({
-      fetchPlayerStructures: vi.fn().mockResolvedValue([
-        { entity_id: 42, coord_x: 0, coord_y: 0 },
-      ]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([{ entity_id: 42, coord_x: 0, coord_y: 0 }]),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.realm(42);
 
@@ -162,7 +180,12 @@ describe("ViewClient.realm", () => {
   });
 
   it("uses fallback owner when no account is connected", async () => {
-    client = new ViewClient(sql, cache, () => null, () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => null,
+      () => 1000,
+    );
 
     const view = await client.realm(42);
 
@@ -180,7 +203,12 @@ describe("ViewClient.explorer", () => {
   beforeEach(() => {
     sql = createMockSql();
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns an ExplorerView with correct structure", async () => {
@@ -212,16 +240,21 @@ describe("ViewClient.mapArea", () => {
         { entity_id: 1, coord_x: 5, coord_y: 5, owner: "0x1", category: "Realm", name: "A", level: 1 },
         { entity_id: 2, coord_x: 100, coord_y: 100, owner: "0x2", category: "Bank", name: "B", level: 1 },
       ]),
-      fetchAllArmiesMapData: vi.fn().mockResolvedValue([
-        { entity_id: 10, coord_x: 6, coord_y: 6, owner: "0x1", stamina: 80, is_in_battle: false },
-      ]),
+      fetchAllArmiesMapData: vi
+        .fn()
+        .mockResolvedValue([{ entity_id: 10, coord_x: 6, coord_y: 6, owner: "0x1", stamina: 80, is_in_battle: false }]),
       fetchAllTiles: vi.fn().mockResolvedValue([
         { col: 5, row: 5, biome: "forest", explored: true, occupier_id: null },
         { col: 200, row: 200, biome: "desert", explored: false, occupier_id: null },
       ]),
     });
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("filters structures within radius", async () => {
@@ -281,7 +314,12 @@ describe("ViewClient.market", () => {
       ]),
     });
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns a MarketView with recent swaps", async () => {
@@ -309,18 +347,27 @@ describe("ViewClient.player", () => {
 
   beforeEach(() => {
     sql = createMockSql({
-      fetchStructuresByOwner: vi.fn().mockResolvedValue([
-        { entity_id: 1, category: "Realm", name: "MyRealm", coord_x: 5, coord_y: 5, level: 2 },
-      ]),
-      fetchAllArmiesMapData: vi.fn().mockResolvedValue([
-        { entity_id: 10, owner: "0xPlayer", coord_x: 6, coord_y: 6, stamina: 70, is_in_battle: true },
-      ]),
-      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([
-        { playerAddress: "0xPlayer", playerName: "TestPlayer", totalPoints: 1500, rank: 3, realmCount: 2 },
-      ]),
+      fetchStructuresByOwner: vi
+        .fn()
+        .mockResolvedValue([{ entity_id: 1, category: "Realm", name: "MyRealm", coord_x: 5, coord_y: 5, level: 2 }]),
+      fetchAllArmiesMapData: vi
+        .fn()
+        .mockResolvedValue([
+          { entity_id: 10, owner: "0xPlayer", coord_x: 6, coord_y: 6, stamina: 70, is_in_battle: true },
+        ]),
+      fetchPlayerLeaderboard: vi
+        .fn()
+        .mockResolvedValue([
+          { playerAddress: "0xPlayer", playerName: "TestPlayer", totalPoints: 1500, rank: 3, realmCount: 2 },
+        ]),
     });
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns a PlayerView with structures", async () => {
@@ -357,11 +404,18 @@ describe("ViewClient.player", () => {
         rank: 9,
         realmCount: 1,
       }),
-      fetchPlayerLeaderboard: vi.fn().mockResolvedValue([
-        { playerAddress: "0xSomeoneElse", playerName: "Top", totalPoints: 9999, rank: 1, realmCount: 10 },
-      ]),
+      fetchPlayerLeaderboard: vi
+        .fn()
+        .mockResolvedValue([
+          { playerAddress: "0xSomeoneElse", playerName: "Top", totalPoints: 9999, rank: 1, realmCount: 10 },
+        ]),
     } as any);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.player("0xPlayer");
 
@@ -403,7 +457,12 @@ describe("ViewClient.player", () => {
       fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
       fetchPlayerStructures: vi.fn().mockResolvedValue([]),
     } as any);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.player("0xPlayer");
 
@@ -430,9 +489,7 @@ describe("ViewClient.player", () => {
       fetchStructuresByOwner: vi.fn().mockResolvedValue([
         {
           entity_id: 10,
-          resources: JSON.stringify([
-            { resource_id: 4, resourceName: "Food", balance: 20, production: { rate: 3 } },
-          ]),
+          resources: JSON.stringify([{ resource_id: 4, resourceName: "Food", balance: 20, production: { rate: 3 } }]),
         },
       ]),
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
@@ -440,7 +497,12 @@ describe("ViewClient.player", () => {
       fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
       fetchPlayerStructures: vi.fn().mockResolvedValue([]),
     } as any);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.player("0xPlayer");
 
@@ -468,7 +530,12 @@ describe("ViewClient.player", () => {
       fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
       fetchPlayerStructures: vi.fn().mockResolvedValue([]),
     } as any);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.player("0xPlayer");
 
@@ -501,7 +568,12 @@ describe("ViewClient.player", () => {
       fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
       fetchPlayerStructures: vi.fn().mockResolvedValue([]),
     } as any);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.player("0xPlayer");
     expect(view.totalResources).toEqual([]);
@@ -509,15 +581,18 @@ describe("ViewClient.player", () => {
 
   it("ignores malformed JSON-like resource payloads", async () => {
     sql = createMockSql({
-      fetchStructuresByOwner: vi.fn().mockResolvedValue([
-        { entity_id: 14, resources: "{not-json}" },
-      ]),
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([{ entity_id: 14, resources: "{not-json}" }]),
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
       fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
       fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
       fetchPlayerStructures: vi.fn().mockResolvedValue([]),
     } as any);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.player("0xPlayer");
     expect(view.totalResources).toEqual([]);
@@ -540,7 +615,12 @@ describe("ViewClient.player", () => {
       fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),
       fetchPlayerStructures: vi.fn().mockResolvedValue([]),
     } as any);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.player("0xPlayer");
     expect(view.totalResources).toEqual([
@@ -569,13 +649,18 @@ describe("ViewClient.hyperstructure", () => {
 
   beforeEach(() => {
     sql = createMockSql({
-      fetchHyperstructures: vi.fn().mockResolvedValue([
-        { entity_id: 200, coord_x: 50, coord_y: 50, owner: "0xOwner", progress: 75 },
-      ]),
+      fetchHyperstructures: vi
+        .fn()
+        .mockResolvedValue([{ entity_id: 200, coord_x: 50, coord_y: 50, owner: "0xOwner", progress: 75 }]),
       fetchGuardsByStructure: vi.fn().mockResolvedValue([]),
     });
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns a HyperstructureView", async () => {
@@ -590,12 +675,17 @@ describe("ViewClient.hyperstructure", () => {
 
   it("marks hyperstructure as complete at 100%", async () => {
     sql = createMockSql({
-      fetchHyperstructures: vi.fn().mockResolvedValue([
-        { entity_id: 200, coord_x: 50, coord_y: 50, owner: "0xOwner", progress: 100 },
-      ]),
+      fetchHyperstructures: vi
+        .fn()
+        .mockResolvedValue([{ entity_id: 200, coord_x: 50, coord_y: 50, owner: "0xOwner", progress: 100 }]),
       fetchGuardsByStructure: vi.fn().mockResolvedValue([]),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.hyperstructure(200);
 
@@ -614,7 +704,12 @@ describe("ViewClient.hyperstructure", () => {
       fetchHyperstructures: vi.fn().mockResolvedValue([]),
       fetchGuardsByStructure: vi.fn().mockResolvedValue([]),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.hyperstructure(999);
 
@@ -638,7 +733,12 @@ describe("ViewClient.leaderboard", () => {
       ]),
     });
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns a LeaderboardView", async () => {
@@ -672,13 +772,18 @@ describe("ViewClient.bank", () => {
 
   beforeEach(() => {
     sql = createMockSql({
-      fetchAllStructuresMapData: vi.fn().mockResolvedValue([
-        { entity_id: 300, coord_x: 30, coord_y: 40, category: "Bank" },
-      ]),
+      fetchAllStructuresMapData: vi
+        .fn()
+        .mockResolvedValue([{ entity_id: 300, coord_x: 30, coord_y: 40, category: "Bank" }]),
       fetchSwapEvents: vi.fn().mockResolvedValue([]),
     });
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns a BankView", async () => {
@@ -700,9 +805,9 @@ describe("ViewClient.bank", () => {
 
   it("maps recent bank swap events", async () => {
     sql = createMockSql({
-      fetchAllStructuresMapData: vi.fn().mockResolvedValue([
-        { entity_id: 300, coord_x: 30, coord_y: 40, category: "Bank" },
-      ]),
+      fetchAllStructuresMapData: vi
+        .fn()
+        .mockResolvedValue([{ entity_id: 300, coord_x: 30, coord_y: 40, category: "Bank" }]),
       fetchSwapEvents: vi.fn().mockResolvedValue([
         {
           event: {
@@ -715,7 +820,12 @@ describe("ViewClient.bank", () => {
         },
       ]),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.bank(300);
 
@@ -739,7 +849,12 @@ describe("ViewClient.events", () => {
       fetchStoryEventsCount: vi.fn().mockResolvedValue(100),
     });
     cache = new ViewCache(5000);
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
   });
 
   it("returns an EventsView", async () => {
@@ -758,7 +873,12 @@ describe("ViewClient.events", () => {
       fetchStoryEventsByEntity: fetchByEntity,
       fetchStoryEventsCount: vi.fn().mockResolvedValue(0),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     await client.events({ entityId: 42 });
 
@@ -771,7 +891,12 @@ describe("ViewClient.events", () => {
       fetchStoryEventsByOwner: fetchByOwner,
       fetchStoryEventsCount: vi.fn().mockResolvedValue(0),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     await client.events({ owner: "0xOwner" });
 
@@ -787,12 +912,15 @@ describe("ViewClient.events", () => {
 
   it("returns hasMore=false when all events are fetched", async () => {
     sql = createMockSql({
-      fetchStoryEvents: vi.fn().mockResolvedValue([
-        { event_id: 1, event_type: "battle", timestamp: 999, data: {} },
-      ]),
+      fetchStoryEvents: vi.fn().mockResolvedValue([{ event_id: 1, event_type: "battle", timestamp: 999, data: {} }]),
       fetchStoryEventsCount: vi.fn().mockResolvedValue(1),
     });
-    client = new ViewClient(sql, cache, () => "0xABC", () => 1000);
+    client = new ViewClient(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+    );
 
     const view = await client.events({ limit: 10, offset: 0 });
 
@@ -807,7 +935,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.realm(42);
 
@@ -826,7 +960,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.market();
 
@@ -841,7 +981,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.explorer(99);
 
@@ -857,7 +1003,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.mapArea({ x: 1, y: 2, radius: 3 });
 
@@ -873,7 +1025,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.player("0xPlayer");
 
@@ -889,7 +1047,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.hyperstructure(200);
 
@@ -905,7 +1069,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.leaderboard({ limit: 10, offset: 0 });
 
@@ -920,7 +1090,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.bank(300);
 
@@ -937,7 +1113,13 @@ describe("ViewClient error boundaries", () => {
     });
     const cache = new ViewCache(5000);
     const logger = { warn: vi.fn() };
-    const client = new (ViewClient as any)(sql, cache, () => "0xABC", () => 1000, logger);
+    const client = new (ViewClient as any)(
+      sql,
+      cache,
+      () => "0xABC",
+      () => 1000,
+      logger,
+    );
 
     const view = await client.events({ limit: 5, offset: 0 });
 

@@ -5,11 +5,11 @@ import type { Model } from "@mariozechner/pi-ai";
  * TEntity is game-specific (units, buildings, cards, pieces, etc.)
  */
 export interface WorldState<TEntity = unknown> {
-	tick: number;
-	timestamp: number;
-	entities: TEntity[];
-	resources?: Map<string, number>;
-	raw?: unknown;
+  tick: number;
+  timestamp: number;
+  entities: TEntity[];
+  resources?: Map<string, number>;
+  raw?: unknown;
 }
 
 /**
@@ -17,68 +17,68 @@ export interface WorldState<TEntity = unknown> {
  * Implement this per-game (Dojo, EVM, etc.)
  */
 export interface GameAdapter<TState extends WorldState = WorldState> {
-	getWorldState(): Promise<TState>;
-	executeAction(action: GameAction): Promise<ActionResult>;
-	simulateAction(action: GameAction): Promise<SimulationResult>;
-	subscribe?(callback: (state: TState) => void): () => void;
+  getWorldState(): Promise<TState>;
+  executeAction(action: GameAction): Promise<ActionResult>;
+  simulateAction(action: GameAction): Promise<SimulationResult>;
+  subscribe?(callback: (state: TState) => void): () => void;
 }
 
 /**
  * An action the agent can take in the game.
  */
 export interface GameAction {
-	type: string;
-	params: Record<string, unknown>;
+  type: string;
+  params: Record<string, unknown>;
 }
 
 /**
  * Result of executing an action on chain.
  */
 export interface ActionResult {
-	success: boolean;
-	txHash?: string;
-	data?: unknown;
-	error?: string;
+  success: boolean;
+  txHash?: string;
+  data?: unknown;
+  error?: string;
 }
 
 /**
  * Result of simulating an action (dry run).
  */
 export interface SimulationResult {
-	success: boolean;
-	outcome?: unknown;
-	cost?: unknown;
-	error?: string;
+  success: boolean;
+  outcome?: unknown;
+  cost?: unknown;
+  error?: string;
 }
 
 /**
  * Configuration for creating a game agent.
  */
 export interface GameAgentConfig<TState extends WorldState = WorldState> {
-	adapter: GameAdapter<TState>;
-	dataDir: string;
-	model?: Model<any>;
-	tickIntervalMs?: number;
+  adapter: GameAdapter<TState>;
+  dataDir: string;
+  model?: Model<any>;
+  tickIntervalMs?: number;
 }
 
 export interface RuntimeConfigChange {
-	path: string;
-	value: unknown;
+  path: string;
+  value: unknown;
 }
 
 export interface RuntimeConfigUpdateResult {
-	path: string;
-	applied: boolean;
-	message: string;
+  path: string;
+  applied: boolean;
+  message: string;
 }
 
 export interface RuntimeConfigApplyResult {
-	ok: boolean;
-	results: RuntimeConfigUpdateResult[];
-	currentConfig: Record<string, unknown>;
+  ok: boolean;
+  results: RuntimeConfigUpdateResult[];
+  currentConfig: Record<string, unknown>;
 }
 
 export interface RuntimeConfigManager {
-	getConfig(): Record<string, unknown>;
-	applyChanges(changes: RuntimeConfigChange[], reason?: string): Promise<RuntimeConfigApplyResult>;
+  getConfig(): Record<string, unknown>;
+  applyChanges(changes: RuntimeConfigChange[], reason?: string): Promise<RuntimeConfigApplyResult>;
 }

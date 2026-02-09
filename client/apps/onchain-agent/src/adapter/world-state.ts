@@ -51,10 +51,7 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
  * @param accountAddress - The player's on-chain address
  * @returns A fully populated EternumWorldState
  */
-export async function buildWorldState(
-  client: EternumClient,
-  accountAddress: string,
-): Promise<EternumWorldState> {
+export async function buildWorldState(client: EternumClient, accountAddress: string): Promise<EternumWorldState> {
   const [playerView, mapAreaView, marketView, leaderboardView] = await Promise.all([
     client.view.player(accountAddress),
     client.view.mapArea({ x: 0, y: 0, radius: 100 }),
@@ -68,9 +65,7 @@ export async function buildWorldState(
   const playerArmies = Array.isArray((playerView as any)?.armies) ? (playerView as any).armies : [];
   const recentSwaps = Array.isArray((marketView as any)?.recentSwaps) ? (marketView as any).recentSwaps : [];
   const openOrders = Array.isArray((marketView as any)?.openOrders) ? (marketView as any).openOrders : [];
-  const leaderboardEntries = Array.isArray((leaderboardView as any)?.entries)
-    ? (leaderboardView as any).entries
-    : [];
+  const leaderboardEntries = Array.isArray((leaderboardView as any)?.entries) ? (leaderboardView as any).entries : [];
 
   // Build entities from map area structures
   const structureEntities: EternumEntity[] = structures.map((s: any) => ({

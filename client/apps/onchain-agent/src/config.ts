@@ -1,4 +1,5 @@
-import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { resolveDefaultDataDir, resolveDefaultManifestPath, resolveDefaultSessionBasePath } from "./runtime-paths";
 
 export interface AgentConfig {
   rpcUrl: string;
@@ -43,15 +44,14 @@ export function loadConfig(): AgentConfig {
     rpcUrl: env.RPC_URL ?? "http://localhost:5050",
     toriiUrl: env.TORII_URL ?? "http://localhost:8080",
     worldAddress: env.WORLD_ADDRESS ?? "0x0",
-    manifestPath:
-      env.MANIFEST_PATH ?? fileURLToPath(new URL("../../../../contracts/game/manifest_local.json", import.meta.url)),
+    manifestPath: path.resolve(env.MANIFEST_PATH ?? resolveDefaultManifestPath(env)),
     gameName: env.GAME_NAME ?? "eternum",
     chainId: env.CHAIN_ID ?? "0x534e5f5345504f4c4941",
-    sessionBasePath: env.SESSION_BASE_PATH ?? ".cartridge",
+    sessionBasePath: path.resolve(env.SESSION_BASE_PATH ?? resolveDefaultSessionBasePath(env)),
     tickIntervalMs: parsePositiveIntervalMs(env.TICK_INTERVAL_MS, 60000),
     loopEnabled: parseBoolean(env.LOOP_ENABLED, true),
     modelProvider: env.MODEL_PROVIDER ?? "anthropic",
     modelId: env.MODEL_ID ?? "claude-sonnet-4-5-20250929",
-    dataDir: new URL("../data", import.meta.url).pathname,
+    dataDir: path.resolve(env.DATA_DIR ?? resolveDefaultDataDir(env)),
   };
 }

@@ -1,5 +1,10 @@
 export { computeBalance, computeDepletionTime } from "./resources.js";
-export type { ComputeBalanceParams, ComputeBalanceResult, ComputeDepletionTimeParams, ComputeDepletionTimeResult } from "./resources.js";
+export type {
+  ComputeBalanceParams,
+  ComputeBalanceResult,
+  ComputeDepletionTimeParams,
+  ComputeDepletionTimeResult,
+} from "./resources.js";
 
 export { computeStrength, computeStaminaModifier, computeCooldownModifier } from "./combat.js";
 

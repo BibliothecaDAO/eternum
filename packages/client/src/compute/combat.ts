@@ -23,11 +23,7 @@ export function computeStaminaModifier(
   return DEFENDER_PENALTY;
 }
 
-export function computeCooldownModifier(
-  cooldownEnd: number,
-  currentTime: number,
-  isAttacker: boolean,
-): number {
+export function computeCooldownModifier(cooldownEnd: number, currentTime: number, isAttacker: boolean): number {
   if (currentTime >= cooldownEnd) {
     return 1;
   }

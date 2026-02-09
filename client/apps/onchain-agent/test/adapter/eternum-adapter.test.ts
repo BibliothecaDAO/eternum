@@ -4,13 +4,7 @@ import { createMockClient, mockSigner } from "../utils/mock-client";
 // Mock the compute functions from @bibliothecadao/client used by simulation.ts
 vi.mock("@bibliothecadao/client", () => ({
   computeStrength: (count: number, tier: number) => count * tier * 10,
-  computeOutputAmount: (
-    amountIn: number,
-    reserveIn: number,
-    reserveOut: number,
-    feeNum: number,
-    feeDenom: number,
-  ) => {
+  computeOutputAmount: (amountIn: number, reserveIn: number, reserveOut: number, feeNum: number, feeDenom: number) => {
     const effective = feeNum > 0 ? (amountIn * (feeDenom - feeNum)) / feeDenom : amountIn;
     return Math.floor((effective * reserveOut) / (reserveIn + effective));
   },
@@ -101,9 +95,7 @@ describe("EternumGameAdapter", () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.cost as any)?.resources).toEqual([
-        { resourceId: 1, name: "Wood", amount: 113 },
-      ]);
+      expect((result.cost as any)?.resources).toEqual([{ resourceId: 1, name: "Wood", amount: 113 }]);
     });
 
     it("returns success for unknown action types with info message", async () => {

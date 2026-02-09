@@ -1,10 +1,9 @@
 ---
 name: early-game-opening
 description: >
-  Standard opening strategy for the first 50-100 ticks. Use when the game
-  has just started and you need to establish economy and scouting before
-  making strategic commitments. Covers worker production, initial
-  scouting, and expansion timing.
+  Standard opening strategy for the first 50-100 ticks. Use when the game has just started and you need to establish
+  economy and scouting before making strategic commitments. Covers worker production, initial scouting, and expansion
+  timing.
 ---
 
 # Early Game Opening
@@ -18,17 +17,20 @@ description: >
 ## Build Order
 
 ### Phase 1: Workers (ticks 0-30)
+
 1. Build workers continuously until you have a basic economy
 2. Assign workers to nearest resource nodes
 3. Send one unit to scout
 
 ### Phase 2: Scout (ticks 20-50)
+
 1. Scout all adjacent areas
 2. Identify enemy base location
 3. Note resource node positions
 4. Check for early aggression signals
 
 ### Phase 3: Expand (ticks 40-80)
+
 1. If scout shows no immediate threat, expand to nearest resource
 2. If threat detected, build military first
 3. Maintain worker production during expansion

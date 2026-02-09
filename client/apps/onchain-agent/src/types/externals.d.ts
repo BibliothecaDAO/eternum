@@ -51,11 +51,7 @@ declare module "@bibliothecadao/client" {
     attackReq: number,
     defenseReq: number,
   ): number;
-  export function computeCooldownModifier(
-    cooldownEnd: number,
-    currentTime: number,
-    isAttacker: boolean,
-  ): number;
+  export function computeCooldownModifier(cooldownEnd: number, currentTime: number, isAttacker: boolean): number;
 }
 
 declare module "@bibliothecadao/game-agent" {

@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=.env --experimental-wasm-modules --import tsx src/index.ts",
+    "dev": "NODE_OPTIONS=--experimental-wasm-modules tsx src/cli.ts run",
+    "doctor": "NODE_OPTIONS=--experimental-wasm-modules tsx src/cli.ts doctor",
+    "init": "NODE_OPTIONS=--experimental-wasm-modules tsx src/cli.ts init",
+    "package:release": "tsx src/release/package-release.ts",
     "build": "tsc --noEmit",
     "test": "vitest --run",
     "test:watch": "vitest"

@@ -1,7 +1,7 @@
 # HEARTBEAT
 
-Define cron-like recurring jobs for the agent here.
-The scheduler hot-reloads this file while the app is running, so edits apply without restart.
+Define cron-like recurring jobs for the agent here. The scheduler hot-reloads this file while the app is running, so
+edits apply without restart.
 
 ```yaml
 version: 1

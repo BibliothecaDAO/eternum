@@ -11,6 +11,5 @@ last_evaluated: tick-0
 
 ## Reasoning
 
-Opening phase. Information and economy are the foundation for everything
-else. Combat and social priorities will shift once we have more data
-about the game state and opponents.
+Opening phase. Information and economy are the foundation for everything else. Combat and social priorities will shift
+once we have more data about the game state and opponents.
