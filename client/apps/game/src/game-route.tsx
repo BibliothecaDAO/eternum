@@ -12,9 +12,9 @@ import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
 import { StoryEventToastBridge } from "./ui/features/story-events";
+import { resolveOnboardingPhaseForScreen, shouldRenderOnboardingScreen } from "./ui/layouts/loading-flow";
 import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
 import { World } from "./ui/layouts/world";
-import { LoadingScreen } from "./ui/modules/loading-screen";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -73,18 +73,18 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, setupResult, account, bootstrap } = state;
+  const { phase, setupResult, account } = state;
+  const hasSetupResult = setupResult !== null;
+  const hasAccount = account !== null;
+  const shouldRenderOnboarding = shouldRenderOnboardingScreen(phase, hasSetupResult, hasAccount);
+  const onboardingPhase = resolveOnboardingPhaseForScreen(phase, hasSetupResult, hasAccount);
 
-  // Phases that don't need Dojo: world-select, account, loading
-  if (phase === "world-select" || phase === "account" || phase === "loading") {
-    return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={state} />;
+  if (shouldRenderOnboarding) {
+    return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={{ ...state, phase: onboardingPhase }} />;
   }
 
-  // Settlement and Ready phases both render the full game
-  // The onboarding overlay (PlayOverlayManager) handles showing settlement UI
-  // when showBlankOverlay is true in the UI store
   if (!setupResult || !account) {
-    return <LoadingScreen backgroundImage={backgroundImage} />;
+    return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={{ ...state, phase: "loading" }} />;
   }
 
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;

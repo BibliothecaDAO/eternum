@@ -6,17 +6,7 @@ import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 
 import type { BootstrapTask } from "@/hooks/context/use-unified-onboarding";
 import Button from "@/ui/design-system/atoms/button";
-
-const DEFAULT_LOADING_STATEMENTS = [
-  "Gathering your armies...",
-  "Forging alliances...",
-  "Building strongholds...",
-  "Mustering forces...",
-  "Preparing the realm...",
-  "Awakening ancient powers...",
-  "Charting territories...",
-  "Summoning heroes...",
-] as const;
+import { DEFAULT_LOADING_STATEMENTS } from "../onboarding/constants";
 
 const STATEMENT_INTERVAL_MS = 3000;
 
