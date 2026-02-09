@@ -12,6 +12,7 @@ import type { Chain } from "@contracts";
 
 // Batch size for JSON-RPC calls
 const BATCH_SIZE = 20;
+const AUTO_REFRESH_INTERVAL_MS = 30_000;
 
 // Selector for get_player_mmr function
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
@@ -285,7 +286,7 @@ export const MMRLeaderboard = () => {
       }
 
       // Sort by MMR descending
-      allPlayerMMRs.sort((a, b) => {
+      const sortedPlayerMMRs = allPlayerMMRs.toSorted((a, b) => {
         if (a.mmr > b.mmr) return -1;
         if (a.mmr < b.mmr) return 1;
         return 0;
@@ -295,7 +296,7 @@ export const MMRLeaderboard = () => {
         ...prev,
         isLoading: false,
         error: null,
-        players: allPlayerMMRs,
+        players: sortedPlayerMMRs,
       }));
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load MMR data";
@@ -313,6 +314,22 @@ export const MMRLeaderboard = () => {
     if (state.selectedWorld) {
       void fetchWorldMMRs(state.selectedWorld);
     }
+  }, [state.selectedWorld, fetchWorldMMRs]);
+
+  // Keep rankings fresh without requiring manual refresh.
+  useEffect(() => {
+    const selectedWorld = state.selectedWorld;
+    if (!selectedWorld) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void fetchWorldMMRs(selectedWorld);
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [state.selectedWorld, fetchWorldMMRs]);
 
   // Format MMR for display (convert from token units with 18 decimals)
