@@ -516,13 +516,21 @@ export class ClientConfigManager {
       },
 
       troop_limit_config: {
-        explorer_max_party_count: 0,
-        explorer_guard_max_troop_count: 0,
         guard_resurrection_delay: 0,
         mercenaries_troop_lower_bound: 0,
         mercenaries_troop_upper_bound: 0,
-        troops_per_military_building: 0,
-        max_defense_armies: 0,
+        agents_troop_lower_bound: 0,
+        agents_troop_upper_bound: 0,
+        settlement_deployment_cap: 0,
+        city_deployment_cap: 0,
+        kingdom_deployment_cap: 0,
+        empire_deployment_cap: 0,
+        t1_tier_strength: 0,
+        t2_tier_strength: 0,
+        t3_tier_strength: 0,
+        t1_tier_modifier: 0,
+        t2_tier_modifier: 0,
+        t3_tier_modifier: 0,
       },
 
       troop_stamina_config: {

@@ -103,13 +103,21 @@ pub fn MOCK_TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
 
 pub fn MOCK_TROOP_LIMIT_CONFIG() -> TroopLimitConfig {
     TroopLimitConfig {
-        explorer_max_party_count: 20, // hard max of explorers per structure
-        explorer_guard_max_troop_count: 500_000, // hard max of troops per party
-        guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
-        mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-        mercenaries_troop_upper_bound: 500_000, // max of troops per mercenary
-        agents_troop_lower_bound: 5_000, // min of troops per agent
-        agents_troop_upper_bound: 50_000 // max of troops per agent
+        guard_resurrection_delay: 24, // delay in ticks before a guard can be resurrected
+        mercenaries_troop_lower_bound: 800, // min of troops per mercenary
+        mercenaries_troop_upper_bound: 1_600, // max of troops per mercenary
+        agents_troop_lower_bound: 500, // min of troops per agent
+        agents_troop_upper_bound: 15_000, // max of troops per agent
+        settlement_deployment_cap: 6_000,
+        city_deployment_cap: 30_000,
+        kingdom_deployment_cap: 90_000,
+        empire_deployment_cap: 180_000,
+        t1_tier_strength: 1,
+        t2_tier_strength: 3,
+        t3_tier_strength: 9,
+        t1_tier_modifier: 50,
+        t2_tier_modifier: 100,
+        t3_tier_modifier: 150,
     }
 }
 
@@ -491,7 +499,7 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
             troop_guard_count: 0,
             troop_explorer_count: 0,
             troop_max_guard_count: 4, // Default max guards
-            troop_max_explorer_count: MOCK_TROOP_LIMIT_CONFIG().explorer_max_party_count.into(),
+            troop_max_explorer_count: 20,
             created_at: starknet::get_block_timestamp().try_into().unwrap(),
             category: StructureCategory::Village.into(),
             coord_x: coord.x,

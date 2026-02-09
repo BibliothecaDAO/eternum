@@ -135,6 +135,14 @@ pub struct VillageTroop {
     pub claimed: bool,
 }
 
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct VillageRaidImmunity {
+    #[key]
+    pub village_id: ID,
+    pub last_raided_at: u64,
+}
+
 #[generate_trait]
 pub impl StructureBaseImpl of StructureBaseTrait {
     fn assert_exists(self: StructureBase) {

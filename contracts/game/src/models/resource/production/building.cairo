@@ -312,10 +312,9 @@ pub impl BuildingPerksImpl of BuildingPerksTrait {
         if self._is_storage_capacity_booster() {
             self._boost_storage_capacity(ref world, add);
         }
-
-        if self._is_explorer_capacity_booster() {
-            self._boost_explorer_capacity(ref world, add);
-        }
+        // if self._is_explorer_capacity_booster() {
+    //     self._boost_explorer_capacity(ref world, add);
+    // }
     }
 
     fn _is_storage_capacity_booster(self: Building) -> bool {

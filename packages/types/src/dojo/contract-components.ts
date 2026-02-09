@@ -1632,13 +1632,21 @@ export function defineContractComponents(world: World) {
             stamina_travel_stamina_cost: RecsType.Number,
           },
           troop_limit_config: {
-            explorer_max_party_count: RecsType.Number,
-            explorer_guard_max_troop_count: RecsType.Number,
             guard_resurrection_delay: RecsType.Number,
-            mercenaries_troop_lower_bound: RecsType.BigInt,
-            mercenaries_troop_upper_bound: RecsType.BigInt,
-            agents_troop_lower_bound: RecsType.BigInt,
-            agents_troop_upper_bound: RecsType.BigInt,
+            mercenaries_troop_lower_bound: RecsType.Number,
+            mercenaries_troop_upper_bound: RecsType.Number,
+            agents_troop_lower_bound: RecsType.Number,
+            agents_troop_upper_bound: RecsType.Number,
+            settlement_deployment_cap: RecsType.Number,
+            city_deployment_cap: RecsType.Number,
+            kingdom_deployment_cap: RecsType.Number,
+            empire_deployment_cap: RecsType.Number,
+            t1_tier_strength: RecsType.Number,
+            t2_tier_strength: RecsType.Number,
+            t3_tier_strength: RecsType.Number,
+            t1_tier_modifier: RecsType.Number,
+            t2_tier_modifier: RecsType.Number,
+            t3_tier_modifier: RecsType.Number,
           },
           capacity_config: {
             structure_capacity: RecsType.Number,
@@ -1652,6 +1660,7 @@ export function defineContractComponents(world: World) {
           battle_config: {
             regular_immunity_ticks: RecsType.Number,
             village_immunity_ticks: RecsType.Number,
+            village_raid_immunity_ticks: RecsType.Number,
           },
           realm_count_config: {
             count: RecsType.Number,
@@ -1811,13 +1820,21 @@ export function defineContractComponents(world: World) {
               "u16", // TroopStaminaConfig stamina_travel_wheat_cost
               "u16", // TroopStaminaConfig stamina_travel_fish_cost
               "u16", // TroopStaminaConfig stamina_travel_stamina_cost
-              "u8", // TroopLimitConfig explorer_max_party_count
-              "u32", // TroopLimitConfig explorer_guard_max_troop_count
-              "u32", // TroopLimitConfig guard_resurrection_delay
-              "u32", // TroopLimitConfig mercenaries_troop_lower_bound
-              "u32", // TroopLimitConfig mercenaries_troop_upper_bound
-              "u32", // TroopLimitConfig agents_troop_lower_bound
-              "u32", // TroopLimitConfig agents_troop_upper_bound
+              "u16", // TroopLimitConfig guard_resurrection_delay
+              "u16", // TroopLimitConfig mercenaries_troop_lower_bound
+              "u16", // TroopLimitConfig mercenaries_troop_upper_bound
+              "u16", // TroopLimitConfig agents_troop_lower_bound
+              "u16", // TroopLimitConfig agents_troop_upper_bound
+              "u32", // TroopLimitConfig settlement_deployment_cap
+              "u32", // TroopLimitConfig city_deployment_cap
+              "u32", // TroopLimitConfig kingdom_deployment_cap
+              "u32", // TroopLimitConfig empire_deployment_cap
+              "u8", // TroopLimitConfig t1_tier_strength
+              "u8", // TroopLimitConfig t2_tier_strength
+              "u8", // TroopLimitConfig t3_tier_strength
+              "u8", // TroopLimitConfig t1_tier_modifier
+              "u8", // TroopLimitConfig t2_tier_modifier
+              "u8", // TroopLimitConfig t3_tier_modifier
               "u32", // CapacityConfig structure_capacity
               "u32", // CapacityConfig troop_capacity
               "u32", // CapacityConfig donkey_capacity
@@ -1825,6 +1842,7 @@ export function defineContractComponents(world: World) {
               "u8", // TradeConfig max_count
               "u8", // BattleConfig regular_immunity_ticks
               "u8", // BattleConfig village_immunity_ticks
+              "u8", // BattleConfig village_raid_immunity_ticks
               "u16", // RealmCountConfig realm_count
               "bool", // SeasonConfig dev_mode_on
               "u64", // SeasonConfig start_settling_at

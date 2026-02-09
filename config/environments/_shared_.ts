@@ -41,14 +41,18 @@ import {
   TROOP_DAMAGE_DELTA,
   TROOP_DAMAGE_RAID_PERCENT_NUM,
   TROOP_DAMAGE_SCALING_FACTOR,
+  TROOP_CITY_DEPLOYMENT_CAP,
+  TROOP_EMPIRE_DEPLOYMENT_CAP,
+  TROOP_TIER_MODIFIER,
+  TROOP_TIER_STRENGTH,
   TROOP_EXPLORE_FISH_COST,
   TROOP_EXPLORE_STAMINA_COST,
   TROOP_EXPLORE_WHEAT_COST,
-  TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT,
-  TROOP_EXPLORER_MAX_PARTY_COUNT,
+  TROOP_KINGDOM_DEPLOYMENT_CAP,
   TROOP_GUARD_RESURRECTION_DELAY,
   TROOP_MERCENARIES_TROOP_LOWER_BOUND,
   TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+  TROOP_SETTLEMENT_DEPLOYMENT_CAP,
   TROOP_STAMINA_ATTACK_REQ,
   TROOP_STAMINA_BIOME_BONUS_VALUE,
   TROOP_STAMINA_DEFENSE_REQ,
@@ -151,6 +155,7 @@ export const ARMY_SPEED = 1;
 
 // ----- Battle ----- //
 export const BATTLE_GRACE_TICK_COUNT = 24;
+export const VILLAGE_RAID_IMMUNITY_TICKS = 24;
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
@@ -313,9 +318,10 @@ export const EternumGlobalConfig: Config = {
     army: ARMY_SPEED,
   },
   battle: {
-    graceTickCount: BATTLE_GRACE_TICK_COUNT,
-    graceTickCountHyp: 0,
+    regularImmunityTicks: BATTLE_GRACE_TICK_COUNT,
+    villageImmunityTicks: 0,
     delaySeconds: 0,
+    villageRaidImmunityTicks: VILLAGE_RAID_IMMUNITY_TICKS,
   },
   troop: {
     damage: {
@@ -347,13 +353,21 @@ export const EternumGlobalConfig: Config = {
       staminaTravelStaminaCost: TROOP_TRAVEL_STAMINA_COST,
     },
     limit: {
-      explorerMaxPartyCount: TROOP_EXPLORER_MAX_PARTY_COUNT,
-      explorerAndGuardMaxTroopCount: TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT,
       guardResurrectionDelay: TROOP_GUARD_RESURRECTION_DELAY,
       mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
       mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,
       agentTroopLowerBound: TROOP_AGENTS_TROOP_LOWER_BOUND,
       agentTroopUpperBound: TROOP_AGENTS_TROOP_UPPER_BOUND,
+      settlementDeploymentCap: TROOP_SETTLEMENT_DEPLOYMENT_CAP,
+      cityDeploymentCap: TROOP_CITY_DEPLOYMENT_CAP,
+      kingdomDeploymentCap: TROOP_KINGDOM_DEPLOYMENT_CAP,
+      empireDeploymentCap: TROOP_EMPIRE_DEPLOYMENT_CAP,
+      t1TierStrength: TROOP_TIER_STRENGTH.T1,
+      t2TierStrength: TROOP_TIER_STRENGTH.T2,
+      t3TierStrength: TROOP_TIER_STRENGTH.T3,
+      t1TierModifier: TROOP_TIER_MODIFIER.T1,
+      t2TierModifier: TROOP_TIER_MODIFIER.T2,
+      t3TierModifier: TROOP_TIER_MODIFIER.T3,
     },
   },
   settlement: {
