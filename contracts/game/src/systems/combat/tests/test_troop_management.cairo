@@ -16,7 +16,7 @@ mod tests {
     use crate::models::structure::{
         StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType};
+    use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopLimitTrait, TroopTier, TroopType};
     use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
     };
@@ -402,7 +402,7 @@ mod tests {
 
         // Get the limit from config
         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-        let max_troops_per_guard = troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let max_troops_per_guard = troop_limit_config.max_army_size(1, TroopTier::T1).into() * RESOURCE_PRECISION;
         let amount_to_exceed = max_troops_per_guard + 1 * RESOURCE_PRECISION;
 
         // Grant enough resources for the large amount
@@ -831,7 +831,7 @@ mod tests {
 
     /// @notice Tests that `explorer_create` reverts if the global explorer limit per structure is reached.
     #[test]
-    #[should_panic(expected: "reached limit of troops per structure")]
+    #[should_panic(expected: "reached limit of troops for your structure")]
     fn test_explorer_create_revert_global_explorer_limit() {
         // Arrange
         let mut world = setup_troop_management_world();
@@ -840,10 +840,10 @@ mod tests {
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
 
-        // Now, set global explorer limit config to 0 *after* realm creation
-        let mut troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
-        troop_limit_config.explorer_max_party_count = 0;
-        WorldConfigUtilImpl::set_member(ref world, selector!("troop_limit_config"), troop_limit_config);
+        // Now, set structure explorer limit to 0 *after* realm creation
+        let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+        structure_base.troop_max_explorer_count = 0;
+        StructureBaseStoreImpl::store(ref structure_base, ref world, realm_id);
 
         // Grant resources needed for the call
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1232,7 +1232,7 @@ mod tests {
 
         // Get the limit from config
         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-        let max_troops_per_explorer = troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let max_troops_per_explorer = troop_limit_config.max_army_size(1, TroopTier::T1).into() * RESOURCE_PRECISION;
         let create_amount = max_troops_per_explorer - 1 * RESOURCE_PRECISION; // Create just under the limit
         let add_amount = 2 * RESOURCE_PRECISION; // Amount that will exceed the limit
         let total_needed_resource = create_amount + add_amount;
@@ -1430,10 +1430,6 @@ mod tests {
     fn test_explorer_swap_success() {
         // Arrange
         let mut world = setup_troop_management_world();
-
-        // Verify config directly
-        let troop_limit_config_check: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-        assert!(troop_limit_config_check.explorer_max_party_count == 20, "Config Max Party Count Check");
 
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };

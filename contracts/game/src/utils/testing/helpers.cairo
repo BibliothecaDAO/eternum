@@ -36,7 +36,9 @@ use crate::models::resource::resource::{
 };
 use crate::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots};
-use crate::models::troop::{ExplorerTroops, GuardTroops, TroopBoosts, TroopLimitTrait, TroopTier, TroopType, Troops};
+use crate::models::troop::{
+    ExplorerTroops, GuardSlot, GuardTroops, TroopBoosts, TroopLimitTrait, TroopTier, TroopType, Troops,
+};
 use crate::models::weight::Weight;
 use crate::systems::combat::contracts::troop_battle::{
     ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
@@ -984,7 +986,7 @@ pub fn setup_explorer_battle(
     let (first_realm, second_realm) = create_two_realms(ref world);
 
     // Grant resources based on troop types
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
     let first_resource = match first_troop_tier {
         TroopTier::T1 => ResourceTypes::KNIGHT_T1,
@@ -1108,7 +1110,7 @@ pub fn setup_guard_battle(
     let (first_realm, second_realm) = create_two_realms(ref world);
 
     // Grant resources based on troop types
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
     let guard_resource = match guard_troop_tier {
         TroopTier::T1 => ResourceTypes::KNIGHT_T1,
