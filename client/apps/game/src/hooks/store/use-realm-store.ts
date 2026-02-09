@@ -1,7 +1,7 @@
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
-import { ID, RelicRecipientType, Structure } from "@bibliothecadao/types";
+import { ID, RelicRecipientType, Structure, StructureType } from "@bibliothecadao/types";
 
 const idsMatch = (left: unknown, right: unknown) => String(left) === String(right);
 
@@ -27,6 +27,11 @@ const normalizeStructureId = (value: ID | unknown): ID | null => {
   }
 
   return null;
+};
+
+const resolvePreferredControlledStructureId = (playerStructures: Structure[]): ID => {
+  const firstRealm = playerStructures.find((structure) => structure.category === StructureType.Realm);
+  return firstRealm?.entityId ?? playerStructures[0]?.entityId ?? UNDEFINED_STRUCTURE_ENTITY_ID;
 };
 
 const removeRelicFromCollection = <T extends { entityId: unknown; relics?: Array<{ resourceId: unknown }> }>(
@@ -160,13 +165,30 @@ export const createRealmStoreSlice = (set: any) => ({
       const lastControlledExists = playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.lastControlledStructureEntityId),
       );
+      const currentStructureIsOwned = playerStructures.some((structure) =>
+        idsMatch(structure.entityId, state.structureEntityId),
+      );
 
       const updates: Partial<RealmStore> = {
         playerStructures,
       };
 
+      const shouldRecoverFromStartupSpectator =
+        state.isSpectating &&
+        state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID &&
+        !currentStructureIsOwned &&
+        playerStructures.length > 0;
+
+      if (shouldRecoverFromStartupSpectator) {
+        const nextControlled = resolvePreferredControlledStructureId(playerStructures);
+        updates.lastControlledStructureEntityId = nextControlled;
+        updates.structureEntityId = nextControlled;
+        updates.isSpectating = false;
+        return updates;
+      }
+
       if (!lastControlledExists) {
-        const nextControlled = playerStructures[0]?.entityId ?? UNDEFINED_STRUCTURE_ENTITY_ID;
+        const nextControlled = resolvePreferredControlledStructureId(playerStructures);
         updates.lastControlledStructureEntityId = nextControlled;
 
         if (!state.isSpectating) {
