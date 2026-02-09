@@ -22,13 +22,6 @@ const normalizeAddressToBigInt = (address: unknown): bigint | undefined => {
     return address;
   }
 
-  if (typeof address === "number") {
-    if (!Number.isFinite(address) || !Number.isInteger(address)) {
-      return undefined;
-    }
-    return BigInt(address);
-  }
-
   if (typeof address === "string") {
     const normalized = address.trim();
     if (normalized.length === 0) {
@@ -44,7 +37,7 @@ const normalizeAddressToBigInt = (address: unknown): bigint | undefined => {
   return undefined;
 };
 
-export function isAddressEqualToAccount(address: bigint | string | number | null | undefined): boolean {
+export function isAddressEqualToAccount(address: bigint | string | null | undefined): boolean {
   const normalizedAddress = normalizeAddressToBigInt(address);
   if (normalizedAddress === undefined) {
     return false;
