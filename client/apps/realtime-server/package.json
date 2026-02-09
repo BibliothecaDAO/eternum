@@ -9,7 +9,7 @@
     "start": "bun run src/server.ts",
     "client": "bun run src/ws/client.ts",
     "test": "vitest run",
-    "lint": "eslint . --ext .js,.cjs,.mjs --no-error-on-unmatched-pattern",
+    "lint": "eslint . --ext .ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:push": "drizzle-kit push --config drizzle.config.ts"
   },

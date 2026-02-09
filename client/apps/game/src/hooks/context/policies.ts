@@ -6,49 +6,40 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { messages } from "./signing-policy";
 
-const getTokenPolicies = () => {
-  // Read active world at call-time so game/world switches update policy addresses.
-  const activeWorld = getActiveWorld();
-  const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
-  const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
+// Get entry token address from active world profile, fallback to env var
+const activeWorld = getActiveWorld();
+const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
+const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
 
-  const entryTokenPolicies =
-    entryTokenAddress && entryTokenAddress !== "0x0"
-      ? {
-          [entryTokenAddress]: {
-            methods: [
-              {
-                name: "token_lock",
-                entrypoint: "token_lock",
-              },
-            ],
-          },
-        }
-      : {};
-
-  const feeTokenPolicies = feeTokenAddress
+const entryTokenPolicies =
+  entryTokenAddress && entryTokenAddress !== "0x0"
     ? {
-        [feeTokenAddress]: {
+        [entryTokenAddress]: {
           methods: [
             {
-              name: "approve",
-              entrypoint: "approve",
+              name: "token_lock",
+              entrypoint: "token_lock",
             },
           ],
         },
       }
     : {};
 
-  return {
-    entryTokenPolicies,
-    feeTokenPolicies,
-  };
-};
+const feeTokenPolicies = feeTokenAddress
+  ? {
+      [feeTokenAddress]: {
+        methods: [
+          {
+            name: "approve",
+            entrypoint: "approve",
+          },
+        ],
+      },
+    }
+  : {};
 
-export const buildPolicies = (manifest: Parameters<typeof getContractByName>[0]) => {
-  const { entryTokenPolicies, feeTokenPolicies } = getTokenPolicies();
-
-  return toSessionPolicies({
+export const buildPolicies = (manifest: any) =>
+  toSessionPolicies({
     contracts: {
       ...entryTokenPolicies,
       ...feeTokenPolicies,
@@ -757,4 +748,3 @@ export const buildPolicies = (manifest: Parameters<typeof getContractByName>[0])
     },
     messages,
   });
-};

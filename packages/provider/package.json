@@ -15,8 +15,8 @@
   "scripts": {
     "build": "tsup",
     "gen:docs": "typedoc --plugin typedoc-plugin-markdown",
-    "lint": "eslint . --ext .js,.cjs,.mjs --no-error-on-unmatched-pattern",
-    "lint:fix": "eslint . --ext .js,.cjs,.mjs --fix --no-error-on-unmatched-pattern",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "vitest"
   },
   "dependencies": {

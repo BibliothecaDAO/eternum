@@ -166,14 +166,6 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
     (dojoConfig as any).rpcUrl = profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
   }
   (dojoConfig as any).manifest = patchedManifest;
-  window.dispatchEvent(
-    new CustomEvent("dojo-config-updated", {
-      detail: {
-        rpcUrl: (dojoConfig as any).rpcUrl,
-        toriiUrl: (dojoConfig as any).toriiUrl,
-      },
-    }),
-  );
 
   // 3) Point SQL API to the active world's Torii
   const toriiUrl = chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
