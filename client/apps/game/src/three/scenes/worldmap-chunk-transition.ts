@@ -1,17 +1,18 @@
-export interface ChunkSwitchDecisionInput {
+interface ChunkSwitchDecisionInput {
   fetchSucceeded: boolean;
   currentChunk: string;
   targetChunk: string;
   previousChunk?: string | null;
 }
 
-export interface ChunkSwitchActions {
+interface ChunkSwitchActions {
   shouldRollback: boolean;
   shouldCommitManagers: boolean;
   shouldUnregisterPreviousChunk: boolean;
+  shouldRestorePreviousState: boolean;
 }
 
-export interface ManagerUpdateDecisionInput {
+interface ManagerUpdateDecisionInput {
   transitionToken?: number;
   expectedTransitionToken: number;
   currentChunk: string;
@@ -30,6 +31,7 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
       shouldRollback: false,
       shouldCommitManagers: false,
       shouldUnregisterPreviousChunk: false,
+      shouldRestorePreviousState: false,
     };
   }
 
@@ -38,17 +40,17 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
       shouldRollback: true,
       shouldCommitManagers: false,
       shouldUnregisterPreviousChunk: false,
+      shouldRestorePreviousState: true,
     };
   }
 
-  const shouldUnregisterPreviousChunk = Boolean(
-    input.previousChunk && input.previousChunk !== input.targetChunk,
-  );
+  const shouldUnregisterPreviousChunk = Boolean(input.previousChunk && input.previousChunk !== input.targetChunk);
 
   return {
     shouldRollback: false,
     shouldCommitManagers: true,
     shouldUnregisterPreviousChunk,
+    shouldRestorePreviousState: false,
   };
 }
 
@@ -68,7 +70,10 @@ export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boole
  * Accept only current or newer transition tokens.
  * Undefined token is treated as non-transitioned work and accepted.
  */
-export function shouldAcceptTransitionToken(transitionToken: number | undefined, latestTransitionToken: number): boolean {
+export function shouldAcceptTransitionToken(
+  transitionToken: number | undefined,
+  latestTransitionToken: number,
+): boolean {
   if (transitionToken === undefined) {
     return true;
   }

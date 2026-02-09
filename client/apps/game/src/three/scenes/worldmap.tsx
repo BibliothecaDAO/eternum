@@ -97,8 +97,15 @@ import {
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
+import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import { resolveChunkSwitchActions, shouldRunManagerUpdate } from "./worldmap-chunk-transition";
-import { insertPrefetchQueueItem, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
+import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
+import {
+  insertPrefetchQueueItem,
+  prunePrefetchQueueByFetchKey,
+  shouldProcessPrefetchQueueItem,
+  type PrefetchQueueItem,
+} from "./worldmap-prefetch-queue";
 import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 
 interface CachedMatrixEntry {
@@ -130,25 +137,24 @@ const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
   { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
+const WORLDMAP_CHUNK_POLICY = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
 
 export default class WorldmapScene extends HexagonScene {
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
   private readonly chunkGeometry = {
-    size: 24, // Smaller stride to reduce edge gaps
-    renderSize: {
-      width: 48,
-      height: 48,
-    },
+    size: WORLDMAP_CHUNK_POLICY.chunkSize,
+    renderSize: WORLDMAP_CHUNK_POLICY.renderSize,
     overlap: 0,
   };
   private chunkSize = this.chunkGeometry.size;
-  private chunkSwitchPadding = 0.05; // switch earlier when crossing boundaries
+  private chunkSwitchPadding = WORLDMAP_CHUNK_POLICY.switchPadding;
   private lastChunkSwitchPosition?: Vector3;
   private hasChunkSwitchAnchor: boolean = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
-  private readonly maxPrefetchedAhead = 8;
+  private readonly maxPrefetchedAhead = WORLDMAP_CHUNK_POLICY.prefetch.maxAhead;
   private prefetchQueue: PrefetchQueueItem[] = [];
+  private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLD_CHUNK_CONFIG.prefetch.maxConcurrent;
@@ -170,9 +176,9 @@ export default class WorldmapScene extends HexagonScene {
   private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
   private toriiLoadingCounter = 0;
   private isSwitchedOff = false;
-  private readonly chunkRowsAhead = 2;
-  private readonly chunkRowsBehind = 2;
-  private readonly chunkColsEachSide = 2;
+  private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
+  private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
+  private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
   private hydratedChunkRefreshes: Set<string> = new Set();
   private hydratedRefreshScheduled = false;
   private cameraPositionScratch: Vector3 = new Vector3();
@@ -334,8 +340,17 @@ export default class WorldmapScene extends HexagonScene {
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
-  private pendingArmyRemovalMeta: Map<ID, { scheduledAt: number; chunkKey: string; reason: "tile" | "zero" }> =
-    new Map();
+  private pendingArmyRemovalMeta: Map<
+    ID,
+    {
+      scheduledAt: number;
+      chunkKey: string;
+      reason: "tile" | "zero";
+      ownerAddress?: bigint;
+      ownerStructureId?: ID | null;
+      position?: HexPosition;
+    }
+  > = new Map();
   private deferredChunkRemovals: Map<ID, { reason: "tile" | "zero"; scheduledAt: number }> = new Map();
 
   private fxManager: FXManager;
@@ -516,11 +531,21 @@ export default class WorldmapScene extends HexagonScene {
       this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
         this.incrementToriiBoundsCounter("explorerTiles");
         this.cancelPendingArmyRemoval(update.entityId);
+        const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
 
         if (update.removed) {
-          this.scheduleArmyRemoval(update.entityId, "tile");
+          this.scheduleArmyRemoval(update.entityId, "tile", {
+            ownerAddress: update.ownerAddress,
+            ownerStructureId: update.ownerStructureId,
+            position: { col: normalizedPos.x, row: normalizedPos.y },
+          });
           return;
         }
+
+        this.resolveSupersededPendingArmyRemoval(update.entityId, update.ownerAddress, update.ownerStructureId, {
+          col: normalizedPos.x,
+          row: normalizedPos.y,
+        });
 
         this.updateArmyHexes(update);
 
@@ -534,7 +559,6 @@ export default class WorldmapScene extends HexagonScene {
 
         // Ensure army spawn location is marked as explored for pathfinding
         // This fixes the bug where newly spawned armies can't see movement options
-        const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
         if (!this.exploredTiles.has(normalizedPos.x)) {
           this.exploredTiles.set(normalizedPos.x, new Map());
         }
@@ -1385,11 +1409,7 @@ export default class WorldmapScene extends HexagonScene {
       };
       const cleanup = () => {
         if (cleaned) return;
-        const delayMs = getMinEffectCleanupDelayMs(
-          effectStartedAtMs,
-          performance.now(),
-          MIN_TRAVEL_EFFECT_VISIBLE_MS,
-        );
+        const delayMs = getMinEffectCleanupDelayMs(effectStartedAtMs, performance.now(), MIN_TRAVEL_EFFECT_VISIBLE_MS);
         if (delayMs === 0) {
           runCleanupNow();
           return;
@@ -1900,6 +1920,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Reset chunk state to ensure clean re-initialization when returning to world view
     this.currentChunk = "null";
+    this.clearQueuedPrefetchState();
     this.fetchedChunks.clear();
     this.pendingChunks.clear();
     this.pinnedChunkKeys.clear();
@@ -1933,7 +1954,43 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingArmyMovements.delete(entityId);
   }
 
-  private scheduleArmyRemoval(entityId: ID, reason: "tile" | "zero" = "tile") {
+  private resolveSupersededPendingArmyRemoval(
+    incomingEntityId: ID,
+    incomingOwnerAddress: bigint | undefined,
+    incomingOwnerStructureId: ID | null | undefined,
+    incomingPosition: HexPosition,
+  ): void {
+    const pending = Array.from(this.pendingArmyRemovalMeta.entries()).map(([entityId, meta]) => ({
+      entityId,
+      scheduledAt: meta.scheduledAt,
+      chunkKey: meta.chunkKey,
+      reason: meta.reason,
+      ownerAddress: meta.ownerAddress,
+      ownerStructureId: meta.ownerStructureId,
+      position: meta.position,
+    }));
+
+    const supersededEntityId = findSupersededArmyRemoval({
+      incomingEntityId,
+      incomingOwnerAddress,
+      incomingOwnerStructureId,
+      incomingPosition,
+      pending,
+    });
+
+    if (supersededEntityId === undefined) {
+      return;
+    }
+
+    this.cancelPendingArmyRemoval(supersededEntityId);
+    this.deleteArmy(supersededEntityId, { playDefeatFx: false });
+  }
+
+  private scheduleArmyRemoval(
+    entityId: ID,
+    reason: "tile" | "zero" = "tile",
+    context?: { ownerAddress?: bigint; ownerStructureId?: ID | null; position?: HexPosition },
+  ) {
     const existing = this.pendingArmyRemovals.get(entityId);
     if (existing) {
       clearTimeout(existing);
@@ -1948,10 +2005,18 @@ export default class WorldmapScene extends HexagonScene {
     const maxPendingWaitMs = 10000;
 
     const scheduledAt = Date.now();
+    const removalPosition = context?.position ?? this.armiesPositions.get(entityId);
+    const removalOwnerAddress =
+      context?.ownerAddress ??
+      (removalPosition ? this.armyHexes.get(removalPosition.col)?.get(removalPosition.row)?.owner : undefined);
+    const removalOwnerStructureId = context?.ownerStructureId ?? this.armyStructureOwners.get(entityId);
     this.pendingArmyRemovalMeta.set(entityId, {
       scheduledAt,
       chunkKey: this.currentChunk,
       reason,
+      ownerAddress: removalOwnerAddress,
+      ownerStructureId: removalOwnerStructureId,
+      position: removalPosition,
     });
 
     const schedule = (delay: number) => {
@@ -2526,11 +2591,14 @@ export default class WorldmapScene extends HexagonScene {
   private prefetchDirectionalChunks(focusPoint: Vector3) {
     const forwardChunkKey = this.getForwardChunkKey(focusPoint);
     if (!forwardChunkKey) {
+      this.directionalPrefetchAreaKeys.clear();
+      this.pruneQueuedDirectionalPrefetches();
       return;
     }
 
     const forwardRowCol = forwardChunkKey.split(",").map(Number);
     const prefetchTargets = new Set<string>();
+    const desiredAreaKeys = new Set<string>();
 
     const { forwardDepthStrides, sideRadiusStrides } = WORLD_CHUNK_CONFIG.prefetch;
     // Prefetch a band ahead centered on the forward chunk.
@@ -2544,6 +2612,16 @@ export default class WorldmapScene extends HexagonScene {
 
     prefetchTargets.forEach((chunkKey) => {
       // Skip if it's already pinned or current
+      if (this.pinnedChunkKeys.has(chunkKey) || chunkKey === this.currentChunk) {
+        return;
+      }
+      desiredAreaKeys.add(this.getRenderAreaKeyForChunk(chunkKey));
+    });
+
+    this.directionalPrefetchAreaKeys = desiredAreaKeys;
+    this.pruneQueuedDirectionalPrefetches();
+
+    prefetchTargets.forEach((chunkKey) => {
       if (this.pinnedChunkKeys.has(chunkKey) || chunkKey === this.currentChunk) {
         return;
       }
@@ -2562,6 +2640,18 @@ export default class WorldmapScene extends HexagonScene {
       // Directional prefetch is lowest priority compared to pinned neighborhood.
       this.enqueueChunkPrefetch(chunkKey, 2);
     });
+  }
+
+  private pruneQueuedDirectionalPrefetches(): void {
+    prunePrefetchQueueByFetchKey(this.prefetchQueue, this.directionalPrefetchAreaKeys);
+    this.queuedPrefetchAreaKeys = new Set(this.prefetchQueue.map((item) => item.fetchKey));
+  }
+
+  private clearQueuedPrefetchState(): void {
+    this.prefetchQueue = [];
+    this.queuedPrefetchAreaKeys.clear();
+    this.directionalPrefetchAreaKeys.clear();
+    this.prefetchedAhead.length = 0;
   }
 
   private enqueueChunkPrefetch(chunkKey: string, priority: number): void {
@@ -2587,10 +2677,32 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private processPrefetchQueue(): void {
+    if (this.isSwitchedOff) {
+      this.clearQueuedPrefetchState();
+      return;
+    }
+
     while (this.activePrefetches < this.maxConcurrentPrefetches && this.prefetchQueue.length > 0) {
       const item = this.prefetchQueue.shift();
       if (!item) {
         return;
+      }
+
+      if (item.fetchTiles) {
+        this.queuedPrefetchAreaKeys.delete(item.fetchKey);
+      }
+
+      if (
+        !shouldProcessPrefetchQueueItem({
+          item,
+          isSwitchedOff: this.isSwitchedOff,
+          desiredFetchKeys: this.directionalPrefetchAreaKeys,
+          fetchedFetchKeys: this.fetchedChunks,
+          pendingFetchKeys: new Set(this.pendingChunks.keys()),
+          pinnedAreaKeys: this.pinnedRenderAreas,
+        })
+      ) {
+        continue;
       }
 
       this.activePrefetches += 1;
@@ -2605,9 +2717,6 @@ export default class WorldmapScene extends HexagonScene {
           }
         } finally {
           this.activePrefetches -= 1;
-          if (item.fetchTiles) {
-            this.queuedPrefetchAreaKeys.delete(item.fetchKey);
-          }
           this.processPrefetchQueue();
         }
       })();
@@ -2986,6 +3095,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.pinnedChunkKeys = nextPinned;
     this.pinnedRenderAreas = nextPinnedAreas;
+    this.pruneQueuedDirectionalPrefetches();
 
     removedPinnedChunks.forEach((chunkKey) => {
       if (chunkKey !== this.currentChunk) {
@@ -3041,7 +3151,11 @@ export default class WorldmapScene extends HexagonScene {
     this.toriiBoundsLogInterval = null;
   }
 
-  private async updateToriiBoundsSubscription(chunkKey: string): Promise<void> {
+  private async updateToriiBoundsSubscription(chunkKey: string, transitionToken?: number): Promise<void> {
+    if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
+      return;
+    }
+
     if (!this.toriiStreamManager || !chunkKey || chunkKey === "null") {
       return;
     }
@@ -3074,6 +3188,9 @@ export default class WorldmapScene extends HexagonScene {
         });
       }
       await this.toriiStreamManager.switchBounds(descriptor);
+      if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
+        return;
+      }
       this.toriiBoundsAreaKey = areaKey;
     } catch (error) {
       console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);
@@ -3117,6 +3234,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async computeTileEntities(chunkKey: string): Promise<boolean> {
+    if (this.isSwitchedOff) {
+      return false;
+    }
+
     const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
     if (this.fetchedChunks.has(fetchKey)) {
       return true;
@@ -3504,6 +3625,7 @@ export default class WorldmapScene extends HexagonScene {
     this.clearEntitySelection();
 
     const oldChunk = this.currentChunk;
+    const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
     this.currentChunk = chunkKey;
     this.updateCurrentChunkBounds(startRow, startCol);
 
@@ -3517,7 +3639,7 @@ export default class WorldmapScene extends HexagonScene {
     // Load surrounding chunks for better UX (3x3 grid)
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
-    void this.updateToriiBoundsSubscription(chunkKey);
+    const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
 
     // Start loading all surrounding chunks (they will deduplicate automatically)
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -3527,6 +3649,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Wait for core tile data before updating managers to avoid empty renders
     const tileFetchSucceeded = await tileFetchPromise;
+    await toriiBoundsSwitchPromise;
     this.hydratedChunkRefreshes.delete(chunkKey);
 
     const chunkSwitchActions = resolveChunkSwitchActions({
@@ -3538,12 +3661,25 @@ export default class WorldmapScene extends HexagonScene {
 
     if (chunkSwitchActions.shouldRollback) {
       this.currentChunk = oldChunk ?? "null";
+      this.updatePinnedChunks(previousPinnedChunks);
       if (oldChunk && oldChunk !== "null") {
         const [oldStartRow, oldStartCol] = oldChunk.split(",").map(Number);
-        if (Number.isFinite(oldStartRow) && Number.isFinite(oldStartCol)) {
+        if (
+          chunkSwitchActions.shouldRestorePreviousState &&
+          Number.isFinite(oldStartRow) &&
+          Number.isFinite(oldStartCol)
+        ) {
           this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
+          await this.updateHexagonGrid(
+            oldStartRow,
+            oldStartCol,
+            this.renderChunkSize.height,
+            this.renderChunkSize.width,
+          );
+          await this.updateToriiBoundsSubscription(oldChunk, transitionToken);
         }
       }
+      this.visibilityManager?.forceUpdate();
       return;
     }
 
@@ -3589,13 +3725,14 @@ export default class WorldmapScene extends HexagonScene {
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
-    void this.updateToriiBoundsSubscription(chunkKey);
+    const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Wait for tile data before updating managers
     const tileFetchSucceeded = await tileFetchPromise;
+    await toriiBoundsSwitchPromise;
     this.hydratedChunkRefreshes.delete(chunkKey);
     if (!tileFetchSucceeded) {
       return;
@@ -3689,6 +3826,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public clearTileEntityCache() {
+    this.clearQueuedPrefetchState();
     this.fetchedChunks.clear();
     this.pendingChunks.clear();
     this.pinnedRenderAreas.clear();

@@ -8,7 +8,7 @@ type ChestOpeningState = "idle" | "selecting" | "pending" | "opening" | "reveal"
 // Chest epoch types for video selection
 export type ChestEpoch = "eternum-rewards-s1" | "blitz-rewards-s0";
 
-export interface ChestOpeningFlowState {
+interface ChestOpeningFlowState {
   state: ChestOpeningState;
   selectedChestId: string | null;
   selectedChestEpoch: ChestEpoch;

@@ -18,6 +18,7 @@ describe("resolveChunkSwitchActions", () => {
       shouldRollback: true,
       shouldCommitManagers: false,
       shouldUnregisterPreviousChunk: false,
+      shouldRestorePreviousState: true,
     });
   });
 
@@ -33,6 +34,7 @@ describe("resolveChunkSwitchActions", () => {
       shouldRollback: false,
       shouldCommitManagers: true,
       shouldUnregisterPreviousChunk: true,
+      shouldRestorePreviousState: false,
     });
   });
 
@@ -48,6 +50,7 @@ describe("resolveChunkSwitchActions", () => {
       shouldRollback: false,
       shouldCommitManagers: false,
       shouldUnregisterPreviousChunk: false,
+      shouldRestorePreviousState: false,
     });
   });
 
@@ -63,6 +66,7 @@ describe("resolveChunkSwitchActions", () => {
       shouldRollback: false,
       shouldCommitManagers: true,
       shouldUnregisterPreviousChunk: false,
+      shouldRestorePreviousState: false,
     });
   });
 });

@@ -259,7 +259,7 @@ const TRAIT_VALUES: Record<number, Record<number, string>> = {
   4: { 1: "Knight", 2: "Crossbowman", 3: "Paladin" },
 };
 
-export interface TraitAttribute {
+interface TraitAttribute {
   trait_type: string;
   value: string;
 }

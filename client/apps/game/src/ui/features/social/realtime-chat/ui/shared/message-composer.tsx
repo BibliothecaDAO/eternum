@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useRef, useState } from "react";
 import { EmojiPicker } from "./emoji-picker";
 
-export interface MessageComposerProps {
+interface MessageComposerProps {
   onSend(message: string): Promise<void> | void;
   placeholder?: string;
   disabled?: boolean;

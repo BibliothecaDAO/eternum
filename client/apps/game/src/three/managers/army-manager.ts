@@ -47,6 +47,7 @@ import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
@@ -180,6 +181,8 @@ export class ArmyManager {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
+    // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
+    void this.armyModel.preloadModels([ModelType.Boat]);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
@@ -1501,22 +1504,8 @@ export class ArmyManager {
     const minTravelCost = configManager.getMinTravelStaminaCost();
     const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
 
-    const path = await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex);
-
-    if (!path || path.length === 0) {
-      // If no path is found, just teleport the army to the target position
-      this.armies.set(entityId, { ...armyData, hexCoords });
-      this.runMovementCompleteListeners(numericEntityId);
-      return;
-    }
-
-    if (path.length < 2) {
-      this.armies.set(entityId, { ...armyData, hexCoords });
-      this.armyPaths.delete(entityId);
-      this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-      this.runMovementCompleteListeners(numericEntityId);
-      return;
-    }
+    const workerPath = await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex);
+    const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
 
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));

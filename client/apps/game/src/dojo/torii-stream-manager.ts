@@ -20,7 +20,7 @@ export interface BoundsDescriptor {
   additionalClauses?: Clause[];
 }
 
-export interface ToriiStreamManagerConfig {
+interface ToriiStreamManagerConfig {
   client: ToriiClient;
   setup: SetupResult;
   logging?: boolean;
