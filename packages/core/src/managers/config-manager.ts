@@ -571,6 +571,28 @@ export class ClientConfigManager {
     }, defaultTroopConfig);
   }
 
+  getMaxArmySize(level: number, tier: TroopTier): number {
+    const config = this.getTroopConfig().troop_limit_config;
+
+    const deploymentCap =
+      [
+        config.settlement_deployment_cap,
+        config.city_deployment_cap,
+        config.kingdom_deployment_cap,
+        config.empire_deployment_cap,
+      ][level] ?? config.settlement_deployment_cap;
+
+    const tierParams: Record<TroopTier, { strength: number; modifier: number }> = {
+      [TroopTier.T1]: { strength: config.t1_tier_strength, modifier: config.t1_tier_modifier },
+      [TroopTier.T2]: { strength: config.t2_tier_strength, modifier: config.t2_tier_modifier },
+      [TroopTier.T3]: { strength: config.t3_tier_strength, modifier: config.t3_tier_modifier },
+    };
+
+    const { strength, modifier } = tierParams[tier];
+    if (strength === 0) return 0;
+    return Math.floor((deploymentCap * modifier) / (strength * 100));
+  }
+
   getCombatConfig() {
     return this.getValueOrDefault(
       () => {

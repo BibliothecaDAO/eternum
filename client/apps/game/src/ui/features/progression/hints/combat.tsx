@@ -1,5 +1,15 @@
 import { Headline } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
+import { TroopTier } from "@bibliothecadao/types";
+
+const STRUCTURE_LEVELS = [
+  { level: 0, name: "Settlement" },
+  { level: 1, name: "City" },
+  { level: 2, name: "Kingdom" },
+  { level: 3, name: "Empire" },
+] as const;
+
+const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3] as const;
 
 export const Combat = () => {
   const troopConfig = configManager.getTroopConfig();
@@ -24,9 +34,32 @@ export const Combat = () => {
           <p className="leading-relaxed">
             Armies consist of a single troop type and tier. Each hex can host only one army. Realms and Villages have
             limits on guard and field armies, which can be increased by upgrading or constructing military buildings.
-            The maximum size of an army is{" "}
-            {troopConfig.troop_limit_config.explorer_guard_max_troop_count.toLocaleString()}.
+            The maximum size of an army depends on the structure level and troop tier:
           </p>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left p-2 border border-gray-600">Level</th>
+                {TIERS.map((tier) => (
+                  <th key={tier} className="text-right p-2 border border-gray-600">
+                    {tier}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {STRUCTURE_LEVELS.map(({ level, name }) => (
+                <tr key={level}>
+                  <td className="p-2 border border-gray-600">{name}</td>
+                  {TIERS.map((tier) => (
+                    <td key={tier} className="text-right p-2 border border-gray-600">
+                      {configManager.getMaxArmySize(level, tier).toLocaleString()}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
           <h5>Field Armies</h5>
           <p className="leading-relaxed">
             Field armies are used for exploration, patrolling, defending, and attacking on the world map. They are
