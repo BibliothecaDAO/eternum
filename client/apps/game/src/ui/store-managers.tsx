@@ -3,7 +3,6 @@ import { POLLING_INTERVALS } from "@/config/polling";
 import { useActiveStructureSync } from "@/hooks/helpers/use-active-structure-sync";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
@@ -24,7 +23,6 @@ import { SeasonEnded } from "@bibliothecadao/torii";
 import { ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
@@ -559,30 +557,6 @@ const SeasonTimerStoreManager = () => {
   return null;
 };
 
-const MinigameStoreManager = () => {
-  const minigameStore = useMinigameStore.getState();
-
-  const { data: minigames } = useMiniGames({});
-
-  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
-
-  const { data: settingsMetadata } = useGameSettingsMetadata({
-    gameAddresses: minigameAddresses,
-  });
-
-  useEffect(() => {
-    if (minigames) {
-      minigameStore.setMinigames(minigames);
-    }
-
-    if (settingsMetadata) {
-      minigameStore.setSettingsMetadata(settingsMetadata);
-    }
-  }, [minigames, settingsMetadata, minigameStore]);
-
-  return null;
-};
-
 /**
  * Manager component that syncs army and structure data with scene-specific shortcut managers
  * This replaces the old centralized ShortcutManager approach
@@ -617,7 +591,6 @@ const SelectableArmiesStoreManager = () => {
 export const StoreManagers = () => {
   return (
     <>
-      <MinigameStoreManager />
       <ResourceArrivalsStoreManager />
       <RelicsStoreManager />
       <AutoRegisterPointsStoreManager />
