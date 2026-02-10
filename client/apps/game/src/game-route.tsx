@@ -4,12 +4,9 @@
  */
 import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect } from "react";
-import { useProvider } from "@starknet-react/core";
 import type { Account, AccountInterface } from "starknet";
-import { dojoConfig } from "../dojo-config";
 import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
-import { ensureMetagameClientInitialized } from "./hooks/context/metagame-client";
 import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
@@ -30,13 +27,6 @@ const TransactionListenerBridge = () => {
 };
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
-  const { provider } = useProvider();
-  ensureMetagameClientInitialized({
-    provider,
-    toriiClient: setupResult.network.toriiClient,
-    toriiUrl: dojoConfig.toriiUrl,
-  });
-
   return (
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
