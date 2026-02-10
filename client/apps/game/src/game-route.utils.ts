@@ -1,6 +1,6 @@
 import type { OnboardingPhase } from "@/hooks/context/use-unified-onboarding";
 
-export type GameRouteView = "loading" | "ready" | "redirect";
+type GameRouteView = "loading" | "ready" | "redirect";
 
 const REQUIRES_LANDING_PHASES: ReadonlySet<OnboardingPhase> = new Set(["world-select", "account", "avatar"]);
 

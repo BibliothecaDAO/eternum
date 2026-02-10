@@ -1,16 +1,16 @@
-export interface WorldmapZoomHardeningConfigInput {
+interface WorldmapZoomHardeningConfigInput {
   enabled: boolean;
   telemetry: boolean;
 }
 
-export interface WorldmapZoomHardeningConfig {
+interface WorldmapZoomHardeningConfig {
   enabled: boolean;
   latestWinsRefresh: boolean;
   terrainSelfHeal: boolean;
   telemetry: boolean;
 }
 
-export interface WorldmapZoomHardeningRuntimeStateInput {
+interface WorldmapZoomHardeningRuntimeStateInput {
   chunkRefreshTimeout: number | null;
   chunkRefreshRequestToken: number;
   chunkRefreshAppliedToken: number;

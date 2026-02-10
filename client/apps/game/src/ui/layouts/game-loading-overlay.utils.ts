@@ -1,11 +1,11 @@
 export const HEXCEPTION_GRID_READY_EVENT = "hexception:grid-ready";
 
-export type GridCoordinates = {
+type GridCoordinates = {
   col: number;
   row: number;
 };
 
-export type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "ready";
+type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "ready";
 
 export const getSceneWarmupProgress = (elapsedMs: number): number => {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 82;

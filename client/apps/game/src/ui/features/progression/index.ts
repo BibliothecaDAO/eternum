@@ -8,6 +8,3 @@ export * from "./quests/quest-utils";
 export { ExplorationTable } from "./hints/exploration-table";
 export { HintModal, HintSection } from "./hints/hint-modal";
 export * from "./hints/utils";
-
-// Onboarding System - Exports used externally
-export { SpectateButton } from "./onboarding/spectate-button";
