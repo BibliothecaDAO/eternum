@@ -31,7 +31,7 @@ enum WeatherPhase {
 /**
  * Weather state snapshot for external consumers
  */
-interface WeatherState {
+export interface WeatherState {
   /** Current weather type */
   type: WeatherType;
   /** Current phase in the weather transition */
@@ -105,6 +105,7 @@ export class WeatherManager {
   private currentType: WeatherType = WeatherType.CLEAR;
   private targetType: WeatherType = WeatherType.CLEAR;
   private currentPhase: WeatherPhase = WeatherPhase.CLEAR;
+  private departingFromType: WeatherType | null = null;
   private phaseProgress: number = 0;
   private phaseElapsed: number = 0;
 
@@ -285,13 +286,14 @@ export class WeatherManager {
         this.currentPhase = WeatherPhase.CLEAR;
         this.currentType = WeatherType.CLEAR;
         this.targetType = WeatherType.CLEAR;
+        this.departingFromType = null;
         this.intensity = 0;
         break;
     }
   }
 
   private computeIntensities(): void {
-    const config = this.weatherConfigs[this.targetType];
+    const config = this.getPhaseWeatherConfig();
     const eased = this.easeInOut(this.phaseProgress);
 
     switch (this.currentPhase) {
@@ -356,6 +358,15 @@ export class WeatherManager {
     }
   }
 
+  private getPhaseWeatherConfig(): WeatherConfig {
+    if (this.currentPhase === WeatherPhase.DEPARTING) {
+      const sourceType = this.departingFromType ?? this.currentType;
+      return this.weatherConfigs[sourceType];
+    }
+
+    return this.weatherConfigs[this.targetType];
+  }
+
   private notifyListeners(): void {
     if (this.listeners.size === 0) return;
 
@@ -382,6 +393,7 @@ export class WeatherManager {
     // If we're at peak and target is CLEAR, start departing
     if (weather === WeatherType.CLEAR && this.currentPhase === WeatherPhase.PEAK) {
       this.targetType = WeatherType.CLEAR;
+      this.departingFromType = this.currentType;
       this.advancePhase(); // Will set to DEPARTING
       return;
     }
@@ -405,6 +417,7 @@ export class WeatherManager {
   setWeather(weather: WeatherType): void {
     this.currentType = weather;
     this.targetType = weather;
+    this.departingFromType = null;
     this.phaseElapsed = 0;
     this.phaseProgress = 0;
 

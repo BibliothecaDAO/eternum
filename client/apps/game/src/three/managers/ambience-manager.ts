@@ -33,7 +33,8 @@ interface AmbienceSoundConfig {
 interface ActiveAmbienceSound {
   layerId: string; // Unique identifier for the layer
   assetId: string; // Currently playing asset
-  source: AudioBufferSourceNode;
+  primarySource: AudioBufferSourceNode;
+  sources: Set<AudioBufferSourceNode>;
   targetVolume: number;
   currentVolume: number;
   fadeSpeed: number; // volume change per second
@@ -175,7 +176,13 @@ export class AmbienceManager {
    * @param currentWeather - Current weather type
    * @param deltaTime - Time since last frame in seconds
    */
-  update(cycleProgress: number, currentWeather: WeatherType, deltaTime: number): void {
+  update(
+    cycleProgress: number,
+    currentWeather: WeatherType,
+    deltaTime: number,
+    weatherIntensity: number = this.params.weatherIntensity,
+    stormIntensity: number = this.params.stormIntensity,
+  ): void {
     if (!this.params.enabled) {
       this.fadeOutAll(deltaTime);
       return;
@@ -186,21 +193,29 @@ export class AmbienceManager {
       return; // Wait until audio system is initialized
     }
 
+    this.params.weatherIntensity = Math.max(0, Math.min(1, weatherIntensity));
+    this.params.stormIntensity = Math.max(0, Math.min(1, stormIntensity));
+
     // Determine current time of day
     const newTimeOfDay = this.getTimeOfDay(cycleProgress);
+    const effectiveWeather = this.resolveEffectiveWeather(
+      currentWeather,
+      this.params.weatherIntensity,
+      this.params.stormIntensity,
+    );
     const timeChanged = newTimeOfDay !== this.currentTimeOfDay;
-    const weatherChanged = currentWeather !== this.currentWeather;
+    const weatherChanged = effectiveWeather !== this.currentWeather;
 
     // On first update, always trigger sound layer update
     if (this.isFirstUpdate) {
       this.isFirstUpdate = false;
       this.currentTimeOfDay = newTimeOfDay;
-      this.currentWeather = currentWeather;
+      this.currentWeather = effectiveWeather;
       this.updateSoundLayers();
       // Don't return - we need to update active sounds for fade-in
     } else {
       this.currentTimeOfDay = newTimeOfDay;
-      this.currentWeather = currentWeather;
+      this.currentWeather = effectiveWeather;
 
       // Check if we need to start/stop sounds
       if (timeChanged || weatherChanged) {
@@ -208,8 +223,20 @@ export class AmbienceManager {
       }
     }
 
+    this.applyWeatherVolumeModulation();
+
     // Update active sounds (for fading)
     this.updateActiveSounds(deltaTime);
+  }
+
+  private resolveEffectiveWeather(
+    weatherType: WeatherType,
+    weatherIntensity: number,
+    stormIntensity: number,
+  ): WeatherType {
+    if (stormIntensity > 0.3) return WeatherType.STORM;
+    if (weatherIntensity > 0.2) return WeatherType.RAIN;
+    return weatherType;
   }
 
   /**
@@ -283,10 +310,16 @@ export class AmbienceManager {
       const targetVolume = layer.baseVolume * this.params.masterVolume;
 
       // Start at volume 0 for fade-in effect
+      let startedSource: AudioBufferSourceNode | null = null;
       const source = await this.audioManager.play(selectedAssetId, {
         loop: shouldLoop,
         volume: 0, // Start silent, will fade in
         onComplete: () => {
+          const active = this.activeSounds.get(layerId);
+          if (active && startedSource) {
+            active.sources.delete(startedSource);
+          }
+
           // For random_interval mode, schedule next play
           if (playbackMode === "random_interval") {
             this.scheduleNextPlay(layer, layerId);
@@ -298,13 +331,15 @@ export class AmbienceManager {
       if (!source) {
         return;
       }
+      startedSource = source;
 
       const fadeSpeed = layer.baseVolume / layer.fadeInDuration;
 
       const activeSound: ActiveAmbienceSound = {
         layerId,
         assetId: selectedAssetId,
-        source,
+        primarySource: source,
+        sources: new Set([source]),
         targetVolume,
         currentVolume: 0, // Start at 0 for fade-in
         fadeSpeed,
@@ -367,11 +402,13 @@ export class AmbienceManager {
 
         if (activeSound.currentVolume <= 0) {
           // Fade out complete - stop sound
-          try {
-            this.audioManager.stop(activeSound.source);
-          } catch (e) {
-            // Ignore errors
-          }
+          activeSound.sources.forEach((source) => {
+            try {
+              this.audioManager.stop(source);
+            } catch (e) {
+              // Ignore errors
+            }
+          });
           soundsToRemove.push(layerId);
         }
       } else {
@@ -392,13 +429,35 @@ export class AmbienceManager {
             const assetIds = Array.isArray(layer.assetId) ? layer.assetId : [layer.assetId];
             const selectedAssetId = assetIds[Math.floor(Math.random() * assetIds.length)];
 
+            let transientSource: AudioBufferSourceNode | null = null;
             this.audioManager
               .play(selectedAssetId, {
                 loop: false,
                 volume: activeSound.currentVolume,
                 onComplete: () => {
+                  const latestSound = this.activeSounds.get(layerId);
+                  if (latestSound && transientSource) {
+                    latestSound.sources.delete(transientSource);
+                  }
                   this.scheduleNextPlay(layer, layerId);
                 },
+              })
+              .then((source) => {
+                if (!source) return;
+                transientSource = source;
+
+                const latestSound = this.activeSounds.get(layerId);
+                if (!latestSound || latestSound.isFadingOut) {
+                  try {
+                    this.audioManager.stop(source);
+                  } catch {
+                    // Ignore errors when source is already completed.
+                  }
+                  return;
+                }
+
+                latestSound.sources.add(source);
+                this.audioManager.setSourceVolume(source, latestSound.currentVolume);
               })
               .catch((error) => {
                 console.warn(`Failed to play random interval sound ${selectedAssetId}:`, error);
@@ -411,7 +470,9 @@ export class AmbienceManager {
       }
 
       // Apply the calculated volume to the actual audio source
-      this.audioManager.setSourceVolume(activeSound.source, activeSound.currentVolume);
+      activeSound.sources.forEach((source) => {
+        this.audioManager.setSourceVolume(source, activeSound.currentVolume);
+      });
     });
 
     // Remove stopped sounds
@@ -437,15 +498,7 @@ export class AmbienceManager {
    */
   setMasterVolume(volume: number): void {
     this.params.masterVolume = Math.max(0, Math.min(1, volume));
-
-    // Update target volumes for active sounds
-    this.activeSounds.forEach((activeSound, layerId) => {
-      const layerIndex = parseInt(layerId.split("_")[1]);
-      const layer = this.soundLayers[layerIndex];
-      if (layer) {
-        activeSound.targetVolume = layer.baseVolume * this.params.masterVolume;
-      }
-    });
+    this.applyWeatherVolumeModulation();
   }
 
   /**
@@ -518,27 +571,10 @@ export class AmbienceManager {
   updateFromWeather(weatherIntensity: number, stormIntensity: number): void {
     this.params.weatherIntensity = weatherIntensity;
     this.params.stormIntensity = stormIntensity;
+    this.applyWeatherVolumeModulation();
+  }
 
-    // Map intensity to weather type for sound layer activation
-    // This creates a graduated transition rather than binary switching
-    let effectiveWeather: WeatherType;
-
-    if (stormIntensity > 0.3) {
-      effectiveWeather = WeatherType.STORM;
-    } else if (weatherIntensity > 0.2) {
-      effectiveWeather = WeatherType.RAIN;
-    } else {
-      effectiveWeather = WeatherType.CLEAR;
-    }
-
-    // Only update if weather type changed (to avoid constant sound restarts)
-    if (effectiveWeather !== this.currentWeather) {
-      this.currentWeather = effectiveWeather;
-      this.updateSoundLayers();
-    }
-
-    // Modulate active rain/storm sound volumes based on intensity
-    // This provides smooth volume transitions during weather phases
+  private applyWeatherVolumeModulation(): void {
     this.activeSounds.forEach((activeSound, layerId) => {
       const layerIndex = parseInt(layerId.split("_")[1]);
       const layer = this.soundLayers[layerIndex];
@@ -550,12 +586,12 @@ export class AmbienceManager {
 
       if (layer.weather.includes(WeatherType.RAIN) || layer.weather.includes(WeatherType.STORM)) {
         // Rain sounds: scale with weather intensity
-        volumeMultiplier = Math.max(0.3, weatherIntensity);
+        volumeMultiplier = Math.max(0.3, this.params.weatherIntensity);
       }
 
       if (layer.weather.includes(WeatherType.STORM)) {
         // Storm sounds (thunder): scale with storm intensity
-        volumeMultiplier = Math.max(0.2, stormIntensity);
+        volumeMultiplier = Math.max(0.2, this.params.stormIntensity);
       }
 
       // Update target volume with intensity multiplier
@@ -582,11 +618,13 @@ export class AmbienceManager {
 
     // Stop all active sounds
     this.activeSounds.forEach((activeSound) => {
-      try {
-        this.audioManager.stop(activeSound.source);
-      } catch (e) {
-        // Ignore errors
-      }
+      activeSound.sources.forEach((source) => {
+        try {
+          this.audioManager.stop(source);
+        } catch (e) {
+          // Ignore errors
+        }
+      });
     });
 
     this.activeSounds.clear();
