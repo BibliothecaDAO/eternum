@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="eternum-agent"
+APP_NAME="axis"
 DEFAULT_REPO="bibliothecadao/eternum"
 
 GITHUB_REPO="${GITHUB_REPO:-$DEFAULT_REPO}"
@@ -106,7 +106,7 @@ main() {
   local archive_url="${RELEASE_BASE_URL}/${resolved_version}/${archive_name}"
   local checksums_url="${RELEASE_BASE_URL}/${resolved_version}/checksums.txt"
 
-  TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t eternum-agent-install)"
+  TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t axis-install)"
   trap 'rm -rf "$TMP_DIR"' EXIT
 
   log "Downloading ${archive_name}"

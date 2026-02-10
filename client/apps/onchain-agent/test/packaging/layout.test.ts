@@ -17,14 +17,14 @@ afterEach(() => {
 
 describe("release layout", () => {
   it("builds expected archive filename from target and version", () => {
-    expect(getArchiveFileName("linux-x64", "0.1.0")).toBe("eternum-agent-v0.1.0-linux-x64.tar.gz");
+    expect(getArchiveFileName("linux-x64", "0.1.0")).toBe("axis-v0.1.0-linux-x64.tar.gz");
   });
 
   it("fails validation when required files are missing", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "onchain-layout-missing-"));
     tempDirs.push(dir);
 
-    writeFileSync(path.join(dir, "eternum-agent"), "#!/bin/sh\necho ok\n");
+    writeFileSync(path.join(dir, "axis"), "#!/bin/sh\necho ok\n");
 
     const result = validateStagedReleaseLayout(dir);
 
@@ -41,7 +41,7 @@ describe("release layout", () => {
 
     mkdirSync(path.join(dir, "data", "tasks"), { recursive: true });
 
-    writeFileSync(path.join(dir, "eternum-agent"), "#!/bin/sh\necho ok\n");
+    writeFileSync(path.join(dir, "axis"), "#!/bin/sh\necho ok\n");
     writeFileSync(path.join(dir, "package.json"), "{}\n");
     writeFileSync(path.join(dir, "README.md"), "# readme\n");
     writeFileSync(path.join(dir, "LICENSE"), "MIT\n");

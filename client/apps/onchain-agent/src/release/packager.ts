@@ -4,7 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 
-const APP_NAME = "eternum-agent";
+const APP_NAME = "axis";
 
 const REQUIRED_STAGED_FILES = [
   APP_NAME,

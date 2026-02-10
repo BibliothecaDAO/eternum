@@ -1,19 +1,19 @@
-# Onchain Agent (CLI)
+# Axis (CLI)
 
-This app runs the Eternum autonomous agent in a terminal (TUI + CLI loop).
+Axis runs the Eternum autonomous agent in a terminal (TUI + CLI loop).
 
 ## Public Install
 
 Install latest public release:
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-onchain-agent.sh | bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
 ```
 
 Install a pinned release:
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-onchain-agent.sh | VERSION=v0.1.0 bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | VERSION=v0.1.0 bash
 ```
 
 More install/rollback/uninstall details: `client/apps/onchain-agent/INSTALL.md`.
@@ -40,7 +40,7 @@ Useful flags:
 - `--targets darwin-arm64,linux-x64` to limit targets
 - `--outDir /tmp/onchain-release` to change output directory
 - `--version 0.1.0` to override package version
-- `--skipBuild --binaryPath /path/to/eternum-agent` for packaging-only flows
+- `--skipBuild --binaryPath /path/to/axis` for packaging-only flows
 
 ## Run in CLI
 

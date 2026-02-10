@@ -27,22 +27,26 @@ describe("cli commands", () => {
   });
 
   it("invokes runtime on run command", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const { runCli } = await import("../../src/cli");
 
     const code = await runCli(["run"]);
 
     expect(code).toBe(0);
     expect(mainMock).toHaveBeenCalledOnce();
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("AXIS"));
   });
 
   it("returns non-zero for unknown command", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const { runCli } = await import("../../src/cli");
 
     const code = await runCli(["wat"]);
 
     expect(code).toBe(1);
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Unknown command"));
+    expect(logSpy).toHaveBeenCalledWith("Usage: axis [--version|doctor|init|run]");
     expect(mainMock).not.toHaveBeenCalled();
   });
 });

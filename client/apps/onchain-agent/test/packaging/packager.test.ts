@@ -24,7 +24,7 @@ describe("release packaging", () => {
     const packageDir = path.join(workspace, "package");
     mkdirSync(path.join(packageDir, "data", "tasks"), { recursive: true });
 
-    const binaryPath = path.join(workspace, "eternum-agent-bin");
+    const binaryPath = path.join(workspace, "axis-bin");
     writeFileSync(binaryPath, "#!/bin/sh\necho agent\n");
 
     writeFileSync(
@@ -53,17 +53,17 @@ describe("release packaging", () => {
     });
 
     expect(result.archives).toHaveLength(1);
-    expect(result.archives[0]).toContain("eternum-agent-v0.1.0-linux-x64.tar.gz");
+    expect(result.archives[0]).toContain("axis-v0.1.0-linux-x64.tar.gz");
 
     const checksumsPath = path.join(outputDir, "checksums.txt");
     const checksums = readFileSync(checksumsPath, "utf8");
-    expect(checksums).toContain("eternum-agent-v0.1.0-linux-x64.tar.gz");
+    expect(checksums).toContain("axis-v0.1.0-linux-x64.tar.gz");
 
     const archivePath = result.archives[0];
     const listing = execFileSync("tar", ["-tzf", archivePath], { encoding: "utf8" });
-    expect(listing).toContain("eternum-agent/eternum-agent");
-    expect(listing).toContain("eternum-agent/package.json");
-    expect(listing).toContain("eternum-agent/data/soul.md");
-    expect(listing).toContain("eternum-agent/data/HEARTBEAT.md");
+    expect(listing).toContain("axis/axis");
+    expect(listing).toContain("axis/package.json");
+    expect(listing).toContain("axis/data/soul.md");
+    expect(listing).toContain("axis/data/HEARTBEAT.md");
   });
 });

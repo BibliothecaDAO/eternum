@@ -26,10 +26,10 @@ function createReleaseFixture(
   const resolvedVersion = version.replace(/^v/, "");
   const versionDir = path.join(baseDir, version);
   const stageRoot = path.join(baseDir, "stage");
-  const stageDir = path.join(stageRoot, "eternum-agent");
+  const stageDir = path.join(stageRoot, "axis");
   mkdirSync(stageDir, { recursive: true });
 
-  const binaryPath = path.join(stageDir, "eternum-agent");
+  const binaryPath = path.join(stageDir, "axis");
   writeFileSync(
     binaryPath,
     `#!/bin/sh
@@ -45,16 +45,16 @@ echo "mock-agent"
 
   mkdirSync(versionDir, { recursive: true });
 
-  const archiveName = `eternum-agent-v${version.replace(/^v/, "")}-${target}.tar.gz`;
+  const archiveName = `axis-v${version.replace(/^v/, "")}-${target}.tar.gz`;
   const archivePath = path.join(versionDir, archiveName);
-  execFileSync("tar", ["-czf", archivePath, "-C", stageRoot, "eternum-agent"]);
+  execFileSync("tar", ["-czf", archivePath, "-C", stageRoot, "axis"]);
 
   const expectedHash = checksumMode === "valid" ? sha256(archivePath) : "deadbeef";
   writeFileSync(path.join(versionDir, "checksums.txt"), `${expectedHash}  ${archiveName}\n`, "utf8");
 }
 
 function runInstaller(env: NodeJS.ProcessEnv): { stdout: string; stderr: string } {
-  const scriptPath = path.resolve(process.cwd(), "../../../scripts/install-onchain-agent.sh");
+  const scriptPath = path.resolve(process.cwd(), "../../../scripts/install-axis.sh");
   expect(existsSync(scriptPath)).toBe(true);
 
   const stdout = execFileSync("bash", [scriptPath], {
@@ -73,7 +73,7 @@ afterEach(() => {
   }
 });
 
-describe("install-onchain-agent.sh", () => {
+describe("install-axis.sh", () => {
   it("installs pinned version from a local release fixture", () => {
     const workspace = createTempDir("onchain-install-pinned-");
     const releasesRoot = path.join(workspace, "releases");
@@ -93,7 +93,7 @@ describe("install-onchain-agent.sh", () => {
 
     runInstaller(env);
 
-    const linkedBinary = path.join(binDir, "eternum-agent");
+    const linkedBinary = path.join(binDir, "axis");
     expect(existsSync(linkedBinary)).toBe(true);
     expect(lstatSync(linkedBinary).isSymbolicLink()).toBe(true);
 
@@ -121,7 +121,7 @@ describe("install-onchain-agent.sh", () => {
 
     runInstaller(env);
 
-    const linkedBinary = path.join(binDir, "eternum-agent");
+    const linkedBinary = path.join(binDir, "axis");
     const versionOutput = execFileSync(linkedBinary, ["--version"], { encoding: "utf8" }).trim();
     expect(versionOutput).toBe("0.2.0");
   });
@@ -132,7 +132,7 @@ describe("install-onchain-agent.sh", () => {
 
     createReleaseFixture(releasesRoot, "v0.1.0", "linux-x64", "invalid");
 
-    const scriptPath = path.resolve(process.cwd(), "../../../scripts/install-onchain-agent.sh");
+    const scriptPath = path.resolve(process.cwd(), "../../../scripts/install-axis.sh");
 
     let stderr = "";
     try {

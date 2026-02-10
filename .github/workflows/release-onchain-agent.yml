@@ -117,10 +117,10 @@ jobs:
             --version "${RELEASE_VERSION}" \
             --outDir release-dist
 
-      - name: Smoke test artifact (eternum-agent --version / eternum-agent doctor)
+      - name: Smoke test artifact (axis --version / axis doctor)
         shell: bash
         run: |
-          archive="release-dist/eternum-agent-v${RELEASE_VERSION#v}-${{ matrix.target }}.tar.gz"
+          archive="release-dist/axis-v${RELEASE_VERSION#v}-${{ matrix.target }}.tar.gz"
           if [ ! -f "${archive}" ]; then
             echo "Expected archive not found: ${archive}" >&2
             exit 1
@@ -129,23 +129,23 @@ jobs:
           mkdir -p smoke
           tar -xzf "${archive}" -C smoke
 
-          cd smoke/eternum-agent
-          ./eternum-agent --version
+          cd smoke/axis
+          ./axis --version
 
           set +e
-          doctor_output=$(./eternum-agent doctor 2>&1)
+          doctor_output=$(./axis doctor 2>&1)
           doctor_rc=$?
           set -e
           echo "${doctor_output}"
           if [ "${doctor_rc}" -ne 0 ] && [ "${doctor_rc}" -ne 1 ]; then
-            echo "eternum-agent doctor exited with unexpected status ${doctor_rc}" >&2
+            echo "axis doctor exited with unexpected status ${doctor_rc}" >&2
             exit 1
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: onchain-agent-${{ matrix.target }}
+          name: axis-${{ matrix.target }}
           path: release-dist/*.tar.gz
           if-no-files-found: error
 
@@ -187,8 +187,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
-          name: onchain-agent ${{ env.RELEASE_VERSION }}
+          name: axis ${{ env.RELEASE_VERSION }}
           files: |
             release-dist/*.tar.gz
             release-dist/checksums.txt
-            scripts/install-onchain-agent.sh
+            scripts/install-axis.sh

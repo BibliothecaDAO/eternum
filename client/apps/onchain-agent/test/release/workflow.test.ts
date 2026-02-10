@@ -36,10 +36,10 @@ describe("release-onchain-agent workflow", () => {
     expect(workflow).toContain("linux-arm64");
 
     expect(workflow).toContain("pnpm --dir client/apps/onchain-agent package:release");
-    expect(workflow).toContain("eternum-agent --version");
-    expect(workflow).toContain("eternum-agent doctor");
+    expect(workflow).toContain("axis --version");
+    expect(workflow).toContain("axis doctor");
     expect(workflow).toContain("checksums.txt");
-    expect(workflow).toContain("scripts/install-onchain-agent.sh");
+    expect(workflow).toContain("scripts/install-axis.sh");
     expect(workflow).toContain("softprops/action-gh-release");
   });
 });

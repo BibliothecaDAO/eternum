@@ -6,6 +6,17 @@ import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config";
 import { resolveBundledPath } from "./runtime-paths";
 
+const CLI_COMMAND = "axis";
+const AXIS_ASCII_BANNER = [
+  " █████╗ ██╗  ██╗██╗███████╗",
+  "██╔══██╗╚██╗██╔╝██║██╔════╝",
+  "███████║ ╚███╔╝ ██║███████╗",
+  "██╔══██║ ██╔██╗ ██║╚════██║",
+  "██║  ██║██╔╝ ██╗██║███████║",
+  "╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝",
+  "AXIS",
+].join("\n");
+
 function readVersion(): string {
   try {
     const packageJsonPath = resolveBundledPath("package.json");
@@ -18,7 +29,11 @@ function readVersion(): string {
 }
 
 function printUsage() {
-  console.log("Usage: eternum-agent [--version|doctor|init|run]");
+  console.log(`Usage: ${CLI_COMMAND} [--version|doctor|init|run]`);
+}
+
+function printBanner() {
+  console.log(AXIS_ASCII_BANNER);
 }
 
 async function ensureDirWritable(dirPath: string): Promise<boolean> {
@@ -95,7 +110,7 @@ function seedDataDir(dataDir: string) {
   if (!existsSync(bundledDataDir)) {
     const fallbackSoul = path.join(dataDir, "soul.md");
     if (!existsSync(fallbackSoul)) {
-      writeFileSync(fallbackSoul, "# Soul\n\nYou are an Eternum onchain agent.\n", "utf8");
+      writeFileSync(fallbackSoul, "# Soul\n\nYou are Axis, an Eternum onchain agent.\n", "utf8");
     }
     const fallbackTasksDir = path.join(dataDir, "tasks");
     mkdirSync(fallbackTasksDir, { recursive: true });
@@ -162,6 +177,7 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<nu
   const [firstArg] = args;
 
   if (!firstArg || firstArg === "run") {
+    printBanner();
     try {
       const { main } = await import("./index");
       await main();

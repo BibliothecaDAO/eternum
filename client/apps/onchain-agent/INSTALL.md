@@ -1,17 +1,17 @@
-# Install Eternum Agent
+# Install Axis
 
 ## One-command Install
 
 Latest release:
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-onchain-agent.sh | bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
 ```
 
 Pinned release:
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-onchain-agent.sh | VERSION=v0.1.0 bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | VERSION=v0.1.0 bash
 ```
 
 The installer:
@@ -20,12 +20,12 @@ The installer:
 - downloads the matching archive + `checksums.txt`
 - verifies SHA-256 checksum
 - installs to `~/.local/share/eternum-agent/<version>`
-- links `eternum-agent` into `~/.local/bin`
+- links `axis` into `~/.local/bin`
 
 ## Optional Installer Overrides
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-onchain-agent.sh | \
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | \
   VERSION=v0.1.0 BIN_DIR="$HOME/.local/bin" INSTALL_DIR="$HOME/.local/share/eternum-agent" bash
 ```
 
@@ -37,9 +37,9 @@ Advanced:
 ## Verify and Initialize
 
 ```bash
-eternum-agent --version
-eternum-agent init
-eternum-agent doctor
+axis --version
+axis init
+axis doctor
 ```
 
 ## Rollback
@@ -47,19 +47,19 @@ eternum-agent doctor
 Re-run installer with an older version:
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-onchain-agent.sh | VERSION=v0.1.0 bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | VERSION=v0.1.0 bash
 ```
 
 Or re-point the symlink manually:
 
 ```bash
-ln -sfn "$HOME/.local/share/eternum-agent/v0.1.0/eternum-agent/eternum-agent" "$HOME/.local/bin/eternum-agent"
+ln -sfn "$HOME/.local/share/eternum-agent/v0.1.0/axis/axis" "$HOME/.local/bin/axis"
 ```
 
 ## Uninstall
 
 ```bash
-rm -f "$HOME/.local/bin/eternum-agent"
+rm -f "$HOME/.local/bin/axis"
 rm -rf "$HOME/.local/share/eternum-agent"
 rm -rf "$HOME/.eternum-agent"
 ```
