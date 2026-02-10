@@ -148,7 +148,7 @@ async function createRuntimeServices(
   config: AgentConfig,
   resolvedManifest?: { contracts: unknown[] },
 ): Promise<RuntimeServices> {
-  const manifest = resolvedManifest ?? await loadManifest(path.resolve(config.manifestPath));
+  const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath)));
 
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,

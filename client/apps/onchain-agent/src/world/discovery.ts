@@ -140,9 +140,7 @@ export async function buildWorldProfile(chain: Chain, worldName: string): Promis
   }
 
   const toriiBaseUrl = `https://api.cartridge.gg/x/${worldName}/torii`;
-  const rpcUrl = deployment.rpcUrl
-    ? normalizeRpcUrl(deployment.rpcUrl)
-    : DEFAULT_RPC_URL;
+  const rpcUrl = deployment.rpcUrl ? normalizeRpcUrl(deployment.rpcUrl) : DEFAULT_RPC_URL;
 
   return {
     name: worldName,
@@ -163,10 +161,7 @@ const MANIFEST_CHAIN_MAP: Record<Chain, string> = {
   mainnet: "manifest_mainnet.json",
 };
 
-export async function buildResolvedManifest(
-  chain: Chain,
-  profile: WorldProfile,
-): Promise<{ contracts: unknown[] }> {
+export async function buildResolvedManifest(chain: Chain, profile: WorldProfile): Promise<{ contracts: unknown[] }> {
   const manifestFile = MANIFEST_CHAIN_MAP[chain];
   const manifestPath = path.resolve(
     import.meta.dirname,

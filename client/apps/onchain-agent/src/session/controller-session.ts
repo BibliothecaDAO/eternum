@@ -8,7 +8,7 @@ interface SessionManifest {
   contracts?: unknown[];
 }
 
-export interface ControllerSessionConfig {
+interface ControllerSessionConfig {
   rpcUrl: string;
   chainId: string;
   gameName?: string;
@@ -16,7 +16,7 @@ export interface ControllerSessionConfig {
   manifest: SessionManifest;
 }
 
-export interface BuildSessionPolicyOptions {
+interface BuildSessionPolicyOptions {
   gameName?: string;
 }
 

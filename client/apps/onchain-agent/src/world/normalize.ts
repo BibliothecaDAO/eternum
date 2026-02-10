@@ -1,7 +1,7 @@
 const strip0x = (v: string) => (v.startsWith("0x") || v.startsWith("0X") ? v.slice(2) : v);
 const leftPadHex = (hexWithout0x: string, width: number) => hexWithout0x.padStart(width, "0");
 
-export const normalizeHex = (v: string) => {
+const normalizeHex = (v: string) => {
   const body = strip0x(v).toLowerCase();
   const padded = leftPadHex(body, 64);
   return `0x${padded}`;

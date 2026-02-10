@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +16,7 @@ function resolvePackageRootFromModule(): string {
   return fileURLToPath(new URL("..", import.meta.url));
 }
 
-export function resolvePackageRoot(): string {
+function resolvePackageRoot(): string {
   if (isBunBinaryRuntime()) {
     return dirname(process.execPath);
   }
@@ -28,16 +27,12 @@ export function resolveBundledPath(...segments: string[]): string {
   return path.join(resolvePackageRoot(), ...segments);
 }
 
-export function resolveAgentHome(env: NodeJS.ProcessEnv = process.env): string {
+function resolveAgentHome(env: NodeJS.ProcessEnv = process.env): string {
   const configured = env.ETERNUM_AGENT_HOME?.trim();
   if (configured) {
     return path.resolve(expandTilde(configured));
   }
   return path.join(homedir(), ".eternum-agent");
-}
-
-export function resolveDefaultManifestPath(env: NodeJS.ProcessEnv = process.env): string {
-  return path.join(resolveAgentHome(env), "manifest.json");
 }
 
 export function resolveDefaultDataDir(env: NodeJS.ProcessEnv = process.env): string {
@@ -46,8 +41,4 @@ export function resolveDefaultDataDir(env: NodeJS.ProcessEnv = process.env): str
 
 export function resolveDefaultSessionBasePath(env: NodeJS.ProcessEnv = process.env): string {
   return path.join(resolveAgentHome(env), ".cartridge");
-}
-
-export function hasBundledData(): boolean {
-  return existsSync(resolveBundledPath("data"));
 }

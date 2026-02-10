@@ -2,7 +2,7 @@ import type { Agent, AgentEvent } from "@mariozechner/pi-agent-core";
 import { TUI, ProcessTerminal, Container, Text, Markdown } from "@mariozechner/pi-tui";
 import type { TickLoop } from "@bibliothecadao/game-agent";
 
-export interface AppState {
+interface AppState {
   agent: Agent;
   ticker: TickLoop;
 }

@@ -17,7 +17,7 @@ const REQUIRED_STAGED_FILES = [
   "data/tasks/priorities.md",
 ];
 
-export interface ReleasePackagingOptions {
+interface ReleasePackagingOptions {
   packageDir: string;
   outputDir: string;
   targets: string[];
@@ -27,12 +27,12 @@ export interface ReleasePackagingOptions {
   licensePath?: string;
 }
 
-export interface ReleasePackagingResult {
+interface ReleasePackagingResult {
   archives: string[];
   checksumsPath: string;
 }
 
-export interface LayoutValidationResult {
+interface LayoutValidationResult {
   ok: boolean;
   missing: string[];
 }
