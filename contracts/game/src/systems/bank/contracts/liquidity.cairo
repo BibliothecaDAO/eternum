@@ -23,7 +23,7 @@ mod liquidity_systems {
     use crate::models::config::SeasonConfigImpl;
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
     use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
@@ -79,6 +79,12 @@ mod liquidity_systems {
 
             // ensure lords are not added as liquidity
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
+
+            // ensure villages cannot add troop resources as liquidity
+            let player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            if player_structure_base.category == StructureCategory::Village.into() {
+                assert!(!TroopResourceImpl::is_troop(resource_type), "villages cannot add troop liquidity");
+            }
 
             // get market for resource type
             let mut market: Market = world.read_model(resource_type);
@@ -175,6 +181,12 @@ mod liquidity_systems {
                 player_structure_owner.assert_caller_owner();
 
                 let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+
+                // ensure villages cannot receive troop resources from LP removal
+                if player_structure_base.category == StructureCategory::Village.into() {
+                    assert!(!TroopResourceImpl::is_troop(resource_type), "villages cannot remove troop liquidity");
+                }
+
                 let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
                 let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
                 let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
