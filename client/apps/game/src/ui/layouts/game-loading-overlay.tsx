@@ -2,12 +2,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { waitForHexceptionGridReady } from "./game-loading-overlay.utils";
 import { useNavigate } from "react-router-dom";
 
 const SAFETY_TIMEOUT_MS = 15_000;
 // Time to wait after navigating to hex before dismissing (player path)
-const POST_NAVIGATE_DELAY_MS = 1_500;
+const POST_HEX_READY_DELAY_MS = 250;
+const HEXCEPTION_READY_TIMEOUT_MS = 6_000;
 // Time to wait after tile data loads before dismissing (spectator path).
 // Longer because the bounds subscription still needs to stream Structure
 // entities and the WorldUpdateListener needs to process them into visuals.
@@ -33,11 +35,14 @@ export const GameLoadingOverlay = () => {
   const hasSeenMapLoading = useRef(false);
   const navigate = useNavigate();
 
-  const dismiss = (delayMs: number) => {
-    if (hasDismissed.current) return;
-    hasDismissed.current = true;
-    setTimeout(() => setShowBlankOverlay(false), delayMs);
-  };
+  const dismiss = useCallback(
+    (delayMs: number) => {
+      if (hasDismissed.current) return;
+      hasDismissed.current = true;
+      setTimeout(() => setShowBlankOverlay(false), delayMs);
+    },
+    [setShowBlankOverlay],
+  );
 
   // --- Player path: navigate to first structure once it appears in RECS ---
   useEffect(() => {
@@ -53,12 +58,17 @@ export const GameLoadingOverlay = () => {
       worldMapPosition: { col: normalized.x, row: normalized.y },
     });
 
+    const targetCoords = { col: normalized.x, row: normalized.y };
+    const ready = waitForHexceptionGridReady(targetCoords, HEXCEPTION_READY_TIMEOUT_MS);
+
     const url = `/play/hex?col=${normalized.x}&row=${normalized.y}`;
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
 
-    dismiss(POST_NAVIGATE_DELAY_MS);
-  }, [playerStructures, isSpectating, setShowBlankOverlay, navigate]);
+    void ready.then(() => {
+      dismiss(POST_HEX_READY_DELAY_MS);
+    });
+  }, [playerStructures, isSpectating, navigate, dismiss]);
 
   // --- Spectator path: dismiss once the world map finishes its initial fetch ---
   useEffect(() => {
@@ -74,7 +84,7 @@ export const GameLoadingOverlay = () => {
     if (hasSeenMapLoading.current && !mapLoading) {
       dismiss(POST_MAP_LOAD_DELAY_MS);
     }
-  }, [mapLoading, isSpectating, setShowBlankOverlay]);
+  }, [mapLoading, isSpectating, dismiss]);
 
   // Safety timeout
   useEffect(() => {
