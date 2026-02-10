@@ -70,6 +70,7 @@ export class AmbientParticleSystem {
   // Visibility
   private dustOpacity = 0;
   private fireflyOpacity = 0;
+  private weatherFade = 1;
 
   // Configuration
   private dustParams = {
@@ -302,7 +303,7 @@ export class AmbientParticleSystem {
     }
 
     this.dustGeometry.attributes.position.needsUpdate = true;
-    this.dustMaterial.opacity = this.dustOpacity * this.dustParams.opacity;
+    this.dustMaterial.opacity = this.dustOpacity * this.dustParams.opacity * this.weatherFade;
   }
 
   private updateFireflies(deltaTime: number): void {
@@ -381,7 +382,7 @@ export class AmbientParticleSystem {
 
     this.fireflyGeometry.attributes.position.needsUpdate = true;
     this.fireflyGeometry.attributes.color.needsUpdate = true;
-    this.fireflyMaterial.opacity = this.fireflyOpacity * this.fireflyParams.opacity;
+    this.fireflyMaterial.opacity = this.fireflyOpacity * this.fireflyParams.opacity * this.weatherFade;
   }
 
   /**
@@ -475,9 +476,7 @@ export class AmbientParticleSystem {
    */
   setWeatherIntensity(intensity: number): void {
     // Fade out particles as weather intensity increases
-    const weatherFade = 1 - intensity;
-    this.dustMaterial.opacity = this.dustOpacity * this.dustParams.opacity * weatherFade;
-    this.fireflyMaterial.opacity = this.fireflyOpacity * this.fireflyParams.opacity * weatherFade;
+    this.weatherFade = 1 - Math.max(0, Math.min(1, intensity));
   }
 
   dispose(): void {

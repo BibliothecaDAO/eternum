@@ -1283,6 +1283,12 @@ export default class GameRenderer {
     // Clear the renderer at the start of each frame
     this.renderer.clear();
 
+    const cycleProgress = useUIStore.getState().cycleProgress || 0;
+    this.hudScene.update(deltaTime, cycleProgress);
+    const weatherState = this.hudScene.getWeatherState();
+    this.worldmapScene.setWeatherAtmosphereState(weatherState);
+    this.hexceptionScene.setWeatherAtmosphereState(weatherState);
+
     // Render the current game scene
     const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
     if (isWorldMap) {
@@ -1298,13 +1304,11 @@ export default class GameRenderer {
       this.labelRenderer.render(activeScene, this.camera);
     }
     this.composer.render();
-    // Render the HUD scene without clearing the buffer
-    const cycleProgress = useUIStore.getState().cycleProgress || 0;
-    this.hudScene.update(deltaTime, cycleProgress);
 
     // Update post-processing based on weather state
     this.updateWeatherPostProcessing();
 
+    // Render the HUD scene without clearing the buffer
     this.renderer.clearDepth(); // Clear only the depth buffer
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     if (shouldRenderLabels) {

@@ -2,6 +2,7 @@ import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE, biomeModelPaths } from "@/three/constants";
 import { DayNightCycleManager } from "@/three/effects/day-night-cycle";
+import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -87,6 +88,7 @@ export abstract class HexagonScene {
 
   private stormAmbientBaseIntensity?: number;
   private stormHemisphereBaseIntensity?: number;
+  private weatherAtmosphereState?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">;
 
   private groundMesh!: Mesh;
   private uiStateUnsubscribe?: () => void;
@@ -954,6 +956,12 @@ export abstract class HexagonScene {
     });
   }
 
+  public setWeatherAtmosphereState(
+    state?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">,
+  ): void {
+    this.weatherAtmosphereState = state ? { ...state } : undefined;
+  }
+
   protected getAnimationDistanceForView(): number {
     switch (this.currentCameraView) {
       case CameraView.Close:
@@ -1020,17 +1028,20 @@ export abstract class HexagonScene {
     const cameraTarget = this.controls.target;
     this.dayNightCycleManager.update(cycleProgress, cameraTarget);
 
-    // Apply weather modulation during storm periods (cycleProgress < 20)
-    // This darkens the sky, increases fog, and reduces sun intensity
-    const stormPeriod = cycleProgress < 20;
-    if (stormPeriod) {
-      // Calculate storm intensity based on how deep into the storm period we are
-      // Peak intensity at cycleProgress = 10, fading at edges
-      const stormDepth = 1 - Math.abs(cycleProgress - 10) / 10;
-      const skyDarkness = stormDepth * 0.6;
-      const fogDensity = stormDepth * 0.5;
-      const sunOcclusion = stormDepth * 0.7;
+    const weatherState = this.weatherAtmosphereState;
+    const cycleStormDepth = cycleProgress < 20 ? 1 - Math.abs(cycleProgress - 10) / 10 : 0;
 
+    const stormDepth =
+      weatherState !== undefined
+        ? Math.max(0, Math.min(1, Math.max(weatherState.intensity, weatherState.stormIntensity)))
+        : cycleStormDepth;
+
+    const skyDarkness = weatherState !== undefined ? weatherState.skyDarkness : stormDepth * 0.6;
+    const fogDensity = weatherState !== undefined ? weatherState.fogDensity : stormDepth * 0.5;
+    const sunOcclusion =
+      weatherState !== undefined ? Math.min(1, weatherState.intensity * 0.75 + weatherState.stormIntensity * 0.25) : stormDepth * 0.7;
+
+    if (stormDepth > 0.001) {
       this.dayNightCycleManager.applyWeatherModulation(skyDarkness, fogDensity, sunOcclusion);
     }
 
@@ -1042,7 +1053,7 @@ export abstract class HexagonScene {
     // Reduced base intensity to avoid overpowering directional light shadows
     // Also scale storm light with storm period intensity
     if (this.lightningEndTime === 0) {
-      const baseStormIntensity = stormPeriod ? 0.6 : 0.2;
+      const baseStormIntensity = stormDepth > 0.05 ? 0.6 : 0.2;
       const stormIntensity = baseStormIntensity + Math.sin(elapsedTime * 0.3) * 0.15;
       this.stormLight.intensity = stormIntensity;
     }

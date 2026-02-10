@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { Navigator } from "@/three/managers/navigator";
-import { WeatherManager, WeatherType } from "@/three/managers/weather-manager";
+import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GUIManager } from "@/three/utils/";
@@ -129,6 +129,10 @@ export default class HUDScene {
     return this.weatherManager;
   }
 
+  getWeatherState(): WeatherState {
+    return this.weatherManager.getState();
+  }
+
   public hasActiveLabelAnimations(): boolean {
     return this.navigator?.hasActiveLabel() ?? false;
   }
@@ -148,13 +152,14 @@ export default class HUDScene {
     const weatherState = this.weatherManager.getState();
     const currentWeatherType = this.weatherManager.getCurrentWeather();
 
-    // CRITICAL: Call ambienceManager.update() to drive time-of-day sounds and scheduling.
-    // Previously only updateFromWeather() was called, which doesn't start/stop sounds
-    // based on time of day - it only modulates volumes for weather intensity.
-    this.ambienceManager.update(this.cycleProgress, currentWeatherType, deltaTime);
-
-    // Additionally modulate ambience volumes based on weather intensity
-    this.ambienceManager.updateFromWeather(weatherState.intensity, weatherState.stormIntensity);
+    // Drive time-of-day and weather layer scheduling in a single pass.
+    this.ambienceManager.update(
+      this.cycleProgress,
+      currentWeatherType,
+      deltaTime,
+      weatherState.intensity,
+      weatherState.stormIntensity,
+    );
 
     // Update ambient particles (dust motes, fireflies)
     if (cycleProgress !== undefined) {
@@ -200,9 +205,9 @@ export default class HUDScene {
       (this.navigator as any).destroy();
     }
 
-    // Clean up rain effect (if it has a destroy method)
-    if (this.rainEffect && "destroy" in this.rainEffect && typeof (this.rainEffect as any).destroy === "function") {
-      (this.rainEffect as any).destroy();
+    // Clean up rain effect resources
+    if (this.rainEffect) {
+      this.rainEffect.dispose();
     }
 
     // Clean up weather manager
