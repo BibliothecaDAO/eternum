@@ -19,6 +19,11 @@ interface ManagerUpdateDecisionInput {
   targetChunk: string;
 }
 
+interface ShortcutNavigationRefreshDecisionInput {
+  isShortcutNavigation: boolean;
+  transitionDurationSeconds: number;
+}
+
 /**
  * Resolve chunk-switch side effects after hydration completes.
  * Keeps behavior deterministic for success, failure, and stale transitions.
@@ -59,7 +64,7 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
  * the target chunk is still the active chunk.
  */
 export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boolean {
-  if (!shouldAcceptTransitionToken(input.transitionToken, input.expectedTransitionToken)) {
+  if (!shouldAcceptExactTransitionToken(input.transitionToken, input.expectedTransitionToken)) {
     return false;
   }
 
@@ -67,7 +72,7 @@ export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boole
 }
 
 /**
- * Accept only current or newer transition tokens.
+ * Accept transition tokens in monotonic order.
  * Undefined token is treated as non-transitioned work and accepted.
  */
 export function shouldAcceptTransitionToken(
@@ -78,4 +83,50 @@ export function shouldAcceptTransitionToken(
     return true;
   }
   return transitionToken >= latestTransitionToken;
+}
+
+/**
+ * Accept only the exact current transition token.
+ * Undefined token is treated as non-transitioned work and accepted.
+ */
+export function shouldAcceptExactTransitionToken(
+  transitionToken: number | undefined,
+  latestTransitionToken: number,
+): boolean {
+  if (transitionToken === undefined) {
+    return true;
+  }
+  return transitionToken === latestTransitionToken;
+}
+
+/**
+ * Refresh updates should only apply for the latest scheduled token.
+ * This enforces latest-wins behavior for debounced camera refresh work.
+ */
+export function shouldApplyRefreshToken(scheduledToken: number, latestToken: number): boolean {
+  return scheduledToken === latestToken;
+}
+
+/**
+ * When a scheduled refresh token is older than the latest token,
+ * the refresh should be rescheduled to converge on the newest camera state.
+ */
+export function shouldRescheduleRefreshToken(scheduledToken: number, latestToken: number): boolean {
+  return scheduledToken < latestToken;
+}
+
+/**
+ * Convert a scheduled refresh token into an execution token.
+ * Stale scheduled work should execute using the latest token to avoid starvation.
+ */
+export function resolveRefreshExecutionToken(scheduledToken: number, latestToken: number): number {
+  return scheduledToken < latestToken ? latestToken : scheduledToken;
+}
+
+/**
+ * Instant camera teleports triggered by shortcut navigation should force
+ * a chunk refresh so switch hysteresis cannot suppress reconciliation.
+ */
+export function shouldForceShortcutNavigationRefresh(input: ShortcutNavigationRefreshDecisionInput): boolean {
+  return input.isShortcutNavigation && input.transitionDurationSeconds <= 0;
 }
