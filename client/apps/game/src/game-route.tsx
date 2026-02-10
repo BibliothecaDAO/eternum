@@ -71,7 +71,7 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, setupResult, account, bootstrap } = state;
+  const { phase, setupResult, account } = state;
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: setupResult !== null,
@@ -83,11 +83,11 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }
 
   if (routeView === "loading") {
-    return <LoadingScreen backgroundImage={backgroundImage} progress={bootstrap.progress} />;
+    return <LoadingScreen />;
   }
 
   if (!setupResult || !account) {
-    return <LoadingScreen backgroundImage={backgroundImage} progress={bootstrap.progress} />;
+    return <LoadingScreen />;
   }
 
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;

@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
 import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
 import Check from "lucide-react/dist/esm/icons/check";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import { useEffect, useMemo, useState } from "react";
 
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import Button from "@/ui/design-system/atoms/button";
-import { BOOTSTRAP_LOADING_STATEMENTS } from "./constants";
 import { getDisplayProgress, getNextStatementIndex } from "./bootstrap-loading-panel.utils";
+import { BOOTSTRAP_LOADING_STATEMENTS } from "./constants";
 
 const STATEMENT_INTERVAL_MS = 3000;
 
@@ -70,7 +70,7 @@ export const BootstrapLoadingPanel = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-center mb-4 sm:mb-6">
+      <div>
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 sm:w-24 mb-3 sm:mb-4" alt="Loading" />
         <h2 className="text-base sm:text-lg font-semibold text-gold">{currentStatement}</h2>
       </div>
