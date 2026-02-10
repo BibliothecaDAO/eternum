@@ -9,10 +9,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Eye, Loader2, Check, AlertCircle, RefreshCw, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
+import { X, Play, Eye, Loader2, Check, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
+import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
@@ -22,7 +23,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
-import { StructureType } from "@bibliothecadao/types";
+import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { Chain } from "@contracts";
 
 const DEBUG_MODAL = false;
@@ -35,7 +36,6 @@ const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
 
 // Types
 type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
-type BootstrapTask = { id: string; label: string; status: "pending" | "running" | "complete" | "error" };
 type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
 type ModalPhase = "loading" | "forge" | "hyperstructure" | "settlement" | "ready" | "error";
 
@@ -44,6 +44,11 @@ type HyperstructureInfo = {
   entityId: number;
   initialized: boolean;
   name: string;
+};
+
+type SettleFinishValue = {
+  coords?: unknown[];
+  structure_ids?: unknown[];
 };
 
 interface GameEntryModalProps {
@@ -58,17 +63,6 @@ interface GameEntryModalProps {
   numHyperstructuresLeft?: number;
 }
 
-const LOADING_STATEMENTS = [
-  "Gathering your armies...",
-  "Forging alliances...",
-  "Building strongholds...",
-  "Mustering forces...",
-  "Preparing the realm...",
-  "Awakening ancient powers...",
-  "Charting territories...",
-  "Summoning heroes...",
-] as const;
-
 const BOOTSTRAP_TASKS: BootstrapTask[] = [
   { id: "world", label: "Selecting world", status: "pending" },
   { id: "manifest", label: "Loading game config", status: "pending" },
@@ -82,116 +76,6 @@ const SETTLEMENT_STEPS = [
   { id: 2, label: "Create Realms", icon: Castle, description: "Building your realm structures" },
   { id: 3, label: "Start Labor", icon: Pickaxe, description: "Initializing resource production" },
 ];
-
-/**
- * Loading panel showing bootstrap progress
- */
-const LoadingPhase = ({
-  tasks,
-  progress,
-  error,
-  onRetry,
-}: {
-  tasks: BootstrapTask[];
-  progress: number;
-  error: Error | null;
-  onRetry: () => void;
-}) => {
-  const [statementIndex, setStatementIndex] = useState(() => Math.floor(Math.random() * LOADING_STATEMENTS.length));
-
-  useEffect(() => {
-    if (error) return;
-    const interval = setInterval(() => {
-      setStatementIndex((prev) => (prev + 1) % LOADING_STATEMENTS.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [error]);
-
-  const displayProgress = progress === 100 ? 99 : progress;
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center py-8">
-        <AlertCircle className="w-12 h-12 text-danger/60 mb-4" />
-        <h2 className="text-xl font-bold text-gold mb-2">Unable to Start</h2>
-        <p className="text-sm text-white/70 max-w-md mb-2">Something went wrong while preparing the world.</p>
-        {error.message && (
-          <p className="text-xs text-white/50 max-w-md mb-4 font-mono bg-black/20 px-3 py-2 rounded">{error.message}</p>
-        )}
-        <Button variant="outline" onClick={onRetry}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Try Again
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col">
-      <div className="text-center mb-6">
-        <img src="/images/logos/eternum-loader.png" className="mx-auto w-24 mb-4" alt="Loading" />
-        <h2 className="text-lg font-semibold text-gold">{LOADING_STATEMENTS[statementIndex]}</h2>
-      </div>
-
-      {/* Task list */}
-      <div className="space-y-2 mb-6">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
-              task.status === "running"
-                ? "bg-gold/10 border border-gold/30"
-                : task.status === "complete"
-                  ? "bg-brilliance/5 border border-brilliance/20"
-                  : task.status === "error"
-                    ? "bg-danger/10 border border-danger/30"
-                    : "bg-white/5 border border-white/10",
-            )}
-          >
-            {task.status === "running" ? (
-              <Loader2 className="w-4 h-4 text-gold animate-spin flex-shrink-0" />
-            ) : task.status === "complete" ? (
-              <Check className="w-4 h-4 text-brilliance flex-shrink-0" />
-            ) : task.status === "error" ? (
-              <AlertCircle className="w-4 h-4 text-danger flex-shrink-0" />
-            ) : (
-              <div className="w-4 h-4 rounded-full border border-white/30 flex-shrink-0" />
-            )}
-            <span
-              className={cn(
-                "text-sm",
-                task.status === "running"
-                  ? "text-gold"
-                  : task.status === "complete"
-                    ? "text-brilliance/80"
-                    : task.status === "error"
-                      ? "text-danger"
-                      : "text-white/40",
-              )}
-            >
-              {task.label}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress bar */}
-      <div>
-        <div className="flex items-center justify-between text-xs text-gold/60 mb-2">
-          <span>Loading...</span>
-          <span>{displayProgress}%</span>
-        </div>
-        <div className="h-2 w-full rounded-full bg-gold/10">
-          <div
-            className="h-2 rounded-full bg-gold transition-all duration-300"
-            style={{ width: `${displayProgress}%` }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /**
  * Settlement phase - shows settlement wizard
@@ -824,10 +708,10 @@ export const GameEntryModal = ({
         const hasSettled = playerStructures.size > 0;
 
         // Check settlement finish status
-        const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId);
+        const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId) as SettleFinishValue | null;
         debugLog(worldName, "settleFinish:", settleFinish);
-        const coordsCount = (settleFinish as any)?.coords?.length ?? 0;
-        const settledCount = (settleFinish as any)?.structure_ids?.length ?? 0;
+        const coordsCount = settleFinish?.coords?.length ?? 0;
+        const settledCount = settleFinish?.structure_ids?.length ?? 0;
 
         setAssignedRealmCount(coordsCount + settledCount);
         setSettledRealmCount(settledCount);
@@ -1249,7 +1133,7 @@ export const GameEntryModal = ({
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [phase, handleEnterGame, worldName]);
+  }, [phase, handleEnterGame, worldName, isSpectateMode]);
 
   debugLog(worldName, "Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
 
@@ -1307,7 +1191,7 @@ export const GameEntryModal = ({
           <AnimatePresence mode="wait">
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <LoadingPhase tasks={tasks} progress={progress} error={bootstrapError} onRetry={handleRetry} />
+                <BootstrapLoadingPanel tasks={tasks} progress={progress} error={bootstrapError} onRetry={handleRetry} />
               </motion.div>
             )}
             {phase === "forge" && (
