@@ -83,8 +83,8 @@ pub mod troop_management_systems {
     };
     use crate::models::stamina::{StaminaImpl, StaminaTrait};
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
-        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadataStoreImpl,
+        StructureOwnerStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use crate::models::troop::{
         ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopLimitTrait, TroopTier, TroopType, Troops,
@@ -92,6 +92,7 @@ pub mod troop_management_systems {
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use crate::systems::utils::village::iVillageImpl;
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
@@ -623,6 +624,14 @@ pub mod troop_management_systems {
                 to_structure_base.coord() == from_explorer.coord.neighbor(to_structure_direction),
                 "explorer is not adjacent to structure",
             );
+
+            // if target is a village, ensure explorer belongs to same village or master realm
+            if to_structure_base.category == StructureCategory::Village.into() {
+                if from_explorer.owner != to_structure_id {
+                    let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
+                    iVillageImpl::ensure_village_realm(ref world, village_metadata, from_explorer.owner);
+                }
+            }
 
             // ensure count is valid
             assert!(count <= from_explorer.troops.count, "insufficient troops in explorer");
