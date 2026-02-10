@@ -76,6 +76,11 @@ const QuestEntityDetailContent = ({
   );
 
   const questLevel = questLevelsEntity?.levels[quest?.level ?? 0] as QuestLevelInfo | undefined;
+  const questTimeLimitSeconds = questLevel?.value?.time_limit?.value;
+  const questTimeLabel =
+    typeof questTimeLimitSeconds === "number" && Number.isFinite(questTimeLimitSeconds)
+      ? formatTime(questTimeLimitSeconds)
+      : "N/A";
 
   if (!quest) return null;
 
@@ -130,7 +135,7 @@ const QuestEntityDetailContent = ({
             label="Target"
             value={`${questLevel?.value?.target_score?.value ?? 0} XP`}
           />
-          <EntityDetailStat compact={compact} label="Time" value={formatTime(questLevel?.value?.time_limit?.value)} />
+          <EntityDetailStat compact={compact} label="Time" value={questTimeLabel} />
         </EntityDetailStatList>
       </EntityDetailSection>
     </div>
