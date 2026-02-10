@@ -297,6 +297,33 @@ declare module "@mariozechner/pi-tui" {
     render(width: number): string[];
     invalidate(): void;
   }
+
+  export interface SelectItem {
+    value: string;
+    label: string;
+    description?: string;
+  }
+
+  export interface SelectListTheme {
+    selectedPrefix: (text: string) => string;
+    selectedText: (text: string) => string;
+    description: (text: string) => string;
+    scrollInfo: (text: string) => string;
+    noMatch: (text: string) => string;
+  }
+
+  export class SelectList implements Component {
+    onSelect?: (item: SelectItem) => void;
+    onCancel?: () => void;
+    onSelectionChange?: (item: SelectItem) => void;
+    constructor(items: SelectItem[], maxVisible: number, theme: SelectListTheme);
+    setFilter(filter: string): void;
+    setSelectedIndex(index: number): void;
+    invalidate(): void;
+    render(width: number): string[];
+    handleInput(keyData: string): void;
+    getSelectedItem(): SelectItem | null;
+  }
 }
 
 declare module "@mariozechner/pi-ai" {

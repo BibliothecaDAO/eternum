@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import SessionProvider from "@cartridge/controller/session/node";
 import type { WalletAccount } from "starknet";
 
@@ -187,6 +188,15 @@ export class ControllerSession {
       policies,
       basePath: config.basePath ?? ".cartridge",
     });
+
+    // Patch openLink to actually open the browser instead of just printing the URL
+    const backend = (this.provider as any)._backend;
+    if (backend) {
+      backend.openLink = (url: string) => {
+        const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
+        execFile(openCmd, [url]);
+      };
+    }
   }
 
   /**
