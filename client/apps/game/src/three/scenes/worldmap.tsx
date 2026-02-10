@@ -97,6 +97,7 @@ import {
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
+import { resolveArmyTabSelectionPosition } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
   resolveRefreshExecutionToken,
@@ -107,7 +108,10 @@ import {
   shouldRunManagerUpdate,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import { createWorldmapZoomHardeningConfig } from "./worldmap-zoom-hardening";
+import {
+  createWorldmapZoomHardeningConfig,
+  resetWorldmapZoomHardeningRuntimeState,
+} from "./worldmap-zoom-hardening";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
@@ -1896,6 +1900,31 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private resetZoomHardeningRuntimeState(): void {
+    const resetState = resetWorldmapZoomHardeningRuntimeState(
+      {
+        chunkRefreshTimeout: this.chunkRefreshTimeout,
+        chunkRefreshRequestToken: this.chunkRefreshRequestToken,
+        chunkRefreshAppliedToken: this.chunkRefreshAppliedToken,
+        chunkRefreshRunning: this.chunkRefreshRunning,
+        chunkRefreshRerunRequested: this.chunkRefreshRerunRequested,
+        pendingChunkRefreshForce: this.pendingChunkRefreshForce,
+        zeroTerrainFrames: this.zeroTerrainFrames,
+        terrainRecoveryInFlight: this.terrainRecoveryInFlight,
+      },
+      (timeoutId) => clearTimeout(timeoutId),
+    );
+
+    this.chunkRefreshTimeout = resetState.chunkRefreshTimeout;
+    this.chunkRefreshRequestToken = resetState.chunkRefreshRequestToken;
+    this.chunkRefreshAppliedToken = resetState.chunkRefreshAppliedToken;
+    this.chunkRefreshRunning = resetState.chunkRefreshRunning;
+    this.chunkRefreshRerunRequested = resetState.chunkRefreshRerunRequested;
+    this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
+    this.zeroTerrainFrames = resetState.zeroTerrainFrames;
+    this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
+  }
+
   onSwitchOff() {
     this.isSwitchedOff = true;
     this.cancelHexGridComputation?.();
@@ -1939,13 +1968,7 @@ export default class WorldmapScene extends HexagonScene {
     this.resetWheelState();
 
     this.unregisterTrackedVisibilityChunks();
-    this.chunkRefreshRequestToken = 0;
-    this.chunkRefreshAppliedToken = 0;
-    this.chunkRefreshRunning = false;
-    this.chunkRefreshRerunRequested = false;
-    this.pendingChunkRefreshForce = false;
-    this.zeroTerrainFrames = 0;
-    this.terrainRecoveryInFlight = false;
+    this.resetZoomHardeningRuntimeState();
 
     // Reset chunk state to ensure clean re-initialization when returning to world view
     this.currentChunk = "null";
@@ -4032,17 +4055,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
-    if (this.chunkRefreshTimeout !== null) {
-      clearTimeout(this.chunkRefreshTimeout);
-      this.chunkRefreshTimeout = null;
-    }
-    this.chunkRefreshRequestToken = 0;
-    this.chunkRefreshAppliedToken = 0;
-    this.chunkRefreshRunning = false;
-    this.chunkRefreshRerunRequested = false;
-    this.pendingChunkRefreshForce = false;
-    this.zeroTerrainFrames = 0;
-    this.terrainRecoveryInFlight = false;
+    this.resetZoomHardeningRuntimeState();
     if (this.hexGridFrameHandle !== null) {
       cancelAnimationFrame(this.hexGridFrameHandle);
       this.hexGridFrameHandle = null;
@@ -4118,8 +4131,15 @@ export default class WorldmapScene extends HexagonScene {
 
       // Skip armies with pending movement transactions
       if (!this.pendingArmyMovements.has(army.entityId)) {
-        const normalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
-        this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+        const selectableArmyNormalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
+        const resolvedPosition = resolveArmyTabSelectionPosition({
+          renderedArmyPosition: this.armiesPositions.get(army.entityId),
+          selectableArmyNormalizedPosition: {
+            col: selectableArmyNormalizedPosition.x,
+            row: selectableArmyNormalizedPosition.y,
+          },
+        });
+        this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
 
         try {
           await this.refreshChunksAfterShortcutNavigation(SHORTCUT_NAVIGATION_DURATION_SECONDS);
@@ -4132,9 +4152,7 @@ export default class WorldmapScene extends HexagonScene {
           }
         }
 
-        // army.position is already in contract coordinates, pass it directly
-        // handleHexSelection will normalize it internally when calling getHexagonEntity
-        this.handleHexSelection(army.position, true);
+        this.handleHexSelection(resolvedPosition, true);
         this.onArmySelection(army.entityId, account);
         this.state.setLeftNavigationView(LeftView.EntityView);
         break;

@@ -225,7 +225,7 @@ Add debug counters and structured logs:
 
 ### Phase 3 Implementation Snapshot (2026-02-09)
 
-- Added `VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING` (default `false`) to gate zoom hardening runtime paths.
+- Added `VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING` (default `true`) to gate zoom hardening runtime paths.
 - Added `VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING_TELEMETRY` (default `false`) for structured console telemetry while canarying.
 - Worldmap refresh path now supports:
   - legacy debounce mode when hardening is disabled
