@@ -321,18 +321,16 @@ pub mod resource_systems {
             // if target is a village, ensure no troop resources from non-connected explorers
             if to_structure.category == StructureCategory::Village.into() {
                 let mut i: u32 = 0;
-                loop {
-                    if i >= resources.len() {
-                        break;
-                    }
+                let mut has_troop = false;
+                while i < resources.len() && !has_troop {
                     let (resource_type, _) = *resources.at(i);
-                    if TroopResourceImpl::is_troop(resource_type) {
-                        let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
-                        iVillageImpl::ensure_village_realm(ref world, village_metadata, explorer.owner);
-                        break;
-                    }
+                    has_troop = TroopResourceImpl::is_troop(resource_type);
                     i += 1;
-                };
+                }
+                if has_troop {
+                    let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
+                    iVillageImpl::ensure_village_realm(ref world, village_metadata, explorer.owner);
+                }
             }
 
             let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
