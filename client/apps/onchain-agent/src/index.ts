@@ -422,11 +422,24 @@ export async function main() {
   }
   heartbeat.start();
 
+  // 6b. Schedule periodic evolution (every 50 ticks)
+  let lastEvolutionTick = 0;
+  const evolutionTimer = setInterval(() => {
+    const currentTick = ticker.tickCount;
+    if (currentTick > 0 && currentTick >= lastEvolutionTick + 50) {
+      lastEvolutionTick = currentTick;
+      game.runEvolution().catch((err) => {
+        process.stderr.write(`[evolution] run failed: ${err}\n`);
+      });
+    }
+  }, 30_000); // Check every 30s
+
   console.log("Agent running. Press Ctrl+C to exit.\n");
 
   // 7. Graceful shutdown
   const shutdown = async () => {
     console.log("\nShutting down...");
+    clearInterval(evolutionTimer);
     heartbeat.stop();
     ticker.stop();
     await disposeAgent();

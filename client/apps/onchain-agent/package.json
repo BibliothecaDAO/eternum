@@ -13,6 +13,7 @@
     "@bibliothecadao/client": "workspace:*",
     "@bibliothecadao/game-agent": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
     "@cartridge/controller": "^0.13.4",
     "@cartridge/controller-wasm": "0.9.1",
     "@mariozechner/pi-agent-core": "^0.52.7",

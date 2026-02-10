@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { computeStamina, computeBalance, computeDepletionTime } from "@bibliothecadao/client";
 import { buildWorldState } from "../../src/adapter/world-state";
 import { createMockClient } from "../utils/mock-client";
 
@@ -46,8 +47,11 @@ describe("buildWorldState", () => {
     expect(army).toBeDefined();
     expect(army!.type).toBe("army");
     expect(army!.strength).toBe(50);
-    // Stamina is overridden by explorer detail view (75) over player summary (80)
-    expect(army!.stamina).toBe(75);
+    // Stamina is computed via tick-based regen (staminaUpdatedTick defaults to 0, fully regenerated)
+    expect(army!.stamina).toBe(120);
+    expect(army!.maxStamina).toBe(120);
+    expect(army!.canExplore).toBe(true);
+    expect(army!.canAttack).toBe(true);
     expect(army!.isInBattle).toBe(false);
     // Explorer enrichment fields
     expect(army!.explorerId).toBe(100);
@@ -117,17 +121,25 @@ describe("buildWorldState", () => {
     const realm = state.entities.find((e) => e.entityId === 1);
     expect(realm).toBeDefined();
     expect(client.view.realm).toHaveBeenCalledWith(1);
-    expect(realm!.guardSlots).toEqual([
-      { troopType: "Knight", count: 20, tier: 1 },
-      { troopType: "Paladin", count: 10, tier: 2 },
-    ]);
+    expect(realm!.guardSlots).toBeDefined();
+    expect(realm!.guardSlots!.length).toBe(2);
+    // Knight guard should have computed stamina (fully regenerated from tick 1000)
+    expect(realm!.guardSlots![0].troopType).toBe("Knight");
+    expect(realm!.guardSlots![0].count).toBe(20);
+    expect(realm!.guardSlots![0].tier).toBe(1);
+    expect(realm!.guardSlots![0].stamina).toBe(120); // fully regen'd
+    expect(realm!.guardSlots![0].maxStamina).toBe(120);
+    expect(realm!.guardSlots![0].isOnCooldown).toBe(false);
+    // Paladin guard is on cooldown (cooldownEnd=9999999999 > now)
+    expect(realm!.guardSlots![1].troopType).toBe("Paladin");
+    expect(realm!.guardSlots![1].isOnCooldown).toBe(true);
     expect(realm!.guardStrength).toBe(500);
     // Buildings come from sql.fetchBuildingsByStructure, not realm view
     expect(client.sql.fetchBuildingsByStructure).toHaveBeenCalledWith(1);
     expect(realm!.buildings).toEqual([
       { category: "Farm", paused: false, position: { x: 10, y: 10 } },
       { category: "Wood", paused: false, position: { x: 11, y: 10 } },
-      { category: "Knight Barracks", paused: true, position: { x: 12, y: 10 } },
+      { category: "Knight T1", paused: true, position: { x: 12, y: 10 } },
     ]);
     // Resource balances come from sql.fetchResourceBalances, not realm view
     expect(client.sql.fetchResourceBalances).toHaveBeenCalledWith(1);
@@ -135,6 +147,83 @@ describe("buildWorldState", () => {
       { resourceId: 1, name: "Stone", balance: 2400 },
       { resourceId: 3, name: "Wood", balance: 4000 },
     ]);
+  });
+
+  it("derives production rates from active buildings and gameConfig", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm).toBeDefined();
+    // Wood building (cat 5) is active, maps to resource_type 3 (Wood)
+    // realmOutputPerSecond for resource_type 3 is 0x3b9aca00 = 1000000000
+    // With 1 active building: rate = 1000000000 / 1_000_000_000 = 1.0 per second
+    expect(realm!.productionRates).toBeDefined();
+    expect(realm!.productionRates!.length).toBeGreaterThan(0);
+    const woodProd = realm!.productionRates!.find(p => p.name === "Wood");
+    expect(woodProd).toBeDefined();
+    expect(woodProd!.ratePerSecond).toBe(1);
+  });
+
+  it("computes distance from home for army entities", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army).toBeDefined();
+    // Army at (15, 25), structure at (10, 20) — should have a non-zero distance
+    expect(army!.distanceFromHome).toBeDefined();
+    expect(army!.distanceFromHome).toBeGreaterThan(0);
+  });
+
+  it("includes battle logs from SQL", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.recentBattles).toBeDefined();
+    expect(state.recentBattles!.length).toBe(1);
+    expect(state.recentBattles![0].winner).toBe("attacker");
+    expect(state.recentBattles![0].attackerEntityId).toBe(100);
+  });
+
+  it("includes swap events from SQL", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.recentSwaps).toBeDefined();
+    expect(state.recentSwaps!.length).toBe(1);
+    expect(state.recentSwaps![0].resourceName).toBe("Wood");
+    expect(state.recentSwaps![0].isBuy).toBe(true);
+  });
+
+  it("includes relic inventory from SQL", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.relics).toBeDefined();
+    expect(state.relics!.length).toBe(1);
+    expect(state.relics![0].relicId).toBe(1);
+    expect(state.relics![0].bonusType).toBe("attack_bonus");
+    expect(state.relics![0].isAttached).toBe(true);
+  });
+
+  it("includes nearby chests with distance", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.nearbyChests).toBeDefined();
+    expect(state.nearbyChests!.length).toBe(2);
+    expect(state.nearbyChests![0].distance).toBeGreaterThan(0);
+  });
+
+  it("includes market pools from SQL", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    expect(state.marketPools).toBeDefined();
+    expect(state.marketPools!.length).toBe(1);
+    expect(state.marketPools![0].price).toBe(2);
+    expect(state.marketPools![0].lordsReserve).toBe(10000);
   });
 
   it("calls explorer() for each player army", async () => {
@@ -281,5 +370,131 @@ describe("buildWorldState", () => {
     // World state still works, gameConfig is undefined
     expect(state.entities).toBeDefined();
     expect(state.gameConfig).toBeUndefined();
+  });
+
+  // --- Phase 1: Stamina Enrichment ---
+
+  it("computes current stamina using tick-based regen instead of stale value", async () => {
+    const client = createMockClient() as any;
+    // Explorer returns stale stamina with a lastUpdateTick far in the past
+    client.view.explorer.mockResolvedValue({
+      entityId: 100,
+      explorerId: 100,
+      troops: {
+        totalTroops: 15,
+        slots: [{ troopType: "Crossbowman", count: 15, tier: 1 }],
+        strength: 200,
+      },
+      carriedResources: [{ resourceId: 1, name: "Wood", amount: 50 }],
+      stamina: 20,
+      staminaUpdatedTick: 1000,
+      isInBattle: false,
+    });
+
+    const state = await buildWorldState(client, "0xdeadbeef");
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army).toBeDefined();
+    // With gainPerTick=20, a large tick gap should fully regenerate to maxStamina (120 for crossbowman)
+    expect(army!.stamina).toBe(120);
+    expect(army!.maxStamina).toBe(120);
+    expect(army!.ticksUntilFullStamina).toBe(0);
+    expect(army!.canExplore).toBe(true);
+    expect(army!.canAttack).toBe(true);
+  });
+
+  it("sets canExplore and canAttack based on computed stamina vs config thresholds", async () => {
+    const client = createMockClient() as any;
+    // Set stamina so it's just above explore cost but below attack req
+    // exploreCost=30, attackReq=50, maxStamina.crossbowman=120, gainPerTick=20
+    // We want computed stamina to be 40: currentAmount=40, lastUpdateTick=currentTick (no regen)
+    const currentTick = Math.floor(Date.now() / 1000 / 60); // armiesTickSeconds=60
+    client.view.explorer.mockResolvedValue({
+      entityId: 100,
+      explorerId: 100,
+      troops: {
+        totalTroops: 15,
+        slots: [{ troopType: "Crossbowman", count: 15, tier: 1 }],
+        strength: 200,
+      },
+      carriedResources: [],
+      stamina: 40,
+      staminaUpdatedTick: currentTick,
+      isInBattle: false,
+    });
+
+    const state = await buildWorldState(client, "0xdeadbeef");
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army).toBeDefined();
+    expect(army!.stamina).toBe(40);
+    expect(army!.canExplore).toBe(true);  // 40 >= 30
+    expect(army!.canAttack).toBe(false);   // 40 < 50
+  });
+});
+
+describe("stamina enrichment (unit)", () => {
+  it("computes current stamina from stale on-chain value using tick regen", () => {
+    const result = computeStamina({
+      currentAmount: 20,
+      lastUpdateTick: 1770590000,
+      currentTick: 1770592109,
+      maxStamina: 120,
+      regenPerTick: 20,
+    });
+    expect(result.current).toBe(120);
+    expect(result.max).toBe(120);
+    expect(result.ticksUntilFull).toBe(0);
+  });
+
+  it("caps stamina at max even with large tick gap", () => {
+    const result = computeStamina({
+      currentAmount: 0,
+      lastUpdateTick: 0,
+      currentTick: 999999999,
+      maxStamina: 120,
+      regenPerTick: 20,
+    });
+    expect(result.current).toBe(120);
+  });
+});
+
+describe("resource production enrichment (unit)", () => {
+  it("computes actual balance including pending production", () => {
+    const result = computeBalance({
+      rawBalance: 1308000000000,
+      productionRate: 500000000,
+      lastUpdatedAt: 1770590000,
+      currentTick: 1770592109,
+      isFood: true,
+      outputAmountLeft: 0,
+      buildingCount: 3,
+      storageCapacityKg: 10000,
+      storageUsedKg: 5000,
+      resourceWeightKg: 1,
+    });
+    expect(result.balance).toBeGreaterThan(Math.floor(1308000000000 / 1_000_000_000));
+  });
+
+  it("computes depletion time for non-food resource", () => {
+    const result = computeDepletionTime({
+      outputAmountLeft: 1000000000000,
+      productionRate: 500000000,
+      lastUpdatedAt: 1770590000,
+      currentTick: 1770590100,
+      tickIntervalSeconds: 1,
+      isFood: false,
+    });
+    expect(result.timeRemainingSeconds).toBeGreaterThan(0);
+  });
+
+  it("returns Infinity for food resources (never deplete)", () => {
+    const result = computeDepletionTime({
+      outputAmountLeft: 0,
+      productionRate: 500000000,
+      lastUpdatedAt: 1770590000,
+      currentTick: 1770592109,
+      tickIntervalSeconds: 1,
+      isFood: true,
+    });
+    expect(result.timeRemainingSeconds).toBe(Infinity);
   });
 });

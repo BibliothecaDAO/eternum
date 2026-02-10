@@ -64,7 +64,10 @@ export function createMockClient() {
         name: "Realm #1",
         guard: {
           totalTroops: 30,
-          slots: [{ troopType: "Knight", count: 20, tier: 1 }, { troopType: "Paladin", count: 10, tier: 2 }],
+          slots: [
+            { troopType: "Knight", count: 20, tier: 1, stamina: 50, staminaUpdatedTick: 1000, cooldownEnd: 0 },
+            { troopType: "Paladin", count: 10, tier: 2, stamina: 30, staminaUpdatedTick: 1000, cooldownEnd: 9999999999 },
+          ],
           strength: 500,
         },
         buildings: [
@@ -164,6 +167,22 @@ export function createMockClient() {
       fetchBuildingCategoryConfig: vi.fn().mockResolvedValue([
         { category: 1, population_cost: 0, capacity_grant: 6, simple_erection_cost_id: 9, simple_erection_cost_count: 1, complex_erection_cost_id: 8, complex_erection_cost_count: 2 },
         { category: 37, population_cost: 1, capacity_grant: 0, simple_erection_cost_id: 79, simple_erection_cost_count: 1, complex_erection_cost_id: 78, complex_erection_cost_count: 1 },
+      ]),
+      fetchBattleLogs: vi.fn().mockResolvedValue([
+        { attacker_entity_id: 100, defender_entity_id: 200, winner: "attacker", timestamp: 1700000100, attacker_loss: 5, defender_loss: 12 },
+      ]),
+      fetchSwapEvents: vi.fn().mockResolvedValue([
+        { resource_type: 3, resource_name: "Wood", lords_amount: 100, resource_amount: 50, is_buy: true, timestamp: 1700000200 },
+      ]),
+      fetchAllAmmPools: vi.fn().mockResolvedValue([
+        { resource_type: 3, resource_name: "Wood", lords_reserve: 10000, resource_reserve: 5000, price: 2 },
+      ]),
+      fetchAllPlayerRelics: vi.fn().mockResolvedValue([
+        { relic_id: 1, entity_id: 100, bonus_type: "attack_bonus", is_attached: true },
+      ]),
+      fetchChestsNearPosition: vi.fn().mockResolvedValue([
+        { coord_x: 12, coord_y: 22 },
+        { coord_x: 14, coord_y: 18 },
       ]),
       fetchResourceFactoryConfig: vi.fn().mockResolvedValue([
         { resource_type: 1, realm_output_per_second: "0x000000003b9aca00", village_output_per_second: "0x000000001dcd6500", simple_input_list_count: 0, complex_input_list_count: 0 },

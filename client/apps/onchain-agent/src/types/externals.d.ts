@@ -116,6 +116,7 @@ declare module "@bibliothecadao/game-agent" {
     reloadPrompt(): void;
     setDataDir(dataDir: string): void;
     getDataDir(): string;
+    runEvolution(): Promise<void>;
     dispose(): Promise<void>;
   }
 

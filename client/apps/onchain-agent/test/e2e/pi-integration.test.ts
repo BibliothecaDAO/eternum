@@ -2,11 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { EternumGameAdapter } from "../../src/adapter/eternum-adapter";
 import { createMockClient, mockSigner } from "../utils/mock-client";
 
-vi.mock("@bibliothecadao/client", () => ({
-  computeStrength: (count: number, tier: number) => count * tier * 10,
-  computeOutputAmount: () => 0,
-  computeBuildingCost: () => [],
-}));
+vi.mock("@bibliothecadao/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@bibliothecadao/client")>();
+  return {
+    ...actual,
+    computeStrength: (count: number, tier: number) => count * tier * 10,
+    computeOutputAmount: () => 0,
+    computeBuildingCost: () => [],
+  };
+});
 
 vi.mock("@sinclair/typebox", () => ({
   Type: {

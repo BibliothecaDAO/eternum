@@ -5,6 +5,7 @@ import { createReadTool, createWriteTool } from "@mariozechner/pi-coding-agent";
 import { existsSync } from "fs";
 import { join } from "path";
 import { createDecisionRecorder, type DecisionRecorder } from "./decision-log.js";
+import { buildEvolutionPrompt, parseEvolutionResult, applyEvolution } from "./evolution.js";
 import { buildGamePrompt, loadSoul, loadTaskLists } from "./soul.js";
 import { createTickLoop, formatTickPrompt, type TickLoop } from "./tick-loop.js";
 import { createAgentConfigTools, createGameTools } from "./tools.js";
@@ -19,6 +20,7 @@ export interface GameAgentResult {
 	reloadPrompt(): void;
 	setDataDir(dataDir: string): void;
 	getDataDir(): string;
+	runEvolution(): Promise<void>;
 	dispose(): Promise<void>;
 }
 
@@ -111,13 +113,32 @@ export function createGameAgent<TState extends WorldState = WorldState>(
 			}
 		}
 		if (cutoff > 0 && cutoff < messages.length) {
-			const trimmed = messages.slice(cutoff);
-			// Ensure we start with a user/toolResult message (not assistant)
-			while (trimmed.length > 0 && trimmed[0].role === "assistant") {
-				trimmed.shift();
+			const dropped = messages.slice(0, cutoff);
+			const kept = messages.slice(cutoff);
+
+			// Ensure kept messages start with a user/toolResult message (not assistant)
+			while (kept.length > 0 && kept[0].role === "assistant") {
+				kept.shift();
 			}
-			process.stderr.write(`[context] trimmed ${messages.length - trimmed.length} old messages (${messages.length} → ${trimmed.length})\n`);
-			return trimmed;
+
+			// Build a summary of dropped messages
+			const toolCallCount = dropped.filter(
+				(m: any) => m.role === "assistant" && Array.isArray(m.content) &&
+				m.content.some((c: any) => c.type === "toolCall"),
+			).length;
+
+			const summary = `[Context compacted: ${dropped.length} older messages removed. ` +
+				`They contained ${toolCallCount} tool call turns. ` +
+				`Focus on recent context below.]`;
+
+			const summaryMessage: AgentMessage = {
+				role: "user" as const,
+				content: summary,
+				timestamp: Date.now(),
+			};
+
+			process.stderr.write(`[context] compacted ${dropped.length} messages into summary\n`);
+			return [summaryMessage, ...kept];
 		}
 		return messages;
 	};
@@ -162,6 +183,35 @@ export function createGameAgent<TState extends WorldState = WorldState>(
 			const state = await adapter.getWorldState();
 			const prompt = formatTickPrompt(state);
 			await enqueuePrompt(prompt);
+
+			// Record the tick's decisions (fire-and-forget)
+			const lastMessages = agent.state.messages.slice(-5);
+			const toolCalls = lastMessages
+				.filter((m: any) => m.role === "assistant" && Array.isArray(m.content))
+				.flatMap((m: any) => m.content.filter((c: any) => c.type === "toolCall"));
+			const reasoning = lastMessages
+				.filter((m: any) => m.role === "assistant")
+				.flatMap((m: any) => {
+					if (typeof m.content === "string") return [m.content];
+					if (Array.isArray(m.content)) return m.content.filter((c: any) => c.type === "text").map((c: any) => c.text);
+					return [];
+				})
+				.join("\n")
+				.slice(0, 500);
+
+			if (toolCalls.length > 0) {
+				recorder.record({
+					tick: state.tick,
+					timestamp: Date.now(),
+					reasoning: reasoning || "(no reasoning extracted)",
+					actionTaken: {
+						type: toolCalls[0].name,
+						params: toolCalls[0].arguments ?? {},
+					},
+				}).catch((err: unknown) => {
+					process.stderr.write(`[decision-log] record failed: ${err}\n`);
+				});
+			}
 		},
 		onError: (err) => {
 			console.error("Tick error:", err.message);
@@ -185,6 +235,34 @@ export function createGameAgent<TState extends WorldState = WorldState>(
 		},
 		getDataDir() {
 			return currentDataDir;
+		},
+		async runEvolution() {
+			const evolutionPrompt = buildEvolutionPrompt({ dataDir: currentDataDir });
+			const msgCountBefore = agent.state.messages.length;
+			await enqueuePrompt(evolutionPrompt);
+
+			// Extract assistant response from messages added during this prompt
+			const newMessages = agent.state.messages.slice(msgCountBefore);
+			const assistantText = newMessages
+				.filter((m: any) => m.role === "assistant")
+				.flatMap((m: any) => {
+					if (typeof m.content === "string") return [m.content];
+					if (Array.isArray(m.content)) return m.content.filter((c: any) => c.type === "text").map((c: any) => c.text);
+					return [];
+				})
+				.join("\n");
+
+			if (assistantText) {
+				const result = parseEvolutionResult(assistantText);
+				if (result.suggestions.length > 0) {
+					const applied = await applyEvolution(result.suggestions, currentDataDir);
+					process.stderr.write(`[evolution] applied ${applied.length} suggestions: ${applied.join(", ")}\n`);
+					// Reload system prompt to pick up changes
+					agent.setSystemPrompt(buildSystemPromptFromDataDir(currentDataDir));
+				} else {
+					process.stderr.write("[evolution] no actionable suggestions\n");
+				}
+			}
 		},
 		async dispose() {
 			ticker.stop();

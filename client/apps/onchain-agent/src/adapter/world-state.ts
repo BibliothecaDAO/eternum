@@ -1,5 +1,14 @@
 import type { WorldState } from "@bibliothecadao/game-agent";
 import type { EternumClient } from "@bibliothecadao/client";
+import { computeStamina, computeDepletionTime, computeMarketPrice, computeSlippage } from "@bibliothecadao/client";
+import {
+  BiomeIdToType,
+  BuildingTypeToString,
+  DirectionName,
+  Direction,
+  NEIGHBOR_OFFSETS_EVEN,
+  NEIGHBOR_OFFSETS_ODD,
+} from "@bibliothecadao/types";
 
 /**
  * Column-name → { resourceId, name } mapping for the s1_eternum-Resource table.
@@ -48,50 +57,11 @@ const RESOURCE_COLUMN_MAP: Record<string, { id: number; name: string }> = {
 };
 
 /**
- * Building category → name mapping. Mirrors BuildingTypeToString from @bibliothecadao/types.
+ * Building category → name mapping. Uses BuildingTypeToString from @bibliothecadao/types.
  */
-const BUILDING_CATEGORY_MAP: Record<number, string> = {
-  0: "None",
-  1: "Workers Hut",
-  2: "Storehouse",
-  3: "Stone",
-  4: "Coal",
-  5: "Wood",
-  6: "Copper",
-  7: "Ironwood",
-  8: "Obsidian",
-  9: "Gold",
-  10: "Silver",
-  11: "Mithral",
-  12: "Alchemical Silver",
-  13: "Cold Iron",
-  14: "Deep Crystal",
-  15: "Ruby",
-  16: "Diamonds",
-  17: "Hartwood",
-  18: "Ignium",
-  19: "Twilight Quartz",
-  20: "True Ice",
-  21: "Adamantine",
-  22: "Sapphire",
-  23: "Ethereal Silica",
-  24: "Dragonhide",
-  25: "Labor",
-  26: "Ancient Fragment",
-  27: "Market",
-  28: "Knight Barracks",
-  29: "Knight T2 Barracks",
-  30: "Knight T3 Barracks",
-  31: "Crossbowman Range",
-  32: "Crossbowman T2 Range",
-  33: "Crossbowman T3 Range",
-  34: "Paladin Stable",
-  35: "Paladin T2 Stable",
-  36: "Paladin T3 Stable",
-  37: "Farm",
-  38: "Fishing Village",
-  39: "Essence Mine",
-};
+const BUILDING_CATEGORY_MAP: Record<number, string> = Object.fromEntries(
+  Object.entries(BuildingTypeToString).map(([k, v]) => [Number(k), v]),
+);
 
 const ZERO_BALANCE = "0x" + "0".repeat(32);
 
@@ -117,44 +87,24 @@ function parseHexOrNum(val: unknown): number {
   return Number(val);
 }
 
-/** Biome ID → name mapping. */
-const BIOME_NAMES: Record<number, string> = {
-  0: "deep_ocean", 1: "ocean", 2: "beach", 3: "scorched", 4: "bare",
-  5: "tundra", 6: "snow", 7: "temperate_desert", 8: "shrubland",
-  9: "taiga", 10: "grassland", 11: "temperate_deciduous_forest",
-  12: "temperate_rain_forest", 13: "subtropical_desert", 14: "tropical_seasonal_forest",
-  15: "tropical_rain_forest",
-};
+/** Biome ID → name mapping. Uses BiomeIdToType from @bibliothecadao/types. */
+const BIOME_NAMES: Record<number, string> = Object.fromEntries(
+  Object.entries(BiomeIdToType).map(([id, type]) => [
+    Number(id),
+    type.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, ""),
+  ]),
+);
 
 // ---------------------------------------------------------------------------
 // Hex grid neighbor computation (even-r offset coordinates)
-// Mirrors NEIGHBOR_OFFSETS_EVEN / NEIGHBOR_OFFSETS_ODD from @bibliothecadao/types
-// Direction enum: 0=EAST, 1=NE, 2=NW, 3=WEST, 4=SW, 5=SE
+// Uses NEIGHBOR_OFFSETS_EVEN/ODD and Direction from @bibliothecadao/types
 // ---------------------------------------------------------------------------
 
-const HEX_OFFSETS_EVEN = [
-  { di: 1, dj: 0 },  // 0 EAST
-  { di: 1, dj: 1 },  // 1 NE
-  { di: 0, dj: 1 },  // 2 NW
-  { di: -1, dj: 0 }, // 3 WEST
-  { di: 0, dj: -1 }, // 4 SW
-  { di: 1, dj: -1 }, // 5 SE
-];
-
-const HEX_OFFSETS_ODD = [
-  { di: 1, dj: 0 },  // 0 EAST
-  { di: 0, dj: 1 },  // 1 NE
-  { di: -1, dj: 1 }, // 2 NW
-  { di: -1, dj: 0 }, // 3 WEST
-  { di: -1, dj: -1 },// 4 SW
-  { di: 0, dj: -1 }, // 5 SE
-];
-
-const DIRECTION_NAMES = ["East", "NorthEast", "NorthWest", "West", "SouthWest", "SouthEast"];
+const DIRECTION_NAMES = Object.values(DirectionName);
 
 function hexNeighbors(col: number, row: number): { col: number; row: number; direction: number }[] {
-  const offsets = row % 2 === 0 ? HEX_OFFSETS_EVEN : HEX_OFFSETS_ODD;
-  return offsets.map((o, dir) => ({ col: col + o.di, row: row + o.dj, direction: dir }));
+  const offsets = row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
+  return offsets.map((o) => ({ col: col + o.i, row: row + o.j, direction: o.direction }));
 }
 
 /**
@@ -175,6 +125,19 @@ function buildTileVisibility(tiles: { col: number; row: number; biome: number }[
   }
 
   return { exploredCount: tiles.length, frontierTiles };
+}
+
+/** Compute hex distance using cube coordinates (offset → cube conversion). */
+function hexDistance(x1: number, y1: number, x2: number, y2: number): number {
+  const toCube = (col: number, row: number) => {
+    const x = col - (row - (row & 1)) / 2;
+    const z = row;
+    const y = -x - z;
+    return { x, y, z };
+  };
+  const a = toCube(x1, y1);
+  const b = toCube(x2, y2);
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
 }
 
 /**
@@ -291,20 +254,36 @@ export interface EternumEntity {
   structureType?: string;
   level?: number;
   // Structure detail (from realm view)
-  guardSlots?: { troopType: string; count: number; tier: number }[];
+  guardSlots?: {
+    troopType: string;
+    count: number;
+    tier: number;
+    stamina?: number;
+    maxStamina?: number;
+    cooldownEnd?: number;
+    isOnCooldown?: boolean;
+  }[];
   guardStrength?: number;
   buildings?: { category: string; paused: boolean; position: { x: number; y: number } }[];
   resourceBalances?: { resourceId: number; name: string; balance: number }[];
+  productionRates?: { resourceId: number; name: string; ratePerSecond: number; depletesInSeconds?: number }[];
+  depletionWarnings?: { resourceId: number; name: string; depletesInSeconds: number }[];
   // Army-specific
   explorerId?: number;
   strength?: number;
   stamina?: number;
+  maxStamina?: number;
+  ticksUntilFullStamina?: number;
+  canExplore?: boolean;
+  canAttack?: boolean;
   isInBattle?: boolean;
   // Explorer detail (from explorer view)
   troops?: { totalTroops: number; slots: { troopType: string; count: number; tier: number }[]; strength: number };
   carriedResources?: { resourceId: number; name: string; amount: number }[];
   // Exploration guidance: which directions from this entity lead to unexplored tiles
   unexploredDirections?: { direction: number; name: string; targetX: number; targetY: number }[];
+  // Distance from player's nearest structure (hex distance)
+  distanceFromHome?: number;
 }
 
 /** Tile visibility summary for the agent. */
@@ -395,6 +374,32 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
   recentEvents?: { eventId: number; eventType: string; timestamp: number; data: Record<string, unknown> }[];
   hyperstructures?: { entityId: number; position: { x: number; y: number }; owner: string | null; progress: number; isComplete: boolean }[];
   banks?: { entityId: number; position: { x: number; y: number } }[];
+  recentBattles?: {
+    attackerEntityId: number;
+    defenderEntityId: number;
+    winner: string;
+    timestamp: number;
+    attackerLoss: number;
+    defenderLoss: number;
+  }[];
+  recentSwaps?: {
+    resourceId: number;
+    resourceName: string;
+    lordsAmount: number;
+    resourceAmount: number;
+    isBuy: boolean;
+    timestamp: number;
+  }[];
+  marketPools?: {
+    resourceId: number;
+    resourceName: string;
+    lordsReserve: number;
+    resourceReserve: number;
+    price: number;
+    slippageFor100Units?: number;
+  }[];
+  relics?: { relicId: number; entityId: number; bonusType: string; isAttached: boolean }[];
+  nearbyChests?: { x: number; y: number; distance: number }[];
 }
 
 /**
@@ -421,7 +426,7 @@ export async function buildWorldState(
 
   const playerStructures = Array.isArray((playerView as any)?.structures) ? (playerView as any).structures : [];
   const playerArmies = Array.isArray((playerView as any)?.armies) ? (playerView as any).armies : [];
-  const recentSwaps = Array.isArray((marketView as any)?.recentSwaps) ? (marketView as any).recentSwaps : [];
+  const marketSwaps = Array.isArray((marketView as any)?.recentSwaps) ? (marketView as any).recentSwaps : [];
   const openOrders = Array.isArray((marketView as any)?.openOrders) ? (marketView as any).openOrders : [];
   const leaderboardEntries = Array.isArray((leaderboardView as any)?.entries)
     ? (leaderboardView as any).entries
@@ -525,6 +530,27 @@ export async function buildWorldState(
     }
   }
 
+  // Fetch game config first (needed for stamina computation during army enrichment)
+  let gameConfig: GameConfig | undefined;
+  try {
+    const [worldRow, levelConfigs, buildingCategories, resourceFactories] = await Promise.all([
+      client.sql?.fetchWorldConfig?.(),
+      client.sql?.fetchStructureLevelConfig?.(),
+      client.sql?.fetchBuildingCategoryConfig?.(),
+      client.sql?.fetchResourceFactoryConfig?.(),
+    ]);
+    if (worldRow) {
+      let resourceLists: any[] | undefined;
+      if (levelConfigs?.length) {
+        const resourceIds = levelConfigs.map((lc) => Number(lc.required_resources_id));
+        resourceLists = (await client.sql?.fetchResourceListByIds?.(resourceIds)) ?? undefined;
+      }
+      gameConfig = parseGameConfig(worldRow, levelConfigs ?? [], resourceLists, buildingCategories ?? undefined, resourceFactories ?? undefined);
+    }
+  } catch (e) {
+    process.stderr.write(`[world-state] gameConfig fetch failed: ${e}\n`);
+  }
+
   // Enrich player structures and armies in parallel
   await Promise.all([
     ...structureEntities.map(async (entity) => {
@@ -538,7 +564,40 @@ export async function buildWorldState(
       if (realmResult.status === "fulfilled" && realmResult.value) {
         const rd = realmResult.value as any;
         if (rd.guard?.slots) {
-          entity.guardSlots = rd.guard.slots;
+          entity.guardSlots = (rd.guard.slots as any[]).map((slot: any) => {
+            const result: NonNullable<typeof entity.guardSlots>[0] = {
+              troopType: String(slot.troopType ?? "unknown"),
+              count: Number(slot.count ?? 0),
+              tier: Number(slot.tier ?? 1),
+            };
+
+            // Enrich with stamina/cooldown if data is available
+            if (slot.stamina != null && gameConfig?.stamina) {
+              const troopCategory = result.troopType.toLowerCase();
+              const maxStam = gameConfig.stamina.maxStamina[troopCategory as keyof typeof gameConfig.stamina.maxStamina]
+                ?? gameConfig.stamina.maxStamina.knight;
+              const currentTick = Math.floor(Date.now() / 1000 / (gameConfig.tick.armiesTickSeconds || 1));
+              const lastUpdateTick = Number(slot.staminaUpdatedTick ?? slot.stamina_updated_tick ?? 0);
+
+              const staminaResult = computeStamina({
+                currentAmount: Number(slot.stamina),
+                lastUpdateTick,
+                currentTick,
+                maxStamina: maxStam,
+                regenPerTick: gameConfig.stamina.gainPerTick,
+              });
+              result.stamina = staminaResult.current;
+              result.maxStamina = staminaResult.max;
+            }
+
+            if (slot.cooldownEnd != null || slot.battle_cooldown_end != null) {
+              const cooldownEnd = Number(slot.cooldownEnd ?? slot.battle_cooldown_end ?? 0);
+              result.cooldownEnd = cooldownEnd;
+              result.isOnCooldown = cooldownEnd > Math.floor(Date.now() / 1000);
+            }
+
+            return result;
+          });
           entity.guardStrength = Number(rd.guard.strength ?? 0);
         }
       } else if (realmResult.status === "rejected") {
@@ -557,6 +616,40 @@ export async function buildWorldState(
           paused: Boolean(b.paused),
           position: { x: Number(b.inner_col ?? 0), y: Number(b.inner_row ?? 0) },
         }));
+
+        // Derive production rates from active buildings + gameConfig
+        if (gameConfig?.production) {
+          const activeBuildingCounts = new Map<number, number>();
+          for (const b of buildingResult.value) {
+            if (!b.paused) {
+              const cat = Number(b.category);
+              activeBuildingCounts.set(cat, (activeBuildingCounts.get(cat) ?? 0) + 1);
+            }
+          }
+
+          const productionRates: NonNullable<typeof entity.productionRates> = [];
+          for (const factory of gameConfig.production) {
+            // Building categories 3-24 map to resource types 1-22, farm=37->wheat(35), fish=38->fish(36)
+            const buildingCat = factory.resourceType <= 24 ? factory.resourceType + 2 :
+              factory.resourceType === 35 ? 37 : factory.resourceType === 36 ? 38 : undefined;
+            if (buildingCat != null && activeBuildingCounts.has(buildingCat)) {
+              const count = activeBuildingCounts.get(buildingCat)!;
+              const ratePerSecond = (factory.realmOutputPerSecond * count) / 1_000_000_000;
+              productionRates.push({
+                resourceId: factory.resourceType,
+                name: factory.name,
+                ratePerSecond,
+              });
+            }
+          }
+
+          if (productionRates.length > 0) {
+            entity.productionRates = productionRates;
+            entity.depletionWarnings = productionRates
+              .filter(p => p.depletesInSeconds != null && p.depletesInSeconds < 3600)
+              .map(p => ({ resourceId: p.resourceId, name: p.name, depletesInSeconds: p.depletesInSeconds! }));
+          }
+        }
       } else if (buildingResult.status === "rejected") {
         process.stderr.write(`[world-state] buildings(${entity.entityId}) failed: ${buildingResult.reason}\n`);
       }
@@ -583,8 +676,29 @@ export async function buildWorldState(
               amount: Number(r.amount ?? r.balance ?? 0),
             }));
           }
-          if (ed.stamina != null) {
-            entity.stamina = Number(ed.stamina);
+          // Compute actual current stamina with tick-based regeneration
+          if (ed.stamina != null && gameConfig?.stamina) {
+            const troopCategory = ed.troops?.slots?.[0]?.troopType?.toLowerCase?.() ?? "knight";
+            const maxStam = gameConfig.stamina.maxStamina[troopCategory as keyof typeof gameConfig.stamina.maxStamina]
+              ?? gameConfig.stamina.maxStamina.knight;
+            const currentTick = Math.floor(Date.now() / 1000 / (gameConfig.tick.armiesTickSeconds || 1));
+            const lastUpdateTick = Number(ed.staminaUpdatedTick ?? ed.stamina_updated_tick ?? 0);
+
+            const staminaResult = computeStamina({
+              currentAmount: Number(ed.stamina),
+              lastUpdateTick,
+              currentTick,
+              maxStamina: maxStam,
+              regenPerTick: gameConfig.stamina.gainPerTick,
+            });
+
+            entity.stamina = staminaResult.current;
+            entity.maxStamina = staminaResult.max;
+            entity.ticksUntilFullStamina = staminaResult.ticksUntilFull;
+            entity.canExplore = staminaResult.current >= gameConfig.stamina.exploreCost;
+            entity.canAttack = staminaResult.current >= gameConfig.stamina.attackReq;
+          } else {
+            entity.stamina = Number(ed.stamina ?? 0);
           }
           if (ed.isInBattle != null) {
             entity.isInBattle = Boolean(ed.isInBattle);
@@ -605,6 +719,15 @@ export async function buildWorldState(
     }
   }
 
+  // Compute distance from home for armies and nearby entities
+  if (structureEntities.length > 0) {
+    for (const entity of [...armyEntities, ...nearbyEntities]) {
+      entity.distanceFromHome = Math.min(
+        ...structureEntities.map(s => hexDistance(s.position.x, s.position.y, entity.position.x, entity.position.y)),
+      );
+    }
+  }
+
   const entities: EternumEntity[] = [...structureEntities, ...armyEntities, ...nearbyEntities];
 
   // Populate resources from the player's totalResources
@@ -615,30 +738,17 @@ export async function buildWorldState(
     }
   }
 
-  // Fetch recent events and game config in parallel
+  // Fetch recent events, battle logs, swap events, and market pools in parallel
   let recentEvents: EternumWorldState["recentEvents"];
-  let gameConfig: GameConfig | undefined;
+  let recentBattles: EternumWorldState["recentBattles"];
+  let recentSwaps: EternumWorldState["recentSwaps"];
+  let marketPools: EternumWorldState["marketPools"];
 
-  const [eventsResult, configResult] = await Promise.allSettled([
+  const [eventsResult, battleResult, swapResult, poolResult] = await Promise.allSettled([
     client.view.events?.({ owner: accountAddress, limit: 10 }),
-    (async () => {
-      const [worldRow, levelConfigs, buildingCategories, resourceFactories] = await Promise.all([
-        client.sql?.fetchWorldConfig?.(),
-        client.sql?.fetchStructureLevelConfig?.(),
-        client.sql?.fetchBuildingCategoryConfig?.(),
-        client.sql?.fetchResourceFactoryConfig?.(),
-      ]);
-      if (worldRow) {
-        // Resolve resource lists for upgrade costs
-        let resourceLists: any[] | undefined;
-        if (levelConfigs?.length) {
-          const resourceIds = levelConfigs.map((lc) => Number(lc.required_resources_id));
-          resourceLists = (await client.sql?.fetchResourceListByIds?.(resourceIds)) ?? undefined;
-        }
-        return parseGameConfig(worldRow, levelConfigs ?? [], resourceLists, buildingCategories ?? undefined, resourceFactories ?? undefined);
-      }
-      return undefined;
-    })(),
+    client.sql?.fetchBattleLogs?.({ limit: 20 }),
+    client.sql?.fetchSwapEvents?.({ limit: 20 }),
+    client.sql?.fetchAllAmmPools?.(),
   ]);
 
   if (eventsResult.status === "fulfilled" && eventsResult.value?.events) {
@@ -652,10 +762,48 @@ export async function buildWorldState(
     process.stderr.write(`[world-state] events() failed: ${eventsResult.reason}\n`);
   }
 
-  if (configResult.status === "fulfilled") {
-    gameConfig = configResult.value;
-  } else {
-    process.stderr.write(`[world-state] gameConfig fetch failed: ${configResult.reason}\n`);
+  if (battleResult.status === "fulfilled" && Array.isArray(battleResult.value) && battleResult.value.length > 0) {
+    recentBattles = battleResult.value.map((b: any) => ({
+      attackerEntityId: Number(b.attacker_entity_id ?? 0),
+      defenderEntityId: Number(b.defender_entity_id ?? 0),
+      winner: String(b.winner ?? "unknown"),
+      timestamp: Number(b.timestamp ?? 0),
+      attackerLoss: Number(b.attacker_loss ?? 0),
+      defenderLoss: Number(b.defender_loss ?? 0),
+    }));
+  }
+
+  if (swapResult.status === "fulfilled" && Array.isArray(swapResult.value) && swapResult.value.length > 0) {
+    recentSwaps = swapResult.value.map((s: any) => ({
+      resourceId: Number(s.resource_type ?? s.resourceId ?? 0),
+      resourceName: String(s.resource_name ?? s.resourceName ?? ""),
+      lordsAmount: Number(s.lords_amount ?? s.lordsAmount ?? 0),
+      resourceAmount: Number(s.resource_amount ?? s.resourceAmount ?? 0),
+      isBuy: Boolean(s.is_buy ?? s.isBuy ?? false),
+      timestamp: Number(s.timestamp ?? 0),
+    }));
+  }
+
+  if (poolResult.status === "fulfilled" && Array.isArray(poolResult.value) && poolResult.value.length > 0) {
+    marketPools = poolResult.value.map((p: any) => {
+      const lordsReserve = Number(p.lords_reserve ?? p.lordsReserve ?? 0);
+      const resourceReserve = Number(p.resource_reserve ?? p.resourceReserve ?? 0);
+      const price = lordsReserve > 0 && resourceReserve > 0
+        ? computeMarketPrice(lordsReserve, resourceReserve)
+        : Number(p.price ?? 0);
+      const slippageFor100Units = resourceReserve > 0
+        ? computeSlippage(100 * 1_000_000_000, lordsReserve, resourceReserve)
+        : undefined;
+
+      return {
+        resourceId: Number(p.resource_type ?? p.resourceId ?? 0),
+        resourceName: String(p.resource_name ?? p.resourceName ?? ""),
+        lordsReserve,
+        resourceReserve,
+        price,
+        slippageFor100Units,
+      };
+    });
   }
 
   // Fetch hyperstructure data from map structures (type = "hyperstructure")
@@ -701,6 +849,41 @@ export async function buildWorldState(
     }));
   }
 
+  // Fetch relic inventory and nearby chests
+  let relics: EternumWorldState["relics"];
+  let nearbyChests: EternumWorldState["nearbyChests"];
+
+  try {
+    const relicResult = await client.sql?.fetchAllPlayerRelics?.(accountAddress);
+    if (Array.isArray(relicResult) && relicResult.length > 0) {
+      relics = relicResult.map((r: any) => ({
+        relicId: Number(r.relic_id ?? 0),
+        entityId: Number(r.entity_id ?? 0),
+        bonusType: String(r.bonus_type ?? "unknown"),
+        isAttached: Boolean(r.is_attached ?? false),
+      }));
+    }
+  } catch {
+    // Relic query not available or failed
+  }
+
+  try {
+    if (structureEntities.length > 0) {
+      const chestResult = await client.sql?.fetchChestsNearPosition?.(structureEntities[0].position, 50);
+      if (Array.isArray(chestResult) && chestResult.length > 0) {
+        nearbyChests = chestResult.map((c: any) => ({
+          x: Number(c.coord_x ?? c.x ?? 0),
+          y: Number(c.coord_y ?? c.y ?? 0),
+          distance: structureEntities.length > 0
+            ? hexDistance(structureEntities[0].position.x, structureEntities[0].position.y, Number(c.coord_x ?? c.x ?? 0), Number(c.coord_y ?? c.y ?? 0))
+            : 0,
+        }));
+      }
+    }
+  } catch {
+    // Chest query not available or failed
+  }
+
   return {
     tick: Math.floor(Date.now() / 1000),
     timestamp: Date.now(),
@@ -715,7 +898,7 @@ export async function buildWorldState(
       rank: Number((playerView as any)?.rank ?? 0),
     },
     market: {
-      recentSwapCount: recentSwaps.length,
+      recentSwapCount: marketSwaps.length,
       openOrderCount: openOrders.length,
     },
     leaderboard: {
@@ -731,5 +914,10 @@ export async function buildWorldState(
     recentEvents,
     hyperstructures,
     banks,
+    recentBattles,
+    recentSwaps,
+    marketPools,
+    relics,
+    nearbyChests,
   };
 }

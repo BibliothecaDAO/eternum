@@ -1,33 +1,30 @@
 # Heartbeat - Recurring Tasks
 
-## Every Tick
-- [ ] Observe game state
-- [ ] Check all structures have guards (minimum 1 per structure)
-- [ ] Check for enemy armies within 3 tiles of structures
-- [ ] Monitor explorer stamina levels
-- [ ] Review resource balances for critical shortages
+```yaml
+version: 1
+jobs:
+  - id: observe-state
+    schedule: "* * * * *"
+    prompt: "Observe the current game state. Check all structures have guards. Check for enemy armies within 5 tiles of any structure. Check explorer stamina levels and whether they can explore or attack. Report any urgent threats."
+    mode: observe
 
-## Every 5 Ticks
-- [ ] Review resource balance trends (compare to 5 ticks ago)
-- [ ] Evaluate explorer positioning and deployment
-- [ ] Check for unclaimed arrivals
-- [ ] Review production building status
+  - id: resource-review
+    schedule: "*/5 * * * *"
+    prompt: "Review resource balance trends across all structures. Check for unclaimed resource arrivals and claim them. Check which production buildings are paused or depleted. Identify resources running low that need purchasing or trading."
+    mode: act
 
-## Every 10 Ticks
-- [ ] Review leaderboard position and point trends
-- [ ] Assess map exploration progress
-- [ ] Evaluate military strength vs. neighbors
-- [ ] Review task priority ordering
-- [ ] Consider realm upgrades if resources allow
+  - id: exploration-check
+    schedule: "*/3 * * * *"
+    prompt: "Check all explorers. For any explorer with sufficient stamina (canExplore=true), move them to explore unexplored tiles using their unexploredDirections. Prioritize explorers near frontier tiles."
+    mode: act
 
-## Every 20 Ticks
-- [ ] Deep strategy review
-- [ ] Evaluate guild/alliance opportunities
-- [ ] Consider hyperstructure contributions
-- [ ] Review and update task files if needed
+  - id: defense-audit
+    schedule: "*/10 * * * *"
+    prompt: "Audit all structure defenses. Ensure every structure has guards in at least slots Alpha and Bravo. If any guard slots are empty and we have troops available, fill them. Check guard stamina levels."
+    mode: act
 
-## Continuous Monitoring
-- Enemy army movements (especially large forces)
-- Resource production rates
-- Neighbor activity and expansion patterns
-- Battle outcomes in the region
+  - id: strategic-review
+    schedule: "*/15 * * * *"
+    prompt: "Conduct a strategic review. Check leaderboard position. Assess whether to upgrade realms, contribute to hyperstructures, or focus on military expansion. Review market prices for trading opportunities. Update reflection.md with current assessment."
+    mode: act
+```

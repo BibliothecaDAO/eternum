@@ -1,25 +1,29 @@
 import { describe, it, expect, vi } from "vitest";
 import { createMockClient, mockSigner } from "../utils/mock-client";
 
-// Mock the compute functions from @bibliothecadao/client used by simulation.ts
-vi.mock("@bibliothecadao/client", () => ({
-  computeStrength: (count: number, tier: number) => count * tier * 10,
-  computeOutputAmount: (
-    amountIn: number,
-    reserveIn: number,
-    reserveOut: number,
-    feeNum: number,
-    feeDenom: number,
-  ) => {
-    const effective = feeNum > 0 ? (amountIn * (feeDenom - feeNum)) / feeDenom : amountIn;
-    return Math.floor((effective * reserveOut) / (reserveIn + effective));
-  },
-  computeBuildingCost: (
-    baseCosts: { resourceId: number; name: string; amount: number }[],
-    existingCount: number,
-    costPercentIncrease: number,
-  ) => baseCosts.map((c) => ({ ...c, amount: c.amount + existingCount + costPercentIncrease })),
-}));
+// Mock the compute functions from @bibliothecadao/client used by simulation.ts and world-state.ts
+vi.mock("@bibliothecadao/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@bibliothecadao/client")>();
+  return {
+    ...actual,
+    computeStrength: (count: number, tier: number) => count * tier * 10,
+    computeOutputAmount: (
+      amountIn: number,
+      reserveIn: number,
+      reserveOut: number,
+      feeNum: number,
+      feeDenom: number,
+    ) => {
+      const effective = feeNum > 0 ? (amountIn * (feeDenom - feeNum)) / feeDenom : amountIn;
+      return Math.floor((effective * reserveOut) / (reserveIn + effective));
+    },
+    computeBuildingCost: (
+      baseCosts: { resourceId: number; name: string; amount: number }[],
+      existingCount: number,
+      costPercentIncrease: number,
+    ) => baseCosts.map((c) => ({ ...c, amount: c.amount + existingCount + costPercentIncrease })),
+  };
+});
 
 // Import after mock
 const { EternumGameAdapter } = await import("../../src/adapter/eternum-adapter");
