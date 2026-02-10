@@ -12,7 +12,7 @@ const isDebugQueryParamEnabled = (): boolean => {
   }
 };
 
-export const isChainTimeDebugEnabled = (): boolean => {
+const isChainTimeDebugEnabled = (): boolean => {
   if (typeof window === "undefined") {
     return false;
   }

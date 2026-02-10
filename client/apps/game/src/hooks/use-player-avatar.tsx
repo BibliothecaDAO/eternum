@@ -483,7 +483,7 @@ export function useAvatarProfilesByUsernames(usernames: Array<string | null | un
 }
 
 // Helper function to get default avatar based on address hash
-export function getDefaultAvatar(address: string): string {
+function getDefaultAvatar(address: string): string {
   const hash = parseInt(address.slice(0, 8), 16);
   const avatarNumber = Number.isNaN(hash) ? 1 : (hash % 7) + 1;
   return `/images/avatars/${String(avatarNumber).padStart(2, "0")}.png`;

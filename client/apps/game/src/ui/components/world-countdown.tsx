@@ -23,7 +23,7 @@ interface WorldCountdownProps {
  * Self-contained countdown component that manages its own timer.
  * This prevents parent component re-renders every second when displaying countdowns.
  */
-export const WorldCountdown = memo(({ startMainAt, endAt, status, className }: WorldCountdownProps) => {
+const WorldCountdown = memo(({ startMainAt, endAt, status, className }: WorldCountdownProps) => {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
 
   // Only run the interval if we have timing data to display

@@ -4,6 +4,7 @@
  */
 import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
@@ -11,9 +12,9 @@ import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
 import { StoryEventToastBridge } from "./ui/features/story-events";
-import { resolveOnboardingPhaseForScreen, shouldRenderOnboardingScreen } from "./ui/layouts/loading-flow";
-import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
+import { LoadingScreen } from "./ui/modules/loading-screen";
 import { World } from "./ui/layouts/world";
+import { resolveGameRouteView } from "./game-route.utils";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -70,18 +71,23 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, setupResult, account } = state;
-  const hasSetupResult = setupResult !== null;
-  const hasAccount = account !== null;
-  const shouldRenderOnboarding = shouldRenderOnboardingScreen(phase, hasSetupResult, hasAccount);
-  const onboardingPhase = resolveOnboardingPhaseForScreen(phase, hasSetupResult, hasAccount);
+  const { phase, setupResult, account, bootstrap } = state;
+  const routeView = resolveGameRouteView({
+    phase,
+    hasSetupResult: setupResult !== null,
+    hasAccount: account !== null,
+  });
 
-  if (shouldRenderOnboarding) {
-    return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={{ ...state, phase: onboardingPhase }} />;
+  if (routeView === "redirect") {
+    return <Navigate to="/" replace />;
+  }
+
+  if (routeView === "loading") {
+    return <LoadingScreen backgroundImage={backgroundImage} progress={bootstrap.progress} />;
   }
 
   if (!setupResult || !account) {
-    return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={{ ...state, phase: "loading" }} />;
+    return <LoadingScreen backgroundImage={backgroundImage} progress={bootstrap.progress} />;
   }
 
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
