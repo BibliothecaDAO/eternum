@@ -14,13 +14,15 @@
 
 ## Document Update Log
 
-| Update | Date (AEDT)      | Author | Change |
-| ------ | ---------------- | ------ | ------ |
+| Update | Date (AEDT)      | Author | Change                                                                                                                  |
+| ------ | ---------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
 | U1     | 2026-02-10 13:20 | Codex  | Created PRD with current-state analysis, prioritized issues, implementation phases, testing strategy, and rollout plan. |
 
 ## Problem Statement
 
-The ambient stack in `client/apps/game/src/three` has solid building blocks (day/night, weather, wind, rain, ambience, and particles), but there are several integration defects that break intended transitions and reduce perceptual coherence:
+The ambient stack in `client/apps/game/src/three` has solid building blocks (day/night, weather, wind, rain, ambience,
+and particles), but there are several integration defects that break intended transitions and reduce perceptual
+coherence:
 
 - Weather departure can zero rain/storm effects immediately instead of fading out.
 - Ambience weather control is driven by two paths that can fight each other frame-to-frame.
@@ -29,7 +31,8 @@ The ambient stack in `client/apps/game/src/three` has solid building blocks (day
 - Storm visuals in world lighting are cycle-driven while rain/audio/post-processing are weather-manager-driven.
 - HUD teardown misses `RainEffect.dispose()` in current cleanup path.
 
-These issues increase transition jitter, create audible/visual popping risk, and make tuning difficult because systems do not share a single authoritative weather timeline.
+These issues increase transition jitter, create audible/visual popping risk, and make tuning difficult because systems
+do not share a single authoritative weather timeline.
 
 ## Goals
 
@@ -78,7 +81,8 @@ These issues increase transition jitter, create audible/visual popping risk, and
 ### P0: Weather departure does not preserve source weather config for fade-out
 
 - `WeatherManager.computeIntensities()` uses `weatherConfigs[this.targetType]`.
-- During `transitionToWeather(CLEAR)` from PEAK, `targetType` becomes `CLEAR`, so departing uses clear config and forces rain/storm intensity to zero instead of fading from current weather.
+- During `transitionToWeather(CLEAR)` from PEAK, `targetType` becomes `CLEAR`, so departing uses clear config and forces
+  rain/storm intensity to zero instead of fading from current weather.
 - Evidence:
   - `client/apps/game/src/three/managers/weather-manager.ts:294`
   - `client/apps/game/src/three/managers/weather-manager.ts:337`
@@ -112,7 +116,8 @@ These issues increase transition jitter, create audible/visual popping risk, and
 ### P1: Random-interval ambience plays are not fully lifecycle-managed
 
 - Layer tracks one `source` in `activeSounds`.
-- Later random interval plays are fire-and-forget and not added to layer ownership, so layer fade/stop logic does not own all currently playing transient sources.
+- Later random interval plays are fire-and-forget and not added to layer ownership, so layer fade/stop logic does not
+  own all currently playing transient sources.
 - Evidence:
   - `client/apps/game/src/three/managers/ambience-manager.ts:304`
   - `client/apps/game/src/three/managers/ambience-manager.ts:395`
@@ -134,7 +139,8 @@ These issues increase transition jitter, create audible/visual popping risk, and
 
 - `HUDScene.destroy()` checks for `rainEffect.destroy()` dynamically.
 - `RainEffect` exposes `dispose()` but no `destroy()`.
-- Weather manager dispose currently clears wind intervals only; rain cleanup should be explicit and deterministic at HUD scope.
+- Weather manager dispose currently clears wind intervals only; rain cleanup should be explicit and deterministic at HUD
+  scope.
 - Evidence:
   - `client/apps/game/src/three/scenes/hud-scene.ts:204`
   - `client/apps/game/src/three/effects/rain-effect.ts:494`
@@ -143,23 +149,23 @@ These issues increase transition jitter, create audible/visual popping risk, and
 
 ### Functional Requirements
 
-| ID   | Requirement | Priority |
-| ---- | ----------- | -------- |
-| FR-1 | Departing weather must fade rain and storm intensities from the previously active weather profile, not clear profile defaults. | P0 |
-| FR-2 | Ambience weather activation and intensity modulation must be driven by one consistent weather input path per frame. | P0 |
-| FR-3 | Ambient particle opacity must apply both time-of-day visibility and weather fade consistently every frame. | P0 |
-| FR-4 | Random-interval ambience clips must be fully controllable by layer stop/fade/disable operations. | P1 |
-| FR-5 | Main-scene storm modulation must consume weather-manager state (or a clearly defined adapter), not an unrelated cycle gate. | P1 |
-| FR-6 | HUD teardown must fully dispose rain resources and detach scene objects deterministically. | P2 |
+| ID   | Requirement                                                                                                                    | Priority |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| FR-1 | Departing weather must fade rain and storm intensities from the previously active weather profile, not clear profile defaults. | P0       |
+| FR-2 | Ambience weather activation and intensity modulation must be driven by one consistent weather input path per frame.            | P0       |
+| FR-3 | Ambient particle opacity must apply both time-of-day visibility and weather fade consistently every frame.                     | P0       |
+| FR-4 | Random-interval ambience clips must be fully controllable by layer stop/fade/disable operations.                               | P1       |
+| FR-5 | Main-scene storm modulation must consume weather-manager state (or a clearly defined adapter), not an unrelated cycle gate.    | P1       |
+| FR-6 | HUD teardown must fully dispose rain resources and detach scene objects deterministically.                                     | P2       |
 
 ### Non-Functional Requirements
 
-| ID    | Requirement | Priority |
-| ----- | ----------- | -------- |
-| NFR-1 | No audible pops/clicks introduced during ambience transitions. | P0 |
-| NFR-2 | No per-frame source churn at weather threshold crossings. | P0 |
-| NFR-3 | Ambient systems must remain allocation-light in update paths. | P1 |
-| NFR-4 | All fixed bugs must be protected by targeted tests for transition correctness. | P0 |
+| ID    | Requirement                                                                    | Priority |
+| ----- | ------------------------------------------------------------------------------ | -------- |
+| NFR-1 | No audible pops/clicks introduced during ambience transitions.                 | P0       |
+| NFR-2 | No per-frame source churn at weather threshold crossings.                      | P0       |
+| NFR-3 | Ambient systems must remain allocation-light in update paths.                  | P1       |
+| NFR-4 | All fixed bugs must be protected by targeted tests for transition correctness. | P0       |
 
 ## Proposed Solution
 
@@ -173,10 +179,12 @@ These issues increase transition jitter, create audible/visual popping risk, and
 
 ### 2) Single-Path Ambience Weather Update
 
-- Consolidate ambience weather inputs so activation + modulation are evaluated once per frame from a single weather snapshot.
+- Consolidate ambience weather inputs so activation + modulation are evaluated once per frame from a single weather
+  snapshot.
 - Replace current dual-callback pattern with one method, e.g.:
   - `ambienceManager.update(cycleProgress, weatherState, deltaTime)`
-- Keep threshold mapping (clear/rain/storm) internal to that method and avoid mutating weather state twice in same frame.
+- Keep threshold mapping (clear/rain/storm) internal to that method and avoid mutating weather state twice in same
+  frame.
 
 ### 3) Persistent Weather Fade in AmbientParticleSystem
 
@@ -192,12 +200,14 @@ These issues increase transition jitter, create audible/visual popping risk, and
 - On `stopSound`/`setEnabled(false)`/dispose:
   - stop all transient clips owned by that layer
   - clear pending schedule state
-- Ensure volume updates apply to all active clips or only currently playing clip per explicit design (must be documented).
+- Ensure volume updates apply to all active clips or only currently playing clip per explicit design (must be
+  documented).
 
 ### 5) Weather Authority Unification for Storm Visuals
 
 - `HexagonScene.updateStormEffects()` should consume weather state from shared weather authority.
-- Replace hardcoded `cycleProgress < 20` storm gate with weather-driven intensity (`state.intensity`, `state.stormIntensity`, `state.fogDensity`, `state.skyDarkness`).
+- Replace hardcoded `cycleProgress < 20` storm gate with weather-driven intensity (`state.intensity`,
+  `state.stormIntensity`, `state.fogDensity`, `state.skyDarkness`).
 - Preserve existing art tuning multipliers but move timing source to weather manager.
 
 ### 6) Deterministic Rain Disposal in HUD
@@ -282,7 +292,8 @@ These issues increase transition jitter, create audible/visual popping risk, and
 ### AC-5: Cross-System Weather Coherence
 
 - During automated weather transition scenario:
-  - rain intensity, ambience weather layer, storm visual modulation, and post-processing modulation move in same temporal direction.
+  - rain intensity, ambience weather layer, storm visual modulation, and post-processing modulation move in same
+    temporal direction.
 
 ### AC-6: Teardown Correctness
 
@@ -337,12 +348,12 @@ These issues increase transition jitter, create audible/visual popping risk, and
 
 ## Risks and Mitigations
 
-| Risk | Impact | Likelihood | Mitigation |
-| ---- | ------ | ---------- | ---------- |
-| Changing ambience update path alters perceived mix balance | Medium | Medium | Keep existing base volumes; only fix control flow first, then retune. |
-| Weather-driven storm visuals reduce current dramatic timing | Medium | Medium | Preserve current multipliers and map them onto weather intensities. |
-| Added clip ownership increases complexity | Medium | Medium | Keep layer model minimal and test stop/dispose thoroughly. |
-| Regressions in audio lifecycle under muted/uninitialized states | Medium | Low | Keep `AudioManager.play()` null-safe behavior and guard all stop calls. |
+| Risk                                                            | Impact | Likelihood | Mitigation                                                              |
+| --------------------------------------------------------------- | ------ | ---------- | ----------------------------------------------------------------------- |
+| Changing ambience update path alters perceived mix balance      | Medium | Medium     | Keep existing base volumes; only fix control flow first, then retune.   |
+| Weather-driven storm visuals reduce current dramatic timing     | Medium | Medium     | Preserve current multipliers and map them onto weather intensities.     |
+| Added clip ownership increases complexity                       | Medium | Medium     | Keep layer model minimal and test stop/dispose thoroughly.              |
+| Regressions in audio lifecycle under muted/uninitialized states | Medium | Low        | Keep `AudioManager.play()` null-safe behavior and guard all stop calls. |
 
 ## Scope
 
@@ -366,13 +377,14 @@ These issues increase transition jitter, create audible/visual popping risk, and
 
 1. Should random-interval layers allow overlapping clips per layer or enforce at most one active clip?
 2. Should ambience weather use hard thresholds (current behavior) or hysteresis to reduce boundary toggling?
-3. Should storm visuals be fully disabled for specific scenes (comment in `worldmap.tsx` currently conflicts with implementation)?
+3. Should storm visuals be fully disabled for specific scenes (comment in `worldmap.tsx` currently conflicts with
+   implementation)?
 
 ## Implementation Status
 
-| Phase | Status | Notes |
-| ----- | ------ | ----- |
-| Phase 0 | Planned | Test harness and baseline trace capture. |
+| Phase   | Status  | Notes                                                                     |
+| ------- | ------- | ------------------------------------------------------------------------- |
+| Phase 0 | Planned | Test harness and baseline trace capture.                                  |
 | Phase 1 | Planned | P0 fixes for weather departure, ambience path, particle fade composition. |
-| Phase 2 | Planned | Random-interval ownership and weather authority unification. |
-| Phase 3 | Planned | Teardown hardening and cleanup verification. |
+| Phase 2 | Planned | Random-interval ownership and weather authority unification.              |
+| Phase 3 | Planned | Teardown hardening and cleanup verification.                              |

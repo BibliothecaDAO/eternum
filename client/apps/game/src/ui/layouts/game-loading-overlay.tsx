@@ -203,7 +203,13 @@ export const GameLoadingOverlay = () => {
           <div className="text-[10px] sm:text-xs uppercase tracking-widest text-gold/60">Step 2 of 2</div>
           <h3 className="text-base sm:text-lg font-semibold text-gold mt-1">{overlayTitle}</h3>
         </div>
-        <BootstrapLoadingPanel tasks={tasks} progress={progress} error={null} onRetry={() => {}} statements={statements} />
+        <BootstrapLoadingPanel
+          tasks={tasks}
+          progress={progress}
+          error={null}
+          onRetry={() => {}}
+          statements={statements}
+        />
       </div>
     </div>
   );

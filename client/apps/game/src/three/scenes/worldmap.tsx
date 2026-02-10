@@ -108,10 +108,7 @@ import {
   shouldRunManagerUpdate,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import {
-  createWorldmapZoomHardeningConfig,
-  resetWorldmapZoomHardeningRuntimeState,
-} from "./worldmap-zoom-hardening";
+import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
@@ -3624,7 +3621,9 @@ export default class WorldmapScene extends HexagonScene {
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
     const latestToken = this.chunkRefreshRequestToken;
     const shouldApplyScheduled = shouldApplyRefreshToken(scheduledToken, latestToken);
-    const executionToken = shouldApplyScheduled ? scheduledToken : resolveRefreshExecutionToken(scheduledToken, latestToken);
+    const executionToken = shouldApplyScheduled
+      ? scheduledToken
+      : resolveRefreshExecutionToken(scheduledToken, latestToken);
 
     if (!shouldApplyScheduled) {
       this.emitZoomHardeningTelemetry("refresh_superseded", {
@@ -3782,7 +3781,7 @@ export default class WorldmapScene extends HexagonScene {
     const isCurrentTransition = transitionToken === this.chunkTransitionToken;
     const chunkSwitchActions = resolveChunkSwitchActions({
       fetchSucceeded: tileFetchSucceeded,
-      currentChunk: isCurrentTransition ? this.currentChunk : oldChunk ?? "null",
+      currentChunk: isCurrentTransition ? this.currentChunk : (oldChunk ?? "null"),
       targetChunk: chunkKey,
       previousChunk: oldChunk,
     });
@@ -4131,7 +4130,10 @@ export default class WorldmapScene extends HexagonScene {
 
       // Skip armies with pending movement transactions
       if (!this.pendingArmyMovements.has(army.entityId)) {
-        const selectableArmyNormalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
+        const selectableArmyNormalizedPosition = new Position({
+          x: army.position.col,
+          y: army.position.row,
+        }).getNormalized();
         const resolvedPosition = resolveArmyTabSelectionPosition({
           renderedArmyPosition: this.armiesPositions.get(army.entityId),
           selectableArmyNormalizedPosition: {

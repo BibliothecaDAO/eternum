@@ -1039,7 +1039,9 @@ export abstract class HexagonScene {
     const skyDarkness = weatherState !== undefined ? weatherState.skyDarkness : stormDepth * 0.6;
     const fogDensity = weatherState !== undefined ? weatherState.fogDensity : stormDepth * 0.5;
     const sunOcclusion =
-      weatherState !== undefined ? Math.min(1, weatherState.intensity * 0.75 + weatherState.stormIntensity * 0.25) : stormDepth * 0.7;
+      weatherState !== undefined
+        ? Math.min(1, weatherState.intensity * 0.75 + weatherState.stormIntensity * 0.25)
+        : stormDepth * 0.7;
 
     if (stormDepth > 0.001) {
       this.dayNightCycleManager.applyWeatherModulation(skyDarkness, fogDensity, sunOcclusion);
