@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
-use crate::constants::{all_resource_ids, is_bank};
+use crate::constants::all_resource_ids;
 use crate::models::config::{SpeedImpl, WorldConfigUtilImpl};
 use crate::models::events::{
     ResourceBurnStory, ResourceReceiveArrivalStory, ResourceTransferStory, Story, StoryEvent, TransferType,
@@ -476,14 +476,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // if the recipient is a village, and troops are being transferred,
             //  ensure the sender realm owner is the connected realm owner
             if to_structure_base.category == StructureCategory::Village.into() {
-                // hack to check if it is from lp position.
-                // todo: fix this
-                let is_lp_position = is_bank(from_id) && mint == true && pickup == true && resources.len() == 2;
-                if TroopResourceImpl::is_troop(resource_type) && !is_lp_position {
+                if TroopResourceImpl::is_troop(resource_type) {
                     let village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                         ref world, to_id,
                     );
-                    iVillageImpl::ensure_village_realm(ref world, village_structure_metadata, from_id);
+                    iVillageImpl::ensure_associated_with_village(ref world, village_structure_metadata, from_id);
                 }
             }
 

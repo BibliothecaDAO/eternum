@@ -35,11 +35,12 @@ pub mod resource_systems {
     use crate::models::position::TravelTrait;
     use crate::models::resource::arrivals::ResourceArrivalImpl;
     use crate::models::resource::resource::{
-        ResourceAllowance, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceAllowance, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
+        WeightStoreImpl,
     };
     use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-        StructureOwnerStoreImpl,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;
@@ -47,6 +48,7 @@ pub mod resource_systems {
     use crate::systems::utils::donkey::iDonkeyImpl;
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::troop::iExplorerImpl;
+    use crate::systems::utils::village::iVillageImpl;
 
 
     #[derive(Copy, Drop, Serde)]
@@ -315,6 +317,21 @@ pub mod resource_systems {
 
             // ensure troop and stucture are adjacent to each other
             assert!(explorer.coord.is_adjacent(to_structure.coord()), "troop and structure are not adjacent");
+
+            // if target is a village, ensure no troop resources from non-connected explorers
+            if to_structure.category == StructureCategory::Village.into() {
+                let mut i: u32 = 0;
+                let mut has_troop = false;
+                while i < resources.len() && !has_troop {
+                    let (resource_type, _) = *resources.at(i);
+                    has_troop = TroopResourceImpl::is_troop(resource_type);
+                    i += 1;
+                }
+                if has_troop {
+                    let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
+                    iVillageImpl::ensure_associated_with_village(ref world, village_metadata, explorer.owner);
+                }
+            }
 
             let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
             let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, to_structure_id);
