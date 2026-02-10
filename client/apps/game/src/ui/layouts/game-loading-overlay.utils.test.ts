@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HEXCEPTION_GRID_READY_EVENT, waitForHexceptionGridReady } from "./game-loading-overlay.utils";
+import {
+  HEXCEPTION_GRID_READY_EVENT,
+  getSceneWarmupProgress,
+  resolveEntryOverlayPhase,
+  waitForHexceptionGridReady,
+} from "./game-loading-overlay.utils";
 
 describe("waitForHexceptionGridReady", () => {
   beforeEach(() => {
@@ -35,5 +40,21 @@ describe("waitForHexceptionGridReady", () => {
     await vi.advanceTimersByTimeAsync(1200);
 
     await expect(promise).resolves.toBeUndefined();
+  });
+});
+
+describe("entry overlay helpers", () => {
+  it("returns a bounded warmup progress curve", () => {
+    expect(getSceneWarmupProgress(0)).toBe(82);
+    expect(getSceneWarmupProgress(2500)).toBeGreaterThan(82);
+    expect(getSceneWarmupProgress(2500)).toBeLessThanOrEqual(95);
+    expect(getSceneWarmupProgress(999999)).toBe(95);
+  });
+
+  it("resolves phase order from handoff to ready", () => {
+    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: false, isSlow: false })).toBe("handoff");
+    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: false })).toBe("scene_warmup");
+    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: true })).toBe("slow");
+    expect(resolveEntryOverlayPhase({ isReady: true, hasNavigated: true, isSlow: true })).toBe("ready");
   });
 });

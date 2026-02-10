@@ -5,6 +5,30 @@ export type GridCoordinates = {
   row: number;
 };
 
+export type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "ready";
+
+export const getSceneWarmupProgress = (elapsedMs: number): number => {
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 82;
+  const bounded = Math.min(1, elapsedMs / 10_000);
+  const progress = 82 + Math.round(13 * Math.sqrt(bounded));
+  return Math.min(95, Math.max(82, progress));
+};
+
+export const resolveEntryOverlayPhase = ({
+  isReady,
+  hasNavigated,
+  isSlow,
+}: {
+  isReady: boolean;
+  hasNavigated: boolean;
+  isSlow: boolean;
+}): EntryOverlayPhase => {
+  if (isReady) return "ready";
+  if (!hasNavigated) return "handoff";
+  if (isSlow) return "slow";
+  return "scene_warmup";
+};
+
 const isMatchingCoordinates = (detail: Partial<GridCoordinates> | undefined, expected: GridCoordinates): boolean => {
   return detail?.col === expected.col && detail?.row === expected.row;
 };
