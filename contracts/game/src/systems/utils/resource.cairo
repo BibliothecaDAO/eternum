@@ -480,7 +480,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     let village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                         ref world, to_id,
                     );
-                    iVillageImpl::ensure_village_realm(ref world, village_structure_metadata, from_id);
+                    iVillageImpl::ensure_associated_with_village(ref world, village_structure_metadata, from_id);
                 }
             }
 

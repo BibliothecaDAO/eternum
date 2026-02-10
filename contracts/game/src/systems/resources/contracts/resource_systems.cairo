@@ -329,7 +329,7 @@ pub mod resource_systems {
                 }
                 if has_troop {
                     let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
-                    iVillageImpl::ensure_village_realm(ref world, village_metadata, explorer.owner);
+                    iVillageImpl::ensure_associated_with_village(ref world, village_metadata, explorer.owner);
                 }
             }
 

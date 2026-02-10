@@ -629,7 +629,7 @@ pub mod troop_management_systems {
             if to_structure_base.category == StructureCategory::Village.into() {
                 if from_explorer.owner != to_structure_id {
                     let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
-                    iVillageImpl::ensure_village_realm(ref world, village_metadata, from_explorer.owner);
+                    iVillageImpl::ensure_associated_with_village(ref world, village_metadata, from_explorer.owner);
                 }
             }
 
