@@ -1,3 +1,4 @@
+import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -30,7 +31,6 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import type { VillageIconKey } from "@/config/game-modes";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
 import { configManager, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -50,8 +50,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
 import Castle from "lucide-react/dist/esm/icons/castle";
-import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
 import Crown from "lucide-react/dist/esm/icons/crown";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
@@ -1109,11 +1109,14 @@ export const LeftCommandSidebar = memo(() => {
     prevChatOpen.current = isChatOpen;
   }, [isChatOpen, setView, view]);
 
+  // listen to structure updates
+  const structure = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
   const structureInfo = useMemo(() => {
     // Include structureNameVersion to refresh cached info when renames happen locally.
     void structureNameVersion;
     return mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components);
-  }, [structureEntityId, account.address, components, structureNameVersion, mode]);
+  }, [structure, account.address, components, structureNameVersion, mode]);
 
   const isRealmOrVillage = useMemo(
     () =>

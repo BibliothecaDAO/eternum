@@ -8,8 +8,8 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
-import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 import { useAccountStore } from "../store/use-account-store";
+import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
 const PLAYER_STRUCTURE_MODELS: string[] = [
@@ -94,14 +94,14 @@ export const usePlayerStructureSync = () => {
     };
 
     void backfillOwnedStructures();
-    const intervalId = setInterval(() => {
-      void backfillOwnedStructures();
-    }, PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS);
+    // const intervalId = setInterval(() => {
+    //   void backfillOwnedStructures();
+    // }, PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS);
 
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-    };
+    // return () => {
+    //   cancelled = true;
+    //   clearInterval(intervalId);
+    // };
   }, [accountAddress, toriiClient, toriiComponents]);
 
   // Sync newly-seen structures into RECS (e.g. first settlement).

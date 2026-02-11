@@ -1,4 +1,3 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { POLLING_INTERVALS } from "@/config/polling";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -453,26 +452,22 @@ const PlayerStructuresStoreManager = () => {
 const ButtonStateStoreManager = () => {
   const {
     account: { account },
-    setup: { components },
   } = useDojo();
-  const mode = useGameModeConfig();
 
   const setDisableButtons = useUIStore((state) => state.setDisableButtons);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
-  const structureInfo = useMemo(
-    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components),
-    [structureEntityId, account.address, components, mode],
+  const structureIsMine = useMemo(
+    () => playerStructures.some((structure) => structure.entityId === structureEntityId),
+    [playerStructures, structureEntityId],
   );
 
-  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
-
-  const seasonHasStarted = useMemo(() => env.VITE_PUBLIC_SEASON_START_TIME < Date.now() / 1000, []);
-
   useEffect(() => {
+    const seasonHasStarted = env.VITE_PUBLIC_SEASON_START_TIME < Date.now() / 1000;
     const disableButtons = !structureIsMine || account.address === "0x0" || !seasonHasStarted;
     setDisableButtons(disableButtons);
-  }, [setDisableButtons, structureIsMine, account.address, seasonHasStarted]);
+  }, [setDisableButtons, structureIsMine, account.address]);
 
   return null;
 };
