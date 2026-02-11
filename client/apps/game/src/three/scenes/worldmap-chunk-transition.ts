@@ -1,6 +1,6 @@
 interface ChunkSwitchDecisionInput {
   fetchSucceeded: boolean;
-  currentChunk: string;
+  isCurrentTransition: boolean;
   targetChunk: string;
   previousChunk?: string | null;
 }
@@ -22,6 +22,13 @@ interface ManagerUpdateDecisionInput {
 interface ShortcutNavigationRefreshDecisionInput {
   isShortcutNavigation: boolean;
   transitionDurationSeconds: number;
+  chunkChanged: boolean;
+}
+
+interface ShortcutForceFallbackDecisionInput {
+  isShortcutNavigation: boolean;
+  chunkChanged: boolean;
+  initialSwitchSucceeded: boolean;
 }
 
 /**
@@ -29,9 +36,7 @@ interface ShortcutNavigationRefreshDecisionInput {
  * Keeps behavior deterministic for success, failure, and stale transitions.
  */
 export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): ChunkSwitchActions {
-  const isStillTargetChunk = input.currentChunk === input.targetChunk;
-
-  if (!isStillTargetChunk) {
+  if (!input.isCurrentTransition) {
     return {
       shouldRollback: false,
       shouldCommitManagers: false,
@@ -128,5 +133,13 @@ export function resolveRefreshExecutionToken(scheduledToken: number, latestToken
  * a chunk refresh so switch hysteresis cannot suppress reconciliation.
  */
 export function shouldForceShortcutNavigationRefresh(input: ShortcutNavigationRefreshDecisionInput): boolean {
-  return input.isShortcutNavigation && input.transitionDurationSeconds <= 0;
+  return input.chunkChanged && input.isShortcutNavigation && input.transitionDurationSeconds <= 0;
+}
+
+/**
+ * After a shortcut navigation refresh attempt, run a forced fallback pass
+ * if the initial attempt did not switch to the target chunk.
+ */
+export function shouldRunShortcutForceFallback(input: ShortcutForceFallbackDecisionInput): boolean {
+  return input.isShortcutNavigation && input.chunkChanged && !input.initialSwitchSucceeded;
 }
