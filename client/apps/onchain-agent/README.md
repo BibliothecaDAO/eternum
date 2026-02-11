@@ -51,6 +51,42 @@ pnpm --dir client/apps/onchain-agent dev
 
 On first run the agent will prompt you to approve a Cartridge Controller session in your browser (see [Authentication](#cartridge-controller-authentication) below).
 
+### Default paths with zero config
+
+With only `ANTHROPIC_API_KEY` set (no other env vars), the agent resolves everything automatically:
+
+| What | Default path | Override env var |
+|---|---|---|
+| Agent home | `~/.eternum-agent/` | `ETERNUM_AGENT_HOME` |
+| Data dir (soul, tasks, heartbeat) | `~/.eternum-agent/data/` | `DATA_DIR` |
+| Session storage | `~/.eternum-agent/.cartridge/` | `SESSION_BASE_PATH` |
+| Chain | `slot` | `CHAIN` |
+| Game name | `eternum` | `GAME_NAME` |
+| Model | `anthropic` / `claude-sonnet-4-5-20250929` | `MODEL_PROVIDER` / `MODEL_ID` |
+| Tick interval | 60000ms (1 min) | `TICK_INTERVAL_MS` |
+| Tick loop | enabled | `LOOP_ENABLED` |
+
+**World discovery is automatic.** When `RPC_URL`, `TORII_URL`, and `WORLD_ADDRESS` are not set, the agent queries the Cartridge Factory SQL API to discover active worlds, then either presents a TUI picker or auto-selects if `SLOT_NAME` matches a discovered world. The manifest is loaded from `contracts/game/manifest_<chain>.json` in the repo and patched with live contract addresses from the factory.
+
+So a minimal `.env` is just:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+The working directory tree after first run:
+
+```
+~/.eternum-agent/
+├── data/
+│   ├── soul.md              # agent personality/instructions
+│   ├── HEARTBEAT.md          # cron-style recurring jobs
+│   └── tasks/
+│       └── priorities.md     # task tracking
+└── .cartridge/
+    └── session.json          # Cartridge Controller session (auto-created on auth)
+```
+
 ### Building a standalone binary
 
 Requires [Bun](https://bun.sh) installed locally:
