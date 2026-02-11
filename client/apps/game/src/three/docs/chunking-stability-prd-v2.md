@@ -6,7 +6,7 @@
 - Status: In Progress
 - Owner: Three / Worldmap Team
 - Created: 2026-02-10
-- Last Updated: 2026-02-10
+- Last Updated: 2026-02-11
 
 ## Executive Summary
 
@@ -78,7 +78,7 @@ Non-functional requirements:
 
 - [x] M0: Baseline + Instrumentation
 - [x] M1: Transactional Switch Core
-- [ ] M2: Manager Convergence Hardening
+- [x] M2: Manager Convergence Hardening
 - [ ] M3: Bounds and Interaction Parity
 - [ ] M4: Lifecycle and Resume Cleanup
 - [ ] M5: Test Expansion + Soak
@@ -137,6 +137,15 @@ Objectives:
 Exit criteria:
 
 1. No premature manager-settled logs before visual apply.
+
+Completion notes:
+
+1. Added manager convergence utilities in `manager-update-convergence.ts`.
+2. Added a coalesced async update runner for structure visible-update draining.
+3. Added an explicit one-frame visual settle awaiter for manager completion boundaries.
+4. `StructureManager.updateChunk` now awaits visible-structure update completion and frame settle before resolving.
+5. `ArmyManager.updateChunk` and `ChestManager.updateChunk` now also await frame settle, aligning completion semantics across all three managers.
+6. Added coverage in `manager-update-convergence.test.ts`.
 
 ### M3: Bounds and Interaction Parity
 
@@ -198,3 +207,4 @@ Exit criteria:
 | 2026-02-10 | M0        | Started | PRD created; instrumentation implementation in progress. |
 | 2026-02-10 | M0        | Completed | Added runtime chunk diagnostics in `worldmap.tsx`, added helper+tests, verified targeted chunk test suites. |
 | 2026-02-10 | M1        | Completed | Transactional chunk switch core implemented with commit-phase chunk authority, overlap bounds handoff, and token-keyed stale switch actions. |
+| 2026-02-11 | M2        | Completed | Manager convergence hardening shipped: structure update is awaitable through visual settle; army/chest completion semantics aligned; convergence utility + tests added. |
