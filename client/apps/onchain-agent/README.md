@@ -18,6 +18,55 @@ curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/in
 
 More install/rollback/uninstall details: `client/apps/onchain-agent/INSTALL.md`.
 
+## Building from Source (Local Dev)
+
+Prerequisites: Node.js 22+, pnpm 9+.
+
+```bash
+# 1. Clone and install
+git clone https://github.com/bibliothecadao/eternum.git
+cd eternum
+pnpm install
+
+# 2. Build workspace dependencies (in order)
+pnpm --dir packages/types build
+pnpm --dir packages/torii build
+pnpm --dir packages/provider build
+pnpm --dir packages/client build
+pnpm --dir packages/game-agent build
+
+# 3. Type-check the agent
+pnpm --dir client/apps/onchain-agent build
+
+# 4. Configure
+cd client/apps/onchain-agent
+cp .env.example .env
+# Edit .env — at minimum set ANTHROPIC_API_KEY (or OPENAI_API_KEY + MODEL_PROVIDER)
+# World discovery auto-resolves RPC/Torii/WorldAddress from the Cartridge factory,
+# so you only need CHAIN=slot and optionally SLOT_NAME to auto-select a world.
+
+# 5. Run (from repo root)
+pnpm --dir client/apps/onchain-agent dev
+```
+
+On first run the agent will prompt you to approve a Cartridge Controller session in your browser (see [Authentication](#cartridge-controller-authentication) below).
+
+### Building a standalone binary
+
+Requires [Bun](https://bun.sh) installed locally:
+
+```bash
+cd client/apps/onchain-agent
+
+# Single target (current platform)
+bun build src/cli.ts --compile --outfile axis
+
+# Run it
+./axis run
+./axis doctor
+./axis init
+```
+
 ## Commands
 
 ```bash

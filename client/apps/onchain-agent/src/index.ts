@@ -19,7 +19,7 @@ import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
 import { createApp } from "./tui/app";
-import { discoverAllWorlds, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
+import { type DiscoveredWorld, discoverAllWorlds, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
 import { normalizeRpcUrl } from "./world/normalize";
 import { createWorldPicker } from "./tui/world-picker";
 
@@ -194,7 +194,18 @@ export async function main() {
       process.exit(1);
     }
 
-    const selected = await createWorldPicker(worlds);
+    // Auto-select if SLOT_NAME matches a discovered world (skip TUI picker)
+    const slotName = process.env.SLOT_NAME;
+    let selected: DiscoveredWorld | null = null;
+    if (slotName) {
+      selected = worlds.find((w) => w.name === slotName) ?? null;
+      if (selected) {
+        console.log(`  Auto-selected world: [${selected.chain}] ${selected.name}`);
+      }
+    }
+    if (!selected) {
+      selected = await createWorldPicker(worlds);
+    }
     if (!selected) {
       console.log("No world selected. Exiting.");
       process.exit(0);
@@ -203,25 +214,31 @@ export async function main() {
     // Update chain from the selected world
     runtimeConfig.chain = selected.chain;
 
+    console.log("  Building world profile...");
     const profile = await buildWorldProfile(selected.chain, selected.name);
+    console.log("  Profile built. Resolving manifest...");
     resolvedManifest = await buildResolvedManifest(selected.chain, profile);
+    console.log("  Manifest resolved.");
 
     runtimeConfig.rpcUrl = normalizeRpcUrl(profile.rpcUrl ?? runtimeConfig.rpcUrl);
     runtimeConfig.toriiUrl = `${profile.toriiBaseUrl}/sql`;
     runtimeConfig.worldAddress = profile.worldAddress;
   }
 
+  console.log("  Connecting controller session...");
   // Listen for Escape/Ctrl+C during init (connect, sync, etc.)
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.on("data", (data: Buffer) => {
-    const str = data.toString();
-    if (str === "\x1b" || str === "\x03") {
-      process.stdout.write("\x1b[?25h");
-      console.log("\nExiting.");
-      process.exit(0);
-    }
-  });
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on("data", (data: Buffer) => {
+      const str = data.toString();
+      if (str === "\x1b" || str === "\x03") {
+        process.stdout.write("\x1b[?25h");
+        console.log("\nExiting.");
+        process.exit(0);
+      }
+    });
+  }
 
   let services = await createRuntimeServices(runtimeConfig, resolvedManifest);
   const adapter = new MutableGameAdapter(services.adapter);
@@ -389,7 +406,9 @@ export async function main() {
 
   // Hand stdin back to the TUI
   process.stdin.removeAllListeners("data");
-  process.stdin.setRawMode(false);
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(false);
+  }
   process.stdin.pause();
 
   // 5. Create the TUI
