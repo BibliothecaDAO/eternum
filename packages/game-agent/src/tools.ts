@@ -1,6 +1,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
-import type { GameAdapter, RuntimeConfigManager } from "./types.js";
+import { StringEnum } from "@mariozechner/pi-ai";
+import type { ActionDefinition, GameAdapter, RuntimeConfigManager } from "./types.js";
 
 const observeSchema = Type.Object({
   filter: Type.Optional(Type.String({ description: "Optional filter for entities" })),
@@ -32,22 +33,51 @@ export function createObserveGameTool(adapter: GameAdapter<any>): AgentTool<type
   };
 }
 
-const actionSchema = Type.Object({
-  actionType: Type.String({ description: "The type of action to execute (e.g. 'move', 'attack', 'build')" }),
-  params: Type.Optional(Type.Record(Type.String(), Type.Unknown(), { description: "Parameters for the action" })),
-});
+/**
+ * Build a human-readable description block from action definitions.
+ * The LLM sees this in the tool description to know what actions + params are valid.
+ */
+function buildActionDocsDescription(actions: ActionDefinition[]): string {
+  if (actions.length === 0) return "";
+
+  const lines: string[] = ["\n\nAvailable actions:\n"];
+  for (const action of actions) {
+    lines.push(`- ${action.type}: ${action.description}`);
+    for (const p of action.params) {
+      const req = p.required === false ? " (optional)" : "";
+      lines.push(`    - ${p.name} (${p.type}${req}): ${p.description}`);
+    }
+  }
+  return lines.join("\n");
+}
 
 /**
  * Creates a tool that executes a game action on chain via the adapter.
- * Returns the action result including success status and optional txHash.
+ * When actionDefs are provided, the tool description is enriched with available actions
+ * and actionType is constrained to a StringEnum of valid types.
  */
-export function createExecuteActionTool(adapter: GameAdapter<any>): AgentTool<typeof actionSchema> {
+export function createExecuteActionTool(
+  adapter: GameAdapter<any>,
+  actionDefs?: ActionDefinition[],
+): AgentTool<any> {
+  const actionTypes = actionDefs?.map((a) => a.type) ?? [];
+  const actionSchema = Type.Object({
+    actionType:
+      actionTypes.length > 0
+        ? StringEnum(actionTypes, { description: "The action type to execute" })
+        : Type.String({ description: "The type of action to execute (e.g. 'move', 'attack', 'build')" }),
+    params: Type.Optional(Type.Record(Type.String(), Type.Unknown(), { description: "Parameters for the action" })),
+  });
+
+  const baseDesc = "Execute a game action on chain. Returns success status and transaction hash.";
+  const description = actionDefs ? baseDesc + buildActionDocsDescription(actionDefs) : baseDesc;
+
   return {
     name: "execute_action",
     label: "Execute Action",
-    description: "Execute a game action on chain. Returns success status and transaction hash.",
+    description,
     parameters: actionSchema,
-    async execute(_toolCallId, { actionType, params }) {
+    async execute(_toolCallId, { actionType, params }: { actionType: string; params?: Record<string, unknown> }) {
       const result = await adapter.executeAction({
         type: actionType,
         params: params ?? {},
@@ -60,22 +90,32 @@ export function createExecuteActionTool(adapter: GameAdapter<any>): AgentTool<ty
   };
 }
 
-const simulateSchema = Type.Object({
-  actionType: Type.String({ description: "The type of action to simulate (e.g. 'move', 'attack', 'build')" }),
-  params: Type.Optional(Type.Record(Type.String(), Type.Unknown(), { description: "Parameters for the action" })),
-});
-
 /**
  * Creates a tool that simulates a game action (dry run) without executing on chain.
- * Returns predicted outcome and cost estimates.
+ * When actionDefs are provided, the tool description and enum mirror execute_action.
  */
-export function createSimulateActionTool(adapter: GameAdapter<any>): AgentTool<typeof simulateSchema> {
+export function createSimulateActionTool(
+  adapter: GameAdapter<any>,
+  actionDefs?: ActionDefinition[],
+): AgentTool<any> {
+  const actionTypes = actionDefs?.map((a) => a.type) ?? [];
+  const simulateSchema = Type.Object({
+    actionType:
+      actionTypes.length > 0
+        ? StringEnum(actionTypes, { description: "The action type to simulate" })
+        : Type.String({ description: "The type of action to simulate (e.g. 'move', 'attack', 'build')" }),
+    params: Type.Optional(Type.Record(Type.String(), Type.Unknown(), { description: "Parameters for the action" })),
+  });
+
+  const baseDesc = "Simulate a game action without executing it. Returns predicted outcome and cost estimates.";
+  const description = actionDefs ? baseDesc + buildActionDocsDescription(actionDefs) : baseDesc;
+
   return {
     name: "simulate_action",
     label: "Simulate Action",
-    description: "Simulate a game action without executing it. Returns predicted outcome and cost estimates.",
+    description,
     parameters: simulateSchema,
-    async execute(_toolCallId, { actionType, params }) {
+    async execute(_toolCallId, { actionType, params }: { actionType: string; params?: Record<string, unknown> }) {
       const result = await adapter.simulateAction({
         type: actionType,
         params: params ?? {},
@@ -90,10 +130,16 @@ export function createSimulateActionTool(adapter: GameAdapter<any>): AgentTool<t
 
 /**
  * Creates all game-related tools for the given adapter.
+ * When actionDefs are provided, execute_action and simulate_action get enriched descriptions
+ * and constrained actionType enums.
  * Returns [observe_game, execute_action, simulate_action].
  */
-export function createGameTools(adapter: GameAdapter<any>): AgentTool<any>[] {
-  return [createObserveGameTool(adapter), createExecuteActionTool(adapter), createSimulateActionTool(adapter)];
+export function createGameTools(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any>[] {
+  return [
+    createObserveGameTool(adapter),
+    createExecuteActionTool(adapter, actionDefs),
+    createSimulateActionTool(adapter, actionDefs),
+  ];
 }
 
 const setAgentConfigSchema = Type.Object({
