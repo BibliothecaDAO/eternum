@@ -32,7 +32,8 @@ export function waitForVisualSettle(
   requestAnimationFrameScheduler?: ((callback: FrameRequestCallback) => number) | null,
   timeoutScheduler?: (callback: () => void) => number,
 ): Promise<void> {
-  const rafScheduler = requestAnimationFrameScheduler === undefined ? globalThis.requestAnimationFrame : requestAnimationFrameScheduler;
+  const rafScheduler =
+    requestAnimationFrameScheduler === undefined ? globalThis.requestAnimationFrame : requestAnimationFrameScheduler;
   if (typeof rafScheduler === "function") {
     return new Promise((resolve) => {
       rafScheduler(() => resolve());

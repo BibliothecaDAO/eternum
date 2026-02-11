@@ -2,7 +2,8 @@
 
 ## Overview
 
-- Feature: Harden worldmap chunk switching and manager synchronization to eliminate stale screens and transient disappearance.
+- Feature: Harden worldmap chunk switching and manager synchronization to eliminate stale screens and transient
+  disappearance.
 - Status: In Progress
 - Owner: Three / Worldmap Team
 - Created: 2026-02-10
@@ -10,7 +11,8 @@
 
 ## Executive Summary
 
-The worldmap chunking path has known race windows between terrain hydration, manager apply timing, and visibility bounds handoff. This PRD formalizes a milestone-driven stabilization plan with explicit testing gates after each milestone.
+The worldmap chunking path has known race windows between terrain hydration, manager apply timing, and visibility bounds
+handoff. This PRD formalizes a milestone-driven stabilization plan with explicit testing gates after each milestone.
 
 ## Problem Statement
 
@@ -122,9 +124,11 @@ Exit criteria:
 
 Completion notes:
 
-1. `performChunkSwitch` now defers `currentChunk` authority update until commit phase after hydrate + switch-action resolution.
+1. `performChunkSwitch` now defers `currentChunk` authority update until commit phase after hydrate + switch-action
+   resolution.
 2. Transition handoff now applies overlap bounds (previous + target) during switch to avoid culling gaps before commit.
-3. `resolveChunkSwitchActions` now keys stale handling on transition-token currency (`isCurrentTransition`) rather than pre-commit `currentChunk`.
+3. `resolveChunkSwitchActions` now keys stale handling on transition-token currency (`isCurrentTransition`) rather than
+   pre-commit `currentChunk`.
 4. Manager fanout remains strict via exact transition token + target chunk guard in `shouldRunManagerUpdate`.
 
 ### M2: Manager Convergence Hardening
@@ -144,7 +148,8 @@ Completion notes:
 2. Added a coalesced async update runner for structure visible-update draining.
 3. Added an explicit one-frame visual settle awaiter for manager completion boundaries.
 4. `StructureManager.updateChunk` now awaits visible-structure update completion and frame settle before resolving.
-5. `ArmyManager.updateChunk` and `ChestManager.updateChunk` now also await frame settle, aligning completion semantics across all three managers.
+5. `ArmyManager.updateChunk` and `ChestManager.updateChunk` now also await frame settle, aligning completion semantics
+   across all three managers.
 6. Added coverage in `manager-update-convergence.test.ts`.
 
 ### M3: Bounds and Interaction Parity
@@ -159,7 +164,8 @@ Exit criteria:
 
 Completion notes:
 
-1. In progress. Initial parity pass exposed interaction regressions (unit tab/click), so bounds-semantic changes were rolled back.
+1. In progress. Initial parity pass exposed interaction regressions (unit tab/click), so bounds-semantic changes were
+   rolled back.
 2. Next pass should keep existing production semantics while converging all managers/interaction on one shared policy.
 
 ### M4: Lifecycle and Resume Cleanup
@@ -207,10 +213,10 @@ Exit criteria:
 
 ## Execution Log
 
-| Date       | Milestone | Status | Notes |
-| ---------- | --------- | ------ | ----- |
-| 2026-02-10 | M0        | Started | PRD created; instrumentation implementation in progress. |
-| 2026-02-10 | M0        | Completed | Added runtime chunk diagnostics in `worldmap.tsx`, added helper+tests, verified targeted chunk test suites. |
-| 2026-02-10 | M1        | Completed | Transactional chunk switch core implemented with commit-phase chunk authority, overlap bounds handoff, and token-keyed stale switch actions. |
-| 2026-02-11 | M2        | Completed | Manager convergence hardening shipped: structure update is awaitable through visual settle; army/chest completion semantics aligned; convergence utility + tests added. |
-| 2026-02-11 | M3        | In Progress | Initial parity attempt surfaced tab/click regressions; semantic shift rolled back, follow-up will preserve existing window semantics while unifying usage. |
+| Date       | Milestone | Status      | Notes                                                                                                                                                                   |
+| ---------- | --------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-10 | M0        | Started     | PRD created; instrumentation implementation in progress.                                                                                                                |
+| 2026-02-10 | M0        | Completed   | Added runtime chunk diagnostics in `worldmap.tsx`, added helper+tests, verified targeted chunk test suites.                                                             |
+| 2026-02-10 | M1        | Completed   | Transactional chunk switch core implemented with commit-phase chunk authority, overlap bounds handoff, and token-keyed stale switch actions.                            |
+| 2026-02-11 | M2        | Completed   | Manager convergence hardening shipped: structure update is awaitable through visual settle; army/chest completion semantics aligned; convergence utility + tests added. |
+| 2026-02-11 | M3        | In Progress | Initial parity attempt surfaced tab/click regressions; semantic shift rolled back, follow-up will preserve existing window semantics while unifying usage.              |

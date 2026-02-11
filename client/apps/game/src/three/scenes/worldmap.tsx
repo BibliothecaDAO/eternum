@@ -3995,7 +3995,9 @@ export default class WorldmapScene extends HexagonScene {
     this.currentChunk = chunkKey;
     const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
     const hasFiniteOldChunkCoordinates =
-      oldChunkCoordinates !== null && Number.isFinite(oldChunkCoordinates[0]) && Number.isFinite(oldChunkCoordinates[1]);
+      oldChunkCoordinates !== null &&
+      Number.isFinite(oldChunkCoordinates[0]) &&
+      Number.isFinite(oldChunkCoordinates[1]);
     const targetChunkBounds = this.computeChunkBounds(startRow, startCol);
     this.visibilityManager?.registerChunk(chunkKey, targetChunkBounds);
     if (hasFiniteOldChunkCoordinates) {
