@@ -21,6 +21,16 @@ const bankIdSchema = {
 const emptySchema = { type: "object" as const, properties: {} };
 
 /**
+ * Serialize a view result, truncating if it exceeds a reasonable size for the LLM context.
+ * Most views are fine, but mapArea or market with many entries could get large.
+ */
+function serializeView(data: unknown, maxChars = 8000): string {
+  const json = JSON.stringify(data, null, 2);
+  if (json.length <= maxChars) return json;
+  return json.slice(0, maxChars) + `\n... (truncated, ${json.length} chars total)`;
+}
+
+/**
  * Inspect a specific realm/structure — returns full detail including resources,
  * production rates, buildings with costs, guard slots, explorers, arrivals, and orders.
  */
@@ -39,7 +49,7 @@ export function createInspectRealmTool(client: EternumClient): AgentTool<any> {
       try {
         const realm = await client.view.realm(entityId);
         return {
-          content: [{ type: "text", text: JSON.stringify(realm, null, 2) }],
+          content: [{ type: "text", text: serializeView(realm) }],
           details: { entityId, found: true },
         };
       } catch (err: any) {
@@ -70,7 +80,7 @@ export function createInspectExplorerTool(client: EternumClient): AgentTool<any>
       try {
         const explorer = await client.view.explorer(entityId);
         return {
-          content: [{ type: "text", text: JSON.stringify(explorer, null, 2) }],
+          content: [{ type: "text", text: serializeView(explorer) }],
           details: { entityId, found: true },
         };
       } catch (err: any) {
@@ -99,7 +109,7 @@ export function createInspectMarketTool(client: EternumClient): AgentTool<any> {
       try {
         const market = await client.view.market();
         return {
-          content: [{ type: "text", text: JSON.stringify(market, null, 2) }],
+          content: [{ type: "text", text: serializeView(market) }],
           details: { found: true },
         };
       } catch (err: any) {
@@ -127,7 +137,7 @@ export function createInspectBankTool(client: EternumClient): AgentTool<any> {
       try {
         const bank = await client.view.bank(bankEntityId);
         return {
-          content: [{ type: "text", text: JSON.stringify(bank, null, 2) }],
+          content: [{ type: "text", text: serializeView(bank) }],
           details: { bankEntityId, found: true },
         };
       } catch (err: any) {

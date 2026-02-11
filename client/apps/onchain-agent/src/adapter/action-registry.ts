@@ -91,21 +91,49 @@ const oa = (name: string, description: string, required = true): ActionParamSche
 });
 
 /**
+ * Extract a short, human-readable error from a Starknet error.
+ * Starknet errors often contain huge execution traces; we pull out the useful bit.
+ */
+function extractErrorMessage(err: any): string {
+  const raw = err?.message ?? String(err);
+
+  // Look for "Failure reason:" pattern common in Starknet reverts
+  const failureMatch = raw.match(/Failure reason:\s*"?([^"]+)"?/i);
+  if (failureMatch) return failureMatch[1].trim();
+
+  // Look for "execution reverted" with a reason
+  const revertMatch = raw.match(/execution reverted[:\s]*(.+?)(?:\n|$)/i);
+  if (revertMatch) return `Reverted: ${revertMatch[1].trim()}`;
+
+  // Look for Cairo panic/assert messages
+  const cairoMatch = raw.match(/(?:assert|panic)[:\s]+(.+?)(?:\n|$)/i);
+  if (cairoMatch) return cairoMatch[1].trim();
+
+  // Truncate generic long errors to something readable
+  const firstLine = raw.split("\n")[0].trim();
+  if (firstLine.length > 200) return firstLine.slice(0, 200) + "...";
+  return firstLine;
+}
+
+/**
  * Wrap an async client transaction call into a normalised ActionResult.
  * Handles both `transaction_hash` and `transactionHash` return shapes.
+ * Strips raw chain data from success responses and extracts readable errors.
  */
 async function wrapTx(fn: () => Promise<any>): Promise<ActionResult> {
   try {
     const result = await fn();
+    const txHash = result?.transaction_hash ?? result?.transactionHash ?? undefined;
     return {
       success: true,
-      txHash: result?.transaction_hash ?? result?.transactionHash ?? undefined,
-      data: result,
+      txHash,
+      // Only include minimal confirmation data, not the full chain response
+      data: txHash ? { transactionHash: txHash } : undefined,
     };
   } catch (err: any) {
     return {
       success: false,
-      error: err?.message ?? String(err),
+      error: extractErrorMessage(err),
     };
   }
 }
