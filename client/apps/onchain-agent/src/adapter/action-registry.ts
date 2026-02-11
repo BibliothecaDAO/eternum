@@ -238,10 +238,10 @@ register("claim_arrivals", "Claim incoming resource arrivals at a structure", [
 
 register("create_explorer", "Create a new explorer troop from a structure", [
   n("forStructureId", "Structure entity ID to spawn from"),
-  n("category", "Troop category (1=Paladin, 2=Knight, 3=Crossbowman)"),
-  n("tier", "Troop tier (1-3, higher is stronger)"),
+  n("category", "Troop category (0=Knight, 1=Paladin, 2=Crossbowman)"),
+  n("tier", "Troop tier (0=T1, 1=T2, 2=T3; higher tier is stronger)"),
   n("amount", "Number of troops to create"),
-  n("spawnDirection", "Hex direction to spawn (0-5)"),
+  n("spawnDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.createExplorer(signer, {
@@ -257,7 +257,7 @@ register("create_explorer", "Create a new explorer troop from a structure", [
 register("add_to_explorer", "Add more troops to an existing explorer", [
   n("toExplorerId", "Explorer entity ID to reinforce"),
   n("amount", "Number of troops to add"),
-  n("homeDirection", "Direction back to home structure (0-5)"),
+  n("homeDirection", "Direction back to home structure (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.addToExplorer(signer, {
@@ -281,8 +281,8 @@ register("delete_explorer", "Delete an explorer and return troops to structure",
 register("add_guard", "Add a guard troop to a structure's defense slot", [
   n("forStructureId", "Structure entity ID to guard"),
   n("slot", "Guard slot index"),
-  n("category", "Troop category (1=Paladin, 2=Knight, 3=Crossbowman)"),
-  n("tier", "Troop tier (1-3)"),
+  n("category", "Troop category (0=Knight, 1=Paladin, 2=Crossbowman)"),
+  n("tier", "Troop tier (0=T1, 1=T2, 2=T3)"),
   n("amount", "Number of troops"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -310,7 +310,7 @@ register("delete_guard", "Remove a guard from a structure's defense slot", [
 
 register("move_explorer", "Move an explorer along hex directions (optionally exploring)", [
   n("explorerId", "Explorer entity ID"),
-  na("directions", "Array of hex directions (0-5) to move through"),
+  na("directions", "Array of hex directions (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
   b("explore", "Whether to explore (discover new tiles) while moving"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -324,7 +324,7 @@ register("move_explorer", "Move an explorer along hex directions (optionally exp
 
 register("travel_explorer", "Travel an explorer along hex directions (no exploration)", [
   n("explorerId", "Explorer entity ID"),
-  na("directions", "Array of hex directions (0-5) for the travel path"),
+  na("directions", "Array of hex directions (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.travel(signer, {
@@ -336,7 +336,7 @@ register("travel_explorer", "Travel an explorer along hex directions (no explora
 
 register("explore", "Explore new tiles with an explorer", [
   n("explorerId", "Explorer entity ID"),
-  na("directions", "Array of hex directions (0-5) to explore"),
+  na("directions", "Array of hex directions (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.explore(signer, {
@@ -349,7 +349,7 @@ register("explore", "Explore new tiles with an explorer", [
 register("swap_explorer_to_explorer", "Transfer troops between two explorers", [
   n("fromExplorerId", "Source explorer entity ID"),
   n("toExplorerId", "Destination explorer entity ID"),
-  n("toExplorerDirection", "Hex direction to destination explorer (0-5)"),
+  n("toExplorerDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
   n("count", "Number of troops to transfer"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -365,7 +365,7 @@ register("swap_explorer_to_explorer", "Transfer troops between two explorers", [
 register("swap_explorer_to_guard", "Transfer troops from an explorer to a structure guard slot", [
   n("fromExplorerId", "Source explorer entity ID"),
   n("toStructureId", "Destination structure entity ID"),
-  n("toStructureDirection", "Hex direction to structure (0-5)"),
+  n("toStructureDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
   n("toGuardSlot", "Guard slot index at the structure"),
   n("count", "Number of troops to transfer"),
 ], (client, signer, p) =>
@@ -384,7 +384,7 @@ register("swap_guard_to_explorer", "Transfer troops from a structure guard slot 
   n("fromStructureId", "Source structure entity ID"),
   n("fromGuardSlot", "Guard slot index at the structure"),
   n("toExplorerId", "Destination explorer entity ID"),
-  n("toExplorerDirection", "Hex direction to explorer (0-5)"),
+  n("toExplorerDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
   n("count", "Number of troops to transfer"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -405,7 +405,7 @@ register("swap_guard_to_explorer", "Transfer troops from a structure guard slot 
 register("attack_explorer", "Attack another explorer with your explorer (costs 50 stamina attacker, 40 defender)", [
   n("aggressorId", "Your explorer entity ID"),
   n("defenderId", "Target explorer entity ID"),
-  n("defenderDirection", "Hex direction to defender (0-5)"),
+  n("defenderDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
   oa("stealResources", "Array of {resourceId, amount} to steal on victory", false),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -421,7 +421,7 @@ register("attack_explorer", "Attack another explorer with your explorer (costs 5
 register("attack_guard", "Attack a structure's guard with your explorer", [
   n("explorerId", "Your explorer entity ID"),
   n("structureId", "Target structure entity ID"),
-  n("structureDirection", "Hex direction to structure (0-5)"),
+  n("structureDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.combat.attackGuard(signer, {
@@ -436,7 +436,7 @@ register("guard_attack_explorer", "Use a structure's guard to attack a nearby ex
   n("structureId", "Your structure entity ID"),
   n("structureGuardSlot", "Guard slot index"),
   n("explorerId", "Target explorer entity ID"),
-  n("explorerDirection", "Hex direction to explorer (0-5)"),
+  n("explorerDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.combat.guardAttackExplorer(signer, {
@@ -451,7 +451,7 @@ register("guard_attack_explorer", "Use a structure's guard to attack a nearby ex
 register("raid", "Raid a structure to steal resources (without destroying guard)", [
   n("explorerId", "Your explorer entity ID"),
   n("structureId", "Target structure entity ID"),
-  n("structureDirection", "Hex direction to structure (0-5)"),
+  n("structureDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
   oa("stealResources", "Array of {resourceId, amount} to steal"),
 ], (client, signer, p) =>
   wrapTx(() =>
