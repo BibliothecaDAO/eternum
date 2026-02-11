@@ -100,6 +100,7 @@ import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
   resolveArmyTabSelectionPosition,
   shouldAcceptArmyTabSelectionAttempt,
+  shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
@@ -111,6 +112,7 @@ import {
   shouldRunShortcutForceFallback,
   shouldRescheduleRefreshToken,
   shouldRunManagerUpdate,
+  waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
@@ -239,6 +241,9 @@ export default class WorldmapScene extends HexagonScene {
 
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
+  private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
+  private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
+  private readonly stalePendingArmyMovementMs = 10_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager: StructureManager;
   private memoryMonitor?: MemoryMonitor;
@@ -1490,7 +1495,7 @@ export default class WorldmapScene extends HexagonScene {
       maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
 
       // Mark army as having pending movement transaction
-      this.pendingArmyMovements.add(selectedEntityId);
+      this.markPendingArmyMovement(selectedEntityId);
 
       // Monitor memory usage before army movement action
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
@@ -1507,7 +1512,7 @@ export default class WorldmapScene extends HexagonScene {
         })
         .catch((e) => {
           // Transaction failed, remove from pending and cleanup
-          this.pendingArmyMovements.delete(selectedEntityId);
+          this.clearPendingArmyMovement(selectedEntityId);
           cleanup();
           console.error("Army movement failed:", e);
         });
@@ -1636,6 +1641,58 @@ export default class WorldmapScene extends HexagonScene {
     this.updateStructureOwnershipPulses(selectedEntityId, extraHexes);
   }
 
+  private clearPendingArmyMovement(entityId: ID): void {
+    this.pendingArmyMovements.delete(entityId);
+    this.pendingArmyMovementStartedAt.delete(entityId);
+
+    const fallbackTimeout = this.pendingArmyMovementFallbackTimeouts.get(entityId);
+    if (fallbackTimeout) {
+      clearTimeout(fallbackTimeout);
+      this.pendingArmyMovementFallbackTimeouts.delete(entityId);
+    }
+  }
+
+  private markPendingArmyMovement(entityId: ID): void {
+    this.pendingArmyMovements.add(entityId);
+    this.pendingArmyMovementStartedAt.set(entityId, Date.now());
+    this.schedulePendingArmyMovementFallback(entityId);
+  }
+
+  private schedulePendingArmyMovementFallback(entityId: ID): void {
+    const existingFallback = this.pendingArmyMovementFallbackTimeouts.get(entityId);
+    if (existingFallback) {
+      clearTimeout(existingFallback);
+    }
+
+    const fallbackTimeout = setTimeout(() => {
+      if (!this.pendingArmyMovements.has(entityId)) {
+        this.pendingArmyMovementFallbackTimeouts.delete(entityId);
+        return;
+      }
+
+      if (!this.shouldClearPendingArmyMovementNow(entityId)) {
+        return;
+      }
+
+      this.clearPendingArmyMovement(entityId);
+      this.requestChunkRefresh(true);
+
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Cleared stale pending movement for army ${entityId} via fallback timeout`);
+      }
+    }, this.stalePendingArmyMovementMs);
+
+    this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
+  }
+
+  private shouldClearPendingArmyMovementNow(entityId: ID, nowMs: number = Date.now()): boolean {
+    return shouldClearPendingArmyMovement({
+      pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
+      nowMs,
+      staleAfterMs: this.stalePendingArmyMovementMs,
+    });
+  }
+
   private onArmySelection(
     selectedEntityId: ID,
     playerAddress: ContractAddress,
@@ -1645,7 +1702,13 @@ export default class WorldmapScene extends HexagonScene {
 
     // Check if army has pending movement transactions
     if (this.pendingArmyMovements.has(selectedEntityId)) {
-      return false;
+      if (!this.shouldClearPendingArmyMovementNow(selectedEntityId)) {
+        this.requestChunkRefresh(true);
+        return false;
+      }
+
+      this.clearPendingArmyMovement(selectedEntityId);
+      this.requestChunkRefresh(true);
     }
 
     // Check if army is currently being rendered or is in chunk transition
@@ -2040,6 +2103,10 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingArmyRemovalMeta.clear();
     this.deferredChunkRemovals.clear();
     this.armyLastUpdateAt.clear();
+    this.pendingArmyMovements.forEach((entityId) => this.clearPendingArmyMovement(entityId));
+    this.pendingArmyMovements.clear();
+    this.pendingArmyMovementStartedAt.clear();
+    this.pendingArmyMovementFallbackTimeouts.clear();
 
     this.armyStructureOwners.clear();
 
@@ -2089,7 +2156,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armyLastUpdateAt.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
     this.armyStructureOwners.delete(entityId);
-    this.pendingArmyMovements.delete(entityId);
+    this.clearPendingArmyMovement(entityId);
   }
 
   private resolveSupersededPendingArmyRemoval(
@@ -2185,7 +2252,7 @@ export default class WorldmapScene extends HexagonScene {
               return;
             }
 
-            this.pendingArmyMovements.delete(entityId);
+            this.clearPendingArmyMovement(entityId);
           }
         }
 
@@ -2365,7 +2432,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Remove from pending movements when position is updated from blockchain
     if (this.pendingArmyMovements.has(entityId)) {
-      this.pendingArmyMovements.delete(entityId);
+      this.clearPendingArmyMovement(entityId);
     }
   }
 
@@ -2449,13 +2516,15 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (removeExplored) {
-      const chunkRow = parseInt(this.currentChunk.split(",")[0]);
-      const chunkCol = parseInt(this.currentChunk.split(",")[1]);
       this.exploredTiles.get(col)?.delete(row);
-      this.removeCachedMatricesForChunk(chunkRow, chunkCol);
-      this.removeCachedMatricesAroundChunk(chunkRow, chunkCol);
-      this.currentChunk = "null"; // reset the current chunk to force a recomputation
-      this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
+
+      const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
+      if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
+        this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+        this.removeCachedMatricesAroundChunk(chunkRow, chunkCol);
+      }
+
+      this.requestChunkRefresh(true);
       return;
     }
 
@@ -3836,14 +3905,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   async updateVisibleChunks(force: boolean = false, options?: { reason?: "default" | "shortcut" }): Promise<boolean> {
-    // Wait for any ongoing global chunk switch to complete first
-    if (this.globalChunkSwitchPromise) {
-      try {
-        await this.globalChunkSwitchPromise;
-      } catch (error) {
-        console.warn(`Previous global chunk switch failed:`, error);
-      }
-    }
+    await waitForChunkTransitionToSettle(
+      () => this.globalChunkSwitchPromise,
+      (error) => console.warn(`Previous global chunk switch failed:`, error),
+    );
 
     const focusPoint = this.getCameraGroundIntersection().clone();
 
@@ -4320,6 +4385,8 @@ export default class WorldmapScene extends HexagonScene {
 
     this.disposeStoreSubscriptions();
     this.disposeWorldUpdateSubscriptions();
+    this.pendingArmyMovements.forEach((entityId) => this.clearPendingArmyMovement(entityId));
+    this.pendingArmyMovements.clear();
     this.stopToriiBoundsCounterLog();
     this.toriiStreamManager?.shutdown();
     this.toriiBoundsAreaKey = null;

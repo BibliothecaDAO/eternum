@@ -9,6 +9,7 @@ import {
   shouldRescheduleRefreshToken,
   shouldAcceptTransitionToken,
   shouldRunManagerUpdate,
+  waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
@@ -273,5 +274,75 @@ describe("shouldRunShortcutForceFallback", () => {
         initialSwitchSucceeded: false,
       }),
     ).toBe(false);
+  });
+});
+
+describe("waitForChunkTransitionToSettle", () => {
+  it("waits through transition promise replacement races", async () => {
+    let resolveFirst: (() => void) | undefined;
+    let resolveSecond: (() => void) | undefined;
+    let reads = 0;
+
+    const first = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const second = new Promise<void>((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    const getTransitionPromise = () => {
+      reads += 1;
+      if (reads <= 2) return first;
+      if (reads === 3) return second;
+      return null;
+    };
+
+    const waitPromise = waitForChunkTransitionToSettle(getTransitionPromise);
+    resolveFirst?.();
+
+    let settled = false;
+    void waitPromise.then(() => {
+      settled = true;
+    });
+
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    resolveSecond?.();
+    await waitPromise;
+    expect(settled).toBe(true);
+  });
+
+  it("invokes error handler and continues waiting for newer transitions", async () => {
+    let rejectFirst: ((error?: unknown) => void) | undefined;
+    let resolveSecond: (() => void) | undefined;
+    const capturedErrors: unknown[] = [];
+    let reads = 0;
+
+    const first = new Promise<void>((_, reject) => {
+      rejectFirst = reject;
+    });
+    const second = new Promise<void>((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    const getTransitionPromise = () => {
+      reads += 1;
+      if (reads <= 2) return first;
+      if (reads === 3) return second;
+      return null;
+    };
+
+    const waitPromise = waitForChunkTransitionToSettle(getTransitionPromise, (error) => {
+      capturedErrors.push(error);
+    });
+
+    const failure = new Error("first switch failed");
+    rejectFirst?.(failure);
+    await Promise.resolve();
+    expect(capturedErrors).toEqual([failure]);
+
+    resolveSecond?.();
+    await waitPromise;
   });
 });

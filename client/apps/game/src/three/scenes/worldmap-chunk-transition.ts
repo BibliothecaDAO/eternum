@@ -143,3 +143,25 @@ export function shouldForceShortcutNavigationRefresh(input: ShortcutNavigationRe
 export function shouldRunShortcutForceFallback(input: ShortcutForceFallbackDecisionInput): boolean {
   return input.isShortcutNavigation && input.chunkChanged && !input.initialSwitchSucceeded;
 }
+
+/**
+ * Wait for any in-flight chunk transition promise to settle.
+ * Re-checks after each await so callers handle promise replacement races.
+ */
+export async function waitForChunkTransitionToSettle(
+  getTransitionPromise: () => Promise<unknown> | null,
+  onTransitionError?: (error: unknown) => void,
+): Promise<void> {
+  while (true) {
+    const transitionPromise = getTransitionPromise();
+    if (!transitionPromise) {
+      return;
+    }
+
+    try {
+      await transitionPromise;
+    } catch (error) {
+      onTransitionError?.(error);
+    }
+  }
+}

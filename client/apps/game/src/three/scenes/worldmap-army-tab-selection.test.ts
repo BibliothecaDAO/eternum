@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveArmyTabSelectionPosition,
   shouldAcceptArmyTabSelectionAttempt,
+  shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 
@@ -117,5 +118,37 @@ describe("shouldQueueArmySelectionRecovery", () => {
         armyPresentInManager: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe("shouldClearPendingArmyMovement", () => {
+  it("clears pending movement when started time is missing", () => {
+    expect(
+      shouldClearPendingArmyMovement({
+        pendingMovementStartedAtMs: undefined,
+        nowMs: 1000,
+        staleAfterMs: 8000,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not clear pending movement before stale threshold", () => {
+    expect(
+      shouldClearPendingArmyMovement({
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 8500,
+        staleAfterMs: 8000,
+      }),
+    ).toBe(false);
+  });
+
+  it("clears pending movement at stale threshold", () => {
+    expect(
+      shouldClearPendingArmyMovement({
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 9000,
+        staleAfterMs: 8000,
+      }),
+    ).toBe(true);
   });
 });

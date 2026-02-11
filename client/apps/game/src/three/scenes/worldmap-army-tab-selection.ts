@@ -15,6 +15,12 @@ interface ShouldQueueArmySelectionRecoveryInput {
   armyPresentInManager: boolean;
 }
 
+interface ShouldClearPendingArmyMovementInput {
+  pendingMovementStartedAtMs?: number;
+  nowMs: number;
+  staleAfterMs: number;
+}
+
 /**
  * Tab cycling should prioritize the position currently rendered in the worldmap.
  * Fallback to selectable-army snapshot coordinates when render state is unavailable.
@@ -49,4 +55,16 @@ export function shouldQueueArmySelectionRecovery(input: ShouldQueueArmySelection
     !input.isChunkTransitioning &&
     !input.armyPresentInManager
   );
+}
+
+/**
+ * Pending movement can become stale when movement updates are missed during
+ * aggressive chunk switches. Clear stale pending state so selection recovers.
+ */
+export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMovementInput): boolean {
+  if (input.pendingMovementStartedAtMs === undefined) {
+    return true;
+  }
+
+  return input.nowMs - input.pendingMovementStartedAtMs >= input.staleAfterMs;
 }
