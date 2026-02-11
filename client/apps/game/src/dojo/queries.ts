@@ -11,7 +11,6 @@ import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
-  debouncedGetTilesForPositionsFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
@@ -107,12 +106,8 @@ export const getStructuresDataFromTorii = async (
     () => {},
   );
 
-  // Query tile components for the structure positions
-  const tilePositions = structuresToSync.map((structure) => structure.position);
-  const tilePromise = debouncedGetTilesForPositionsFromTorii(client, components as any, tilePositions, () => {});
-
   // Execute all promises in parallel
-  return Promise.all([structuresPromise, armiesPromise, buildingsPromise, tilePromise]);
+  return Promise.all([structuresPromise, armiesPromise, buildingsPromise]);
 };
 
 // For own structures, usePlayerStructureSync keeps data fresh so we only fetch if missing.
