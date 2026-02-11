@@ -94,14 +94,14 @@ export const usePlayerStructureSync = () => {
     };
 
     void backfillOwnedStructures();
-    // const intervalId = setInterval(() => {
-    //   void backfillOwnedStructures();
-    // }, PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS);
+    const intervalId = setInterval(() => {
+      void backfillOwnedStructures();
+    }, PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS);
 
-    // return () => {
-    //   cancelled = true;
-    //   clearInterval(intervalId);
-    // };
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, [accountAddress, toriiClient, toriiComponents]);
 
   // Sync newly-seen structures into RECS (e.g. first settlement).

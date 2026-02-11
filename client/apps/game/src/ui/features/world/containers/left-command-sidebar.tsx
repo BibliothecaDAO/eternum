@@ -1116,7 +1116,7 @@ export const LeftCommandSidebar = memo(() => {
     // Include structureNameVersion to refresh cached info when renames happen locally.
     void structureNameVersion;
     return mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components);
-  }, [structure, account.address, components, structureNameVersion, mode]);
+  }, [structureEntityId, structure, account.address, components, structureNameVersion, mode]);
 
   const isRealmOrVillage = useMemo(
     () =>
