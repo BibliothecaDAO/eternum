@@ -8,8 +8,8 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
-import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 import { useAccountStore } from "../store/use-account-store";
+import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
 const PLAYER_STRUCTURE_MODELS: string[] = [
