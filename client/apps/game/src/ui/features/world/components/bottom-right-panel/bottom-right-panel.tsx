@@ -125,7 +125,9 @@ const PanelFrame = ({ title, children, headerAction, className, attached = false
     style={{ height: BOTTOM_PANEL_HEIGHT }}
   >
     <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2">
-      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">{title}</p>
+      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
+        {title}
+      </p>
       {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-3 py-2">{children}</div>
@@ -297,7 +299,11 @@ const MapTilePanel = () => {
         disabled={isSyncingCurrentEntity}
         aria-label={`Re-sync ${syncableEntityType} ${String(syncableEntityId)}`}
       >
-        {isSyncingCurrentEntity ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+        {isSyncingCurrentEntity ? (
+          <Loader className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
         <span>{isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}</span>
       </Button>
     ) : null;
@@ -540,22 +546,21 @@ const LocalTilePanel = () => {
     });
   }, [contractComponents, structureSyncTarget, syncEntity, toriiClient]);
 
-  const headerAction =
-    structureSyncTarget ? (
-      <Button
-        variant="outline"
-        size="xs"
-        className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
-        forceUppercase={false}
-        onClick={handleResyncStructure}
-        withoutSound
-        disabled={isSyncingStructure}
-        aria-label={`Re-sync structure ${String(structureSyncTarget.entityId)}`}
-      >
-        {isSyncingStructure ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-        <span>{isSyncingStructure ? "Syncing..." : "Re-sync"}</span>
-      </Button>
-    ) : null;
+  const headerAction = structureSyncTarget ? (
+    <Button
+      variant="outline"
+      size="xs"
+      className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+      forceUppercase={false}
+      onClick={handleResyncStructure}
+      withoutSound
+      disabled={isSyncingStructure}
+      aria-label={`Re-sync structure ${String(structureSyncTarget.entityId)}`}
+    >
+      {isSyncingStructure ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+      <span>{isSyncingStructure ? "Syncing..." : "Re-sync"}</span>
+    </Button>
+  ) : null;
 
   const handleToggleProduction = async () => {
     if (!selectedBuildingHex) return;

@@ -54,9 +54,7 @@ export const useEntityResync = ({
             reject(new Error("Resync timed out"));
           }, timeoutMs);
 
-          void runSync()
-            .then(resolve)
-            .catch(reject);
+          void runSync().then(resolve).catch(reject);
         });
         toast.success(successMessage);
         return true;
