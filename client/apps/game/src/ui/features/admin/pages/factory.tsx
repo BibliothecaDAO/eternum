@@ -44,7 +44,7 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import XCircle from "lucide-react/dist/esm/icons/x-circle";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
 import { env } from "../../../../../env";
@@ -63,16 +63,14 @@ import {
 import { useFactoryAdmin } from "../hooks/use-factory-admin";
 import { generateCairoOutput, generateFactoryCalldata } from "../services/factory-config";
 import {
-  checkIndexerExists as checkIndexerExistsService,
   createIndexer as createIndexerService,
-  getWorldDeployedAddress as getWorldDeployedAddressService,
 } from "../services/factory-indexer";
+import { buildWorldConfigForFactory } from "../services/world-config-builder";
 import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
 import {
   cacheDeployedAddress,
   getConfiguredWorlds,
   getCurrentWorldName,
-  getDeployedAddressMap,
   getRemainingCooldown,
   getStoredWorldNames,
   getStoredWorldSeriesMetadata,
@@ -91,22 +89,6 @@ type AutoDeployState = { current: number; total: number; status: "running" | "st
 
 // Maximum hours in the future that a game start time can be set
 const MAX_START_TIME_HOURS = 50_000;
-
-const parseDecimalToBigInt = (value: string, precision: number): bigint => {
-  const trimmed = value.trim();
-  if (!trimmed) throw new Error("Fee amount is required");
-  const normalized = trimmed.startsWith(".") ? `0${trimmed}` : trimmed;
-  if (!/^\d+(\.\d+)?$/.test(normalized)) {
-    throw new Error("Fee amount must be a number");
-  }
-  const [whole, fraction = ""] = normalized.split(".");
-  if (fraction.length > precision) {
-    throw new Error(`Fee amount has more than ${precision} decimals`);
-  }
-  const paddedFraction = fraction.padEnd(precision, "0");
-  const combined = `${whole}${precision > 0 ? paddedFraction : ""}`.replace(/^0+(?=\d)/, "");
-  return BigInt(combined || "0");
-};
 
 // Storage keys and cooldowns moved to ../constants and ../utils/storage
 
@@ -288,7 +270,7 @@ export const FactoryPage = () => {
   const { account, accountName } = useAccountStore();
 
   const currentChain = env.VITE_PUBLIC_CHAIN as ChainType;
-  const { refreshStatuses } = useFactoryAdmin(currentChain);
+  const { refreshStatuses, checkIndexerExists, getWorldDeployedAddressLocal } = useFactoryAdmin(currentChain);
   const factoryDeployRepeats = getFactoryDeployRepeatsForChain(currentChain);
   const defaultBlitzRegistration = useMemo(() => getDefaultBlitzRegistrationConfig(currentChain), [currentChain]);
   const {
@@ -343,8 +325,7 @@ export const FactoryPage = () => {
   const [worldSeriesMetadata, setWorldSeriesMetadata] = useState<Record<string, WorldSeriesMetadata>>({});
   const [worldIndexerStatus, setWorldIndexerStatus] = useState<Record<string, boolean>>({});
   const [creatingIndexer, setCreatingIndexer] = useState<Record<string, boolean>>({});
-  const [cooldownTimers, setCooldownTimers] = useState<Record<string, number>>({});
-  const [indexerCreationCountdown, setIndexerCreationCountdown] = useState<Record<string, number>>({});
+  const [indexerActionErrors, setIndexerActionErrors] = useState<Record<string, string>>({});
   const [worldDeployedStatus, setWorldDeployedStatus] = useState<Record<string, boolean>>({});
   const [verifyingDeployment, setVerifyingDeployment] = useState<Record<string, boolean>>({});
   const [autoDeployState, setAutoDeployState] = useState<Record<string, AutoDeployState>>({});
@@ -354,7 +335,9 @@ export const FactoryPage = () => {
   const [worldConfigTx, setWorldConfigTx] = useState<Record<string, TxState>>({});
   // Per-world season start override (epoch seconds)
   const [startMainAtOverrides, setStartMainAtOverrides] = useState<Record<string, number>>({});
+  const [startSettlingAtOverrides, setStartSettlingAtOverrides] = useState<Record<string, number>>({});
   const [startMainAtErrors, setStartMainAtErrors] = useState<Record<string, string>>({});
+  const [startSettlingAtErrors, setStartSettlingAtErrors] = useState<Record<string, string>>({});
   // Per-world overrides
   const [devModeOverrides, setDevModeOverrides] = useState<Record<string, boolean>>({});
   const [mmrEnabledOverrides, setMmrEnabledOverrides] = useState<Record<string, boolean>>({});
@@ -363,9 +346,36 @@ export const FactoryPage = () => {
   const [blitzFeeAmountOverrides, setBlitzFeeAmountOverrides] = useState<Record<string, string>>({});
   const [blitzFeePrecisionOverrides, setBlitzFeePrecisionOverrides] = useState<Record<string, string>>({});
   const [blitzFeeTokenOverrides, setBlitzFeeTokenOverrides] = useState<Record<string, string>>({});
+  const [blitzFeeRecipientOverrides, setBlitzFeeRecipientOverrides] = useState<Record<string, string>>({});
   const [registrationCountMaxOverrides, setRegistrationCountMaxOverrides] = useState<Record<string, string>>({});
+  const [registrationDelaySecondsOverrides, setRegistrationDelaySecondsOverrides] = useState<Record<string, string>>(
+    {},
+  );
+  const [registrationPeriodSecondsOverrides, setRegistrationPeriodSecondsOverrides] = useState<
+    Record<string, string>
+  >({});
   const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
+  const [seasonBridgeCloseAfterEndSecondsOverrides, setSeasonBridgeCloseAfterEndSecondsOverrides] = useState<
+    Record<string, string>
+  >({});
+  const [
+    seasonPointRegistrationCloseAfterEndSecondsOverrides,
+    setSeasonPointRegistrationCloseAfterEndSecondsOverrides,
+  ] = useState<Record<string, string>>({});
+  const [settlementCenterOverrides, setSettlementCenterOverrides] = useState<Record<string, string>>({});
+  const [settlementBaseDistanceOverrides, setSettlementBaseDistanceOverrides] = useState<Record<string, string>>({});
+  const [settlementSubsequentDistanceOverrides, setSettlementSubsequentDistanceOverrides] = useState<
+    Record<string, string>
+  >({});
+  const [tradeMaxCountOverrides, setTradeMaxCountOverrides] = useState<Record<string, string>>({});
+  const [battleGraceTickCountOverrides, setBattleGraceTickCountOverrides] = useState<Record<string, string>>({});
+  const [battleGraceTickCountHypOverrides, setBattleGraceTickCountHypOverrides] = useState<
+    Record<string, string>
+  >({});
+  const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
+  const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
+  const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
@@ -374,6 +384,14 @@ export const FactoryPage = () => {
     if (!Number.isFinite(secs) || secs <= 0) return 0;
     return Math.max(0, Math.round((secs % 3600) / 60));
   }, [eternumConfig]);
+
+  // Check indexer and deployment status for all stored worlds
+  const checkAllWorldStatuses = useCallback(async () => {
+    const worlds = getStoredWorldNames();
+    const { indexerStatusMap, deployedStatusMap } = await refreshStatuses(worlds);
+    setWorldIndexerStatus(indexerStatusMap);
+    setWorldDeployedStatus(deployedStatusMap);
+  }, [refreshStatuses]);
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
@@ -409,38 +427,14 @@ export const FactoryPage = () => {
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
     }
-  }, [accountName]);
+  }, [accountName, worldName]);
 
   // Check indexer and deployment statuses when stored world names change
   useEffect(() => {
     if (storedWorldNames.length > 0) {
       checkAllWorldStatuses();
     }
-  }, [storedWorldNames.length]);
-
-  // Update cooldown timers every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const updatedTimers: Record<string, number> = {};
-      let hasActiveTimers = false;
-
-      storedWorldNames.forEach((worldName) => {
-        const remaining = getRemainingCooldown(worldName);
-        if (remaining > 0) {
-          updatedTimers[worldName] = remaining;
-          hasActiveTimers = true;
-        }
-      });
-
-      if (hasActiveTimers) {
-        setCooldownTimers(updatedTimers);
-      } else {
-        setCooldownTimers({});
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [storedWorldNames]);
+  }, [storedWorldNames, checkAllWorldStatuses]);
 
   // Auto-parse manifest whenever inputs change
   useEffect(() => {
@@ -470,14 +464,6 @@ export const FactoryPage = () => {
       setGeneratedCalldata([]);
     }
   }, [manifestJson, version, namespace, maxActions, defaultNamespaceWriterAll]);
-
-  // Load manifest from config files
-  const handleLoadFromConfig = (chain: ChainType) => {
-    const jsonString = getManifestJsonString(chain);
-    if (jsonString) {
-      setManifestJson(jsonString);
-    }
-  };
 
   // Generate new world name
   const handleGenerateWorldName = () => {
@@ -599,44 +585,6 @@ export const FactoryPage = () => {
     }
   };
 
-  // Check if world is deployed via factory Torii SQL
-  const checkWorldDeployed = async (worldName: string): Promise<boolean> => {
-    try {
-      const addr = await getWorldDeployedAddressLocal(worldName);
-      return !!addr;
-    } catch (error) {
-      console.error(`Error checking if world ${worldName} is deployed:`, error);
-      return false;
-    }
-  };
-
-  // Check if indexer exists for a world name
-  const checkIndexerExists = async (worldName: string): Promise<boolean> => {
-    return checkIndexerExistsService(worldName);
-  };
-
-  // Fetch deployed world address from factory Torii (returns null if not deployed)
-  const getCachedDeployedAddress = (worldName: string): string | null => {
-    const map = getDeployedAddressMap();
-    return map[worldName] ?? null;
-  };
-
-  const getWorldDeployedAddressLocal = async (worldName: string): Promise<string | null> => {
-    const cached = getCachedDeployedAddress(worldName);
-    if (cached) return cached;
-    const addr = await getWorldDeployedAddressService(currentChain as any, worldName);
-    if (addr) cacheDeployedAddress(worldName, addr);
-    return addr;
-  };
-
-  // Check indexer and deployment status for all stored worlds
-  const checkAllWorldStatuses = async () => {
-    const worlds = getStoredWorldNames();
-    const { indexerStatusMap, deployedStatusMap } = await refreshStatuses(worlds);
-    setWorldIndexerStatus(indexerStatusMap);
-    setWorldDeployedStatus(deployedStatusMap);
-  };
-
   // Handle reload - clear all loading states and refresh data
   const handleReload = async () => {
     // Clear all transaction states
@@ -656,6 +604,9 @@ export const FactoryPage = () => {
       return;
     }
 
+    setIndexerActionErrors((prev) => ({ ...prev, [worldName]: "" }));
+    setCreatingIndexer((prev) => ({ ...prev, [worldName]: true }));
+
     // Get torii config for current chain
     // Build torii config for current chain
     const envName = currentChain;
@@ -664,13 +615,19 @@ export const FactoryPage = () => {
     const deployedWorldAddress = await getWorldDeployedAddressLocal(worldName);
     if (!deployedWorldAddress) {
       console.warn("World not deployed or address not found in factory indexer; cannot create indexer.");
+      setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
+      setIndexerActionErrors((prev) => ({
+        ...prev,
+        [worldName]: "World is not deployed yet. Deploy first.",
+      }));
       return;
     }
 
     try {
       // Immediately set cooldown so UI shows small wait timer right away
       setIndexerCooldown(worldName);
-      setCooldownTimers((prev) => ({ ...prev, [worldName]: getRemainingCooldown(worldName) }));
+
+      let resolved = false;
 
       await createIndexerService({
         env: envName,
@@ -685,7 +642,10 @@ export const FactoryPage = () => {
       const pollInterval = setInterval(async () => {
         const exists = await checkIndexerExists(worldName);
         if (exists) {
+          resolved = true;
           setWorldIndexerStatus((prev) => ({ ...prev, [worldName]: true }));
+          setIndexerActionErrors((prev) => ({ ...prev, [worldName]: "" }));
+          setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
           clearInterval(pollInterval);
         }
       }, 10000); // Check every 10 seconds
@@ -693,9 +653,21 @@ export const FactoryPage = () => {
       // Stop polling after 6 minutes (safety limit)
       setTimeout(() => {
         clearInterval(pollInterval);
+        if (!resolved) {
+          setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
+          setIndexerActionErrors((prev) => ({
+            ...prev,
+            [worldName]: "Indexer creation is still pending. Wait a bit and try refresh.",
+          }));
+        }
       }, 360000); // 6 minutes
     } catch (error: any) {
       console.error("Error creating indexer:", error);
+      setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
+      setIndexerActionErrors((prev) => ({
+        ...prev,
+        [worldName]: error?.message ?? "Failed to create indexer.",
+      }));
     }
   };
 
@@ -717,68 +689,6 @@ export const FactoryPage = () => {
 
       // Mark world as configured after successful transaction
       markWorldAsConfigured(worldName);
-    } catch (err: any) {
-      setTx({ status: "error", error: err.message });
-    }
-  };
-
-  // Execute deploy only
-  const handleDeploy = async () => {
-    if (!account || !factoryAddress || !worldName) return;
-
-    setTx({ status: "running" });
-
-    try {
-      const worldNameFelt = shortString.encodeShortString(worldName);
-      const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute({
-        contractAddress: factoryAddress,
-        entrypoint: "create_game",
-        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
-      });
-
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
-
-      // Save world name to storage after successful deployment
-      saveWorldNameToStorage(worldName);
-      setStoredWorldNames(getStoredWorldNames());
-    } catch (err: any) {
-      setTx({ status: "error", error: err.message });
-    }
-  };
-
-  // Execute both set_config and deploy in multicall
-  const handleSetConfigAndDeploy = async () => {
-    if (!account || !parsedManifest || !factoryAddress || !worldName) return;
-
-    setTx({ status: "running" });
-
-    console.log("Generated Calldata:", generatedCalldata);
-
-    try {
-      const worldNameFelt = shortString.encodeShortString(worldName);
-      const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute([
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config",
-          calldata: generatedCalldata,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "create_game",
-          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
-        },
-      ]);
-
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
-
-      // Mark world as configured and save world name to storage after successful deployment
-      markWorldAsConfigured(worldName);
-      saveWorldNameToStorage(worldName);
-      setStoredWorldNames(getStoredWorldNames());
     } catch (err: any) {
       setTx({ status: "error", error: err.message });
     }
@@ -892,14 +802,6 @@ export const FactoryPage = () => {
       default:
         return null;
     }
-  };
-
-  const getDisabledReason = (action: "configAndDeploy" | "config" | "deploy"): string | null => {
-    if (tx.status === "running") return "Transaction in progress";
-    if (!account) return "Wallet not connected";
-    if (!factoryAddress) return "Factory address required";
-    if ((action === "configAndDeploy" || action === "deploy") && !worldName) return "World name required";
-    return null;
   };
 
   return (
@@ -1119,14 +1021,14 @@ export const FactoryPage = () => {
                         </button>
                         {showStoredNames && (
                           <div className="pl-4 space-y-3">
-                            {[...storedWorldNames].reverse().map((name, idx) => {
+                            {[...storedWorldNames].reverse().map((name) => {
                               const metadata = worldSeriesMetadata[name];
                               const metadataParts: string[] = [];
                               if (metadata?.seriesName) metadataParts.push(metadata.seriesName);
                               if (metadata?.seriesGameNumber) metadataParts.push(`#${metadata.seriesGameNumber}`);
 
                               return (
-                                <div key={idx} className="space-y-2">
+                                <div key={name} className="space-y-2">
                                   <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
                                     <span className="flex-1 text-xs font-mono text-slate-700">{name}</span>
 
@@ -1208,22 +1110,24 @@ export const FactoryPage = () => {
                                         </button>
                                       )}
 
-                                    {/* Indexer Status/Actions - Only show if deployed */}
+                                    {/* Step 2: Configure - available before deploy to stage overrides */}
+                                    {!isWorldConfigured(name) && (
+                                      <button
+                                        onClick={() => setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))}
+                                        className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
+                                      >
+                                        {worldConfigOpen[name]
+                                          ? "Hide Config"
+                                          : worldDeployedStatus[name]
+                                            ? "Configure"
+                                            : "Configure (Draft)"}
+                                      </button>
+                                    )}
+
+                                    {/* Step 3: Indexer - Only available once deployed */}
                                     {worldDeployedStatus[name] && (
                                       <>
-                                        {/* Step 2: Configure (can run before indexer) - Only show if not configured yet */}
-                                        {!isWorldConfigured(name) && (
-                                          <button
-                                            onClick={() =>
-                                              setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))
-                                            }
-                                            className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
-                                          >
-                                            {worldConfigOpen[name] ? "Hide Config" : "Configure"}
-                                          </button>
-                                        )}
-
-                                        {/* Step 3: Indexer - Always show if no indexer exists (regardless of config status) */}
+                                        {/* Indexer status/actions */}
                                         {worldIndexerStatus[name] ? (
                                           <a
                                             href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
@@ -1234,6 +1138,11 @@ export const FactoryPage = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             Indexer On
                                           </a>
+                                        ) : creatingIndexer[name] ? (
+                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 cursor-wait">
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            Creating Indexer...
+                                          </span>
                                         ) : isWorldOnCooldown(name) ? (
                                           <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
                                             Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
@@ -1253,6 +1162,9 @@ export const FactoryPage = () => {
                                   {metadataParts.length > 0 && (
                                     <p className="text-[11px] text-slate-500">Series: {metadataParts.join(" ")}</p>
                                   )}
+                                  {indexerActionErrors[name] && !worldIndexerStatus[name] && (
+                                    <p className="text-[11px] text-red-600">{indexerActionErrors[name]}</p>
+                                  )}
 
                                   {/* No extra status panel; only small wait timer above */}
 
@@ -1264,7 +1176,7 @@ export const FactoryPage = () => {
                                           <div>
                                             <p className="text-sm font-semibold text-slate-800">Configure Game</p>
                                             <p className="text-xs text-slate-500">
-                                              Runs full config using live manifest
+                                              Edit overrides any time. Set runs a live deployment check.
                                             </p>
                                           </div>
                                           {worldConfigTx[name]?.status === "running" && (
@@ -1386,6 +1298,87 @@ export const FactoryPage = () => {
                                             )}
                                           </div>
                                           <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Settling Start Time
+                                            </label>
+                                            <input
+                                              type="datetime-local"
+                                              min={(() => {
+                                                const d = new Date();
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const yyyy = d.getFullYear();
+                                                const mm = pad(d.getMonth() + 1);
+                                                const dd = pad(d.getDate());
+                                                const hh = pad(d.getHours());
+                                                const mi = pad(d.getMinutes());
+                                                return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                              })()}
+                                              max={(() => {
+                                                const d = new Date(Date.now() + MAX_START_TIME_HOURS * 3600 * 1000);
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const yyyy = d.getFullYear();
+                                                const mm = pad(d.getMonth() + 1);
+                                                const dd = pad(d.getDate());
+                                                const hh = pad(d.getHours());
+                                                const mi = pad(d.getMinutes());
+                                                return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                              })()}
+                                              value={(() => {
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const toLocalInput = (date: Date) => {
+                                                  const yyyy = date.getFullYear();
+                                                  const mm = pad(date.getMonth() + 1);
+                                                  const dd = pad(date.getDate());
+                                                  const hh = pad(date.getHours());
+                                                  const mi = pad(date.getMinutes());
+                                                  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                                };
+                                                const ts = startSettlingAtOverrides[name];
+                                                if (ts && ts > 0) {
+                                                  return toLocalInput(new Date(ts * 1000));
+                                                }
+                                                const now = new Date();
+                                                const nextHalfHour = new Date(now.getTime());
+                                                nextHalfHour.setSeconds(0, 0);
+                                                const addMinutes = 30 - (nextHalfHour.getMinutes() % 30 || 30);
+                                                nextHalfHour.setMinutes(nextHalfHour.getMinutes() + addMinutes);
+                                                return toLocalInput(nextHalfHour);
+                                              })()}
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (!val) {
+                                                  setStartSettlingAtOverrides((p) => ({ ...p, [name]: 0 }));
+                                                  setStartSettlingAtErrors((p) => ({ ...p, [name]: "" }));
+                                                  return;
+                                                }
+                                                const selected = Math.floor(new Date(val).getTime() / 1000);
+                                                const now = Math.floor(Date.now() / 1000);
+                                                const maxAllowed = now + MAX_START_TIME_HOURS * 3600;
+                                                if (selected < now) {
+                                                  setStartSettlingAtErrors((p) => ({
+                                                    ...p,
+                                                    [name]: "Settling start cannot be in the past",
+                                                  }));
+                                                } else if (selected > maxAllowed) {
+                                                  setStartSettlingAtErrors((p) => ({
+                                                    ...p,
+                                                    [name]: `Settling start cannot be more than ${MAX_START_TIME_HOURS.toLocaleString()} hours ahead`,
+                                                  }));
+                                                } else {
+                                                  setStartSettlingAtErrors((p) => ({ ...p, [name]: "" }));
+                                                }
+                                                setStartSettlingAtOverrides((p) => ({ ...p, [name]: selected }));
+                                              }}
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                            />
+                                            <p className="text-[10px] text-slate-500">
+                                              Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
+                                            </p>
+                                            {startSettlingAtErrors[name] && (
+                                              <p className="text-[11px] text-red-600">{startSettlingAtErrors[name]}</p>
+                                            )}
+                                          </div>
+                                          <div className="space-y-1">
                                             <label className="text-xs font-semibold text-slate-600">Dev Mode</label>
                                             <div className="flex items-center gap-2">
                                               <input
@@ -1490,7 +1483,10 @@ export const FactoryPage = () => {
                                               placeholder={
                                                 factoryAddress || (eternumConfig as any)?.factory_address || "0x..."
                                               }
-                                              value={factoryAddressOverrides[name] || ""}
+                                              value={
+                                                factoryAddressOverrides[name] ??
+                                                (factoryAddress || (eternumConfig as any)?.factory_address || "")
+                                              }
                                               onChange={(e) =>
                                                 setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
@@ -1543,7 +1539,7 @@ export const FactoryPage = () => {
                                             <input
                                               type="text"
                                               placeholder={defaultBlitzRegistration.amount}
-                                              value={blitzFeeAmountOverrides[name] || ""}
+                                              value={blitzFeeAmountOverrides[name] ?? defaultBlitzRegistration.amount}
                                               onChange={(e) =>
                                                 setBlitzFeeAmountOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
@@ -1563,7 +1559,10 @@ export const FactoryPage = () => {
                                               min={0}
                                               step={1}
                                               placeholder={String(defaultBlitzRegistration.precision)}
-                                              value={blitzFeePrecisionOverrides[name] || ""}
+                                              value={
+                                                blitzFeePrecisionOverrides[name] ??
+                                                String(defaultBlitzRegistration.precision)
+                                              }
                                               onChange={(e) =>
                                                 setBlitzFeePrecisionOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
@@ -1580,7 +1579,12 @@ export const FactoryPage = () => {
                                             <input
                                               type="text"
                                               placeholder={defaultBlitzRegistration.token || "0x..."}
-                                              value={blitzFeeTokenOverrides[name] || ""}
+                                              value={
+                                                blitzFeeTokenOverrides[name] ??
+                                                (defaultBlitzRegistration.token ||
+                                                  (eternumConfig as any)?.blitz?.registration?.fee_token ||
+                                                  "")
+                                              }
                                               onChange={(e) =>
                                                 setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
@@ -1599,7 +1603,13 @@ export const FactoryPage = () => {
                                               min={0}
                                               step={1}
                                               placeholder="30"
-                                              value={registrationCountMaxOverrides[name] || ""}
+                                              value={
+                                                registrationCountMaxOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.blitz?.registration?.registration_count_max ??
+                                                    30,
+                                                )
+                                              }
                                               onChange={(e) =>
                                                 setRegistrationCountMaxOverrides((p) => ({
                                                   ...p,
@@ -1612,12 +1622,325 @@ export const FactoryPage = () => {
                                           </div>
                                         </div>
 
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Blitz Fee Recipient
+                                            </label>
+                                            <input
+                                              type="text"
+                                              placeholder={(eternumConfig as any)?.blitz?.registration?.fee_recipient || "0x..."}
+                                              value={
+                                                blitzFeeRecipientOverrides[name] ??
+                                                ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
+                                              }
+                                              onChange={(e) =>
+                                                setBlitzFeeRecipientOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Registration Delay (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.blitz?.registration?.registration_delay_seconds ?? 60)}
+                                              value={
+                                                registrationDelaySecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.blitz?.registration?.registration_delay_seconds ??
+                                                    60,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setRegistrationDelaySecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Registration Period (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.blitz?.registration?.registration_period_seconds ?? 600)}
+                                              value={
+                                                registrationPeriodSecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.blitz?.registration?.registration_period_seconds ??
+                                                    600,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setRegistrationPeriodSecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Bridge Close After End (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0)}
+                                              value={
+                                                seasonBridgeCloseAfterEndSecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setSeasonBridgeCloseAfterEndSecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Point Registration Close (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.season?.pointRegistrationCloseAfterEndSeconds ?? 0,
+                                              )}
+                                              value={
+                                                seasonPointRegistrationCloseAfterEndSecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.season
+                                                    ?.pointRegistrationCloseAfterEndSeconds ?? 0,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setSeasonPointRegistrationCloseAfterEndSecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">Settlement Center</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.settlement?.center ?? 0)}
+                                              value={
+                                                settlementCenterOverrides[name] ??
+                                                String((eternumConfig as any)?.settlement?.center ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setSettlementCenterOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Settlement Base Distance
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.settlement?.base_distance ?? 0)}
+                                              value={
+                                                settlementBaseDistanceOverrides[name] ??
+                                                String((eternumConfig as any)?.settlement?.base_distance ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setSettlementBaseDistanceOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Settlement Subsequent Distance
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)}
+                                              value={
+                                                settlementSubsequentDistanceOverrides[name] ??
+                                                String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setSettlementSubsequentDistanceOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">Trade Max Count</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.trade?.maxCount ?? 0)}
+                                              value={
+                                                tradeMaxCountOverrides[name] ??
+                                                String((eternumConfig as any)?.trade?.maxCount ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setTradeMaxCountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">Battle Grace Ticks</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.battle?.graceTickCount ?? 0)}
+                                              value={
+                                                battleGraceTickCountOverrides[name] ??
+                                                String((eternumConfig as any)?.battle?.graceTickCount ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setBattleGraceTickCountOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">
+                                              Battle Hyperstructure Grace Ticks
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)}
+                                              value={
+                                                battleGraceTickCountHypOverrides[name] ??
+                                                String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setBattleGraceTickCountHypOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">Battle Delay (seconds)</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.battle?.delaySeconds ?? 0)}
+                                              value={
+                                                battleDelaySecondsOverrides[name] ??
+                                                String((eternumConfig as any)?.battle?.delaySeconds ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setBattleDelaySecondsOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">Agent Max Current</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.agent?.max_current_count ?? 0)}
+                                              value={
+                                                agentMaxCurrentCountOverrides[name] ??
+                                                String((eternumConfig as any)?.agent?.max_current_count ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setAgentMaxCurrentCountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-slate-600">Agent Max Lifetime</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)}
+                                              value={
+                                                agentMaxLifetimeCountOverrides[name] ??
+                                                String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setAgentMaxLifetimeCountOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
                                         <div className="flex items-center gap-2">
                                           <button
                                             onClick={async () => {
                                               if (!account) return;
                                               setWorldConfigTx((p) => ({ ...p, [name]: { status: "running" } }));
+                                              let localProvider: any = null;
                                               try {
+                                                const deployedWorldAddress = await getWorldDeployedAddressLocal(name);
+                                                if (!deployedWorldAddress) {
+                                                  throw new Error("World is not deployed yet. Deploy first.");
+                                                }
+
                                                 // 1) Build runtime profile, patch manifest, create provider for this world
                                                 const profile = await buildWorldProfile(currentChain as Chain, name);
                                                 const baseManifest = getGameManifest(currentChain as Chain);
@@ -1626,7 +1949,7 @@ export const FactoryPage = () => {
                                                   profile.worldAddress,
                                                   profile.contractsBySelector,
                                                 );
-                                                const localProvider: any = new EternumProvider(
+                                                localProvider = new EternumProvider(
                                                   patched,
                                                   env.VITE_PUBLIC_NODE_URL,
                                                   env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
@@ -1635,151 +1958,103 @@ export const FactoryPage = () => {
                                                 // 2) Batch and run all config functions (same order as config-admin-page)
                                                 await localProvider.beginBatch({ signer: account });
 
-                                                // prepare optional override for startMainAt (clamped to +MAX_START_TIME_HOURS)
+                                                // prepare optional overrides and build typed config
                                                 const nowSec = Math.floor(Date.now() / 1000);
                                                 const maxAllowed = nowSec + MAX_START_TIME_HOURS * 3600;
-                                                const sel = startMainAtOverrides[name];
-                                                // default to start of next hour if not provided
+                                                const selectedStartRaw = startMainAtOverrides[name];
                                                 const nextHourDefault = (() => {
                                                   const now = Date.now();
                                                   const nextHourMs = Math.ceil(now / 3600000) * 3600000;
                                                   return Math.floor(nextHourMs / 1000);
                                                 })();
-                                                const chosenStart = sel && sel > 0 ? sel : nextHourDefault;
+                                                const chosenStart =
+                                                  selectedStartRaw && selectedStartRaw > 0
+                                                    ? selectedStartRaw
+                                                    : nextHourDefault;
                                                 const selectedStart = Math.max(
                                                   nowSec,
                                                   Math.min(chosenStart, maxAllowed),
                                                 );
 
-                                                const selectedDevMode = Object.prototype.hasOwnProperty.call(
+                                                const selectedSettlingRaw = startSettlingAtOverrides[name];
+                                                const selectedSettling =
+                                                  selectedSettlingRaw && selectedSettlingRaw > 0
+                                                    ? Math.max(nowSec, Math.min(selectedSettlingRaw, maxAllowed))
+                                                    : undefined;
+                                                if (selectedSettling && selectedSettling > selectedStart) {
+                                                  throw new Error("Settling start cannot be later than game start");
+                                                }
+
+                                                const hasDevOverride = Object.prototype.hasOwnProperty.call(
                                                   devModeOverrides,
                                                   name,
-                                                )
-                                                  ? !!devModeOverrides[name]
-                                                  : devModeOn;
-                                                const selectedDurationHours = Object.prototype.hasOwnProperty.call(
-                                                  durationHoursOverrides,
-                                                  name,
-                                                )
-                                                  ? Number(durationHoursOverrides[name] || 0)
-                                                  : Number(durationHours || 0);
-                                                const selectedDurationMinutes = Object.prototype.hasOwnProperty.call(
-                                                  durationMinutesOverrides,
-                                                  name,
-                                                )
-                                                  ? Number(durationMinutesOverrides[name] || 0)
-                                                  : Number(baseDurationMinutes || 0);
-                                                if (
-                                                  !Number.isFinite(selectedDurationMinutes) ||
-                                                  selectedDurationMinutes < 0 ||
-                                                  selectedDurationMinutes > 59
-                                                ) {
-                                                  throw new Error("Duration minutes must be between 0 and 59");
-                                                }
-
-                                                // Apply blitz registration fee overrides if provided
-                                                const rawFeeAmount = blitzFeeAmountOverrides[name]?.trim();
-                                                const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
-                                                const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
-                                                const rawRegistrationCountMax =
-                                                  registrationCountMaxOverrides[name]?.trim();
-                                                const hasRegistrationCountMax =
-                                                  rawRegistrationCountMax !== undefined &&
-                                                  rawRegistrationCountMax !== "";
-                                                const registrationCountMax = hasRegistrationCountMax
-                                                  ? Number(rawRegistrationCountMax)
-                                                  : 30;
-                                                if (
-                                                  !Number.isFinite(registrationCountMax) ||
-                                                  registrationCountMax < 0
-                                                ) {
-                                                  throw new Error(
-                                                    "Registration count max must be a non-negative number",
-                                                  );
-                                                }
-                                                const hasFeePrecision =
-                                                  rawFeePrecision !== undefined && rawFeePrecision !== "";
-                                                const precision = hasFeePrecision
-                                                  ? Number(rawFeePrecision)
-                                                  : defaultBlitzRegistration.precision;
-                                                if (
-                                                  !Number.isFinite(precision) ||
-                                                  precision < 0 ||
-                                                  !Number.isInteger(precision)
-                                                ) {
-                                                  throw new Error("Fee precision must be a non-negative integer");
-                                                }
-                                                const hasFeeAmount = rawFeeAmount !== undefined && rawFeeAmount !== "";
-                                                const amountToParse = hasFeeAmount
-                                                  ? rawFeeAmount
-                                                  : defaultBlitzRegistration.amount;
-                                                const blitzFeeAmount = amountToParse
-                                                  ? parseDecimalToBigInt(amountToParse, precision)
-                                                  : eternumConfig.blitz?.registration?.fee_amount;
-                                                const blitzFeeToken =
-                                                  rawFeeToken ||
-                                                  defaultBlitzRegistration.token ||
-                                                  eternumConfig.blitz?.registration?.fee_token;
-
-                                                const rawFactoryAddress = factoryAddressOverrides[name]?.trim();
-                                                const factoryAddressOverride =
-                                                  rawFactoryAddress ||
-                                                  factoryAddress ||
-                                                  (eternumConfig as any)?.factory_address;
-
-                                                // Apply single realm mode override if provided
-                                                const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
-                                                  singleRealmModeOverrides,
-                                                  name,
-                                                )
-                                                  ? !!singleRealmModeOverrides[name]
-                                                  : !!eternumConfig.settlement?.single_realm_mode;
-
-                                                // Apply MMR enabled override if provided
-                                                const selectedMmrEnabled = Object.prototype.hasOwnProperty.call(
+                                                );
+                                                const hasMmrOverride = Object.prototype.hasOwnProperty.call(
                                                   mmrEnabledOverrides,
                                                   name,
-                                                )
-                                                  ? !!mmrEnabledOverrides[name]
-                                                  : mmrEnabledOn;
+                                                );
+                                                const hasSingleRealmOverride = Object.prototype.hasOwnProperty.call(
+                                                  singleRealmModeOverrides,
+                                                  name,
+                                                );
+                                                const hasDurationHoursOverride = Object.prototype.hasOwnProperty.call(
+                                                  durationHoursOverrides,
+                                                  name,
+                                                );
+                                                const hasDurationMinutesOverride = Object.prototype.hasOwnProperty.call(
+                                                  durationMinutesOverrides,
+                                                  name,
+                                                );
 
-                                                const configForWorld = {
-                                                  ...eternumConfig,
-                                                  factory_address: factoryAddressOverride,
-                                                  dev: {
-                                                    ...(eternumConfig as any).dev,
-                                                    mode: {
-                                                      ...((eternumConfig as any).dev?.mode || {}),
-                                                      on: selectedDevMode,
-                                                    },
+                                                const configForWorld = buildWorldConfigForFactory({
+                                                  baseConfig: eternumConfig as any,
+                                                  defaults: {
+                                                    factoryAddress:
+                                                      factoryAddress || ((eternumConfig as any)?.factory_address ?? ""),
+                                                    devModeOn,
+                                                    mmrEnabledOn,
+                                                    durationHours,
+                                                    baseDurationMinutes,
+                                                    defaultBlitzRegistration,
                                                   },
-                                                  season: {
-                                                    ...eternumConfig.season,
+                                                  overrides: {
                                                     startMainAt: selectedStart,
-                                                    durationSeconds: Math.max(
-                                                      60,
-                                                      Math.max(0, selectedDurationHours) * 3600 +
-                                                        Math.max(0, selectedDurationMinutes) * 60,
-                                                    ),
+                                                    startSettlingAt: selectedSettling,
+                                                    devModeOn: hasDevOverride ? !!devModeOverrides[name] : undefined,
+                                                    mmrEnabled: hasMmrOverride ? !!mmrEnabledOverrides[name] : undefined,
+                                                    durationHours: hasDurationHoursOverride
+                                                      ? String(durationHoursOverrides[name] ?? 0)
+                                                      : undefined,
+                                                    durationMinutes: hasDurationMinutesOverride
+                                                      ? String(durationMinutesOverrides[name] ?? 0)
+                                                      : undefined,
+                                                    blitzFeeAmount: blitzFeeAmountOverrides[name],
+                                                    blitzFeePrecision: blitzFeePrecisionOverrides[name],
+                                                    blitzFeeToken: blitzFeeTokenOverrides[name],
+                                                    blitzFeeRecipient: blitzFeeRecipientOverrides[name],
+                                                    registrationCountMax: registrationCountMaxOverrides[name],
+                                                    registrationDelaySeconds: registrationDelaySecondsOverrides[name],
+                                                    registrationPeriodSeconds: registrationPeriodSecondsOverrides[name],
+                                                    factoryAddress: factoryAddressOverrides[name],
+                                                    singleRealmMode: hasSingleRealmOverride
+                                                      ? !!singleRealmModeOverrides[name]
+                                                      : undefined,
+                                                    seasonBridgeCloseAfterEndSeconds:
+                                                      seasonBridgeCloseAfterEndSecondsOverrides[name],
+                                                    seasonPointRegistrationCloseAfterEndSeconds:
+                                                      seasonPointRegistrationCloseAfterEndSecondsOverrides[name],
+                                                    settlementCenter: settlementCenterOverrides[name],
+                                                    settlementBaseDistance: settlementBaseDistanceOverrides[name],
+                                                    settlementSubsequentDistance:
+                                                      settlementSubsequentDistanceOverrides[name],
+                                                    tradeMaxCount: tradeMaxCountOverrides[name],
+                                                    battleGraceTickCount: battleGraceTickCountOverrides[name],
+                                                    battleGraceTickCountHyp: battleGraceTickCountHypOverrides[name],
+                                                    battleDelaySeconds: battleDelaySecondsOverrides[name],
+                                                    agentMaxCurrentCount: agentMaxCurrentCountOverrides[name],
+                                                    agentMaxLifetimeCount: agentMaxLifetimeCountOverrides[name],
                                                   },
-                                                  blitz: {
-                                                    ...eternumConfig.blitz,
-                                                    registration: {
-                                                      ...eternumConfig.blitz?.registration,
-                                                      fee_amount: blitzFeeAmount,
-                                                      fee_token: blitzFeeToken,
-                                                      registration_count_max: registrationCountMax,
-                                                    },
-                                                  },
-                                                  settlement: {
-                                                    ...eternumConfig.settlement,
-                                                    single_realm_mode: selectedSingleRealmMode,
-                                                  },
-                                                  mmr: {
-                                                    ...eternumConfig.mmr,
-                                                    enabled: selectedMmrEnabled,
-                                                  },
-                                                } as any;
+                                                });
 
                                                 const ctx = {
                                                   account,
@@ -1843,7 +2118,8 @@ export const FactoryPage = () => {
                                             disabled={
                                               !account ||
                                               worldConfigTx[name]?.status === "running" ||
-                                              !!startMainAtErrors[name]
+                                              !!startMainAtErrors[name] ||
+                                              !!startSettlingAtErrors[name]
                                             }
                                           >
                                             Set
