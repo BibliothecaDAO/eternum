@@ -351,7 +351,7 @@ const LocalTilePanel = () => {
       };
     }
 
-    let structureEntityKey: string | undefined;
+    let structureEntityKey: ReturnType<typeof getEntityIdFromKeys> | undefined;
     try {
       structureEntityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
     } catch {
@@ -519,7 +519,7 @@ const LocalTilePanel = () => {
     }
 
     const { entityId, position } = structureSyncTarget;
-    const toriiComponents = contractComponents as Parameters<typeof getStructuresDataFromTorii>[1];
+    const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
 
     void syncEntity({
       syncKey: `structure:${String(entityId)}`,

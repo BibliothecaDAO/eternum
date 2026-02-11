@@ -47,7 +47,7 @@ export const useEntityResync = ({
       lastSyncedAtRef.current.set(syncKey, now);
       setSyncingKey(syncKey);
 
-      let timeoutId: ReturnType<typeof window.setTimeout> | null = null;
+      let timeoutId: number | null = null;
       try {
         await new Promise<void>((resolve, reject) => {
           timeoutId = window.setTimeout(() => {
