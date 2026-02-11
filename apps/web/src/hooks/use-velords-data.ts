@@ -36,32 +36,8 @@ export const useVelordsData = () => {
   const { chain } = useNetwork();
   const { address: userAddress } = useAccount();
 
-  // Get current timestamp
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const currentWeek = floorToWeek(currentTimestamp);
-  const lastWeek = currentWeek - TIME_CONSTANTS.WEEK;
-
-  // Ensure we don't query before protocol start
-  const protocolStartWeek = floorToWeek(TIME_CONSTANTS.PROTOCOL_START_TIME);
-  const safeLastWeek = Math.max(lastWeek, protocolStartWeek);
-
-  console.log("[useVelords] Hook initialized:", {
-    chain: chain.name,
-    userAddress,
-    currentTimestamp,
-    currentWeek,
-    lastWeek,
-    safeLastWeek,
-    protocolStartTime: TIME_CONSTANTS.PROTOCOL_START_TIME,
-    protocolStartWeek,
-    contracts: {
-      VELORDS: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID],
-      REWARD_POOL: StakingAddresses.rewardpool[SUPPORTED_L2_CHAIN_ID],
-    },
-  });
-
   // Get veLORDS total supply
-  const { data: totalSupply, error: totalSupplyError } = useReadContract({
+  const { data: totalSupply } = useReadContract({
     abi: VeLords,
     functionName: "total_supply",
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
@@ -69,17 +45,8 @@ export const useVelordsData = () => {
     enabled: !!chain,
   });
 
-  console.log("[useVelords] Total supply:", {
-    totalSupply,
-    totalSupplyError,
-    formatted:
-      totalSupply !== undefined
-        ? formatTokenAmount(toBigInt(totalSupply))
-        : "N/A",
-  });
-
   // Get LORDS balance in veLORDS contract
-  const { data: lordsInVelords, error: lordsInVelordsError } = useReadContract({
+  const { data: lordsInVelords } = useReadContract({
     abi: L2_C1ERC20,
     functionName: "balance_of",
     address: LORDS[SUPPORTED_L2_CHAIN_ID]?.address as `0x${string}`,
@@ -87,26 +54,11 @@ export const useVelordsData = () => {
     enabled: !!chain,
   });
 
-  console.log("[useVelords] LORDS in veLORDS:", {
-    lordsInVelords,
-    lordsInVelordsError,
-    formatted:
-      lordsInVelords !== undefined
-        ? formatTokenAmount(toBigInt(lordsInVelords))
-        : "N/A",
-  });
-
   // Get LORDS price for TVL calculation
   const { data: lordsPrice } = useQuery({
     queryKey: ["lordsPrice"],
     queryFn: () => getLordsInfo({}),
     staleTime: 60000, // Cache for 1 minute
-  });
-
-  console.log("[useVelords] Price query data:", {
-    lordsPrice,
-    hasPrice: !!lordsPrice?.price?.rate,
-    hasLordsInVelords: !!lordsInVelords,
   });
 
   // Calculate TVL
@@ -117,7 +69,6 @@ export const useVelordsData = () => {
       lordsPrice?.price?.rate,
     ],
     queryFn: () => {
-      console.log('here')
       if (!lordsInVelords || !lordsPrice?.price?.rate) {
         return null;
       }
@@ -128,23 +79,14 @@ export const useVelordsData = () => {
           ? parseFloat(lordsPrice.price.rate)
           : lordsPrice.price.rate;
 
-      const tvlValue = lordsAmount * price;
-
-      console.log("[useVelords] TVL calculation:", {
-        lordsAmount,
-        price,
-        tvl: tvlValue,
-      });
-
-      return tvlValue;
+      return lordsAmount * price;
     },
     enabled: !!lordsInVelords && !!lordsPrice?.price?.rate,
     staleTime: 60000, // Cache for 1 minute
   });
 
-
   // Get user's veLORDS balance if connected
-  const { data: userBalance, error: userBalanceError } = useReadContract({
+  const { data: userBalance } = useReadContract({
     abi: VeLords,
     functionName: "balance_of",
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
@@ -152,38 +94,14 @@ export const useVelordsData = () => {
     enabled: !!userAddress,
   });
 
-  console.log("[useVelords] User balance:", {
-    userBalance,
-    userBalanceError,
-    formatted:
-      userBalance !== undefined
-        ? formatTokenAmount(toBigInt(userBalance))
-        : "N/A",
-  });
-
   // Get user's locked LORDS info
-  const { data: userLocked, error: userLockedError } = useReadContract({
+  const { data: userLocked } = useReadContract({
     abi: VeLords,
     functionName: "get_lock_for",
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
     args: [userAddress!],
     enabled: !!chain && !!userAddress,
   });
-
-  console.log("[useVelords] User locked:", {
-    userLocked,
-    userLockedError,
-    formatted: userLocked
-      ? {
-          amount: formatTokenAmount(toBigInt((userLocked as any)[0])),
-          unlockTime: Number((userLocked as any)[1]),
-        }
-      : "N/A",
-  });
-
-
-
-
 
   const result = {
     // Supply data
@@ -217,8 +135,6 @@ export const useVelordsData = () => {
     floorToWeek,
     formatTokenAmount,
   };
-
-  console.log("[useVelords] Final return value:", result);
 
   return result;
 };

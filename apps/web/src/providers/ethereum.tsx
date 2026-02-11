@@ -1,82 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef } from "react";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { mainnet, sepolia } from "@reown/appkit/networks";
+import { createAppKit } from "@reown/appkit/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
+import { WagmiProvider } from "wagmi";
 
-// 0. Setup queryClient
-const queryClient = new QueryClient();
+const PROJECT_ID = "d80d873dcad4b8636dd7314223238a59";
+const NETWORKS = [mainnet, sepolia];
+const METADATA = {
+  name: "Realms World",
+  description: "Connect your Ethereum wallet to Realms World",
+  url: "https://account.realms.world",
+  icons: ["https://assets.reown.com/reown-profile-pic.png"],
+};
 
-export function AppKitProvider({ children }: { children: React.ReactNode }) {
-  const [WagmiProvider, setWagmiProvider] = useState<any>(null);
-  const [wagmiConfig, setWagmiConfig] = useState<any>(null);
+export function AppKitProvider({
+  children,
+  queryClient,
+}: {
+  children: React.ReactNode;
+  queryClient: QueryClient;
+}) {
+  const initializedRef = useRef(false);
+  const wagmiAdapter = useMemo(
+    () =>
+      new WagmiAdapter({
+        networks: [...NETWORKS],
+        projectId: PROJECT_ID,
+        ssr: true,
+      }),
+    [],
+  );
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadClientOnlyDeps() {
-      // Dynamically import client-only packages
-      const [{ WagmiAdapter }, { mainnet, sepolia }, { createAppKit }] =
-        await Promise.all([
-          import("@reown/appkit-adapter-wagmi"),
-          import("@reown/appkit/networks"),
-          import("@reown/appkit/react"),
-        ]);
-      const { WagmiProvider } = await import("wagmi");
-
-      // 1. Get projectId from https://cloud.reown.com
-      const projectId = "d80d873dcad4b8636dd7314223238a59";
-
-      // 2. Create a metadata object - optional
-      const metadata = {
-        name: "Realms World",
-        description: "Connect your Ethereum wallet to Realms World",
-        url: "https://account.realms.world",
-        icons: ["https://assets.reown.com/reown-profile-pic.png"],
-      };
-
-      // 3. Set the networks
-      const networks = [mainnet, sepolia];
-
-      // 4. Create Wagmi Adapter
-      const wagmiAdapter = new WagmiAdapter({
-        networks,
-        projectId,
-        ssr: true,
-      });
-
-      // 5. Create modal
-      createAppKit({
-        adapters: [wagmiAdapter],
-        networks,
-        projectId,
-        metadata,
-        features: {
-          analytics: true,
-        },
-      });
-
-      if (isMounted) {
-        setWagmiProvider(() => WagmiProvider);
-        setWagmiConfig(wagmiAdapter.wagmiConfig);
-      }
+    if (typeof window === "undefined" || initializedRef.current) {
+      return;
     }
 
-    if (typeof window !== "undefined") {
-      loadClientOnlyDeps();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  if (!WagmiProvider || !wagmiConfig) {
-    // Optionally render a loading spinner here
-    return null;
-  }
+    createAppKit({
+      adapters: [wagmiAdapter],
+      networks: [...NETWORKS],
+      projectId: PROJECT_ID,
+      metadata: METADATA,
+      features: {
+        analytics: true,
+      },
+    });
+    initializedRef.current = true;
+  }, [wagmiAdapter]);
 
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   );

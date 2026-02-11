@@ -36,31 +36,31 @@ export const useL2RealmsClaims = () => {
   });
 
   useEffect(() => {
-    if (balance !== undefined && balance !== previousBalance) {
-      const start = previousBalance ?? BigInt(Number(balance));
-      const end = BigInt(Number(balance));
-      const duration = 1000; // duration of the easing in ms
+    if (typeof balance === "bigint" && balance !== previousBalance) {
+      const start = previousBalance ?? balance;
+      const end = balance;
+      const duration = 1000;
       const startTime = Date.now();
 
       const ease = () => {
         const now = Date.now();
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const easedValue =
-          start + BigInt(Math.round(Number(end - start) * progress));
+        const scaledProgress = BigInt(Math.round(progress * 1000));
+        const easedValue = start + ((end - start) * scaledProgress) / 1000n;
 
         setEasedBalance(easedValue);
 
         if (progress < 1) {
           requestAnimationFrame(ease);
         } else {
-          setPreviousBalance(BigInt(Number(balance)));
+          setPreviousBalance(balance);
         }
       };
 
       ease();
     }
-  }, [balance, previousBalance, isFetching]);
+  }, [balance, previousBalance]);
 
   const { contract } = useContract({
     abi: RealmsABI,
@@ -81,9 +81,10 @@ export const useL2RealmsClaims = () => {
   const claimRewards = useCallback(async () => {
     const tx = await sendAsync();
     if (tx.transaction_hash) {
+      const claimAmount = typeof balance === "bigint" ? formatEther(balance) : "0";
       toast({
         title: "Realms' Lords Claim Submitted",
-        description: `Claim of ${formatEther(balance as bigint)} Lords in progress`,
+        description: `Claim of ${claimAmount} Lords in progress`,
       });
     }
     return tx;

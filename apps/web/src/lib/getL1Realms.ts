@@ -195,5 +195,7 @@ export const getL1UsersRealmsQueryOptions = (
 ) =>
   queryOptions({
     queryKey: ["getL1UsersRealms", input?.address],
-    queryFn: () => getL1UsersRealms({ data: input ?? {} }),
+    queryFn: () =>
+      input?.address != undefined ? getL1UsersRealms({ data: input }) : null,
+    enabled: !!input?.address,
   });

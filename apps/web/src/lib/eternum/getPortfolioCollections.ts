@@ -110,4 +110,5 @@ export const getAccountTokensQueryOptions = (
             },
           })
         : null,
+    enabled: !!input.address,
   });

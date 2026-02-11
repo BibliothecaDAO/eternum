@@ -57,6 +57,7 @@ function RouteComponent() {
             <SidebarGroupLabel>View On</SidebarGroupLabel>
             <a
               target="_blank"
+              rel="noopener noreferrer"
               href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62"
             >
               <Badge

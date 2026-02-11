@@ -62,13 +62,15 @@ function RouteComponent() {
     }),
   );
   const { data } = useCurrentDelegate();
+  const delegateAddress =
+    data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : "";
 
   const { data: userVotesQuery } = useQuery(
     getUserVotesQueryOptions({
       spaceIds: [SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID] as string],
       limit: 100,
       skip: 0,
-      voter: formatAddress(num.toHex(BigInt(data ?? 0))),
+      voter: delegateAddress,
     }),
   );
 
@@ -78,6 +80,8 @@ function RouteComponent() {
   );
 
   const proposal = proposalQuery.proposal;
+  const authorAddress = (proposal?.author.id ?? "0x0") as `0x${string}`;
+  const name = useStarkDisplayName(authorAddress);
 
   if (!proposal) {
     return <div>Proposal not found</div>;
@@ -124,8 +128,6 @@ function RouteComponent() {
       };
     }
   };
-  const name = useStarkDisplayName(proposal.author.id as `0x${string}`);
-
   const proposalStatus = getProposalStatus();
 
   return (
@@ -202,7 +204,7 @@ function RouteComponent() {
             {userVoteRef && (
               <>
                 <SidebarGroupLabel>You Voted:</SidebarGroupLabel>
-                <ProposalUserVoteBadge choice={vote.choice} />
+                <ProposalUserVoteBadge choice={userVoteRef.choice} />
               </>
             )}
           </SidebarGroup>

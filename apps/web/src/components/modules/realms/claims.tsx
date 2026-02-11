@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { ERC721 } from "@/abi/L2/ERC721";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,24 +6,11 @@ import { getRealmsLordsClaimsQueryOptions } from "@/lib/getRealmsLordsClaims";
 import {
   formatNumber,
   shortenAddress,
-  SUPPORTED_L2_CHAIN_ID,
 } from "@/utils/utils";
-import { useAccount, useExplorer, useReadContract } from "@starknet-react/core";
+import { useAccount, useExplorer } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
-import Confetti from "react-confetti";
 import { formatEther } from "viem";
-
-import { CollectionAddresses } from "@realms-world/constants";
-
-// Define a type for a claim transaction record.
-interface ClaimTransaction {
-  id: number;
-  transactionHash: string;
-  date: string;
-  amount: string;
-  status: string;
-}
 
 export const ClaimRewards = () => {
   const { address } = useAccount();
@@ -92,7 +77,11 @@ export const ClaimRewards = () => {
           </CardHeader>
           <CardContent>
             The Realms DAO voted to end weekly Lords Rewards in{" "}
-            <a href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62/proposal/53">
+            <a
+              href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62/proposal/53"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               BIP-80 and the Lords have now been directed to game rewards for
               Eterenum seasons
             </a>
@@ -130,6 +119,7 @@ export const ClaimRewards = () => {
                         href={explorer.transaction(tx.hash)}
                         className="flex items-center gap-2 hover:underline"
                         target="_blank"
+                        rel="noopener noreferrer"
                       >
                         {shortenAddress(tx.hash)} <ExternalLink />
                       </a>
