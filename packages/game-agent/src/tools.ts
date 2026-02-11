@@ -35,12 +35,12 @@ export function createObserveGameTool(adapter: GameAdapter<any>): AgentTool<type
 
 /**
  * Build a human-readable description block from action definitions.
- * The LLM sees this in the tool description to know what actions + params are valid.
+ * Used by the list_actions tool to return the full catalog on demand.
  */
-function buildActionDocsDescription(actions: ActionDefinition[]): string {
-  if (actions.length === 0) return "";
+function formatActionDocs(actions: ActionDefinition[]): string {
+  if (actions.length === 0) return "No actions registered.";
 
-  const lines: string[] = ["\n\nAvailable actions:\n"];
+  const lines: string[] = [];
   for (const action of actions) {
     lines.push(`- ${action.type}: ${action.description}`);
     for (const p of action.params) {
@@ -52,9 +52,47 @@ function buildActionDocsDescription(actions: ActionDefinition[]): string {
 }
 
 /**
+ * Creates a tool that returns the action catalog on demand.
+ * The LLM calls this when it needs to look up available actions and their parameters.
+ */
+export function createListActionsTool(actionDefs: ActionDefinition[]): AgentTool<any> {
+  const cached = formatActionDocs(actionDefs);
+
+  return {
+    name: "list_actions",
+    label: "List Actions",
+    description:
+      "Look up available game actions and their parameters. " +
+      "Call this before execute_action or simulate_action to find valid action types and required params.",
+    parameters: Type.Object({
+      filter: Type.Optional(
+        Type.String({ description: "Optional keyword to filter actions (e.g. 'trade', 'troop', 'build')" }),
+      ),
+    }),
+    async execute(_toolCallId, { filter }: { filter?: string }) {
+      if (actionDefs.length === 0) {
+        return { content: [{ type: "text", text: "No actions registered." }], details: { total: 0, filtered: false } };
+      }
+      let text = cached;
+      if (filter) {
+        const lower = filter.toLowerCase();
+        const filtered = actionDefs.filter(
+          (a) => a.type.toLowerCase().includes(lower) || a.description.toLowerCase().includes(lower),
+        );
+        text = filtered.length > 0 ? formatActionDocs(filtered) : `No actions matching "${filter}".`;
+      }
+      return {
+        content: [{ type: "text", text }],
+        details: { total: actionDefs.length, filtered: !!filter },
+      };
+    },
+  };
+}
+
+/**
  * Creates a tool that executes a game action on chain via the adapter.
- * When actionDefs are provided, the tool description is enriched with available actions
- * and actionType is constrained to a StringEnum of valid types.
+ * When actionDefs are provided, actionType is constrained to a StringEnum of valid types.
+ * Use list_actions to look up available actions and their parameters.
  */
 export function createExecuteActionTool(
   adapter: GameAdapter<any>,
@@ -69,13 +107,12 @@ export function createExecuteActionTool(
     params: Type.Optional(Type.Record(Type.String(), Type.Unknown(), { description: "Parameters for the action" })),
   });
 
-  const baseDesc = "Execute a game action on chain. Returns success status and transaction hash.";
-  const description = actionDefs ? baseDesc + buildActionDocsDescription(actionDefs) : baseDesc;
-
   return {
     name: "execute_action",
     label: "Execute Action",
-    description,
+    description:
+      "Execute a game action on chain. Returns success status and transaction hash. " +
+      "Use list_actions first to look up valid action types and their required params.",
     parameters: actionSchema,
     async execute(_toolCallId, { actionType, params }: { actionType: string; params?: Record<string, unknown> }) {
       const result = await adapter.executeAction({
@@ -92,7 +129,8 @@ export function createExecuteActionTool(
 
 /**
  * Creates a tool that simulates a game action (dry run) without executing on chain.
- * When actionDefs are provided, the tool description and enum mirror execute_action.
+ * When actionDefs are provided, actionType is constrained to a StringEnum of valid types.
+ * Use list_actions to look up available actions and their parameters.
  */
 export function createSimulateActionTool(
   adapter: GameAdapter<any>,
@@ -107,13 +145,12 @@ export function createSimulateActionTool(
     params: Type.Optional(Type.Record(Type.String(), Type.Unknown(), { description: "Parameters for the action" })),
   });
 
-  const baseDesc = "Simulate a game action without executing it. Returns predicted outcome and cost estimates.";
-  const description = actionDefs ? baseDesc + buildActionDocsDescription(actionDefs) : baseDesc;
-
   return {
     name: "simulate_action",
     label: "Simulate Action",
-    description,
+    description:
+      "Simulate a game action without executing it. Returns predicted outcome and cost estimates. " +
+      "Use list_actions first to look up valid action types and their required params.",
     parameters: simulateSchema,
     async execute(_toolCallId, { actionType, params }: { actionType: string; params?: Record<string, unknown> }) {
       const result = await adapter.simulateAction({
@@ -130,16 +167,19 @@ export function createSimulateActionTool(
 
 /**
  * Creates all game-related tools for the given adapter.
- * When actionDefs are provided, execute_action and simulate_action get enriched descriptions
- * and constrained actionType enums.
- * Returns [observe_game, execute_action, simulate_action].
+ * When actionDefs are provided, execute_action and simulate_action get constrained
+ * actionType enums, and a list_actions lookup tool is included.
  */
 export function createGameTools(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any>[] {
-  return [
+  const tools: AgentTool<any>[] = [
     createObserveGameTool(adapter),
     createExecuteActionTool(adapter, actionDefs),
     createSimulateActionTool(adapter, actionDefs),
   ];
+  if (actionDefs && actionDefs.length > 0) {
+    tools.push(createListActionsTool(actionDefs));
+  }
+  return tools;
 }
 
 const setAgentConfigSchema = Type.Object({
