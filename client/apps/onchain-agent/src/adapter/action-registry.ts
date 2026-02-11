@@ -2,7 +2,11 @@ import type { EternumClient } from "@bibliothecadao/client";
 import type { ActionResult, GameAction } from "@bibliothecadao/game-agent";
 import type { Account } from "starknet";
 
-type ActionHandler = (client: EternumClient, signer: Account, params: Record<string, unknown>) => Promise<ActionResult>;
+export type ActionHandler = (
+  client: EternumClient,
+  signer: Account,
+  params: Record<string, unknown>,
+) => Promise<ActionResult>;
 
 // ---------------------------------------------------------------------------
 // Registry internals
