@@ -265,7 +265,11 @@ interface ManifestData {
 
 // Calldata and Cairo generators moved to services/factory-config
 
-export const FactoryPage = () => {
+interface FactoryPageProps {
+  embedded?: boolean;
+}
+
+export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const navigate = useNavigate();
   const { account, accountName } = useAccountStore();
 
@@ -805,21 +809,27 @@ export const FactoryPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-slate-200 via-blue-200 to-indigo-200">
-      <div className="max-w-6xl mx-auto px-8 py-16">
-        <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />
+    <div
+      className={
+        embedded
+          ? "w-full overflow-x-hidden"
+          : "fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-black via-brown/80 to-black"
+      }
+    >
+      <div className={embedded ? "w-full" : "max-w-6xl mx-auto px-8 py-16"}>
+        {!embedded && <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />}
 
         {/* Unified Configuration and Deployment */}
         {parsedManifest && (
           <div className="mb-12">
-            <div className="relative overflow-hidden p-10 bg-white rounded-3xl shadow-xl shadow-indigo-500/10 border border-slate-200">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full blur-3xl" />
+            <div className="relative overflow-hidden p-10 panel-wood rounded-3xl shadow-xl shadow-gold/10 border border-gold/20">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-gold/15 to-transparent rounded-full blur-3xl" />
               <div className="relative space-y-8">
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-2xl font-bold text-slate-900">Ready to Deploy</h3>
+                      <h3 className="text-2xl font-bold text-gold">Ready to Deploy</h3>
                       <div className="flex items-center gap-2 px-3 py-1 bg-emerald-100 rounded-full">
                         <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
@@ -827,7 +837,7 @@ export const FactoryPage = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 text-sm text-slate-600">
+                    <div className="flex items-center gap-6 text-sm text-gold/70">
                       <span className="font-medium">{parsedManifest.contracts.length} Contracts</span>
                       <span className="font-medium">{parsedManifest.models.length} Models</span>
                       <span className="font-medium">{parsedManifest.events.length} Events</span>
@@ -836,13 +846,13 @@ export const FactoryPage = () => {
                 </div>
 
                 {/* Connection Status */}
-                <div className="flex items-center justify-between p-6 bg-white rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between p-6 bg-black/40 rounded-2xl border border-gold/20">
                   <div className="space-y-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Connected Wallet</span>
+                    <span className="text-xs font-bold text-gold/60 uppercase tracking-wider">Connected Wallet</span>
                     <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${account?.address ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      <div className={`h-2 w-2 rounded-full ${account?.address ? "bg-emerald-500" : "bg-gold/20"}`} />
                       {account?.address ? (
-                        <span className="text-sm font-mono text-slate-900">
+                        <span className="text-sm font-mono text-gold">
                           {`${account.address.slice(0, 6)}...${account.address.slice(-4)}`}
                         </span>
                       ) : (
@@ -850,18 +860,18 @@ export const FactoryPage = () => {
                       )}
                     </div>
                   </div>
-                  <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                  <div className="px-4 py-2 bg-black/40 rounded-xl border border-gold/20">
+                    <span className="text-xs font-bold text-gold/70 uppercase tracking-wide">
                       Network: {currentChain}
                     </span>
                   </div>
                 </div>
 
                 {/* Deploy Section - Always Visible */}
-                <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 shadow-sm">
+                <div className="space-y-6 p-6 bg-gradient-to-br from-black/40 to-black/20 rounded-2xl border-2 border-gold/20 shadow-sm">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Game Name</label>
+                      <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Game Name</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
@@ -872,24 +882,24 @@ export const FactoryPage = () => {
                             setCurrentWorldName(newName);
                           }}
                           placeholder="ccf-fire-gate-42"
-                          className="flex-1 px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-mono focus:outline-none transition-all"
+                          className="flex-1 px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-mono focus:outline-none transition-all"
                         />
                         <button
                           onClick={handleGenerateWorldName}
-                          className="p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors group"
+                          className="p-3 bg-gold/15 hover:bg-gold/25 rounded-xl transition-colors group"
                           title="Generate new game name"
                         >
-                          <RefreshCw className="w-5 h-5 text-blue-600 group-hover:rotate-180 transition-transform duration-500" />
+                          <RefreshCw className="w-5 h-5 text-gold/90 group-hover:rotate-180 transition-transform duration-500" />
                         </button>
                         <button
                           onClick={handleAddToQueue}
                           disabled={!worldName}
-                          className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                          className="button-gold px-4 py-3 bg-gold/20 hover:bg-gold/30 disabled:bg-gold/20 disabled:cursor-not-allowed text-gold text-sm font-semibold rounded-xl transition-colors"
                         >
                           Add
                         </button>
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-gold/60">
                         Generate a game name and add it to the queue to deploy now or later
                       </p>
                     </div>
@@ -897,11 +907,11 @@ export const FactoryPage = () => {
                     {/* Series selection */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+                        <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">
                           Series (optional)
                         </label>
                         {(seriesLoading || seriesFetching) && account && (
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <div className="flex items-center gap-2 text-xs text-gold/60">
                             <Loader2 className="w-3 h-3 animate-spin" />
                             Fetching your series
                           </div>
@@ -913,7 +923,7 @@ export const FactoryPage = () => {
                           value={seriesName}
                           onChange={(e) => setSeriesName(e.target.value)}
                           placeholder="ccf-series-wars"
-                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                          className="w-full px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-sans focus:outline-none transition-all"
                         />
                         <input
                           type="number"
@@ -922,12 +932,12 @@ export const FactoryPage = () => {
                           value={seriesGameNumber}
                           onChange={(e) => setSeriesGameNumber(e.target.value.replace(/[^\d]/g, ""))}
                           placeholder="Game #"
-                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                          className="w-full px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-sans focus:outline-none transition-all"
                         />
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="font-medium text-slate-700">Series status:</span>
-                        <span className="text-slate-500">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gold/60">
+                        <span className="font-medium text-gold/90">Series status:</span>
+                        <span className="text-gold/60">
                           {seriesName ? `${seriesName} #${seriesGameNumber || "0"}` : "Not configured"}
                         </span>
                       </div>
@@ -945,36 +955,36 @@ export const FactoryPage = () => {
                                   key={series.paddedName}
                                   type="button"
                                   onClick={() => handleSeriesSuggestion(series)}
-                                  className="flex flex-col items-start gap-0.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-left text-[11px] text-slate-600 hover:border-blue-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                                  className="flex flex-col items-start gap-0.5 px-3 py-2 bg-black/40 border border-gold/20 rounded-2xl text-left text-[11px] text-gold/70 hover:border-gold/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60"
                                 >
-                                  <span className="font-semibold text-slate-900">{series.name}</span>
-                                  <span className="text-[10px] text-slate-500">
+                                  <span className="font-semibold text-gold">{series.name}</span>
+                                  <span className="text-[10px] text-gold/60">
                                     Last game #{series.lastGameNumber?.toString() ?? "n/a"}
                                   </span>
                                 </button>
                               ))}
                             </div>
                           ) : (
-                            <p className="text-[11px] text-slate-500">No series found for this wallet.</p>
+                            <p className="text-[11px] text-gold/60">No series found for this wallet.</p>
                           )}
                         </div>
                       ) : (
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-[11px] text-gold/60">
                           Connect your wallet to list the series you control.
                         </p>
                       )}
                     </div>
 
                     {/* Create Series */}
-                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-white/70 p-4">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Create Series</label>
+                    <div className="space-y-2 rounded-2xl border border-gold/20 bg-black/40 p-4">
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Create Series</label>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <input
                           type="text"
                           value={seriesConfigName}
                           onChange={(e) => setSeriesConfigName(e.target.value)}
                           placeholder="ccf-series-wars"
-                          className="flex-1 px-4 py-2.5 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                          className="flex-1 px-4 py-2.5 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-sans focus:outline-none transition-all"
                         />
                         <button
                           onClick={handleCreateSeries}
@@ -984,7 +994,7 @@ export const FactoryPage = () => {
                             !seriesConfigName.trim() ||
                             seriesConfigTx.status === "running"
                           }
-                          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                          className="button-gold px-4 py-2.5 bg-gold/20 hover:bg-gold/30 disabled:bg-gold/20 disabled:cursor-not-allowed text-gold text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                         >
                           {seriesConfigTx.status === "running" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                           Create Series
@@ -998,7 +1008,7 @@ export const FactoryPage = () => {
                             href={getExplorerTxUrl(currentChain as any, seriesConfigTx.hash)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700 underline"
+                            className="text-gold/90 hover:text-gold underline"
                           >
                             View Tx
                           </a>
@@ -1014,7 +1024,7 @@ export const FactoryPage = () => {
                       <div className="space-y-2">
                         <button
                           onClick={() => setShowStoredNames(!showStoredNames)}
-                          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                          className="flex items-center gap-2 text-sm font-semibold text-gold/90 hover:text-gold transition-colors"
                         >
                           {showStoredNames ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           Game List ({storedWorldNames.length})
@@ -1029,8 +1039,8 @@ export const FactoryPage = () => {
 
                               return (
                                 <div key={name} className="space-y-2">
-                                  <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
-                                    <span className="flex-1 text-xs font-mono text-slate-700">{name}</span>
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-gold/20 hover:border-gold/40 transition-colors">
+                                    <span className="flex-1 text-xs font-mono text-gold/90">{name}</span>
 
                                     {/* Copy Button */}
                                     <button
@@ -1041,7 +1051,7 @@ export const FactoryPage = () => {
                                           console.error("Failed to copy world name", err);
                                         }
                                       }}
-                                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded transition-colors"
+                                      className="p-1 text-gold/40 hover:text-gold/90 hover:bg-black/40 rounded transition-colors"
                                       title="Copy world name"
                                       aria-label="Copy world name"
                                     >
@@ -1051,25 +1061,25 @@ export const FactoryPage = () => {
                                     {/* Remove Button */}
                                     <button
                                       onClick={() => handleRemoveFromQueue(name)}
-                                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      className="p-1 text-gold/40 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                                       title="Remove from queue"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
 
                                     {/* Divider */}
-                                    <div className="h-4 w-px bg-slate-200" />
+                                    <div className="h-4 w-px bg-gold/20" />
 
                                     {/* Verifying Deployment Status */}
                                     {verifyingDeployment[name] && (
-                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded border border-gold/20">
                                         <Loader2 className="w-3 h-3 animate-spin" />
                                         Verifying...
                                       </span>
                                     )}
 
                                     {autoDeployState[name] && !verifyingDeployment[name] && (
-                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded border border-gold/20">
                                         <Loader2 className="w-3 h-3 animate-spin" />
                                         {autoDeployState[name].status === "stopping" ? "Stopping" : "Deploying"}{" "}
                                         {autoDeployState[name].current}/{autoDeployState[name].total}
@@ -1091,7 +1101,7 @@ export const FactoryPage = () => {
                                         <button
                                           onClick={() => handleQueueDeploy(name)}
                                           disabled={!account || !factoryAddress || tx.status === "running"}
-                                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
+                                          className="button-gold px-3 py-1 bg-gold/20 hover:bg-gold/30 disabled:bg-gold/20 disabled:cursor-not-allowed text-gold text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
                                         >
                                           {tx.status === "running" && getTxStatusIcon()}
                                           {factoryDeployRepeats > 1 ? `Deploy x${factoryDeployRepeats}` : "Deploy"}
@@ -1104,7 +1114,7 @@ export const FactoryPage = () => {
                                         <button
                                           onClick={() => handleStopAutoDeploy(name)}
                                           disabled={autoDeployState[name].status === "stopping"}
-                                          className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
+                                          className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-gold/10 disabled:text-gold/40 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
                                         >
                                           {autoDeployState[name].status === "stopping" ? "Stopping..." : "Stop"}
                                         </button>
@@ -1114,7 +1124,7 @@ export const FactoryPage = () => {
                                     {!isWorldConfigured(name) && (
                                       <button
                                         onClick={() => setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))}
-                                        className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
+                                        className="px-3 py-1 bg-black/40 hover:bg-gold/10 text-gold/90 text-xs font-semibold rounded-md border border-gold/20 hover:border-gold/20 transition-colors"
                                       >
                                         {worldConfigOpen[name]
                                           ? "Hide Config"
@@ -1139,19 +1149,19 @@ export const FactoryPage = () => {
                                             Indexer On
                                           </a>
                                         ) : creatingIndexer[name] ? (
-                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 cursor-wait">
+                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 cursor-wait">
                                             <Loader2 className="w-3 h-3 animate-spin" />
                                             Creating Indexer...
                                           </span>
                                         ) : isWorldOnCooldown(name) ? (
-                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
+                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-gold/10 text-gold/60 text-xs font-semibold rounded-md border border-gold/20 cursor-not-allowed">
                                             Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
                                             {getRemainingCooldown(name) % 60}s
                                           </span>
                                         ) : (
                                           <button
                                             onClick={() => handleCreateIndexer(name)}
-                                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                                            className="px-3 py-1 bg-black/40 hover:bg-gold/15 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 hover:border-gold/40 transition-colors"
                                           >
                                             Create Indexer
                                           </button>
@@ -1160,7 +1170,7 @@ export const FactoryPage = () => {
                                     )}
                                   </div>
                                   {metadataParts.length > 0 && (
-                                    <p className="text-[11px] text-slate-500">Series: {metadataParts.join(" ")}</p>
+                                    <p className="text-[11px] text-gold/60">Series: {metadataParts.join(" ")}</p>
                                   )}
                                   {indexerActionErrors[name] && !worldIndexerStatus[name] && (
                                     <p className="text-[11px] text-red-600">{indexerActionErrors[name]}</p>
@@ -1170,17 +1180,17 @@ export const FactoryPage = () => {
 
                                   {/* Per-world Config Panel */}
                                   {worldConfigOpen[name] && (
-                                    <div className="ml-3 pl-3 py-4 border-l-2 border-slate-200">
-                                      <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
+                                    <div className="ml-3 pl-3 py-4 border-l-2 border-gold/20">
+                                      <div className="p-4 bg-black/40 border border-gold/20 rounded-xl shadow-sm space-y-3">
                                         <div className="flex items-center justify-between">
                                           <div>
-                                            <p className="text-sm font-semibold text-slate-800">Configure Game</p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-sm font-semibold text-gold">Configure Game</p>
+                                            <p className="text-xs text-gold/60">
                                               Edit overrides any time. Set runs a live deployment check.
                                             </p>
                                           </div>
                                           {worldConfigTx[name]?.status === "running" && (
-                                            <span className="inline-flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
+                                            <span className="inline-flex items-center gap-2 text-xs text-gold/80 bg-black/40 border border-gold/20 px-2 py-1 rounded">
                                               <Loader2 className="w-3 h-3 animate-spin" /> Running
                                             </span>
                                           )}
@@ -1193,7 +1203,7 @@ export const FactoryPage = () => {
                                                 href={getExplorerTxUrl(currentChain as any, worldConfigTx[name].hash)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                                className="text-xs text-gold/90 hover:text-gold underline"
                                               >
                                                 View Tx
                                               </a>
@@ -1216,7 +1226,7 @@ export const FactoryPage = () => {
                                         {/* startMainAt override */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Game Start Time
                                             </label>
                                             <input
@@ -1288,9 +1298,9 @@ export const FactoryPage = () => {
                                                 }
                                                 setStartMainAtOverrides((p) => ({ ...p, [name]: selected }));
                                               }}
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
                                             </p>
                                             {startMainAtErrors[name] && (
@@ -1298,7 +1308,7 @@ export const FactoryPage = () => {
                                             )}
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Settling Start Time
                                             </label>
                                             <input
@@ -1369,9 +1379,9 @@ export const FactoryPage = () => {
                                                 }
                                                 setStartSettlingAtOverrides((p) => ({ ...p, [name]: selected }));
                                               }}
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
                                             </p>
                                             {startSettlingAtErrors[name] && (
@@ -1379,7 +1389,7 @@ export const FactoryPage = () => {
                                             )}
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Dev Mode</label>
+                                            <label className="text-xs font-semibold text-gold/70">Dev Mode</label>
                                             <div className="flex items-center gap-2">
                                               <input
                                                 id={`dev-mode-${name}`}
@@ -1394,14 +1404,14 @@ export const FactoryPage = () => {
                                                 }
                                                 className="h-4 w-4 accent-blue-600"
                                               />
-                                              <label htmlFor={`dev-mode-${name}`} className="text-xs text-slate-700">
+                                              <label htmlFor={`dev-mode-${name}`} className="text-xs text-gold/90">
                                                 Enable developer mode for this world
                                               </label>
                                             </div>
-                                            <p className="text-[10px] text-slate-500">Controls in-game dev features.</p>
+                                            <p className="text-[10px] text-gold/60">Controls in-game dev features.</p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">MMR System</label>
+                                            <label className="text-xs font-semibold text-gold/70">MMR System</label>
                                             <div className="flex items-center gap-2">
                                               <input
                                                 id={`mmr-enabled-${name}`}
@@ -1416,11 +1426,11 @@ export const FactoryPage = () => {
                                                 }
                                                 className="h-4 w-4 accent-blue-600"
                                               />
-                                              <label htmlFor={`mmr-enabled-${name}`} className="text-xs text-slate-700">
+                                              <label htmlFor={`mmr-enabled-${name}`} className="text-xs text-gold/90">
                                                 Enable MMR tracking for this world
                                               </label>
                                             </div>
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Tracks player skill ratings across Blitz games.
                                             </p>
                                           </div>
@@ -1428,7 +1438,7 @@ export const FactoryPage = () => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Game Duration (hours)
                                             </label>
                                             <input
@@ -1445,14 +1455,14 @@ export const FactoryPage = () => {
                                                   [name]: Number(e.target.value || 0),
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Applies to season.durationSeconds.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Game Duration (minutes)
                                             </label>
                                             <input
@@ -1470,12 +1480,12 @@ export const FactoryPage = () => {
                                                   [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
                                             />
-                                            <p className="text-[10px] text-slate-500">0–59 minutes (added to hours).</p>
+                                            <p className="text-[10px] text-gold/60">0–59 minutes (added to hours).</p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Factory Address Override
                                             </label>
                                             <input
@@ -1490,14 +1500,14 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Used by set_factory_address when configuring this world.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Single Realm Mode
                                             </label>
                                             <div className="flex items-center gap-2">
@@ -1519,12 +1529,12 @@ export const FactoryPage = () => {
                                               />
                                               <label
                                                 htmlFor={`single-realm-mode-${name}`}
-                                                className="text-xs text-slate-700"
+                                                className="text-xs text-gold/90"
                                               >
                                                 Enable single realm mode for this world
                                               </label>
                                             </div>
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Controls settlement spawning behavior.
                                             </p>
                                           </div>
@@ -1533,7 +1543,7 @@ export const FactoryPage = () => {
                                         {/* Blitz Registration Fee Configuration */}
                                         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Blitz Registration Fee Amount
                                             </label>
                                             <input
@@ -1543,15 +1553,15 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setBlitzFeeAmountOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Default: {defaultBlitzRegistration.amount} with precision{" "}
                                               {defaultBlitzRegistration.precision}.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Fee Precision (decimals)
                                             </label>
                                             <input
@@ -1566,14 +1576,14 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setBlitzFeePrecisionOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Default: {defaultBlitzRegistration.precision} decimals.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Blitz Registration Fee Token
                                             </label>
                                             <input
@@ -1588,14 +1598,14 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Default: {defaultBlitzRegistration.token}. Leave empty for default.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Registration Count Max
                                             </label>
                                             <input
@@ -1616,15 +1626,15 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">Default: 30.</p>
+                                            <p className="text-[10px] text-gold/60">Default: 30.</p>
                                           </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Blitz Fee Recipient
                                             </label>
                                             <input
@@ -1637,11 +1647,11 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setBlitzFeeRecipientOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Registration Delay (seconds)
                                             </label>
                                             <input
@@ -1662,11 +1672,11 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Registration Period (seconds)
                                             </label>
                                             <input
@@ -1687,14 +1697,14 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Bridge Close After End (seconds)
                                             </label>
                                             <input
@@ -1714,11 +1724,11 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Point Registration Close (seconds)
                                             </label>
                                             <input
@@ -1741,14 +1751,14 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Settlement Center</label>
+                                            <label className="text-xs font-semibold text-gold/70">Settlement Center</label>
                                             <input
                                               type="number"
                                               min={0}
@@ -1761,11 +1771,11 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setSettlementCenterOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Settlement Base Distance
                                             </label>
                                             <input
@@ -1783,11 +1793,11 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Settlement Subsequent Distance
                                             </label>
                                             <input
@@ -1805,14 +1815,14 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Trade Max Count</label>
+                                            <label className="text-xs font-semibold text-gold/70">Trade Max Count</label>
                                             <input
                                               type="number"
                                               min={0}
@@ -1825,11 +1835,11 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setTradeMaxCountOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Battle Grace Ticks</label>
+                                            <label className="text-xs font-semibold text-gold/70">Battle Grace Ticks</label>
                                             <input
                                               type="number"
                                               min={0}
@@ -1845,11 +1855,11 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Battle Hyperstructure Grace Ticks
                                             </label>
                                             <input
@@ -1867,14 +1877,14 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Battle Delay (seconds)</label>
+                                            <label className="text-xs font-semibold text-gold/70">Battle Delay (seconds)</label>
                                             <input
                                               type="number"
                                               min={0}
@@ -1887,11 +1897,11 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setBattleDelaySecondsOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Agent Max Current</label>
+                                            <label className="text-xs font-semibold text-gold/70">Agent Max Current</label>
                                             <input
                                               type="number"
                                               min={0}
@@ -1904,11 +1914,11 @@ export const FactoryPage = () => {
                                               onChange={(e) =>
                                                 setAgentMaxCurrentCountOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Agent Max Lifetime</label>
+                                            <label className="text-xs font-semibold text-gold/70">Agent Max Lifetime</label>
                                             <input
                                               type="number"
                                               min={0}
@@ -1924,7 +1934,7 @@ export const FactoryPage = () => {
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                         </div>
@@ -2114,7 +2124,7 @@ export const FactoryPage = () => {
                                                 } catch {}
                                               }
                                             }}
-                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                            className="button-gold px-4 py-2 bg-gold/20 hover:bg-gold/30 text-gold text-xs font-semibold rounded-md disabled:bg-gold/20 disabled:cursor-not-allowed"
                                             disabled={
                                               !account ||
                                               worldConfigTx[name]?.status === "running" ||
@@ -2130,7 +2140,7 @@ export const FactoryPage = () => {
                                               href={getExplorerTxUrl(currentChain as any, worldConfigTx[name]!.hash)}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              className="text-xs text-blue-700 hover:underline ml-2"
+                                              className="text-xs text-gold/90 hover:underline ml-2"
                                             >
                                               View Tx
                                             </a>
@@ -2162,7 +2172,7 @@ export const FactoryPage = () => {
           <div className="space-y-4 mt-12">
             <button
               onClick={() => setShowDevConfig(!showDevConfig)}
-              className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-2 text-sm font-semibold text-gold/70 hover:text-gold transition-colors"
             >
               {showDevConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               Are you a dev?
@@ -2171,28 +2181,28 @@ export const FactoryPage = () => {
             {showDevConfig && (
               <div className="space-y-8">
                 {/* Configuration Section */}
-                <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-200">
-                  <h3 className="text-lg font-bold text-slate-900 mb-4">Configuration</h3>
+                <div className="p-6 bg-black/40 rounded-2xl border-2 border-gold/20">
+                  <h3 className="text-lg font-bold text-gold mb-4">Configuration</h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">
                         Factory Address
                       </label>
                       <input
                         type="text"
                         value={factoryAddress}
                         disabled
-                        className="w-full px-4 py-3 bg-slate-200 border-2 border-slate-300 rounded-xl text-slate-500 font-mono text-sm cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-gold/20 border-2 border-gold/20 rounded-xl text-gold/60 font-mono text-sm cursor-not-allowed"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Version</label>
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Version</label>
                       <input
                         type="text"
                         value={version}
                         onChange={(e) => setVersion(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 focus:outline-none transition-all"
+                        className="w-full px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold focus:outline-none transition-all"
                       />
                       {version !== DEFAULT_VERSION && (
                         <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -2206,19 +2216,19 @@ export const FactoryPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Namespace</label>
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Namespace</label>
                       <input
                         type="text"
                         value={namespace}
                         disabled
-                        className="w-full px-4 py-3 bg-slate-200 border-2 border-slate-300 rounded-xl text-slate-500 cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-gold/20 border-2 border-gold/20 rounded-xl text-gold/60 cursor-not-allowed"
                       />
                     </div>
 
                     <button
                       onClick={handleSetConfig}
                       disabled={!factoryAddress || !account || tx.status === "running"}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                      className="button-gold w-full px-6 py-3 bg-gradient-to-r from-gold/20 to-gold/20 hover:from-gold/30 hover:to-gold/30 disabled:from-gold/20 disabled:to-gold/20 disabled:cursor-not-allowed text-gold font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {tx.status === "running" && getTxStatusIcon()}
                       <span>Set Configuration</span>
@@ -2236,7 +2246,7 @@ export const FactoryPage = () => {
                             href={getExplorerTxUrl(currentChain as any, tx.hash)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline"
+                            className="text-sm font-semibold text-gold/90 hover:text-gold underline"
                           >
                             View Transaction
                           </a>
@@ -2260,75 +2270,75 @@ export const FactoryPage = () => {
                 {/* Deployment Summary Section */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-2xl font-bold text-slate-900">Deployment Summary</h3>
+                    <h3 className="text-2xl font-bold text-gold">Deployment Summary</h3>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setShowFullConfig((v) => !v)}
-                        className="px-6 py-3 text-sm font-semibold text-slate-700 hover:text-white bg-slate-100 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-teal-600 border-2 border-slate-200 hover:border-transparent rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
+                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
                       >
                         {showFullConfig ? "Hide" : "View"} Full Config
                       </button>
                       <button
                         onClick={() => setShowCairoOutput(!showCairoOutput)}
-                        className="px-6 py-3 text-sm font-semibold text-slate-700 hover:text-white bg-slate-100 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 border-2 border-slate-200 hover:border-transparent rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-blue-500/20"
+                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-gold/20"
                       >
                         {showCairoOutput ? "Hide" : "View"} Cairo Code
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-8 bg-white border-2 border-slate-200 rounded-3xl shadow-lg space-y-1">
-                    <div className="flex items-center justify-between py-5 border-b-2 border-slate-100">
-                      <span className="text-sm font-bold text-slate-600 uppercase tracking-wide">World Class Hash</span>
-                      <span className="text-sm text-slate-900 font-mono bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
+                  <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-lg space-y-1">
+                    <div className="flex items-center justify-between py-5 border-b-2 border-gold/10">
+                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">World Class Hash</span>
+                      <span className="text-sm text-gold font-mono bg-black/40 px-4 py-2 rounded-lg border border-gold/20">
                         {parsedManifest.world.class_hash.slice(0, 20)}...
                       </span>
                     </div>
-                    <div className="flex items-center justify-between py-5 border-b-2 border-slate-100">
-                      <span className="text-sm font-bold text-slate-600 uppercase tracking-wide">Namespace</span>
-                      <span className="text-sm font-semibold text-slate-900 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between py-5 border-b-2 border-gold/10">
+                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">Namespace</span>
+                      <span className="text-sm font-semibold text-gold bg-black/40 px-4 py-2 rounded-lg border border-gold/20">
                         {namespace}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-5">
-                      <span className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">
                         Calldata Arguments
                       </span>
-                      <span className="text-sm font-bold text-slate-900 font-mono bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-200">
+                      <span className="text-sm font-bold text-gold font-mono bg-black/40 px-4 py-2 rounded-lg border border-gold/20">
                         {generatedCalldata.length}
                       </span>
                     </div>
                   </div>
 
                   {showCairoOutput && (
-                    <div className="p-8 bg-slate-900 border-2 border-slate-700 rounded-3xl shadow-2xl">
-                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                          <Download className="w-5 h-5 text-white" />
+                    <div className="p-8 panel-wood border-2 border-gold/20 rounded-3xl shadow-2xl">
+                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
+                        <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
+                          <Download className="w-5 h-5 text-gold" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-white">Generated Cairo Code</p>
-                          <p className="text-xs text-slate-400">Factory configuration output</p>
+                          <p className="text-sm font-bold text-gold">Generated Cairo Code</p>
+                          <p className="text-xs text-gold/60">Factory configuration output</p>
                         </div>
                       </div>
-                      <pre className="text-xs text-emerald-400 overflow-x-auto leading-relaxed font-mono">
+                      <pre className="text-xs text-gold/90 overflow-x-auto leading-relaxed font-mono">
                         {generateCairoOutput(parsedManifest, version, maxActions, defaultNamespaceWriterAll, namespace)}
                       </pre>
                     </div>
                   )}
 
                   {showFullConfig && (
-                    <div className="p-8 bg-white border-2 border-slate-200 rounded-3xl shadow-lg">
-                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                          <Download className="w-5 h-5 text-white" />
+                    <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-lg">
+                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
+                        <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
+                          <Download className="w-5 h-5 text-gold" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900">Full Configuration (read-only)</p>
-                          <p className="text-xs text-slate-500">Effective config for current chain</p>
+                          <p className="text-sm font-bold text-gold">Full Configuration (read-only)</p>
+                          <p className="text-xs text-gold/60">Effective config for current chain</p>
                         </div>
                       </div>
-                      <pre className="text-xs text-slate-800 overflow-x-auto leading-relaxed font-mono whitespace-pre-wrap">
+                      <pre className="text-xs text-gold overflow-x-auto leading-relaxed font-mono whitespace-pre-wrap">
                         {JSON.stringify(eternumConfig, null, 2)}
                       </pre>
                     </div>
