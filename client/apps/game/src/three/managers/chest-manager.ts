@@ -16,6 +16,7 @@ import { applyLabelTransitions, transitionManager } from "../utils/labels/label-
 import { gltfLoader } from "../utils/utils";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
+import { waitForVisualSettle } from "./manager-update-convergence";
 
 const MAX_INSTANCES = 1000;
 
@@ -251,7 +252,7 @@ export class ChestManager {
     }
 
     // Create and track the chunk switch promise
-    this.chunkSwitchPromise = Promise.resolve().then(() => {
+    this.chunkSwitchPromise = (async () => {
       if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
         return;
       }
@@ -259,7 +260,8 @@ export class ChestManager {
         return;
       }
       this.renderVisibleChests(chunkKey);
-    });
+      await waitForVisualSettle();
+    })();
 
     try {
       await this.chunkSwitchPromise;

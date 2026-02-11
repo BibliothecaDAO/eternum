@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   shouldForceShortcutNavigationRefresh,
+  shouldRunShortcutForceFallback,
   resolveRefreshExecutionToken,
   resolveChunkSwitchActions,
   shouldApplyRefreshToken,
@@ -8,14 +9,15 @@ import {
   shouldRescheduleRefreshToken,
   shouldAcceptTransitionToken,
   shouldRunManagerUpdate,
+  waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
-  it("rolls back when fetch failed and target chunk is still active", () => {
+  it("rolls back when fetch failed and transition is still current", () => {
     expect(
       resolveChunkSwitchActions({
         fetchSucceeded: false,
-        currentChunk: "24,24",
+        isCurrentTransition: true,
         targetChunk: "24,24",
         previousChunk: "0,0",
       }),
@@ -31,7 +33,7 @@ describe("resolveChunkSwitchActions", () => {
     expect(
       resolveChunkSwitchActions({
         fetchSucceeded: true,
-        currentChunk: "24,24",
+        isCurrentTransition: true,
         targetChunk: "24,24",
         previousChunk: "0,0",
       }),
@@ -43,11 +45,11 @@ describe("resolveChunkSwitchActions", () => {
     });
   });
 
-  it("ignores stale transitions when current chunk changed", () => {
+  it("ignores stale transitions when transition token is no longer current", () => {
     expect(
       resolveChunkSwitchActions({
         fetchSucceeded: true,
-        currentChunk: "48,48",
+        isCurrentTransition: false,
         targetChunk: "24,24",
         previousChunk: "0,0",
       }),
@@ -63,7 +65,7 @@ describe("resolveChunkSwitchActions", () => {
     expect(
       resolveChunkSwitchActions({
         fetchSucceeded: true,
-        currentChunk: "24,24",
+        isCurrentTransition: true,
         targetChunk: "24,24",
         previousChunk: "24,24",
       }),
@@ -197,6 +199,7 @@ describe("shouldForceShortcutNavigationRefresh", () => {
       shouldForceShortcutNavigationRefresh({
         isShortcutNavigation: true,
         transitionDurationSeconds: 0,
+        chunkChanged: true,
       }),
     ).toBe(true);
   });
@@ -206,6 +209,17 @@ describe("shouldForceShortcutNavigationRefresh", () => {
       shouldForceShortcutNavigationRefresh({
         isShortcutNavigation: true,
         transitionDurationSeconds: 0.25,
+        chunkChanged: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not force refresh when shortcut target stays in the same chunk", () => {
+    expect(
+      shouldForceShortcutNavigationRefresh({
+        isShortcutNavigation: true,
+        transitionDurationSeconds: 0,
+        chunkChanged: false,
       }),
     ).toBe(false);
   });
@@ -215,7 +229,120 @@ describe("shouldForceShortcutNavigationRefresh", () => {
       shouldForceShortcutNavigationRefresh({
         isShortcutNavigation: false,
         transitionDurationSeconds: 0,
+        chunkChanged: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe("shouldRunShortcutForceFallback", () => {
+  it("runs fallback when chunk changed and initial shortcut switch did not switch", () => {
+    expect(
+      shouldRunShortcutForceFallback({
+        isShortcutNavigation: true,
+        chunkChanged: true,
+        initialSwitchSucceeded: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not run fallback when initial shortcut switch already succeeded", () => {
+    expect(
+      shouldRunShortcutForceFallback({
+        isShortcutNavigation: true,
+        chunkChanged: true,
+        initialSwitchSucceeded: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not run fallback when chunk did not change", () => {
+    expect(
+      shouldRunShortcutForceFallback({
+        isShortcutNavigation: true,
+        chunkChanged: false,
+        initialSwitchSucceeded: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not run fallback for non-shortcut navigation", () => {
+    expect(
+      shouldRunShortcutForceFallback({
+        isShortcutNavigation: false,
+        chunkChanged: true,
+        initialSwitchSucceeded: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("waitForChunkTransitionToSettle", () => {
+  it("waits through transition promise replacement races", async () => {
+    let resolveFirst: (() => void) | undefined;
+    let resolveSecond: (() => void) | undefined;
+    let reads = 0;
+
+    const first = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const second = new Promise<void>((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    const getTransitionPromise = () => {
+      reads += 1;
+      if (reads <= 2) return first;
+      if (reads === 3) return second;
+      return null;
+    };
+
+    const waitPromise = waitForChunkTransitionToSettle(getTransitionPromise);
+    resolveFirst?.();
+
+    let settled = false;
+    void waitPromise.then(() => {
+      settled = true;
+    });
+
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    resolveSecond?.();
+    await waitPromise;
+    expect(settled).toBe(true);
+  });
+
+  it("invokes error handler and continues waiting for newer transitions", async () => {
+    let rejectFirst: ((error?: unknown) => void) | undefined;
+    let resolveSecond: (() => void) | undefined;
+    const capturedErrors: unknown[] = [];
+    let reads = 0;
+
+    const first = new Promise<void>((_, reject) => {
+      rejectFirst = reject;
+    });
+    const second = new Promise<void>((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    const getTransitionPromise = () => {
+      reads += 1;
+      if (reads <= 2) return first;
+      if (reads === 3) return second;
+      return null;
+    };
+
+    const waitPromise = waitForChunkTransitionToSettle(getTransitionPromise, (error) => {
+      capturedErrors.push(error);
+    });
+
+    const failure = new Error("first switch failed");
+    rejectFirst?.(failure);
+    await Promise.resolve();
+    expect(capturedErrors).toEqual([failure]);
+
+    resolveSecond?.();
+    await waitPromise;
   });
 });
