@@ -157,6 +157,11 @@ Exit criteria:
 
 1. No reproducible edge mismatch at chunk boundaries.
 
+Completion notes:
+
+1. In progress. Initial parity pass exposed interaction regressions (unit tab/click), so bounds-semantic changes were rolled back.
+2. Next pass should keep existing production semantics while converging all managers/interaction on one shared policy.
+
 ### M4: Lifecycle and Resume Cleanup
 
 Objectives:
@@ -208,3 +213,4 @@ Exit criteria:
 | 2026-02-10 | M0        | Completed | Added runtime chunk diagnostics in `worldmap.tsx`, added helper+tests, verified targeted chunk test suites. |
 | 2026-02-10 | M1        | Completed | Transactional chunk switch core implemented with commit-phase chunk authority, overlap bounds handoff, and token-keyed stale switch actions. |
 | 2026-02-11 | M2        | Completed | Manager convergence hardening shipped: structure update is awaitable through visual settle; army/chest completion semantics aligned; convergence utility + tests added. |
+| 2026-02-11 | M3        | In Progress | Initial parity attempt surfaced tab/click regressions; semantic shift rolled back, follow-up will preserve existing window semantics while unifying usage. |

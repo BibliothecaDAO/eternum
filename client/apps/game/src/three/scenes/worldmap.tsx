@@ -2527,13 +2527,9 @@ export default class WorldmapScene extends HexagonScene {
   isColRowInVisibleChunk(col: number, row: number) {
     const startRow = parseInt(this.currentChunk.split(",")[0]);
     const startCol = parseInt(this.currentChunk.split(",")[1]);
-    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const insideChunkBounds =
-      col >= chunkCenterCol - this.renderChunkSize.width / 2 &&
-      col <= chunkCenterCol + this.renderChunkSize.width / 2 &&
-      row >= chunkCenterRow - this.renderChunkSize.height / 2 &&
-      row <= chunkCenterRow + this.renderChunkSize.height / 2;
+      col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
 
     if (!insideChunkBounds) {
       return false;
