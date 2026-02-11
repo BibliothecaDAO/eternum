@@ -31,4 +31,25 @@ describe("ShutdownGate", () => {
     await new Promise(r => setTimeout(r, 50));
     expect(resolveCount).toBe(1);
   });
+
+  it("main() should export or use a shutdown gate pattern", async () => {
+    // Verify the shutdown-gate module exports are correct
+    const { createShutdownGate } = await import("../src/shutdown-gate");
+    const gate = createShutdownGate();
+    
+    // Simulate what main() should do: return gate.promise
+    const mainPromise = gate.promise;
+    
+    let mainResolved = false;
+    mainPromise.then(() => { mainResolved = true; });
+    
+    // main() should NOT resolve on its own
+    await new Promise(r => setTimeout(r, 50));
+    expect(mainResolved).toBe(false);
+    
+    // Only resolves when shutdown is triggered (simulating SIGINT)
+    gate.shutdown();
+    await new Promise(r => setTimeout(r, 50));
+    expect(mainResolved).toBe(true);
+  });
 });

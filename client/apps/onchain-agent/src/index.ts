@@ -13,6 +13,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AccountInterface } from "starknet";
+import { createShutdownGate } from "./shutdown-gate";
 import { type AgentConfig, loadConfig } from "./config";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
@@ -430,6 +431,8 @@ export async function main() {
   console.log("Agent running. Press Ctrl+C to exit.\n");
 
   // 7. Graceful shutdown
+  const gate = createShutdownGate();
+
   const shutdown = async () => {
     console.log("\nShutting down...");
     heartbeat.stop();
@@ -437,11 +440,13 @@ export async function main() {
     await disposeAgent();
     disposeTui();
     services.client.disconnect();
-    process.exit(0);
+    gate.shutdown();
   };
 
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+
+  return gate.promise;
 }
 
 function isDirectExecution(metaUrl: string): boolean {
