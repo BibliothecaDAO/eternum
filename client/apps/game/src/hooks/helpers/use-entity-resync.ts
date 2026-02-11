@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
-export const ENTITY_RESYNC_COOLDOWN_MS = 10_000;
-export const ENTITY_RESYNC_TIMEOUT_MS = 20_000;
+const ENTITY_RESYNC_COOLDOWN_MS = 10_000;
+const ENTITY_RESYNC_TIMEOUT_MS = 20_000;
 
 type UseEntityResyncOptions = {
   cooldownMs?: number;
