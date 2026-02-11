@@ -8,7 +8,7 @@
     "lint": "eslint",
     "start": "pnpm with-env vite start",
     "with-env": "dotenv -e ../../.env --",
-    "postbuild": "FUNC_DIR=$(find .vercel/output/functions -maxdepth 1 -type d -name '*.func' | head -n1) && mkdir -p \"$FUNC_DIR/node_modules/@starknet-io\" && rsync -aL ../../packages/starknet-types-07/ \"$FUNC_DIR/node_modules/@starknet-io/starknet-types-07/\" && rsync -aL ../../packages/starknet-types-08/ \"$FUNC_DIR/node_modules/@starknet-io/starknet-types-08/\" && rsync -aL ../../packages/starknet-types-09/ \"$FUNC_DIR/node_modules/@starknet-io/starknet-types-09/\""
+    "postbuild": "FUNC_DIR=$(find .vercel/output/functions -maxdepth 1 -type d -name '*.func' | head -n1) && [ -n \"$FUNC_DIR\" ] && mkdir -p \"$FUNC_DIR/node_modules/@starknet-io\" && for V in 07 08 09; do TARGET=\"$FUNC_DIR/node_modules/@starknet-io/starknet-types-$V\"; mkdir -p \"$TARGET\"; cp \"../../packages/starknet-types-$V/package.json\" \"$TARGET/package.json\"; cp \"../../packages/starknet-types-$V/index.mjs\" \"$TARGET/index.mjs\"; done"
   },
   "devDependencies": {
     "@cartridge/connector": "0.13.5",
