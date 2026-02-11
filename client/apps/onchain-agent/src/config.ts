@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveDefaultDataDir, resolveDefaultSessionBasePath } from "./runtime-paths";
+import { resolveDefaultDataDir, resolveDefaultManifestPath, resolveDefaultSessionBasePath } from "./runtime-paths";
 
 export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
 
@@ -66,7 +66,7 @@ export function loadConfig(): AgentConfig {
     rpcUrl: env.RPC_URL ?? "",
     toriiUrl: env.TORII_URL ?? "",
     worldAddress: env.WORLD_ADDRESS ?? "",
-    manifestPath: env.MANIFEST_PATH ? path.resolve(env.MANIFEST_PATH) : "",
+    manifestPath: env.MANIFEST_PATH ? path.resolve(env.MANIFEST_PATH) : resolveDefaultManifestPath(env),
     gameName: env.GAME_NAME ?? "eternum",
     chainId,
     sessionBasePath: path.resolve(env.SESSION_BASE_PATH ?? resolveDefaultSessionBasePath(env)),
