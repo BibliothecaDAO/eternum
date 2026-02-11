@@ -201,9 +201,15 @@ export async function main() {
       selected = worlds.find((w) => w.name === slotName) ?? null;
       if (selected) {
         console.log(`  Auto-selected world: [${selected.chain}] ${selected.name}`);
+      } else {
+        console.log(`  SLOT_NAME="${slotName}" did not match any world. Available: ${worlds.map((w) => w.name).join(", ")}`);
       }
     }
     if (!selected) {
+      if (!process.stdin.isTTY) {
+        console.error("No world selected and no TTY available for picker. Set SLOT_NAME env var.");
+        process.exit(1);
+      }
       selected = await createWorldPicker(worlds);
     }
     if (!selected) {
