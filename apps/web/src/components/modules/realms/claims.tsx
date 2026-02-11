@@ -15,7 +15,7 @@ import { formatEther } from "viem";
 export const ClaimRewards = () => {
   const { address } = useAccount();
   const pastLordsClaimsQuery = useQuery(
-    getRealmsLordsClaimsQueryOptions({ address: address as string }),
+    getRealmsLordsClaimsQueryOptions({ address }),
   );
   const pastLordsClaims = pastLordsClaimsQuery.data;
   /*const [claimTransactions, setClaimTransactions] = useState<

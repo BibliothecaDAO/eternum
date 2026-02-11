@@ -10,13 +10,18 @@ import { db } from "@realms-world/db/client";
 /* -------------------------------------------------------------------------- */
 
 const GetRealmsLordsClaimsInput = z.object({
-  address: z.string(),
+  address: z.string().optional(),
 });
 
 export const getRealmsLordsClaims = createServerFn({ method: "GET" })
   .validator((input: unknown) => GetRealmsLordsClaimsInput.parse(input))
   .handler(async (ctx) => {
     const { address } = ctx.data;
+
+    if (!address) {
+      return [];
+    }
+
     return db.query.realmsLordsClaims.findMany({
       where: eq(realmsLordsClaims.recipient, address),
       orderBy: desc(realmsLordsClaims.timestamp),
@@ -28,5 +33,9 @@ export const getRealmsLordsClaimsQueryOptions = (
 ) =>
   queryOptions({
     queryKey: ["getRealmsLordsClaims", input.address],
-    queryFn: () => getRealmsLordsClaims({ data: input }),
+    queryFn: () =>
+      input.address
+        ? getRealmsLordsClaims({ data: input })
+        : Promise.resolve([]),
+    enabled: !!input.address,
   });
