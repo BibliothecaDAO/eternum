@@ -82,12 +82,16 @@ export const getAccountTokens = createServerFn({ method: "GET" })
       .replace("{accountAddress}", address ?? "")
       .replace("{trimmedAccountAddress}", trimAddress(address ?? ""));
 
-    const result = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
-    const resultsWithParsedTokenId = result.map(r => ({
-      ...r,
-      token_id: parseInt(r.token_id.split(":")[1], 16),
-    }));
-    return resultsWithParsedTokenId;
+    try {
+      const result = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
+      const resultsWithParsedTokenId = result.map((r) => ({
+        ...r,
+        token_id: Number.parseInt(r.token_id.split(":")[1] ?? "0", 16) || 0,
+      }));
+      return resultsWithParsedTokenId;
+    } catch {
+      return [];
+    }
   });
 
 export const getAccountTokensQueryOptions = (

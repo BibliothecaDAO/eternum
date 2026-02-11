@@ -32,6 +32,10 @@ export const ProposalListItem = ({
   }
 
   const isActive = proposal.max_end * 1000 > Date.now();
+  const scoresTotal = Number(proposal.scores_total);
+  const scoresFor = Number(proposal.scores_1);
+  const progressValue =
+    scoresTotal > 0 ? (scoresFor / scoresTotal) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-4">
@@ -69,10 +73,7 @@ export const ProposalListItem = ({
       ) : (
         <div className="flex flex-shrink-0 flex-col items-end gap-2">
           <Progress
-            value={
-              (Number(proposal.scores_1) / Number(proposal.scores_total)) * 100
-            }
-            max={Number(proposal.scores_total)}
+            value={progressValue}
             className="w-full bg-red-500/60 sm:w-32"
             indicatorColor="bg-green-500"
           />
