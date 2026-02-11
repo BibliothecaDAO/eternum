@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { games } from "@/data/games";
 // import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { GameDetails } from "@/components/game/GameDetails";
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/games/$slug")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
+    const { games } = await import("@/data/games");
     const game = games.find((g) => g.slug === params.slug);
     if (!game) {
       throw new Error("Game not found");

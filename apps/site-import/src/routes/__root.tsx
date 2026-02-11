@@ -1,11 +1,61 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { HeadContent } from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet } from "@tanstack/react-router";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 // import { WaveformBackground } from "@/components/WaveformBackground";
 import { motion } from "framer-motion";
-import { FooterSection } from "@/components/sections/FooterSection";
 // import AsciiArt from "@/components/ascii";
+
+const RouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@tanstack/react-router-devtools").then((module) => ({
+        default: module.TanStackRouterDevtools,
+      }))
+    )
+  : null;
+
+const FooterSection = lazy(() =>
+  import("@/components/sections/FooterSection").then((module) => ({
+    default: module.FooterSection,
+  }))
+);
+
+function DeferredFooter() {
+  const [isVisible, setIsVisible] = useState(false);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (isVisible) return;
+
+    const node = footerRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "450px 0px" }
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  return (
+    <div ref={footerRef}>
+      {isVisible ? (
+        <Suspense fallback={<div className="min-h-[440px]" />}>
+          <FooterSection />
+        </Suspense>
+      ) : (
+        <div className="min-h-[440px]" />
+      )}
+    </div>
+  );
+}
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -90,8 +140,12 @@ function RootComponent() {
           <Outlet />
         </div>
       </motion.div>
-      <FooterSection />
-      <TanStackRouterDevtools position="bottom-right" />
+      <DeferredFooter />
+      {RouterDevtools ? (
+        <Suspense fallback={null}>
+          <RouterDevtools position="bottom-right" />
+        </Suspense>
+      ) : null}
     </>
   );
 }

@@ -1,9 +1,9 @@
 import { socials } from "@/data/socials";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { ComponentType, useEffect, useRef, useState } from "react";
 import { getLordsInfo } from "@/lib/getLordsPrice";
 import { getTreasuryBalance } from "@/lib/getTreasuryBalance";
-import { useVelords } from "@/hooks/use-velords";
 import {
   Coins,
   Users,
@@ -13,6 +13,43 @@ import {
   Github,
   ShoppingBag,
 } from "lucide-react";
+
+function DeferredApyValue() {
+  const wrapperRef = useRef<HTMLSpanElement | null>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [ApyValue, setApyValue] = useState<ComponentType | null>(null);
+
+  useEffect(() => {
+    if (shouldLoad) return;
+
+    const node = wrapperRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px 0px" }
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  useEffect(() => {
+    if (!shouldLoad || ApyValue) return;
+
+    import("./FooterApyValue").then((module) => {
+      setApyValue(() => module.FooterApyValue);
+    });
+  }, [ApyValue, shouldLoad]);
+
+  return <span ref={wrapperRef}>{ApyValue ? <ApyValue /> : "12.5%"}</span>;
+}
 
 export function FooterSection() {
   // Fetch live data
@@ -25,8 +62,6 @@ export function FooterSection() {
     queryKey: ["treasuryBalance"],
     queryFn: getTreasuryBalance,
   });
-
-  const { currentAPY } = useVelords();
 
   const totalTreasuryValue = treasuryBalance
     ? treasuryBalance.LORDS.usdValue +
@@ -48,7 +83,7 @@ export function FooterSection() {
     {
       icon: TrendingUp,
       label: "veLORDS APY",
-      value: currentAPY ? `${currentAPY.toFixed(2)}%` : "12.5%",
+      value: <DeferredApyValue />,
       color: "text-blue-500",
     },
     {

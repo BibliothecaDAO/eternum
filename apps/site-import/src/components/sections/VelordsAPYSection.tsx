@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useVelords } from "@/hooks/use-velords";
+import { StarknetProvider } from "@/hooks/starknet-provider";
 import {
   Card,
   CardContent,
@@ -21,6 +22,14 @@ import {
 } from "@/lib/velords-utils";
 
 export function VelordsAPYSection() {
+  return (
+    <StarknetProvider>
+      <VelordsAPYSectionContent />
+    </StarknetProvider>
+  );
+}
+
+function VelordsAPYSectionContent() {
   const {
     currentAPY,
     isAPYLoading,
