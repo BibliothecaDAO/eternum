@@ -185,13 +185,40 @@ function liquidityCalls(v: unknown): { resourceType: number; resourceAmount: num
 }
 
 // ---------------------------------------------------------------------------
+// Shared reference strings for enum-valued params
+// ---------------------------------------------------------------------------
+
+const RESOURCE_IDS =
+  "Resource IDs: 1=Stone, 2=Coal, 3=Wood, 4=Copper, 5=Ironwood, 6=Obsidian, 7=Gold, 8=Silver, " +
+  "9=Mithral, 10=AlchemicalSilver, 11=ColdIron, 12=DeepCrystal, 13=Ruby, 14=Diamonds, " +
+  "15=Hartwood, 16=Ignium, 17=TwilightQuartz, 18=TrueIce, 19=Adamantine, 20=Sapphire, " +
+  "21=EtherealSilica, 22=Dragonhide, 23=Labor, 24=AncientFragment, 25=Donkey, " +
+  "26=Knight, 27=KnightT2, 28=KnightT3, 29=Crossbowman, 30=CrossbowmanT2, 31=CrossbowmanT3, " +
+  "32=Paladin, 33=PaladinT2, 34=PaladinT3, 35=Wheat, 36=Fish, 37=Lords, 38=Essence";
+
+const BUILDING_TYPES =
+  "Building IDs: 0=None, 1=WorkersHut, 2=Storehouse, 3=Stone, 4=Coal, 5=Wood, 6=Copper, " +
+  "7=Ironwood, 8=Obsidian, 9=Gold, 10=Silver, 11=Mithral, 12=AlchemicalSilver, 13=ColdIron, " +
+  "14=DeepCrystal, 15=Ruby, 16=Diamonds, 17=Hartwood, 18=Ignium, 19=TwilightQuartz, " +
+  "20=TrueIce, 21=Adamantine, 22=Sapphire, 23=EtherealSilica, 24=Dragonhide, 25=Labor, " +
+  "26=AncientFragment, 27=Donkey, 28=KnightT1, 29=KnightT2, 30=KnightT3, " +
+  "31=CrossbowmanT1, 32=CrossbowmanT2, 33=CrossbowmanT3, 34=PaladinT1, 35=PaladinT2, " +
+  "36=PaladinT3, 37=Wheat, 38=Fish, 39=Essence";
+
+const DIR = "0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE";
+
+const TROOP_CATEGORY = "0=Knight, 1=Paladin, 2=Crossbowman";
+
+const TROOP_TIER = "0=T1, 1=T2, 2=T3";
+
+// ---------------------------------------------------------------------------
 // Resources
 // ---------------------------------------------------------------------------
 
 register("send_resources", "Send resources from one entity to another", [
   n("senderEntityId", "Entity ID of the sender"),
   n("recipientEntityId", "Entity ID of the recipient"),
-  oa("resources", "Array of {resourceType, amount} to send"),
+  oa("resources", `Array of {resourceType, amount} to send. ${RESOURCE_IDS}`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.resources.send(signer, {
@@ -205,7 +232,7 @@ register("send_resources", "Send resources from one entity to another", [
 register("pickup_resources", "Pick up resources from an entity you own", [
   n("recipientEntityId", "Entity ID receiving the resources"),
   n("ownerEntityId", "Entity ID that owns the resources"),
-  oa("resources", "Array of {resourceType, amount} to pick up"),
+  oa("resources", `Array of {resourceType, amount} to pick up. ${RESOURCE_IDS}`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.resources.pickup(signer, {
@@ -238,10 +265,10 @@ register("claim_arrivals", "Claim incoming resource arrivals at a structure", [
 
 register("create_explorer", "Create a new explorer troop from a structure", [
   n("forStructureId", "Structure entity ID to spawn from"),
-  n("category", "Troop category (0=Knight, 1=Paladin, 2=Crossbowman)"),
-  n("tier", "Troop tier (0=T1, 1=T2, 2=T3; higher tier is stronger)"),
+  n("category", `Troop category (${TROOP_CATEGORY})`),
+  n("tier", `Troop tier (${TROOP_TIER}; higher is stronger)`),
   n("amount", "Number of troops to create"),
-  n("spawnDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  n("spawnDirection", `Hex direction (${DIR})`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.createExplorer(signer, {
@@ -257,7 +284,7 @@ register("create_explorer", "Create a new explorer troop from a structure", [
 register("add_to_explorer", "Add more troops to an existing explorer", [
   n("toExplorerId", "Explorer entity ID to reinforce"),
   n("amount", "Number of troops to add"),
-  n("homeDirection", "Direction back to home structure (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  n("homeDirection", `Direction back to home structure (${DIR})`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.addToExplorer(signer, {
@@ -280,9 +307,9 @@ register("delete_explorer", "Delete an explorer and return troops to structure",
 
 register("add_guard", "Add a guard troop to a structure's defense slot", [
   n("forStructureId", "Structure entity ID to guard"),
-  n("slot", "Guard slot index"),
-  n("category", "Troop category (0=Knight, 1=Paladin, 2=Crossbowman)"),
-  n("tier", "Troop tier (0=T1, 1=T2, 2=T3)"),
+  n("slot", "Guard slot index (0-3, depends on structure max guards)"),
+  n("category", `Troop category (${TROOP_CATEGORY})`),
+  n("tier", `Troop tier (${TROOP_TIER})`),
   n("amount", "Number of troops"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -298,7 +325,7 @@ register("add_guard", "Add a guard troop to a structure's defense slot", [
 
 register("delete_guard", "Remove a guard from a structure's defense slot", [
   n("forStructureId", "Structure entity ID"),
-  n("slot", "Guard slot index to clear"),
+  n("slot", "Guard slot index to clear (0-3)"),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.deleteGuard(signer, {
@@ -310,7 +337,7 @@ register("delete_guard", "Remove a guard from a structure's defense slot", [
 
 register("move_explorer", "Move an explorer along hex directions (optionally exploring)", [
   n("explorerId", "Explorer entity ID"),
-  na("directions", "Array of hex directions (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  na("directions", `Array of hex directions (${DIR})`),
   b("explore", "Whether to explore (discover new tiles) while moving"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -324,7 +351,7 @@ register("move_explorer", "Move an explorer along hex directions (optionally exp
 
 register("travel_explorer", "Travel an explorer along hex directions (no exploration)", [
   n("explorerId", "Explorer entity ID"),
-  na("directions", "Array of hex directions (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  na("directions", `Array of hex directions (${DIR})`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.travel(signer, {
@@ -336,7 +363,7 @@ register("travel_explorer", "Travel an explorer along hex directions (no explora
 
 register("explore", "Explore new tiles with an explorer", [
   n("explorerId", "Explorer entity ID"),
-  na("directions", "Array of hex directions (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  na("directions", `Array of hex directions (${DIR})`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.troops.explore(signer, {
@@ -349,7 +376,7 @@ register("explore", "Explore new tiles with an explorer", [
 register("swap_explorer_to_explorer", "Transfer troops between two explorers", [
   n("fromExplorerId", "Source explorer entity ID"),
   n("toExplorerId", "Destination explorer entity ID"),
-  n("toExplorerDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  n("toExplorerDirection", `Hex direction (${DIR})`),
   n("count", "Number of troops to transfer"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -365,8 +392,8 @@ register("swap_explorer_to_explorer", "Transfer troops between two explorers", [
 register("swap_explorer_to_guard", "Transfer troops from an explorer to a structure guard slot", [
   n("fromExplorerId", "Source explorer entity ID"),
   n("toStructureId", "Destination structure entity ID"),
-  n("toStructureDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
-  n("toGuardSlot", "Guard slot index at the structure"),
+  n("toStructureDirection", `Hex direction (${DIR})`),
+  n("toGuardSlot", "Guard slot index at the structure (0-3)"),
   n("count", "Number of troops to transfer"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -382,9 +409,9 @@ register("swap_explorer_to_guard", "Transfer troops from an explorer to a struct
 
 register("swap_guard_to_explorer", "Transfer troops from a structure guard slot to an explorer", [
   n("fromStructureId", "Source structure entity ID"),
-  n("fromGuardSlot", "Guard slot index at the structure"),
+  n("fromGuardSlot", "Guard slot index at the structure (0-3)"),
   n("toExplorerId", "Destination explorer entity ID"),
-  n("toExplorerDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  n("toExplorerDirection", `Hex direction (${DIR})`),
   n("count", "Number of troops to transfer"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -405,8 +432,8 @@ register("swap_guard_to_explorer", "Transfer troops from a structure guard slot 
 register("attack_explorer", "Attack another explorer with your explorer (costs 50 stamina attacker, 40 defender)", [
   n("aggressorId", "Your explorer entity ID"),
   n("defenderId", "Target explorer entity ID"),
-  n("defenderDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
-  oa("stealResources", "Array of {resourceId, amount} to steal on victory", false),
+  n("defenderDirection", `Hex direction (${DIR})`),
+  oa("stealResources", `Array of {resourceId, amount} to steal on victory. ${RESOURCE_IDS}`, false),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.combat.attackExplorer(signer, {
@@ -421,7 +448,7 @@ register("attack_explorer", "Attack another explorer with your explorer (costs 5
 register("attack_guard", "Attack a structure's guard with your explorer", [
   n("explorerId", "Your explorer entity ID"),
   n("structureId", "Target structure entity ID"),
-  n("structureDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  n("structureDirection", `Hex direction (${DIR})`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.combat.attackGuard(signer, {
@@ -434,9 +461,9 @@ register("attack_guard", "Attack a structure's guard with your explorer", [
 
 register("guard_attack_explorer", "Use a structure's guard to attack a nearby explorer", [
   n("structureId", "Your structure entity ID"),
-  n("structureGuardSlot", "Guard slot index"),
+  n("structureGuardSlot", "Guard slot index (0-3, depends on structure max guards)"),
   n("explorerId", "Target explorer entity ID"),
-  n("explorerDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
+  n("explorerDirection", `Hex direction (${DIR})`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.combat.guardAttackExplorer(signer, {
@@ -451,8 +478,8 @@ register("guard_attack_explorer", "Use a structure's guard to attack a nearby ex
 register("raid", "Raid a structure to steal resources (without destroying guard)", [
   n("explorerId", "Your explorer entity ID"),
   n("structureId", "Target structure entity ID"),
-  n("structureDirection", "Hex direction (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)"),
-  oa("stealResources", "Array of {resourceId, amount} to steal"),
+  n("structureDirection", `Hex direction (${DIR})`),
+  oa("stealResources", `Array of {resourceId, amount} to steal. ${RESOURCE_IDS}`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.combat.raid(signer, {
@@ -471,8 +498,8 @@ register("raid", "Raid a structure to steal resources (without destroying guard)
 const createOrderParams: ActionParamSchema[] = [
   n("makerId", "Your structure entity ID offering resources"),
   n("takerId", "Target structure entity ID (0 for open market)"),
-  n("makerGivesResourceType", "Resource type ID you are offering"),
-  n("takerPaysResourceType", "Resource type ID you want in return"),
+  n("makerGivesResourceType", `Resource type ID you are offering. ${RESOURCE_IDS}`),
+  n("takerPaysResourceType", `Resource type ID you want in return. ${RESOURCE_IDS}`),
   n("makerGivesMinResourceAmount", "Minimum amount per trade unit"),
   n("makerGivesMaxCount", "Maximum number of trade units"),
   n("takerPaysMinResourceAmount", "Minimum payment per trade unit"),
@@ -529,8 +556,8 @@ registerAliases(["cancel_order", "cancel_trade"], "Cancel your trade order", can
 
 register("create_building", "Build a new building at a structure", [
   n("entityId", "Structure entity ID to build at"),
-  na("directions", "Hex directions to building location"),
-  n("buildingCategory", "Building category ID"),
+  na("directions", `Hex directions to building location (${DIR})`),
+  n("buildingCategory", `Building category ID. ${BUILDING_TYPES}`),
   b("useSimple", "Use simple (cheaper) building variant"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -586,7 +613,7 @@ register("resume_production", "Resume production at a paused building", [
 register("buy_resources", "Buy resources from the bank using Lords", [
   n("bankEntityId", "Bank entity ID"),
   n("entityId", "Your entity ID making the purchase"),
-  n("resourceType", "Resource type ID to buy"),
+  n("resourceType", `Resource type ID to buy. ${RESOURCE_IDS}`),
   n("amount", "Amount to buy"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -602,7 +629,7 @@ register("buy_resources", "Buy resources from the bank using Lords", [
 register("sell_resources", "Sell resources to the bank for Lords", [
   n("bankEntityId", "Bank entity ID"),
   n("entityId", "Your entity ID selling"),
-  n("resourceType", "Resource type ID to sell"),
+  n("resourceType", `Resource type ID to sell. ${RESOURCE_IDS}`),
   n("amount", "Amount to sell"),
 ], (client, signer, p) =>
   wrapTx(() =>
@@ -618,7 +645,7 @@ register("sell_resources", "Sell resources to the bank for Lords", [
 register("add_liquidity", "Add liquidity to the bank's AMM pool", [
   n("bankEntityId", "Bank entity ID"),
   n("entityId", "Your entity ID providing liquidity"),
-  oa("calls", "Array of {resourceType, resourceAmount, lordsAmount}"),
+  oa("calls", `Array of {resourceType, resourceAmount, lordsAmount}. ${RESOURCE_IDS}`),
 ], (client, signer, p) =>
   wrapTx(() =>
     client.bank.addLiquidity(signer, {
@@ -632,7 +659,7 @@ register("add_liquidity", "Add liquidity to the bank's AMM pool", [
 register("remove_liquidity", "Remove liquidity from the bank's AMM pool", [
   n("bankEntityId", "Bank entity ID"),
   n("entityId", "Your entity ID"),
-  n("resourceType", "Resource type ID"),
+  n("resourceType", `Resource type ID. ${RESOURCE_IDS}`),
   n("shares", "Number of LP shares to remove"),
 ], (client, signer, p) =>
   wrapTx(() =>
