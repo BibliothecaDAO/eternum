@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { useQuery, queryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getProposalsQueryOptions } from "@/lib/getProposals";
-import { getTreasuryBalance } from "@/lib/getTreasuryBalance";
+import { treasuryBalanceQueryOptions } from "@/lib/query-options";
 import { ProposalQuery } from "@/gql/graphql";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,8 @@ import {
   Gamepad2,
 } from "lucide-react";
 
+const appLoadTimestamp = Date.now();
+
 export function TreasurySection() {
   const { data: proposalsQuery } = useQuery(
     getProposalsQueryOptions({
@@ -37,14 +39,9 @@ export function TreasurySection() {
   );
 
   const isActive = (proposal: ProposalQuery["proposal"]) =>
-    proposal && proposal.max_end * 1000 > Date.now();
+    proposal && proposal.max_end * 1000 > appLoadTimestamp;
 
-  const { data: treasuryBalance } = useQuery(
-    queryOptions({
-      queryKey: ["treasuryBalance"],
-      queryFn: getTreasuryBalance,
-    })
-  );
+  const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
   const totalTreasuryBalance =
     (treasuryBalance?.LORDS.usdValue ?? 0) +

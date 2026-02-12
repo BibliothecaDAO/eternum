@@ -3,11 +3,16 @@ import { useState, useEffect, useRef } from "react";
 export function useCountAnimation(end: number, duration: number = 2) {
   const [count, setCount] = useState(0);
   const nodeRef = useRef(0);
-  const startTime = useRef(Date.now());
+  const startTime = useRef<number | null>(null);
 
   useEffect(() => {
-    const animate = () => {
-      const now = Date.now();
+    let frameId = 0;
+
+    const animate = (now: number) => {
+      if (startTime.current === null) {
+        startTime.current = now;
+      }
+
       const progress = Math.min(
         (now - startTime.current) / (duration * 1000),
         1
@@ -16,16 +21,17 @@ export function useCountAnimation(end: number, duration: number = 2) {
       if (progress < 1) {
         nodeRef.current = Math.floor(end * progress);
         setCount(nodeRef.current);
-        requestAnimationFrame(animate);
+        frameId = requestAnimationFrame(animate);
       } else {
         setCount(end);
       }
     };
 
-    requestAnimationFrame(animate);
+    frameId = requestAnimationFrame(animate);
     return () => {
       nodeRef.current = 0;
-      startTime.current = Date.now();
+      startTime.current = null;
+      cancelAnimationFrame(frameId);
     };
   }, [end, duration]);
 
