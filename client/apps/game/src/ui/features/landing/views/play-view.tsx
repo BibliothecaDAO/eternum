@@ -332,8 +332,8 @@ const PlayTabContent = ({
             <UnifiedGameGrid
               onSelectGame={onSelectGame}
               onSpectate={onSpectate}
+              onForgeHyperstructures={onForgeHyperstructures}
               onRegistrationComplete={onRegistrationComplete}
-              devModeFilter={false}
               statusFilter="ongoing"
               hideHeader
               hideLegend
