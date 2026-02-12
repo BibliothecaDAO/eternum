@@ -5,6 +5,7 @@ import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { marketplaceCollections } from "@/config";
 import { fetchMarketOrderEvents } from "@/hooks/services";
+import { hasCollectionKey } from "@/lib/collection-key";
 import { formatRelativeTime } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
@@ -29,7 +30,11 @@ function ActivityPage() {
   const [filterType, setFilterType] = useState<"all" | "sales" | "listings">("all");
 
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
+  const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+    ? marketplaceCollections[collection]
+    : null;
+  const collectionAddress = collectionConfig?.address ?? "";
+  const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
 
   const isSeasonPassEndSeason = collection === "season-passes" && env.VITE_PUBLIC_SHOW_END_GAME_WARNING;
 
@@ -37,7 +42,11 @@ function ActivityPage() {
     queryKey: ["marketOrderEvents", collection, filterType],
     queryFn: ({ signal }) => fetchMarketOrderEvents(collectionAddress, filterType, undefined, undefined, { signal }),
     refetchInterval: 30_000,
+    enabled: isValidCollection,
   });
+  if (!isValidCollection) {
+    return <div className="text-center py-6 text-muted-foreground">Collection not available.</div>;
+  }
   // Function to get display status
   const getDisplayStatus = (status: string) => {
     if (status === "Accepted") return "Sale";

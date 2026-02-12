@@ -5,21 +5,11 @@ import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
 import { hasCollectionKey } from "@/lib/collection-key";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, redirect, useLocation, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
 
 export const Route = createFileRoute("/trade/$collection")({
-  beforeLoad: ({ params }) => {
-    if (!hasCollectionKey(marketplaceCollections, params.collection)) {
-      throw redirect({ to: "/trade" });
-    }
-
-    const collectionConfig = marketplaceCollections[params.collection];
-    if (!collectionConfig.address) {
-      throw redirect({ to: "/trade" });
-    }
-  },
   component: TradeLayout,
   head: ({ params }) => {
     const { collection } = params;
@@ -78,14 +68,18 @@ export const Route = createFileRoute("/trade/$collection")({
 
 function TradeLayout() {
   const { collection } = useParams({ from: "/trade/$collection" });
-  const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
+  const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+    ? marketplaceCollections[collection]
+    : null;
+  const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
 
-  const collectionAddress = collectionConfig.address;
-  const collectionName = collectionConfig.name;
+  const collectionAddress = collectionConfig?.address ?? "";
+  const collectionName = collectionConfig?.name ?? collection;
   const { data: totals } = useQuery({
     queryKey: ["collectionStatistics", collectionAddress],
     queryFn: ({ signal }) => fetchCollectionStatistics(collectionAddress, { signal }),
     refetchInterval: 30_000,
+    enabled: isValidCollection,
   });
 
   const location = useLocation();
@@ -96,6 +90,14 @@ function TradeLayout() {
   const totalWei = formatUnits(totalWeiStr, 18);
   const totalEth = totalWei ?? "0";
   const floorPrice = totals?.[0]?.floor_price_wei ? formatUnits(BigInt(totals?.[0]?.floor_price_wei), 18) : "0";
+
+  if (!isValidCollection) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        Collection not available.
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

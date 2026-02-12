@@ -25,6 +25,20 @@ import X from "lucide-react/dist/esm/icons/x";
 import { TypeH2 } from "../typography/type-h2";
 
 type CollectionKey = keyof typeof marketplaceCollections;
+type StaticNavItem = {
+  title: string;
+  href: string;
+  to: "/" | "/trade";
+  icon: LucideIcon;
+};
+type CollectionNavItem = {
+  title: string;
+  href: string;
+  to: "/$collection" | "/trade/$collection";
+  params: { collection: CollectionKey };
+  icon: LucideIcon;
+};
+type NavItem = StaticNavItem | CollectionNavItem;
 
 const collectionIconMap: Partial<Record<CollectionKey, LucideIcon>> = {
   realms: Map,
@@ -76,29 +90,35 @@ export function AppSidebar() {
     icon: collectionIconMap[key as CollectionKey] ?? Sparkles,
   }));
 
-  const overviewItems = [
+  const overviewItems: NavItem[] = [
     {
       title: "Home",
-      url: "/",
+      href: "/",
+      to: "/",
       icon: Crown,
     },
   ];
 
-  const walletItems = collectionNavItems.map((item) => ({
+  const walletItems: NavItem[] = collectionNavItems.map((item) => ({
     title: item.title,
-    url: `/${item.key}`,
+    href: `/${item.key}`,
+    to: "/$collection",
+    params: { collection: item.key },
     icon: item.icon,
   }));
 
-  const marketplaceItems = [
+  const marketplaceItems: NavItem[] = [
     {
       title: "All Listings",
-      url: "/trade",
+      href: "/trade",
+      to: "/trade",
       icon: ShoppingBag,
     },
     ...collectionNavItems.map((item) => ({
       title: item.title,
-      url: `/trade/${item.key}`,
+      href: `/trade/${item.key}`,
+      to: "/trade/$collection",
+      params: { collection: item.key },
       icon: item.icon,
     })),
   ];
@@ -167,24 +187,42 @@ export function AppSidebar() {
                 {section.description && <p className="mb-2 text-xs text-muted-foreground">{section.description}</p>}
                 <SidebarMenu>
                   {section.items.map((item) => {
-                    const active = isLinkActive(item.url);
+                    const active = isLinkActive(item.href);
                     return (
-                      <SidebarMenuItem key={item.url}>
+                      <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton asChild>
-                          <Link
-                            to={item.url}
-                            onClick={handleLinkClick}
-                            className={cn(
-                              "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                              active
-                                ? "bg-gold/15 text-gold shadow-inner"
-                                : "text-muted-foreground hover:bg-secondary/40",
-                            )}
-                            aria-current={active ? "page" : undefined}
-                          >
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </Link>
+                          {"params" in item ? (
+                            <Link
+                              to={item.to}
+                              params={item.params}
+                              onClick={handleLinkClick}
+                              className={cn(
+                                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                                active
+                                  ? "bg-gold/15 text-gold shadow-inner"
+                                  : "text-muted-foreground hover:bg-secondary/40",
+                              )}
+                              aria-current={active ? "page" : undefined}
+                            >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.title}</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              to={item.to}
+                              onClick={handleLinkClick}
+                              className={cn(
+                                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                                active
+                                  ? "bg-gold/15 text-gold shadow-inner"
+                                  : "text-muted-foreground hover:bg-secondary/40",
+                              )}
+                              aria-current={active ? "page" : undefined}
+                            >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.title}</span>
+                            </Link>
+                          )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );

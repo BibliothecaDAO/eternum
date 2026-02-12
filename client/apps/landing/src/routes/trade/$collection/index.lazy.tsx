@@ -24,6 +24,7 @@ import {
   FetchAllCollectionTokensOptions,
   fetchCollectionTraits,
 } from "@/hooks/services";
+import { hasCollectionKey } from "@/lib/collection-key";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
 import { useQuery } from "@tanstack/react-query";
@@ -44,13 +45,16 @@ export const Route = createLazyFileRoute("/trade/$collection/")({
 function CollectionPage() {
   const { collection } = Route.useParams();
   const navigate = useNavigate();
-  const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
-  const collectionAddress = collectionConfig.address;
+  const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+    ? marketplaceCollections[collection]
+    : null;
+  const collectionAddress = collectionConfig?.address ?? "";
+  const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
 
   const enforcedTraitFilters = useMemo(
     () =>
       Object.fromEntries(
-        Object.entries(collectionConfig.defaultTraitFilters ?? {}).map(([trait, values]) => [trait, [...values]]),
+        Object.entries(collectionConfig?.defaultTraitFilters ?? {}).map(([trait, values]) => [trait, [...values]]),
       ),
     [collectionConfig],
   );
@@ -145,6 +149,7 @@ function CollectionPage() {
     queryKey: ["allCollectionTokens", marketplaceAddress, collection, tokenOptions],
     queryFn: ({ signal }) => fetchAllCollectionTokens(collectionAddress, tokenOptions, { signal }),
     refetchInterval: 8_000,
+    enabled: isValidCollection,
   });
 
   // Get all traits for filter UI efficiently
@@ -153,6 +158,7 @@ function CollectionPage() {
     queryFn: ({ signal }) => fetchCollectionTraits(collectionAddress, { signal }),
     refetchInterval: 300_000, // Very infrequent updates (5 minutes) since traits don't change often
     staleTime: 300_000, // Consider data fresh for 5 minutes
+    enabled: isValidCollection,
   });
 
   // --- Derived State ---
@@ -307,7 +313,9 @@ function CollectionPage() {
 
   return (
     <>
-      {isSeasonPassEndSeason ? (
+      {!isValidCollection ? (
+        <div className="text-center py-6 text-muted-foreground">Collection not available.</div>
+      ) : isSeasonPassEndSeason ? (
         <div className="text-lg border px-4 py-2 flex items-center gap-2 mt-2 mx-6">
           <AlertTriangle className="w-4 h-4" />
           <p>The current season has ended and Season 1 Passes can no longer be used in Realms.</p>

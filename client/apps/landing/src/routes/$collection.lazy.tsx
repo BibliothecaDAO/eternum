@@ -16,6 +16,7 @@ import {
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics, fetchTokenBalancesWithMetadata } from "@/hooks/services";
+import { hasCollectionKey } from "@/lib/collection-key";
 import { getPaginationWindow } from "@/lib/pagination";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
@@ -49,8 +50,12 @@ export const Route = createLazyFileRoute("/$collection")({
 
 function ManageCollectionRoute() {
   const { collection } = Route.useParams();
-  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
-  const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
+  const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+    ? marketplaceCollections[collection]
+    : null;
+  const collectionAddress = collectionConfig?.address ?? "";
+  const collectionName = collectionConfig?.name ?? collection;
+  const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
@@ -68,8 +73,9 @@ function ManageCollectionRoute() {
     queries: [
       {
         queryKey: ["tokenBalance", collection, address],
-        queryFn: () => (address ? fetchTokenBalancesWithMetadata(collectionAddress, address) : null),
+        queryFn: () => (address && isValidCollection ? fetchTokenBalancesWithMetadata(collectionAddress, address) : null),
         refetchInterval: 8_000,
+        enabled: Boolean(address && isValidCollection),
       },
     ],
   });
@@ -78,6 +84,7 @@ function ManageCollectionRoute() {
     queryKey: ["collectionStatistics", collectionAddress],
     queryFn: ({ signal }) => fetchCollectionStatistics(collectionAddress, { signal }),
     refetchInterval: 60_000,
+    enabled: isValidCollection,
   });
 
   const getMetadataString = useCallback((token: MergedNftData) => {
@@ -177,6 +184,10 @@ function ManageCollectionRoute() {
       setInitialSelectedTokenId(null);
     }
   };
+
+  if (!isValidCollection) {
+    return <div className="text-center py-6 text-muted-foreground">Collection not available.</div>;
+  }
 
   if (!address) {
     return <ConnectWalletPrompt connectors={connectors} connect={connect} />;

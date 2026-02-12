@@ -1,18 +1,8 @@
 import { marketplaceCollections } from "@/config";
 import { hasCollectionKey } from "@/lib/collection-key";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/$collection")({
-  beforeLoad: ({ params }) => {
-    if (!hasCollectionKey(marketplaceCollections, params.collection)) {
-      throw redirect({ to: "/" });
-    }
-
-    const collectionConfig = marketplaceCollections[params.collection];
-    if (!collectionConfig.address) {
-      throw redirect({ to: "/" });
-    }
-  },
   head: ({ params }) => {
     const { collection } = params;
     const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
