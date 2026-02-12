@@ -2,6 +2,12 @@ import { L2_C1ERC20 } from "@/abi/L2/C1ERC20";
 import { VeLords } from "@/abi/L2/VeLords";
 import { TIME_CONSTANTS } from "@/lib/constants";
 import { getLordsInfo } from "@/lib/getLordsPrice";
+import {
+  calculateSharePercent,
+  computeTvlUsd,
+  formatTokenAmountDisplay,
+  toBigInt,
+} from "@/lib/velords-utils";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useAccount, useNetwork, useReadContract } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
@@ -11,25 +17,6 @@ import { LORDS, StakingAddresses } from "@realms-world/constants";
 // Helper function to get the current week timestamp (floored to week)
 const floorToWeek = (timestamp: number): number => {
   return Math.floor(timestamp / TIME_CONSTANTS.WEEK) * TIME_CONSTANTS.WEEK;
-};
-
-// Helper function to convert BigInt to number with decimals
-const formatTokenAmount = (amount: bigint, decimals: number = 18): number => {
-  return Number(amount) / Math.pow(10, decimals);
-};
-
-// Helper to safely convert contract response to BigInt
-const toBigInt = (value: any): bigint => {
-  if (typeof value === "bigint") return value;
-  if (typeof value === "string") return BigInt(value);
-  if (typeof value === "number") return BigInt(value);
-  if (value && typeof value === "object") {
-    // Handle Uint256 type from StarkNet
-    if ("low" in value && "high" in value) {
-      return BigInt(value.low) + (BigInt(value.high) << 128n);
-    }
-  }
-  return 0n;
 };
 
 export const useVelordsData = () => {
@@ -61,30 +48,6 @@ export const useVelordsData = () => {
     staleTime: 60000, // Cache for 1 minute
   });
 
-  // Calculate TVL
-  const tvl = useQuery({
-    queryKey: [
-      "velords-tvl",
-      lordsInVelords?.toString(),
-      lordsPrice?.price?.rate,
-    ],
-    queryFn: () => {
-      if (!lordsInVelords || !lordsPrice?.price?.rate) {
-        return null;
-      }
-
-      const lordsAmount = formatTokenAmount(toBigInt(lordsInVelords));
-      const price =
-        typeof lordsPrice.price.rate === "string"
-          ? parseFloat(lordsPrice.price.rate)
-          : lordsPrice.price.rate;
-
-      return lordsAmount * price;
-    },
-    enabled: !!lordsInVelords && !!lordsPrice?.price?.rate,
-    staleTime: 60000, // Cache for 1 minute
-  });
-
   // Get user's veLORDS balance if connected
   const { data: userBalance } = useReadContract({
     abi: VeLords,
@@ -99,41 +62,73 @@ export const useVelordsData = () => {
     abi: VeLords,
     functionName: "get_lock_for",
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
-    args: [userAddress!],
-    enabled: !!chain && !!userAddress,
+    args: userAddress ? [userAddress] : undefined,
+    enabled: !!userAddress,
   });
+
+  const totalSupplyRaw = totalSupply !== undefined ? toBigInt(totalSupply) : undefined;
+  const lordsLockedRaw =
+    lordsInVelords !== undefined ? toBigInt(lordsInVelords) : undefined;
+  const userBalanceRaw =
+    userBalance !== undefined ? toBigInt(userBalance) : undefined;
+  const userLockedData = userLocked as
+    | {
+        amount?: unknown;
+        end_time?: unknown;
+        0?: unknown;
+        1?: unknown;
+      }
+    | undefined;
+  const userLockedRaw =
+    userLockedData !== undefined
+      ? {
+          amount: toBigInt(userLockedData.amount ?? userLockedData[0]),
+          unlockTime: Number(userLockedData.end_time ?? userLockedData[1] ?? 0),
+        }
+      : undefined;
+
+  const tvl = computeTvlUsd(lordsInVelords, lordsPrice?.price?.rate);
+  const isTVLLoading = lordsInVelords === undefined || lordsPrice === undefined;
 
   const result = {
     // Supply data
+    totalSupplyRaw,
+    lordsLockedRaw,
     totalSupply:
-      totalSupply !== undefined
-        ? formatTokenAmount(toBigInt(totalSupply))
+      totalSupplyRaw !== undefined
+        ? formatTokenAmountDisplay(totalSupplyRaw, { maximumFractionDigits: 0 })
         : undefined,
     lordsLocked:
-      lordsInVelords !== undefined
-        ? formatTokenAmount(toBigInt(lordsInVelords))
+      lordsLockedRaw !== undefined
+        ? formatTokenAmountDisplay(lordsLockedRaw, { maximumFractionDigits: 0 })
         : undefined,
 
     // TVL data
-    tvl: tvl.data,
-    isTVLLoading: tvl.isLoading,
+    tvl,
+    isTVLLoading,
     lordsPrice: lordsPrice?.price?.rate,
 
     // User data
+    userBalanceRaw,
     userBalance:
-      userBalance !== undefined
-        ? formatTokenAmount(toBigInt(userBalance))
+      userBalanceRaw !== undefined
+        ? formatTokenAmountDisplay(userBalanceRaw, { maximumFractionDigits: 2 })
         : undefined,
-    userLocked: userLocked
+    userSharePercent:
+      userBalanceRaw !== undefined && totalSupplyRaw !== undefined
+        ? calculateSharePercent(userBalanceRaw, totalSupplyRaw)
+        : undefined,
+    userLocked: userLockedRaw
       ? {
-          amount: formatTokenAmount(toBigInt((userLocked as any)[0])),
-          unlockTime: Number((userLocked as any)[1]),
+          amount: formatTokenAmountDisplay(userLockedRaw.amount, {
+            maximumFractionDigits: 2,
+          }),
+          unlockTime: userLockedRaw.unlockTime,
         }
       : undefined,
 
     // Helper functions
     floorToWeek,
-    formatTokenAmount,
   };
 
   return result;

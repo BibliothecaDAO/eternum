@@ -38,6 +38,7 @@ export function UnlockDialog({
   withdraw: () => Promise<{ transaction_hash: string }>;
 }) {
   const [open, setOpen] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   // Check if the current lock has expired
   const isLockExpired = useMemo(() => {
@@ -77,15 +78,26 @@ export function UnlockDialog({
   }
 
   async function handleWithdraw() {
-    const hash = await withdraw();
-    toast({
-      description: (
-        <div className="flex items-center gap-2">
-          <Check /> Lords Withdrawal successful {hash.transaction_hash}
-        </div>
-      ),
-    });
-    setOpen(false);
+    try {
+      setIsWithdrawing(true);
+      const hash = await withdraw();
+      toast({
+        description: (
+          <div className="flex items-center gap-2">
+            <Check /> Lords Withdrawal successful {hash.transaction_hash}
+          </div>
+        ),
+      });
+      setOpen(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description:
+          error instanceof Error ? error.message : "Unable to withdraw lock.",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
   }
 
   return (
@@ -186,8 +198,12 @@ export function UnlockDialog({
           </div>
 
           <DialogFooter>
-            <Button onClick={() => handleWithdraw()} className="w-full">
-              Withdraw Lords
+            <Button
+              onClick={() => handleWithdraw()}
+              className="w-full"
+              disabled={isWithdrawing}
+            >
+              {isWithdrawing ? "Withdrawing..." : "Withdraw Lords"}
             </Button>
           </DialogFooter>
         </DialogContent>

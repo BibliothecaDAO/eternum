@@ -1,4 +1,3 @@
-import type { Address } from "@starknet-react/core";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,19 +23,29 @@ export const VelordsRewards = () => {
   const {
     recipient,
     setRecipient,
+    isRecipientValid,
+    claimCall,
     lordsClaimable,
     claimRewards,
     claimIsSubmitting,
   } = useVeLordsClaims();
   const handleClaimRewards = async () => {
-    const hash = await claimRewards();
-    toast({
-      description: (
-        <div className="flex items-center gap-2">
-          Claim Lords successful {hash.transaction_hash}
-        </div>
-      ),
-    });
+    try {
+      const hash = await claimRewards();
+      toast({
+        description: (
+          <div className="flex items-center gap-2">
+            Claim Lords successful {hash.transaction_hash}
+          </div>
+        ),
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description:
+          error instanceof Error ? error.message : "Unable to claim rewards.",
+      });
+    }
   };
 
   return (
@@ -88,14 +97,24 @@ export const VelordsRewards = () => {
               <Input
                 placeholder="Recipient"
                 value={recipient}
-                onChange={(e) => setRecipient(e.target.value as Address)}
+                onChange={(e) => setRecipient(e.target.value)}
               />
+              {!isRecipientValid && (
+                <p className="text-destructive mt-2 text-xs">
+                  Enter a valid Starknet recipient address.
+                </p>
+              )}
             </CollapsibleContent>
           </Collapsible>
           <Button
             onClick={handleClaimRewards}
             className="w-full"
-            disabled={claimIsSubmitting}
+            disabled={
+              claimIsSubmitting ||
+              !isRecipientValid ||
+              !claimCall ||
+              lordsClaimable <= 0n
+            }
           >
             Claim Lords
           </Button>

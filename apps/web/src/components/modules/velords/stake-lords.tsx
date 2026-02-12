@@ -83,22 +83,24 @@ export const StakeLords = () => {
         : undefined,
   });
 
+  const availableLords = Number(data?.formatted ?? 0);
+
   const chartData = useMemo(
     () => [
       {
         month: "January",
         locked: Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0n))),
-        unlocked: Number(data?.formatted),
+        unlocked: availableLords,
       },
     ],
-    [ownerLordsLock?.amount, data?.formatted],
+    [availableLords, ownerLordsLock?.amount],
   );
   const totalLords = useMemo(() => {
     return (
       Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0n))) +
-      Number(data?.formatted)
+      availableLords
     );
-  }, [ownerLordsLock?.amount, data?.formatted]);
+  }, [availableLords, ownerLordsLock?.amount]);
 
   return (
     <Card className="flex flex-col">
@@ -112,7 +114,7 @@ export const StakeLords = () => {
         <Card className="mt-4 sm:ml-8 sm:mt-0">
           <CardContent className="flex items-center px-4 pb-0 pt-2 text-lg font-semibold md:text-2xl">
             <LordsIcon className="mr-2 h-6 w-6" />
-            {formatNumber(Number(data?.formatted))}
+            {formatNumber(availableLords)}
           </CardContent>
           <CardFooter className="text-muted-foreground px-4 pb-3 text-sm">
             Lords Available
@@ -143,12 +145,12 @@ export const StakeLords = () => {
                 content={({ viewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                     return (
-                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy ?? 0) + 15}
-                          className="fill-foreground text-lg font-bold"
-                        >
+                          <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                            <tspan
+                              x={viewBox.cx}
+                              y={viewBox.cy + 15}
+                              className="fill-foreground text-lg font-bold"
+                            >
                           {ownerLordsLock?.amount
                             ? abbreviateNumber(
                                 formatEther(BigInt(ownerLordsLock.amount)),
@@ -156,11 +158,11 @@ export const StakeLords = () => {
                             : "0"}{" "}
                           /{abbreviateNumber(totalLords)}
                         </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy ?? 0) + 32}
-                          className="fill-muted-foreground"
-                        >
+                            <tspan
+                              x={viewBox.cx}
+                              y={viewBox.cy + 32}
+                              className="fill-muted-foreground"
+                            >
                           Staked / Total $LORDS
                         </tspan>
                       </text>
@@ -188,20 +190,20 @@ export const StakeLords = () => {
       </div>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="mb-4 flex gap-2">
-          <StakeDialog
-            ownerLordsLock={ownerLordsLock}
-            lordsBalance={Number(data?.formatted)}
-            manageLordsLock={manageLordsLock}
-          />
-          <UnlockDialog
-            ownerLordsLock={ownerLordsLock}
-            lordsBalance={Number(data?.formatted)}
-            withdraw={withdraw}
-          />
+            <StakeDialog
+              ownerLordsLock={ownerLordsLock}
+              lordsBalance={availableLords}
+              manageLordsLock={manageLordsLock}
+            />
+            <UnlockDialog
+              ownerLordsLock={ownerLordsLock}
+              lordsBalance={availableLords}
+              withdraw={withdraw}
+            />
         </div>
         <div className="flex items-center gap-2 font-medium leading-none">
           veLords are entitled to a share of Lords fees from ecosystem games and
-          marketplaces. One lock per walllet address.
+          marketplaces. One lock per wallet address.
         </div>
         <div className="text-muted-foreground leading-none">
           Note: max 75% penalty for early withdrawal (if withdrawn immediately

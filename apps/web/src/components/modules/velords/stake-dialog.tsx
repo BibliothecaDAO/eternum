@@ -18,7 +18,7 @@ import { formatDistanceToNow, getUnixTime } from "date-fns";
 import { Check, Plus, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import LordsIcon from "@/components/icons/lords.svg?react";
-import { formatEther, parseEther } from "viem";
+import { formatEther } from "viem";
 import type { Address} from "@starknet-react/core";
 import { useAccount, useContract } from "@starknet-react/core";
 import { L2_C1ERC20 } from "@/abi/L2/C1ERC20";
@@ -26,6 +26,7 @@ import { LORDS, StakingAddresses } from "@realms-world/constants";
 import type { Call } from "starknet";
 import { VeLords } from "@/abi/L2/VeLords";
 import { toast } from "@/hooks/use-toast";
+import { parseOptionalStakeAmount } from "@/lib/velords-utils";
 
 function formatLockEndTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
@@ -49,6 +50,7 @@ export function StakeDialog({
   const { address } = useAccount();
   const [open, setOpen] = useState(false);
   const [stakeAmount, setStakeAmount] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const veLordsAddress = StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID];
   const { contract: veLords } = useContract({
     abi: VeLords,
@@ -56,6 +58,7 @@ export function StakeDialog({
   });
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    if (!/^\d*\.?\d*$/.test(value)) return;
     setStakeAmount(value);
   };
   const { contract: lordsContract } = useContract({
@@ -99,19 +102,39 @@ export function StakeDialog({
   }, [ownerLordsLock?.end_time, lockWeeks, isLockExpired]);
 
   const manageLock = async () => {
-    if (address && lordsContract && veLords) {
-      const hash = await manageLordsLock([
-        lordsContract.populate("approve", [
-          veLordsAddress as `0x${string}`,
-          parseEther(stakeAmount),
-        ]),
+    if (!address || !veLords) return;
+
+    try {
+      const parsedAmount = parseOptionalStakeAmount(stakeAmount);
+      const hasStakeInput = stakeAmount.trim().length > 0;
+      if (hasStakeInput && !parsedAmount && lockWeeks === 0) {
+        toast({
+          variant: "destructive",
+          description: "Enter a valid LORDS amount.",
+        });
+        return;
+      }
+      if (!parsedAmount && lockWeeks <= 0) return;
+
+      const calls: Call[] = [];
+      if (parsedAmount && lordsContract) {
+        calls.push(
+          lordsContract.populate("approve", [
+            veLordsAddress as `0x${string}`,
+            parsedAmount,
+          ]),
+        );
+      }
+      calls.push(
         veLords.populate("manage_lock", [
-          parseEther(stakeAmount),
+          parsedAmount ?? 0n,
           newLockEndTime,
           address,
         ]),
-      ]);
+      );
 
+      setIsSubmitting(true);
+      const hash = await manageLordsLock(calls);
         toast({
           description: (
             <div className="flex items-center gap-2">
@@ -120,7 +143,13 @@ export function StakeDialog({
           ),
         });
         setOpen(false);
-      
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: error instanceof Error ? error.message : "Unable to update lock.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -274,7 +303,7 @@ export function StakeDialog({
           </div>
           <DialogFooter>
             <Button
-              disabled={!stakeAmount && !lockWeeks}
+              disabled={isSubmitting || (!stakeAmount.trim() && !lockWeeks)}
               className="w-full"
               onClick={manageLock}
             >
