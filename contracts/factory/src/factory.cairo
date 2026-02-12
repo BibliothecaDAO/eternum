@@ -30,6 +30,10 @@ pub mod factory {
     mod errors {
         pub const DEPLOYMENT_ALREADY_COMPLETED: felt252 = 'deployment already completed';
         pub const NOT_CONFIG_OWNER: felt252 = 'not config owner';
+        pub const INVALID_CONTRACTS_START_INDEX: felt252 = 'invalid contracts start index';
+        pub const INVALID_MODELS_START_INDEX: felt252 = 'invalid models start index';
+        pub const INVALID_EVENTS_START_INDEX: felt252 = 'invalid events start index';
+        pub const INVALID_LIBRARIES_START_INDEX: felt252 = 'invalid libraries start index';
         pub const NOT_SERIES_OWNER: felt252 = 'not series owner';
         pub const CONFIG_NOT_INITIALIZED: felt252 = 'config not initialized';
         pub const SERIES_DOES_NOT_EXIST: felt252 = 'series does not exist';
@@ -158,11 +162,29 @@ pub mod factory {
         }
 
         fn set_factory_config_contracts(
-            ref self: ContractState, version: felt252, contracts: Array<FactoryConfigContract>,
+            ref self: ContractState,
+            version: felt252,
+            start_index: usize,
+            contracts: Array<FactoryConfigContract>,
         ) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
             let config: FactoryConfig = factory_world.read_model(version);
+
+            let mut next_contracts = if start_index == 0 {
+                array![]
+            } else {
+                let existing_contracts = config.contracts.clone();
+                assert(
+                    existing_contracts.len() == start_index, errors::INVALID_CONTRACTS_START_INDEX,
+                );
+                existing_contracts
+            };
+
+            for contract in contracts.span() {
+                next_contracts.append(*contract);
+            }
+
             factory_world
                 .write_model(
                     @FactoryConfig {
@@ -171,7 +193,7 @@ pub mod factory {
                         world_class_hash: config.world_class_hash,
                         default_namespace: config.default_namespace,
                         default_namespace_writer_all: config.default_namespace_writer_all,
-                        contracts,
+                        contracts: next_contracts,
                         models: config.models,
                         events: config.events,
                         libraries: config.libraries,
@@ -180,11 +202,26 @@ pub mod factory {
         }
 
         fn set_factory_config_models(
-            ref self: ContractState, version: felt252, models: Array<ClassHash>,
+            ref self: ContractState, version: felt252, start_index: usize, models: Array<ClassHash>,
         ) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
             let config: FactoryConfig = factory_world.read_model(version);
+
+            let mut next_models = if start_index == 0 {
+                array![]
+            } else {
+                let existing_models = config.models.clone();
+                assert(
+                    existing_models.len() == start_index, errors::INVALID_MODELS_START_INDEX,
+                );
+                existing_models
+            };
+
+            for model in models.span() {
+                next_models.append(*model);
+            }
+
             factory_world
                 .write_model(
                     @FactoryConfig {
@@ -194,7 +231,7 @@ pub mod factory {
                         default_namespace: config.default_namespace,
                         default_namespace_writer_all: config.default_namespace_writer_all,
                         contracts: config.contracts,
-                        models,
+                        models: next_models,
                         events: config.events,
                         libraries: config.libraries,
                     },
@@ -202,11 +239,26 @@ pub mod factory {
         }
 
         fn set_factory_config_events(
-            ref self: ContractState, version: felt252, events: Array<ClassHash>,
+            ref self: ContractState, version: felt252, start_index: usize, events: Array<ClassHash>,
         ) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
             let config: FactoryConfig = factory_world.read_model(version);
+
+            let mut next_events = if start_index == 0 {
+                array![]
+            } else {
+                let existing_events = config.events.clone();
+                assert(
+                    existing_events.len() == start_index, errors::INVALID_EVENTS_START_INDEX,
+                );
+                existing_events
+            };
+
+            for event in events.span() {
+                next_events.append(*event);
+            }
+
             factory_world
                 .write_model(
                     @FactoryConfig {
@@ -217,18 +269,36 @@ pub mod factory {
                         default_namespace_writer_all: config.default_namespace_writer_all,
                         contracts: config.contracts,
                         models: config.models,
-                        events,
+                        events: next_events,
                         libraries: config.libraries,
                     },
                 );
         }
 
         fn set_factory_config_libraries(
-            ref self: ContractState, version: felt252, libraries: Array<FactoryConfigLibrary>,
+            ref self: ContractState,
+            version: felt252,
+            start_index: usize,
+            libraries: Array<FactoryConfigLibrary>,
         ) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
             let config: FactoryConfig = factory_world.read_model(version);
+
+            let mut next_libraries = if start_index == 0 {
+                array![]
+            } else {
+                let existing_libraries = config.libraries.clone();
+                assert(
+                    existing_libraries.len() == start_index, errors::INVALID_LIBRARIES_START_INDEX,
+                );
+                existing_libraries
+            };
+
+            for library in libraries.span() {
+                next_libraries.append(library.clone());
+            }
+
             factory_world
                 .write_model(
                     @FactoryConfig {
@@ -240,7 +310,7 @@ pub mod factory {
                         contracts: config.contracts,
                         models: config.models,
                         events: config.events,
-                        libraries,
+                        libraries: next_libraries,
                     },
                 );
         }
