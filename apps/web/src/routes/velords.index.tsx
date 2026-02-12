@@ -1,15 +1,9 @@
-import type { Address } from "@starknet-react/core";
 import { lazy, Suspense, useMemo, useState } from "react";
-import { VeLords } from "@/abi/L2/VeLords";
 import { useVelordsData } from "@/hooks/use-velords-data";
 import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useAccount, useReadContract } from "@starknet-react/core";
+import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { formatEther } from "viem";
-
-import { StakingAddresses } from "@realms-world/constants";
 
 const VeLordsRewardsChart = lazy(() =>
   import("@/components/modules/velords/rewards-chart").then((mod) => ({
@@ -51,18 +45,14 @@ function RouteComponent() {
   const { address } = useAccount();
   const velordsData = useVelordsData();
   const {
-    totalSupply: hookTotalSupply,
+    totalSupply,
+    totalSupplyRaw,
     lordsLocked,
     tvl,
+    isTVLLoading,
     userBalance,
+    userSharePercent,
   } = velordsData;
-
-  const { data: totalSupply, error } = useReadContract({
-    address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
-    abi: VeLords,
-    functionName: "total_supply",
-    args: [],
-  });
 
   const handleTimePeriodChange = (period: "3m" | "6m" | "1y") => {
     setSelectedPeriod(period);
@@ -81,13 +71,6 @@ function RouteComponent() {
               Stake $LORDS in the Lordship Protocol
             </p>
           </div>
-          {error && (
-            <div className="bg-destructive/10 rounded-md p-3">
-              <p className="text-destructive text-sm font-medium">
-                {error.message}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Main Content Grid */}
@@ -100,25 +83,18 @@ function RouteComponent() {
                 <div className="bg-card rounded-lg border p-4">
                   <div className="text-sm text-muted-foreground">Total Voting Power (veLORDS)</div>
                   <div className="text-2xl font-bold">
-                    {hookTotalSupply !== undefined 
-                      ? `${hookTotalSupply.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
-                      : "Loading..."
-                    }
+                    {totalSupply ?? "Loading..."}
                   </div>
-                  {userBalance !== undefined && hookTotalSupply !== undefined && hookTotalSupply > 0 && (
+                  {userBalance !== undefined && userSharePercent !== undefined && (
                     <div className="text-sm text-muted-foreground mt-1">
-                      Your share: {userBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {" "}
-                      ({((userBalance / hookTotalSupply) * 100).toFixed(2)}%)
+                      Your share: {userBalance} ({userSharePercent}%)
                     </div>
                   )}
                 </div>
                 <div className="bg-card rounded-lg border p-4">
                   <div className="text-sm text-muted-foreground">LORDS Locked</div>
                   <div className="text-2xl font-bold">
-                    {lordsLocked !== undefined 
-                      ? `${lordsLocked.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
-                      : "Loading..."
-                    }
+                    {lordsLocked ?? "Loading..."}
                   </div>
                 </div>
                 <div className="bg-card rounded-lg border p-4">
@@ -126,7 +102,9 @@ function RouteComponent() {
                   <div className="text-2xl font-bold">
                     {typeof tvl === "number" && !isNaN(tvl)
                       ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                      : "Loading..."
+                      : isTVLLoading
+                        ? "Loading..."
+                        : "$0"
                     }
                   </div>
                 </div>
@@ -135,13 +113,15 @@ function RouteComponent() {
             <div className="bg-card rounded-lg border p-6">
               <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-md border" />}>
                 <VeLordsRewardsChart
-                  totalSupply={hookTotalSupply ?? (
-                    totalSupply
-                      ? Number(formatEther(totalSupply as bigint))
-                      : undefined
-                  )}
+                  totalSupplyRaw={totalSupplyRaw}
                   data={veLordsBurns}
                   onTimePeriodChange={handleTimePeriodChange}
+                  isLoading={veLordsBurnsQuery.isLoading}
+                  errorMessage={
+                    veLordsBurnsQuery.error instanceof Error
+                      ? veLordsBurnsQuery.error.message
+                      : undefined
+                  }
                 />
               </Suspense>
             </div>

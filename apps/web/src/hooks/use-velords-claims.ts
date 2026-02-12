@@ -8,6 +8,7 @@ import {
   useContract,
   useSendTransaction,
 } from "@starknet-react/core";
+import { validateAndParseAddress } from "starknet";
 
 import { StakingAddresses } from "@realms-world/constants";
 
@@ -20,7 +21,7 @@ export default function useVeLordsClaims() {
   const rewardPoolAddress = StakingAddresses.rewardpool[SUPPORTED_L2_CHAIN_ID];
 
   // Allow room to override the recipient (defaults to current account address).
-  const [recipient, setRecipient] = useState<Address | undefined>(undefined);
+  const [recipient, setRecipient] = useState<string>("");
 
   // Initialize the reward pool contract.
   const { contract: rewardPool } = useContract({
@@ -28,13 +29,22 @@ export default function useVeLordsClaims() {
     address: rewardPoolAddress as Address,
   });
 
+  const parsedRecipient = useMemo(() => {
+    const normalizedRecipient = recipient.trim();
+    if (!normalizedRecipient) return address;
+    try {
+      return validateAndParseAddress(normalizedRecipient) as Address;
+    } catch {
+      return undefined;
+    }
+  }, [address, recipient]);
+
   // Create the call to claim rewards. If no recipient is provided, use the current account.
   const claimCall: Call[] | undefined = useMemo(() => {
-    const finalRecipient = recipient ?? address;
-    return finalRecipient !== undefined && rewardPool
-      ? [rewardPool.populate("claim", [finalRecipient])]
+    return parsedRecipient !== undefined && rewardPool
+      ? [rewardPool.populate("claim", [parsedRecipient])]
       : undefined;
-  }, [address, recipient, rewardPool]);
+  }, [parsedRecipient, rewardPool]);
 
   // Simulate the claim rewards call to get the potential rewards amount.
   const { data: simulateData } = useSimulateTransactions({
@@ -43,12 +53,17 @@ export default function useVeLordsClaims() {
 
   // Retrieve the claimable amount (ensure this aligns with your contract's response shape).
   const lordsClaimable = useMemo(
-    () =>
-      BigInt(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-        ((simulateData as any)?.[0]?.transaction_trace?.execute_invocation
-          ?.result?.[2] ?? "0") as string,
-      ),
+    () => {
+      try {
+        return BigInt(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+          ((simulateData as any)?.[0]?.transaction_trace?.execute_invocation
+            ?.result?.[2] ?? "0") as string,
+        );
+      } catch {
+        return 0n;
+      }
+    },
     [simulateData],
   );
 
@@ -61,6 +76,7 @@ export default function useVeLordsClaims() {
   return {
     recipient,
     setRecipient,
+    isRecipientValid: recipient.trim().length === 0 || parsedRecipient !== undefined,
     claimCall,
     lordsClaimable,
     claimRewards,

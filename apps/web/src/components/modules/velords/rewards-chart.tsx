@@ -1,5 +1,5 @@
 import type { ChartConfig } from "@/components/ui/chart";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Card, CardHeader } from "@/components/ui/card";
 import {
@@ -26,6 +26,14 @@ const sourceColors = {
   // Add more sources and colors as needed
 } as const;
 
+const fallbackSourceColors = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
+
 const chartConfig = {
   total_amount: {
     label: "Lords",
@@ -39,14 +47,17 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 function getSenderLabel(sender: string): string {
+  const normalizedSender = formatAddress(sender);
+  const velordsAddress = formatAddress(
+    StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as string,
+  );
   if (
-    sender ===
-    formatAddress(StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as string)
+    normalizedSender === velordsAddress
   ) {
     return "VeLords Exit Fees";
   }
   if (
-    sender ===
+    normalizedSender ===
     "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5"
   ) {
     return "Game + Marketplace Fees";
@@ -56,8 +67,10 @@ function getSenderLabel(sender: string): string {
 
 export function VeLordsRewardsChart({
   data,
-  totalSupply,
+  totalSupplyRaw,
   onTimePeriodChange,
+  isLoading = false,
+  errorMessage,
 }: {
   data?: {
     sender: string;
@@ -65,8 +78,10 @@ export function VeLordsRewardsChart({
     transaction_hash: string;
     timestamp: Date;
   }[];
-  totalSupply?: number;
+  totalSupplyRaw?: bigint;
   onTimePeriodChange?: (period: "3m" | "6m" | "1y") => void;
+  isLoading?: boolean;
+  errorMessage?: string;
 }) {
   const [selectedPeriod, setSelectedPeriod] = useState<"3m" | "6m" | "1y">(
     "3m",
@@ -78,103 +93,99 @@ export function VeLordsRewardsChart({
     onTimePeriodChange?.(period);
   };
 
-  const parsedData = totalSupply
-    ? (() => {
-        if (!data || data.length === 0) return [];
+  const parsedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    const totalSupply = totalSupplyRaw
+      ? Number(formatUnits(totalSupplyRaw, 18))
+      : undefined;
 
-        // Find the date range
-        const timestamps = data.map((item) =>
-          typeof item.timestamp === "number"
-            ? item.timestamp
-            : new Date(item.timestamp).getTime() / 1000,
-        );
-        const minTimestamp = Math.min(...timestamps);
-        const maxTimestamp = Math.max(...timestamps);
+    // Find the date range
+    const timestamps = data.map((item) =>
+      typeof item.timestamp === "number"
+        ? item.timestamp
+        : new Date(item.timestamp).getTime() / 1000,
+    );
+    const minTimestamp = Math.min(...timestamps);
+    const maxTimestamp = Math.max(...timestamps);
 
-        // Generate all weeks in the range
-        const allWeeks: Record<
-          string,
-          {
-            week: string;
-            amounts: Record<string, number>;
-            total_amount: number;
-            apy: number;
-          }
-        > = {};
+    // Generate all weeks in the range
+    const allWeeks: Record<
+      string,
+      {
+        week: string;
+        amounts: Record<string, number>;
+        total_amount: number;
+        apy: number;
+      }
+    > = {};
 
-        // Pre-populate all weeks with zero values
-        for (
-          let timestamp = minTimestamp;
-          timestamp <= maxTimestamp;
-          timestamp += 604800
-        ) {
-          const weekStart = Math.floor(timestamp / 604800) * 604800;
-          const week = new Date(weekStart * 1000).toISOString().split("T")[0];
-          allWeeks[week] = {
-            week,
-            amounts: {},
-            total_amount: 0,
-            apy: 0,
-          };
-        }
+    // Pre-populate all weeks with zero values
+    for (
+      let timestamp = minTimestamp;
+      timestamp <= maxTimestamp;
+      timestamp += 604800
+    ) {
+      const weekStart = Math.floor(timestamp / 604800) * 604800;
+      const week = new Date(weekStart * 1000).toISOString().split("T")[0];
+      allWeeks[week] = {
+        week,
+        amounts: {},
+        total_amount: 0,
+        apy: 0,
+      };
+    }
 
-        // Fill in the actual data
-        data.forEach((item) => {
-          const timestamp =
-            typeof item.timestamp === "number"
-              ? item.timestamp
-              : new Date(item.timestamp).getTime() / 1000;
+    // Fill in the actual data
+    data.forEach((item) => {
+      const timestamp =
+        typeof item.timestamp === "number"
+          ? item.timestamp
+          : new Date(item.timestamp).getTime() / 1000;
 
-          const weekStart = Math.floor(timestamp / 604800) * 604800;
-          const week = new Date(weekStart * 1000).toISOString().split("T")[0];
+      const weekStart = Math.floor(timestamp / 604800) * 604800;
+      const week = new Date(weekStart * 1000).toISOString().split("T")[0];
 
-          const formattedAmount = Number(formatUnits(BigInt(item.amount), 18));
-          const senderLabel = getSenderLabel(item.sender);
+      const formattedAmount = Number(formatUnits(BigInt(item.amount), 18));
+      const senderLabel = getSenderLabel(item.sender);
 
-          if (!allWeeks[week]) {
-            allWeeks[week] = {
-              week,
-              amounts: {},
-              total_amount: 0,
-              apy: 0,
-            };
-          }
-          if (!allWeeks[week].amounts) allWeeks[week].amounts = {};
-          allWeeks[week].amounts[senderLabel] =
-            (allWeeks[week].amounts[senderLabel] || 0) + formattedAmount;
-          allWeeks[week].total_amount += formattedAmount;
-          allWeeks[week].apy =
-            ((allWeeks[week].total_amount * 52) / totalSupply) * 100;
-        });
+      allWeeks[week].amounts[senderLabel] =
+        (allWeeks[week].amounts[senderLabel] || 0) + formattedAmount;
+      allWeeks[week].total_amount += formattedAmount;
+      allWeeks[week].apy =
+        totalSupply && totalSupply > 0
+          ? ((allWeeks[week].total_amount * 52) / totalSupply) * 100
+          : 0;
+    });
 
-        return Object.values(allWeeks).sort((a, b) =>
-          a.week.localeCompare(b.week),
-        );
-      })()
-    : [];
+    return Object.values(allWeeks).sort((a, b) => a.week.localeCompare(b.week));
+  }, [data, totalSupplyRaw]);
 
-  // Build all unique sender labels (not addresses)
-  const allSenderLabels = Array.from(
-    new Set(data?.map((item) => getSenderLabel(item.sender)) ?? []),
+  const allSenderLabels = useMemo(
+    () => Array.from(new Set(data?.map((item) => getSenderLabel(item.sender)) ?? [])),
+    [data],
   );
 
   // Build dynamic chart config using labels
   const dynamicChartConfig: Record<
     string,
-    { label: string; color: string; icon?: typeof LordsIcon }
+      { label: string; color: string; icon?: typeof LordsIcon }
   > &
     typeof chartConfig = {
     ...chartConfig,
     ...Object.fromEntries(
-      allSenderLabels.map((label) => [
+      allSenderLabels.map((label, index) => [
         `amounts.${label}`,
         {
           label,
-          color:
-            sourceColors[
-              data?.find((item) => getSenderLabel(item.sender) === label)
-                ?.sender as keyof typeof sourceColors
-            ],
+          color: (() => {
+            const senderAddress = data?.find(
+              (item) => getSenderLabel(item.sender) === label,
+            )?.sender;
+            const knownColor = senderAddress
+              ? sourceColors[senderAddress as keyof typeof sourceColors]
+              : undefined;
+            return knownColor ?? fallbackSourceColors[index % fallbackSourceColors.length];
+          })(),
         },
       ]),
     ),
@@ -219,6 +230,15 @@ export function VeLordsRewardsChart({
         config={dynamicChartConfig}
         className="max-h-[800px] w-full overflow-x-auto"
       >
+        {errorMessage ? (
+          <div className="text-destructive p-6 text-sm">{errorMessage}</div>
+        ) : isLoading ? (
+          <div className="p-6 text-sm text-muted-foreground">Loading chart data...</div>
+        ) : parsedData.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground">
+            No rewards data is available for this period.
+          </div>
+        ) : (
         <BarChart data={parsedData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
@@ -278,6 +298,7 @@ export function VeLordsRewardsChart({
             activeDot={{ r: 8 }}
           />
         </BarChart>
+        )}
       </ChartContainer>
     </Card>
   );
