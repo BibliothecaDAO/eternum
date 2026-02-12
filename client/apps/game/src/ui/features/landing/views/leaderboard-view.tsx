@@ -1,4 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -41,9 +42,11 @@ export const LeaderboardView = ({ className }: LeaderboardViewProps) => {
       case "ranked":
       default:
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <MMRLeaderboard />
-          </Suspense>
+          <MarketsProviders>
+            <Suspense fallback={<LoadingSpinner />}>
+              <MMRLeaderboard />
+            </Suspense>
+          </MarketsProviders>
         );
     }
   };
