@@ -14,6 +14,7 @@ import { z } from "zod";
 import { SnapshotSpaceAddresses } from "@realms-world/constants";
 
 import { execute } from "../queries/execute";
+import { formatSnapshotProposalReference } from "./proposal-id";
 
 graphql(`
   fragment proposalFields on Proposal {
@@ -244,10 +245,18 @@ export const getProposal = createServerFn({ method: "POST" })
   .validator((input: unknown) => LoadProposalInput.parse(input))
   .handler(async (ctx) => {
     const { id } = ctx.data;
+    const proposalReference = formatSnapshotProposalReference(
+      SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID] as string,
+      id,
+    );
+
+    if (!proposalReference) {
+      return { proposal: null };
+    }
 
     // Fetch a single proposal using the generic fetch helper
     const proposalData = await execute(PROPOSAL_QUERY, {
-      id: `${SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID]}/${id}`,
+      id: proposalReference,
     });
 
     // Return the proposal data
