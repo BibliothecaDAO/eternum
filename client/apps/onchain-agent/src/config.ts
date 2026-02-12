@@ -1,7 +1,18 @@
 import path from "node:path";
 import { resolveDefaultDataDir, resolveDefaultManifestPath, resolveDefaultSessionBasePath } from "./runtime-paths";
 
+export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
+
+const CHAIN_ID_MAP: Record<Chain, string> = {
+  slot: "0x4b4154414e41",
+  slottest: "0x4b4154414e41",
+  local: "0x4b4154414e41",
+  sepolia: "0x534e5f5345504f4c4941",
+  mainnet: "0x534e5f4d41494e",
+};
+
 export interface AgentConfig {
+  chain: Chain;
   rpcUrl: string;
   toriiUrl: string;
   worldAddress: string;
@@ -38,15 +49,26 @@ function parseBoolean(value: string | undefined, fallback: boolean): boolean {
   return fallback;
 }
 
+function parseChain(value: string | undefined): Chain {
+  const valid: Chain[] = ["slot", "slottest", "local", "sepolia", "mainnet"];
+  if (value && valid.includes(value as Chain)) {
+    return value as Chain;
+  }
+  return "slot";
+}
+
 export function loadConfig(): AgentConfig {
   const env = process.env;
+  const chain = parseChain(env.CHAIN);
+  const chainId = env.CHAIN_ID ?? CHAIN_ID_MAP[chain];
   return {
-    rpcUrl: env.RPC_URL ?? "http://localhost:5050",
-    toriiUrl: env.TORII_URL ?? "http://localhost:8080",
-    worldAddress: env.WORLD_ADDRESS ?? "0x0",
-    manifestPath: path.resolve(env.MANIFEST_PATH ?? resolveDefaultManifestPath(env)),
+    chain,
+    rpcUrl: env.RPC_URL ?? "",
+    toriiUrl: env.TORII_URL ?? "",
+    worldAddress: env.WORLD_ADDRESS ?? "",
+    manifestPath: env.MANIFEST_PATH ? path.resolve(env.MANIFEST_PATH) : resolveDefaultManifestPath(env),
     gameName: env.GAME_NAME ?? "eternum",
-    chainId: env.CHAIN_ID ?? "0x534e5f5345504f4c4941",
+    chainId,
     sessionBasePath: path.resolve(env.SESSION_BASE_PATH ?? resolveDefaultSessionBasePath(env)),
     tickIntervalMs: parsePositiveIntervalMs(env.TICK_INTERVAL_MS, 60000),
     loopEnabled: parseBoolean(env.LOOP_ENABLED, true),

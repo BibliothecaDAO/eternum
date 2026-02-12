@@ -57,11 +57,20 @@ function normalizeJob(raw: unknown): HeartbeatJob | null {
 
 export function parseHeartbeatConfig(markdown: string): HeartbeatConfig {
   const payload = extractYamlPayload(markdown);
-  const parsed = YAML.parse(payload) as { version?: unknown; jobs?: unknown } | null;
-  const jobsRaw = Array.isArray(parsed?.jobs) ? parsed.jobs : [];
+  let parsed: { version?: unknown; jobs?: unknown } | null = null;
+  try {
+    parsed = YAML.parse(payload) as { version?: unknown; jobs?: unknown } | null;
+  } catch {
+    // Invalid YAML (e.g. agent overwrote with markdown) — return empty config
+    return { version: 1, jobs: [] };
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return { version: 1, jobs: [] };
+  }
+  const jobsRaw = Array.isArray(parsed.jobs) ? parsed.jobs : [];
   const jobs = jobsRaw.map(normalizeJob).filter((job): job is HeartbeatJob => Boolean(job));
   return {
-    version: typeof parsed?.version === "number" ? parsed.version : 1,
+    version: typeof parsed.version === "number" ? parsed.version : 1,
     jobs,
   };
 }

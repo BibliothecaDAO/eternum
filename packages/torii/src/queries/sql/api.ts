@@ -31,6 +31,7 @@ import {
   RawPlayerLeaderboardRow,
   RawRealmVillageSlot,
   RealmVillageSlot,
+  ResourceBalanceRow,
   SeasonEnded,
   StoryEventData,
   StructureDetails,
@@ -64,6 +65,7 @@ import {
 } from "./leaderboard-helpers";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
+import { RESOURCE_QUERIES } from "./resource";
 import { extractRelicsFromResourceData } from "./relics-utils";
 import { SEASON_QUERIES } from "./season";
 import { STORY_QUERIES } from "./story";
@@ -379,6 +381,18 @@ export class SqlApi {
     const query = STRUCTURE_QUERIES.PLAYER_STRUCTURES.replace("{owner}", formattedOwner);
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<PlayerStructure>(url, "Failed to fetch player structures");
+  }
+
+  /**
+   * Fetch resource balances for a set of entity IDs from the s1_eternum-Resource table.
+   * Selects only *_BALANCE columns (29 cols) instead of the full table (218 cols).
+   * SQL queries always return arrays.
+   */
+  async fetchResourceBalances(entityIds: number[]): Promise<ResourceBalanceRow[]> {
+    if (entityIds.length === 0) return [];
+    const query = RESOURCE_QUERIES.RESOURCE_BALANCES.replace("{entityIds}", entityIds.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances");
   }
 
   /**

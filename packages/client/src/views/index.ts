@@ -1,3 +1,4 @@
+import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { ViewCache } from "../cache";
 import { computeStrength } from "../compute";
 import type { ClientLogger } from "../config";
@@ -34,6 +35,7 @@ import type {
  */
 export interface SqlApiLike {
   fetchPlayerStructures(owner: string): Promise<any[]>;
+  fetchResourceBalances(entityIds: number[]): Promise<any[]>;
   fetchGuardsByStructure(entityId: ID): Promise<any[]>;
   fetchAllArmiesMapData(): Promise<any[]>;
   fetchAllStructuresMapData(): Promise<any[]>;
@@ -89,6 +91,10 @@ export class ViewClient {
       // Fetch guards
       const guards = await this.sql.fetchGuardsByStructure(entityId);
 
+      // Fetch resource balances for this specific entity
+      const resourceRows = await this.sql.fetchResourceBalances([entityId]);
+      const realmResources = this.parseResourceBalanceRows(resourceRows);
+
       // Fetch armies to find explorers for this realm
       const allArmies = await this.sql.fetchAllArmiesMapData();
       const ownedArmies = allArmies.filter((a: any) => a.owner !== undefined && a.owner === owner);
@@ -118,7 +124,7 @@ export class ViewClient {
           y: Number(structure?.coord_y ?? structure?.y ?? 0),
         },
         level: Number(structure?.level ?? 1),
-        resources: [],
+        resources: realmResources,
         productions: [],
         buildings: [],
         guard: guardState,
@@ -378,7 +384,10 @@ export class ViewClient {
         );
       }
 
-      const totalResources = this.aggregateResourcesFromStructures(structures, playerStructureRows);
+      // Fetch actual resource balances from the Resource table
+      const entityIds = playerStructureRows.map((s: any) => Number(s.entity_id)).filter(Boolean);
+      const resourceRows = entityIds.length > 0 ? await this.sql.fetchResourceBalances(entityIds) : [];
+      const totalResources = this.aggregateResourceBalancesFromRows(resourceRows);
 
       const result: PlayerView = {
         address,
@@ -619,95 +628,92 @@ export class ViewClient {
     return normalize(a) !== "" && normalize(a) === normalize(b);
   }
 
-  private aggregateResourcesFromStructures(
-    ...structureGroups: Array<any[] | undefined>
+  private static readonly RESOURCE_PRECISION = 1_000_000_000_000_000_000n; // 1e18
+  private static readonly ZERO_HEX = "0x00000000000000000000000000000000";
+
+  /**
+   * Parse a hex balance string from the Resource table into a whole-number balance.
+   * On-chain values use 1e18 precision; this divides to get the integer part.
+   */
+  private parseHexBalance(hex: unknown): number {
+    if (typeof hex !== "string" || hex === ViewClient.ZERO_HEX) return 0;
+    try {
+      const raw = BigInt(hex);
+      if (raw <= 0n) return 0;
+      return Number(raw / ViewClient.RESOURCE_PRECISION);
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Parse raw ResourceBalanceRow rows into ResourceState objects for a single entity.
+   * Returns only resources with non-zero balances.
+   */
+  private parseResourceBalanceRows(rows: any[]): any[] {
+    const results: any[] = [];
+
+    for (const row of rows) {
+      for (const col of RESOURCE_BALANCE_COLUMNS) {
+        const hex = row[col.column];
+        const balance = this.parseHexBalance(hex);
+        if (balance > 0) {
+          results.push({
+            resourceId: col.resourceId,
+            name: col.name,
+            tier: "",
+            balance,
+            rawBalance: typeof hex === "string" ? BigInt(hex) : 0n,
+            production: null,
+            atMaxCapacity: false,
+            weightKg: 0,
+          });
+        }
+      }
+    }
+
+    return results.sort((a: any, b: any) => a.resourceId - b.resourceId);
+  }
+
+  /**
+   * Aggregate resource balances from multiple ResourceBalanceRow rows (across structures).
+   * Returns totals per resource with structure counts.
+   */
+  private aggregateResourceBalancesFromRows(
+    rows: any[],
   ): { resourceId: number; name: string; totalBalance: number; totalProduction: number; structureCount: number }[] {
     const aggregates = new Map<
       number,
-      { resourceId: number; name: string; totalBalance: number; totalProduction: number; structures: Set<number> }
+      { resourceId: number; name: string; totalBalance: number; structures: Set<number> }
     >();
 
-    for (const group of structureGroups) {
-      if (!Array.isArray(group)) continue;
+    for (const row of rows) {
+      const entityId = Number(row.entity_id ?? 0);
+      for (const col of RESOURCE_BALANCE_COLUMNS) {
+        const balance = this.parseHexBalance(row[col.column]);
+        if (balance <= 0) continue;
 
-      for (const structure of group) {
-        const structureId = Number(structure?.entity_id ?? structure?.entityId ?? -1);
-        for (const resource of this.extractResourceEntries(structure?.resources)) {
-          const key = Number(resource.resourceId);
-          const current = aggregates.get(key) ?? {
-            resourceId: key,
-            name: resource.name,
-            totalBalance: 0,
-            totalProduction: 0,
-            structures: new Set<number>(),
-          };
-
-          current.totalBalance += resource.amount;
-          if (resource.production != null) {
-            current.totalProduction += resource.production;
-          }
-          if (structureId >= 0) {
-            current.structures.add(structureId);
-          }
-          if (!current.name && resource.name) {
-            current.name = resource.name;
-          }
-          aggregates.set(key, current);
-        }
+        const current = aggregates.get(col.resourceId) ?? {
+          resourceId: col.resourceId,
+          name: col.name,
+          totalBalance: 0,
+          structures: new Set<number>(),
+        };
+        current.totalBalance += balance;
+        if (entityId > 0) current.structures.add(entityId);
+        aggregates.set(col.resourceId, current);
       }
     }
 
     return Array.from(aggregates.values())
-      .map((resource) => ({
-        resourceId: resource.resourceId,
-        name: resource.name || `Resource #${resource.resourceId}`,
-        totalBalance: resource.totalBalance,
-        totalProduction: resource.totalProduction,
-        structureCount: resource.structures.size,
+      .map((r) => ({
+        resourceId: r.resourceId,
+        name: r.name,
+        totalBalance: r.totalBalance,
+        totalProduction: 0,
+        structureCount: r.structures.size,
       }))
       .sort((a, b) => a.resourceId - b.resourceId);
-  }
-
-  private extractResourceEntries(
-    raw: unknown,
-  ): Array<{ resourceId: number; name: string; amount: number; production: number | null }> {
-    if (!raw) return [];
-
-    if (typeof raw === "string") {
-      const trimmed = raw.trim();
-      if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
-        try {
-          return this.extractResourceEntries(JSON.parse(trimmed));
-        } catch {
-          return [];
-        }
-      }
-      return [];
-    }
-
-    if (Array.isArray(raw)) {
-      return raw
-        .map((entry: any) => ({
-          resourceId: Number(entry?.resourceId ?? entry?.resource_id ?? entry?.id ?? -1),
-          name: String(entry?.name ?? entry?.resourceName ?? ""),
-          amount: Number(entry?.amount ?? entry?.balance ?? entry?.totalBalance ?? 0),
-          production: entry?.production == null ? null : Number(entry.production?.rate ?? entry.production ?? 0),
-        }))
-        .filter((entry) => Number.isFinite(entry.resourceId) && entry.resourceId >= 0 && Number.isFinite(entry.amount));
-    }
-
-    if (typeof raw === "object") {
-      return Object.entries(raw as Record<string, unknown>)
-        .map(([key, value]) => ({
-          resourceId: Number(key),
-          name: "",
-          amount: Number(value ?? 0),
-          production: null,
-        }))
-        .filter((entry) => Number.isFinite(entry.resourceId) && Number.isFinite(entry.amount));
-    }
-
-    return [];
   }
 
   private buildGuardState(guards: any[]): GuardState {

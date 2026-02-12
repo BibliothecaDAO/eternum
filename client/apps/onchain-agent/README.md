@@ -18,6 +18,91 @@ curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/in
 
 More install/rollback/uninstall details: `client/apps/onchain-agent/INSTALL.md`.
 
+## Building from Source (Local Dev)
+
+Prerequisites: Node.js 22+, pnpm 9+.
+
+```bash
+# 1. Clone and install
+git clone https://github.com/bibliothecadao/eternum.git
+cd eternum
+pnpm install
+
+# 2. Build workspace dependencies (in order)
+pnpm --dir packages/types build
+pnpm --dir packages/torii build
+pnpm --dir packages/provider build
+pnpm --dir packages/client build
+pnpm --dir packages/game-agent build
+
+# 3. Type-check the agent
+pnpm --dir client/apps/onchain-agent build
+
+# 4. Configure
+cd client/apps/onchain-agent
+cp .env.example .env
+# Edit .env — at minimum set ANTHROPIC_API_KEY (or OPENAI_API_KEY + MODEL_PROVIDER)
+# World discovery auto-resolves RPC/Torii/WorldAddress from the Cartridge factory,
+# so you only need CHAIN=slot and optionally SLOT_NAME to auto-select a world.
+
+# 5. Run (from repo root)
+pnpm --dir client/apps/onchain-agent dev
+```
+
+On first run the agent will prompt you to approve a Cartridge Controller session in your browser (see [Authentication](#cartridge-controller-authentication) below).
+
+### Default paths with zero config
+
+With only `ANTHROPIC_API_KEY` set (no other env vars), the agent resolves everything automatically:
+
+| What | Default path | Override env var |
+|---|---|---|
+| Agent home | `~/.eternum-agent/` | `ETERNUM_AGENT_HOME` |
+| Data dir (soul, tasks, heartbeat) | `~/.eternum-agent/data/` | `DATA_DIR` |
+| Session storage | `~/.eternum-agent/.cartridge/` | `SESSION_BASE_PATH` |
+| Chain | `slot` | `CHAIN` |
+| Game name | `eternum` | `GAME_NAME` |
+| Model | `anthropic` / `claude-sonnet-4-5-20250929` | `MODEL_PROVIDER` / `MODEL_ID` |
+| Tick interval | 60000ms (1 min) | `TICK_INTERVAL_MS` |
+| Tick loop | enabled | `LOOP_ENABLED` |
+
+**World discovery is automatic.** When `RPC_URL`, `TORII_URL`, and `WORLD_ADDRESS` are not set, the agent queries the Cartridge Factory SQL API to discover active worlds, then either presents a TUI picker or auto-selects if `SLOT_NAME` matches a discovered world. The manifest is loaded from `contracts/game/manifest_<chain>.json` in the repo and patched with live contract addresses from the factory.
+
+So a minimal `.env` is just:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+The working directory tree after first run:
+
+```
+~/.eternum-agent/
+├── data/
+│   ├── soul.md              # agent personality/instructions
+│   ├── HEARTBEAT.md          # cron-style recurring jobs
+│   └── tasks/
+│       └── priorities.md     # task tracking
+└── .cartridge/
+    └── session.json          # Cartridge Controller session (auto-created on auth)
+```
+
+### Building a standalone binary
+
+Requires [Bun](https://bun.sh) installed locally:
+
+```bash
+cd client/apps/onchain-agent
+
+# Single target (current platform)
+bun build src/cli.ts --compile --outfile axis
+
+# Run it
+./axis run
+./axis doctor
+./axis init
+```
+
 ## Commands
 
 ```bash

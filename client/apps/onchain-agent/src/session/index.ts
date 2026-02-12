@@ -1,1 +1,1 @@
-export { ControllerSession, type ControllerSessionConfig } from "./controller-session";
+export { ControllerSession } from "./controller-session";

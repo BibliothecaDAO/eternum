@@ -93,7 +93,7 @@ describe("buildWorldState", () => {
     await buildWorldState(client, "0xdeadbeef");
 
     expect(client.view.player).toHaveBeenCalledWith("0xdeadbeef");
-    expect(client.view.mapArea).toHaveBeenCalledWith({ x: 0, y: 0, radius: 100 });
+    expect(client.view.mapArea).toHaveBeenCalledWith({ x: 0, y: 0, radius: 15 });
     expect(client.view.market).toHaveBeenCalled();
     expect(client.view.leaderboard).toHaveBeenCalledWith({ limit: 10 });
   });

@@ -34,7 +34,7 @@ describe("cli commands", () => {
 
     expect(code).toBe(0);
     expect(mainMock).toHaveBeenCalledOnce();
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("AXIS"));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("█"));
   });
 
   it("returns non-zero for unknown command", async () => {

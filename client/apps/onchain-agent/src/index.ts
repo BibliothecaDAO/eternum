@@ -13,11 +13,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AccountInterface } from "starknet";
+import { createShutdownGate } from "./shutdown-gate";
 import { type AgentConfig, loadConfig } from "./config";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
 import { createApp } from "./tui/app";
+import { type DiscoveredWorld, discoverAllWorlds, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
+import { normalizeRpcUrl } from "./world/normalize";
+import { createWorldPicker } from "./tui/world-picker";
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
   const raw = await readFile(manifestPath, "utf8");
@@ -110,6 +114,7 @@ function parseConfigValue(key: keyof AgentConfig, value: unknown): AgentConfig[k
       return parsePositiveInt(value, key);
     case "loopEnabled":
       return parseBoolean(value, key);
+    case "chain":
     case "rpcUrl":
     case "toriiUrl":
     case "worldAddress":
@@ -140,8 +145,11 @@ function updateResultForKey(
   }
 }
 
-async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServices> {
-  const manifest = await loadManifest(path.resolve(config.manifestPath));
+async function createRuntimeServices(
+  config: AgentConfig,
+  resolvedManifest?: { contracts: unknown[] },
+): Promise<RuntimeServices> {
+  const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath)));
 
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
@@ -151,9 +159,7 @@ async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServic
     manifest,
   });
 
-  console.log("Connecting to Cartridge Controller...");
   const account = await session.connect();
-  console.log(`Session ready! Account: ${account.address}`);
 
   const client = await EternumClient.create({
     rpcUrl: config.rpcUrl,
@@ -167,16 +173,80 @@ async function createRuntimeServices(config: AgentConfig): Promise<RuntimeServic
 }
 
 export async function main() {
+  // Ensure clean exit on Ctrl+C at any point (e.g. during auth URL wait)
+  process.on("SIGINT", () => {
+    process.stdout.write("\x1b[?25h"); // restore cursor
+    console.log("\nExiting.");
+    process.exit(0);
+  });
+
   let runtimeConfig: AgentConfig = loadConfig();
-  const manifestPath = path.resolve(runtimeConfig.manifestPath);
+  let resolvedManifest: { contracts: unknown[] } | undefined;
 
-  console.log("Initializing Eternum Agent...");
-  console.log(`  RPC: ${runtimeConfig.rpcUrl}`);
-  console.log(`  Torii: ${runtimeConfig.toriiUrl}`);
-  console.log(`  Manifest: ${manifestPath}`);
-  console.log(`  Model: ${runtimeConfig.modelProvider}/${runtimeConfig.modelId}`);
+  // World Discovery Flow — resolve config from factory unless all overrides are set
+  const hasManualOverrides = runtimeConfig.rpcUrl && runtimeConfig.toriiUrl && runtimeConfig.worldAddress;
+  if (!hasManualOverrides) {
+    // Discovery happens silently — the TUI picker shows the results
+    const worlds = await discoverAllWorlds();
 
-  let services = await createRuntimeServices(runtimeConfig);
+    if (worlds.length === 0) {
+      console.error("No worlds found on any chain.");
+      process.exit(1);
+    }
+
+    // Auto-select if SLOT_NAME matches a discovered world (skip TUI picker)
+    const slotName = process.env.SLOT_NAME;
+    let selected: DiscoveredWorld | null = null;
+    if (slotName) {
+      selected = worlds.find((w) => w.name === slotName) ?? null;
+      if (selected) {
+        console.log(`  Auto-selected world: [${selected.chain}] ${selected.name}`);
+      } else {
+        console.log(`  SLOT_NAME="${slotName}" did not match any world. Available: ${worlds.map((w) => w.name).join(", ")}`);
+      }
+    }
+    if (!selected) {
+      if (!process.stdin.isTTY) {
+        console.error("No world selected and no TTY available for picker. Set SLOT_NAME env var.");
+        process.exit(1);
+      }
+      selected = await createWorldPicker(worlds);
+    }
+    if (!selected) {
+      console.log("No world selected. Exiting.");
+      process.exit(0);
+    }
+
+    // Update chain from the selected world
+    runtimeConfig.chain = selected.chain;
+
+    console.log("  Building world profile...");
+    const profile = await buildWorldProfile(selected.chain, selected.name);
+    console.log("  Profile built. Resolving manifest...");
+    resolvedManifest = await buildResolvedManifest(selected.chain, profile);
+    console.log("  Manifest resolved.");
+
+    runtimeConfig.rpcUrl = normalizeRpcUrl(profile.rpcUrl ?? runtimeConfig.rpcUrl);
+    runtimeConfig.toriiUrl = `${profile.toriiBaseUrl}/sql`;
+    runtimeConfig.worldAddress = profile.worldAddress;
+  }
+
+  console.log("  Connecting controller session...");
+  // Listen for Escape/Ctrl+C during init (connect, sync, etc.)
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on("data", (data: Buffer) => {
+      const str = data.toString();
+      if (str === "\x1b" || str === "\x03") {
+        process.stdout.write("\x1b[?25h");
+        console.log("\nExiting.");
+        process.exit(0);
+      }
+    });
+  }
+
+  let services = await createRuntimeServices(runtimeConfig, resolvedManifest);
   const adapter = new MutableGameAdapter(services.adapter);
 
   let runtimeAgent: ReturnType<typeof createGameAgent> | null = null;
@@ -237,7 +307,7 @@ export async function main() {
     const backendChanged = Array.from(changedKeys).some((key) => BACKEND_KEYS.has(key));
     if (backendChanged) {
       try {
-        const nextServices = await createRuntimeServices(candidate);
+        const nextServices = await createRuntimeServices(candidate, resolvedManifest);
         adapter.setAdapter(nextServices.adapter);
         services.client.disconnect();
         services = nextServices;
@@ -340,6 +410,13 @@ export async function main() {
   runtimeAgent = game;
   const { agent, ticker, dispose: disposeAgent } = game;
 
+  // Hand stdin back to the TUI
+  process.stdin.removeAllListeners("data");
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(false);
+  }
+  process.stdin.pause();
+
   // 5. Create the TUI
   const { dispose: disposeTui } = createApp({ agent, ticker });
 
@@ -379,6 +456,8 @@ export async function main() {
   console.log("Agent running. Press Ctrl+C to exit.\n");
 
   // 7. Graceful shutdown
+  const gate = createShutdownGate();
+
   const shutdown = async () => {
     console.log("\nShutting down...");
     heartbeat.stop();
@@ -386,11 +465,13 @@ export async function main() {
     await disposeAgent();
     disposeTui();
     services.client.disconnect();
-    process.exit(0);
+    gate.shutdown();
   };
 
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+
+  return gate.promise;
 }
 
 function isDirectExecution(metaUrl: string): boolean {

@@ -100,6 +100,17 @@ vi.mock("../src/tui/app", () => ({
   createApp: mocks.createApp,
 }));
 
+vi.mock("../src/tui/world-picker", () => ({
+  createWorldPicker: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("../src/shutdown-gate", () => ({
+  createShutdownGate: () => ({
+    promise: Promise.resolve(),
+    shutdown: vi.fn(),
+  }),
+}));
+
 vi.mock("../src/adapter/eternum-adapter", () => ({
   EternumGameAdapter: class {
     constructor(...args: unknown[]) {
@@ -256,7 +267,6 @@ describe("index bootstrap", () => {
       expect(disposeTui).toHaveBeenCalledOnce();
       expect(mocks.client.disconnect).toHaveBeenCalledOnce();
       expect(mocks.sessionInstances[0]?.disconnect).not.toHaveBeenCalled();
-      expect(exitSpy).toHaveBeenCalledWith(0);
     } finally {
       logSpy.mockRestore();
       onSpy.mockRestore();
