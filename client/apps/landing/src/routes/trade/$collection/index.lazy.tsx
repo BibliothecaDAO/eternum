@@ -50,13 +50,12 @@ function CollectionPage() {
     : null;
   const collectionAddress = collectionConfig?.address ?? "";
   const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
+  const defaultTraitFilters: Record<string, string[]> = collectionConfig?.defaultTraitFilters ?? {};
 
   const enforcedTraitFilters = useMemo(
     () =>
-      Object.fromEntries(
-        Object.entries(collectionConfig?.defaultTraitFilters ?? {}).map(([trait, values]) => [trait, [...values]]),
-      ),
-    [collectionConfig],
+      Object.fromEntries(Object.entries(defaultTraitFilters).map(([trait, values]) => [trait, [...values]])),
+    [defaultTraitFilters],
   );
 
   const applyEnforcedFilters = useCallback(

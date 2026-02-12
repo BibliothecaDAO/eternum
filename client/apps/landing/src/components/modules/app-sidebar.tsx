@@ -99,7 +99,7 @@ export function AppSidebar() {
     },
   ];
 
-  const walletItems: NavItem[] = collectionNavItems.map((item) => ({
+  const walletItems: NavItem[] = collectionNavItems.map<CollectionNavItem>((item) => ({
     title: item.title,
     href: `/${item.key}`,
     to: "/$collection",
@@ -114,7 +114,7 @@ export function AppSidebar() {
       to: "/trade",
       icon: ShoppingBag,
     },
-    ...collectionNavItems.map((item) => ({
+    ...collectionNavItems.map<CollectionNavItem>((item) => ({
       title: item.title,
       href: `/trade/${item.key}`,
       to: "/trade/$collection",

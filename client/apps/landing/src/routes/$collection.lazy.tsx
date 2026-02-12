@@ -75,7 +75,6 @@ function ManageCollectionRoute() {
         queryKey: ["tokenBalance", collection, address],
         queryFn: () => (address && isValidCollection ? fetchTokenBalancesWithMetadata(collectionAddress, address) : null),
         refetchInterval: 8_000,
-        enabled: Boolean(address && isValidCollection),
       },
     ],
   });
