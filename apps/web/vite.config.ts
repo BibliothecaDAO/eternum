@@ -41,12 +41,15 @@ export default defineConfig({
     ],
   },
   ssr: {
-    noExternal: ["@realms-world/db", "@realms-world/constants", "zod"],
+    noExternal: [
+      "@realms-world/db",
+      "@realms-world/constants",
+      "zod",
+      /^@reown\//,
+      /^@walletconnect\//,
+    ],
     external: [
       "wagmi",
-      "@reown/appkit/react",
-      "@reown/appkit",
-      "@reown/appkit-adapter-wagmi",
       "@starknet-io/starknet-types-08",
     ],
   },
