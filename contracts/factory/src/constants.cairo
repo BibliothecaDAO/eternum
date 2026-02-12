@@ -1,0 +1,2 @@
+pub const MMR_SYSTEMS_SELECTOR: felt252 =
+    0x628d6becd2c6fa1835109109b92cc642dfe69ab9194ca331cf7c510d9e2b5ce;

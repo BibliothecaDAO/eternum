@@ -33,7 +33,7 @@ pub impl iVillageImpl of iVillageTrait {
         2
     }
 
-    fn ensure_village_realm(
+    fn ensure_associated_with_village(
         ref world: WorldStorage, village_structure_metadata: StructureMetadata, check_realm_entity_id: ID,
     ) {
         assert!(village_structure_metadata.village_realm.is_non_zero(), "village owner is not set");

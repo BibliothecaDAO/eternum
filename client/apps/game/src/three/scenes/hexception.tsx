@@ -33,6 +33,7 @@ import { LeftView } from "@/types";
 import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { IS_FLAT_MODE } from "@/ui/config";
+import { HEXCEPTION_GRID_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -158,6 +159,8 @@ export default class HexceptionScene extends HexagonScene {
   private structureUpdateSubscription: any | null = null;
   private isInitialized = false;
   private lastRealmKey?: string;
+  // Store Zustand unsubscribe functions to clean up on destroy
+  private storeUnsubscribes: (() => void)[] = [];
 
   constructor(
     controls: MapControls,
@@ -250,75 +253,101 @@ export default class HexceptionScene extends HexagonScene {
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
 
-    useUIStore.subscribe(
-      (state) => state.playerStructures,
-      (playerStructures) => {
-        if (playerStructures.length > 0) {
-          this.updatePlayerStructures(playerStructures);
-        }
-      },
+    // Store all Zustand subscriptions for cleanup on destroy
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.playerStructures,
+        (playerStructures) => {
+          if (playerStructures.length > 0) {
+            this.updatePlayerStructures(playerStructures);
+          }
+        },
+      ),
     );
 
-    useUIStore.subscribe(
-      (state) => state.previewBuilding,
-      (building) => {
-        if (building) {
-          this.interactiveHexManager.setAuraVisibility(false);
-          this.buildingPreview?.setPreviewBuilding(building as any);
-          this.highlightHexManager.highlightHexes(
-            this.highlights.map((hex) => ({
-              hex: { col: hex.col, row: hex.row },
-              actionType: ActionType.Build,
-            })),
-          );
-        } else {
-          this.interactiveHexManager.setAuraVisibility(true);
-          this.clearBuildingMode();
-        }
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.previewBuilding,
+        (building) => {
+          if (building) {
+            this.interactiveHexManager.setAuraVisibility(false);
+            this.buildingPreview?.setPreviewBuilding(building as any);
+            this.highlightHexManager.highlightHexes(
+              this.highlights.map((hex) => ({
+                hex: { col: hex.col, row: hex.row },
+                actionType: ActionType.Build,
+              })),
+            );
+          } else {
+            this.interactiveHexManager.setAuraVisibility(true);
+            this.clearBuildingMode();
+          }
+        },
+      ),
     );
 
-    useUIStore.subscribe(
-      (state) => state.useSimpleCost,
-      (useSimpleCost) => {
-        this.state.useSimpleCost = useSimpleCost;
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.useSimpleCost,
+        (useSimpleCost) => {
+          this.state.useSimpleCost = useSimpleCost;
+        },
+      ),
     );
 
     // Subscribe to structureEntityId changes
-    useUIStore.subscribe(
-      (state) => state.structureEntityId,
-      (structureEntityId) => {
-        // Clean up previous subscription if it exists
-        if (this.structureUpdateSubscription) {
-          this.structureUpdateSubscription.unsubscribe();
-          this.structureUpdateSubscription = null;
-        }
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.structureEntityId,
+        (structureEntityId) => {
+          // Clean up previous subscription if it exists
+          if (this.structureUpdateSubscription) {
+            this.structureUpdateSubscription.unsubscribe();
+            this.structureUpdateSubscription = null;
+          }
 
-        // Only create a new subscription if we have a valid entity ID
-        if (structureEntityId && structureEntityId !== 0) {
-          console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
+          // Only create a new subscription if we have a valid entity ID
+          if (structureEntityId && structureEntityId !== 0) {
+            console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
 
-          this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
-            structureEntityId,
-            (update) => {
-              this.structureStage = update.level as RealmLevels;
-              this.removeCastleFromScene();
-              this.updateHexceptionGrid(this.hexceptionRadius);
-            },
-          );
-        }
-      },
+            this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
+              structureEntityId,
+              (update) => {
+                this.structureStage = update.level as RealmLevels;
+                this.removeCastleFromScene();
+                this.updateHexceptionGrid(this.hexceptionRadius);
+              },
+            );
+          }
+        },
+      ),
     );
 
     // Subscribe to zoom setting changes
-    useUIStore.subscribe(
-      (state) => state.enableMapZoom,
-      (enableMapZoom) => {
-        if (this.controls) {
-          this.controls.enableZoom = enableMapZoom;
-        }
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.enableMapZoom,
+        (enableMapZoom) => {
+          if (this.controls) {
+            this.controls.enableZoom = enableMapZoom;
+          }
+        },
+      ),
+    );
+
+    // Re-render the hex grid when the loading overlay dismisses.
+    // Buildings may not be in RECS when the scene first sets up;
+    // once showBlankOverlay becomes false, structures are synced.
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.showBlankOverlay,
+        (showBlankOverlay) => {
+          if (!showBlankOverlay) {
+            this.removeCastleFromScene();
+            this.updateHexceptionGrid(this.hexceptionRadius);
+          }
+        },
+      ),
     );
   }
 
@@ -469,6 +498,11 @@ export default class HexceptionScene extends HexagonScene {
 
   destroy() {
     this.clearHoverLabel();
+
+    // CRITICAL: Clean up all Zustand store subscriptions to prevent memory leaks
+    console.log("🧹 Cleaning up Zustand subscriptions:", this.storeUnsubscribes.length);
+    this.storeUnsubscribes.forEach((unsubscribe) => unsubscribe());
+    this.storeUnsubscribes = [];
 
     // Clean up structure update subscription
     if (this.structureUpdateSubscription) {
@@ -1057,6 +1091,14 @@ export default class HexceptionScene extends HexagonScene {
         matrices.length = 0;
       }
       console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
+            detail: { col: this.centerColRow[0], row: this.centerColRow[1] },
+          }),
+        );
+      }
     });
   }
 

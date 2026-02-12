@@ -1,1 +1,0 @@
-export { FactoryGamesList } from "./FactoryGamesList";

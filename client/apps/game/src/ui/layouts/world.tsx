@@ -1,11 +1,10 @@
-import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { Leva } from "leva";
 import { env } from "../../../env";
 import { Tooltip } from "../design-system/molecules/tooltip";
-import { StoryEventStream } from "../features";
 import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
+import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { ActionInstructions } from "../features/world/components/actions/action-instructions";
@@ -62,7 +61,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 const BackgroundSystems = () => (
   <>
     <StoreManagers />
-    <StructureSynchronizer />
     <BlockTimestampPoller />
     <ChainTimePoller />
     <NotLoggedInMessage />
@@ -70,13 +68,9 @@ const BackgroundSystems = () => (
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
     <TransferAutomationManager />
+    <ExplorationAutomationManager />
   </>
 );
-
-const StructureSynchronizer = () => {
-  useSyncPlayerStructures();
-  return null;
-};
 
 /**
  * Core game systems that render interactive content.
@@ -86,7 +80,6 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
     <RealmTransferManager zIndex={100} />
     <PlayOverlayManager backgroundImage={backgroundImage} />
     <CombatSimulation />
-    <StoryEventStream />
   </>
 );
 

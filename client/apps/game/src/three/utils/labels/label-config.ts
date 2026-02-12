@@ -135,7 +135,7 @@ export const LABEL_TYPE_CONFIGS = {
 /**
  * Transition class sets for label visibility
  */
-export const TRANSITION_CLASSES = {
+const TRANSITION_CLASSES = {
   EXPANDED: ["max-w-[1000px]", "ml-2", "opacity-100"],
   COLLAPSED: ["max-w-0", "ml-0", "opacity-0"],
 };
@@ -215,7 +215,7 @@ function getPlayerOwnershipStyle(
 /**
  * Get camera view configuration safely
  */
-export function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig> {
+function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig> {
   const effectiveView = resolveCameraView(cameraView);
   return CAMERA_VIEW_CONFIGS[effectiveView as number] || {};
 }
@@ -223,7 +223,7 @@ export function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig
 /**
  * Merge multiple label configurations with proper deep merging
  */
-export function mergeConfigs(...configs: Partial<LabelConfig>[]): LabelConfig {
+function mergeConfigs(...configs: Partial<LabelConfig>[]): LabelConfig {
   const result: LabelConfig = {
     baseClasses: [],
     transitions: {},

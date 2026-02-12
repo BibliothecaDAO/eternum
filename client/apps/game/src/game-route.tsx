@@ -4,17 +4,17 @@
  */
 import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
-import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
-import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
-import { UnifiedOnboardingScreen } from "./ui/layouts/unified-onboarding";
-import { World } from "./ui/layouts/world";
+import { StoryEventToastBridge } from "./ui/features/story-events";
 import { LoadingScreen } from "./ui/modules/loading-screen";
+import { World } from "./ui/layouts/world";
+import { resolveGameRouteView } from "./game-route.utils";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -30,18 +30,14 @@ const TransactionListenerBridge = () => {
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
     <DojoProvider value={setupResult} account={account}>
-      <MetagameProvider>
-        <ErrorBoundary>
-          <StoryEventToastProvider>
-            <StoryEventToastBridge />
-            <TransactionListenerBridge />
-            <TransactionNotification />
-            <World backgroundImage={backgroundImage} />
-            <WorldLoading />
-            <Toaster />
-          </StoryEventToastProvider>
-        </ErrorBoundary>
-      </MetagameProvider>
+      <ErrorBoundary>
+        <StoryEventToastBridge />
+        <TransactionListenerBridge />
+        <TransactionNotification />
+        <World backgroundImage={backgroundImage} />
+        <WorldLoading />
+        <Toaster />
+      </ErrorBoundary>
     </DojoProvider>
   );
 };
@@ -76,17 +72,22 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
 
   const state = useUnifiedOnboarding(backgroundImage);
   const { phase, setupResult, account } = state;
+  const routeView = resolveGameRouteView({
+    phase,
+    hasSetupResult: setupResult !== null,
+    hasAccount: account !== null,
+  });
 
-  // Phases that don't need Dojo: world-select, account, loading
-  if (phase === "world-select" || phase === "account" || phase === "loading") {
-    return <UnifiedOnboardingScreen backgroundImage={backgroundImage} state={state} />;
+  if (routeView === "redirect") {
+    return <Navigate to="/" replace />;
   }
 
-  // Settlement and Ready phases both render the full game
-  // The onboarding overlay (PlayOverlayManager) handles showing settlement UI
-  // when showBlankOverlay is true in the UI store
+  if (routeView === "loading") {
+    return <LoadingScreen />;
+  }
+
   if (!setupResult || !account) {
-    return <LoadingScreen backgroundImage={backgroundImage} />;
+    return <LoadingScreen />;
   }
 
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;

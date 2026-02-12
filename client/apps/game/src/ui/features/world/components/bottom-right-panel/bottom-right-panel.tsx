@@ -1,4 +1,7 @@
 import { BottomPanelTabId, useUIStore } from "@/hooks/store/use-ui-store";
+import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
+import { getStructuresDataFromTorii } from "@/dojo/queries";
+import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
@@ -23,11 +26,12 @@ import {
   BUILDINGS_CENTER,
   BuildingType,
   BuildingTypeToString,
+  ID,
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { memo, ReactNode, useEffect, useMemo, useState } from "react";
+import { Component, getComponentValue, Metadata, Schema } from "@dojoengine/recs";
+import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
@@ -37,8 +41,11 @@ import { TileManager } from "@bibliothecadao/eternum";
 import { type LucideIcon } from "lucide-react";
 import CircleHelp from "lucide-react/dist/esm/icons/circle-help";
 import Info from "lucide-react/dist/esm/icons/info";
+import Loader from "lucide-react/dist/esm/icons/loader";
 import MapIcon from "lucide-react/dist/esm/icons/map";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import { toast } from "sonner";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
@@ -56,9 +63,22 @@ const formatResourceAmount = (value: number): string => {
   return flooredValue.toLocaleString();
 };
 
+const ENTITY_SYNC_MODELS = {
+  explorer: ["s1_eternum-ExplorerTroops"],
+  structure: ["s1_eternum-Structure"],
+} as const;
+
+type SyncableEntityType = keyof typeof ENTITY_SYNC_MODELS;
+
+const ENTITY_TYPE_LABELS: Record<SyncableEntityType, string> = {
+  explorer: "Explorer",
+  structure: "Structure",
+};
+
 interface PanelFrameProps {
   title: string;
   children: ReactNode;
+  headerAction?: ReactNode;
   className?: string;
   attached?: boolean;
 }
@@ -95,7 +115,7 @@ const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
     .filter((entry): entry is ResourceAmountEntry => Boolean(entry));
 };
 
-const PanelFrame = ({ title, children, className, attached = false }: PanelFrameProps) => (
+const PanelFrame = ({ title, children, headerAction, className, attached = false }: PanelFrameProps) => (
   <section
     className={cn(
       "pointer-events-auto panel-wood panel-wood-corners border border-gold/20 bg-black/60 shadow-2xl flex h-full flex-col overflow-hidden",
@@ -104,8 +124,11 @@ const PanelFrame = ({ title, children, className, attached = false }: PanelFrame
     )}
     style={{ height: BOTTOM_PANEL_HEIGHT }}
   >
-    <header className="flex items-center justify-between border-b border-gold/20 px-4 py-2">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">{title}</p>
+    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2">
+      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
+        {title}
+      </p>
+      {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-3 py-2">{children}</div>
   </section>
@@ -159,7 +182,11 @@ const PanelTabs = ({
 
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
-  const { setup } = useDojo();
+  const {
+    setup,
+    network: { contractComponents, toriiClient },
+  } = useDojo();
+  const { syncEntity, isSyncing } = useEntityResync();
 
   const tile = useMemo(() => {
     if (!selectedHex) return null;
@@ -168,7 +195,7 @@ const MapTilePanel = () => {
       y: selectedHex.row,
     }).getContract();
     return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHexContract.x, selectedHexContract.y);
-  }, [selectedHex]);
+  }, [selectedHex, setup.components]);
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;
@@ -200,8 +227,89 @@ const MapTilePanel = () => {
     ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
     : "No Tile Selected";
 
+  const syncableEntityType = useMemo<SyncableEntityType | null>(() => {
+    if (!tile || !hasOccupier || isChest || isQuest) return null;
+    return isStructure ? "structure" : "explorer";
+  }, [hasOccupier, isChest, isQuest, isStructure, tile]);
+
+  const syncableEntityId = useMemo<ID | null>(() => {
+    if (!tile || !syncableEntityType) return null;
+    const entityId = Number(tile.occupier_id);
+    if (!Number.isFinite(entityId) || entityId <= 0) return null;
+    return entityId as ID;
+  }, [syncableEntityType, tile]);
+
+  const getEntitySyncKey = useCallback(
+    (entityType: SyncableEntityType, entityId: ID) => `${entityType}:${String(entityId)}`,
+    [],
+  );
+
+  const isSyncingCurrentEntity = useMemo(() => {
+    if (!syncableEntityType || syncableEntityId === null) return false;
+    return isSyncing(getEntitySyncKey(syncableEntityType, syncableEntityId));
+  }, [getEntitySyncKey, isSyncing, syncableEntityId, syncableEntityType]);
+
+  const handleResyncCurrentEntity = useCallback(() => {
+    if (!syncableEntityType || syncableEntityId === null) return;
+
+    if (!toriiClient || !contractComponents) {
+      toast.error("Unable to sync right now.");
+      return;
+    }
+
+    const entitySyncKey = getEntitySyncKey(syncableEntityType, syncableEntityId);
+    void syncEntity({
+      syncKey: entitySyncKey,
+      entityLabel: ENTITY_TYPE_LABELS[syncableEntityType],
+      successMessage: `${ENTITY_TYPE_LABELS[syncableEntityType]} #${String(syncableEntityId)} synced.`,
+      runSync: () =>
+        new Promise<void>((resolve, reject) => {
+          let settled = false;
+
+          const complete = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+
+          void debouncedGetEntitiesFromTorii(
+            toriiClient,
+            contractComponents as unknown as Component<Schema, Metadata, undefined>[],
+            [syncableEntityId],
+            [...ENTITY_SYNC_MODELS[syncableEntityType]],
+            complete,
+          ).catch((error) => {
+            if (settled) return;
+            settled = true;
+            reject(error);
+          });
+        }),
+    });
+  }, [contractComponents, getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
+
+  const headerAction =
+    syncableEntityType && syncableEntityId !== null ? (
+      <Button
+        variant="outline"
+        size="xs"
+        className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+        forceUppercase={false}
+        onClick={handleResyncCurrentEntity}
+        withoutSound
+        disabled={isSyncingCurrentEntity}
+        aria-label={`Re-sync ${syncableEntityType} ${String(syncableEntityId)}`}
+      >
+        {isSyncingCurrentEntity ? (
+          <Loader className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
+        <span>{isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}</span>
+      </Button>
+    ) : null;
+
   return (
-    <PanelFrame title={panelTitle} attached>
+    <PanelFrame title={panelTitle} headerAction={headerAction} attached>
       {selectedHex ? (
         <div className="h-full min-h-0 overflow-hidden">
           <SelectedWorldmapEntity />
@@ -216,7 +324,12 @@ const MapTilePanel = () => {
 };
 
 const LocalTilePanel = () => {
-  const { setup, account } = useDojo();
+  const {
+    setup,
+    account,
+    network: { toriiClient, contractComponents },
+  } = useDojo();
+  const { syncEntity, isSyncing } = useEntityResync();
   const buildingComponent = setup.components.Building;
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
@@ -231,14 +344,49 @@ const LocalTilePanel = () => {
   const structureBase = useMemo(() => {
     const structure = playerStructures.find((entry) => entry.entityId === structureEntityId);
     const base = structure?.structure?.base;
-    if (!base || base.coord_x === undefined || base.coord_y === undefined) {
-      return null;
+    if (base && base.coord_x !== undefined && base.coord_y !== undefined) {
+      return {
+        outerCol: Number(base.coord_x),
+        outerRow: Number(base.coord_y),
+      };
     }
+
+    let structureEntityKey: ReturnType<typeof getEntityIdFromKeys> | undefined;
+    try {
+      structureEntityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
+    } catch {
+      structureEntityKey = undefined;
+    }
+
+    const liveStructure = structureEntityKey ? getComponentValue(setup.components.Structure, structureEntityKey) : null;
+    const liveBase = liveStructure?.base;
+    const hasLiveCoords = liveBase?.coord_x !== undefined && liveBase?.coord_y !== undefined;
+    if (hasLiveCoords) {
+      return {
+        outerCol: Number(liveBase.coord_x),
+        outerRow: Number(liveBase.coord_y),
+      };
+    }
+
+    return null;
+  }, [playerStructures, setup.components.Structure, structureEntityId]);
+
+  const structureSyncTarget = useMemo(() => {
+    const entityId = Number(structureEntityId);
+    if (!Number.isFinite(entityId) || entityId <= 0) return null;
+    const syncPosition = selectedBuildingHex
+      ? { col: selectedBuildingHex.outerCol, row: selectedBuildingHex.outerRow }
+      : structureBase
+        ? { col: structureBase.outerCol, row: structureBase.outerRow }
+        : null;
+    if (!syncPosition) return null;
     return {
-      outerCol: Number(base.coord_x),
-      outerRow: Number(base.coord_y),
+      entityId: entityId as ID,
+      position: syncPosition,
     };
-  }, [playerStructures, structureEntityId]);
+  }, [selectedBuildingHex, structureBase, structureEntityId]);
+  const structureSyncKey = structureSyncTarget ? `structure:${String(structureSyncTarget.entityId)}` : null;
+  const isSyncingStructure = isSyncing(structureSyncKey);
 
   useEffect(() => {
     if (!structureBase) return;
@@ -363,6 +511,57 @@ const LocalTilePanel = () => {
     ? `${buildingName} · (${selectedBuildingHex.innerCol}, ${selectedBuildingHex.innerRow})`
     : "No Tile Selected";
 
+  const handleResyncStructure = useCallback(() => {
+    if (!structureSyncTarget) return;
+    if (!toriiClient || !contractComponents) {
+      toast.error("Unable to sync right now.");
+      return;
+    }
+
+    const { entityId, position } = structureSyncTarget;
+    const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
+
+    void syncEntity({
+      syncKey: `structure:${String(entityId)}`,
+      entityLabel: "Structure",
+      successMessage: `Structure #${String(entityId)} synced.`,
+      runSync: () =>
+        new Promise<void>((resolve, reject) => {
+          let settled = false;
+
+          const complete = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+
+          void getStructuresDataFromTorii(toriiClient, toriiComponents, [{ entityId, position }], complete).catch(
+            (error) => {
+              if (settled) return;
+              settled = true;
+              reject(error);
+            },
+          );
+        }),
+    });
+  }, [contractComponents, structureSyncTarget, syncEntity, toriiClient]);
+
+  const headerAction = structureSyncTarget ? (
+    <Button
+      variant="outline"
+      size="xs"
+      className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+      forceUppercase={false}
+      onClick={handleResyncStructure}
+      withoutSound
+      disabled={isSyncingStructure}
+      aria-label={`Re-sync structure ${String(structureSyncTarget.entityId)}`}
+    >
+      {isSyncingStructure ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+      <span>{isSyncingStructure ? "Syncing..." : "Re-sync"}</span>
+    </Button>
+  ) : null;
+
   const handleToggleProduction = async () => {
     if (!selectedBuildingHex) return;
     setIsActionLoading(true);
@@ -423,7 +622,7 @@ const LocalTilePanel = () => {
   };
 
   return (
-    <PanelFrame title={panelTitle} attached>
+    <PanelFrame title={panelTitle} headerAction={headerAction} attached>
       {selectedBuildingHex ? (
         isCastleTile ? (
           <div className="h-full min-h-0 overflow-auto">

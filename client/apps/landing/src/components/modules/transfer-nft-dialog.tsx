@@ -66,7 +66,6 @@ export default function TransferNftDialog({
     calls:
       contract && address && transferTo
         ? selectedTokens.map((tokenId) => {
-            console.log("Creating transfer call for tokenId:", tokenId, "from:", address, "to:", transferTo);
             return contract.populate("transfer_from", [address, BigInt(transferTo || ""), tokenId]);
           })
         : undefined,
@@ -76,7 +75,6 @@ export default function TransferNftDialog({
     if (!transferTo || selectedTokens.length === 0) return;
     setIsOpen(false);
     const tx = await sendAsync();
-    console.log(tx);
     if (tx) {
       setInput("");
       setSelectedTokens([]);

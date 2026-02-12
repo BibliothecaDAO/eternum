@@ -1,11 +1,11 @@
 import { getWorldPositionForHex } from "./utils";
 
-export interface ChunkRenderSize {
+interface ChunkRenderSize {
   width: number;
   height: number;
 }
 
-export interface ChunkBounds {
+interface ChunkBounds {
   minCol: number;
   maxCol: number;
   minRow: number;
@@ -35,13 +35,15 @@ export function getRenderBounds(
   chunkSize: number,
 ): ChunkBounds {
   const { row: chunkCenterRow, col: chunkCenterCol } = getChunkCenter(startRow, startCol, chunkSize);
-  const halfWidth = renderSize.width / 2;
-  const halfHeight = renderSize.height / 2;
+  const width = Math.max(0, Math.floor(renderSize.width));
+  const height = Math.max(0, Math.floor(renderSize.height));
+  const minCol = chunkCenterCol - Math.floor(width / 2);
+  const minRow = chunkCenterRow - Math.floor(height / 2);
   return {
-    minCol: chunkCenterCol - halfWidth,
-    maxCol: chunkCenterCol + halfWidth,
-    minRow: chunkCenterRow - halfHeight,
-    maxRow: chunkCenterRow + halfHeight,
+    minCol,
+    maxCol: minCol + width - 1,
+    minRow,
+    maxRow: minRow + height - 1,
   };
 }
 

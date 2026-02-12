@@ -11,7 +11,7 @@ import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
   useLandingLeaderboardStore,
-} from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+} from "@/services/leaderboard/use-landing-leaderboard-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";

@@ -3,6 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
+import { hasCollectionKey } from "@/lib/collection-key";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useLocation, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
@@ -12,7 +13,9 @@ export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,
   head: ({ params }) => {
     const { collection } = params;
-    const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
+    const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+      ? marketplaceCollections[collection]
+      : undefined;
     const collectionName = collectionConfig?.name || collection;
 
     return {
@@ -65,12 +68,18 @@ export const Route = createFileRoute("/trade/$collection")({
 
 function TradeLayout() {
   const { collection } = useParams({ from: "/trade/$collection" });
-  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
-  const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
+  const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+    ? marketplaceCollections[collection]
+    : null;
+  const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
+
+  const collectionAddress = collectionConfig?.address ?? "";
+  const collectionName = collectionConfig?.name ?? collection;
   const { data: totals } = useQuery({
     queryKey: ["collectionStatistics", collectionAddress],
-    queryFn: () => fetchCollectionStatistics(collectionAddress),
+    queryFn: ({ signal }) => fetchCollectionStatistics(collectionAddress, { signal }),
     refetchInterval: 30_000,
+    enabled: isValidCollection,
   });
 
   const location = useLocation();
@@ -81,6 +90,14 @@ function TradeLayout() {
   const totalWei = formatUnits(totalWeiStr, 18);
   const totalEth = totalWei ?? "0";
   const floorPrice = totals?.[0]?.floor_price_wei ? formatUnits(BigInt(totals?.[0]?.floor_price_wei), 18) : "0";
+
+  if (!isValidCollection) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        Collection not available.
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -112,13 +129,13 @@ function TradeLayout() {
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent uppercase">
                 {!isSeasonPass && (
                   <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
-                    <Link to={collection ? `/trade/$collection` : "/trade"} className="cursor-pointer">
+                    <Link to="/trade/$collection" params={{ collection }} className="cursor-pointer">
                       Items
                     </Link>
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="activity" asChild>
-                  <Link to={collection ? `/trade/$collection/activity` : "/trade"} className="cursor-pointer">
+                  <Link to="/trade/$collection/activity" params={{ collection }} className="cursor-pointer">
                     Activity
                   </Link>
                 </TabsTrigger>

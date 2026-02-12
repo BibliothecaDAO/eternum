@@ -87,9 +87,7 @@ export const TransferTroopsContainer = ({
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<GuardSelection>(null);
 
-  const troopMaxSizeRaw = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
-  const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
-  const troopCapacityLimit = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0 ? parsedTroopCap : null;
+  // troopCapacityLimit computed below after query data is available
 
   // Query for selected entity data
   const { data: selectedEntityData, isLoading: isSelectedLoading } = useQuery({
@@ -150,6 +148,12 @@ export const TransferTroopsContainer = ({
   const selectedExplorerResources = selectedEntityData?.explorerResources;
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
+
+  const troopCapacityLimit = useMemo(() => {
+    const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
+    const level = selectedStructure?.base?.level ?? 0;
+    return configManager.getMaxArmySize(level, tier) || null;
+  }, [targetExplorerTroops?.troops?.tier, selectedStructure?.base?.level]);
 
   const directionLabel = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {

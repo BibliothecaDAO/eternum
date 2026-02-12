@@ -106,11 +106,6 @@ interface ChestLabelData extends LabelData {
   // Chests have minimal data
 }
 
-export interface QuestLabelData extends LabelData {
-  questType: number; // QuestType enum value
-  occupierId: number;
-}
-
 /**
  * Create base label element with common properties
  */
@@ -969,50 +964,6 @@ const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
 };
 
 /**
- * Quest label type definition
- */
-export const QuestLabelType: LabelTypeDefinition<QuestLabelData> = {
-  type: "quest",
-  defaultConfig: {
-    ...LABEL_TYPE_CONFIGS.CHEST, // Similar to chest positioning
-    positionOffset: { x: 0, y: 1.5, z: 0 },
-  },
-
-  createElement: (data: QuestLabelData, inputView: CameraView): HTMLElement => {
-    const cameraView = resolveCameraView(inputView);
-    // Create base label with quest styling
-    const labelDiv = createLabelBase(false, cameraView); // Quests don't have ownership
-
-    // Override text color for quests (gold)
-    labelDiv.style.setProperty("color", "#fbbf24", "important");
-    labelDiv.style.setProperty("background-color", "rgba(251, 191, 36, 0.3)", "important");
-    labelDiv.style.setProperty("border-color", "rgba(245, 158, 11, 0.5)", "important");
-
-    // Add quest icon
-    const img = document.createElement("img");
-    img.src = "/images/labels/quest.png";
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-    img.setAttribute("data-component", "quest-icon");
-    labelDiv.appendChild(img);
-
-    // Create content container
-    const contentContainer = createContentContainer(cameraView);
-
-    // Add quest label
-    const line1 = document.createElement("span");
-    line1.textContent = "Quest";
-    line1.style.color = "inherit";
-    contentContainer.appendChild(line1);
-
-    labelDiv.appendChild(contentContainer.wrapper);
-    return labelDiv;
-  },
-
-  // Quests don't need updates
-  updateElement: undefined,
-};
-
-/**
  * Factory function to create label type definitions with custom configurations
  */
 function createCustomLabelType<T extends LabelData = LabelData>(
@@ -1066,8 +1017,4 @@ export const updateStructureLabel = (
 
 export const createChestLabel = (chest: ChestLabelData, cameraView: CameraView): HTMLElement => {
   return ChestLabelType.createElement(chest, cameraView);
-};
-
-const createQuestLabel = (quest: QuestLabelData, cameraView: CameraView): HTMLElement => {
-  return QuestLabelType.createElement(quest, cameraView);
 };

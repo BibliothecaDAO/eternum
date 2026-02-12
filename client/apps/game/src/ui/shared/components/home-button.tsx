@@ -1,12 +1,25 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useNavigate } from "react-router-dom";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { resetBootstrap } from "@/init/bootstrap";
 import { BuildingThumbs } from "../../config";
+
 export const HomeButton = () => {
-  const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const navigate = useNavigate();
 
   const handleHomeClick = () => {
-    setShowBlankOverlay(true);
+    // Clean up game resources before navigating to landing
+    resetBootstrap();
+    // Navigate to landing page without page refresh
+    navigate("/");
   };
 
-  return <CircleButton image={BuildingThumbs.home} onClick={() => handleHomeClick()} size="md"></CircleButton>;
+  return (
+    <CircleButton
+      image={BuildingThumbs.home}
+      onClick={() => handleHomeClick()}
+      size="md"
+      tooltipLocation="bottom"
+      label="Home"
+    />
+  );
 };

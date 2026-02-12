@@ -63,7 +63,7 @@ export const listWorldNames = (): string[] => {
   return Object.keys(profiles);
 };
 
-export const getWorldProfiles = (): WorldProfilesMap => {
+const getWorldProfiles = (): WorldProfilesMap => {
   return safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
 };
 
@@ -77,7 +77,7 @@ export const saveWorldProfile = (profile: WorldProfile) => {
   saveWorldProfiles(profiles);
 };
 
-export const deleteWorldProfile = (name: string) => {
+const deleteWorldProfile = (name: string) => {
   const profiles = getWorldProfiles();
   if (profiles[name]) {
     delete profiles[name];
@@ -96,7 +96,7 @@ export const getActiveWorldName = (): string | null => localStorage.getItem(ACTI
 
 export const setActiveWorldName = (name: string) => localStorage.setItem(ACTIVE_KEY, name);
 
-export const clearActiveWorld = () => localStorage.removeItem(ACTIVE_KEY);
+const clearActiveWorld = () => localStorage.removeItem(ACTIVE_KEY);
 
 export const getActiveWorld = (): WorldProfile | null => {
   const name = getActiveWorldName();

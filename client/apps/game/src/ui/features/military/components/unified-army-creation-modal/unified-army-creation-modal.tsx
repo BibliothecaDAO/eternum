@@ -117,10 +117,7 @@ export const UnifiedArmyCreationModal = ({
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
 
-  const troopMaxSizeRaw = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
-  const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
-  const hasTroopCap = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0;
-  const troopCapacityLimit = hasTroopCap ? parsedTroopCap : null;
+  // troopCapacityLimit computed below after structureLevel is resolved
 
   useEffect(() => {
     if (initialGuardSlot !== undefined) {
@@ -200,6 +197,8 @@ export const UnifiedArmyCreationModal = ({
 
   const structureCategory = structureBase?.category as StructureType | undefined;
   const structureLevel = structureBase?.level ?? null;
+  const troopCapacityLimit =
+    configManager.getMaxArmySize(structureLevel ?? 0, selectedTroopCombo.tier as TroopTier) || null;
   const guardCapacityFromStructureRaw = structureBase?.troop_max_guard_count ?? null;
   const guardCapacityFromStructure =
     guardCapacityFromStructureRaw !== null && guardCapacityFromStructureRaw !== undefined
