@@ -1,10 +1,10 @@
-export interface BlitzRegistrationDefaults {
+interface BlitzRegistrationDefaults {
   amount: string;
   precision: number;
   token: string;
 }
 
-export interface FactoryWorldConfigDefaults {
+interface FactoryWorldConfigDefaults {
   factoryAddress: string;
   devModeOn: boolean;
   mmrEnabledOn: boolean;
@@ -13,7 +13,7 @@ export interface FactoryWorldConfigDefaults {
   defaultBlitzRegistration: BlitzRegistrationDefaults;
 }
 
-export interface FactoryWorldConfigOverrides {
+interface FactoryWorldConfigOverrides {
   startMainAt?: number;
   startSettlingAt?: number;
   devModeOn?: boolean;
