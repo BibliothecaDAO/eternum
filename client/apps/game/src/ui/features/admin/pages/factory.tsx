@@ -44,7 +44,7 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import XCircle from "lucide-react/dist/esm/icons/x-circle";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
 import { env } from "../../../../../env";
@@ -63,16 +63,14 @@ import {
 import { useFactoryAdmin } from "../hooks/use-factory-admin";
 import { generateCairoOutput, generateFactoryCalldata } from "../services/factory-config";
 import {
-  checkIndexerExists as checkIndexerExistsService,
   createIndexer as createIndexerService,
-  getWorldDeployedAddress as getWorldDeployedAddressService,
 } from "../services/factory-indexer";
+import { buildWorldConfigForFactory } from "../services/world-config-builder";
 import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
 import {
   cacheDeployedAddress,
   getConfiguredWorlds,
   getCurrentWorldName,
-  getDeployedAddressMap,
   getRemainingCooldown,
   getStoredWorldNames,
   getStoredWorldSeriesMetadata,
@@ -88,25 +86,10 @@ import {
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 type AutoDeployState = { current: number; total: number; status: "running" | "stopping" };
+type ConfigPreset = "sandbox" | "blitz-slot";
 
 // Maximum hours in the future that a game start time can be set
 const MAX_START_TIME_HOURS = 50_000;
-
-const parseDecimalToBigInt = (value: string, precision: number): bigint => {
-  const trimmed = value.trim();
-  if (!trimmed) throw new Error("Fee amount is required");
-  const normalized = trimmed.startsWith(".") ? `0${trimmed}` : trimmed;
-  if (!/^\d+(\.\d+)?$/.test(normalized)) {
-    throw new Error("Fee amount must be a number");
-  }
-  const [whole, fraction = ""] = normalized.split(".");
-  if (fraction.length > precision) {
-    throw new Error(`Fee amount has more than ${precision} decimals`);
-  }
-  const paddedFraction = fraction.padEnd(precision, "0");
-  const combined = `${whole}${precision > 0 ? paddedFraction : ""}`.replace(/^0+(?=\d)/, "");
-  return BigInt(combined || "0");
-};
 
 // Storage keys and cooldowns moved to ../constants and ../utils/storage
 
@@ -283,12 +266,16 @@ interface ManifestData {
 
 // Calldata and Cairo generators moved to services/factory-config
 
-export const FactoryPage = () => {
+interface FactoryPageProps {
+  embedded?: boolean;
+}
+
+export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const navigate = useNavigate();
   const { account, accountName } = useAccountStore();
 
   const currentChain = env.VITE_PUBLIC_CHAIN as ChainType;
-  const { refreshStatuses } = useFactoryAdmin(currentChain);
+  const { refreshStatuses, checkIndexerExists, getWorldDeployedAddressLocal } = useFactoryAdmin(currentChain);
   const factoryDeployRepeats = getFactoryDeployRepeatsForChain(currentChain);
   const defaultBlitzRegistration = useMemo(() => getDefaultBlitzRegistrationConfig(currentChain), [currentChain]);
   const {
@@ -316,6 +303,7 @@ export const FactoryPage = () => {
   const [showCairoOutput, setShowCairoOutput] = useState<boolean>(false);
   const [showFullConfig, setShowFullConfig] = useState<boolean>(false);
   const [showDevConfig, setShowDevConfig] = useState<boolean>(false);
+  const [activeConfigPreset, setActiveConfigPreset] = useState<ConfigPreset | null>(null);
   const [devModeOn, setDevModeOn] = useState<boolean>(() => {
     try {
       return !!ETERNUM_CONFIG()?.dev?.mode?.on;
@@ -343,8 +331,7 @@ export const FactoryPage = () => {
   const [worldSeriesMetadata, setWorldSeriesMetadata] = useState<Record<string, WorldSeriesMetadata>>({});
   const [worldIndexerStatus, setWorldIndexerStatus] = useState<Record<string, boolean>>({});
   const [creatingIndexer, setCreatingIndexer] = useState<Record<string, boolean>>({});
-  const [cooldownTimers, setCooldownTimers] = useState<Record<string, number>>({});
-  const [indexerCreationCountdown, setIndexerCreationCountdown] = useState<Record<string, number>>({});
+  const [indexerActionErrors, setIndexerActionErrors] = useState<Record<string, string>>({});
   const [worldDeployedStatus, setWorldDeployedStatus] = useState<Record<string, boolean>>({});
   const [verifyingDeployment, setVerifyingDeployment] = useState<Record<string, boolean>>({});
   const [autoDeployState, setAutoDeployState] = useState<Record<string, AutoDeployState>>({});
@@ -354,7 +341,9 @@ export const FactoryPage = () => {
   const [worldConfigTx, setWorldConfigTx] = useState<Record<string, TxState>>({});
   // Per-world season start override (epoch seconds)
   const [startMainAtOverrides, setStartMainAtOverrides] = useState<Record<string, number>>({});
+  const [startSettlingAtOverrides, setStartSettlingAtOverrides] = useState<Record<string, number>>({});
   const [startMainAtErrors, setStartMainAtErrors] = useState<Record<string, string>>({});
+  const [startSettlingAtErrors, setStartSettlingAtErrors] = useState<Record<string, string>>({});
   // Per-world overrides
   const [devModeOverrides, setDevModeOverrides] = useState<Record<string, boolean>>({});
   const [mmrEnabledOverrides, setMmrEnabledOverrides] = useState<Record<string, boolean>>({});
@@ -363,9 +352,36 @@ export const FactoryPage = () => {
   const [blitzFeeAmountOverrides, setBlitzFeeAmountOverrides] = useState<Record<string, string>>({});
   const [blitzFeePrecisionOverrides, setBlitzFeePrecisionOverrides] = useState<Record<string, string>>({});
   const [blitzFeeTokenOverrides, setBlitzFeeTokenOverrides] = useState<Record<string, string>>({});
+  const [blitzFeeRecipientOverrides, setBlitzFeeRecipientOverrides] = useState<Record<string, string>>({});
   const [registrationCountMaxOverrides, setRegistrationCountMaxOverrides] = useState<Record<string, string>>({});
+  const [registrationDelaySecondsOverrides, setRegistrationDelaySecondsOverrides] = useState<Record<string, string>>(
+    {},
+  );
+  const [registrationPeriodSecondsOverrides, setRegistrationPeriodSecondsOverrides] = useState<
+    Record<string, string>
+  >({});
   const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
+  const [seasonBridgeCloseAfterEndSecondsOverrides, setSeasonBridgeCloseAfterEndSecondsOverrides] = useState<
+    Record<string, string>
+  >({});
+  const [
+    seasonPointRegistrationCloseAfterEndSecondsOverrides,
+    setSeasonPointRegistrationCloseAfterEndSecondsOverrides,
+  ] = useState<Record<string, string>>({});
+  const [settlementCenterOverrides, setSettlementCenterOverrides] = useState<Record<string, string>>({});
+  const [settlementBaseDistanceOverrides, setSettlementBaseDistanceOverrides] = useState<Record<string, string>>({});
+  const [settlementSubsequentDistanceOverrides, setSettlementSubsequentDistanceOverrides] = useState<
+    Record<string, string>
+  >({});
+  const [tradeMaxCountOverrides, setTradeMaxCountOverrides] = useState<Record<string, string>>({});
+  const [battleGraceTickCountOverrides, setBattleGraceTickCountOverrides] = useState<Record<string, string>>({});
+  const [battleGraceTickCountHypOverrides, setBattleGraceTickCountHypOverrides] = useState<
+    Record<string, string>
+  >({});
+  const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
+  const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
+  const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
@@ -374,6 +390,46 @@ export const FactoryPage = () => {
     if (!Number.isFinite(secs) || secs <= 0) return 0;
     return Math.max(0, Math.round((secs % 3600) / 60));
   }, [eternumConfig]);
+
+  // Check indexer and deployment status for all stored worlds
+  const checkAllWorldStatuses = useCallback(async () => {
+    const worlds = getStoredWorldNames();
+    const { indexerStatusMap, deployedStatusMap } = await refreshStatuses(worlds);
+    setWorldIndexerStatus(indexerStatusMap);
+    setWorldDeployedStatus(deployedStatusMap);
+  }, [refreshStatuses]);
+
+  const applyConfigPreset = useCallback(
+    (preset: ConfigPreset) => {
+      const worldMap = (value: boolean | number) =>
+        Object.fromEntries(storedWorldNames.map((world) => [world, value])) as Record<string, boolean | number>;
+
+      setActiveConfigPreset(preset);
+
+      if (preset === "sandbox") {
+        setDevModeOn(true);
+        setMmrEnabledOn(false);
+        setDurationHours(72);
+
+        setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
+        setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(72) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+      }
+
+      if (preset === "blitz-slot") {
+        setDevModeOn(false);
+        setMmrEnabledOn(true);
+        setDurationHours(2);
+
+        setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
+        setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(2) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+      }
+    },
+    [storedWorldNames],
+  );
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
@@ -409,38 +465,14 @@ export const FactoryPage = () => {
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
     }
-  }, [accountName]);
+  }, [accountName, worldName]);
 
   // Check indexer and deployment statuses when stored world names change
   useEffect(() => {
     if (storedWorldNames.length > 0) {
       checkAllWorldStatuses();
     }
-  }, [storedWorldNames.length]);
-
-  // Update cooldown timers every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const updatedTimers: Record<string, number> = {};
-      let hasActiveTimers = false;
-
-      storedWorldNames.forEach((worldName) => {
-        const remaining = getRemainingCooldown(worldName);
-        if (remaining > 0) {
-          updatedTimers[worldName] = remaining;
-          hasActiveTimers = true;
-        }
-      });
-
-      if (hasActiveTimers) {
-        setCooldownTimers(updatedTimers);
-      } else {
-        setCooldownTimers({});
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [storedWorldNames]);
+  }, [storedWorldNames, checkAllWorldStatuses]);
 
   // Auto-parse manifest whenever inputs change
   useEffect(() => {
@@ -470,14 +502,6 @@ export const FactoryPage = () => {
       setGeneratedCalldata([]);
     }
   }, [manifestJson, version, namespace, maxActions, defaultNamespaceWriterAll]);
-
-  // Load manifest from config files
-  const handleLoadFromConfig = (chain: ChainType) => {
-    const jsonString = getManifestJsonString(chain);
-    if (jsonString) {
-      setManifestJson(jsonString);
-    }
-  };
 
   // Generate new world name
   const handleGenerateWorldName = () => {
@@ -599,44 +623,6 @@ export const FactoryPage = () => {
     }
   };
 
-  // Check if world is deployed via factory Torii SQL
-  const checkWorldDeployed = async (worldName: string): Promise<boolean> => {
-    try {
-      const addr = await getWorldDeployedAddressLocal(worldName);
-      return !!addr;
-    } catch (error) {
-      console.error(`Error checking if world ${worldName} is deployed:`, error);
-      return false;
-    }
-  };
-
-  // Check if indexer exists for a world name
-  const checkIndexerExists = async (worldName: string): Promise<boolean> => {
-    return checkIndexerExistsService(worldName);
-  };
-
-  // Fetch deployed world address from factory Torii (returns null if not deployed)
-  const getCachedDeployedAddress = (worldName: string): string | null => {
-    const map = getDeployedAddressMap();
-    return map[worldName] ?? null;
-  };
-
-  const getWorldDeployedAddressLocal = async (worldName: string): Promise<string | null> => {
-    const cached = getCachedDeployedAddress(worldName);
-    if (cached) return cached;
-    const addr = await getWorldDeployedAddressService(currentChain as any, worldName);
-    if (addr) cacheDeployedAddress(worldName, addr);
-    return addr;
-  };
-
-  // Check indexer and deployment status for all stored worlds
-  const checkAllWorldStatuses = async () => {
-    const worlds = getStoredWorldNames();
-    const { indexerStatusMap, deployedStatusMap } = await refreshStatuses(worlds);
-    setWorldIndexerStatus(indexerStatusMap);
-    setWorldDeployedStatus(deployedStatusMap);
-  };
-
   // Handle reload - clear all loading states and refresh data
   const handleReload = async () => {
     // Clear all transaction states
@@ -656,6 +642,9 @@ export const FactoryPage = () => {
       return;
     }
 
+    setIndexerActionErrors((prev) => ({ ...prev, [worldName]: "" }));
+    setCreatingIndexer((prev) => ({ ...prev, [worldName]: true }));
+
     // Get torii config for current chain
     // Build torii config for current chain
     const envName = currentChain;
@@ -664,13 +653,19 @@ export const FactoryPage = () => {
     const deployedWorldAddress = await getWorldDeployedAddressLocal(worldName);
     if (!deployedWorldAddress) {
       console.warn("World not deployed or address not found in factory indexer; cannot create indexer.");
+      setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
+      setIndexerActionErrors((prev) => ({
+        ...prev,
+        [worldName]: "World is not deployed yet. Deploy first.",
+      }));
       return;
     }
 
     try {
       // Immediately set cooldown so UI shows small wait timer right away
       setIndexerCooldown(worldName);
-      setCooldownTimers((prev) => ({ ...prev, [worldName]: getRemainingCooldown(worldName) }));
+
+      let resolved = false;
 
       await createIndexerService({
         env: envName,
@@ -685,7 +680,10 @@ export const FactoryPage = () => {
       const pollInterval = setInterval(async () => {
         const exists = await checkIndexerExists(worldName);
         if (exists) {
+          resolved = true;
           setWorldIndexerStatus((prev) => ({ ...prev, [worldName]: true }));
+          setIndexerActionErrors((prev) => ({ ...prev, [worldName]: "" }));
+          setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
           clearInterval(pollInterval);
         }
       }, 10000); // Check every 10 seconds
@@ -693,9 +691,21 @@ export const FactoryPage = () => {
       // Stop polling after 6 minutes (safety limit)
       setTimeout(() => {
         clearInterval(pollInterval);
+        if (!resolved) {
+          setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
+          setIndexerActionErrors((prev) => ({
+            ...prev,
+            [worldName]: "Indexer creation is still pending. Wait a bit and try refresh.",
+          }));
+        }
       }, 360000); // 6 minutes
     } catch (error: any) {
       console.error("Error creating indexer:", error);
+      setCreatingIndexer((prev) => ({ ...prev, [worldName]: false }));
+      setIndexerActionErrors((prev) => ({
+        ...prev,
+        [worldName]: error?.message ?? "Failed to create indexer.",
+      }));
     }
   };
 
@@ -717,68 +727,6 @@ export const FactoryPage = () => {
 
       // Mark world as configured after successful transaction
       markWorldAsConfigured(worldName);
-    } catch (err: any) {
-      setTx({ status: "error", error: err.message });
-    }
-  };
-
-  // Execute deploy only
-  const handleDeploy = async () => {
-    if (!account || !factoryAddress || !worldName) return;
-
-    setTx({ status: "running" });
-
-    try {
-      const worldNameFelt = shortString.encodeShortString(worldName);
-      const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute({
-        contractAddress: factoryAddress,
-        entrypoint: "create_game",
-        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
-      });
-
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
-
-      // Save world name to storage after successful deployment
-      saveWorldNameToStorage(worldName);
-      setStoredWorldNames(getStoredWorldNames());
-    } catch (err: any) {
-      setTx({ status: "error", error: err.message });
-    }
-  };
-
-  // Execute both set_config and deploy in multicall
-  const handleSetConfigAndDeploy = async () => {
-    if (!account || !parsedManifest || !factoryAddress || !worldName) return;
-
-    setTx({ status: "running" });
-
-    console.log("Generated Calldata:", generatedCalldata);
-
-    try {
-      const worldNameFelt = shortString.encodeShortString(worldName);
-      const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute([
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config",
-          calldata: generatedCalldata,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "create_game",
-          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
-        },
-      ]);
-
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
-
-      // Mark world as configured and save world name to storage after successful deployment
-      markWorldAsConfigured(worldName);
-      saveWorldNameToStorage(worldName);
-      setStoredWorldNames(getStoredWorldNames());
     } catch (err: any) {
       setTx({ status: "error", error: err.message });
     }
@@ -894,30 +842,28 @@ export const FactoryPage = () => {
     }
   };
 
-  const getDisabledReason = (action: "configAndDeploy" | "config" | "deploy"): string | null => {
-    if (tx.status === "running") return "Transaction in progress";
-    if (!account) return "Wallet not connected";
-    if (!factoryAddress) return "Factory address required";
-    if ((action === "configAndDeploy" || action === "deploy") && !worldName) return "World name required";
-    return null;
-  };
-
   return (
-    <div className="fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-slate-200 via-blue-200 to-indigo-200">
-      <div className="max-w-6xl mx-auto px-8 py-16">
-        <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />
+    <div
+      className={
+        embedded
+          ? "w-full overflow-x-hidden"
+          : "fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-black via-brown/80 to-black"
+      }
+    >
+      <div className={embedded ? "w-full" : "max-w-6xl mx-auto px-8 py-16"}>
+        {!embedded && <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />}
 
         {/* Unified Configuration and Deployment */}
         {parsedManifest && (
           <div className="mb-12">
-            <div className="relative overflow-hidden p-10 bg-white rounded-3xl shadow-xl shadow-indigo-500/10 border border-slate-200">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full blur-3xl" />
+            <div className="relative overflow-hidden p-10 panel-wood rounded-3xl shadow-xl shadow-gold/10 border border-gold/20">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-gold/15 to-transparent rounded-full blur-3xl" />
               <div className="relative space-y-8">
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-2xl font-bold text-slate-900">Ready to Deploy</h3>
+                      <h3 className="text-2xl font-bold text-gold">Ready to Deploy</h3>
                       <div className="flex items-center gap-2 px-3 py-1 bg-emerald-100 rounded-full">
                         <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
@@ -925,7 +871,7 @@ export const FactoryPage = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 text-sm text-slate-600">
+                    <div className="flex items-center gap-6 text-sm text-gold/70">
                       <span className="font-medium">{parsedManifest.contracts.length} Contracts</span>
                       <span className="font-medium">{parsedManifest.models.length} Models</span>
                       <span className="font-medium">{parsedManifest.events.length} Events</span>
@@ -934,13 +880,13 @@ export const FactoryPage = () => {
                 </div>
 
                 {/* Connection Status */}
-                <div className="flex items-center justify-between p-6 bg-white rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between p-6 bg-black/40 rounded-2xl border border-gold/20">
                   <div className="space-y-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Connected Wallet</span>
+                    <span className="text-xs font-bold text-gold/60 uppercase tracking-wider">Connected Wallet</span>
                     <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${account?.address ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      <div className={`h-2 w-2 rounded-full ${account?.address ? "bg-emerald-500" : "bg-gold/20"}`} />
                       {account?.address ? (
-                        <span className="text-sm font-mono text-slate-900">
+                        <span className="text-sm font-mono text-gold">
                           {`${account.address.slice(0, 6)}...${account.address.slice(-4)}`}
                         </span>
                       ) : (
@@ -948,18 +894,50 @@ export const FactoryPage = () => {
                       )}
                     </div>
                   </div>
-                  <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                  <div className="px-4 py-2 bg-black/40 rounded-xl border border-gold/20">
+                    <span className="text-xs font-bold text-gold/70 uppercase tracking-wide">
                       Network: {currentChain}
                     </span>
                   </div>
                 </div>
 
                 {/* Deploy Section - Always Visible */}
-                <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 shadow-sm">
+                <div className="space-y-6 p-6 bg-gradient-to-br from-black/40 to-black/20 rounded-2xl border-2 border-gold/20 shadow-sm">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Game Name</label>
+                      <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Config Presets</label>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => applyConfigPreset("sandbox")}
+                          className={`text-left rounded-xl border p-4 transition-all ${
+                            activeConfigPreset === "sandbox"
+                              ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
+                              : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
+                          }`}
+                        >
+                          <p className="text-sm font-semibold text-gold">SANDBOX (dev mode 72hrs)</p>
+                          <p className="mt-1 text-xs text-gold/60">Sets Dev Mode ON and game duration to 72 hours.</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => applyConfigPreset("blitz-slot")}
+                          className={`text-left rounded-xl border p-4 transition-all ${
+                            activeConfigPreset === "blitz-slot"
+                              ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
+                              : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
+                          }`}
+                        >
+                          <p className="text-sm font-semibold text-gold">BLITZ SLOT (2 hr game onslot)</p>
+                          <p className="mt-1 text-xs text-gold/60">
+                            Sets Dev Mode OFF, MMR ON, and game duration to 2 hours.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Game Name</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
@@ -970,24 +948,24 @@ export const FactoryPage = () => {
                             setCurrentWorldName(newName);
                           }}
                           placeholder="ccf-fire-gate-42"
-                          className="flex-1 px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-mono focus:outline-none transition-all"
+                          className="flex-1 px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-mono focus:outline-none transition-all"
                         />
                         <button
                           onClick={handleGenerateWorldName}
-                          className="p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors group"
+                          className="p-3 bg-gold/15 hover:bg-gold/25 rounded-xl transition-colors group"
                           title="Generate new game name"
                         >
-                          <RefreshCw className="w-5 h-5 text-blue-600 group-hover:rotate-180 transition-transform duration-500" />
+                          <RefreshCw className="w-5 h-5 text-gold/90 group-hover:rotate-180 transition-transform duration-500" />
                         </button>
                         <button
                           onClick={handleAddToQueue}
                           disabled={!worldName}
-                          className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                          className="button-gold px-4 py-3 bg-gold/20 hover:bg-gold/30 disabled:bg-gold/20 disabled:cursor-not-allowed text-gold text-sm font-semibold rounded-xl transition-colors"
                         >
                           Add
                         </button>
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-gold/60">
                         Generate a game name and add it to the queue to deploy now or later
                       </p>
                     </div>
@@ -995,11 +973,11 @@ export const FactoryPage = () => {
                     {/* Series selection */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+                        <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">
                           Series (optional)
                         </label>
                         {(seriesLoading || seriesFetching) && account && (
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <div className="flex items-center gap-2 text-xs text-gold/60">
                             <Loader2 className="w-3 h-3 animate-spin" />
                             Fetching your series
                           </div>
@@ -1011,7 +989,7 @@ export const FactoryPage = () => {
                           value={seriesName}
                           onChange={(e) => setSeriesName(e.target.value)}
                           placeholder="ccf-series-wars"
-                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                          className="w-full px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-sans focus:outline-none transition-all"
                         />
                         <input
                           type="number"
@@ -1020,12 +998,12 @@ export const FactoryPage = () => {
                           value={seriesGameNumber}
                           onChange={(e) => setSeriesGameNumber(e.target.value.replace(/[^\d]/g, ""))}
                           placeholder="Game #"
-                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                          className="w-full px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-sans focus:outline-none transition-all"
                         />
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="font-medium text-slate-700">Series status:</span>
-                        <span className="text-slate-500">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gold/60">
+                        <span className="font-medium text-gold/90">Series status:</span>
+                        <span className="text-gold/60">
                           {seriesName ? `${seriesName} #${seriesGameNumber || "0"}` : "Not configured"}
                         </span>
                       </div>
@@ -1043,36 +1021,36 @@ export const FactoryPage = () => {
                                   key={series.paddedName}
                                   type="button"
                                   onClick={() => handleSeriesSuggestion(series)}
-                                  className="flex flex-col items-start gap-0.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-left text-[11px] text-slate-600 hover:border-blue-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                                  className="flex flex-col items-start gap-0.5 px-3 py-2 bg-black/40 border border-gold/20 rounded-2xl text-left text-[11px] text-gold/70 hover:border-gold/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60"
                                 >
-                                  <span className="font-semibold text-slate-900">{series.name}</span>
-                                  <span className="text-[10px] text-slate-500">
+                                  <span className="font-semibold text-gold">{series.name}</span>
+                                  <span className="text-[10px] text-gold/60">
                                     Last game #{series.lastGameNumber?.toString() ?? "n/a"}
                                   </span>
                                 </button>
                               ))}
                             </div>
                           ) : (
-                            <p className="text-[11px] text-slate-500">No series found for this wallet.</p>
+                            <p className="text-[11px] text-gold/60">No series found for this wallet.</p>
                           )}
                         </div>
                       ) : (
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-[11px] text-gold/60">
                           Connect your wallet to list the series you control.
                         </p>
                       )}
                     </div>
 
                     {/* Create Series */}
-                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-white/70 p-4">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Create Series</label>
+                    <div className="space-y-2 rounded-2xl border border-gold/20 bg-black/40 p-4">
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Create Series</label>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <input
                           type="text"
                           value={seriesConfigName}
                           onChange={(e) => setSeriesConfigName(e.target.value)}
                           placeholder="ccf-series-wars"
-                          className="flex-1 px-4 py-2.5 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-sans focus:outline-none transition-all"
+                          className="flex-1 px-4 py-2.5 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold placeholder-gold/40 font-sans focus:outline-none transition-all"
                         />
                         <button
                           onClick={handleCreateSeries}
@@ -1082,7 +1060,7 @@ export const FactoryPage = () => {
                             !seriesConfigName.trim() ||
                             seriesConfigTx.status === "running"
                           }
-                          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                          className="button-gold px-4 py-2.5 bg-gold/20 hover:bg-gold/30 disabled:bg-gold/20 disabled:cursor-not-allowed text-gold text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                         >
                           {seriesConfigTx.status === "running" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                           Create Series
@@ -1096,7 +1074,7 @@ export const FactoryPage = () => {
                             href={getExplorerTxUrl(currentChain as any, seriesConfigTx.hash)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700 underline"
+                            className="text-gold/90 hover:text-gold underline"
                           >
                             View Tx
                           </a>
@@ -1112,23 +1090,23 @@ export const FactoryPage = () => {
                       <div className="space-y-2">
                         <button
                           onClick={() => setShowStoredNames(!showStoredNames)}
-                          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                          className="flex items-center gap-2 text-sm font-semibold text-gold/90 hover:text-gold transition-colors"
                         >
                           {showStoredNames ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           Game List ({storedWorldNames.length})
                         </button>
                         {showStoredNames && (
                           <div className="pl-4 space-y-3">
-                            {[...storedWorldNames].reverse().map((name, idx) => {
+                            {[...storedWorldNames].reverse().map((name) => {
                               const metadata = worldSeriesMetadata[name];
                               const metadataParts: string[] = [];
                               if (metadata?.seriesName) metadataParts.push(metadata.seriesName);
                               if (metadata?.seriesGameNumber) metadataParts.push(`#${metadata.seriesGameNumber}`);
 
                               return (
-                                <div key={idx} className="space-y-2">
-                                  <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
-                                    <span className="flex-1 text-xs font-mono text-slate-700">{name}</span>
+                                <div key={name} className="space-y-2">
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-gold/20 hover:border-gold/40 transition-colors">
+                                    <span className="flex-1 text-xs font-mono text-gold/90">{name}</span>
 
                                     {/* Copy Button */}
                                     <button
@@ -1139,7 +1117,7 @@ export const FactoryPage = () => {
                                           console.error("Failed to copy world name", err);
                                         }
                                       }}
-                                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded transition-colors"
+                                      className="p-1 text-gold/40 hover:text-gold/90 hover:bg-black/40 rounded transition-colors"
                                       title="Copy world name"
                                       aria-label="Copy world name"
                                     >
@@ -1149,25 +1127,25 @@ export const FactoryPage = () => {
                                     {/* Remove Button */}
                                     <button
                                       onClick={() => handleRemoveFromQueue(name)}
-                                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      className="p-1 text-gold/40 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                                       title="Remove from queue"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
 
                                     {/* Divider */}
-                                    <div className="h-4 w-px bg-slate-200" />
+                                    <div className="h-4 w-px bg-gold/20" />
 
                                     {/* Verifying Deployment Status */}
                                     {verifyingDeployment[name] && (
-                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded border border-gold/20">
                                         <Loader2 className="w-3 h-3 animate-spin" />
                                         Verifying...
                                       </span>
                                     )}
 
                                     {autoDeployState[name] && !verifyingDeployment[name] && (
-                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                      <span className="flex items-center gap-1.5 px-2 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded border border-gold/20">
                                         <Loader2 className="w-3 h-3 animate-spin" />
                                         {autoDeployState[name].status === "stopping" ? "Stopping" : "Deploying"}{" "}
                                         {autoDeployState[name].current}/{autoDeployState[name].total}
@@ -1189,7 +1167,7 @@ export const FactoryPage = () => {
                                         <button
                                           onClick={() => handleQueueDeploy(name)}
                                           disabled={!account || !factoryAddress || tx.status === "running"}
-                                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
+                                          className="button-gold px-3 py-1 bg-gold/20 hover:bg-gold/30 disabled:bg-gold/20 disabled:cursor-not-allowed text-gold text-xs font-semibold rounded-md transition-colors flex items-center gap-1"
                                         >
                                           {tx.status === "running" && getTxStatusIcon()}
                                           {factoryDeployRepeats > 1 ? `Deploy x${factoryDeployRepeats}` : "Deploy"}
@@ -1202,28 +1180,30 @@ export const FactoryPage = () => {
                                         <button
                                           onClick={() => handleStopAutoDeploy(name)}
                                           disabled={autoDeployState[name].status === "stopping"}
-                                          className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
+                                          className="px-3 py-1 bg-red-50 hover:bg-red-100 disabled:bg-gold/10 disabled:text-gold/40 text-red-700 text-xs font-semibold rounded-md border border-red-200 hover:border-red-300 transition-colors"
                                         >
                                           {autoDeployState[name].status === "stopping" ? "Stopping..." : "Stop"}
                                         </button>
                                       )}
 
-                                    {/* Indexer Status/Actions - Only show if deployed */}
+                                    {/* Step 2: Configure - available before deploy to stage overrides */}
+                                    {!isWorldConfigured(name) && (
+                                      <button
+                                        onClick={() => setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))}
+                                        className="px-3 py-1 bg-black/40 hover:bg-gold/10 text-gold/90 text-xs font-semibold rounded-md border border-gold/20 hover:border-gold/20 transition-colors"
+                                      >
+                                        {worldConfigOpen[name]
+                                          ? "Hide Config"
+                                          : worldDeployedStatus[name]
+                                            ? "Configure"
+                                            : "Configure (Draft)"}
+                                      </button>
+                                    )}
+
+                                    {/* Step 3: Indexer - Only available once deployed */}
                                     {worldDeployedStatus[name] && (
                                       <>
-                                        {/* Step 2: Configure (can run before indexer) - Only show if not configured yet */}
-                                        {!isWorldConfigured(name) && (
-                                          <button
-                                            onClick={() =>
-                                              setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))
-                                            }
-                                            className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
-                                          >
-                                            {worldConfigOpen[name] ? "Hide Config" : "Configure"}
-                                          </button>
-                                        )}
-
-                                        {/* Step 3: Indexer - Always show if no indexer exists (regardless of config status) */}
+                                        {/* Indexer status/actions */}
                                         {worldIndexerStatus[name] ? (
                                           <a
                                             href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
@@ -1234,15 +1214,20 @@ export const FactoryPage = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             Indexer On
                                           </a>
+                                        ) : creatingIndexer[name] ? (
+                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 cursor-wait">
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            Creating Indexer...
+                                          </span>
                                         ) : isWorldOnCooldown(name) ? (
-                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
+                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-gold/10 text-gold/60 text-xs font-semibold rounded-md border border-gold/20 cursor-not-allowed">
                                             Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
                                             {getRemainingCooldown(name) % 60}s
                                           </span>
                                         ) : (
                                           <button
                                             onClick={() => handleCreateIndexer(name)}
-                                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                                            className="px-3 py-1 bg-black/40 hover:bg-gold/15 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 hover:border-gold/40 transition-colors"
                                           >
                                             Create Indexer
                                           </button>
@@ -1251,24 +1236,27 @@ export const FactoryPage = () => {
                                     )}
                                   </div>
                                   {metadataParts.length > 0 && (
-                                    <p className="text-[11px] text-slate-500">Series: {metadataParts.join(" ")}</p>
+                                    <p className="text-[11px] text-gold/60">Series: {metadataParts.join(" ")}</p>
+                                  )}
+                                  {indexerActionErrors[name] && !worldIndexerStatus[name] && (
+                                    <p className="text-[11px] text-red-600">{indexerActionErrors[name]}</p>
                                   )}
 
                                   {/* No extra status panel; only small wait timer above */}
 
                                   {/* Per-world Config Panel */}
                                   {worldConfigOpen[name] && (
-                                    <div className="ml-3 pl-3 py-4 border-l-2 border-slate-200">
-                                      <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
+                                    <div className="ml-3 pl-3 py-4 border-l-2 border-gold/20">
+                                      <div className="p-4 bg-black/40 border border-gold/20 rounded-xl shadow-sm space-y-3">
                                         <div className="flex items-center justify-between">
                                           <div>
-                                            <p className="text-sm font-semibold text-slate-800">Configure Game</p>
-                                            <p className="text-xs text-slate-500">
-                                              Runs full config using live manifest
+                                            <p className="text-sm font-semibold text-gold">Configure Game</p>
+                                            <p className="text-xs text-gold/60">
+                                              Edit overrides any time. Set runs a live deployment check.
                                             </p>
                                           </div>
                                           {worldConfigTx[name]?.status === "running" && (
-                                            <span className="inline-flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
+                                            <span className="inline-flex items-center gap-2 text-xs text-gold/80 bg-black/40 border border-gold/20 px-2 py-1 rounded">
                                               <Loader2 className="w-3 h-3 animate-spin" /> Running
                                             </span>
                                           )}
@@ -1281,7 +1269,7 @@ export const FactoryPage = () => {
                                                 href={getExplorerTxUrl(currentChain as any, worldConfigTx[name].hash)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                                className="text-xs text-gold/90 hover:text-gold underline"
                                               >
                                                 View Tx
                                               </a>
@@ -1304,7 +1292,7 @@ export const FactoryPage = () => {
                                         {/* startMainAt override */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Game Start Time
                                             </label>
                                             <input
@@ -1376,9 +1364,9 @@ export const FactoryPage = () => {
                                                 }
                                                 setStartMainAtOverrides((p) => ({ ...p, [name]: selected }));
                                               }}
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
                                             </p>
                                             {startMainAtErrors[name] && (
@@ -1386,7 +1374,88 @@ export const FactoryPage = () => {
                                             )}
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">Dev Mode</label>
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Settling Start Time
+                                            </label>
+                                            <input
+                                              type="datetime-local"
+                                              min={(() => {
+                                                const d = new Date();
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const yyyy = d.getFullYear();
+                                                const mm = pad(d.getMonth() + 1);
+                                                const dd = pad(d.getDate());
+                                                const hh = pad(d.getHours());
+                                                const mi = pad(d.getMinutes());
+                                                return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                              })()}
+                                              max={(() => {
+                                                const d = new Date(Date.now() + MAX_START_TIME_HOURS * 3600 * 1000);
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const yyyy = d.getFullYear();
+                                                const mm = pad(d.getMonth() + 1);
+                                                const dd = pad(d.getDate());
+                                                const hh = pad(d.getHours());
+                                                const mi = pad(d.getMinutes());
+                                                return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                              })()}
+                                              value={(() => {
+                                                const pad = (n: number) => n.toString().padStart(2, "0");
+                                                const toLocalInput = (date: Date) => {
+                                                  const yyyy = date.getFullYear();
+                                                  const mm = pad(date.getMonth() + 1);
+                                                  const dd = pad(date.getDate());
+                                                  const hh = pad(date.getHours());
+                                                  const mi = pad(date.getMinutes());
+                                                  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                                                };
+                                                const ts = startSettlingAtOverrides[name];
+                                                if (ts && ts > 0) {
+                                                  return toLocalInput(new Date(ts * 1000));
+                                                }
+                                                const now = new Date();
+                                                const nextHalfHour = new Date(now.getTime());
+                                                nextHalfHour.setSeconds(0, 0);
+                                                const addMinutes = 30 - (nextHalfHour.getMinutes() % 30 || 30);
+                                                nextHalfHour.setMinutes(nextHalfHour.getMinutes() + addMinutes);
+                                                return toLocalInput(nextHalfHour);
+                                              })()}
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (!val) {
+                                                  setStartSettlingAtOverrides((p) => ({ ...p, [name]: 0 }));
+                                                  setStartSettlingAtErrors((p) => ({ ...p, [name]: "" }));
+                                                  return;
+                                                }
+                                                const selected = Math.floor(new Date(val).getTime() / 1000);
+                                                const now = Math.floor(Date.now() / 1000);
+                                                const maxAllowed = now + MAX_START_TIME_HOURS * 3600;
+                                                if (selected < now) {
+                                                  setStartSettlingAtErrors((p) => ({
+                                                    ...p,
+                                                    [name]: "Settling start cannot be in the past",
+                                                  }));
+                                                } else if (selected > maxAllowed) {
+                                                  setStartSettlingAtErrors((p) => ({
+                                                    ...p,
+                                                    [name]: `Settling start cannot be more than ${MAX_START_TIME_HOURS.toLocaleString()} hours ahead`,
+                                                  }));
+                                                } else {
+                                                  setStartSettlingAtErrors((p) => ({ ...p, [name]: "" }));
+                                                }
+                                                setStartSettlingAtOverrides((p) => ({ ...p, [name]: selected }));
+                                              }}
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
+                                            />
+                                            <p className="text-[10px] text-gold/60">
+                                              Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
+                                            </p>
+                                            {startSettlingAtErrors[name] && (
+                                              <p className="text-[11px] text-red-600">{startSettlingAtErrors[name]}</p>
+                                            )}
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">Dev Mode</label>
                                             <div className="flex items-center gap-2">
                                               <input
                                                 id={`dev-mode-${name}`}
@@ -1401,14 +1470,14 @@ export const FactoryPage = () => {
                                                 }
                                                 className="h-4 w-4 accent-blue-600"
                                               />
-                                              <label htmlFor={`dev-mode-${name}`} className="text-xs text-slate-700">
+                                              <label htmlFor={`dev-mode-${name}`} className="text-xs text-gold/90">
                                                 Enable developer mode for this world
                                               </label>
                                             </div>
-                                            <p className="text-[10px] text-slate-500">Controls in-game dev features.</p>
+                                            <p className="text-[10px] text-gold/60">Controls in-game dev features.</p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">MMR System</label>
+                                            <label className="text-xs font-semibold text-gold/70">MMR System</label>
                                             <div className="flex items-center gap-2">
                                               <input
                                                 id={`mmr-enabled-${name}`}
@@ -1423,11 +1492,11 @@ export const FactoryPage = () => {
                                                 }
                                                 className="h-4 w-4 accent-blue-600"
                                               />
-                                              <label htmlFor={`mmr-enabled-${name}`} className="text-xs text-slate-700">
+                                              <label htmlFor={`mmr-enabled-${name}`} className="text-xs text-gold/90">
                                                 Enable MMR tracking for this world
                                               </label>
                                             </div>
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Tracks player skill ratings across Blitz games.
                                             </p>
                                           </div>
@@ -1435,7 +1504,7 @@ export const FactoryPage = () => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Game Duration (hours)
                                             </label>
                                             <input
@@ -1452,14 +1521,14 @@ export const FactoryPage = () => {
                                                   [name]: Number(e.target.value || 0),
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Applies to season.durationSeconds.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Game Duration (minutes)
                                             </label>
                                             <input
@@ -1477,12 +1546,12 @@ export const FactoryPage = () => {
                                                   [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
                                             />
-                                            <p className="text-[10px] text-slate-500">0–59 minutes (added to hours).</p>
+                                            <p className="text-[10px] text-gold/60">0–59 minutes (added to hours).</p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Factory Address Override
                                             </label>
                                             <input
@@ -1490,18 +1559,21 @@ export const FactoryPage = () => {
                                               placeholder={
                                                 factoryAddress || (eternumConfig as any)?.factory_address || "0x..."
                                               }
-                                              value={factoryAddressOverrides[name] || ""}
+                                              value={
+                                                factoryAddressOverrides[name] ??
+                                                (factoryAddress || (eternumConfig as any)?.factory_address || "")
+                                              }
                                               onChange={(e) =>
                                                 setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Used by set_factory_address when configuring this world.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Single Realm Mode
                                             </label>
                                             <div className="flex items-center gap-2">
@@ -1523,12 +1595,12 @@ export const FactoryPage = () => {
                                               />
                                               <label
                                                 htmlFor={`single-realm-mode-${name}`}
-                                                className="text-xs text-slate-700"
+                                                className="text-xs text-gold/90"
                                               >
                                                 Enable single realm mode for this world
                                               </label>
                                             </div>
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Controls settlement spawning behavior.
                                             </p>
                                           </div>
@@ -1537,25 +1609,25 @@ export const FactoryPage = () => {
                                         {/* Blitz Registration Fee Configuration */}
                                         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Blitz Registration Fee Amount
                                             </label>
                                             <input
                                               type="text"
                                               placeholder={defaultBlitzRegistration.amount}
-                                              value={blitzFeeAmountOverrides[name] || ""}
+                                              value={blitzFeeAmountOverrides[name] ?? defaultBlitzRegistration.amount}
                                               onChange={(e) =>
                                                 setBlitzFeeAmountOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Default: {defaultBlitzRegistration.amount} with precision{" "}
                                               {defaultBlitzRegistration.precision}.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Fee Precision (decimals)
                                             </label>
                                             <input
@@ -1563,35 +1635,43 @@ export const FactoryPage = () => {
                                               min={0}
                                               step={1}
                                               placeholder={String(defaultBlitzRegistration.precision)}
-                                              value={blitzFeePrecisionOverrides[name] || ""}
+                                              value={
+                                                blitzFeePrecisionOverrides[name] ??
+                                                String(defaultBlitzRegistration.precision)
+                                              }
                                               onChange={(e) =>
                                                 setBlitzFeePrecisionOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Default: {defaultBlitzRegistration.precision} decimals.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Blitz Registration Fee Token
                                             </label>
                                             <input
                                               type="text"
                                               placeholder={defaultBlitzRegistration.token || "0x..."}
-                                              value={blitzFeeTokenOverrides[name] || ""}
+                                              value={
+                                                blitzFeeTokenOverrides[name] ??
+                                                (defaultBlitzRegistration.token ||
+                                                  (eternumConfig as any)?.blitz?.registration?.fee_token ||
+                                                  "")
+                                              }
                                               onChange={(e) =>
                                                 setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">
+                                            <p className="text-[10px] text-gold/60">
                                               Default: {defaultBlitzRegistration.token}. Leave empty for default.
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-600">
+                                            <label className="text-xs font-semibold text-gold/70">
                                               Registration Count Max
                                             </label>
                                             <input
@@ -1599,16 +1679,329 @@ export const FactoryPage = () => {
                                               min={0}
                                               step={1}
                                               placeholder="30"
-                                              value={registrationCountMaxOverrides[name] || ""}
+                                              value={
+                                                registrationCountMaxOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.blitz?.registration?.registration_count_max ??
+                                                    30,
+                                                )
+                                              }
                                               onChange={(e) =>
                                                 setRegistrationCountMaxOverrides((p) => ({
                                                   ...p,
                                                   [name]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md font-mono"
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-slate-500">Default: 30.</p>
+                                            <p className="text-[10px] text-gold/60">Default: 30.</p>
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Blitz Fee Recipient
+                                            </label>
+                                            <input
+                                              type="text"
+                                              placeholder={(eternumConfig as any)?.blitz?.registration?.fee_recipient || "0x..."}
+                                              value={
+                                                blitzFeeRecipientOverrides[name] ??
+                                                ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
+                                              }
+                                              onChange={(e) =>
+                                                setBlitzFeeRecipientOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Registration Delay (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.blitz?.registration?.registration_delay_seconds ?? 60)}
+                                              value={
+                                                registrationDelaySecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.blitz?.registration?.registration_delay_seconds ??
+                                                    60,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setRegistrationDelaySecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Registration Period (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.blitz?.registration?.registration_period_seconds ?? 600)}
+                                              value={
+                                                registrationPeriodSecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.blitz?.registration?.registration_period_seconds ??
+                                                    600,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setRegistrationPeriodSecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Bridge Close After End (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0)}
+                                              value={
+                                                seasonBridgeCloseAfterEndSecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setSeasonBridgeCloseAfterEndSecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Point Registration Close (seconds)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.season?.pointRegistrationCloseAfterEndSeconds ?? 0,
+                                              )}
+                                              value={
+                                                seasonPointRegistrationCloseAfterEndSecondsOverrides[name] ??
+                                                String(
+                                                  (eternumConfig as any)?.season
+                                                    ?.pointRegistrationCloseAfterEndSeconds ?? 0,
+                                                )
+                                              }
+                                              onChange={(e) =>
+                                                setSeasonPointRegistrationCloseAfterEndSecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">Settlement Center</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.settlement?.center ?? 0)}
+                                              value={
+                                                settlementCenterOverrides[name] ??
+                                                String((eternumConfig as any)?.settlement?.center ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setSettlementCenterOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Settlement Base Distance
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.settlement?.base_distance ?? 0)}
+                                              value={
+                                                settlementBaseDistanceOverrides[name] ??
+                                                String((eternumConfig as any)?.settlement?.base_distance ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setSettlementBaseDistanceOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Settlement Subsequent Distance
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)}
+                                              value={
+                                                settlementSubsequentDistanceOverrides[name] ??
+                                                String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setSettlementSubsequentDistanceOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">Trade Max Count</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.trade?.maxCount ?? 0)}
+                                              value={
+                                                tradeMaxCountOverrides[name] ??
+                                                String((eternumConfig as any)?.trade?.maxCount ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setTradeMaxCountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">Battle Grace Ticks</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.battle?.graceTickCount ?? 0)}
+                                              value={
+                                                battleGraceTickCountOverrides[name] ??
+                                                String((eternumConfig as any)?.battle?.graceTickCount ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setBattleGraceTickCountOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Battle Hyperstructure Grace Ticks
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)}
+                                              value={
+                                                battleGraceTickCountHypOverrides[name] ??
+                                                String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setBattleGraceTickCountHypOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">Battle Delay (seconds)</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.battle?.delaySeconds ?? 0)}
+                                              value={
+                                                battleDelaySecondsOverrides[name] ??
+                                                String((eternumConfig as any)?.battle?.delaySeconds ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setBattleDelaySecondsOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">Agent Max Current</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.agent?.max_current_count ?? 0)}
+                                              value={
+                                                agentMaxCurrentCountOverrides[name] ??
+                                                String((eternumConfig as any)?.agent?.max_current_count ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setAgentMaxCurrentCountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">Agent Max Lifetime</label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={1}
+                                              placeholder={String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)}
+                                              value={
+                                                agentMaxLifetimeCountOverrides[name] ??
+                                                String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)
+                                              }
+                                              onChange={(e) =>
+                                                setAgentMaxLifetimeCountOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
                                           </div>
                                         </div>
 
@@ -1617,7 +2010,13 @@ export const FactoryPage = () => {
                                             onClick={async () => {
                                               if (!account) return;
                                               setWorldConfigTx((p) => ({ ...p, [name]: { status: "running" } }));
+                                              let localProvider: any = null;
                                               try {
+                                                const deployedWorldAddress = await getWorldDeployedAddressLocal(name);
+                                                if (!deployedWorldAddress) {
+                                                  throw new Error("World is not deployed yet. Deploy first.");
+                                                }
+
                                                 // 1) Build runtime profile, patch manifest, create provider for this world
                                                 const profile = await buildWorldProfile(currentChain as Chain, name);
                                                 const baseManifest = getGameManifest(currentChain as Chain);
@@ -1626,7 +2025,7 @@ export const FactoryPage = () => {
                                                   profile.worldAddress,
                                                   profile.contractsBySelector,
                                                 );
-                                                const localProvider: any = new EternumProvider(
+                                                localProvider = new EternumProvider(
                                                   patched,
                                                   env.VITE_PUBLIC_NODE_URL,
                                                   env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
@@ -1635,151 +2034,103 @@ export const FactoryPage = () => {
                                                 // 2) Batch and run all config functions (same order as config-admin-page)
                                                 await localProvider.beginBatch({ signer: account });
 
-                                                // prepare optional override for startMainAt (clamped to +MAX_START_TIME_HOURS)
+                                                // prepare optional overrides and build typed config
                                                 const nowSec = Math.floor(Date.now() / 1000);
                                                 const maxAllowed = nowSec + MAX_START_TIME_HOURS * 3600;
-                                                const sel = startMainAtOverrides[name];
-                                                // default to start of next hour if not provided
+                                                const selectedStartRaw = startMainAtOverrides[name];
                                                 const nextHourDefault = (() => {
                                                   const now = Date.now();
                                                   const nextHourMs = Math.ceil(now / 3600000) * 3600000;
                                                   return Math.floor(nextHourMs / 1000);
                                                 })();
-                                                const chosenStart = sel && sel > 0 ? sel : nextHourDefault;
+                                                const chosenStart =
+                                                  selectedStartRaw && selectedStartRaw > 0
+                                                    ? selectedStartRaw
+                                                    : nextHourDefault;
                                                 const selectedStart = Math.max(
                                                   nowSec,
                                                   Math.min(chosenStart, maxAllowed),
                                                 );
 
-                                                const selectedDevMode = Object.prototype.hasOwnProperty.call(
+                                                const selectedSettlingRaw = startSettlingAtOverrides[name];
+                                                const selectedSettling =
+                                                  selectedSettlingRaw && selectedSettlingRaw > 0
+                                                    ? Math.max(nowSec, Math.min(selectedSettlingRaw, maxAllowed))
+                                                    : undefined;
+                                                if (selectedSettling && selectedSettling > selectedStart) {
+                                                  throw new Error("Settling start cannot be later than game start");
+                                                }
+
+                                                const hasDevOverride = Object.prototype.hasOwnProperty.call(
                                                   devModeOverrides,
                                                   name,
-                                                )
-                                                  ? !!devModeOverrides[name]
-                                                  : devModeOn;
-                                                const selectedDurationHours = Object.prototype.hasOwnProperty.call(
-                                                  durationHoursOverrides,
-                                                  name,
-                                                )
-                                                  ? Number(durationHoursOverrides[name] || 0)
-                                                  : Number(durationHours || 0);
-                                                const selectedDurationMinutes = Object.prototype.hasOwnProperty.call(
-                                                  durationMinutesOverrides,
-                                                  name,
-                                                )
-                                                  ? Number(durationMinutesOverrides[name] || 0)
-                                                  : Number(baseDurationMinutes || 0);
-                                                if (
-                                                  !Number.isFinite(selectedDurationMinutes) ||
-                                                  selectedDurationMinutes < 0 ||
-                                                  selectedDurationMinutes > 59
-                                                ) {
-                                                  throw new Error("Duration minutes must be between 0 and 59");
-                                                }
-
-                                                // Apply blitz registration fee overrides if provided
-                                                const rawFeeAmount = blitzFeeAmountOverrides[name]?.trim();
-                                                const rawFeePrecision = blitzFeePrecisionOverrides[name]?.trim();
-                                                const rawFeeToken = blitzFeeTokenOverrides[name]?.trim();
-                                                const rawRegistrationCountMax =
-                                                  registrationCountMaxOverrides[name]?.trim();
-                                                const hasRegistrationCountMax =
-                                                  rawRegistrationCountMax !== undefined &&
-                                                  rawRegistrationCountMax !== "";
-                                                const registrationCountMax = hasRegistrationCountMax
-                                                  ? Number(rawRegistrationCountMax)
-                                                  : 30;
-                                                if (
-                                                  !Number.isFinite(registrationCountMax) ||
-                                                  registrationCountMax < 0
-                                                ) {
-                                                  throw new Error(
-                                                    "Registration count max must be a non-negative number",
-                                                  );
-                                                }
-                                                const hasFeePrecision =
-                                                  rawFeePrecision !== undefined && rawFeePrecision !== "";
-                                                const precision = hasFeePrecision
-                                                  ? Number(rawFeePrecision)
-                                                  : defaultBlitzRegistration.precision;
-                                                if (
-                                                  !Number.isFinite(precision) ||
-                                                  precision < 0 ||
-                                                  !Number.isInteger(precision)
-                                                ) {
-                                                  throw new Error("Fee precision must be a non-negative integer");
-                                                }
-                                                const hasFeeAmount = rawFeeAmount !== undefined && rawFeeAmount !== "";
-                                                const amountToParse = hasFeeAmount
-                                                  ? rawFeeAmount
-                                                  : defaultBlitzRegistration.amount;
-                                                const blitzFeeAmount = amountToParse
-                                                  ? parseDecimalToBigInt(amountToParse, precision)
-                                                  : eternumConfig.blitz?.registration?.fee_amount;
-                                                const blitzFeeToken =
-                                                  rawFeeToken ||
-                                                  defaultBlitzRegistration.token ||
-                                                  eternumConfig.blitz?.registration?.fee_token;
-
-                                                const rawFactoryAddress = factoryAddressOverrides[name]?.trim();
-                                                const factoryAddressOverride =
-                                                  rawFactoryAddress ||
-                                                  factoryAddress ||
-                                                  (eternumConfig as any)?.factory_address;
-
-                                                // Apply single realm mode override if provided
-                                                const selectedSingleRealmMode = Object.prototype.hasOwnProperty.call(
-                                                  singleRealmModeOverrides,
-                                                  name,
-                                                )
-                                                  ? !!singleRealmModeOverrides[name]
-                                                  : !!eternumConfig.settlement?.single_realm_mode;
-
-                                                // Apply MMR enabled override if provided
-                                                const selectedMmrEnabled = Object.prototype.hasOwnProperty.call(
+                                                );
+                                                const hasMmrOverride = Object.prototype.hasOwnProperty.call(
                                                   mmrEnabledOverrides,
                                                   name,
-                                                )
-                                                  ? !!mmrEnabledOverrides[name]
-                                                  : mmrEnabledOn;
+                                                );
+                                                const hasSingleRealmOverride = Object.prototype.hasOwnProperty.call(
+                                                  singleRealmModeOverrides,
+                                                  name,
+                                                );
+                                                const hasDurationHoursOverride = Object.prototype.hasOwnProperty.call(
+                                                  durationHoursOverrides,
+                                                  name,
+                                                );
+                                                const hasDurationMinutesOverride = Object.prototype.hasOwnProperty.call(
+                                                  durationMinutesOverrides,
+                                                  name,
+                                                );
 
-                                                const configForWorld = {
-                                                  ...eternumConfig,
-                                                  factory_address: factoryAddressOverride,
-                                                  dev: {
-                                                    ...(eternumConfig as any).dev,
-                                                    mode: {
-                                                      ...((eternumConfig as any).dev?.mode || {}),
-                                                      on: selectedDevMode,
-                                                    },
+                                                const configForWorld = buildWorldConfigForFactory({
+                                                  baseConfig: eternumConfig as any,
+                                                  defaults: {
+                                                    factoryAddress:
+                                                      factoryAddress || ((eternumConfig as any)?.factory_address ?? ""),
+                                                    devModeOn,
+                                                    mmrEnabledOn,
+                                                    durationHours,
+                                                    baseDurationMinutes,
+                                                    defaultBlitzRegistration,
                                                   },
-                                                  season: {
-                                                    ...eternumConfig.season,
+                                                  overrides: {
                                                     startMainAt: selectedStart,
-                                                    durationSeconds: Math.max(
-                                                      60,
-                                                      Math.max(0, selectedDurationHours) * 3600 +
-                                                        Math.max(0, selectedDurationMinutes) * 60,
-                                                    ),
+                                                    startSettlingAt: selectedSettling,
+                                                    devModeOn: hasDevOverride ? !!devModeOverrides[name] : undefined,
+                                                    mmrEnabled: hasMmrOverride ? !!mmrEnabledOverrides[name] : undefined,
+                                                    durationHours: hasDurationHoursOverride
+                                                      ? String(durationHoursOverrides[name] ?? 0)
+                                                      : undefined,
+                                                    durationMinutes: hasDurationMinutesOverride
+                                                      ? String(durationMinutesOverrides[name] ?? 0)
+                                                      : undefined,
+                                                    blitzFeeAmount: blitzFeeAmountOverrides[name],
+                                                    blitzFeePrecision: blitzFeePrecisionOverrides[name],
+                                                    blitzFeeToken: blitzFeeTokenOverrides[name],
+                                                    blitzFeeRecipient: blitzFeeRecipientOverrides[name],
+                                                    registrationCountMax: registrationCountMaxOverrides[name],
+                                                    registrationDelaySeconds: registrationDelaySecondsOverrides[name],
+                                                    registrationPeriodSeconds: registrationPeriodSecondsOverrides[name],
+                                                    factoryAddress: factoryAddressOverrides[name],
+                                                    singleRealmMode: hasSingleRealmOverride
+                                                      ? !!singleRealmModeOverrides[name]
+                                                      : undefined,
+                                                    seasonBridgeCloseAfterEndSeconds:
+                                                      seasonBridgeCloseAfterEndSecondsOverrides[name],
+                                                    seasonPointRegistrationCloseAfterEndSeconds:
+                                                      seasonPointRegistrationCloseAfterEndSecondsOverrides[name],
+                                                    settlementCenter: settlementCenterOverrides[name],
+                                                    settlementBaseDistance: settlementBaseDistanceOverrides[name],
+                                                    settlementSubsequentDistance:
+                                                      settlementSubsequentDistanceOverrides[name],
+                                                    tradeMaxCount: tradeMaxCountOverrides[name],
+                                                    battleGraceTickCount: battleGraceTickCountOverrides[name],
+                                                    battleGraceTickCountHyp: battleGraceTickCountHypOverrides[name],
+                                                    battleDelaySeconds: battleDelaySecondsOverrides[name],
+                                                    agentMaxCurrentCount: agentMaxCurrentCountOverrides[name],
+                                                    agentMaxLifetimeCount: agentMaxLifetimeCountOverrides[name],
                                                   },
-                                                  blitz: {
-                                                    ...eternumConfig.blitz,
-                                                    registration: {
-                                                      ...eternumConfig.blitz?.registration,
-                                                      fee_amount: blitzFeeAmount,
-                                                      fee_token: blitzFeeToken,
-                                                      registration_count_max: registrationCountMax,
-                                                    },
-                                                  },
-                                                  settlement: {
-                                                    ...eternumConfig.settlement,
-                                                    single_realm_mode: selectedSingleRealmMode,
-                                                  },
-                                                  mmr: {
-                                                    ...eternumConfig.mmr,
-                                                    enabled: selectedMmrEnabled,
-                                                  },
-                                                } as any;
+                                                });
 
                                                 const ctx = {
                                                   account,
@@ -1839,11 +2190,12 @@ export const FactoryPage = () => {
                                                 } catch {}
                                               }
                                             }}
-                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                            className="button-gold px-4 py-2 bg-gold/20 hover:bg-gold/30 text-gold text-xs font-semibold rounded-md disabled:bg-gold/20 disabled:cursor-not-allowed"
                                             disabled={
                                               !account ||
                                               worldConfigTx[name]?.status === "running" ||
-                                              !!startMainAtErrors[name]
+                                              !!startMainAtErrors[name] ||
+                                              !!startSettlingAtErrors[name]
                                             }
                                           >
                                             Set
@@ -1854,7 +2206,7 @@ export const FactoryPage = () => {
                                               href={getExplorerTxUrl(currentChain as any, worldConfigTx[name]!.hash)}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              className="text-xs text-blue-700 hover:underline ml-2"
+                                              className="text-xs text-gold/90 hover:underline ml-2"
                                             >
                                               View Tx
                                             </a>
@@ -1886,7 +2238,7 @@ export const FactoryPage = () => {
           <div className="space-y-4 mt-12">
             <button
               onClick={() => setShowDevConfig(!showDevConfig)}
-              className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-2 text-sm font-semibold text-gold/70 hover:text-gold transition-colors"
             >
               {showDevConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               Are you a dev?
@@ -1895,28 +2247,28 @@ export const FactoryPage = () => {
             {showDevConfig && (
               <div className="space-y-8">
                 {/* Configuration Section */}
-                <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-200">
-                  <h3 className="text-lg font-bold text-slate-900 mb-4">Configuration</h3>
+                <div className="p-6 bg-black/40 rounded-2xl border-2 border-gold/20">
+                  <h3 className="text-lg font-bold text-gold mb-4">Configuration</h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">
                         Factory Address
                       </label>
                       <input
                         type="text"
                         value={factoryAddress}
                         disabled
-                        className="w-full px-4 py-3 bg-slate-200 border-2 border-slate-300 rounded-xl text-slate-500 font-mono text-sm cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-gold/20 border-2 border-gold/20 rounded-xl text-gold/60 font-mono text-sm cursor-not-allowed"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Version</label>
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Version</label>
                       <input
                         type="text"
                         value={version}
                         onChange={(e) => setVersion(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 focus:outline-none transition-all"
+                        className="w-full px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold focus:outline-none transition-all"
                       />
                       {version !== DEFAULT_VERSION && (
                         <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -1930,19 +2282,19 @@ export const FactoryPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Namespace</label>
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Namespace</label>
                       <input
                         type="text"
                         value={namespace}
                         disabled
-                        className="w-full px-4 py-3 bg-slate-200 border-2 border-slate-300 rounded-xl text-slate-500 cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-gold/20 border-2 border-gold/20 rounded-xl text-gold/60 cursor-not-allowed"
                       />
                     </div>
 
                     <button
                       onClick={handleSetConfig}
                       disabled={!factoryAddress || !account || tx.status === "running"}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                      className="button-gold w-full px-6 py-3 bg-gradient-to-r from-gold/20 to-gold/20 hover:from-gold/30 hover:to-gold/30 disabled:from-gold/20 disabled:to-gold/20 disabled:cursor-not-allowed text-gold font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {tx.status === "running" && getTxStatusIcon()}
                       <span>Set Configuration</span>
@@ -1960,7 +2312,7 @@ export const FactoryPage = () => {
                             href={getExplorerTxUrl(currentChain as any, tx.hash)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline"
+                            className="text-sm font-semibold text-gold/90 hover:text-gold underline"
                           >
                             View Transaction
                           </a>
@@ -1984,75 +2336,75 @@ export const FactoryPage = () => {
                 {/* Deployment Summary Section */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-2xl font-bold text-slate-900">Deployment Summary</h3>
+                    <h3 className="text-2xl font-bold text-gold">Deployment Summary</h3>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setShowFullConfig((v) => !v)}
-                        className="px-6 py-3 text-sm font-semibold text-slate-700 hover:text-white bg-slate-100 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-teal-600 border-2 border-slate-200 hover:border-transparent rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
+                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
                       >
                         {showFullConfig ? "Hide" : "View"} Full Config
                       </button>
                       <button
                         onClick={() => setShowCairoOutput(!showCairoOutput)}
-                        className="px-6 py-3 text-sm font-semibold text-slate-700 hover:text-white bg-slate-100 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 border-2 border-slate-200 hover:border-transparent rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-blue-500/20"
+                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-gold/20"
                       >
                         {showCairoOutput ? "Hide" : "View"} Cairo Code
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-8 bg-white border-2 border-slate-200 rounded-3xl shadow-lg space-y-1">
-                    <div className="flex items-center justify-between py-5 border-b-2 border-slate-100">
-                      <span className="text-sm font-bold text-slate-600 uppercase tracking-wide">World Class Hash</span>
-                      <span className="text-sm text-slate-900 font-mono bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
+                  <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-lg space-y-1">
+                    <div className="flex items-center justify-between py-5 border-b-2 border-gold/10">
+                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">World Class Hash</span>
+                      <span className="text-sm text-gold font-mono bg-black/40 px-4 py-2 rounded-lg border border-gold/20">
                         {parsedManifest.world.class_hash.slice(0, 20)}...
                       </span>
                     </div>
-                    <div className="flex items-center justify-between py-5 border-b-2 border-slate-100">
-                      <span className="text-sm font-bold text-slate-600 uppercase tracking-wide">Namespace</span>
-                      <span className="text-sm font-semibold text-slate-900 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between py-5 border-b-2 border-gold/10">
+                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">Namespace</span>
+                      <span className="text-sm font-semibold text-gold bg-black/40 px-4 py-2 rounded-lg border border-gold/20">
                         {namespace}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-5">
-                      <span className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">
                         Calldata Arguments
                       </span>
-                      <span className="text-sm font-bold text-slate-900 font-mono bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-200">
+                      <span className="text-sm font-bold text-gold font-mono bg-black/40 px-4 py-2 rounded-lg border border-gold/20">
                         {generatedCalldata.length}
                       </span>
                     </div>
                   </div>
 
                   {showCairoOutput && (
-                    <div className="p-8 bg-slate-900 border-2 border-slate-700 rounded-3xl shadow-2xl">
-                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                          <Download className="w-5 h-5 text-white" />
+                    <div className="p-8 panel-wood border-2 border-gold/20 rounded-3xl shadow-2xl">
+                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
+                        <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
+                          <Download className="w-5 h-5 text-gold" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-white">Generated Cairo Code</p>
-                          <p className="text-xs text-slate-400">Factory configuration output</p>
+                          <p className="text-sm font-bold text-gold">Generated Cairo Code</p>
+                          <p className="text-xs text-gold/60">Factory configuration output</p>
                         </div>
                       </div>
-                      <pre className="text-xs text-emerald-400 overflow-x-auto leading-relaxed font-mono">
+                      <pre className="text-xs text-gold/90 overflow-x-auto leading-relaxed font-mono">
                         {generateCairoOutput(parsedManifest, version, maxActions, defaultNamespaceWriterAll, namespace)}
                       </pre>
                     </div>
                   )}
 
                   {showFullConfig && (
-                    <div className="p-8 bg-white border-2 border-slate-200 rounded-3xl shadow-lg">
-                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                          <Download className="w-5 h-5 text-white" />
+                    <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-lg">
+                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
+                        <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
+                          <Download className="w-5 h-5 text-gold" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900">Full Configuration (read-only)</p>
-                          <p className="text-xs text-slate-500">Effective config for current chain</p>
+                          <p className="text-sm font-bold text-gold">Full Configuration (read-only)</p>
+                          <p className="text-xs text-gold/60">Effective config for current chain</p>
                         </div>
                       </div>
-                      <pre className="text-xs text-slate-800 overflow-x-auto leading-relaxed font-mono whitespace-pre-wrap">
+                      <pre className="text-xs text-gold overflow-x-auto leading-relaxed font-mono whitespace-pre-wrap">
                         {JSON.stringify(eternumConfig, null, 2)}
                       </pre>
                     </div>
