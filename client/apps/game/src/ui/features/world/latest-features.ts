@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-12",
+    title: "Building Cost Visual Feedback",
+    description:
+      "Missing resources in building construction costs now appear in red, making it easier to identify what resources you need to gather before building.",
+    type: "improvement",
+  },
+  {
     date: "2026-02-11",
     title: "Unit Selection Recovery After Moves",
     description:
