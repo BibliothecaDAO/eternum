@@ -16,6 +16,7 @@ import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useVotingPower } from "@/hooks/governance/use-voting-power";
 import { useStarkDisplayName } from "@/hooks/use-stark-name";
 import { getProposalQueryOptions } from "@/lib/snapshot/getProposals";
+import { isMatchingProposalVote } from "@/lib/snapshot/proposal-id";
 import { getUserVotesQueryOptions } from "@/lib/snapshot/getUserVotes";
 import {
   formatAddress,
@@ -76,7 +77,7 @@ function RouteComponent() {
 
   // Find the vote that matches this proposal ID
   const userVoteRef = userVotesQuery?.votes?.find(
-    (vote) => vote && Number(id) === Number(vote.proposal),
+    (vote) => isMatchingProposalVote(vote?.proposal, id),
   );
 
   const proposal = proposalQuery.proposal;

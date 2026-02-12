@@ -1,4 +1,5 @@
 import { getProposalsQueryOptions } from "@/lib/snapshot/getProposals";
+import { isMatchingProposalVote } from "@/lib/snapshot/proposal-id";
 import { getUserVotesQueryOptions } from "@/lib/snapshot/getUserVotes";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
@@ -39,7 +40,7 @@ export function ProposalList({
     <div className="flex flex-col">
       {proposals?.map((proposal) => {
         const matchingVote = userVotes?.find((vote) => {
-          return vote?.proposal === Number(proposal?.id.split("/")[1]);
+          return isMatchingProposalVote(vote?.proposal, proposal?.proposal_id);
         });
         return (
           <ProposalListItem

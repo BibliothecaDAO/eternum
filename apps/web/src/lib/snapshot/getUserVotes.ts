@@ -6,6 +6,7 @@ import {
   joinHighlightProposal,
 } from "@/utils/helpers";*/
 import { graphql } from "@/gql/snapshot";
+import type { UserVotesQueryVariables } from "@/gql/snapshot/graphql";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -56,7 +57,7 @@ const USER_VOTES_QUERY = graphql(`
 
 // Define a Zod schema for the UserVotes request input.
 const LoadUserVotesInput = z.object({
-  spaceIds: z.array(z.string()),
+  spaceIds: z.array(z.string()).min(1),
   voter: z.string(),
   limit: z.number().min(1),
   skip: z.number().min(0).default(0),
@@ -71,7 +72,7 @@ export const getUserVotes = createServerFn({ method: "POST" })
   .handler(async (ctx) => {
     const { spaceIds, limit, skip, voter } = ctx.data;
     // Define variables for the UserVotes query.
-    const variables = {
+    const variables: UserVotesQueryVariables = {
       first: limit,
       skip,
       spaceIds,
