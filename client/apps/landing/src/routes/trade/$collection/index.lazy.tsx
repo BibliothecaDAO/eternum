@@ -53,8 +53,7 @@ function CollectionPage() {
   const defaultTraitFilters: Record<string, string[]> = collectionConfig?.defaultTraitFilters ?? {};
 
   const enforcedTraitFilters = useMemo(
-    () =>
-      Object.fromEntries(Object.entries(defaultTraitFilters).map(([trait, values]) => [trait, [...values]])),
+    () => Object.fromEntries(Object.entries(defaultTraitFilters).map(([trait, values]) => [trait, [...values]])),
     [defaultTraitFilters],
   );
 

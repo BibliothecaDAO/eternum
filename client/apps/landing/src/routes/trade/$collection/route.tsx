@@ -93,9 +93,7 @@ function TradeLayout() {
 
   if (!isValidCollection) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        Collection not available.
-      </div>
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">Collection not available.</div>
     );
   }
 
