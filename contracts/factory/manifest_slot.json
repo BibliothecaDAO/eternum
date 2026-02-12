@@ -34,7 +34,7 @@
   "contracts": [
     {
       "address": "0x78306a0c2ccf2227c3623d3a8b6fc4be4fbcc9c31c8c688fbc49da66b5b7835",
-      "class_hash": "0x3b7e8833818380493fc8240c43fdfc80196763cf8b268402a12e927247444eb",
+      "class_hash": "0x42c53079061f01a5fc3e3cb9d95c9aca20c089734930bfe5d587feff5502391",
       "init_calldata": [],
       "tag": "wf-factory",
       "selector": "0x398833bb04609c104a5d4c379fe679825183830e7be294a4725f7a8b3b1dab7",
@@ -42,6 +42,10 @@
         "set_series_config",
         "create_game",
         "set_factory_config",
+        "set_factory_config_contracts",
+        "set_factory_config_models",
+        "set_factory_config_events",
+        "set_factory_config_libraries",
         "upgrade"
       ]
     }
@@ -2480,8 +2484,104 @@
           "name": "set_factory_config",
           "inputs": [
             {
-              "name": "config",
-              "type": "world_factory::factory_models::FactoryConfig"
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "max_actions",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "world_class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            },
+            {
+              "name": "default_namespace",
+              "type": "core::byte_array::ByteArray"
+            },
+            {
+              "name": "default_namespace_writer_all",
+              "type": "core::bool"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_contracts",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "start_index",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "contracts",
+              "type": "core::array::Array::<world_factory::factory_models::FactoryConfigContract>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_models",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "start_index",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "models",
+              "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_events",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "start_index",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "events",
+              "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_libraries",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "start_index",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "libraries",
+              "type": "core::array::Array::<world_factory::factory_models::FactoryConfigLibrary>"
             }
           ],
           "outputs": [],
