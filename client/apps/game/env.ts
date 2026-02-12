@@ -20,6 +20,7 @@ const envSchema = z.object({
 
   // API endpoints
   VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-3/torii"),
+  VITE_PUBLIC_GLOBAL_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/blitz-slot-global-1/torii"),
   VITE_PUBLIC_NODE_URL: z
     .string()
     .url()
