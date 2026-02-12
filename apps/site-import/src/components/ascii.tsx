@@ -1,10 +1,32 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 interface AsciiArtProps {
   width?: number;
   height?: number;
   className?: string;
 }
+
+const CHAR_SETS: Record<string, string[]> = {
+  minimal: [" ", ".", "·", "•", "○", "●"],
+  geometric: [" ", "░", "▒", "▓", "█", "▪", "▫", "◆", "◇"],
+  classic: [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"],
+  complex: [" ", "·", "∴", "∵", "∷", "∶", "⋮", "⋯", "⋰", "⋱"],
+  organic: [" ", "~", "≈", "∼", "∽", "∾", "∿", "≀", "≁", "≂"],
+  matrix: [" ", "0", "1", "╱", "╲", "╳", "│", "─", "┼", "█"],
+  runic: [" ", "ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ"],
+  cosmic: [" ", "✦", "✧", "★", "☆", "✪", "✫", "✬", "✭", "✮"],
+};
+
+const PALETTES: Record<string, string[]> = {
+  neon: ["#FF006E", "#FB5607", "#FFBE0B", "#8338EC", "#3A86FF"],
+  sunset: ["#FF6B6B", "#F7B731", "#5F27CD", "#00D2D3", "#EE5A24"],
+  ocean: ["#0A3D62", "#3C6382", "#60A3BC", "#82CCDD", "#B8E994"],
+  cyberpunk: ["#00FF41", "#FF0080", "#00FFFF", "#FF00FF", "#FFFF00"],
+  monochrome: ["#222", "#444", "#666", "#888", "#AAA", "#CCC", "#EEE"],
+  fire: ["#FF0000", "#FF4500", "#FF6347", "#FF7F50", "#FFA500"],
+  aurora: ["#00FF00", "#00FFFF", "#0080FF", "#8000FF", "#FF00FF"],
+  void: ["#0A0A0A", "#1A1A1A", "#2A2A2A", "#3A3A3A", "#4A4A4A"],
+};
 
 const AsciiArt: React.FC<AsciiArtProps> = ({
   width = 80,
@@ -16,44 +38,21 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
   const [algorithm, setAlgorithm] = useState<string>("");
   const canvasRef = useRef<HTMLPreElement>(null);
 
-  // ASCII character sets for different densities
-  const charSets: Record<string, string[]> = {
-    minimal: [" ", ".", "·", "•", "○", "●"],
-    geometric: [" ", "░", "▒", "▓", "█", "▪", "▫", "◆", "◇"],
-    classic: [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"],
-    complex: [" ", "·", "∴", "∵", "∷", "∶", "⋮", "⋯", "⋰", "⋱"],
-    organic: [" ", "~", "≈", "∼", "∽", "∾", "∿", "≀", "≁", "≂"],
-    matrix: [" ", "0", "1", "╱", "╲", "╳", "│", "─", "┼", "█"],
-    runic: [" ", "ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ"],
-    cosmic: [" ", "✦", "✧", "★", "☆", "✪", "✫", "✬", "✭", "✮"],
-  };
-
-  // Color palettes
-  const palettes: Record<string, string[]> = {
-    neon: ["#FF006E", "#FB5607", "#FFBE0B", "#8338EC", "#3A86FF"],
-    sunset: ["#FF6B6B", "#F7B731", "#5F27CD", "#00D2D3", "#EE5A24"],
-    ocean: ["#0A3D62", "#3C6382", "#60A3BC", "#82CCDD", "#B8E994"],
-    cyberpunk: ["#00FF41", "#FF0080", "#00FFFF", "#FF00FF", "#FFFF00"],
-    monochrome: ["#222", "#444", "#666", "#888", "#AAA", "#CCC", "#EEE"],
-    fire: ["#FF0000", "#FF4500", "#FF6347", "#FF7F50", "#FFA500"],
-    aurora: ["#00FF00", "#00FFFF", "#0080FF", "#8000FF", "#FF00FF"],
-    void: ["#0A0A0A", "#1A1A1A", "#2A2A2A", "#3A3A3A", "#4A4A4A"],
-  };
-
   // Procedural generation algorithms
-  const algorithms = {
+  const algorithms = useMemo(
+    () => ({
     // Perlin-like noise simulation
     noise: () => {
       const chars =
-        charSets[
-          Object.keys(charSets)[
-            Math.floor(Math.random() * Object.keys(charSets).length)
+        CHAR_SETS[
+          Object.keys(CHAR_SETS)[
+            Math.floor(Math.random() * Object.keys(CHAR_SETS).length)
           ]
         ];
       const palette =
-        palettes[
-          Object.keys(palettes)[
-            Math.floor(Math.random() * Object.keys(palettes).length)
+        PALETTES[
+          Object.keys(PALETTES)[
+            Math.floor(Math.random() * Object.keys(PALETTES).length)
           ]
         ];
       const grid: string[][] = [];
@@ -78,11 +77,11 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
 
     // Cellular automaton
     cellular: () => {
-      const chars = charSets.geometric;
+      const chars = CHAR_SETS.geometric;
       const palette =
-        palettes[
-          Object.keys(palettes)[
-            Math.floor(Math.random() * Object.keys(palettes).length)
+        PALETTES[
+          Object.keys(PALETTES)[
+            Math.floor(Math.random() * Object.keys(PALETTES).length)
           ]
         ];
       const grid: string[][] = [];
@@ -129,15 +128,15 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
     // Fractal patterns
     fractal: () => {
       const chars =
-        charSets[
-          Object.keys(charSets)[
-            Math.floor(Math.random() * Object.keys(charSets).length)
+        CHAR_SETS[
+          Object.keys(CHAR_SETS)[
+            Math.floor(Math.random() * Object.keys(CHAR_SETS).length)
           ]
         ];
       const palette =
-        palettes[
-          Object.keys(palettes)[
-            Math.floor(Math.random() * Object.keys(palettes).length)
+        PALETTES[
+          Object.keys(PALETTES)[
+            Math.floor(Math.random() * Object.keys(PALETTES).length)
           ]
         ];
       const grid: string[][] = [];
@@ -173,15 +172,15 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
     // Wave interference patterns
     waves: () => {
       const chars =
-        charSets[
-          Object.keys(charSets)[
-            Math.floor(Math.random() * Object.keys(charSets).length)
+        CHAR_SETS[
+          Object.keys(CHAR_SETS)[
+            Math.floor(Math.random() * Object.keys(CHAR_SETS).length)
           ]
         ];
       const palette =
-        palettes[
-          Object.keys(palettes)[
-            Math.floor(Math.random() * Object.keys(palettes).length)
+        PALETTES[
+          Object.keys(PALETTES)[
+            Math.floor(Math.random() * Object.keys(PALETTES).length)
           ]
         ];
       const grid: string[][] = [];
@@ -223,15 +222,15 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
     // Voronoi diagram
     voronoi: () => {
       const chars =
-        charSets[
-          Object.keys(charSets)[
-            Math.floor(Math.random() * Object.keys(charSets).length)
+        CHAR_SETS[
+          Object.keys(CHAR_SETS)[
+            Math.floor(Math.random() * Object.keys(CHAR_SETS).length)
           ]
         ];
       const palette =
-        palettes[
-          Object.keys(palettes)[
-            Math.floor(Math.random() * Object.keys(palettes).length)
+        PALETTES[
+          Object.keys(PALETTES)[
+            Math.floor(Math.random() * Object.keys(PALETTES).length)
           ]
         ];
       const grid: string[][] = [];
@@ -281,8 +280,8 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
 
     // Spiral galaxy
     spiral: () => {
-      const chars = charSets.cosmic;
-      const palette = palettes.aurora;
+      const chars = CHAR_SETS.cosmic;
+      const palette = PALETTES.aurora;
       const grid: string[][] = [];
       const colors: string[][] = [];
       const centerX = width / 2;
@@ -323,7 +322,9 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
       }
       return { grid, colors };
     },
-  };
+    }),
+    [height, width]
+  );
 
   useEffect(() => {
     // Select random algorithm
@@ -337,7 +338,7 @@ const AsciiArt: React.FC<AsciiArtProps> = ({
       algorithms[selectedAlgorithm as keyof typeof algorithms]();
     setArt(grid);
     setColorMap(colors);
-  }, [width, height]);
+  }, [algorithms]);
 
   // Animate on hover
   const handleMouseMove = (e: React.MouseEvent) => {

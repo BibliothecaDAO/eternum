@@ -6,7 +6,8 @@ export function TopographicBackground() {
   const timeRef = useRef(0);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     // --- Scene Setup ---
     const scene = new THREE.Scene();
@@ -28,7 +29,7 @@ export function TopographicBackground() {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    containerRef.current.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
 
     // --- Create a Denser Plane with Wireframe ---
     // This plane has 100 subdivisions on each side to better reveal contour lines.
@@ -94,8 +95,8 @@ export function TopographicBackground() {
     return () => {
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
       }
       geometry.dispose();
       material.dispose();

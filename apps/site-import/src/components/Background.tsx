@@ -29,7 +29,8 @@ export function Background() {
   const animationIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     // Scene setup
     const scene = new THREE.Scene();
@@ -48,7 +49,7 @@ export function Background() {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    containerRef.current.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -173,11 +174,8 @@ export function Background() {
     return () => {
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       window.removeEventListener("resize", handleResize);
-      if (
-        containerRef.current &&
-        containerRef.current.contains(renderer.domElement)
-      ) {
-        containerRef.current.removeChild(renderer.domElement);
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
       }
       geometry.dispose();
       material.dispose();

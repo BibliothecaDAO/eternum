@@ -18,7 +18,8 @@ export function WaveformBackground() {
   const roadSegmentsRef = useRef<RoadSegment[]>([]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     // --- Scene Setup ---
     const scene = new THREE.Scene();
@@ -40,7 +41,7 @@ export function WaveformBackground() {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    containerRef.current.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
 
     // --- Lights ---
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -496,11 +497,8 @@ export function WaveformBackground() {
     return () => {
       window.removeEventListener("resize", onWindowResize);
       renderer.dispose();
-      if (
-        containerRef.current &&
-        renderer.domElement.parentNode === containerRef.current
-      ) {
-        containerRef.current.removeChild(renderer.domElement);
+      if (renderer.domElement.parentNode === container) {
+        container.removeChild(renderer.domElement);
       }
     };
   }, []);

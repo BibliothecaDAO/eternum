@@ -35,6 +35,41 @@ const animatedEdgeStyle = {
   stroke: "#3b82f6",
 };
 
+const VALUE_SOURCES = [
+  {
+    id: "autonomous-worlds",
+    label: "Autonomous Worlds",
+    description: "Eternum and other fully onchain worlds",
+    icon: Globe,
+    value: "Primary Revenue",
+    color: "border-green-500/50",
+  },
+  {
+    id: "trading",
+    label: "Swap & NFTs",
+    description: "DEX fees and trading volume",
+    icon: ArrowRightLeft,
+    value: "Transaction Fees",
+    color: "border-blue-500/50",
+  },
+  {
+    id: "games",
+    label: "Ecosystem Games",
+    description: "Loot Survivor, Blobert Arena, and more",
+    icon: Gamepad2,
+    value: "Game Fees",
+    color: "border-purple-500/50",
+  },
+  {
+    id: "infrastructure",
+    label: "Infrastructure",
+    description: "AMMs, bridges, and client utilization",
+    icon: Layers,
+    value: "Protocol Fees",
+    color: "border-orange-500/50",
+  },
+] as const;
+
 // Custom node component for value sources
 function ValueSourceNode({
   data,
@@ -169,47 +204,11 @@ function ValueFlowSectionContent() {
   const onEdgesChange = useFlowStore((state) => state.onEdgesChange);
   const onConnect = useFlowStore((state) => state.onConnect);
 
-  // Define value sources
-  const valueSources = [
-    {
-      id: "autonomous-worlds",
-      label: "Autonomous Worlds",
-      description: "Eternum and other fully onchain worlds",
-      icon: Globe,
-      value: "Primary Revenue",
-      color: "border-green-500/50",
-    },
-    {
-      id: "trading",
-      label: "Swap & NFTs",
-      description: "DEX fees and trading volume",
-      icon: ArrowRightLeft,
-      value: "Transaction Fees",
-      color: "border-blue-500/50",
-    },
-    {
-      id: "games",
-      label: "Ecosystem Games",
-      description: "Loot Survivor, Blobert Arena, and more",
-      icon: Gamepad2,
-      value: "Game Fees",
-      color: "border-purple-500/50",
-    },
-    {
-      id: "infrastructure",
-      label: "Infrastructure",
-      description: "AMMs, bridges, and client utilization",
-      icon: Layers,
-      value: "Protocol Fees",
-      color: "border-orange-500/50",
-    },
-  ];
-
   // Create nodes with better positioning
   const initialNodes: Node[] = useMemo(
     () => [
       // Value source nodes - arranged vertically on the left
-      ...valueSources.map((source, index) => {
+      ...VALUE_SOURCES.map((source, index) => {
         const x = 50;
         const y = 100 + index * 120; // Space them vertically
 
@@ -243,14 +242,14 @@ function ValueFlowSectionContent() {
         },
       },
     ],
-    [valueSources, lordsLocked, tvl, currentAPY, tokensThisWeek]
+    [lordsLocked, tvl, currentAPY]
   );
 
   // Create edges with proper animation
   const initialEdges: Edge[] = useMemo(
     () => [
       // From value sources to veLords
-      ...valueSources.map((source, index) => ({
+      ...VALUE_SOURCES.map((source, index) => ({
         id: `edge-${source.id}`,
         source: source.id,
         target: "velords",
@@ -315,17 +314,17 @@ function ValueFlowSectionContent() {
         },
       },
     ],
-    [valueSources, currentAPY, tokensThisWeek]
+    [tokensThisWeek]
   );
 
   // Initialize nodes and edges when they change
   useEffect(() => {
     setNodes(initialNodes);
-  }, [currentAPY, lordsLocked, tvl, tokensThisWeek]);
+  }, [initialNodes, setNodes]);
 
   useEffect(() => {
     setEdges(initialEdges);
-  }, [currentAPY, lordsLocked, tvl, tokensThisWeek]);
+  }, [initialEdges, setEdges]);
 
   const nodeTypes = useMemo(
     () => ({
@@ -395,7 +394,7 @@ function ValueFlowSectionContent() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.6 }}
       >
-        {valueSources.map((source, index) => {
+        {VALUE_SOURCES.map((source, index) => {
           const Icon = source.icon;
           return (
             <motion.div
