@@ -86,6 +86,7 @@ import {
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 type AutoDeployState = { current: number; total: number; status: "running" | "stopping" };
+type ConfigPreset = "sandbox" | "blitz-slot";
 
 // Maximum hours in the future that a game start time can be set
 const MAX_START_TIME_HOURS = 50_000;
@@ -302,6 +303,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [showCairoOutput, setShowCairoOutput] = useState<boolean>(false);
   const [showFullConfig, setShowFullConfig] = useState<boolean>(false);
   const [showDevConfig, setShowDevConfig] = useState<boolean>(false);
+  const [activeConfigPreset, setActiveConfigPreset] = useState<ConfigPreset | null>(null);
   const [devModeOn, setDevModeOn] = useState<boolean>(() => {
     try {
       return !!ETERNUM_CONFIG()?.dev?.mode?.on;
@@ -396,6 +398,38 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     setWorldIndexerStatus(indexerStatusMap);
     setWorldDeployedStatus(deployedStatusMap);
   }, [refreshStatuses]);
+
+  const applyConfigPreset = useCallback(
+    (preset: ConfigPreset) => {
+      const worldMap = (value: boolean | number) =>
+        Object.fromEntries(storedWorldNames.map((world) => [world, value])) as Record<string, boolean | number>;
+
+      setActiveConfigPreset(preset);
+
+      if (preset === "sandbox") {
+        setDevModeOn(true);
+        setMmrEnabledOn(false);
+        setDurationHours(72);
+
+        setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
+        setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(72) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+      }
+
+      if (preset === "blitz-slot") {
+        setDevModeOn(false);
+        setMmrEnabledOn(true);
+        setDurationHours(2);
+
+        setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
+        setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(2) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+      }
+    },
+    [storedWorldNames],
+  );
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
@@ -870,6 +904,38 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                 {/* Deploy Section - Always Visible */}
                 <div className="space-y-6 p-6 bg-gradient-to-br from-black/40 to-black/20 rounded-2xl border-2 border-gold/20 shadow-sm">
                   <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Config Presets</label>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => applyConfigPreset("sandbox")}
+                          className={`text-left rounded-xl border p-4 transition-all ${
+                            activeConfigPreset === "sandbox"
+                              ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
+                              : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
+                          }`}
+                        >
+                          <p className="text-sm font-semibold text-gold">SANDBOX (dev mode 72hrs)</p>
+                          <p className="mt-1 text-xs text-gold/60">Sets Dev Mode ON and game duration to 72 hours.</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => applyConfigPreset("blitz-slot")}
+                          className={`text-left rounded-xl border p-4 transition-all ${
+                            activeConfigPreset === "blitz-slot"
+                              ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
+                              : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
+                          }`}
+                        >
+                          <p className="text-sm font-semibold text-gold">BLITZ SLOT (2 hr game onslot)</p>
+                          <p className="mt-1 text-xs text-gold/60">
+                            Sets Dev Mode OFF, MMR ON, and game duration to 2 hours.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Game Name</label>
                       <div className="flex items-center gap-2">
