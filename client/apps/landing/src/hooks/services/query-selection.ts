@@ -1,4 +1,4 @@
-export type CollectionTokensQueryMode = "listed_with_traits" | "listed_no_traits" | "full";
+type CollectionTokensQueryMode = "listed_with_traits" | "listed_no_traits" | "full";
 
 export function resolveCollectionTokensQueryMode(options: {
   listedOnly: boolean;
