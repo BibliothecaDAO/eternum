@@ -14,6 +14,8 @@ export type WorldmapChunkDiagnosticsEvent =
   | "refresh_requested"
   | "refresh_executed"
   | "refresh_superseded"
+  | "duplicate_tile_cache_invalidated"
+  | "duplicate_tile_reconcile_requested"
   | "switch_duration_recorded"
   | "manager_duration_recorded";
 
@@ -33,6 +35,8 @@ export interface WorldmapChunkDiagnostics {
   refreshRequested: number;
   refreshExecuted: number;
   refreshSuperseded: number;
+  duplicateTileCacheInvalidated: number;
+  duplicateTileReconcileRequested: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
   managerDurationMsTotal: number;
@@ -61,6 +65,8 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     refreshRequested: 0,
     refreshExecuted: 0,
     refreshSuperseded: 0,
+    duplicateTileCacheInvalidated: 0,
+    duplicateTileReconcileRequested: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
     managerDurationMsTotal: 0,
@@ -121,6 +127,12 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "refresh_superseded":
       diagnostics.refreshSuperseded += 1;
+      break;
+    case "duplicate_tile_cache_invalidated":
+      diagnostics.duplicateTileCacheInvalidated += 1;
+      break;
+    case "duplicate_tile_reconcile_requested":
+      diagnostics.duplicateTileReconcileRequested += 1;
       break;
     case "switch_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;

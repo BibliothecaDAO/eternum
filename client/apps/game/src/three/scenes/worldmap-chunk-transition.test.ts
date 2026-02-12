@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   shouldForceShortcutNavigationRefresh,
+  shouldForceRefreshForDuplicateTileUpdate,
   shouldRunShortcutForceFallback,
   resolveRefreshExecutionToken,
   resolveChunkSwitchActions,
@@ -272,6 +273,68 @@ describe("shouldRunShortcutForceFallback", () => {
         isShortcutNavigation: false,
         chunkChanged: true,
         initialSwitchSucceeded: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("shouldForceRefreshForDuplicateTileUpdate", () => {
+  it("forces refresh when a duplicate tile update targets a visible hex in the active chunk", () => {
+    expect(
+      shouldForceRefreshForDuplicateTileUpdate({
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not force refresh when tile update is not a duplicate", () => {
+    expect(
+      shouldForceRefreshForDuplicateTileUpdate({
+        removeExplored: false,
+        tileAlreadyKnown: false,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not force refresh for removeExplored updates", () => {
+    expect(
+      shouldForceRefreshForDuplicateTileUpdate({
+        removeExplored: true,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not force refresh while chunk transition is in progress", () => {
+    expect(
+      shouldForceRefreshForDuplicateTileUpdate({
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: true,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not force refresh when chunk is null", () => {
+    expect(
+      shouldForceRefreshForDuplicateTileUpdate({
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "null",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
       }),
     ).toBe(false);
   });

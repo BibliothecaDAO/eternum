@@ -109,6 +109,7 @@ import {
   resolveRefreshExecutionToken,
   resolveChunkSwitchActions,
   shouldApplyRefreshToken,
+  shouldForceRefreshForDuplicateTileUpdate,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRescheduleRefreshToken,
@@ -2503,10 +2504,31 @@ export default class WorldmapScene extends HexagonScene {
     const col = normalized.x;
     const row = normalized.y;
 
-    // Early check: Skip if tile already exists (prevents duplicate processing)
-    // This check must happen BEFORE any cache invalidation or heavy operations
-    if (!removeExplored && this.exploredTiles.get(col)?.has(row)) {
-      return; // Tile already exists - nothing to do
+    const tileAlreadyKnown = !removeExplored && this.exploredTiles.get(col)?.has(row) === true;
+
+    // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
+    // and force a refresh when the duplicate impacts the currently visible chunk.
+    if (tileAlreadyKnown) {
+      this.invalidateAllChunkCachesContainingHex(col, row);
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
+
+      const isVisibleInCurrentChunk =
+        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false;
+
+      if (
+        shouldForceRefreshForDuplicateTileUpdate({
+          removeExplored,
+          tileAlreadyKnown,
+          currentChunk: this.currentChunk,
+          isChunkTransitioning: this.isChunkTransitioning,
+          isVisibleInCurrentChunk,
+        })
+      ) {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
+        this.requestChunkRefresh(true);
+      }
+
+      return;
     }
 
     // Check if there's a compass effect for this hex and end it

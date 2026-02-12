@@ -21,6 +21,8 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.prefetchQueued).toBe(0);
     expect(diagnostics.prefetchSkipped).toBe(0);
     expect(diagnostics.prefetchExecuted).toBe(0);
+    expect(diagnostics.duplicateTileCacheInvalidated).toBe(0);
+    expect(diagnostics.duplicateTileReconcileRequested).toBe(0);
     expect(diagnostics.switchDurationMsTotal).toBe(0);
     expect(diagnostics.switchDurationMsMax).toBe(0);
     expect(diagnostics.managerDurationMsTotal).toBe(0);
@@ -45,6 +47,8 @@ describe("worldmap-chunk-diagnostics", () => {
       "refresh_requested",
       "refresh_executed",
       "refresh_superseded",
+      "duplicate_tile_cache_invalidated",
+      "duplicate_tile_reconcile_requested",
     ];
 
     events.forEach((event) => recordChunkDiagnosticsEvent(diagnostics, event));
@@ -64,6 +68,8 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.refreshRequested).toBe(1);
     expect(diagnostics.refreshExecuted).toBe(1);
     expect(diagnostics.refreshSuperseded).toBe(1);
+    expect(diagnostics.duplicateTileCacheInvalidated).toBe(1);
+    expect(diagnostics.duplicateTileReconcileRequested).toBe(1);
   });
 
   it("accumulates switch and manager durations", () => {
