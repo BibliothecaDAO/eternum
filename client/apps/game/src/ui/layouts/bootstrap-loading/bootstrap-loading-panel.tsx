@@ -1,50 +1,53 @@
-import { useEffect, useState } from "react";
 import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
 import Check from "lucide-react/dist/esm/icons/check";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import { useEffect, useMemo, useState } from "react";
 
-import type { BootstrapTask } from "@/hooks/context/use-unified-onboarding";
+import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import Button from "@/ui/design-system/atoms/button";
-
-const DEFAULT_LOADING_STATEMENTS = [
-  "Gathering your armies...",
-  "Forging alliances...",
-  "Building strongholds...",
-  "Mustering forces...",
-  "Preparing the realm...",
-  "Awakening ancient powers...",
-  "Charting territories...",
-  "Summoning heroes...",
-] as const;
+import { getDisplayProgress, getNextStatementIndex } from "./bootstrap-loading-panel.utils";
+import { BOOTSTRAP_LOADING_STATEMENTS } from "./constants";
 
 const STATEMENT_INTERVAL_MS = 3000;
 
-interface LoadingPanelProps {
+interface BootstrapLoadingPanelProps {
   tasks: BootstrapTask[];
   progress: number;
   error: Error | null;
   onRetry: () => void;
+  statements?: readonly string[];
 }
 
-export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelProps) => {
-  const [statementIndex, setStatementIndex] = useState(() =>
-    Math.floor(Math.random() * DEFAULT_LOADING_STATEMENTS.length),
-  );
+export const BootstrapLoadingPanel = ({
+  tasks,
+  progress,
+  error,
+  onRetry,
+  statements = BOOTSTRAP_LOADING_STATEMENTS,
+}: BootstrapLoadingPanelProps) => {
+  const resolvedStatements = statements.length > 0 ? statements : BOOTSTRAP_LOADING_STATEMENTS;
+  const [statementIndex, setStatementIndex] = useState(0);
 
-  // Cycle through statements
+  const statementCount = resolvedStatements.length;
+
   useEffect(() => {
-    if (error) return;
+    if (error || statementCount <= 1) return;
 
     const interval = window.setInterval(() => {
-      setStatementIndex((prev) => (prev + 1) % DEFAULT_LOADING_STATEMENTS.length);
+      setStatementIndex((prev) => getNextStatementIndex(prev, statementCount));
     }, STATEMENT_INTERVAL_MS);
 
     return () => window.clearInterval(interval);
-  }, [error]);
+  }, [error, statementCount]);
 
-  const currentStatement = DEFAULT_LOADING_STATEMENTS[statementIndex];
-  const displayProgress = progress === 100 ? 99 : progress;
+  const currentStatement = useMemo(() => {
+    if (statementCount <= 0) return "Preparing the realm...";
+    const safeIndex = statementIndex % statementCount;
+    return resolvedStatements[safeIndex] ?? "Preparing the realm...";
+  }, [resolvedStatements, statementCount, statementIndex]);
+
+  const displayProgress = getDisplayProgress(progress);
 
   if (error) {
     return (
@@ -67,12 +70,11 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-center mb-4 sm:mb-6">
+      <div>
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 sm:w-24 mb-3 sm:mb-4" alt="Loading" />
         <h2 className="text-base sm:text-lg font-semibold text-gold">{currentStatement}</h2>
       </div>
 
-      {/* Task list */}
       <div className="flex-1 space-y-1.5 sm:space-y-2 overflow-y-auto">
         {tasks.map((task) => (
           <div
@@ -113,7 +115,6 @@ export const LoadingPanel = ({ tasks, progress, error, onRetry }: LoadingPanelPr
         ))}
       </div>
 
-      {/* Progress bar */}
       <div className="mt-4 sm:mt-6">
         <div className="flex items-center justify-between text-xs text-gold/60 mb-2">
           <span>Loading...</span>

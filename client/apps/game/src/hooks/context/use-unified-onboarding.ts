@@ -12,7 +12,7 @@ import type { SetupResult } from "@/init/bootstrap";
 import { getActiveWorld, setActiveWorldName } from "@/runtime/world";
 import { useAccount, useConnect } from "@starknet-react/core";
 
-import type { BootstrapTask, EagerBootstrapState } from "./use-eager-bootstrap";
+import type { EagerBootstrapState } from "./use-eager-bootstrap";
 import { useEagerBootstrap } from "./use-eager-bootstrap";
 
 /**
@@ -27,7 +27,7 @@ export type OnboardingPhase =
   | "settlement" // User picks realm/blitz setup (bootstrap complete, account connected)
   | "ready"; // All done, can enter game
 
-export type UnifiedOnboardingState = {
+type UnifiedOnboardingState = {
   // Current phase (what UI to show)
   phase: OnboardingPhase;
 
@@ -260,5 +260,3 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     setupResult: bootstrap.setupResult,
   };
 };
-
-export type { BootstrapTask };

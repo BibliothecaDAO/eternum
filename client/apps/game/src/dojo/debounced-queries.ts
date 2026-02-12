@@ -106,7 +106,7 @@ export const debouncedGetBuildingsFromTorii = async <S extends Schema>(
   }
 };
 
-export const debouncedGetTilesForPositionsFromTorii = async <S extends Schema>(
+const debouncedGetTilesForPositionsFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   positions: HexPosition[],

@@ -2,6 +2,7 @@ import type { PointerEvent } from "react";
 import { useCallback, useEffect } from "react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { shouldShowTransitionLoadingOverlay } from "@/ui/layouts/loading-flow";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { GameLoadingOverlay } from "@/ui/layouts/game-loading-overlay";
@@ -21,6 +22,7 @@ export const PlayOverlayManager = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+  const showTransitionLoadingOverlay = shouldShowTransitionLoadingOverlay(showBlankOverlay, isLoadingScreenEnabled);
 
   const handleModalOverlayPointerDown = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
@@ -58,7 +60,7 @@ export const PlayOverlayManager = ({
 
       {enableOnboarding && showBlankOverlay ? <GameLoadingOverlay /> : null}
 
-      <LoadingOroborus loading={isLoadingScreenEnabled} />
+      <LoadingOroborus loading={showTransitionLoadingOverlay} />
     </>
   );
 };

@@ -8,10 +8,9 @@ import { StructureBannerEntityDetail } from "@/ui/features/world/components/enti
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { battleSimulation } from "@/ui/features/world/components/config";
-import { ID } from "@bibliothecadao/types";
+import { HexPosition, ID } from "@bibliothecadao/types";
 import {
   Biome,
-  getEntityIdFromKeys,
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierStructure,
@@ -19,8 +18,6 @@ import {
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { HexPosition } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 
 export const SelectedWorldmapEntity = () => {
@@ -45,7 +42,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const tile = useMemo(() => {
     if (!selectedHex) return undefined;
     return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHex.col, selectedHex.row);
-  }, [selectedHex?.col, selectedHex?.row]);
+  }, [selectedHex, setup.components]);
 
   const biome = useMemo(() => {
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
