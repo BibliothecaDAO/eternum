@@ -363,7 +363,7 @@ function ValueFlowSectionContent() {
       </div>
 
       <motion.div
-        className="h-[600px] bg-background/50 backdrop-blur-sm rounded-xl border border-border overflow-hidden shadow-lg"
+        className="h-[420px] sm:h-[600px] bg-background/50 backdrop-blur-sm rounded-xl border border-border overflow-hidden shadow-lg"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
@@ -378,7 +378,7 @@ function ValueFlowSectionContent() {
           nodeTypes={nodeTypes}
           connectionMode={ConnectionMode.Loose}
           fitView
-          fitViewOptions={{ padding: 0.3, minZoom: 0.8, maxZoom: 1 }}
+          fitViewOptions={{ padding: 0.3, minZoom: 0.35, maxZoom: 1 }}
           defaultEdgeOptions={{
             animated: true,
             type: "smoothstep",

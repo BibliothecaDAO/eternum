@@ -264,10 +264,10 @@ export function TopBar() {
                       rel="noopener noreferrer"
                     >
                       <Button
-                        size={isScrolled ? "sm" : "sm"}
+                        size="sm"
                         className={cn(
                           "cursor-pointer transition-all duration-300",
-                          isScrolled ? "h-8 text-xs px-3" : ""
+                          isScrolled ? "text-xs px-3" : ""
                         )}
                       >
                         Log In

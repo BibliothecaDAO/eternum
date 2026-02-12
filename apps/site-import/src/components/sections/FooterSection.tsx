@@ -272,7 +272,7 @@ export function FooterSection() {
                 Building the future of onchain gaming
               </span>
             </div>
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-sm">
               <a
                 href="#"
                 className="text-muted-foreground hover:text-primary transition-colors"
