@@ -55,7 +55,7 @@ const VALUE_SOURCES = [
   {
     id: "games",
     label: "Ecosystem Games",
-    description: "Loot Survivor, Blobert Arena, and more",
+    description: "Loot Survivor, Blob Arena, and more",
     icon: Gamepad2,
     value: "Game Fees",
     color: "border-purple-500/50",

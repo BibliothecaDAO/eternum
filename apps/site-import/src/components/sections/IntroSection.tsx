@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Coins, Shield, Zap } from "lucide-react";
+import { ArrowRight, Coins, Sparkles, Sword, Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useVelords } from "@/hooks/use-velords";
 import { StarknetProvider } from "@/hooks/starknet-provider";
+import { games } from "@/data/games";
 
 export function IntroSection() {
   return (
@@ -14,100 +15,105 @@ export function IntroSection() {
 }
 
 function IntroSectionContent() {
-  const { currentAPY, isAPYLoading, tvl, isTVLLoading, lordsLocked } =
-    useVelords();
+  const { currentAPY, isAPYLoading, tvl, isTVLLoading } = useVelords();
+  const liveGameCount = games.filter((game) => game.isLive).length;
 
-  const stats = [
+  const heroStats = [
     {
-      icon: Shield,
-      label: "Total Value Locked",
-      value: tvl
-        ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-        : isTVLLoading
-        ? "Loading..."
-        : "N/A",
-      description: lordsLocked
-        ? `${lordsLocked.toLocaleString(undefined, {
-            maximumFractionDigits: 0,
-          })} LORDS`
-        : "In veLORDS",
+      icon: Sword,
+      label: "Live Game Count",
+      value: liveGameCount.toString(),
+      detail: "Realms currently playable",
+    },
+    {
+      icon: Sparkles,
+      label: "Agent Rollout",
+      value: "Active",
+      detail: "Rolling out across games",
     },
     {
       icon: Coins,
+      label: "Ecosystem TVL",
+      value: tvl
+        ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+        : isTVLLoading
+        ? "Syncing..."
+        : "N/A",
+      detail: "Locked via veLORDS",
+    },
+    {
+      icon: Zap,
       label: "Current APY",
       value: currentAPY
         ? `${currentAPY.toFixed(2)}%`
         : isAPYLoading
-        ? "Loading..."
+        ? "Syncing..."
         : "N/A",
-      description: "Annual rewards",
-    },
-    {
-      icon: Zap,
-      label: "Active Games",
-      value: "6",
-      description: "In ecosystem",
+      detail: "Annual rewards",
     },
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-background to-background/80 py-20 md:py-32">
-      {/* Background decoration */}
+    <section className="relative overflow-hidden py-18 sm:py-24 md:py-32">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute right-0 bottom-0 translate-x-1/2 translate-y-1/2 h-[400px] w-[400px] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute left-1/2 top-12 -translate-x-1/2 h-[360px] w-[95%] max-w-6xl rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute left-1/2 top-16 -translate-x-1/2 h-[520px] w-[92%] max-w-6xl border border-primary/30 rounded-[999px] opacity-55" />
       </div>
 
       <div className="container mx-auto px-4">
         <motion.div
-          className="text-center max-w-4xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 20 }}
+          className="max-w-5xl mx-auto text-center"
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.7 }}
         >
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            terraforming onchain worlds
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            The premier onchain gaming ecosystem built on Starknet. Play games,
-            earn rewards, and participate in the future of onchain gaming.
+          <p className="inline-flex items-center gap-2 text-xs tracking-[0.28em] uppercase text-primary/90 mb-6">
+            <Sparkles className="h-3.5 w-3.5" />
+            Agent Native Games
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
+          <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight text-foreground mb-6">
+            Mythic Worlds.
+            <span className="block text-primary">One Autonomous Champion.</span>
+          </h1>
+          <p className="text-base sm:text-lg md:text-xl text-foreground/85 max-w-3xl mx-auto mb-10">
+            The Realms ecosystem is now agent-native. Our autonomous player is
+            rolling out across games so you can explore every realm with deeper
+            strategy and faster execution.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
+            <Button size="lg" className="shadow-lg shadow-primary/20" asChild>
               <Link to="/games">
-                Explore Games <ArrowRight className="ml-2 h-4 w-4" />
+                Explore Ecosystem <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <a href="#agent-native">See Agent Rollout</a>
             </Button>
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
         >
-          {stats.map((stat, index) => (
-            <motion.div
+          {heroStats.map((stat, index) => (
+            <motion.article
               key={stat.label}
-              className="relative group"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+              className="rounded-2xl border border-primary/20 bg-black/25 backdrop-blur-md p-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 + index * 0.1, duration: 0.45 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-lg blur-xl group-hover:blur-2xl transition-all" />
-              <div className="relative bg-card p-6 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
-                <stat.icon className="h-8 w-8 text-primary mb-4" />
-                <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">
-                  {stat.label}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {stat.description}
-                </div>
-              </div>
-            </motion.div>
+              <stat.icon className="h-5 w-5 text-primary mb-4" />
+              <p className="text-3xl font-bold text-foreground mb-1">{stat.value}</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-primary/90 mb-2">
+                {stat.label}
+              </p>
+              <p className="text-sm text-foreground/70">{stat.detail}</p>
+            </motion.article>
           ))}
         </motion.div>
       </div>

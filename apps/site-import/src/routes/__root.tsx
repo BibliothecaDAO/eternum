@@ -18,6 +18,11 @@ const FooterSection = lazy(() =>
     default: module.FooterSection,
   }))
 );
+const RealmSceneBackground = lazy(() =>
+  import("@/components/RealmSceneBackground").then((module) => ({
+    default: module.RealmSceneBackground,
+  }))
+);
 
 function DeferredFooter() {
   const [isVisible, setIsVisible] = useState(false);
@@ -125,7 +130,11 @@ function RootComponent() {
       {/* <AsciiArt /> */}
       {/* Fixed position background */}
       <div className="fixed inset-0">
-        <div className="absolute inset-x-0 bottom-0 h-[70vh]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(246,194,122,0.17),transparent_42%),radial-gradient(circle_at_80%_8%,rgba(106,127,227,0.18),transparent_35%),linear-gradient(180deg,rgba(13,15,22,0.97),rgba(11,11,15,0.94))]" />
+        <Suspense fallback={null}>
+          <RealmSceneBackground />
+        </Suspense>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,11,0.06),rgba(8,8,11,0.35))]" />
       </div>
 
       {/* Scrollable content */}

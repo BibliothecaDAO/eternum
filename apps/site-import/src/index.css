@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Manrope:wght@200..800&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
 
 @import 'tailwindcss';
 
@@ -38,8 +38,8 @@
   --sidebar-accent-foreground: oklch(0.33 0 0);
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: oklch(0.77 0 0);
-  --font-sans: Space Grotesk, serif;
-  --font-serif: Space Grotesk, serif;
+  --font-sans: Manrope, sans-serif;
+  --font-serif: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
   --radius: 0rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -85,8 +85,8 @@
   --sidebar-accent-foreground: oklch(0.97 0.00 286.38);
   --sidebar-border: oklch(0.27 0.01 286.03);
   --sidebar-ring: oklch(0.87 0.01 286.29);
-  --font-sans: Space Grotesk, serif;
-  --font-serif: Space Grotesk, serif;
+  --font-sans: Manrope, sans-serif;
+  --font-serif: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
   --radius: 0rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);

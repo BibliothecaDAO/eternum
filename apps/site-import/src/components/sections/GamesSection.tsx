@@ -24,16 +24,20 @@ export function GamesSection() {
   };
 
   return (
-    <section className="relative z-10 transition-all duration-500 mt-6 sm:mt-8 md:mt-20">
+    <section className="relative z-10 transition-all duration-500 mt-6 sm:mt-8 md:mt-20 py-8 sm:py-12">
       <div className="container mx-auto px-1 sm:px-2 md:px-4 mb-3 sm:mb-4 md:mb-8">
         <motion.h2
-          className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-4"
+          className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 md:mb-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          Featured Games
+          Realms To Conquer
         </motion.h2>
+        <p className="text-sm sm:text-base text-foreground/75">
+          Explore the live and emerging worlds where the agent is rolling out
+          across games.
+        </p>
       </div>
       <motion.div
         className="relative"

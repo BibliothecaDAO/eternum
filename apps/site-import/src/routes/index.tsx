@@ -3,9 +3,14 @@ import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IntroSection } from "@/components/sections/IntroSection";
 import { generateMetaTags } from "@/lib/og-image";
 
-const GamesSection = lazy(() =>
-  import("@/components/sections/GamesSection").then((module) => ({
-    default: module.GamesSection,
+const AgentNativeSection = lazy(() =>
+  import("@/components/sections/AgentNativeSection").then((module) => ({
+    default: module.AgentNativeSection,
+  }))
+);
+const EcosystemAtlasSection = lazy(() =>
+  import("@/components/sections/EcosystemAtlasSection").then((module) => ({
+    default: module.EcosystemAtlasSection,
   }))
 );
 const PartnersSection = lazy(() =>
@@ -81,9 +86,9 @@ export const Route = createFileRoute("/")({
   component: HomePage,
   head: () => ({
     meta: generateMetaTags({
-      title: "Realms World - Onchain Gaming Powered by $LORDS",
+      title: "Realms World - Agent-Native Onchain Gaming",
       description:
-        "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
+        "Enter the mythic onchain gaming ecosystem where a Realms agent is rolling out across games. Explore live worlds powered by $LORDS.",
       path: "/",
     }),
   }),
@@ -95,9 +100,14 @@ function HomePage() {
       <div id="hero">
         <IntroSection />
       </div>
-      <div id="games">
+      <div id="agent-native">
         <DeferredSection eager>
-          <GamesSection />
+          <AgentNativeSection />
+        </DeferredSection>
+      </div>
+      <div id="ecosystem-atlas">
+        <DeferredSection eager>
+          <EcosystemAtlasSection />
         </DeferredSection>
       </div>
       <div id="partners">
