@@ -274,6 +274,12 @@ export function FooterSection() {
             </div>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-sm">
               <a
+                href="/scroll"
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                Scroll
+              </a>
+              <a
                 href="#"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
