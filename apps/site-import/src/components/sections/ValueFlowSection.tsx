@@ -21,6 +21,7 @@ import {
   Layers,
   Users,
   Coins,
+  type LucideIcon,
 } from "lucide-react";
 
 // Custom edge style
@@ -41,7 +42,7 @@ function ValueSourceNode({
   data: {
     label: string;
     description: string;
-    icon: any;
+    icon: LucideIcon;
     value?: string;
     color: string;
   };

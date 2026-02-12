@@ -18,17 +18,38 @@ const formatTokenAmount = (amount: bigint, decimals: number = 18): number => {
   return Number(amount) / Math.pow(10, decimals);
 };
 
+type StarknetUint256 = {
+  low: bigint | number | string;
+  high: bigint | number | string;
+};
+
+const isStarknetUint256 = (value: unknown): value is StarknetUint256 => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "low" in value &&
+    "high" in value
+  );
+};
+
+const isLockData = (value: unknown): value is readonly [unknown, unknown] => {
+  return Array.isArray(value) && value.length >= 2;
+};
+
 // Helper to safely convert contract response to BigInt
-const toBigInt = (value: any): bigint => {
-  if (typeof value === "bigint") return value;
-  if (typeof value === "string") return BigInt(value);
-  if (typeof value === "number") return BigInt(value);
-  if (value && typeof value === "object") {
-    // Handle Uint256 type from StarkNet
-    if ("low" in value && "high" in value) {
+const toBigInt = (value: unknown): bigint => {
+  try {
+    if (typeof value === "bigint") return value;
+    if (typeof value === "string") return BigInt(value);
+    if (typeof value === "number") return BigInt(value);
+    if (isStarknetUint256(value)) {
+      // Handle Uint256 type from StarkNet
       return BigInt(value.low) + (BigInt(value.high) << 128n);
     }
+  } catch (error) {
+    console.error("[useVelords] Failed to parse bigint value:", error);
   }
+
   return 0n;
 };
 
@@ -238,15 +259,17 @@ export const useVelords = () => {
     enabled: !!chain && !!userAddress,
   });
 
+  const parsedUserLocked = isLockData(userLocked)
+    ? {
+        amount: formatTokenAmount(toBigInt(userLocked[0])),
+        unlockTime: Number(userLocked[1]),
+      }
+    : undefined;
+
   console.log("[useVelords] User locked:", {
     userLocked,
     userLockedError,
-    formatted: userLocked
-      ? {
-          amount: formatTokenAmount(toBigInt((userLocked as any)[0])),
-          unlockTime: Number((userLocked as any)[1]),
-        }
-      : "N/A",
+    formatted: parsedUserLocked ?? "N/A",
   });
 
   // Calculate APY based on weekly rewards
@@ -437,12 +460,7 @@ export const useVelords = () => {
       userBalance !== undefined
         ? formatTokenAmount(toBigInt(userBalance))
         : undefined,
-    userLocked: userLocked
-      ? {
-          amount: formatTokenAmount(toBigInt((userLocked as any)[0])),
-          unlockTime: Number((userLocked as any)[1]),
-        }
-      : undefined,
+    userLocked: parsedUserLocked,
     userWeeklyRewards: userWeeklyRewards.data,
 
     // Historical data

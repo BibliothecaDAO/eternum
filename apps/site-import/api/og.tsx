@@ -177,9 +177,10 @@ export default async function handler(request: Request) {
         height: 630,
       }
     );
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Error generating OG image:", e);
-    const errorMessage = e?.message || "Unknown error occurred";
+    const errorMessage =
+      e instanceof Error ? e.message : "Unknown error occurred";
     return new Response(`Failed to generate the image: ${errorMessage}`, {
       status: 500,
     });

@@ -12,7 +12,24 @@ interface TokenomicsChartProps {
   marketPercentage?: number;
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+type TokenomicsDataPoint = {
+  allocation: string;
+  value: number;
+  fill: string;
+  description: string;
+};
+
+type CustomTooltipPayloadItem = {
+  value: number;
+  payload: Pick<TokenomicsDataPoint, "allocation" | "description">;
+};
+
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: CustomTooltipPayloadItem[];
+};
+
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-background/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg">
@@ -29,7 +46,7 @@ export function TokenomicsChart({
   treasuryPercentage = 40,
   marketPercentage = 60,
 }: TokenomicsChartProps) {
-  const tokenomicsData = [
+  const tokenomicsData: TokenomicsDataPoint[] = [
     {
       allocation: "DAO Treasury",
       value: treasuryPercentage,
