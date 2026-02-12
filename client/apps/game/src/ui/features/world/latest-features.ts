@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-12",
+    title: "Big Event News Headlines",
+    description:
+      "Added prominent news headline notifications for major game events like hyperstructure captures, realm falls, and significant battles to keep everyone informed about critical developments.",
+    type: "feature",
+  },
+  {
     date: "2026-02-11",
     title: "Unit Selection Recovery After Moves",
     description:

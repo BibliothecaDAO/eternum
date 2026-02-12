@@ -11,7 +11,7 @@ import { DojoProvider } from "./hooks/context/dojo-context";
 import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
-import { StoryEventToastBridge } from "./ui/features/story-events";
+import { StoryEventToastBridge, BigEventNotificationSystem } from "./ui/features/story-events";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
@@ -32,6 +32,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
         <StoryEventToastBridge />
+        <BigEventNotificationSystem />
         <TransactionListenerBridge />
         <TransactionNotification />
         <World backgroundImage={backgroundImage} />
