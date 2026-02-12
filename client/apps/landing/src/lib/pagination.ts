@@ -1,10 +1,10 @@
-export interface PaginationWindowInput {
+interface PaginationWindowInput {
   currentPage: number;
   totalPages: number;
   maxVisiblePages: number;
 }
 
-export interface PaginationWindowResult {
+interface PaginationWindowResult {
   pages: number[];
   showFirst: boolean;
   showLast: boolean;

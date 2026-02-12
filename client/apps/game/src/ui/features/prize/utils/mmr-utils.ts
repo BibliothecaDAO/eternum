@@ -70,7 +70,7 @@ async function fetchMMRBatch(players: bigint[], tokenAddress: string, rpcUrl: st
   return playerMMRs;
 }
 
-export type CommitClaimMMRParams = {
+type CommitClaimMMRParams = {
   registeredPlayers: bigint[];
   mmrTokenAddress: string;
   rpcUrl: string;
