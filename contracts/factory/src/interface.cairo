@@ -1,5 +1,5 @@
-use starknet::{ClassHash, ContractAddress, class_hash};
-use crate::factory_models::FactoryConfig;
+use starknet::{ClassHash, ContractAddress};
+use crate::factory_models::{FactoryConfigContract, FactoryConfigLibrary};
 
 /// Interface for the world factory.
 #[starknet::interface]
@@ -24,20 +24,42 @@ pub trait IWorldFactory<T> {
         series_game_number: u16,
     );
 
-    /// Sets the configuration of the factory.
+    /// Sets the non-array configuration fields of the factory.
     ///
-    /// TODO: currently `FactoryConfig` is a big model, where the 300 felts limit may be reached
-    /// for very large worlds. This will need to be split into multiple models to not
-    /// limit large worlds for using the factory.
-    ///
-    /// To ensure that once a config is set, only the writer of the config can edit it,
-    /// the factory will check if the caller address is the writer of the config if it is
-    /// already set (owner_address being non-zero).
+    /// This call must be done first. It records/validates the config owner,
+    /// which is then used by the array-specific setters.
     ///
     /// # Arguments
     ///
-    /// * `config` - The configuration of the factory.
-    fn set_factory_config(ref self: T, config: FactoryConfig);
+    /// * `version` - The configuration version key.
+    /// * `max_actions` - Max actions performed per `create_game` transaction.
+    /// * `world_class_hash` - Class hash for world deployment.
+    /// * `default_namespace` - Default namespace used for registration.
+    /// * `default_namespace_writer_all` - Whether to grant namespace writer to all contracts.
+    fn set_factory_config(
+        ref self: T,
+        version: felt252,
+        max_actions: u64,
+        world_class_hash: ClassHash,
+        default_namespace: ByteArray,
+        default_namespace_writer_all: bool,
+    );
+
+    /// Sets the contract registration entries for a config version.
+    fn set_factory_config_contracts(
+        ref self: T, version: felt252, contracts: Array<FactoryConfigContract>,
+    );
+
+    /// Sets the model registration entries for a config version.
+    fn set_factory_config_models(ref self: T, version: felt252, models: Array<ClassHash>);
+
+    /// Sets the event registration entries for a config version.
+    fn set_factory_config_events(ref self: T, version: felt252, events: Array<ClassHash>);
+
+    /// Sets the library registration entries for a config version.
+    fn set_factory_config_libraries(
+        ref self: T, version: felt252, libraries: Array<FactoryConfigLibrary>,
+    );
 }
 
 

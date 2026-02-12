@@ -19,7 +19,8 @@ pub mod factory {
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
     use crate::constants::MMR_SYSTEMS_SELECTOR;
     use crate::factory_models::{
-        FactoryConfig, FactoryConfigContract, FactoryConfigOwner, FactoryDeploymentCursor,
+        FactoryConfig, FactoryConfigContract, FactoryConfigLibrary, FactoryConfigOwner,
+        FactoryDeploymentCursor,
     };
     use crate::interface::{IWorldFactory, IWorldFactoryMMR, IWorldFactorySeries};
     use crate::mmr_models::MMRRegistration;
@@ -30,6 +31,7 @@ pub mod factory {
         pub const DEPLOYMENT_ALREADY_COMPLETED: felt252 = 'deployment already completed';
         pub const NOT_CONFIG_OWNER: felt252 = 'not config owner';
         pub const NOT_SERIES_OWNER: felt252 = 'not series owner';
+        pub const CONFIG_NOT_INITIALIZED: felt252 = 'config not initialized';
         pub const SERIES_DOES_NOT_EXIST: felt252 = 'series does not exist';
         pub const ZERO_SERIES_GAME_NUMBER: felt252 = 'zero series game number';
         pub const INCORRECT_SERIES_GAME_NUMBER: felt252 = 'incorrect series game number';
@@ -117,26 +119,130 @@ pub mod factory {
 
     #[abi(embed_v0)]
     impl IWorldFactoryImpl of IWorldFactory<ContractState> {
-        fn set_factory_config(ref self: ContractState, config: FactoryConfig) {
+        fn set_factory_config(
+            ref self: ContractState,
+            version: felt252,
+            max_actions: u64,
+            world_class_hash: ClassHash,
+            default_namespace: ByteArray,
+            default_namespace_writer_all: bool,
+        ) {
             let mut factory_world = self.world_default();
 
-            let config_owner: FactoryConfigOwner = factory_world.read_model(config.version);
+            let config_owner: FactoryConfigOwner = factory_world.read_model(version);
+            let caller = starknet::get_caller_address();
 
             if config_owner.contract_address.is_non_zero() {
-                assert(
-                    starknet::get_caller_address() == config_owner.contract_address,
-                    errors::NOT_CONFIG_OWNER,
-                );
+                assert(caller == config_owner.contract_address, errors::NOT_CONFIG_OWNER);
+            } else {
+                factory_world
+                    .write_model(@FactoryConfigOwner { version, contract_address: caller });
             }
+
+            let existing_config: FactoryConfig = factory_world.read_model(version);
 
             factory_world
                 .write_model(
-                    @FactoryConfigOwner {
-                        version: config.version, contract_address: starknet::get_caller_address(),
+                    @FactoryConfig {
+                        version,
+                        max_actions,
+                        world_class_hash,
+                        default_namespace,
+                        default_namespace_writer_all,
+                        contracts: existing_config.contracts,
+                        models: existing_config.models,
+                        events: existing_config.events,
+                        libraries: existing_config.libraries,
                     },
                 );
+        }
 
-            factory_world.write_model(@config);
+        fn set_factory_config_contracts(
+            ref self: ContractState, version: felt252, contracts: Array<FactoryConfigContract>,
+        ) {
+            self.assert_config_owner(version);
+            let mut factory_world = self.world_default();
+            let config: FactoryConfig = factory_world.read_model(version);
+            factory_world
+                .write_model(
+                    @FactoryConfig {
+                        version,
+                        max_actions: config.max_actions,
+                        world_class_hash: config.world_class_hash,
+                        default_namespace: config.default_namespace,
+                        default_namespace_writer_all: config.default_namespace_writer_all,
+                        contracts,
+                        models: config.models,
+                        events: config.events,
+                        libraries: config.libraries,
+                    },
+                );
+        }
+
+        fn set_factory_config_models(
+            ref self: ContractState, version: felt252, models: Array<ClassHash>,
+        ) {
+            self.assert_config_owner(version);
+            let mut factory_world = self.world_default();
+            let config: FactoryConfig = factory_world.read_model(version);
+            factory_world
+                .write_model(
+                    @FactoryConfig {
+                        version,
+                        max_actions: config.max_actions,
+                        world_class_hash: config.world_class_hash,
+                        default_namespace: config.default_namespace,
+                        default_namespace_writer_all: config.default_namespace_writer_all,
+                        contracts: config.contracts,
+                        models,
+                        events: config.events,
+                        libraries: config.libraries,
+                    },
+                );
+        }
+
+        fn set_factory_config_events(
+            ref self: ContractState, version: felt252, events: Array<ClassHash>,
+        ) {
+            self.assert_config_owner(version);
+            let mut factory_world = self.world_default();
+            let config: FactoryConfig = factory_world.read_model(version);
+            factory_world
+                .write_model(
+                    @FactoryConfig {
+                        version,
+                        max_actions: config.max_actions,
+                        world_class_hash: config.world_class_hash,
+                        default_namespace: config.default_namespace,
+                        default_namespace_writer_all: config.default_namespace_writer_all,
+                        contracts: config.contracts,
+                        models: config.models,
+                        events,
+                        libraries: config.libraries,
+                    },
+                );
+        }
+
+        fn set_factory_config_libraries(
+            ref self: ContractState, version: felt252, libraries: Array<FactoryConfigLibrary>,
+        ) {
+            self.assert_config_owner(version);
+            let mut factory_world = self.world_default();
+            let config: FactoryConfig = factory_world.read_model(version);
+            factory_world
+                .write_model(
+                    @FactoryConfig {
+                        version,
+                        max_actions: config.max_actions,
+                        world_class_hash: config.world_class_hash,
+                        default_namespace: config.default_namespace,
+                        default_namespace_writer_all: config.default_namespace_writer_all,
+                        contracts: config.contracts,
+                        models: config.models,
+                        events: config.events,
+                        libraries,
+                    },
+                );
         }
 
         fn create_game(
@@ -440,6 +546,16 @@ pub mod factory {
         /// Default world storage for the factory.
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"wf")
+        }
+
+        fn assert_config_owner(self: @ContractState, version: felt252) {
+            let mut factory_world = self.world_default();
+            let config_owner: FactoryConfigOwner = factory_world.read_model(version);
+            assert(config_owner.contract_address.is_non_zero(), errors::CONFIG_NOT_INITIALIZED);
+            assert(
+                starknet::get_caller_address() == config_owner.contract_address,
+                errors::NOT_CONFIG_OWNER,
+            );
         }
 
         /// Deploys a new world and returns its address.
