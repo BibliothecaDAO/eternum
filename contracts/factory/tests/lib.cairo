@@ -64,7 +64,7 @@ fn test_factory_config() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_config(factory_config);
+    factory.set_factory_config(factory_config);
 
     let config: FactoryConfig = factory_world.read_model(1);
     assert!(config.version == 1, "version should be 1");
@@ -101,13 +101,13 @@ fn test_factory_config_owner_only() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_config(factory_config.clone());
+    factory.set_factory_config(factory_config.clone());
 
     cheat_caller_address(
         factory.contract_address, 'OTHER_CONTRACT'.try_into().unwrap(), CheatSpan::TargetCalls(1),
     );
 
-    factory.set_config(factory_config);
+    factory.set_factory_config(factory_config);
 }
 
 #[test]
@@ -132,9 +132,9 @@ fn test_factory_deploy_and_confirm_cursor() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_config(factory_config);
+    factory.set_factory_config(factory_config);
 
-    factory.deploy('world_1', 1);
+    factory.create_game('world_1', 1, 0, 0);
 
     let cursor: FactoryDeploymentCursor = factory_world.read_model((1, 'world_1'));
     assert!(cursor.completed == true);
@@ -143,7 +143,7 @@ fn test_factory_deploy_and_confirm_cursor() {
     let cursor: FactoryDeploymentCursor = factory_world.read_model((1, 'world_2'));
     assert!(cursor.completed == false);
 
-    factory.deploy('world_2', 1);
+    factory.create_game('world_2', 1, 0, 0);
 
     let cursor: FactoryDeploymentCursor = factory_world.read_model((1, 'world_2'));
     assert!(cursor.completed == true);
@@ -171,9 +171,9 @@ fn test_factory_deploy_and_confirm_world_deployed() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_config(factory_config);
+    factory.set_factory_config(factory_config);
 
-    factory.deploy('world_1', 1);
+    factory.create_game('world_1', 1, 0, 0);
 
     let world_deployed: WorldDeployed = factory_world.read_model('world_1');
     assert!(world_deployed.name == 'world_1');
