@@ -8,12 +8,13 @@ We expect all contributors to foster a welcoming and inclusive environment.
 
 ## Getting Started
 
-1) **Fork the repository** (GitHub UI).
-2) **Clone your fork** to your machine.
-3) **Create a branch** for your change.
-4) **Sync from upstream** regularly to reduce merge conflicts.
+1. **Fork the repository** (GitHub UI).
+2. **Clone your fork** to your machine.
+3. **Create a branch** for your change.
+4. **Sync from upstream** regularly to reduce merge conflicts.
 
 ### Quickstart (developer)
+
 From the repo root:
 
 ```bash
@@ -22,13 +23,16 @@ pnpm run build:packages
 ```
 
 Common dev commands:
+
 - Game: `pnpm dev`
 - Docs site: `pnpm dev:docs`
 - Lint: `pnpm lint`
 - Tests: `pnpm test`
 
 ### Docs contributions
+
 There are two doc “homes”:
+
 - **Docs site (player + dev docs):** `client/apps/game-docs/docs/pages/`
 - **Repo docs (architecture/notes):** `docs/`
 
