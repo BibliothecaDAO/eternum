@@ -3,16 +3,29 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
+import { hasCollectionKey } from "@/lib/collection-key";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, useLocation, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useLocation, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
 
 export const Route = createFileRoute("/trade/$collection")({
+  beforeLoad: ({ params }) => {
+    if (!hasCollectionKey(marketplaceCollections, params.collection)) {
+      throw redirect({ to: "/trade" });
+    }
+
+    const collectionConfig = marketplaceCollections[params.collection];
+    if (!collectionConfig.address) {
+      throw redirect({ to: "/trade" });
+    }
+  },
   component: TradeLayout,
   head: ({ params }) => {
     const { collection } = params;
-    const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
+    const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+      ? marketplaceCollections[collection]
+      : undefined;
     const collectionName = collectionConfig?.name || collection;
 
     return {
@@ -65,8 +78,10 @@ export const Route = createFileRoute("/trade/$collection")({
 
 function TradeLayout() {
   const { collection } = useParams({ from: "/trade/$collection" });
-  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
-  const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
+  const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
+
+  const collectionAddress = collectionConfig.address;
+  const collectionName = collectionConfig.name;
   const { data: totals } = useQuery({
     queryKey: ["collectionStatistics", collectionAddress],
     queryFn: ({ signal }) => fetchCollectionStatistics(collectionAddress, { signal }),
@@ -112,13 +127,13 @@ function TradeLayout() {
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent uppercase">
                 {!isSeasonPass && (
                   <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
-                    <Link to={collection ? `/trade/$collection` : "/trade"} className="cursor-pointer">
+                    <Link to="/trade/$collection" params={{ collection }} className="cursor-pointer">
                       Items
                     </Link>
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="activity" asChild>
-                  <Link to={collection ? `/trade/$collection/activity` : "/trade"} className="cursor-pointer">
+                  <Link to="/trade/$collection/activity" params={{ collection }} className="cursor-pointer">
                     Activity
                   </Link>
                 </TabsTrigger>
