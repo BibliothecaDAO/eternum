@@ -10,12 +10,10 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Label } from "@/components/ui/label";
+import { getVelordsSourceLabel } from "@/lib/velords-sources";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { Bar, BarChart, CartesianGrid, Line, XAxis, YAxis } from "recharts";
 import { formatUnits } from "viem";
-
-import { StakingAddresses } from "@realms-world/constants";
 
 const sourceColors = {
   "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5":
@@ -46,28 +44,10 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-function getSenderLabel(sender: string): string {
-  const normalizedSender = formatAddress(sender);
-  const velordsAddress = formatAddress(
-    StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as string,
-  );
-  if (
-    normalizedSender === velordsAddress
-  ) {
-    return "VeLords Exit Fees";
-  }
-  if (
-    normalizedSender ===
-    "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5"
-  ) {
-    return "Game + Marketplace Fees";
-  }
-  return sender;
-}
-
 export function VeLordsRewardsChart({
   data,
   totalSupplyRaw,
+  selectedPeriod,
   onTimePeriodChange,
   isLoading = false,
   errorMessage,
@@ -79,17 +59,19 @@ export function VeLordsRewardsChart({
     timestamp: Date;
   }[];
   totalSupplyRaw?: bigint;
+  selectedPeriod?: "3m" | "6m" | "1y";
   onTimePeriodChange?: (period: "3m" | "6m" | "1y") => void;
   isLoading?: boolean;
   errorMessage?: string;
 }) {
-  const [selectedPeriod, setSelectedPeriod] = useState<"3m" | "6m" | "1y">(
+  const [localSelectedPeriod, setLocalSelectedPeriod] = useState<"3m" | "6m" | "1y">(
     "3m",
   );
+  const currentSelectedPeriod = selectedPeriod ?? localSelectedPeriod;
 
   const handlePeriodChange = (value: string) => {
     const period = value as "3m" | "6m" | "1y";
-    setSelectedPeriod(period);
+    setLocalSelectedPeriod(period);
     onTimePeriodChange?.(period);
   };
 
@@ -146,7 +128,7 @@ export function VeLordsRewardsChart({
       const week = new Date(weekStart * 1000).toISOString().split("T")[0];
 
       const formattedAmount = Number(formatUnits(BigInt(item.amount), 18));
-      const senderLabel = getSenderLabel(item.sender);
+      const senderLabel = getVelordsSourceLabel(item.sender);
 
       allWeeks[week].amounts[senderLabel] =
         (allWeeks[week].amounts[senderLabel] || 0) + formattedAmount;
@@ -161,7 +143,7 @@ export function VeLordsRewardsChart({
   }, [data, totalSupplyRaw]);
 
   const allSenderLabels = useMemo(
-    () => Array.from(new Set(data?.map((item) => getSenderLabel(item.sender)) ?? [])),
+    () => Array.from(new Set(data?.map((item) => getVelordsSourceLabel(item.sender)) ?? [])),
     [data],
   );
 
@@ -179,7 +161,7 @@ export function VeLordsRewardsChart({
           label,
           color: (() => {
             const senderAddress = data?.find(
-              (item) => getSenderLabel(item.sender) === label,
+              (item) => getVelordsSourceLabel(item.sender) === label,
             )?.sender;
             const knownColor = senderAddress
               ? sourceColors[senderAddress as keyof typeof sourceColors]
@@ -200,7 +182,7 @@ export function VeLordsRewardsChart({
             Time Period:
           </Label>
           <RadioGroup
-            value={selectedPeriod}
+            value={currentSelectedPeriod}
             onValueChange={handlePeriodChange}
             className="flex space-x-2"
           >

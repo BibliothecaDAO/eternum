@@ -18,6 +18,7 @@ import {
 } from "@realms-world/db/schema";
 
 import { env } from "../env";
+import { toDecimalAmount } from "./amount-utils";
 
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
@@ -86,7 +87,7 @@ export function createIndexer<
             .values({
               transaction_hash: transactionHash,
               sender: args.sender.toString(),
-              amount: Number(args.amount),
+              amount: toDecimalAmount(args.amount),
               timestamp: block.header.timestamp,
             })
             .onConflictDoNothing();
@@ -103,7 +104,7 @@ export function createIndexer<
             .values({
               transaction_hash: transactionHash,
               owner: args.owner.toString(),
-              amount: Number(args.amount),
+              amount: toDecimalAmount(args.amount),
               timestamp: block.header.timestamp,
               end_time: args.end_time,
             })
