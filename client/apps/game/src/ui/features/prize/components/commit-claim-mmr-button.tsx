@@ -6,17 +6,9 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { hash } from "starknet";
 import { dojoConfig } from "../../../../../dojo-config";
 import { env } from "../../../../../env";
-
-type PlayerMMR = { address: bigint; mmr: bigint };
-
-// Batch size for JSON-RPC calls
-const BATCH_SIZE = 20;
-
-// Selector for get_player_mmr function
-const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
+import { commitAndClaimMMR } from "../utils/mmr-utils";
 
 export const CommitClaimMMRButton = ({ className }: { className?: string }) => {
   const {
@@ -61,6 +53,9 @@ export const CommitClaimMMRButton = ({ className }: { className?: string }) => {
 
   const mmrEnabled = Boolean(worldCfg?.mmr_config?.enabled);
 
+  // Get minimum players required from config (default to 6 if not set)
+  const minPlayers = Number(worldCfg?.mmr_config?.min_players ?? 6);
+
   // Get registered players from BlitzRealmPlayerRegister
   const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
   const registeredPlayerAddresses = useMemo(() => {
@@ -98,65 +93,8 @@ export const CommitClaimMMRButton = ({ className }: { className?: string }) => {
     return Boolean(final?.trial_id && (final.trial_id as bigint) > 0n);
   }, [finalEntities, components.PlayersRankFinal]);
 
-  const canCommitClaim = mmrEnabled && mmrTokenAddress && registeredPlayers.length >= 2 && hasFinal;
-
-  /**
-   * Fetch MMRs for a batch of players using JSON-RPC batch request
-   */
-  const fetchMMRBatch = async (players: bigint[], tokenAddress: string): Promise<PlayerMMR[]> => {
-    // Create batch JSON-RPC request
-    const batchRequest = players.map((playerAddress, idx) => ({
-      jsonrpc: "2.0",
-      id: idx,
-      method: "starknet_call",
-      params: [
-        {
-          contract_address: tokenAddress,
-          entry_point_selector: GET_PLAYER_MMR_SELECTOR,
-          calldata: [toHexString(playerAddress)],
-        },
-        "pre_confirmed",
-      ],
-    }));
-
-    const response = await fetch(rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(batchRequest),
-    });
-
-    if (!response.ok) {
-      throw new Error(`RPC request failed: ${response.status}`);
-    }
-
-    const results = await response.json();
-
-    // Parse results - handle both array (batch) and single response
-    const resultsArray = Array.isArray(results) ? results : [results];
-
-    const playerMMRs: PlayerMMR[] = [];
-    for (let idx = 0; idx < players.length; idx++) {
-      const playerAddress = players[idx];
-      const result = resultsArray.find((r: any) => r.id === idx);
-
-      if (result?.error) {
-        throw new Error(`Failed to fetch MMR for ${toHexString(playerAddress)}: ${JSON.stringify(result.error)}`);
-      }
-
-      if (!result?.result) {
-        throw new Error(`No result for player ${toHexString(playerAddress)}`);
-      }
-
-      // u256 is returned as two felts [low, high]
-      const resultArray = result.result;
-      const low = BigInt(resultArray[0] || "0");
-      const high = BigInt(resultArray[1] || "0");
-      const mmr = low + (high << 128n);
-      playerMMRs.push({ address: playerAddress, mmr });
-    }
-
-    return playerMMRs;
-  };
+  const hasEnoughPlayers = registeredPlayers.length >= minPlayers;
+  const canCommitClaim = mmrEnabled && mmrTokenAddress && hasEnoughPlayers && hasFinal;
 
   const handleCommitClaim = async () => {
     if (!canCommitClaim || !mmrTokenAddress) return;
@@ -164,53 +102,24 @@ export const CommitClaimMMRButton = ({ className }: { className?: string }) => {
     setStatus("Preparing...");
 
     try {
-      // Chunk players into batches
-      const playerChunks: bigint[][] = [];
-      for (let i = 0; i < registeredPlayers.length; i += BATCH_SIZE) {
-        playerChunks.push(registeredPlayers.slice(i, i + BATCH_SIZE));
-      }
-
-      const allPlayerMMRs: PlayerMMR[] = [];
-
-      // Fetch MMRs in batches
-      for (let chunkIdx = 0; chunkIdx < playerChunks.length; chunkIdx++) {
-        const chunk = playerChunks[chunkIdx];
-        setStatus(`Fetching MMRs: batch ${chunkIdx + 1}/${playerChunks.length} (${chunk.length} players)...`);
-
-        const batchMMRs = await fetchMMRBatch(chunk, mmrTokenAddress);
-        allPlayerMMRs.push(...batchMMRs);
-      }
-
-      setStatus("Sorting players by MMR...");
-
-      // Sort players by MMR ascending (lowest MMR first)
-      const sortedPlayers = allPlayerMMRs.sort((a, b) => {
-        if (a.mmr < b.mmr) return -1;
-        if (a.mmr > b.mmr) return 1;
-        return 0;
-      });
-
-      const sortedAddresses = sortedPlayers.map((p) => toHexString(p.address));
-
-      console.log("Sorted player addresses for MMR commit & claim:", sortedAddresses, sortedPlayers);
-
-      setStatus(`Committing and claiming MMR for ${sortedAddresses.length} players...`);
-
-      // Call commit and claim in single transaction
-      await commit_and_claim_game_mmr({
+      const sortedAddresses = await commitAndClaimMMR({
+        registeredPlayers,
+        mmrTokenAddress,
+        rpcUrl,
+        commitAndClaimGameMmr: commit_and_claim_game_mmr,
         signer: account,
-        players: sortedAddresses,
+        onStatusChange: setStatus,
       });
 
-      console.log("MMR Commit & Claim transaction submitted.");
       setStatus("Done");
       toast("MMR Commit & Claim submitted", {
         description: `Updated MMR for ${sortedAddresses.length} players.`,
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("MMR Commit & Claim Failed", e);
       setStatus("Failed");
-      toast("MMR Commit & Claim failed", { description: e?.message || String(e) });
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      toast("MMR Commit & Claim failed", { description: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -229,7 +138,7 @@ export const CommitClaimMMRButton = ({ className }: { className?: string }) => {
         onClick={handleCommitClaim}
         className={className}
       >
-        {!hasFinal ? "Finalize Ranking First" : registeredPlayers.length < 2 ? "Need 2+ Players" : "Update MMR"}
+        {!hasFinal ? "Finalize Ranking First" : !hasEnoughPlayers ? `Need ${minPlayers}+ Players` : "Update MMR"}
       </Button>
       {status && status !== "Done" && status !== "Failed" && <div className="text-xs text-gold/60">{status}</div>}
       {status === "Done" && <div className="text-xs text-brilliance">MMR updated successfully.</div>}
