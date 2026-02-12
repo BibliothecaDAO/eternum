@@ -31,6 +31,14 @@ interface ShortcutForceFallbackDecisionInput {
   initialSwitchSucceeded: boolean;
 }
 
+interface DuplicateTileRefreshDecisionInput {
+  removeExplored: boolean;
+  tileAlreadyKnown: boolean;
+  currentChunk: string;
+  isChunkTransitioning: boolean;
+  isVisibleInCurrentChunk: boolean;
+}
+
 /**
  * Resolve chunk-switch side effects after hydration completes.
  * Keeps behavior deterministic for success, failure, and stale transitions.
@@ -142,6 +150,27 @@ export function shouldForceShortcutNavigationRefresh(input: ShortcutNavigationRe
  */
 export function shouldRunShortcutForceFallback(input: ShortcutForceFallbackDecisionInput): boolean {
   return input.isShortcutNavigation && input.chunkChanged && !input.initialSwitchSucceeded;
+}
+
+/**
+ * Duplicate tile updates can indicate a missed visual apply while data state is
+ * already present. Force a chunk refresh only when the duplicate touches the
+ * active visible chunk and no transition is in progress.
+ */
+export function shouldForceRefreshForDuplicateTileUpdate(input: DuplicateTileRefreshDecisionInput): boolean {
+  if (input.removeExplored) {
+    return false;
+  }
+
+  if (!input.tileAlreadyKnown) {
+    return false;
+  }
+
+  if (input.currentChunk === "null" || input.isChunkTransitioning) {
+    return false;
+  }
+
+  return input.isVisibleInCurrentChunk;
 }
 
 /**
