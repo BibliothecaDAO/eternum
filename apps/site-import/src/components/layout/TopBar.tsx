@@ -8,6 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { lordsInfoQueryOptions } from "@/lib/query-options";
 import { useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { Menu } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function TopBar() {
   const [time, setTime] = useState(new Date());
@@ -50,6 +57,7 @@ export function TopBar() {
     location.pathname === "/"
       ? [
           { id: "hero", label: "Home", href: "#" },
+          { id: "partners", label: "Partners", href: "#partners" },
           { id: "value-flow", label: "Value Flow", href: "#value-flow" },
           { id: "tokenomics", label: "Tokenomics", href: "#tokenomics" },
           { id: "treasury", label: "Treasury", href: "#treasury" },
@@ -114,7 +122,7 @@ export function TopBar() {
                   </h1>
 
                   {/* Navigation Links */}
-                  <nav className="flex items-center space-x-4">
+                  <nav className="flex items-center space-x-3 sm:space-x-4">
                     {/* Always show Games link */}
                     <Link
                       to="/games"
@@ -130,6 +138,32 @@ export function TopBar() {
                     {pageSections.length > 0 && (
                       <>
                         <span className="h-4 w-px bg-border" />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="lg:hidden px-2"
+                              aria-label="Open section navigation"
+                            >
+                              <Menu className="h-4 w-4" />
+                              <span className="ml-1">Sections</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-44">
+                            {pageSections.map((section) => (
+                              <DropdownMenuItem
+                                key={section.id}
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                  scrollToSection(section.href);
+                                }}
+                              >
+                                {section.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         {pageSections.slice(1).map((section) => (
                           <button
                             key={section.id}
