@@ -1,9 +1,33 @@
-import { lazy, Suspense, useMemo, useState } from "react";
-import { useVelordsData } from "@/hooks/use-velords-data";
-import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
+import { lazy, Suspense, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { Copy, Link2 } from "lucide-react";
+import { formatUnits } from "viem";
+
+import { VelordsLockActivity } from "@/components/modules/velords/lock-activity";
+import { VelordsSourceBreakdown } from "@/components/modules/velords/source-breakdown";
+import { useToast } from "@/hooks/use-toast";
+import { useVelordsData } from "@/hooks/use-velords-data";
+import {
+  getVelordsLockActivityQueryOptions,
+  getVelordsOverviewQueryOptions,
+  getVelordsRewardsSeriesQueryOptions,
+} from "@/lib/getVeLordsAnalytics";
+import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
+import { calculateTrailingApyPercent } from "@/lib/velords-analytics";
+import { seo } from "@/utils/seo";
+import { formatNumber } from "@/utils/utils";
+
+type VelordsPeriod = "3m" | "6m" | "1y";
+type VelordsView = "overview" | "sources" | "locks" | "trends";
 
 const VeLordsRewardsChart = lazy(() =>
   import("@/components/modules/velords/rewards-chart").then((mod) => ({
@@ -20,30 +44,103 @@ const VelordsRewards = lazy(() =>
     default: mod.VelordsRewards,
   })),
 );
+const VelordsTrendsPanel = lazy(() =>
+  import("@/components/modules/velords/trends-panel").then((mod) => ({
+    default: mod.VelordsTrendsPanel,
+  })),
+);
+
+function parsePeriod(period: unknown): VelordsPeriod {
+  return period === "6m" || period === "1y" ? period : "3m";
+}
+
+function parseView(view: unknown): VelordsView {
+  if (view === "sources") return "sources";
+  if (view === "locks") return "locks";
+  if (view === "trends") return "trends";
+  return "overview";
+}
+
+function periodToStartDate(period: VelordsPeriod): Date {
+  const now = Date.now();
+  const periods: Record<VelordsPeriod, number> = {
+    "3m": 3 * 30 * 24 * 60 * 60 * 1000,
+    "6m": 6 * 30 * 24 * 60 * 60 * 1000,
+    "1y": 12 * 30 * 24 * 60 * 60 * 1000,
+  };
+  return new Date(now - periods[period]);
+}
+
+function formatWeiAmount(
+  value?: string,
+  maximumFractionDigits = 0,
+): string | undefined {
+  if (!value) return undefined;
+  return formatNumber(
+    Number(formatUnits(BigInt(value), 18)),
+    maximumFractionDigits,
+  );
+}
 
 export const Route = createFileRoute("/velords/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    period: parsePeriod(search.period),
+    view: parseView(search.view),
+    source:
+      typeof search.source === "string" && search.source.trim().length > 0
+        ? search.source
+        : undefined,
+  }),
+  head: () => ({
+    meta: [
+      ...seo({
+        title: "RW | veLords Dashboard",
+        description:
+          "Track veLords rewards, lock activity, and your staking position.",
+        image: "/icon.svg",
+      }),
+    ],
+  }),
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const [selectedPeriod, setSelectedPeriod] = useState<"3m" | "6m" | "1y">("3m");
-
-  const startTimestamp = useMemo(() => {
-    const now = Date.now();
-    const periods = {
-      "3m": 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
-      "6m": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-      "1y": 12 * 30 * 24 * 60 * 60 * 1000, // 1 year
-    };
-    return new Date(now - periods[selectedPeriod]);
-  }, [selectedPeriod]);
+  const { toast } = useToast();
+  const navigate = Route.useNavigate();
+  const search = Route.useSearch();
+  const selectedPeriod = search.period;
+  const selectedView = search.view;
+  const startTimestamp = useMemo(
+    () => periodToStartDate(selectedPeriod),
+    [selectedPeriod],
+  );
 
   const veLordsBurnsQuery = useQuery(
-    getVelordsBurnsQueryOptions({ startTimestamp }),
+    getVelordsBurnsQueryOptions({
+      startTimestamp,
+      sender: search.source,
+    }),
   );
-  const veLordsBurns = veLordsBurnsQuery.data ?? [];
+  const overviewQuery = useQuery(
+    getVelordsOverviewQueryOptions({
+      period: selectedPeriod,
+      source: search.source,
+    }),
+  );
+  const rewardsSeriesQuery = useQuery(
+    getVelordsRewardsSeriesQueryOptions({
+      period: selectedPeriod,
+      source: search.source,
+    }),
+  );
+  const lockActivityQuery = useQuery(
+    getVelordsLockActivityQueryOptions({
+      period: selectedPeriod,
+    }),
+  );
   const { address } = useAccount();
   const velordsData = useVelordsData();
+
   const {
     totalSupply,
     totalSupplyRaw,
@@ -52,69 +149,152 @@ function RouteComponent() {
     isTVLLoading,
     userBalance,
     userSharePercent,
+    userLocked,
   } = velordsData;
 
-  const handleTimePeriodChange = (period: "3m" | "6m" | "1y") => {
-    setSelectedPeriod(period);
+  const trailingApy = useMemo(() => {
+    const weekly = rewardsSeriesQuery.data?.weekly ?? [];
+    const trailingWeeks = weekly.slice(-4).map((row) => row.totalWei);
+    return calculateTrailingApyPercent(trailingWeeks, totalSupplyRaw);
+  }, [rewardsSeriesQuery.data?.weekly, totalSupplyRaw]);
+
+  const estimatedWeeklyRewards = useMemo(() => {
+    const latestWeek = rewardsSeriesQuery.data?.weekly.at(-1);
+    if (!latestWeek || !userSharePercent) return undefined;
+    const latestWeekRewards = Number(formatUnits(BigInt(latestWeek.totalWei), 18));
+    return (latestWeekRewards * Number(userSharePercent)) / 100;
+  }, [rewardsSeriesQuery.data?.weekly, userSharePercent]);
+
+  const rewards7d = formatWeiAmount(overviewQuery.data?.rewards7dWei, 2);
+  const rewards30d = formatWeiAmount(overviewQuery.data?.rewards30dWei, 2);
+
+  const handleTimePeriodChange = (period: VelordsPeriod) => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        period,
+      }),
+    });
+  };
+
+  const handleViewChange = (view: string) => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        view: parseView(view),
+      }),
+    });
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({ description: "veLords dashboard link copied." });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description:
+          error instanceof Error ? error.message : "Unable to copy link.",
+      });
+    }
+  };
+
+  const handleCopySummary = async () => {
+    const summary = [
+      `veLords Dashboard (${selectedPeriod})`,
+      `TVL: ${
+        typeof tvl === "number" && Number.isFinite(tvl)
+          ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+          : "$0"
+      }`,
+      `Locked: ${lordsLocked ?? "0"} LORDS`,
+      `30d Rewards: ${rewards30d ?? "0"} LORDS`,
+      `APY: ${formatNumber(trailingApy, 2)}%`,
+      `Updated: ${new Date().toISOString().slice(0, 10)}`,
+    ].join(" | ");
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      toast({ description: "veLords summary copied." });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description:
+          error instanceof Error ? error.message : "Unable to copy summary.",
+      });
+    }
   };
 
   return (
     <div className="bg-background min-h-screen">
       <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        {/* Header Section */}
-        <div className="mb-8 space-y-4">
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
               veLords Dashboard
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg">
-              Stake $LORDS in the Lordship Protocol
+              Stake $LORDS in the Lordship Protocol and monitor reward performance.
             </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleCopyLink}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Copy Link
+            </Button>
+            <Button variant="outline" onClick={handleCopySummary}>
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Summary
+            </Button>
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">
-          {/* Right Column - Data Cards and Chart */}
-          <div className="space-y-6 xl:col-span-3">
-            {/* Key Metrics */}
-            <div className="mb-8 space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="bg-card rounded-lg border p-4">
-                  <div className="text-sm text-muted-foreground">Total Voting Power (veLORDS)</div>
-                  <div className="text-2xl font-bold">
-                    {totalSupply ?? "Loading..."}
-                  </div>
-                  {userBalance !== undefined && userSharePercent !== undefined && (
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Your share: {userBalance} ({userSharePercent}%)
-                    </div>
-                  )}
-                </div>
-                <div className="bg-card rounded-lg border p-4">
-                  <div className="text-sm text-muted-foreground">LORDS Locked</div>
-                  <div className="text-2xl font-bold">
-                    {lordsLocked ?? "Loading..."}
-                  </div>
-                </div>
-                <div className="bg-card rounded-lg border p-4">
-                  <div className="text-sm text-muted-foreground">TVL</div>
-                  <div className="text-2xl font-bold">
-                    {typeof tvl === "number" && !isNaN(tvl)
-                      ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                      : isTVLLoading
-                        ? "Loading..."
-                        : "$0"
-                    }
-                  </div>
-                </div>
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">Total Voting Power (veLORDS)</div>
+            <div className="text-2xl font-bold">{totalSupply ?? "Loading..."}</div>
+            {userBalance !== undefined && userSharePercent !== undefined && (
+              <div className="text-muted-foreground mt-1 text-sm">
+                Your share: {userBalance} ({userSharePercent}%)
               </div>
+            )}
+          </div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">LORDS Locked</div>
+            <div className="text-2xl font-bold">{lordsLocked ?? "Loading..."}</div>
+          </div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">TVL</div>
+            <div className="text-2xl font-bold">
+              {typeof tvl === "number" && Number.isFinite(tvl)
+                ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                : isTVLLoading
+                  ? "Loading..."
+                  : "$0"}
             </div>
+          </div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">Rewards (7d)</div>
+            <div className="text-2xl font-bold">{rewards7d ?? "Loading..."}</div>
+          </div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">Rewards (30d)</div>
+            <div className="text-2xl font-bold">{rewards30d ?? "Loading..."}</div>
+          </div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">Trailing APY (4w avg)</div>
+            <div className="text-2xl font-bold">{formatNumber(trailingApy, 2)}%</div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">
+          <div className="space-y-6 xl:col-span-3">
             <div className="bg-card rounded-lg border p-6">
               <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-md border" />}>
                 <VeLordsRewardsChart
+                  selectedPeriod={selectedPeriod}
                   totalSupplyRaw={totalSupplyRaw}
-                  data={veLordsBurns}
+                  data={veLordsBurnsQuery.data ?? []}
                   onTimePeriodChange={handleTimePeriodChange}
                   isLoading={veLordsBurnsQuery.isLoading}
                   errorMessage={
@@ -125,10 +305,77 @@ function RouteComponent() {
                 />
               </Suspense>
             </div>
+
+            <Tabs value={selectedView} onValueChange={handleViewChange}>
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="sources">Sources</TabsTrigger>
+                <TabsTrigger value="locks">Locks</TabsTrigger>
+                <TabsTrigger value="trends">Trends</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <VelordsSourceBreakdown
+                    data={rewardsSeriesQuery.data?.sources ?? []}
+                    isLoading={rewardsSeriesQuery.isLoading}
+                  />
+                  <VelordsLockActivity
+                    data={lockActivityQuery.data?.weekly ?? []}
+                    isLoading={lockActivityQuery.isLoading}
+                  />
+                </div>
+              </TabsContent>
+              <TabsContent value="sources">
+                <VelordsSourceBreakdown
+                  data={rewardsSeriesQuery.data?.sources ?? []}
+                  isLoading={rewardsSeriesQuery.isLoading}
+                />
+              </TabsContent>
+              <TabsContent value="locks">
+                <VelordsLockActivity
+                  data={lockActivityQuery.data?.weekly ?? []}
+                  isLoading={lockActivityQuery.isLoading}
+                />
+              </TabsContent>
+              <TabsContent value="trends">
+                <Suspense
+                  fallback={
+                    <div className="h-[640px] w-full animate-pulse rounded-md border" />
+                  }
+                >
+                  <VelordsTrendsPanel
+                    rewardsWeekly={rewardsSeriesQuery.data?.weekly ?? []}
+                    lockWeekly={lockActivityQuery.data?.weekly ?? []}
+                    isRewardsLoading={rewardsSeriesQuery.isLoading}
+                    isLocksLoading={lockActivityQuery.isLoading}
+                  />
+                </Suspense>
+              </TabsContent>
+            </Tabs>
           </div>
 
-          {/* Left Column - Staking Controls and Claimable Rewards */}
           <div className="space-y-6 xl:col-span-2">
+            <div className="bg-card rounded-lg border p-4">
+              <div className="text-sm font-medium">Your Position</div>
+              <div className="text-muted-foreground mt-2 space-y-1 text-sm">
+                <div>veLORDS Balance: {userBalance ?? "-"}</div>
+                <div>Supply Share: {userSharePercent ? `${userSharePercent}%` : "-"}</div>
+                <div>Locked LORDS: {userLocked?.amount ?? "-"}</div>
+                <div>
+                  Unlock Time:{" "}
+                  {userLocked?.unlockTime
+                    ? new Date(userLocked.unlockTime * 1000).toLocaleDateString()
+                    : "-"}
+                </div>
+                <div>
+                  Est. Weekly Rewards:{" "}
+                  {estimatedWeeklyRewards !== undefined
+                    ? `~${formatNumber(estimatedWeeklyRewards, 2)} LORDS`
+                    : "-"}
+                </div>
+              </div>
+            </div>
+
             <div className="bg-card rounded-lg border">
               <Suspense
                 fallback={

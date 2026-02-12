@@ -17,6 +17,7 @@ import type {
   } from "@realms-world/db/schema";
   
   import { env } from "../env";
+import { toDecimalAmount } from "./amount-utils";
   
   export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
     return createIndexer({ database: db });
@@ -74,8 +75,6 @@ import type {
               eventName: "Transfer",
               event,
             });
-            logger.info(args)
-            logger.info(StakingAddresses.velordsburner[l2ChainId])
 
             if (args.to == StakingAddresses.velordsburner[l2ChainId]) {
   
@@ -84,7 +83,7 @@ import type {
               .values({
                 transaction_hash: transactionHash,
                 sender: args.from.toString(),
-                amount: Number(args.value),
+                amount: toDecimalAmount(args.value),
                 timestamp: block.header.timestamp,
               })
               .onConflictDoNothing();
