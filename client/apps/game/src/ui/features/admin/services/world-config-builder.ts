@@ -1,10 +1,10 @@
-export interface BlitzRegistrationDefaults {
+interface BlitzRegistrationDefaults {
   amount: string;
   precision: number;
   token: string;
 }
 
-export interface FactoryWorldConfigDefaults {
+interface FactoryWorldConfigDefaults {
   factoryAddress: string;
   devModeOn: boolean;
   mmrEnabledOn: boolean;
@@ -13,7 +13,7 @@ export interface FactoryWorldConfigDefaults {
   defaultBlitzRegistration: BlitzRegistrationDefaults;
 }
 
-export interface FactoryWorldConfigOverrides {
+interface FactoryWorldConfigOverrides {
   startMainAt?: number;
   startSettlingAt?: number;
   devModeOn?: boolean;
@@ -243,7 +243,10 @@ export const buildWorldConfigForFactory = ({
       registration: {
         ...(baseConfig.blitz?.registration || {}),
         fee_amount: blitzFeeAmount,
-        fee_token: overrides.blitzFeeToken?.trim() || defaults.defaultBlitzRegistration.token || baseConfig.blitz?.registration?.fee_token,
+        fee_token:
+          overrides.blitzFeeToken?.trim() ||
+          defaults.defaultBlitzRegistration.token ||
+          baseConfig.blitz?.registration?.fee_token,
         fee_recipient: overrides.blitzFeeRecipient?.trim() || baseConfig.blitz?.registration?.fee_recipient,
         registration_count_max: registrationCountMax,
         registration_delay_seconds: registrationDelaySeconds,

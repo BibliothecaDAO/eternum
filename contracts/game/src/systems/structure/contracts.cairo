@@ -28,6 +28,7 @@ pub mod structure_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
+    use crate::models::troop::TroopLimitImpl;
     use crate::models::weight::Weight;
     use crate::systems::utils::map::IMapImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
@@ -88,9 +89,10 @@ pub mod structure_systems {
             structure_weight.store(ref world, structure_id);
 
             // update structure level and troop max guard count
+            let (explorer_limit, guard_limit) = TroopLimitImpl::max_slot_size(next_level);
             structure_base.level = next_level;
-            structure_base.troop_max_guard_count += 1;
-            structure_base.troop_max_explorer_count += 1;
+            structure_base.troop_max_guard_count = guard_limit;
+            structure_base.troop_max_explorer_count = explorer_limit.into();
             StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
             // update structure tile

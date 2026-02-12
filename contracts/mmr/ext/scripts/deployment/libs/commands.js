@@ -22,7 +22,7 @@ export const declareMMRToken = async () => {
   return class_hash;
 };
 
-export const deployMMRTokenContract = async (defaultAdmin, gameContract, upgrader) => {
+export const deployMMRTokenContract = async (defaultAdmin, upgrader) => {
   //////////////////////////////////////////////////////////
   ////////  Deploy MMR Token Contract
   ///////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ export const deployMMRTokenContract = async (defaultAdmin, gameContract, upgrade
   const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
 
   // Constructor: default_admin, game_contract, upgrader
-  let constructorCalldata = [BigInt(defaultAdmin), BigInt(gameContract), BigInt(upgrader)];
+  let constructorCalldata = [BigInt(defaultAdmin), BigInt(upgrader)];
   let address = await deploy(casualName, class_hash, constructorCalldata);
   await saveContractAddressToCommonFolder("mmrToken", address);
   console.log(

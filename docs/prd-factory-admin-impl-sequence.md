@@ -7,9 +7,12 @@
 
 ## 1. Problem Statement
 
-The current Factory Admin experience is difficult to iterate on because UX, orchestration, and world-specific config state are tightly coupled in a single page component. This slows down design iteration, increases regression risk, and makes it hard to add new configuration controls safely.
+The current Factory Admin experience is difficult to iterate on because UX, orchestration, and world-specific config
+state are tightly coupled in a single page component. This slows down design iteration, increases regression risk, and
+makes it hard to add new configuration controls safely.
 
 The desired product outcome is a milestone-based rollout:
+
 1. Clean up the form and add more config customization while preserving reliable deploy/configure flows.
 2. Move Factory Admin into the main dashboard experience.
 
@@ -107,6 +110,7 @@ The desired product outcome is a milestone-based rollout:
 3. Add basic coverage for critical existing flows before structural refactor.
 
 Exit Criteria:
+
 1. Existing behavior unchanged for happy paths.
 2. Known reliability issues above resolved.
 
@@ -124,6 +128,7 @@ Exit Criteria:
 3. Keep service boundaries in `services/` and storage interactions in `utils/storage.ts`.
 
 Exit Criteria:
+
 1. Parity with pre-refactor UX/behavior.
 2. Reduced main page size and lower prop/state coupling.
 
@@ -135,6 +140,7 @@ Exit Criteria:
 4. Add effective config preview panel for selected world.
 
 Exit Criteria:
+
 1. Admin can set and save required override fields without tx failures caused by invalid local input.
 2. Expanded fields correctly map to deployer config payload.
 
@@ -147,6 +153,7 @@ Exit Criteria:
 3. Add telemetry/logging around failure points for faster rollback diagnosis.
 
 Exit Criteria (Milestone 1 Complete):
+
 1. Deploy + configure + indexer flows pass QA matrix.
 2. No blocker regressions.
 3. Team signs off migration readiness for Milestone 2.
@@ -158,6 +165,7 @@ Exit Criteria (Milestone 1 Complete):
 3. Keep standalone `/factory` route enabled for safety during rollout.
 
 Exit Criteria:
+
 1. Authorized users can access the admin flow from dashboard.
 2. Unauthorized users cannot access controls.
 
@@ -168,6 +176,7 @@ Exit Criteria:
 3. Validate wallet/controller behavior and tx permissions in embedded path.
 
 Exit Criteria:
+
 1. Embedded admin mode is functionally equivalent to standalone mode.
 2. No measurable landing/dashboard performance regressions.
 
@@ -178,6 +187,7 @@ Exit Criteria:
 3. Finalize documentation and ops runbook.
 
 Exit Criteria (Milestone 2 Complete):
+
 1. Main dashboard is primary entry for Factory Admin.
 2. Operational fallback plan documented.
 

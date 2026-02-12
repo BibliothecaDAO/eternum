@@ -122,10 +122,9 @@ export const ArmyCreate = ({
   const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
-  const troopMaxSizeRaw = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
-  const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
-  const hasTroopCap = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0;
-  const troopCapacityLimit = hasTroopCap ? parsedTroopCap : null;
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(owner_entity)]));
+  const structureLevel = structure?.base?.level ?? 0;
+  const troopCapacityLimit = configManager.getMaxArmySize(structureLevel, selectedTier) || null;
   const currentTroopCountValue = Number(army?.troops?.count ?? 0);
   const currentTroopCount = Number.isFinite(currentTroopCountValue) ? currentTroopCountValue : 0;
   const remainingTroopCapacity =
