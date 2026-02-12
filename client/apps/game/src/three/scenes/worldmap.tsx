@@ -3400,6 +3400,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private async updateToriiBoundsSubscription(chunkKey: string, transitionToken?: number): Promise<void> {
     if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_stale_token");
       return;
     }
 
@@ -3451,6 +3452,7 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
     } catch (error) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_failed");
       console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);
     }
   }

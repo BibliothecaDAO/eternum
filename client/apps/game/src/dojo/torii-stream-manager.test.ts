@@ -79,4 +79,45 @@ describe("ToriiStreamManager", () => {
     expect(cancelFirst).toHaveBeenCalledTimes(1);
     expect(cancelSecond).toHaveBeenCalledTimes(1);
   });
+
+  it("drops stale middle switch during A->B->A bounds churn", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const firstSwitch = deferred<{ cancel: () => void }>();
+    const secondSwitch = deferred<{ cancel: () => void }>();
+    const thirdSwitch = deferred<{ cancel: () => void }>();
+
+    const cancelFirst = vi.fn();
+    const cancelSecond = vi.fn();
+    const cancelThird = vi.fn();
+
+    syncMock
+      .mockImplementationOnce(async () => firstSwitch.promise)
+      .mockImplementationOnce(async () => secondSwitch.promise)
+      .mockImplementationOnce(async () => thirdSwitch.promise);
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    const pendingA1 = manager.switchBounds(descriptor(0));
+    const pendingB = manager.switchBounds(descriptor(24));
+    const pendingA2 = manager.switchBounds(descriptor(0));
+
+    firstSwitch.resolve({ cancel: cancelFirst });
+    secondSwitch.resolve({ cancel: cancelSecond });
+    thirdSwitch.resolve({ cancel: cancelThird });
+
+    const [resultA1, resultB, resultA2] = await Promise.all([pendingA1, pendingB, pendingA2]);
+
+    manager.cancelCurrentSubscription();
+
+    expect(resultA1.outcome).toBe("stale_dropped");
+    expect(resultB.outcome).toBe("stale_dropped");
+    expect(resultA2.outcome).toBe("applied");
+    expect(cancelFirst).toHaveBeenCalledTimes(1);
+    expect(cancelSecond).toHaveBeenCalledTimes(1);
+    expect(cancelThird).toHaveBeenCalledTimes(1);
+  });
 });
