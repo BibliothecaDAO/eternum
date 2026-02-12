@@ -95,3 +95,27 @@ test("Toolchain majors: vite/eslint stack is on target versions", () => {
     );
   }
 });
+
+test("P2 runtime majors: starknet/zod/recharts are on target versions", () => {
+  const packageJson = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  const dependencies = packageJson.dependencies ?? {};
+
+  const expectations = [
+    { name: "@starknet-react/chains", major: 5 },
+    { name: "@starknet-react/core", major: 5 },
+    { name: "recharts", major: 3 },
+    { name: "zod", major: 4 },
+  ];
+
+  for (const { name, major } of expectations) {
+    const version = dependencies[name] ?? "";
+    const match = version.match(/(\d+)\.(\d+)\.(\d+)/);
+    assert.ok(match, `Expected a concrete semver for ${name}, got: ${version}`);
+    const detectedMajor = Number(match[1]);
+    assert.equal(
+      detectedMajor,
+      major,
+      `Expected ${name} major ${major}, got ${version}`
+    );
+  }
+});

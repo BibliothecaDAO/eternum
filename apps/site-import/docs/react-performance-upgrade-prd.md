@@ -5,7 +5,7 @@
 - Owner: Frontend Engineering
 - Date: February 11, 2026
 - Status: In Progress
-- Related branch: `ponderingdemocritus/prd-high-priority`
+- Related branch: `ponderingdemocritus/finish-p2`
 
 ## 2. Context and Problem Statement
 The current site has excellent visual richness but carries frontend performance and maintenance risk:
@@ -147,6 +147,20 @@ Quality baseline:
     - `@eslint/js` `9.x` -> `10.0.1`
     - `eslint-plugin-react-hooks` `5.x` -> `7.0.1`
   - Addressed new React purity lint findings introduced by upgraded rules.
+  - Completed runtime/data major wave:
+    - `@starknet-react/chains` `3.x` -> `5.0.3`
+    - `@starknet-react/core` `3.x` -> `5.0.3`
+    - Added compatible peer runtime `starknet` `8.1.2`
+    - `recharts` `2.x` -> `3.7.0`
+    - `zod` `3.x` -> `4.3.6`
+  - Updated chart wrapper typing compatibility for Recharts v3 (`src/components/ui/chart.tsx`).
+  - Post-upgrade bundle shape:
+    - `starknet-vendor`: `281.22 kB` (gzip `86.50 kB`)
+    - `charts-vendor`: `351.43 kB` (gzip `107.13 kB`)
+  - Validation after runtime wave:
+    - `pnpm lint` passes
+    - `pnpm build` passes
+    - `node --test tests/p1-query-normalization.test.mjs` passes
 
 ## 11. Risks and Mitigations
 - Risk: Over-aggressive splitting causes loading jank.
@@ -170,3 +184,4 @@ Quality baseline:
 - [x] P1 started: query key normalization + deprecated type removal.
 - [x] P1 started: low-risk dependency refresh (`typescript`).
 - [x] P2 started: toolchain major upgrade wave (`vite` + ESLint stack).
+- [x] P2 completed: runtime/data major upgrade wave (`@starknet-react/*`, `recharts`, `zod`) with validation.
