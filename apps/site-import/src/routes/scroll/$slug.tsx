@@ -5,6 +5,7 @@ import {
   formatScrollDate,
   getScrollPostBySlug,
   getScrollPostNeighbors,
+  getSimilarScrollPosts,
 } from "@/lib/scroll";
 
 export const Route = createFileRoute("/scroll/$slug")({
@@ -15,7 +16,8 @@ export const Route = createFileRoute("/scroll/$slug")({
     }
 
     const { older, newer } = getScrollPostNeighbors(params.slug);
-    return { post, older, newer };
+    const similarPosts = getSimilarScrollPosts(params.slug, 3);
+    return { post, older, newer, similarPosts };
   },
   component: ScrollPostPage,
   head: ({ loaderData }) => {
@@ -38,7 +40,7 @@ export const Route = createFileRoute("/scroll/$slug")({
 });
 
 function ScrollPostPage() {
-  const { post, older, newer } = Route.useLoaderData();
+  const { post, older, newer, similarPosts } = Route.useLoaderData();
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -55,7 +57,21 @@ function ScrollPostPage() {
           Back to Scroll
         </Link>
 
-        <header className="mt-6 mb-8">
+        <div className="scroll-hero mt-6 mb-8">
+          {post.coverImage ? (
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="scroll-hero-image"
+            />
+          ) : (
+            <div className="scroll-hero-image" />
+          )}
+          <div className="scroll-hero-overlay" />
+          <div className="scroll-hero-eyebrow">Scroll Article</div>
+        </div>
+
+        <header className="mb-8">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">
             <span>{post.type === "update" ? "Update" : "Thought Piece"}</span>
             <span className="mx-2">•</span>
@@ -109,6 +125,35 @@ function ScrollPostPage() {
             ) : null}
           </div>
         </footer>
+
+        {similarPosts.length > 0 ? (
+          <section className="mt-12">
+            <h2 className="text-2xl font-semibold mb-4">Similar Scrolls</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {similarPosts.map((candidate) => (
+                <Link
+                  key={candidate.slug}
+                  to="/scroll/$slug"
+                  params={{ slug: candidate.slug }}
+                  className="similar-scroll-card"
+                >
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {candidate.type === "update" ? "Update" : "Thought Piece"}
+                  </p>
+                  <p className="text-lg font-semibold mt-1 line-clamp-2">
+                    {candidate.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
+                    {candidate.excerpt}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {formatScrollDate(candidate.date)}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </motion.article>
     </div>
   );

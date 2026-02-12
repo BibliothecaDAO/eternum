@@ -362,4 +362,29 @@
   .scroll-content pre code {
     @apply p-0 bg-transparent;
   }
+
+  .scroll-hero {
+    @apply relative overflow-hidden border border-border bg-card;
+    min-height: 280px;
+  }
+
+  .scroll-hero-image {
+    @apply absolute inset-0 h-full w-full object-cover;
+    background:
+      radial-gradient(circle at 20% 20%, color-mix(in oklab, var(--color-primary) 50%, transparent) 0%, transparent 45%),
+      linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 35%, transparent), color-mix(in oklab, var(--color-secondary) 35%, transparent));
+  }
+
+  .scroll-hero-overlay {
+    @apply absolute inset-0;
+    background: linear-gradient(to top, color-mix(in oklab, var(--color-background) 85%, transparent), transparent 55%);
+  }
+
+  .scroll-hero-eyebrow {
+    @apply absolute left-4 top-4 md:left-6 md:top-6 text-xs uppercase tracking-[0.2em] text-primary-foreground bg-foreground/80 px-3 py-1;
+  }
+
+  .similar-scroll-card {
+    @apply block border border-border bg-card/70 p-4 transition-all hover:border-primary/60 hover:-translate-y-0.5;
+  }
 }

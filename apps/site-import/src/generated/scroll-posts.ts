@@ -32,6 +32,7 @@ export const scrollPosts: ScrollPost[] = [
       "onchain"
     ],
     "published": true,
+    "coverImage": "/og.jpg",
     "readingTimeMinutes": 1,
     "html": "<p>Most games are shipped as closed products. Onchain worlds work better when they are treated as public systems.</p>\n<h2>Durable Design Principles</h2>\n<h3>1) Legibility beats magic</h3>\n<p>Players and contributors should be able to understand how key systems work without reading private code or hidden spreadsheets.</p>\n<h3>2) Forkability is a feature</h3>\n<p>If a game system is truly open, other teams can adapt it. That does not weaken the original world. It increases total surface area for innovation.</p>\n<h3>3) Coordination is gameplay</h3>\n<p>When economies and governance are real, social coordination becomes part of the game itself.</p>\n<h2>Closing</h2>\n<p>The long-term winners in onchain gaming will not be the teams that hide the most implementation details. They will be the teams that make world logic clear enough for others to extend.</p>\n"
   },
@@ -48,6 +49,7 @@ export const scrollPosts: ScrollPost[] = [
       "builders"
     ],
     "published": true,
+    "coverImage": "/og.jpg",
     "readingTimeMinutes": 1,
     "html": "<p>This week was defined by one thing: velocity.</p>\n<p>Studios pushed new playable loops, contributors landed infra improvements, and community operators helped tighten feedback cycles between players and builders.</p>\n<h2>Highlights</h2>\n<ul>\n<li>More teams moved from prototype screens into gameplay-heavy test builds.</li>\n<li>Shared infra matured, reducing repeated setup work for new projects.</li>\n<li>Community QA participation increased, especially around onboarding and progression.</li>\n</ul>\n<h2>Why This Matters</h2>\n<p>Every small ship compounds. The network effect is not only players joining games, it is developers learning from each other in public and compressing the distance between idea and playable product.</p>\n<p>The Scroll will keep tracking these moments so the ecosystem has a consistent record of progress.</p>\n"
   }

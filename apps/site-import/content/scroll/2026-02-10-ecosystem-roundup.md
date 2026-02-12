@@ -4,6 +4,7 @@ excerpt: "A quick pulse check on what shipped this week across Realms ecosystem 
 date: "2026-02-10"
 type: "update"
 author: "Realms Team"
+coverImage: "/og.jpg"
 tags:
   - ecosystem
   - updates

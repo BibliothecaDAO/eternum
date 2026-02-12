@@ -4,6 +4,7 @@ excerpt: "Onchain games become more durable when systems are legible, forkable, 
 date: "2026-02-11"
 type: "thought-piece"
 author: "Realms Team"
+coverImage: "/og.jpg"
 tags:
   - thought-piece
   - design

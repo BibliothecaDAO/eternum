@@ -28,6 +28,40 @@ export function getScrollPostNeighbors(slug: string) {
   };
 }
 
+export function getSimilarScrollPosts(slug: string, limit = 3) {
+  const posts = getPublishedScrollPosts();
+  const currentPost = posts.find((post) => post.slug === slug);
+
+  if (!currentPost) {
+    return [];
+  }
+
+  const withScores = posts
+    .filter((post) => post.slug !== slug)
+    .map((post) => {
+      const sharedTags = post.tags.filter((tag) =>
+        currentPost.tags.includes(tag)
+      ).length;
+      const sameTypeBonus = post.type === currentPost.type ? 1 : 0;
+      const score = sharedTags * 2 + sameTypeBonus;
+
+      return { post, score };
+    });
+
+  return withScores
+    .sort((a, b) => {
+      if (a.score === b.score) {
+        if (a.post.date === b.post.date) {
+          return a.post.slug.localeCompare(b.post.slug);
+        }
+        return a.post.date < b.post.date ? 1 : -1;
+      }
+      return b.score - a.score;
+    })
+    .slice(0, limit)
+    .map((entry) => entry.post);
+}
+
 export function formatScrollDate(date: string) {
   const [year, month, day] = date.split("-").map(Number);
   const parsed = new Date(year, month - 1, day);
