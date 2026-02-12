@@ -4,6 +4,7 @@ import { RealmMetadata } from "@/types";
 import { calculateUnregisteredShareholderPointsCache, type ContractAddressAndAmount } from "@/utils/leaderboard";
 import type { ContractAddress } from "@bibliothecadao/types";
 import { fetchSQL, gameClientFetch } from "./apiClient";
+import { resolveCollectionTokensQueryMode } from "./query-selection";
 import { QUERIES } from "./queries";
 
 const DEFAULT_HYPERSTRUCTURE_RADIUS = 8;
@@ -780,12 +781,20 @@ export async function fetchAllCollectionTokens(
   const fullOrderByPaged = buildFullOrderPaged();
   const fullOrderByFinal = buildFullOrderFinal();
 
-  // Choose fast listed-only or full paged query
-  const queryTemplate = listedOnly ? QUERIES.ALL_COLLECTION_TOKENS_LISTED : QUERIES.ALL_COLLECTION_TOKENS_FULL_PAGED;
+  const queryMode = resolveCollectionTokensQueryMode({
+    listedOnly,
+    hasTraitFilters: traitFilterClauses.length > 0,
+  });
 
-  const countTemplate = listedOnly
-    ? QUERIES.ALL_COLLECTION_TOKENS_LISTED_COUNT
-    : QUERIES.ALL_COLLECTION_TOKENS_FULL_COUNT;
+  let queryTemplate = QUERIES.ALL_COLLECTION_TOKENS_FULL_PAGED;
+  let countTemplate = QUERIES.ALL_COLLECTION_TOKENS_FULL_COUNT;
+  if (queryMode === "listed_with_traits") {
+    queryTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED;
+    countTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED_COUNT;
+  } else if (queryMode === "listed_no_traits") {
+    queryTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED_NO_TRAITS;
+    countTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED_NO_TRAITS_COUNT;
+  }
 
   const query = queryTemplate
     .replaceAll("{contractAddress}", padAddress(contractAddress))
