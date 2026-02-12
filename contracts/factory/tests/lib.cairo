@@ -42,6 +42,21 @@ fn deploy_factory() -> (IWorldFactoryDispatcher, WorldStorage) {
     (IWorldFactoryDispatcher { contract_address: factory_addr }, world)
 }
 
+fn set_factory_config_full(factory: IWorldFactoryDispatcher, config: FactoryConfig) {
+    factory
+        .set_factory_config(
+            config.version,
+            config.max_actions,
+            config.world_class_hash,
+            config.default_namespace.clone(),
+            config.default_namespace_writer_all,
+        );
+    factory.set_factory_config_contracts(config.version, config.contracts.clone());
+    factory.set_factory_config_models(config.version, config.models.clone());
+    factory.set_factory_config_events(config.version, config.events.clone());
+    factory.set_factory_config_libraries(config.version, config.libraries.clone());
+}
+
 #[test]
 fn test_factory_config() {
     let (factory, factory_world) = deploy_factory();
@@ -64,7 +79,7 @@ fn test_factory_config() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_factory_config(factory_config);
+    set_factory_config_full(factory, factory_config);
 
     let config: FactoryConfig = factory_world.read_model(1);
     assert!(config.version == 1, "version should be 1");
@@ -101,13 +116,20 @@ fn test_factory_config_owner_only() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_factory_config(factory_config.clone());
+    set_factory_config_full(factory, factory_config.clone());
 
     cheat_caller_address(
         factory.contract_address, 'OTHER_CONTRACT'.try_into().unwrap(), CheatSpan::TargetCalls(1),
     );
 
-    factory.set_factory_config(factory_config);
+    factory
+        .set_factory_config(
+            factory_config.version,
+            factory_config.max_actions,
+            factory_config.world_class_hash,
+            factory_config.default_namespace.clone(),
+            factory_config.default_namespace_writer_all,
+        );
 }
 
 #[test]
@@ -132,7 +154,7 @@ fn test_factory_deploy_and_confirm_cursor() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_factory_config(factory_config);
+    set_factory_config_full(factory, factory_config);
 
     factory.create_game('world_1', 1, 0, 0);
 
@@ -171,7 +193,7 @@ fn test_factory_deploy_and_confirm_world_deployed() {
         libraries: fake_world_resources.libraries.clone(),
     };
 
-    factory.set_factory_config(factory_config);
+    set_factory_config_full(factory, factory_config);
 
     factory.create_game('world_1', 1, 0, 0);
 

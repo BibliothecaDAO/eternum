@@ -20,36 +20,57 @@ interface ManifestData {
   libraries?: Array<{ class_hash: string; tag?: string; version?: string; name?: string }>;
 }
 
+export interface FactoryConfigCalldataParts {
+  base: any[];
+  contracts: any[];
+  models: any[];
+  events: any[];
+  libraries: any[];
+  all: any[];
+}
+
 export const generateFactoryCalldata = (
   manifest: ManifestData,
   version: string,
   namespace: string,
   maxActions = 20,
   defaultNamespaceWriterAll = true,
-): any[] => {
-  const calldata: any[] = [];
-  calldata.push(version);
-  calldata.push(maxActions);
-  calldata.push(manifest.world.class_hash);
+): FactoryConfigCalldataParts => {
+  const base: any[] = [];
+  base.push(version);
+  base.push(maxActions);
+  base.push(manifest.world.class_hash);
   const namespaceByteArray = byteArray.byteArrayFromString(namespace);
-  calldata.push(namespaceByteArray);
-  calldata.push(defaultNamespaceWriterAll ? 1 : 0);
-  calldata.push(manifest.contracts.length);
+  base.push(namespaceByteArray);
+  base.push(defaultNamespaceWriterAll ? 1 : 0);
+
+  const contracts: any[] = [];
+  contracts.push(version);
+  contracts.push(manifest.contracts.length);
   for (const contract of manifest.contracts) {
-    calldata.push(contract.selector);
-    calldata.push(contract.class_hash);
+    contracts.push(contract.selector);
+    contracts.push(contract.class_hash);
     const initCalldataCount = contract.init_calldata?.length || 0;
-    calldata.push(initCalldataCount);
-    if (initCalldataCount > 0) calldata.push(...(contract.init_calldata || []));
-    calldata.push(0);
-    calldata.push(0);
+    contracts.push(initCalldataCount);
+    if (initCalldataCount > 0) contracts.push(...(contract.init_calldata || []));
+    contracts.push(0);
+    contracts.push(0);
   }
-  calldata.push(manifest.models.length);
-  for (const model of manifest.models) calldata.push(model.class_hash);
-  calldata.push(manifest.events.length);
-  for (const event of manifest.events) calldata.push(event.class_hash);
+
+  const models: any[] = [];
+  models.push(version);
+  models.push(manifest.models.length);
+  for (const model of manifest.models) models.push(model.class_hash);
+
+  const events: any[] = [];
+  events.push(version);
+  events.push(manifest.events.length);
+  for (const event of manifest.events) events.push(event.class_hash);
+
   const libs = manifest.libraries ?? [];
-  calldata.push(libs.length);
+  const libraries: any[] = [];
+  libraries.push(version);
+  libraries.push(libs.length);
   for (const lib of libs) {
     const classHash = lib.class_hash;
     let libName = lib.name || "";
@@ -65,11 +86,19 @@ export const generateFactoryCalldata = (
     }
     const nameByteArray = byteArray.byteArrayFromString(libName || "");
     const versionByteArray = byteArray.byteArrayFromString(libVersion || "");
-    calldata.push(classHash);
-    calldata.push(nameByteArray);
-    calldata.push(versionByteArray);
+    libraries.push(classHash);
+    libraries.push(nameByteArray);
+    libraries.push(versionByteArray);
   }
-  return calldata;
+
+  return {
+    base,
+    contracts,
+    models,
+    events,
+    libraries,
+    all: [...base, ...contracts, ...models, ...events, ...libraries],
+  };
 };
 
 export const generateCairoOutput = (
