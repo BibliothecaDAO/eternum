@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
+import { lazy, Suspense } from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/providers/theme";
 import appCss from "@/styles.css?url";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -12,7 +12,6 @@ import {
   ScriptOnce,
   Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import type { QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,7 +19,21 @@ import { StarknetProvider } from "@/providers/starknet";
 import { seo } from "@/utils/seo";
 import { AppKitProvider } from "@/providers/ethereum";
 
-
+const THEME_STORAGE_KEY = "vite-ui-theme";
+const TanStackRouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@tanstack/react-router-devtools").then((mod) => ({
+        default: mod.TanStackRouterDevtools,
+      })),
+    )
+  : null;
+const ReactQueryDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@tanstack/react-query-devtools").then((mod) => ({
+        default: mod.ReactQueryDevtools,
+      })),
+    )
+  : null;
 
 export interface RouterAppContext {
   session: {
@@ -82,6 +95,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
 
   return (
     <html lang="en">
@@ -90,17 +104,20 @@ function RootComponent() {
       </head>
       <body className="overflow-hidden">
         <ScriptOnce>
-          {`document.documentElement.classList.toggle(
-            'dark',
-            localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
-            )`}
+          {`(() => {
+            const theme = localStorage.getItem('${THEME_STORAGE_KEY}');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const shouldUseDark =
+              theme === 'dark' || theme === null || (theme === 'system' && prefersDark);
+            document.documentElement.classList.toggle('dark', shouldUseDark);
+          })();`}
         </ScriptOnce>
         <div
           className={`flex h-screen flex-col [--header-height:calc(--spacing(14))]`}
         >
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <StarknetProvider>
-              <AppKitProvider>
+              <AppKitProvider queryClient={queryClient}>
                   <SidebarProvider className="flex h-full flex-col">
                     <Header />
                     <div className="flex min-h-0 flex-1">
@@ -115,8 +132,19 @@ function RootComponent() {
             </StarknetProvider>
           </ThemeProvider>
         </div>
-        <TanStackRouterDevtools position="bottom-left" />
-        <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            {TanStackRouterDevtools && (
+              <TanStackRouterDevtools position="bottom-left" />
+            )}
+            {ReactQueryDevtools && (
+              <ReactQueryDevtools
+                position="bottom"
+                buttonPosition="bottom-right"
+              />
+            )}
+          </Suspense>
+        )}
         <Scripts />
       </body>
     </html>

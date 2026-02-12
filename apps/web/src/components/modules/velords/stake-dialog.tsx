@@ -77,6 +77,11 @@ export function StakeDialog({
     const currentTime = getUnixTime(new Date());
     return Number(ownerLordsLock.end_time) < currentTime;
   }, [ownerLordsLock?.end_time]);
+  const remainingLockWeeks = Math.max(maxLockWeeks - weeksToUnlock, 0);
+  const canExtendLock = isLockExpired || remainingLockWeeks > 0;
+  const lockDurationSliderMax = isLockExpired
+    ? maxLockWeeks
+    : Math.max(remainingLockWeeks, 1);
 
   const newLockEndTime = useMemo(() => {
     const currentTime = getUnixTime(new Date());
@@ -250,10 +255,11 @@ export function StakeDialog({
             <Slider
               className="my-2"
               min={0}
-              max={isLockExpired ? maxLockWeeks : maxLockWeeks - weeksToUnlock}
+              max={lockDurationSliderMax}
               step={1}
               value={[lockWeeks]}
               onValueChange={(value) => setLockWeeks(value[0] ?? 0)}
+              disabled={!canExtendLock}
             />
             {lockWeeks > 0 ? (
               <p className="text-sm text-muted">

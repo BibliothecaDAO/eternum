@@ -8,7 +8,6 @@ import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { DelegateCard } from "@/components/modules/governance/delegate-card";
 import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-card-skeleton";
 import { RealmCard } from "@/components/modules/realms/realm-card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,7 +33,7 @@ import {
   useReadContract,
   useSendTransaction,
 } from "@starknet-react/core";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";
 import { num } from "starknet";
@@ -58,21 +57,20 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   );
   const l2Realms = l2RealmsQuery.data;*/
 
-  const l1UsersRealmsQuery = useSuspenseQuery(
-    getL1UsersRealmsQueryOptions({
-      address: l1Address ?? "",
-    }),
-  );
+  const [l1UsersRealmsQuery, accountTokensQuery] = useSuspenseQueries({
+    queries: [
+      getL1UsersRealmsQueryOptions({
+        address: l1Address,
+      }),
+      getAccountTokensQueryOptions({
+        address: address,
+        collectionAddress: CollectionAddresses.realms[
+          SUPPORTED_L2_CHAIN_ID
+        ] as string,
+      }),
+    ],
+  });
   const l1UsersRealms = l1UsersRealmsQuery.data;
-
-  const accountTokensQuery = useSuspenseQuery(
-    getAccountTokensQueryOptions({
-      address: address,
-      collectionAddress: CollectionAddresses.realms[
-        SUPPORTED_L2_CHAIN_ID
-      ] as string,
-    }),
-  );
   const accountTokens = accountTokensQuery.data;
 
   const { data } = useCurrentDelegate();
@@ -136,14 +134,8 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-3xl font-bold">
-                    <Suspense
-                      fallback={
-                        <div className="text-muted-foreground">Loading...</div>
-                      }
-                    >
-                      {l1UsersRealms?.collections?.[0]?.ownership?.tokenCount ??
-                        0}
-                    </Suspense>
+                    {l1UsersRealms?.collections?.[0]?.ownership?.tokenCount ??
+                      0}
                   </div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <EthereumIcon className="h-4 w-4" />
@@ -173,6 +165,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <a
                 href="https://empire.realms.world/trade/realms"
                 target="_blank"
+                rel="noopener noreferrer"
                 className="flex-1"
               >
                 <Button variant="outline" size="sm" className="w-full">
@@ -442,6 +435,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 <a
                   href="https://empire.realms.world/trade/realms"
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="mt-4 inline-block"
                 >
                   <Button>

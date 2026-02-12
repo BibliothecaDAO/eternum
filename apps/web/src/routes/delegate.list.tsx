@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useDeferredValue, useState } from "react";
 import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-card-skeleton";
 import DelegateList from "@/components/modules/governance/delegate-list";
 import { DelegateListActions } from "@/components/modules/governance/delegate-list-actions";
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/delegate/list")({
 function RouteComponent() {
   // Local state for the search string.
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [sortMethod, setSortMethod] = useState<"desc" | "random">("random");
 
   return (
@@ -47,7 +48,7 @@ function RouteComponent() {
           </div>
         }
       >
-        <DelegateList searchQuery={searchQuery} sortMethod={sortMethod} />
+        <DelegateList searchQuery={deferredSearchQuery} sortMethod={sortMethod} />
       </Suspense>
     </div>
   );

@@ -33,18 +33,18 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
-    "@neondatabase/serverless": "1.0.1",
+    "@neondatabase/serverless": "1.0.2",
     "drizzle-orm": "catalog:",
-    "drizzle-zod": "^0.8.2",
-    "ws": "^8.18.0",
+    "drizzle-zod": "^0.8.3",
+    "ws": "^8.19.0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^22.13.1",
-    "@types/ws": "^8.5.14",
+    "@types/node": "^22.19.11",
+    "@types/ws": "^8.18.1",
     "dotenv-cli": "catalog:",
     "drizzle-kit": "catalog:",
-    "pg": "^8.13.1",
+    "pg": "^8.18.0",
     "postgres-range": "^1.1.4",
     "typescript": "catalog:"
   }

@@ -19,27 +19,27 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "devDependencies": {
-    "@types/node": "^20.5.2",
-    "@types/pg": "^8.11.10",
+    "@types/node": "^20.19.33",
+    "@types/pg": "^8.16.0",
     "dotenv-cli": "catalog:",
     "drizzle-kit": "catalog:",
     "rollup-plugin-esbuild": "^6.2.1",
     "typescript": "catalog:",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.1"
   },
   "dependencies": {
-    "@apibara/evm": "2.1.0-beta.38",
-    "@apibara/indexer": "2.1.0-beta.38",
-    "@apibara/plugin-drizzle": "2.1.0-beta.38",
-    "@apibara/protocol": "2.1.0-beta.38",
-    "@apibara/starknet": "2.1.0-beta.38",
-    "@electric-sql/pglite": "^0.2.17",
+    "@apibara/evm": "2.1.0-beta.53",
+    "@apibara/indexer": "2.1.0-beta.54",
+    "@apibara/plugin-drizzle": "2.1.0-beta.53",
+    "@apibara/protocol": "2.1.0-beta.54",
+    "@apibara/starknet": "2.1.0-beta.54",
+    "@electric-sql/pglite": "^0.3.15",
     "@realms-world/constants": "workspace:*",
     "@realms-world/db": "workspace:*",
-    "apibara": "2.1.0-beta.38",
+    "apibara": "2.1.0-beta.53",
     "drizzle-orm": "catalog:",
-    "pg": "^8.13.1",
+    "pg": "^8.18.0",
     "starknet": "catalog:",
     "viem": "catalog:",
     "zod": "catalog:"

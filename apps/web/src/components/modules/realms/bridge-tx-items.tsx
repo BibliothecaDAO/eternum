@@ -12,7 +12,6 @@ import { getBridgeTransactionsQueryOptions } from "@/lib/getBridgeTransactions";
 import { cn, shortenAddress } from "@/utils/utils";
 import { useAccount, useExplorer } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
@@ -131,13 +130,18 @@ const BridgeTransactionItems = () => {
                       ? explorer.transaction(event.hash)
                       : "https://sepolia.etherscan.io/tx/" + event.hash;
                     return (
-                      <Link to={explorerLink} target="_blank">
-                        <Button variant="outline" key={event.hash + idx}>
+                      <a
+                        key={event.hash + idx}
+                        href={explorerLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="outline">
                           {event.type.endsWith("l2")
                             ? "Starkscan"
                             : "Etherscan"}
                         </Button>
-                      </Link>
+                      </a>
                     );
                   })}
                 </div>

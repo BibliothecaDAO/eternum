@@ -74,8 +74,8 @@ export const getUserVotes = createServerFn({ method: "POST" })
     const variables = {
       first: limit,
       skip,
-      space_in: spaceIds,
-      voter: voter,
+      spaceIds,
+      voter,
     };
 
     // Fetch UserVotes using the generic fetch helper.
@@ -94,7 +94,7 @@ export const getUserVotesQueryOptions = (
 ) =>
   queryOptions({
     queryKey: [
-      "loadUserVotess",
+      "loadUserVotes",
       input.spaceIds,
       input.voter,
       input.limit,

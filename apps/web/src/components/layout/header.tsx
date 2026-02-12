@@ -4,7 +4,7 @@ import { toast } from "@/hooks/use-toast";
 import useIsWrongNetwork from "@/hooks/use-wrong-network";
 import { getConnectorIcon } from "@/utils/connectWallet";
 import { cn, shortenAddress } from "@/utils/utils";
-import ControllerConnector from "@cartridge/connector/controller";
+import type ControllerConnector from "@cartridge/connector/controller";
 import { Separator } from "@radix-ui/react-separator";
 import {
   useAccount,
@@ -31,7 +31,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { SidebarTrigger, useSidebar } from "../ui/sidebar";
@@ -130,7 +129,11 @@ export function Header() {
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <a href={explorer.contract(address)} target="_blank">
+                    <a
+                      href={explorer.contract(address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Button
                         variant={"outline"}
                         size="icon"
