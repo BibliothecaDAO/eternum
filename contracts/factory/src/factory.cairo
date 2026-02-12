@@ -17,10 +17,12 @@ pub mod factory {
     use dojo::utils::bytearray_hash;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
+    use crate::constants::MMR_SYSTEMS_SELECTOR;
     use crate::factory_models::{
         FactoryConfig, FactoryConfigContract, FactoryConfigOwner, FactoryDeploymentCursor,
     };
-    use crate::interface::{IWorldFactory, IWorldFactorySeries};
+    use crate::interface::{IWorldFactory, IWorldFactoryMMR, IWorldFactorySeries};
+    use crate::mmr_models::MMRRegistration;
     use crate::series_models::{Series, SeriesContract, SeriesContractBySelector, SeriesGame};
     use crate::world_models::{WorldContract, WorldDeployed};
 
@@ -202,6 +204,13 @@ pub mod factory {
                             contract_address: addr,
                         },
                     );
+
+                if *contract.selector == MMR_SYSTEMS_SELECTOR {
+                    factory_world
+                        .write_model(
+                            @MMRRegistration { address: addr, version: factory_config_version },
+                        );
+                }
 
                 if series_name.is_non_zero() {
                     // set series data
@@ -411,6 +420,18 @@ pub mod factory {
 
             cursor.completed = true;
             factory_world.write_model(@cursor);
+        }
+    }
+
+
+    #[abi(embed_v0)]
+    impl IWorldFactoryMMRImpl of IWorldFactoryMMR<ContractState> {
+        fn get_factory_mmr_contract_version(
+            self: @ContractState, addr: ContractAddress,
+        ) -> felt252 {
+            let mut factory_world = self.world_default();
+            let mmr_registration: MMRRegistration = factory_world.read_model(addr);
+            return mmr_registration.version;
         }
     }
 
