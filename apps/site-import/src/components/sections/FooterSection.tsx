@@ -2,8 +2,10 @@ import { socials } from "@/data/socials";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { ComponentType, useEffect, useRef, useState } from "react";
-import { getLordsInfo } from "@/lib/getLordsPrice";
-import { getTreasuryBalance } from "@/lib/getTreasuryBalance";
+import {
+  lordsInfoQueryOptions,
+  treasuryBalanceQueryOptions,
+} from "@/lib/query-options";
 import {
   Coins,
   Users,
@@ -53,15 +55,9 @@ function DeferredApyValue() {
 
 export function FooterSection() {
   // Fetch live data
-  const { data: lordsInfo } = useQuery({
-    queryKey: ["lordsInfo"],
-    queryFn: getLordsInfo,
-  });
+  const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
 
-  const { data: treasuryBalance } = useQuery({
-    queryKey: ["treasuryBalance"],
-    queryFn: getTreasuryBalance,
-  });
+  const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
   const totalTreasuryValue = treasuryBalance
     ? treasuryBalance.LORDS.usdValue +

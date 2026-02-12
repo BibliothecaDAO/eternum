@@ -125,7 +125,7 @@ Quality baseline:
 
 ## 10.1 Progress Snapshot (After P0 Start)
 - Build status: passing.
-- Lint status: still failing (`12` errors, `11` warnings), unchanged from baseline.
+- Lint status: passing.
 - Bundle shape after P0 changes:
   - App shell entry chunk: `121.27 kB` (gzip `41.03 kB`)
   - `react-vendor`: `185.46 kB` (gzip `58.52 kB`)
@@ -135,6 +135,18 @@ Quality baseline:
 - Result:
   - Previous single >1 MB app shell is eliminated.
   - Rollup chunk-size warning is eliminated (largest chunk now < 500 kB).
+- P1 progress:
+  - Normalized shared React Query options for LORDS info and treasury balance.
+  - Removed deprecated `@types/react-helmet-async`.
+  - Completed low-risk TypeScript refresh to `5.9.3`.
+- P2 progress:
+  - Completed toolchain major wave for `vite` and ESLint stack:
+    - `vite` `6.x` -> `7.3.1`
+    - `@vitejs/plugin-react` `4.x` -> `5.1.4`
+    - `eslint` `9.x` -> `10.0.0`
+    - `@eslint/js` `9.x` -> `10.0.1`
+    - `eslint-plugin-react-hooks` `5.x` -> `7.0.1`
+  - Addressed new React purity lint findings introduced by upgraded rules.
 
 ## 11. Risks and Mitigations
 - Risk: Over-aggressive splitting causes loading jank.
@@ -155,4 +167,6 @@ Quality baseline:
 - [x] P0 started: devtools isolated from production path.
 - [x] P0 started: homepage heavy sections moved behind lazy boundaries.
 - [x] P0 validation complete (post-change build comparison).
-- [ ] P1 lint/error remediation started.
+- [x] P1 started: query key normalization + deprecated type removal.
+- [x] P1 started: low-risk dependency refresh (`typescript`).
+- [x] P2 started: toolchain major upgrade wave (`vite` + ESLint stack).

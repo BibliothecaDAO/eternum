@@ -9,23 +9,17 @@ import {
 } from "@/components/ui/card";
 import { Coins, Users, Briefcase, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getTreasuryBalance } from "@/lib/getTreasuryBalance";
-import { getLordsInfo } from "@/lib/getLordsPrice";
+import {
+  lordsInfoQueryOptions,
+  treasuryBalanceQueryOptions,
+} from "@/lib/query-options";
 
 export function TokenomicsSection() {
   // Fetch treasury balance
-  const { data: treasuryBalance } = useQuery({
-    queryKey: ["treasuryBalance"],
-    queryFn: getTreasuryBalance,
-    staleTime: 60000, // Cache for 1 minute
-  });
+  const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
   // Fetch LORDS price and supply info
-  const { data: lordsInfo } = useQuery({
-    queryKey: ["lordsInfo"],
-    queryFn: getLordsInfo,
-    staleTime: 60000, // Cache for 1 minute
-  });
+  const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
 
   // Calculate total LORDS in treasury
   const treasuryLords = treasuryBalance?.LORDS.amount || 0;

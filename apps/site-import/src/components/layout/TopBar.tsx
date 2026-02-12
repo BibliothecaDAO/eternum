@@ -5,8 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { socials } from "@/data/socials";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { useQuery } from "@tanstack/react-query";
-import { queryOptions } from "@tanstack/react-query";
-import { getLordsInfo } from "@/lib/getLordsPrice";
+import { lordsInfoQueryOptions } from "@/lib/query-options";
 import { useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
@@ -22,12 +21,7 @@ export function TopBar() {
   const marginX = useTransform(scrollY, [0, 50], [16, 0]);
   const paddingY = useTransform(scrollY, [0, 50], [16, 8]);
 
-  const { data: lordsInfo } = useQuery(
-    queryOptions({
-      queryKey: ["lordsPrice"],
-      queryFn: getLordsInfo,
-    })
-  );
+  const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
 
   const lordsPrice = lordsInfo?.price?.rate;
 

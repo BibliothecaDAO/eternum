@@ -6,7 +6,7 @@ import { CONTRACTS, TIME_CONSTANTS, APY_CONSTANTS } from "@/lib/constants";
 import { REWARD_POOL_ABI } from "@/lib/abis/rewardPool";
 import { VELORDS_ABI } from "@/lib/abis/velords";
 import { LORDS_ABI } from "@/lib/abis/lords";
-import { getLordsInfo } from "@/lib/getLordsPrice";
+import { lordsInfoQueryOptions } from "@/lib/query-options";
 
 // Helper function to get the current week timestamp (floored to week)
 const floorToWeek = (timestamp: number): number => {
@@ -118,11 +118,7 @@ export const useVelords = () => {
   });
 
   // Get LORDS price for TVL calculation
-  const { data: lordsPrice } = useQuery({
-    queryKey: ["lordsPrice"],
-    queryFn: getLordsInfo,
-    staleTime: 60000, // Cache for 1 minute
-  });
+  const { data: lordsPrice } = useQuery(lordsInfoQueryOptions());
 
   // Calculate TVL
   const tvl = useQuery({
