@@ -125,7 +125,8 @@ export function GamesSection() {
           </div>
           <button
             onClick={scrollLeft}
-            className="absolute left-0 top-1/2 -translate-y-1/2 hover:bg-muted/70 backdrop-blur-sm p-1 sm:p-1.5 md:p-2 rounded-full transition-all duration-300 z-10 cursor-pointer"
+            className="absolute left-0 top-1/2 -translate-y-1/2 hover:bg-muted/70 backdrop-blur-sm min-h-11 min-w-11 p-1 sm:p-1.5 md:p-2 rounded-full transition-all duration-300 z-10 cursor-pointer"
+            aria-label="Scroll featured games left"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -144,7 +145,8 @@ export function GamesSection() {
           </button>
           <button
             onClick={scrollRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 hover:bg-muted/70 backdrop-blur-sm p-1 sm:p-1.5 md:p-2 rounded-full transition-all duration-300 z-10 cursor-pointer"
+            className="absolute right-0 top-1/2 -translate-y-1/2 hover:bg-muted/70 backdrop-blur-sm min-h-11 min-w-11 p-1 sm:p-1.5 md:p-2 rounded-full transition-all duration-300 z-10 cursor-pointer"
+            aria-label="Scroll featured games right"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

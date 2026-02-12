@@ -116,7 +116,7 @@ function ScreenshotModal({
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-4 top-1/2 -translate-y-1/2 "
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/30 bg-black/50 backdrop-blur-sm z-10"
               onClick={(e) => {
                 e.stopPropagation();
                 onNext();
@@ -179,7 +179,7 @@ export function GameDetails({ game }: { game: Game }) {
 
   return (
     <>
-      <div className="container mx-auto px-8 py-8 max-w-7xl rounded-2xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl rounded-2xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
