@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://realms.world/</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games/realms-eternum</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games/dark-shuffle</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games/loot-survivor</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games/pistols-at-dawn</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games/zkube</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games/blob-arena</loc>
+  </url>
+  <url>
+    <loc>https://realms.world/games/rising-revenant</loc>
+  </url>
+</urlset>
